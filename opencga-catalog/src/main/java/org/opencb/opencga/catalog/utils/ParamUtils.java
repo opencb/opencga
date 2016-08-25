@@ -14,8 +14,7 @@ import java.util.regex.Pattern;
 public class ParamUtils {
     public static void checkId(long id, String name) throws CatalogParameterException {
         if (id < 0) {
-            throw new CatalogParameterException("Error in id: '" + name + "' is not valid: "
-                    + id + ".");
+            throw new CatalogParameterException("Error in id: '" + name + "' is not valid: " + id + ".");
         }
     }
 

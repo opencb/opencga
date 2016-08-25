@@ -18,7 +18,7 @@ package org.opencb.opencga.analysis.storage.variant;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
@@ -115,7 +115,11 @@ public abstract class CatalogVariantStorageManager extends StorageManager<Varian
     @Override
     public VariantDBAdaptor getDBAdaptor(String dbName) throws StorageManagerException {
         if (dbName == null) {
-            dbName = getCatalogManager().getUserIdBySessionId(params.getString("sessionId"));
+            try {
+                dbName = getCatalogManager().getUserIdBySessionId(params.getString("sessionId"));
+            } catch (CatalogException e) {
+                e.printStackTrace();
+            }
         }
         return getStorageManager(params).getDBAdaptor(dbName);
     }

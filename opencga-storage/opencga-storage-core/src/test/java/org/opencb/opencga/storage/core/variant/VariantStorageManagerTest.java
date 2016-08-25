@@ -31,7 +31,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -62,10 +62,11 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
     public void basicIndex() throws Exception {
         clearDB(DB_NAME);
         StudyConfiguration studyConfiguration = newStudyConfiguration();
-        StorageETLResult etlResult = runDefaultETL(variantStorageManager, studyConfiguration);
+        StorageETLResult etlResult = runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
+                new ObjectMap(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json"));
         assertTrue("Incorrect transform file extension " + etlResult.getTransformResult() + ". Expected 'variants.json.gz'",
                 Paths.get(etlResult.getTransformResult()).toFile().getName().endsWith("variants.json.gz"));
-        VariantSource source = VariantStorageManager.readVariantSource(Paths.get(etlResult.getTransformResult().getPath()), null);
+        VariantSource source = VariantReaderUtils.readVariantSource(Paths.get(etlResult.getTransformResult().getPath()), null);
 
         assertTrue(studyConfiguration.getIndexedFiles().contains(6));
         checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration);
@@ -127,7 +128,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(9));
 
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
-        checkLoadedVariants(dbAdaptor, studyConfigurationMultiFile, true, false, expectedNumVariants - 8);
+        checkLoadedVariants(dbAdaptor, studyConfigurationMultiFile, true, false, expectedNumVariants);
 
 
         //Load, in a new study, the same dataset in one single file
@@ -152,10 +153,11 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
             assertTrue(variant.toString(), map.containsKey(studyConfigurationMultiFile.getStudyName()));
             assertTrue(variant.toString(), map.containsKey(studyConfigurationSingleFile.getStudyName()));
-            assertEquals(variant.toString(), map.get(studyConfigurationSingleFile.getStudyName()).getSamplesData().toString(), map.get(studyConfigurationMultiFile
-                    .getStudyName()).getSamplesData().toString());
+            String expected = map.get(studyConfigurationSingleFile.getStudyName()).getSamplesData().toString();
+            String actual = map.get(studyConfigurationMultiFile.getStudyName()).getSamplesData().toString();
+            assertWithConflicts(variant, () -> assertEquals(variant.toString(), expected, actual));
         }
-        assertEquals(expectedNumVariants - 8, numVariants);
+        assertEquals(expectedNumVariants, numVariants);
 
     }
 
@@ -468,6 +470,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                 values.set(0, values.get(0).replace("0/0", "0|0"));
                 while (values.get(2).length() < 5) values.set(2, values.get(2) + "0");   //Set lost zeros
             });
+            variant.resetLength();
             assertEquals("\n" + variant.toJson() + "\n" + loadedVariant.toJson(), variant.toJson(), loadedVariant.toJson());
 
         }

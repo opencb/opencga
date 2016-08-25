@@ -19,39 +19,46 @@ package org.opencb.opencga.client.rest;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.client.rest.commons.AnnotationClient;
 
 import java.io.IOException;
 
 /**
  * Created by imedina on 24/05/16.
  */
-public class SampleClient extends AbstractParentClient<Sample> {
+public class SampleClient extends AnnotationClient<Sample, SampleAclEntry> {
 
     private static final String SAMPLES_URL = "samples";
 
-    protected SampleClient(String sessionId, ClientConfiguration configuration) {
-        super(sessionId, configuration);
+    protected SampleClient(String userId, String sessionId, ClientConfiguration configuration) {
+        super(userId, sessionId, configuration);
 
         this.category = SAMPLES_URL;
         this.clazz = Sample.class;
+        this.aclClass = SampleAclEntry.class;
     }
 
-    public QueryResponse<Individual> create(String studyId, String sampleName, ObjectMap params) throws CatalogException, IOException {
-        addParamsToObjectMap(params, "studyId", studyId, "name", sampleName);
-        return execute(SAMPLES_URL, "create", params, Individual.class);
+    public QueryResponse<Sample> create(String studyId, String sampleName, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "studyId", studyId, "name", sampleName);
+        return execute(SAMPLES_URL, "create", params, GET, Sample.class);
     }
 
     public QueryResponse<Sample> annotate(String sampleId, String annotateSetName, ObjectMap params) throws CatalogException, IOException {
-        addParamsToObjectMap(params, "annotateSetName", annotateSetName);
-        return execute(SAMPLES_URL, sampleId, "annotate", params, Sample.class);
+        params = addParamsToObjectMap(params, "annotateSetName", annotateSetName);
+        return execute(SAMPLES_URL, sampleId, "annotate", params, GET, Sample.class);
     }
 
-    public QueryResponse<Sample> loadFromPed(String studyId, String variableSetId, ObjectMap params) throws CatalogException, IOException {
-        addParamsToObjectMap(params, "studyId", studyId, "variableSetId", variableSetId);
-        return execute(SAMPLES_URL, "load", params, Sample.class);
+    public QueryResponse<Sample> loadFromPed(String studyId, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "studyId", studyId);
+        return execute(SAMPLES_URL, "load", params, GET, Sample.class);
+    }
+
+    public QueryResponse<Sample> groupBy(String studyId, String by, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "studyId", studyId, "by", by);
+        return execute(SAMPLES_URL, "groupBy", params, GET, Sample.class);
     }
 
 }

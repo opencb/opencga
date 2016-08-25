@@ -363,10 +363,10 @@ public class AnalysisCliOptionsParser {
 //        public String fileId;
 
         @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
-        boolean transform = false;
+        public boolean transform = false;
 
         @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
-        boolean load = false;
+        public boolean load = false;
 
 //        @Parameter(names = {"--overwrite"}, description = "Reset the database if exists before installing")
 //        public boolean overwrite;
@@ -590,6 +590,15 @@ public class AnalysisCliOptionsParser {
         @Parameter(names = {"--gene-trait-name"}, description = "List of gene trait association id. e.g. \"umls:C0007222\" , \"OMIM:269600\"", required = false, arity = 1)
         public String geneTraitName;
 
+        @Parameter(names = {"--hpo"}, description = "List of HPO terms. e.g. \"HP:0000545\" , \"HP:0002812\"", required = false, arity = 1)
+        public String hpo;
+
+        @Parameter(names = {"--go"}, description = "List of GO (Genome Ontology) terms. e.g. \"GO:0002020\"", required = false, arity = 1)
+        public String go;
+
+        @Parameter(names = {"--expression"}, description = "List of tissues of interest. e.g. \"tongue\"", required = false, arity = 1)
+        public String expression;
+
         @Parameter(names = {"--protein-keywords"}, description = "List of protein variant annotation keywords", required = false, arity = 1)
         public String proteinKeywords;
 
@@ -685,6 +694,9 @@ public class AnalysisCliOptionsParser {
 
         @Parameter(names = {"--limit"}, description = "Limit the number of returned elements.", required = false, arity = 1)
         public int limit;
+
+        @Parameter(names = {"--sort"}, description = "Sort the output variants.")
+        public boolean sort;
 
         @Parameter(names = {"--count"}, description = "Count results. Do not return elements.", required = false, arity = 0)
         public boolean count;

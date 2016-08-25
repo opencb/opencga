@@ -15,21 +15,20 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
 import org.opencb.opencga.catalog.db.api.CatalogPanelDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.PanelConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.DiseasePanel;
 import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.acls.DiseasePanelAcl;
+import org.opencb.opencga.catalog.models.acls.permissions.DiseasePanelAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
+import static org.opencb.opencga.catalog.utils.CatalogMemberValidator.checkMembers;
 
 /**
  * Created by pfurio on 01/06/16.
@@ -38,12 +37,14 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
 
     private final MongoDBCollection panelCollection;
     private PanelConverter panelConverter;
+    private CatalogMongoAclDBAdaptor<DiseasePanelAclEntry> aclDBAdaptor;
 
     public CatalogMongoPanelDBAdaptor(MongoDBCollection panelCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoJobDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.panelCollection = panelCollection;
         this.panelConverter = new PanelConverter();
+        this.aclDBAdaptor = new CatalogMongoAclDBAdaptor<>(panelCollection, panelConverter, logger);
     }
 
     @Override
@@ -54,145 +55,84 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<DiseasePanelAcl> getPanelAcl(long panelId, List<String> members) throws CatalogDBException {
+    public QueryResult<DiseasePanelAclEntry> getPanelAcl(long panelId, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
 
         checkPanelId(panelId);
 
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, panelId));
-        Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
-        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), members));
-        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
+        Bson unwind = Aggregates.unwind("$" + QueryParams.ACL.key());
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACL_MEMBER.key(), members));
+        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACL.key()));
 
-        List<DiseasePanelAcl> panelAcl = null;
+        List<DiseasePanelAclEntry> panelAcl = null;
         QueryResult<Document> aggregate = panelCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
         DiseasePanel panel = panelConverter.convertToDataModelType(aggregate.first());
 
         if (panel != null) {
-            panelAcl = panel.getAcls();
+            panelAcl = panel.getAcl();
         }
 
         return endQuery("Get panel Acl", startTime, panelAcl);
     }
 
     @Override
-    public QueryResult<DiseasePanelAcl> setPanelAcl(long panelId, DiseasePanelAcl acl, boolean override) throws CatalogDBException {
+    public QueryResult<DiseasePanelAclEntry> setPanelAcl(long panelId, DiseasePanelAclEntry acl, boolean override)
+            throws CatalogDBException {
         long startTime = startQuery();
-
-        checkPanelId(panelId);
         long studyId = getStudyIdByPanelId(panelId);
-        // Check that all the members (users) are correct and exist.
-        checkMembers(dbAdaptorFactory, studyId, acl.getUsers());
 
-        // If there are groups in acl.getUsers(), we will obtain all the users belonging to the groups and will check if any of them
+        String member = acl.getMember();
+
+        // If there is a group in acl.getMember(), we will obtain all the users belonging to the groups and will check if any of them
         // already have permissions on its own.
-        Map<String, List<String>> groups = new HashMap<>();
-        Set<String> users = new HashSet<>();
+        if (member.startsWith("@")) {
+            Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
 
-        for (String member : acl.getUsers()) {
-            if (member.startsWith("@")) {
-                Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
-                groups.put(group.getId(), group.getUserIds());
-            } else {
-                users.add(member);
-            }
-        }
-        if (groups.size() > 0) {
             // Check if any user already have permissions set on their own.
-            for (Map.Entry<String, List<String>> entry : groups.entrySet()) {
-                QueryResult<DiseasePanelAcl> panelAcl = getPanelAcl(panelId, entry.getValue());
-                if (panelAcl.getNumResults() > 0) {
-                    throw new CatalogDBException("Error when adding permissions in panel. At least one user in " + entry.getKey()
-                            + " has already defined permissions for panel " + panelId);
-                }
+            QueryResult<DiseasePanelAclEntry> fileAcl = getPanelAcl(panelId, group.getUserIds());
+            if (fileAcl.getNumResults() > 0) {
+                throw new CatalogDBException("Error when adding permissions in panel. At least one user in " + group.getName()
+                        + " has already defined permissions for panel " + panelId);
+            }
+        } else {
+            // Check if the members of the new acl already have some permissions set
+            QueryResult<DiseasePanelAclEntry> panelAcls = getPanelAcl(panelId, acl.getMember());
+
+            if (panelAcls.getNumResults() > 0 && override) {
+                unsetPanelAcl(panelId, Arrays.asList(member), Collections.emptyList());
+            } else if (panelAcls.getNumResults() > 0 && !override) {
+                throw new CatalogDBException("setDiseasePanelAcl: " + member + " already had an Acl set. If you "
+                        + "still want to set a new Acl and remove the old one, please use the override parameter.");
             }
         }
 
-        // Check if any of the users in the set of users also belongs to any introduced group. In that case, we will remove the user
-        // because the group will be given the permission.
-        for (Map.Entry<String, List<String>> entry : groups.entrySet()) {
-            for (String userId : entry.getValue()) {
-                if (users.contains(userId)) {
-                    users.remove(userId);
-                }
-            }
-        }
-
-        // Create the definitive list of members that will be added in the acl
-        List<String> members = new ArrayList<>(users.size() + groups.size());
-        members.addAll(users.stream().collect(Collectors.toList()));
-        members.addAll(groups.entrySet().stream().map(Map.Entry::getKey).collect(Collectors.toList()));
-        acl.setUsers(members);
-
-        // Check if the members of the new acl already have some permissions set
-        QueryResult<DiseasePanelAcl> panelAcls = getPanelAcl(panelId, acl.getUsers());
-        if (panelAcls.getNumResults() > 0 && override) {
-            Set<String> usersSet = new HashSet<>(acl.getUsers().size());
-            usersSet.addAll(acl.getUsers().stream().collect(Collectors.toList()));
-
-            List<String> usersToOverride = new ArrayList<>();
-            for (DiseasePanelAcl panelAcl : panelAcls.getResult()) {
-                for (String member : panelAcl.getUsers()) {
-                    if (usersSet.contains(member)) {
-                        // Add the user to the list of users that will be taken out from the Acls.
-                        usersToOverride.add(member);
-                    }
-                }
-            }
-
-            // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
-            unsetPanelAcl(panelId, usersToOverride);
-        } else if (panelAcls.getNumResults() > 0 && !override) {
-            throw new CatalogDBException("setPanelAcl: " + panelAcls.getNumResults() + " of the members already had an Acl set. If you "
-                    + "still want to set the Acls for them and remove the old one, please use the override parameter.");
-        }
-
-        // Append the users to the existing acl.
-        List<String> permissions = acl.getPermissions().stream().map(DiseasePanelAcl.DiseasePanelPermissions::name)
-                .collect(Collectors.toList());
-
-        // Check if the permissions found on acl already exist on cohort id
+        // Push the new acl to the list of acls.
         Document queryDocument = new Document(PRIVATE_ID, panelId);
-        if (permissions.size() > 0) {
-            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", permissions.size()).append("$all", permissions));
-        } else {
-            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", 0));
-        }
-
-        Bson update;
-        if (panelCollection.count(queryDocument).first() > 0) {
-            // Append the users to the existing acl.
-            update = new Document("$addToSet", new Document("acls.$.users", new Document("$each", acl.getUsers())));
-        } else {
-            queryDocument = new Document(PRIVATE_ID, panelId);
-            // Push the new acl to the list of acls.
-            update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "CohortAcl")));
-        }
-
+        Document update = new Document("$push", new Document(QueryParams.ACL.key(), getMongoDBDocument(acl, "DiseasePanelAcl")));
         QueryResult<UpdateResult> updateResult = panelCollection.update(queryDocument, update, null);
+
         if (updateResult.first().getModifiedCount() == 0) {
-            throw new CatalogDBException("setPanelAcl: An error occurred when trying to share panel " + panelId
-                    + " with other members.");
+            throw new CatalogDBException("setDiseasePanelAcl: An error occurred when trying to share file " + panelId + " with " + member);
         }
 
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.ACLS.key());
-        DiseasePanel panel = panelConverter.convertToDataModelType(panelCollection.find(queryDocument, queryOptions).first());
-
-        return endQuery("setPanelAcl", startTime, panel.getAcls());
+        return endQuery("setDiseasePanelAcl", startTime, Arrays.asList(acl));
     }
 
     @Override
-    public void unsetPanelAcl(long panelId, List<String> members) throws CatalogDBException {
-        checkPanelId(panelId);
-
+    public void unsetPanelAcl(long panelId, List<String> members, List<String> permissions) throws CatalogDBException {
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, getStudyIdByPanelId(panelId), members);
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_ID, panelId)
-                    .append("acls", new Document("$elemMatch", new Document("users", member)));
-            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            Document query = new Document(PRIVATE_ID, panelId).append(QueryParams.ACL_MEMBER.key(), member);
+            Bson update;
+            if (permissions.size() == 0) {
+                update = new Document("$pull", new Document("acl", new Document("member", member)));
+            } else {
+                update = new Document("$pull", new Document("acl.$.permissions", new Document("$in", permissions)));
+            }
             QueryResult<UpdateResult> updateResult = panelCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
                 throw new CatalogDBException("unsetPanelAcl: An error occurred when trying to stop sharing panel " + panelId
@@ -201,33 +141,31 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
         }
 
         // Remove possible panelAcls that might have permissions defined but no users
-        Bson queryBson = new Document(QueryParams.ID.key(), panelId)
-                .append(QueryParams.ACLS_USERS.key(),
-                        new Document("$exists", true).append("$eq", Collections.emptyList()));
-        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
-        panelCollection.update(queryBson, update, null);
+//        Bson queryBson = new Document(QueryParams.ID.key(), panelId)
+//                .append(QueryParams.ACL_MEMBER.key(),
+//                        new Document("$exists", true).append("$eq", Collections.emptyList()));
+//        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
+//        panelCollection.update(queryBson, update, null);
     }
 
     @Override
     public void unsetPanelAclsInStudy(long studyId, List<String> members) throws CatalogDBException {
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, studyId, members);
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_STUDY_ID, studyId)
-                    .append("acls", new Document("$elemMatch", new Document("users", member)));
-            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.ACL_MEMBER.key(), member);
+            Bson update = new Document("$pull", new Document("acl", new Document("member", member)));
             panelCollection.update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
         }
-
-        // Remove possible CohortAcls that might have permissions defined but no users
-        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
-                .append(CatalogSampleDBAdaptor.QueryParams.ACLS_USERS.key(),
-                        new Document("$exists", true).append("$eq", Collections.emptyList()));
-        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
-        panelCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
+//
+//        // Remove possible CohortAcls that might have permissions defined but no users
+//        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
+//                .append(CatalogSampleDBAdaptor.QueryParams.ACL_MEMBER.key(),
+//                        new Document("$exists", true).append("$eq", Collections.emptyList()));
+//        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
+//        panelCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
     }
 
     @Override
@@ -259,7 +197,7 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
         try {
             panelCollection.insert(panelDocument, null);
         } catch (DuplicateKeyException e) {
-            throw CatalogDBException.alreadyExists("Panel from study { id:" + studyId + "}", "name", diseasePanel.getName());
+            throw CatalogDBException.alreadyExists("Panel", studyId, "name", diseasePanel.getName());
         }
 
         return endQuery("Create panel", startTime, getPanel(newPanelId, options));
@@ -283,8 +221,8 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
     @Override
     public QueryResult<DiseasePanel> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson;
         try {
@@ -308,8 +246,8 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson;
         try {
@@ -349,8 +287,8 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
         final String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, panelSetParameters, acceptedParams);
 
-        if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
-            panelSetParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
+        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
+            panelSetParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
             panelSetParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
         }
         // Create the update with set
@@ -412,8 +350,13 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<Long> restore(Query query) throws CatalogDBException {
-        throw new UnsupportedOperationException("Operation not yet implemented.");
+    public QueryResult<DiseasePanel> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Restore not yet implemented.");
+    }
+
+    @Override
+    public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Restore not yet implemented.");
     }
 
     @Override
@@ -490,4 +433,57 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
         }
     }
 
+    @Override
+    public QueryResult<DiseasePanelAclEntry> createAcl(long id, DiseasePanelAclEntry acl) throws CatalogDBException {
+        long startTime = startQuery();
+//        CatalogMongoDBUtils.createAcl(id, acl, panelCollection, "DiseasePanelAcl");
+        return endQuery("create panel Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
+    }
+
+    @Override
+    public QueryResult<DiseasePanelAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
+        long startTime = startQuery();
+//
+//        List<DiseasePanelAclEntry> acl = null;
+//        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, panelCollection, logger);
+//        DiseasePanel panel = panelConverter.convertToDataModelType(aggregate.first());
+//
+//        if (panel != null) {
+//            acl = panel.getAcl();
+//        }
+
+        return endQuery("get panel Acl", startTime, aclDBAdaptor.getAcl(id, members));
+    }
+
+    @Override
+    public void removeAcl(long id, String member) throws CatalogDBException {
+//        CatalogMongoDBUtils.removeAcl(id, member, panelCollection);
+        aclDBAdaptor.removeAcl(id, member);
+    }
+
+    @Override
+    public QueryResult<DiseasePanelAclEntry> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+        long startTime = startQuery();
+//        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, panelCollection);
+        return endQuery("Set Acls to member", startTime, Arrays.asList(aclDBAdaptor.setAclsToMember(id, member, permissions)));
+    }
+
+    @Override
+    public QueryResult<DiseasePanelAclEntry> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+        long startTime = startQuery();
+//        CatalogMongoDBUtils.addAclsToMember(id, member, permissions, panelCollection);
+        return endQuery("Add Acls to member", startTime, Arrays.asList(aclDBAdaptor.addAclsToMember(id, member, permissions)));
+    }
+
+    @Override
+    public QueryResult<DiseasePanelAclEntry> removeAclsFromMember(long id, String member, List<String> permissions)
+            throws CatalogDBException {
+//        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, panelCollection);
+        long startTime = startQuery();
+        return endQuery("Remove Acls from member", startTime, Arrays.asList(aclDBAdaptor.removeAclsFromMember(id, member, permissions)));
+    }
+
+    public void removeAclsFromStudy(long studyId, String member) throws CatalogDBException {
+        aclDBAdaptor.removeAclsFromStudy(studyId, member);
+    }
 }

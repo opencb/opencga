@@ -23,6 +23,9 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -52,6 +55,18 @@ public class DocumentToVariantStatsConverterTest {
         stats.addGenotype(new Genotype("0/0"), 100);
         stats.addGenotype(new Genotype("0/1"), 50);
         stats.addGenotype(new Genotype("1/1"), 10);
+        Map<Genotype, Float> genotypeFreq = new HashMap<>();
+        float numSamples = 160;
+        float numAlleles = 320;
+        genotypeFreq.put(new Genotype("0/0"), 100 / numSamples);
+        genotypeFreq.put(new Genotype("0/1"), 50 / numSamples);
+        genotypeFreq.put(new Genotype("1/1"), 10 / numSamples);
+        stats.setGenotypesFreq(genotypeFreq);
+        stats.setRefAlleleCount(250);
+        stats.setRefAlleleFreq(250 / numAlleles);
+        stats.setAltAlleleCount(70);
+        stats.setAltAlleleFreq(70 / numAlleles);
+
     }
 
     @Test

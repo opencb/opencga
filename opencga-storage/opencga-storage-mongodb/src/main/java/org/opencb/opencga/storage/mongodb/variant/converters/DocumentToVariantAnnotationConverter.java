@@ -85,7 +85,7 @@ public class DocumentToVariantAnnotationConverter
     public static final String GENE_TRAIT_FIELD = "gn_trait";
     public static final String GENE_TRAIT_ID_FIELD = "id";
     public static final String GENE_TRAIT_NAME_FIELD = "name";
-    public static final String GENE_TRAIT_HPO_FIELD = "name";
+    public static final String GENE_TRAIT_HPO_FIELD = "hpo";
     public static final String GENE_TRAIT_SCORE_FIELD = "sc";
 //    public static final String GENE_TRAIT_PUBMEDS_FIELD = "nPubmed";
     public static final String GENE_TRAIT_TYPES_FIELD = "types";
@@ -508,6 +508,7 @@ public class DocumentToVariantAnnotationConverter
                     putNotNull(d, GENE_TRAIT_ID_FIELD, geneTraitAssociation.getId());
                     putNotNull(d, GENE_TRAIT_NAME_FIELD, geneTraitAssociation.getName());
                     putNotNull(d, GENE_TRAIT_SCORE_FIELD, geneTraitAssociation.getScore());
+                    putNotNull(d, GENE_TRAIT_HPO_FIELD, geneTraitAssociation.getHpo());
 //                    putNotNull(d, GENE_TRAIT_PUBMEDS_FIELD, geneTraitAssociation.getNumberOfPubmeds());
                     putNotNull(d, GENE_TRAIT_TYPES_FIELD, geneTraitAssociation.getAssociationTypes());
 //                    putNotNull(d, GENE_TRAIT_SOURCES_FIELD, geneTraitAssociation.getSources());

@@ -18,7 +18,7 @@ package org.opencb.opencga.catalog.io;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.IOUtils;
@@ -162,7 +162,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
                 return Files.createDirectory(Paths.get(uri)).toUri();
             }
         } catch (IOException e) {
-            throw new CatalogIOException("Error creating directory", e);
+            throw new CatalogIOException("Error creating directory " + uri + " with parents=" + parents, e);
         }
     }
 

@@ -17,12 +17,13 @@
 package org.opencb.opencga.catalog.config;
 
 import org.junit.Test;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 
 /**
  * Created by imedina on 16/03/16.
@@ -51,6 +52,12 @@ public class CatalogConfigurationTest {
 
         Audit audit = new Audit(20000000, 100000000000L, "", Collections.emptyList());
         catalogConfiguration.setAudit(audit);
+
+        StudyAclEntry studyAcl = new StudyAclEntry("admin", EnumSet.of(
+                StudyAclEntry.StudyPermissions.VIEW_FILE_HEADERS, StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENTS,
+                StudyAclEntry.StudyPermissions.VIEW_FILES, StudyAclEntry.StudyPermissions.UPDATE_FILES,
+                StudyAclEntry.StudyPermissions.VIEW_JOBS, StudyAclEntry.StudyPermissions.UPDATE_JOBS));
+        catalogConfiguration.setAcl(Arrays.asList(studyAcl));
 
 //        CellBaseConfiguration cellBaseConfiguration = new CellBaseConfiguration(Arrays.asList("localhost"), "v3", new DatabaseCredentials(Arrays.asList("localhost"), "user", "password"));
 //        QueryServerConfiguration queryServerConfiguration = new QueryServerConfiguration(61976, Arrays.asList("localhost"));

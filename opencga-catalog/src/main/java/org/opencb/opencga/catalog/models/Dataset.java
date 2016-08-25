@@ -16,7 +16,8 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.DatasetAcl;
+import org.opencb.opencga.catalog.models.acls.AbstractAcl;
+import org.opencb.opencga.catalog.models.acls.permissions.DatasetAclEntry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +26,7 @@ import java.util.Map;
 /**
  * Created by imedina on 24/11/14.
  */
-public class Dataset {
+public class Dataset extends AbstractAcl<DatasetAclEntry> {
 
     private long id;
     private String name;
@@ -33,11 +34,11 @@ public class Dataset {
     private String description;
 
     private List<Long> files;
-    private List<DatasetAcl> acls;
-
+//    private List<DatasetAclEntry> acl;
     private Status status;
 
     private Map<String, Object> attributes;
+
 
     public Dataset() {
     }
@@ -49,10 +50,23 @@ public class Dataset {
         this.creationDate = creationDate;
         this.description = description;
         this.files = files;
-        this.acls = new ArrayList<>();
+        this.acl = new ArrayList<>();
         this.status = status;
         this.attributes = attributes;
     }
+
+    public Dataset(long id, String name, String creationDate, String description, List<Long> files, List<DatasetAclEntry> acl,
+                   Status status, Map<String, Object> attributes) {
+        this.id = id;
+        this.name = name;
+        this.creationDate = creationDate;
+        this.description = description;
+        this.files = files;
+        this.acl = acl;
+        this.status = status;
+        this.attributes = attributes;
+    }
+
 
     @Override
     public String toString() {
@@ -62,7 +76,7 @@ public class Dataset {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", files=").append(files);
-        sb.append(", acls=").append(acls);
+        sb.append(", acl=").append(acl);
         sb.append(", status=").append(status);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -132,12 +146,9 @@ public class Dataset {
         return this;
     }
 
-    public List<DatasetAcl> getAcls() {
-        return acls;
-    }
-
-    public Dataset setAcls(List<DatasetAcl> acls) {
-        this.acls = acls;
+    public Dataset setAcl(List<DatasetAclEntry> acl) {
+        this.acl = acl;
         return this;
     }
+
 }

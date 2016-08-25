@@ -22,7 +22,8 @@ import org.opencb.biodata.models.pedigree.Individual;
 import org.opencb.biodata.models.pedigree.Pedigree;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.slf4j.Logger;
@@ -126,8 +127,8 @@ public class CatalogSampleAnnotationsLoader {
         for (Map.Entry<String, Sample> entry : sampleMap.entrySet()) {
             Map<String, Object> annotations = getAnnotation(ped.getIndividuals().get(entry.getKey()), sampleMap, variableSet, ped
                     .getFields());
-            catalogManager.annotateSample(entry.getValue().getId(), "Pedigree annotation", variableSetId, annotations, Collections
-                    .<String, Object>emptyMap(), false, sessionId);
+            catalogManager.createSampleAnnotationSet(Long.toString(entry.getValue().getId()), variableSetId, "pedigreeAnnotation",
+                    annotations, Collections.emptyMap(), sessionId);
         }
         logger.debug("Annotated {} samples in {}ms", ped.getIndividuals().size(), System.currentTimeMillis() - auxTime);
 
@@ -153,7 +154,7 @@ public class CatalogSampleAnnotationsLoader {
         }
         Map<String, Object> annotations = new HashMap<>();
         for (Variable variable : variableSet.getVariables()) {
-            switch (variable.getId()) {
+            switch (variable.getName()) {
                 case "family":
                     annotations.put("family", individual.getFamily());
                     break;
@@ -193,7 +194,10 @@ public class CatalogSampleAnnotationsLoader {
                     }
                     break;
                 default:
-                    annotations.put(variable.getId(), individual.getFields()[fields.get(variable.getId())]);
+                    Integer idx = fields.get(variable.getName());
+                    if (idx != null) {
+                        annotations.put(variable.getName(), individual.getFields()[idx]);
+                    }
                     break;
             }
         }

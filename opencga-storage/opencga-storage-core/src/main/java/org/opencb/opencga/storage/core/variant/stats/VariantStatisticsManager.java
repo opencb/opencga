@@ -31,7 +31,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.core.common.ProgressLogger;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -167,7 +168,8 @@ public class VariantStatisticsManager {
 
 
         // reader, tasks and writer
-        Query readerQuery = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
+        Query readerQuery = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())
+                .append(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), studyConfiguration.getStudyId());
         if (options.containsKey(Options.FILE_ID.key())) {
             readerQuery.append(VariantDBAdaptor.VariantQueryParams.FILES.key(), options.get(Options.FILE_ID.key()));
         }
@@ -182,7 +184,9 @@ public class VariantStatisticsManager {
                             .joining(";")));
         }
         logger.info("ReaderQuery: " + readerQuery.toJson());
-        VariantDBReader reader = new VariantDBReader(studyConfiguration, variantDBAdaptor, readerQuery, null);
+        QueryOptions readerOptions = new QueryOptions(QueryOptions.SORT, true);
+        logger.info("ReaderQueryOptions: " + readerOptions.toJson());
+        VariantDBReader reader = new VariantDBReader(studyConfiguration, variantDBAdaptor, readerQuery, readerOptions);
         List<ParallelTaskRunner.Task<Variant, String>> tasks = new ArrayList<>(numTasks);
         for (int i = 0; i < numTasks; i++) {
             tasks.add(new VariantStatsWrapperTask(overwrite, cohorts, studyConfiguration, null/*FILE_ID*/,
@@ -273,7 +277,7 @@ public class VariantStatisticsManager {
                     variantSourceStats.updateSampleStats(variants, null);  // TODO test
                 }
             }
-            logger.debug("another batch  of {} elements calculated. time: {}ms", strings.size(), System.currentTimeMillis() - start);
+            logger.debug("another batch of {} elements calculated. time: {}ms", strings.size(), System.currentTimeMillis() - start);
             if (variants.size() != 0) {
                 logger.info("stats created up to position {}:{}", variants.get(variants.size() - 1).getChromosome(),
                         variants.get(variants.size() - 1).getStart());
@@ -282,10 +286,17 @@ public class VariantStatisticsManager {
             }
             return strings;
         }
+
+        @Override
+        public void post() {
+            if (variantStatisticsCalculator.getSkippedFiles() > 0) {
+                logger.warn("Non calculated variant stats: " + variantStatisticsCalculator.getSkippedFiles());
+            }
+        }
     }
 
     public void loadStats(VariantDBAdaptor variantDBAdaptor, URI uri, StudyConfiguration studyConfiguration, QueryOptions options) throws
-            IOException {
+            IOException, StorageManagerException {
 
         URI variantStatsUri = Paths.get(uri.getPath() + VARIANT_STATS_SUFFIX).toUri();
         URI sourceStatsUri = Paths.get(uri.getPath() + SOURCE_STATS_SUFFIX).toUri();
@@ -306,7 +317,9 @@ public class VariantStatisticsManager {
     }
 
     public void loadVariantStats(VariantDBAdaptor variantDBAdaptor, URI uri, StudyConfiguration studyConfiguration, QueryOptions options)
-            throws IOException {
+            throws IOException, StorageManagerException {
+
+        variantDBAdaptor.preUpdateStats(studyConfiguration);
 
         /* Open input streams */
         Path variantInput = Paths.get(uri.getPath());
@@ -314,37 +327,49 @@ public class VariantStatisticsManager {
         variantInputStream = new FileInputStream(variantInput.toFile());
         variantInputStream = new GZIPInputStream(variantInputStream);
 
+        final int[] writes = {0};
+        final int[] variantsNumber = {0};
+
         /* Initialize Json parse */
-        int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), 1000);
-        ArrayList<VariantStatsWrapper> statsBatch = new ArrayList<>(batchSize);
-        int writes = 0;
-        int variantsNumber = 0;
-
         try (JsonParser parser = jsonFactory.createParser(variantInputStream)) {
-            while (parser.nextToken() != null) {
-                variantsNumber++;
-                statsBatch.add(parser.readValueAs(VariantStatsWrapper.class));
+            ProgressLogger progressLogger = new ProgressLogger("Loaded stats:");
+            ParallelTaskRunner<VariantStatsWrapper, Integer> ptr = new ParallelTaskRunner<>(
+                    size -> {
+                        ArrayList<VariantStatsWrapper> statsBatch = new ArrayList<>(size);
+                        try {
+                            while (parser.nextToken() != null || statsBatch.size() == size) {
+                                variantsNumber[0]++;
+                                statsBatch.add(parser.readValueAs(VariantStatsWrapper.class));
+                            }
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                        return statsBatch;
+                    },
+                    statsBatch -> {
+                        QueryResult writeResult = variantDBAdaptor.updateStats(statsBatch, studyConfiguration, options);
+                        VariantStatsWrapper last = statsBatch.get(statsBatch.size() - 1);
+                        progressLogger.increment(statsBatch.size(), ", up to position " + last.getChromosome() + ":" + last.getPosition());
+                        return Collections.singletonList(writeResult.getNumResults());
+                    },
+                    writesList -> {
+                        writes[0] += writesList.get(0);
+                        return true;
+                    },
+                    ParallelTaskRunner.Config.builder().setAbortOnFail(true)
+                            .setBatchSize(options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue()))
+                            .setNumTasks(options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue())).build()
 
-                if (statsBatch.size() == batchSize) {
-                    QueryResult writeResult = variantDBAdaptor.updateStats(statsBatch, studyConfiguration, options);
-                    writes += writeResult.getNumResults();
-                    logger.info("stats loaded up to position {}:{}", statsBatch.get(statsBatch.size() - 1).getChromosome(), statsBatch
-                            .get(statsBatch.size() - 1).getPosition());
-                    statsBatch.clear();
-                }
+            );
+            try {
+                ptr.run();
+            } catch (ExecutionException e) {
+                throw new StorageManagerException("Error loading stats", e);
             }
         }
 
-        if (!statsBatch.isEmpty()) {
-            QueryResult writeResult = variantDBAdaptor.updateStats(statsBatch, studyConfiguration, options);
-            writes += writeResult.getNumResults();
-            logger.info("stats loaded up to position {}:{}", statsBatch.get(statsBatch.size() - 1).getChromosome(),
-                    statsBatch.get(statsBatch.size() - 1).getPosition());
-            statsBatch.clear();
-        }
-
-        if (writes < variantsNumber) {
-            logger.warn("provided statistics of {} variants, but only {} were updated", variantsNumber, writes);
+        if (writes[0] < variantsNumber[0]) {
+            logger.warn("provided statistics of {} variants, but only {} were updated", variantsNumber[0], writes[0]);
             logger.info("note: maybe those variants didn't had the proper study? maybe the new and the old stats were the same?");
         }
 

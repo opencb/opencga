@@ -12,7 +12,7 @@ public class Group {
     /**
      * Group name, unique in the belonging study.
      */
-    private String id;
+    private String name;
 
     /**
      * Set of users belonging to this group.
@@ -22,26 +22,27 @@ public class Group {
     public Group() {
     }
 
-    public Group(String id, List<String> userIds) {
-        this.id = id;
+    public Group(String name, List<String> userIds) {
+        this.name = name;
         this.userIds = userIds;
     }
+
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Group{");
-        sb.append("id='").append(id).append('\'');
+        sb.append("name='").append(name).append('\'');
         sb.append(", userIds=").append(userIds);
         sb.append('}');
         return sb.toString();
     }
 
-    public String getId() {
-        return id;
+    public String getName() {
+        return name;
     }
 
-    public Group setId(String id) {
-        this.id = id;
+    public Group setName(String name) {
+        this.name = name;
         return this;
     }
 
@@ -53,5 +54,6 @@ public class Group {
         this.userIds = userIds;
         return this;
     }
+
 }
 

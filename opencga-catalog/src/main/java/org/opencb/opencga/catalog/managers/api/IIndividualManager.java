@@ -7,7 +7,7 @@ import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
-import org.opencb.opencga.catalog.models.acls.IndividualAcl;
+import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,7 +16,7 @@ import java.util.Map;
 /**
  * Created by hpccoll1 on 19/06/15.
  */
-public interface IIndividualManager extends ResourceManager<Long, Individual> {
+public interface IIndividualManager extends ResourceManager<Long, Individual>, IAnnotationSetManager {
 
     Long getStudyId(long individualId) throws CatalogException;
 
@@ -50,7 +50,7 @@ public interface IIndividualManager extends ResourceManager<Long, Individual> {
     @Deprecated
     Long getIndividualId(String individualId) throws CatalogException;
 
-    QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId, Individual.Gender gender,
+    QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId, Individual.Sex sex,
                                    QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<Individual> readAll(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
@@ -65,22 +65,27 @@ public interface IIndividualManager extends ResourceManager<Long, Individual> {
      * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
      * the individual id is not valid or the members given do not exist.
      */
-    QueryResult<IndividualAcl> getIndividualAcls(String individualStr, List<String> members, String sessionId) throws CatalogException;
-    default List<QueryResult<IndividualAcl>> getIndividualAcls(List<String> individualIds, List<String> members, String sessionId)
+    @Deprecated
+    QueryResult<IndividualAclEntry> getIndividualAcls(String individualStr, List<String> members, String sessionId) throws CatalogException;
+    @Deprecated
+    default List<QueryResult<IndividualAclEntry>> getIndividualAcls(List<String> individualIds, List<String> members, String sessionId)
             throws CatalogException {
-        List<QueryResult<IndividualAcl>> result = new ArrayList<>(individualIds.size());
+        List<QueryResult<IndividualAclEntry>> result = new ArrayList<>(individualIds.size());
         for (String individualStr : individualIds) {
             result.add(getIndividualAcls(individualStr, members, sessionId));
         }
         return result;
     }
 
-    QueryResult<AnnotationSet> annotate(long individualId, String annotationSetId, long variableSetId, Map<String, Object> annotations,
+    @Deprecated
+    QueryResult<AnnotationSet> annotate(long individualId, String annotationSetName, long variableSetId, Map<String, Object> annotations,
                                         Map<String, Object> attributes, String sessionId) throws CatalogException;
 
-    QueryResult<AnnotationSet> updateAnnotation(long individualId, String annotationSetId, Map<String, Object> newAnnotations,
+    @Deprecated
+    QueryResult<AnnotationSet> updateAnnotation(long individualId, String annotationSetName, Map<String, Object> newAnnotations,
                                                 String sessionId) throws CatalogException;
 
+    @Deprecated
     QueryResult<AnnotationSet> deleteAnnotation(long individualId, String annotationId, String sessionId) throws CatalogException;
 
     /**

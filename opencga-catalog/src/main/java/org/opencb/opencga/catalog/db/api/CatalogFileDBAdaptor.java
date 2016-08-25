@@ -21,7 +21,7 @@ import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.acls.FileAcl;
+import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -33,7 +33,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
+public interface CatalogFileDBAdaptor extends CatalogAclDBAdaptor<File, FileAclEntry> {
 
     enum QueryParams implements QueryParam {
         DELETE_DATE("deleteDate", TEXT_ARRAY, ""),
@@ -48,28 +48,31 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
         CREATION_DATE("creationDate", TEXT_ARRAY, ""),
         MODIFICATION_DATE("modificationDate", TEXT_ARRAY, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
-        STATUS_STATUS("status.status", TEXT, ""),
+        EXTERNAL("external", BOOLEAN, ""),
+        STATUS("status", TEXT_ARRAY, ""),
+        STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
-        FILE_STATUS("fileStatus", TEXT, ""),
+        @Deprecated
+        FILE_STATUS("status.name", TEXT, ""),
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
         EXPERIMENT_ID("experimentId", INTEGER_ARRAY, ""),
         SAMPLE_IDS("sampleIds", INTEGER_ARRAY, ""),
 
         JOB_ID("jobId", INTEGER_ARRAY, ""),
-        ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
-        ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
+        ACL("acl", TEXT_ARRAY, ""),
+        ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
+        ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),
 //        ACL_USER_ID("acls.userId", TEXT_ARRAY, ""),
 //        ACL_READ("acls.read", BOOLEAN, ""),
 //        ACL_WRITE("acls.write", BOOLEAN, ""),
 //        ACL_EXECUTE("acls.execute", BOOLEAN, ""),
 //        ACL_DELETE("acls.delete", BOOLEAN, ""),
 
-        //INDEX("index", TEXT, ""),
+        INDEX("index", TEXT_ARRAY, ""),
         INDEX_USER_ID("index.userId", TEXT, ""),
-        INDEX_DATE("index.date", TEXT, ""),
-        INDEX_STATUS_STATUS("index.status.status", TEXT, ""),
+        INDEX_CREATION_DATE("index.creationDate", TEXT, ""),
+        INDEX_STATUS_NAME("index.status.name", TEXT, ""),
         INDEX_STATUS_MESSAGE("index.status.message", TEXT, ""),
         INDEX_JOB_ID("index.jobId", TEXT, ""),
 
@@ -198,12 +201,12 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
      *
      * @param fileId Id of the file to be renamed.
      * @param filePath New file or directory name (containing the full path).
+     * @param fileUri New file uri (containing the full path).
      * @param options Options to filter the file output.
      * @return A QueryResult object containing the file that have been renamed.
-     *
      * @throws CatalogDBException when the filePath already exists.
      */
-    QueryResult<File> renameFile(long fileId, String filePath, QueryOptions options) throws CatalogDBException;
+    QueryResult<File> renameFile(long fileId, String filePath, String fileUri, QueryOptions options) throws CatalogDBException;
 
     /**
      * Extract the sampleIds given from the files that matching the query.
@@ -214,6 +217,18 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
      * @throws CatalogDBException CatalogDBException.
      */
     QueryResult<Long> extractSampleFromFiles(Query query, List<Long> sampleIds) throws CatalogDBException;
+
+    /**
+     * Delete file.
+     *
+     * @param fileId fileId.
+     * @param update Map containing the parameters that will be updated after deletion. SKIP_CHECK might also be found in the map
+     *               to avoid checking whether the fileId is being used and delete it anyway.
+     * @param queryOptions Query Options.
+     * @return the deleted file.
+     * @throws CatalogDBException when the file could not be deleted.
+     */
+    QueryResult<File> delete(long fileId, ObjectMap update, QueryOptions queryOptions) throws CatalogDBException;
 
     /*
      * ACL methods
@@ -229,7 +244,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
      * @return A map of files containing a map of user - AclEntries.
      * @throws CatalogDBException when the study does not exist.
      */
-    QueryResult<Map<String, Map<String, FileAcl>>> getFilesAcl(long studyId, List<String> filePaths, List<String> userIds)
+    QueryResult<Map<String, Map<String, FileAclEntry>>> getFilesAcl(long studyId, List<String> filePaths, List<String> userIds)
             throws CatalogDBException;
 
     @Deprecated
@@ -238,15 +253,15 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
     @Deprecated
     QueryResult<AclEntry> unsetFileAcl(long fileId, String userId) throws CatalogDBException;
 
-    default QueryResult<FileAcl> getFileAcl(long fileId, String member) throws CatalogDBException {
+    default QueryResult<FileAclEntry> getFileAcl(long fileId, String member) throws CatalogDBException {
         return getFileAcl(fileId, Arrays.asList(member));
     }
 
-    QueryResult<FileAcl> getFileAcl(long fileId, List<String> members) throws CatalogDBException;
+    QueryResult<FileAclEntry> getFileAcl(long fileId, List<String> members) throws CatalogDBException;
 
-    QueryResult<FileAcl> setFileAcl(long fileId, FileAcl acl, boolean override) throws CatalogDBException;
+    QueryResult<FileAclEntry> setFileAcl(long fileId, FileAclEntry acl, boolean override) throws CatalogDBException;
 
-    void unsetFileAcl(long fileId, List<String> members) throws CatalogDBException;
+    void unsetFileAcl(long fileId, List<String> members, List<String> permissions) throws CatalogDBException;
 
     void unsetFileAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
 
@@ -326,4 +341,14 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
 
     @Deprecated
     QueryResult<File> deleteFile(long fileId) throws CatalogDBException;
+
+    /**
+     * Remove all the Acls defined for the member in the resource.
+     *
+     * @param studyId study id where the Acls will be removed from.
+     * @param member member from whom the Acls will be removed.
+     * @throws CatalogDBException if any problem occurs during the removal.
+     */
+    void removeAclsFromStudy(long studyId, String member) throws CatalogDBException;
+
 }

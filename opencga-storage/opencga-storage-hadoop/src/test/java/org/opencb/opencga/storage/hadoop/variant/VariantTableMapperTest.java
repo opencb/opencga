@@ -15,10 +15,11 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.HBaseToVariantConverter;
 
 public class VariantTableMapperTest extends VariantStorageManagerTestUtils implements HadoopVariantStorageManagerTestUtils {
@@ -34,11 +35,11 @@ public class VariantTableMapperTest extends VariantStorageManagerTestUtils imple
 
     @Before
     public void setUp() throws Exception {
-        clearDB(DB_NAME);
-        clearDB(HadoopVariantStorageManager.getTableName(STUDY_ID));
+        HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
+        clearDB(variantStorageManager.getVariantTableName(DB_NAME));
+        clearDB(variantStorageManager.getArchiveTableName(STUDY_ID));
         //Force HBaseConverter to fail if something goes wrong
         HBaseToVariantConverter.setFailOnWrongVariants(true);
-        HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
         dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
         
     }

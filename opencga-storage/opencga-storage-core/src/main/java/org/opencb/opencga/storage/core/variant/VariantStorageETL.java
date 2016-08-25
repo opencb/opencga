@@ -2,8 +2,12 @@ package org.opencb.opencga.storage.core.variant;
 
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFHeaderVersion;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.pedigree.io.PedigreePedReader;
 import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
@@ -15,18 +19,18 @@ import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
-import org.opencb.commons.io.DataWriter;
-import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.commons.run.Task;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.io.DataWriter;
+import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.commons.run.Task;
 import org.opencb.hpg.bigdata.core.io.avro.AvroFileWriter;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageETL;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.runner.StringDataReader;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
@@ -58,6 +62,7 @@ import java.util.zip.GZIPInputStream;
  */
 public abstract class VariantStorageETL implements StorageETL {
 
+    private static final String HTSJDK_PARSER = "htsjdk";
     protected final StorageConfiguration configuration;
     protected final String storageEngineId;
     protected final ObjectMap options;
@@ -99,8 +104,6 @@ public abstract class VariantStorageETL implements StorageETL {
 
     @Override
     public URI preTransform(URI input) throws StorageManagerException, IOException, FileFormatException {
-//        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
-
         String fileName = Paths.get(input.getPath()).getFileName().toString();
         int fileId = options.getInt(Options.FILE_ID.key(), Options.FILE_ID.defaultValue());
         int studyId = options.getInt(Options.STUDY_ID.key(), Options.STUDY_ID.defaultValue());
@@ -114,50 +117,30 @@ public abstract class VariantStorageETL implements StorageETL {
             studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class));
             options.put(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
         } else {
-            //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
-            studyConfiguration = getStudyConfiguration(options);
+            long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
+            try {
+                //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
+                studyConfiguration = getStudyConfiguration(true);
 
-            if (studyConfiguration == null) {
-                logger.info("Creating a new StudyConfiguration");
-                checkStudyId(studyId);
-                studyConfiguration = new StudyConfiguration(studyId, options.getString(Options.STUDY_NAME.key()));
-                studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class));
+                if (studyConfiguration == null) {
+                    logger.info("Creating a new StudyConfiguration");
+                    checkStudyId(studyId);
+                    studyConfiguration = new StudyConfiguration(studyId, options.getString(Options.STUDY_NAME.key()));
+                    studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class));
+                }
+                fileId = checkNewFile(studyConfiguration, fileId, fileName);
+                options.put(Options.FILE_ID.key(), fileId);
+                dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
+            } finally {
+                dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
             }
-            fileId = checkNewFile(studyConfiguration, fileId, fileName);
-            options.put(Options.FILE_ID.key(), fileId);
         }
         options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-
 
         return input;
     }
 
-    /**
-     * Transform raw variant files into biodata model.
-     *
-     * @param inputUri Input file. Accepted formats: *.vcf, *.vcf.gz
-     * @param pedigreeUri Pedigree input file. Accepted formats: *.ped
-     * @param outputUri The destination folder
-     * @throws StorageManagerException If any IO problem
-     */
-    @Override
-    public final URI transform(URI inputUri, URI pedigreeUri, URI outputUri) throws StorageManagerException {
-        // input: VcfReader
-        // output: JsonWriter
-
-//        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
-
-        Path input = Paths.get(inputUri.getPath());
-        Path pedigree = pedigreeUri == null ? null : Paths.get(pedigreeUri.getPath());
-        Path output = Paths.get(outputUri.getPath());
-
-//        boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key(), false);
-        boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key(), false);
-//        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key(), Options.INCLUDE_SRC.defaultValue());
-        boolean includeSrc = false;
-        String format = options.getString(Options.TRANSFORM_FORMAT.key(), Options.TRANSFORM_FORMAT.defaultValue());
-        String parser = options.getString("transform.parser", "htsjdk");
-
+    protected VariantSource buildVariantSource(Path input, ObjectMap options) throws StorageManagerException {
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
         Integer fileId;
         if (options.getBoolean(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION
@@ -171,12 +154,55 @@ public abstract class VariantStorageETL implements StorageETL {
         String fileName = input.getFileName().toString();
         VariantStudy.StudyType type = options.get(Options.STUDY_TYPE.key(), VariantStudy.StudyType.class,
                 Options.STUDY_TYPE.defaultValue());
-        VariantSource source = new VariantSource(
+        return new VariantSource(
                 fileName,
                 fileId.toString(),
                 Integer.toString(studyConfiguration.getStudyId()),
                 studyConfiguration.getStudyName(), type, aggregation);
+    }
 
+
+    public static Pair<VCFHeader, VCFHeaderVersion> readHtsHeader(Path input) throws StorageManagerException {
+        try (InputStream fileInputStream = input.toString().endsWith("gz")
+                ? new GZIPInputStream(new FileInputStream(input.toFile()))
+                : new FileInputStream(input.toFile())) {
+            FullVcfCodec codec = new FullVcfCodec();
+            LineIterator lineIterator = codec.makeSourceFromStream(fileInputStream);
+            VCFHeader header = (VCFHeader) codec.readActualHeader(lineIterator);
+            VCFHeaderVersion headerVersion = codec.getVCFHeaderVersion();
+            return new ImmutablePair<>(header, headerVersion);
+        } catch (IOException e) {
+            throw new StorageManagerException("Unable to read VCFHeader", e);
+        }
+    }
+
+    /**
+     * Transform raw variant files into biodata model.
+     *
+     * @param inputUri Input file. Accepted formats: *.vcf, *.vcf.gz
+     * @param pedigreeUri Pedigree input file. Accepted formats: *.ped
+     * @param outputUri The destination folder
+     * @throws StorageManagerException If any IO problem
+     */
+    @Override
+    public URI transform(URI inputUri, URI pedigreeUri, URI outputUri) throws StorageManagerException {
+        // input: VcfReader
+        // output: JsonWriter
+
+
+        Path input = Paths.get(inputUri.getPath());
+        Path pedigree = pedigreeUri == null ? null : Paths.get(pedigreeUri.getPath());
+        Path output = Paths.get(outputUri.getPath());
+
+//        boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key(), false);
+        boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key(), false);
+//        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key(), Options.INCLUDE_SRC.defaultValue());
+        boolean includeSrc = false;
+        String format = options.getString(Options.TRANSFORM_FORMAT.key(), Options.TRANSFORM_FORMAT.defaultValue());
+        String parser = options.getString("transform.parser", HTSJDK_PARSER);
+
+        VariantSource source = buildVariantSource(input, options);
+        String fileName = source.getFileName();
         boolean generateReferenceBlocks = options.getBoolean(Options.GVCF.key(), false);
 
         int batchSize = options.getInt(Options.TRANSFORM_BATCH_SIZE.key(), Options.TRANSFORM_BATCH_SIZE.defaultValue());
@@ -186,34 +212,25 @@ public abstract class VariantStorageETL implements StorageETL {
         int numTasks = options.getInt(Options.TRANSFORM_THREADS.key(), Options.TRANSFORM_THREADS.defaultValue());
         int capacity = options.getInt("blockingQueueCapacity", numTasks * 2);
 
-        if (compression.equalsIgnoreCase("gzip") || compression.equalsIgnoreCase("gz")) {
+        if ("gzip".equalsIgnoreCase(compression) || "gz".equalsIgnoreCase(compression)) {
             extension = ".gz";
-        } else if (compression.equalsIgnoreCase("snappy") || compression.equalsIgnoreCase("snz")) {
+        } else if ("snappy".equalsIgnoreCase(compression) || "snz".equalsIgnoreCase(compression)) {
             extension = ".snappy";
         } else if (!compression.isEmpty()) {
             throw new IllegalArgumentException("Unknown compression method " + compression);
         }
 
         // TODO Create a utility to determine which extensions are variants files
-        final VariantVcfFactory factory;
-        if (fileName.endsWith(".vcf") || fileName.endsWith(".vcf.gz") || fileName.endsWith(".vcf.snappy")) {
-            if (VariantSource.Aggregation.NONE.equals(aggregation)) {
-                factory = new VariantVcfFactory();
-            } else {
-                factory = new VariantAggregatedVcfFactory();
-            }
-        } else {
-            throw new StorageManagerException("Variants input file format not supported");
-        }
+        final VariantVcfFactory factory = createVariantVcfFactory(source, fileName);
 
 
         Path outputVariantsFile = output.resolve(fileName + ".variants." + format + extension);
         Path outputMetaFile = output.resolve(fileName + ".file." + format + extension);
 
-        logger.info("Transforming variants...");
+        logger.info("Transforming variants using {} into {} ...", parser, format);
         long start, end;
-        if (numTasks == 1 && format.equals("json")) { //Run transformation with a SingleThread runner. The legacy way
-            if (!extension.equals(".gz")) { //FIXME: Add compatibility with snappy compression
+        if (numTasks == 1 && "json".equals(format)) { //Run transformation with a SingleThread runner. The legacy way
+            if (!".gz".equals(extension)) { //FIXME: Add compatibility with snappy compression
                 logger.warn("Force using gzip compression");
                 extension = ".gz";
                 outputVariantsFile = output.resolve(fileName + ".variants.json" + extension);
@@ -231,8 +248,6 @@ public abstract class VariantStorageETL implements StorageETL {
 
             //Writers
             VariantJsonWriter jsonWriter = new VariantJsonWriter(source, output);
-//            jsonWriter.includeSrc(includeSrc);
-//            jsonWriter.includeSamples(includeSamples);
             jsonWriter.includeStats(includeStats);
 
             List<VariantWriter> writers = Collections.<VariantWriter>singletonList(jsonWriter);
@@ -250,7 +265,7 @@ public abstract class VariantStorageETL implements StorageETL {
             }
             end = System.currentTimeMillis();
 
-        } else if (format.equals("avro")) {
+        } else if ("avro".equals(format)) {
             //Read VariantSource
             source = VariantStorageManager.readVariantSource(input, source);
 
@@ -267,23 +282,15 @@ public abstract class VariantStorageETL implements StorageETL {
             }
             Supplier<ParallelTaskRunner.Task<String, ByteBuffer>> taskSupplier;
 
-            if (parser.equalsIgnoreCase("htsjdk")) {
+            if (parser.equalsIgnoreCase(HTSJDK_PARSER)) {
                 logger.info("Using HTSJDK to read variants.");
                 FullVcfCodec codec = new FullVcfCodec();
                 final VariantSource finalSource = source;
                 final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in avro too
-                try (InputStream fileInputStream = input.toString().endsWith("gz")
-                        ? new GZIPInputStream(new FileInputStream(input.toFile()))
-                        : new FileInputStream(input.toFile())) {
-                    LineIterator lineIterator = codec.makeSourceFromStream(fileInputStream);
-                    VCFHeader header = (VCFHeader) codec.readActualHeader(lineIterator);
-                    VCFHeaderVersion headerVersion = codec.getVCFHeaderVersion();
-                    VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
-                    taskSupplier = () -> new VariantAvroTransformTask(header, headerVersion, finalSource, finalOutputMetaFile,
-                            statsCalculator, includeSrc, generateReferenceBlocks);
-                } catch (IOException e) {
-                    throw new StorageManagerException("Unable to read VCFHeader", e);
-                }
+                Pair<VCFHeader, VCFHeaderVersion> header = readHtsHeader(input);
+                VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
+                taskSupplier = () -> new VariantAvroTransformTask(header.getKey(), header.getValue(), finalSource, finalOutputMetaFile,
+                        statsCalculator, includeSrc, generateReferenceBlocks);
             } else {
                 logger.info("Using Biodata to read variants.");
                 final VariantSource finalSource = source;
@@ -310,11 +317,10 @@ public abstract class VariantStorageETL implements StorageETL {
             try {
                 ptr.run();
             } catch (ExecutionException e) {
-                e.printStackTrace();
                 throw new StorageManagerException("Error while executing TransformVariants in ParallelTaskRunner", e);
             }
             end = System.currentTimeMillis();
-        } else if (format.equals("json")) {
+        } else if ("json".equals(format)) {
             //Read VariantSource
             source = VariantStorageManager.readVariantSource(input, source);
 
@@ -329,21 +335,12 @@ public abstract class VariantStorageETL implements StorageETL {
             ParallelTaskRunner<String, String> ptr;
 
             Supplier<ParallelTaskRunner.Task<String, String>> taskSupplier;
-            if (parser.equalsIgnoreCase("htsjdk")) {
+            if (parser.equalsIgnoreCase(HTSJDK_PARSER)) {
                 logger.info("Using HTSJDK to read variants.");
-                try (InputStream fileInputStream = input.toString().endsWith("gz")
-                        ? new GZIPInputStream(new FileInputStream(input.toFile()))
-                        : new FileInputStream(input.toFile())) {
-                    FullVcfCodec codec = new FullVcfCodec();
-                    LineIterator lineIterator = codec.makeSourceFromStream(fileInputStream);
-                    VCFHeader header = (VCFHeader) codec.readActualHeader(lineIterator);
-                    VCFHeaderVersion headerVersion = codec.getVCFHeaderVersion();
-                    VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(finalSource);
-                    taskSupplier = () -> new VariantJsonTransformTask(header, headerVersion, finalSource,
-                            finalOutputFileJsonFile, statsCalculator, includeSrc, generateReferenceBlocks);
-                } catch (IOException e) {
-                    throw new StorageManagerException("Unable to read VCFHeader", e);
-                }
+                Pair<VCFHeader, VCFHeaderVersion> header = readHtsHeader(input);
+                VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(finalSource);
+                taskSupplier = () -> new VariantJsonTransformTask(header.getKey(), header.getValue(), finalSource,
+                        finalOutputFileJsonFile, statsCalculator, includeSrc, generateReferenceBlocks);
             } else {
                 logger.info("Using Biodata to read variants.");
                 final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in avro too
@@ -369,10 +366,16 @@ public abstract class VariantStorageETL implements StorageETL {
             try {
                 ptr.run();
             } catch (ExecutionException e) {
-                e.printStackTrace();
                 throw new StorageManagerException("Error while executing TransformVariants in ParallelTaskRunner", e);
             }
             end = System.currentTimeMillis();
+        } else if ("proto".equals(format)) {
+            //Read VariantSource
+            source = VariantStorageManager.readVariantSource(input, source);
+            Pair<Long, Long> times =  processProto(input, fileName, output, source, outputVariantsFile, outputMetaFile,
+                    includeSrc, parser, generateReferenceBlocks, batchSize, extension, compression);
+            start = times.getKey();
+            end = times.getValue();
         } else {
             throw new IllegalArgumentException("Unknown format " + format);
         }
@@ -382,10 +385,29 @@ public abstract class VariantStorageETL implements StorageETL {
         return outputUri.resolve(outputVariantsFile.getFileName().toString());
     }
 
+    protected VariantVcfFactory createVariantVcfFactory(VariantSource source, String fileName) throws StorageManagerException {
+        VariantVcfFactory factory;
+        if (fileName.endsWith(".vcf") || fileName.endsWith(".vcf.gz") || fileName.endsWith(".vcf.snappy")) {
+            if (VariantSource.Aggregation.NONE.equals(source.getAggregation())) {
+                factory = new VariantVcfFactory();
+            } else {
+                factory = new VariantAggregatedVcfFactory();
+            }
+        } else {
+            throw new StorageManagerException("Variants input file format not supported");
+        }
+        return factory;
+    }
+
+    protected Pair<Long, Long> processProto(
+            Path input, String fileName, Path output, VariantSource source, Path outputVariantsFile,
+            Path outputMetaFile, boolean includeSrc, String parser, boolean generateReferenceBlocks,
+            int batchSize, String extension, String compression) throws StorageManagerException {
+        throw new NotImplementedException("Please request feature");
+    }
+
     @Override
     public URI postTransform(URI input) throws IOException, FileFormatException {
-//        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
-
         // Delete isolated storage configuration
         if (options.getBoolean(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key())) {
             options.remove(Options.STUDY_CONFIGURATION.key());
@@ -396,20 +418,36 @@ public abstract class VariantStorageETL implements StorageETL {
 
     @Override
     public URI preLoad(URI input, URI output) throws StorageManagerException {
-//        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+        int studyId = options.getInt(Options.STUDY_ID.key(), -1);
+        options.remove(Options.STUDY_CONFIGURATION.key());
+
+        long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
 
         //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
-        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
-        if (studyConfiguration == null) {
-            logger.info("Creating a new StudyConfiguration");
-            int studyId = options.getInt(Options.STUDY_ID.key(), Options.STUDY_ID.defaultValue());
-            String studyName = options.getString(Options.STUDY_NAME.key(), Options.STUDY_NAME.defaultValue());
-            checkStudyId(studyId);
-            studyConfiguration = new StudyConfiguration(studyId, studyName);
-            options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        StudyConfiguration studyConfiguration;
+        try {
+            studyConfiguration = checkOrCreateStudyConfiguration();
+            VariantSource source = readVariantSource(input, options);
+            securePreLoad(studyConfiguration, source);
+            dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
+        } finally {
+            dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
         }
 
-        VariantSource source = readVariantSource(input, options);
+        options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        return input;
+    }
+
+    /**
+     * PreLoad step for modify the StudyConfiguration.
+     * This step is executed inside a study lock.
+     *
+     * @see StudyConfigurationManager#lockStudy(int)
+     * @param studyConfiguration    StudyConfiguration
+     * @param source                VariantSource
+     * @throws StorageManagerException  If any condition is wrong
+     */
+    protected void securePreLoad(StudyConfiguration studyConfiguration, VariantSource source) throws StorageManagerException {
 
         /*
          * Before load file, check and add fileName to the StudyConfiguration.
@@ -434,16 +472,15 @@ public abstract class VariantStorageETL implements StorageETL {
             fileId = options.getInt(Options.FILE_ID.key(), Options.FILE_ID.defaultValue());
         } else {
             int fileIdFromParams = options.getInt(Options.FILE_ID.key(), Options.FILE_ID.defaultValue());
-            if (fileIdFromParams >= 0) {
-                if (fileIdFromParams != fileId) {
-                    if (!options.getBoolean(Options.OVERRIDE_FILE_ID.key(), Options.OVERRIDE_FILE_ID.defaultValue())) {
-                        throw new StorageManagerException("Wrong fileId! Unable to load using fileId: " + fileIdFromParams + ". "
-                                + "The input file has fileId: " + fileId
-                                + ". Use " + Options.OVERRIDE_FILE_ID.key() + " to ignore original fileId.");
-                    } else {
-                        //Override the fileId
-                        fileId = fileIdFromParams;
-                    }
+            if (fileIdFromParams >= 0 && fileIdFromParams != fileId) {
+                if (!options.getBoolean(Options.OVERRIDE_FILE_ID.key(), Options.OVERRIDE_FILE_ID.defaultValue())) {
+                    throw new StorageManagerException("Wrong fileId! Unable to load using fileId: "
+                            + fileIdFromParams + ". "
+                            + "The input file has fileId: " + fileId
+                            + ". Use " + Options.OVERRIDE_FILE_ID.key() + " to ignore original fileId.");
+                } else {
+                    //Override the fileId
+                    fileId = fileIdFromParams;
                 }
             }
         }
@@ -452,6 +489,7 @@ public abstract class VariantStorageETL implements StorageETL {
             // First indexed file
             // Use the EXCLUDE_GENOTYPES value from CLI. Write in StudyConfiguration.attributes
             boolean excludeGenotypes = options.getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
+            studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class));
             studyConfiguration.getAttributes().put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
         } else {
             // Not first indexed file
@@ -469,10 +507,67 @@ public abstract class VariantStorageETL implements StorageETL {
 
         checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
 
-        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
-        options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        // Check Extra genotype fields
+        if (options.containsKey(Options.EXTRA_GENOTYPE_FIELDS.key())
+                && StringUtils.isNotEmpty(options.getString(Options.EXTRA_GENOTYPE_FIELDS.key()))) {
+            List<String> extraFields = options.getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
+            if (studyConfiguration.getIndexedFiles().isEmpty()) {
+                studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS.key(), extraFields);
+            } else {
+                if (!extraFields.equals(studyConfiguration.getAttributes().getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key()))) {
+                    throw new StorageManagerException("Unable to change Stored Extra Fields if there are already indexed files.");
+                }
+            }
+            if (!studyConfiguration.getAttributes().containsKey(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key())) {
+                List<String> extraFieldsType = new ArrayList<>(extraFields.size());
+                for (String extraField : extraFields) {
+                    List<Map<String, Object>> formats = (List) source.getHeader().getMeta().get("FORMAT");
+                    VCFHeaderLineType type = VCFHeaderLineType.String;
+                    for (Map<String, Object> format : formats) {
+                        if (format.get("ID").toString().equals(extraField)) {
+                            if ("1".equals(format.get("Number"))) {
+                                try {
+                                    type = VCFHeaderLineType.valueOf(Objects.toString(format.get("Type")));
+                                } catch (IllegalArgumentException ignore) {
+                                    type = VCFHeaderLineType.String;
+                                }
+                            } else {
+                                //Fields with arity != 1 are loaded as String
+                                type = VCFHeaderLineType.String;
+                            }
+                            break;
+                        }
+                    }
+                    switch (type) {
+                        case String:
+                        case Float:
+                        case Integer:
+                            break;
+                        case Character:
+                        default:
+                            type = VCFHeaderLineType.String;
+                            break;
 
-        return input;
+                    }
+                    extraFieldsType.add(type.toString());
+                    logger.debug(extraField + " : " + type);
+                }
+                studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), extraFieldsType);
+            }
+        }
+    }
+
+    protected StudyConfiguration checkOrCreateStudyConfiguration() throws StorageManagerException {
+        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
+        if (studyConfiguration == null) {
+            logger.info("Creating a new StudyConfiguration");
+            int studyId = options.getInt(Options.STUDY_ID.key(), Options.STUDY_ID.defaultValue());
+            String studyName = options.getString(Options.STUDY_NAME.key(), Options.STUDY_NAME.defaultValue());
+            checkStudyId(studyId);
+            studyConfiguration = new StudyConfiguration(studyId, studyName);
+            options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        }
+        return studyConfiguration;
     }
 
     /*
@@ -600,6 +695,10 @@ public abstract class VariantStorageETL implements StorageETL {
         }
     }
 
+    protected int getStudyId() {
+        return options.getInt(Options.STUDY_ID.key());
+    }
+
     @Override
     public URI postLoad(URI input, URI output) throws StorageManagerException {
 //        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
@@ -608,12 +707,22 @@ public abstract class VariantStorageETL implements StorageETL {
         List<Integer> fileIds = options.getAsIntegerList(Options.FILE_ID.key());
         boolean annotate = options.getBoolean(Options.ANNOTATE.key(), Options.ANNOTATE.defaultValue());
 
-        //Update StudyConfiguration
-        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
-        studyConfiguration.getIndexedFiles().addAll(fileIds);
-        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, new QueryOptions());
+        int studyId = options.getInt(Options.STUDY_ID.key(), -1);
+        long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
 
-        checkLoadedVariants(input, fileIds, studyConfiguration, options);
+        // Check loaded variants BEFORE updating the StudyConfiguration
+        checkLoadedVariants(input, fileIds, getStudyConfiguration(), options);
+
+        StudyConfiguration studyConfiguration;
+        try {
+            //Update StudyConfiguration
+            studyConfiguration = getStudyConfiguration(true);
+            securePostLoad(fileIds, studyConfiguration);
+            dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, new QueryOptions());
+        } finally {
+            dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
+        }
+
 
         if (annotate) {
 
@@ -695,6 +804,10 @@ public abstract class VariantStorageETL implements StorageETL {
         return input;
     }
 
+    public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) {
+        studyConfiguration.getIndexedFiles().addAll(fileIds);
+    }
+
     @Override
     public void close() throws StorageManagerException {
         if (dbAdaptor != null) {
@@ -734,6 +847,20 @@ public abstract class VariantStorageETL implements StorageETL {
     /* --------------------------------------- */
 
     public final StudyConfiguration getStudyConfiguration() throws StorageManagerException {
+        return getStudyConfiguration(false);
+    }
+
+    /**
+     * Reads the study configuration.
+     *
+     * @param forceFetch If true, forces to get the StudyConfiguration from the database. Ignores current one.
+     * @return           The study configuration.
+     * @throws StorageManagerException If the study configuration is not found
+     */
+    public final StudyConfiguration getStudyConfiguration(boolean forceFetch) throws StorageManagerException {
+        if (forceFetch) {
+            options.remove(Options.STUDY_CONFIGURATION.key());
+        }
         return getStudyConfiguration(options);
     }
 
@@ -786,24 +913,27 @@ public abstract class VariantStorageETL implements StorageETL {
                 fileId = studyConfiguration.getFileIds().get(fileName);
             } else {
                 fileId = studyConfiguration.getFileIds().values().stream().max(Integer::compareTo).orElse(-1) + 1;
+                studyConfiguration.getFileIds().put(fileName, fileId);
             }
             //throw new StorageManagerException("Invalid fileId " + fileId + " for file " + fileName + ". FileId must be positive.");
         }
 
         if (studyConfiguration.getFileIds().containsKey(fileName)) {
             if (studyConfiguration.getFileIds().get(fileName) != fileId) {
-                throw new StorageManagerException("FileName " + fileName + " have a different fileId in the StudyConfiguration: "
+                throw new StorageManagerException("File " + fileName + " (" + fileId + ") "
+                        + "has a different fileId in the StudyConfiguration: "
                         + fileName + " (" + studyConfiguration.getFileIds().get(fileName) + ")");
             }
         }
         if (idFiles.containsKey(fileId)) {
             if (!idFiles.get(fileId).equals(fileName)) {
-                throw new StorageManagerException("FileId " + fileId + " has a different fileName in the StudyConfiguration: "
-                        + idFiles.containsKey(fileId) + " (" + fileId + ")");
+                throw new StorageManagerException("File " + fileName + " (" + fileId + ") "
+                        + "has a different fileName in the StudyConfiguration: "
+                        + idFiles.get(fileId) + " (" + fileId + ")");
             }
         }
         if (studyConfiguration.getIndexedFiles().contains(fileId)) {
-            throw new StorageManagerException("File " + fileName + " (" + fileId + ")" + " was already already loaded ");
+            throw StorageManagerException.alreadyLoaded(fileId, fileName);
         }
 
         return fileId;

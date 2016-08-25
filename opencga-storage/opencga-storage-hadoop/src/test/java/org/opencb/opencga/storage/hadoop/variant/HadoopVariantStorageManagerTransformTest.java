@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.rules.ExternalResource;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTransformTest;
 

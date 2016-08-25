@@ -24,7 +24,7 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,8 +74,13 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
 
     @Override
     public VariantStats convertToDataModelType(Document object) {
-        // Basic fields
         VariantStats stats = new VariantStats();
+        convertToDataModelType(object, stats);
+        return stats;
+    }
+
+    public void convertToDataModelType(Document object, VariantStats stats) {
+        // Basic fields
         stats.setMaf(((Double) object.get(MAF_FIELD)).floatValue());
         stats.setMgf(((Double) object.get(MGF_FIELD)).floatValue());
         stats.setMafAllele((String) object.get(MAFALLELE_FIELD));
@@ -106,19 +111,33 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
         stats.setGenotypesFreq(genotypesFreq);
 
         int[] alleleCounts = {0, 0};
-        for (Map.Entry<Genotype, Integer> entry : stats.getGenotypesCount().entrySet()) {
-            for (int i : entry.getKey().getAllelesIdx()) {
-                if (i == 0 || i == 1) {
-                    alleleCounts[i] += entry.getValue();
+        if (stats.getGenotypesCount().isEmpty()) {
+            if (stats.getRefAllele().equals(stats.getMafAllele())) {
+                stats.setRefAlleleFreq(stats.getMaf());
+                stats.setAltAlleleFreq(1 - stats.getMaf());
+            } else {
+                stats.setAltAlleleFreq(stats.getMaf());
+                stats.setRefAlleleFreq(1 - stats.getMaf());
+            }
+        } else {
+            for (Map.Entry<Genotype, Integer> entry : stats.getGenotypesCount().entrySet()) {
+                for (int i : entry.getKey().getAllelesIdx()) {
+                    if (i == 0 || i == 1) {
+                        alleleCounts[i] += entry.getValue();
+                    }
                 }
             }
-        }
 
-        stats.setRefAlleleCount(alleleCounts[0]);
-        stats.setRefAlleleFreq(alleleCounts[0] / ((float) alleleNumber));
-        stats.setAltAlleleCount(alleleCounts[1]);
-        stats.setAltAlleleFreq(alleleCounts[1] / ((float) alleleNumber));
-        return stats;
+            stats.setRefAlleleCount(alleleCounts[0]);
+            stats.setAltAlleleCount(alleleCounts[1]);
+            if (alleleNumber == 0) {
+                stats.setRefAlleleFreq(0F);
+                stats.setAltAlleleFreq(0F);
+            } else {
+                stats.setRefAlleleFreq(alleleCounts[0] / ((float) alleleNumber));
+                stats.setAltAlleleFreq(alleleCounts[1] / ((float) alleleNumber));
+            }
+        }
     }
 
     @Override
@@ -150,7 +169,10 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
      */
     public void convertCohortsToDataModelType(List<Document> cohortsStats, Variant variant) {
         for (Document vs : cohortsStats) {
-            VariantStats variantStats = convertToDataModelType(vs);
+            VariantStats variantStats = new VariantStats();
+            variantStats.setRefAllele(variant.getReference());
+            variantStats.setAltAllele(variant.getAlternate());
+            convertToDataModelType(vs, variantStats);
             if (variant != null) {
                 variantStats.setRefAllele(variant.getReference());
                 variantStats.setAltAllele(variant.getAlternate());

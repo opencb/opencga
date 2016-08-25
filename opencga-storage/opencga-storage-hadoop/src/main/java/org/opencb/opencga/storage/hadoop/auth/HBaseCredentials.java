@@ -12,23 +12,34 @@ import java.net.URISyntaxException;
 public class HBaseCredentials implements OpenCGACredentials {
 
     private static final Integer DEFAULT_PORT = 60000;
+    private static final String DEFAULT_ZOOKEEPER_PATH = "hbase";
     private final String host;
     private final int hbasePort;
     private final String table;
     private final String pass;
     private final String user;
-//    private final int hbaseZookeeperClientPort;
+    private final String zookeeperPath;
 
     public HBaseCredentials(String host, String table, String user, String pass) {
-        this(host, table, user, pass, DEFAULT_PORT);
+        this(host, table, user, pass, DEFAULT_PORT, DEFAULT_ZOOKEEPER_PATH);
     }
 
     public HBaseCredentials(String host, String table, String user, String pass, Integer hbasePort) {
+        this(host, table, user, pass, hbasePort, DEFAULT_ZOOKEEPER_PATH);
+    }
+
+    public HBaseCredentials(String host, String table, String user, String pass, Integer hbasePort,
+                            String zookeeperPath) {
         this.host = host;
         this.hbasePort = hbasePort;
         this.table = table;
         this.user = user;
         this.pass = pass;
+        this.zookeeperPath = zookeeperPath;
+    }
+
+    public String getZookeeperPath() {
+        return this.zookeeperPath;
     }
 
     public String getPass() {

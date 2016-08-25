@@ -9,6 +9,7 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.ColumnPrefixFilter;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -23,7 +24,11 @@ import java.util.stream.Stream;
  */
 public class VariantTableMapper extends AbstractVariantTableMapReduce {
 
-    public static final VariantType[] TARGET_VARIANT_TYPE = new VariantType[] { VariantType.SNV, VariantType.SNP };
+    public static final VariantType[] TARGET_VARIANT_TYPE = new VariantType[] {
+            VariantType.SNV, VariantType.SNP,
+            VariantType.INDEL, VariantType.INSERTION, VariantType.DELETION,
+            VariantType.MNV, VariantType.MNP,
+    };
 
     /*
      *
@@ -110,6 +115,12 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
             if (!analysisVarSet.contains(tarString)) {
                 // Empty variant with no Sample information
                 // Filled with Sample information later (see 2)
+                String studyId = Integer.toString(getStudyConfiguration().getStudyId());
+                StudyEntry se = tar.getStudy(studyId);
+                if (null == se) {
+                    throw new IllegalStateException(String.format(
+                            "Study Entry for study %s of target variant is null: %s",  studyId, tar));
+                }
                 Variant tarNew = this.getVariantMerger().createFromTemplate(tar);
                 analysisNew.add(tarNew);
             }

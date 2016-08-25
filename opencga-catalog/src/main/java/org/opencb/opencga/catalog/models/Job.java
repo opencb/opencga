@@ -16,16 +16,20 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.JobAcl;
+import org.opencb.opencga.catalog.models.acls.AbstractAcl;
+import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.net.URI;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Job {
+public class Job extends AbstractAcl<JobAclEntry> {
 
     /* Attributes known keys */
     public static final String TYPE = "type";
@@ -47,30 +51,26 @@ public class Job {
         ERROR_DESCRIPTIONS.put(ERRNO_ABORTED, "Job aborted");
     }
 
-    /**
-     * Catalog unique identifier.
-     */
     private long id;
-
-    /**
-     * User given job name.
-     */
     private String name;
 
     /**
-     * UserId of the user that created the job.
+     * Id of the user that created the job.
      */
     private String userId;
 
     /**
-     * Name of the tool to be executed.
+     * Tool to be executed.
      */
+    private long toolId;
+
+    @Deprecated
     private String toolName;
 
     /**
      * Job creation date.
      */
-    private String date;
+    private String creationDate;
     private String description;
 
     /**
@@ -84,7 +84,7 @@ public class Job {
     private long endTime;
     private String outputError;
     private String execution;
-    private Map<String, String> params;
+    private String executable;
     private String commandLine;
     private long visits;
     private JobStatus status;
@@ -94,31 +94,42 @@ public class Job {
     private List<Long> input;    // input files to this job
     private List<Long> output;   // output files of this job
     private List<String> tags;
-    private List<JobAcl> acls;
+//    private List<JobAclEntry> acl;
+
+    private Map<String, String> params;
     private Map<String, Object> attributes;
     private Map<String, Object> resourceManagerAttributes;
     private String error;
     private String errorDescription;
 
+
     public Job() {
     }
 
-    public Job(String name, String userId, String toolName, String description, String commandLine, long outDirId, URI tmpOutDirUri,
-               List<Long> input) {
-        this(-1, name, userId, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", commandLine, -1,
-                new JobStatus(JobStatus.PREPARED), 0, outDirId, tmpOutDirUri, input, new LinkedList<>(), new LinkedList<>(),
-                new HashMap<>(), new HashMap<>());
+    public Job(String name, String userId, String executable, List<Long> input, List<Long> output, long outDirId,
+               Map<String, String> params) {
+        this(-1, name, userId, -1, executable, TimeUtils.getTime(), "", -1, -1, "", "", "", 0, new JobStatus(JobStatus.PREPARED), -1,
+                outDirId, null, input, output, Collections.emptyList(), Collections.emptyList(), params, new HashMap<>(),
+                new HashMap<>(), "", "");
     }
 
-    public Job(long id, String name, String userId, String toolName, String date, String description, long startTime, long endTime,
-               String outputError, String commandLine, long visits, JobStatus jobStatus, long diskUsage, long outDirId, URI tmpOutDirUri,
-               List<Long> input, List<Long> output, List<String> tags, Map<String, Object> attributes,
+    public Job(String name, String userId, String toolName, String description, String commandLine, long outDirId,
+               URI tmpOutDirUri, List<Long> input) {
+        this(-1, name, userId, -1, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", null, commandLine,
+                -1, new JobStatus(JobStatus.PREPARED), 0, outDirId, tmpOutDirUri, input, Collections.emptyList(),
+                Collections.emptyList(), Collections.emptyList(), new HashMap<>(), new HashMap<>(), new HashMap<>(), null);
+    }
+
+    @Deprecated
+    public Job(long id, String name, String userId, String executable, String creationDate, String description, long startTime,
+               long endTime, String outputError, String commandLine, long visits, JobStatus jobStatus, long diskUsage, long outDirId,
+               URI tmpOutDirUri, List<Long> input, List<Long> output, List<String> tags, Map<String, Object> attributes,
                Map<String, Object> resourceManagerAttributes) {
         this.id = id;
         this.name = name;
         this.userId = userId;
-        this.toolName = toolName;
-        this.date = date;
+        this.executable = executable;
+        this.creationDate = creationDate;
         this.description = description;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -133,7 +144,7 @@ public class Job {
 //        this.outDir = outDir;
         this.input = input;
         this.output = output;
-        this.acls = Collections.emptyList();
+        this.acl = Collections.emptyList();
         this.tags = tags;
         this.attributes = attributes;
         this.resourceManagerAttributes = resourceManagerAttributes;
@@ -151,239 +162,87 @@ public class Job {
         errorDescription = null;
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("Job{");
-        sb.append("id=").append(id);
-        sb.append(", name='").append(name).append('\'');
-        sb.append(", userId='").append(userId).append('\'');
-        sb.append(", toolName='").append(toolName).append('\'');
-        sb.append(", date='").append(date).append('\'');
-        sb.append(", description='").append(description).append('\'');
-        sb.append(", startTime=").append(startTime);
-        sb.append(", endTime=").append(endTime);
-        sb.append(", outputError='").append(outputError).append('\'');
-        sb.append(", execution='").append(execution).append('\'');
-        sb.append(", params=").append(params);
-        sb.append(", commandLine='").append(commandLine).append('\'');
-        sb.append(", visits=").append(visits);
-        sb.append(", status=").append(status);
-        sb.append(", diskUsage=").append(diskUsage);
-        sb.append(", outDirId=").append(outDirId);
-        sb.append(", tmpOutDirUri=").append(tmpOutDirUri);
-        sb.append(", input=").append(input);
-        sb.append(", output=").append(output);
-        sb.append(", tags=").append(tags);
-        sb.append(", acls=").append(acls);
-        sb.append(", attributes=").append(attributes);
-        sb.append(", resourceManagerAttributes=").append(resourceManagerAttributes);
-        sb.append(", error='").append(error).append('\'');
-        sb.append(", errorDescription='").append(errorDescription).append('\'');
-        sb.append('}');
-        return sb.toString();
-    }
-
-    public long getId() {
-        return id;
-    }
-
-    public void setId(long id) {
+    public Job(long id, String name, String userId, long toolId, String executable, String creationDate, String description, long startTime,
+               long endTime, String outputError, String execution, String commandLine, long visits, JobStatus status, long diskUsage,
+               long outDirId, URI tmpOutDirUri, List<Long> input, List<Long> output, List<String> tags, List<JobAclEntry> acl,
+               Map<String, String> params, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, String error) {
         this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
         this.name = name;
-    }
-
-    public String getUserId() {
-        return userId;
-    }
-
-    public void setUserId(String userId) {
         this.userId = userId;
-    }
-
-    public String getToolName() {
-        return toolName;
-    }
-
-    public void setToolName(String toolName) {
-        this.toolName = toolName;
-    }
-
-    public String getDate() {
-        return date;
-    }
-
-    public void setDate(String date) {
-        this.date = date;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
+        this.toolId = toolId;
+        this.executable = executable;
+        this.creationDate = creationDate;
         this.description = description;
-    }
-
-    public long getStartTime() {
-        return startTime;
-    }
-
-    public void setStartTime(long startTime) {
         this.startTime = startTime;
-    }
-
-    public long getEndTime() {
-        return endTime;
-    }
-
-    public void setEndTime(long endTime) {
         this.endTime = endTime;
-    }
-
-    public String getOutputError() {
-        return outputError;
-    }
-
-    public void setOutputError(String outputError) {
         this.outputError = outputError;
-    }
-
-    public String getCommandLine() {
-        return commandLine;
-    }
-
-    public void setCommandLine(String commandLine) {
-        this.commandLine = commandLine;
-    }
-
-    public long getVisits() {
-        return visits;
-    }
-
-    public void setVisits(long visits) {
-        this.visits = visits;
-    }
-
-    public JobStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(JobStatus status) {
-        this.status = status;
-    }
-
-    public long getDiskUsage() {
-        return diskUsage;
-    }
-
-    public void setDiskUsage(long diskUsage) {
-        this.diskUsage = diskUsage;
-    }
-
-    public String getExecution() {
-        return execution;
-    }
-
-    public Job setExecution(String execution) {
         this.execution = execution;
-        return this;
-    }
-
-    public Map<String, String> getParams() {
-        return params;
-    }
-
-    public Job setParams(Map<String, String> params) {
-        this.params = params;
-        return this;
-    }
-
-    public long getOutDirId() {
-        return outDirId;
-    }
-
-    public void setOutDirId(long outDirId) {
+        this.commandLine = commandLine;
+        this.visits = visits;
+        this.status = status;
+        this.diskUsage = diskUsage;
         this.outDirId = outDirId;
-    }
-
-    public URI getTmpOutDirUri() {
-        return tmpOutDirUri;
-    }
-
-    public void setTmpOutDirUri(URI tmpOutDirUri) {
         this.tmpOutDirUri = tmpOutDirUri;
-    }
-
-    public List<Long> getInput() {
-        return input;
-    }
-
-    public void setInput(List<Long> input) {
         this.input = input;
-    }
-
-    public List<Long> getOutput() {
-        return output;
-    }
-
-    public void setOutput(List<Long> output) {
         this.output = output;
-    }
-
-    public List<String> getTags() {
-        return tags;
-    }
-
-    public void setTags(List<String> tags) {
         this.tags = tags;
-    }
-
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
-    public void setAttributes(Map<String, Object> attributes) {
+        this.acl = acl;
+        this.params = params;
         this.attributes = attributes;
-    }
-
-    public Map<String, Object> getResourceManagerAttributes() {
-        return resourceManagerAttributes;
-    }
-
-    public void setResourceManagerAttributes(Map<String, Object> resourceManagerAttributes) {
         this.resourceManagerAttributes = resourceManagerAttributes;
-    }
-
-    public String getErrorDescription() {
-        return errorDescription;
-    }
-
-    public void setErrorDescription(String errorDescription) {
-        this.errorDescription = errorDescription;
-    }
-
-    public String getError() {
-        return error;
-    }
-
-    public void setError(String error) {
+        if (this.resourceManagerAttributes == null) {
+            this.resourceManagerAttributes = new HashMap<>();
+        }
+        if (!this.resourceManagerAttributes.containsKey(Job.JOB_SCHEDULER_NAME)) {
+            this.resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, "");
+        }
+        if (!this.attributes.containsKey(Job.TYPE)) {
+            this.attributes.put(Job.TYPE, Type.ANALYSIS);
+        }
         this.error = error;
+        this.errorDescription = null;
     }
 
-    public List<JobAcl> getAcls() {
-        return acls;
-    }
-
-    public Job setAcls(List<JobAcl> acls) {
-        this.acls = acls;
-        return this;
+    public Job(long id, String name, String userId, long toolId, String executable, String creationDate, String description, long startTime,
+               long endTime, String outputError, String execution, String commandLine, long visits, JobStatus status, long diskUsage,
+               long outDirId, URI tmpOutDirUri, List<Long> input, List<Long> output, List<String> tags, List<JobAclEntry> acl,
+               Map<String, String> params, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, String error,
+               String errorDescription) {
+        this.id = id;
+        this.name = name;
+        this.userId = userId;
+        this.toolId = toolId;
+        this.executable = executable;
+        this.creationDate = creationDate;
+        this.description = description;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.outputError = outputError;
+        this.execution = execution;
+        this.commandLine = commandLine;
+        this.visits = visits;
+        this.status = status;
+        this.diskUsage = diskUsage;
+        this.outDirId = outDirId;
+        this.tmpOutDirUri = tmpOutDirUri;
+        this.input = input;
+        this.output = output;
+        this.tags = tags;
+        this.acl = acl;
+        this.params = params;
+        this.attributes = attributes;
+        this.resourceManagerAttributes = resourceManagerAttributes;
+        if (this.resourceManagerAttributes == null) {
+            this.resourceManagerAttributes = new HashMap<>();
+        }
+        if (!this.resourceManagerAttributes.containsKey(Job.JOB_SCHEDULER_NAME)) {
+            this.resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, "");
+        }
+        if (!this.attributes.containsKey(Job.TYPE)) {
+            this.attributes.put(Job.TYPE, Type.ANALYSIS);
+        }
+        this.error = error;
+        this.errorDescription = errorDescription;
     }
 
     public static class JobStatus extends Status {
@@ -443,4 +302,277 @@ public class Job {
         INDEX,
         COHORT_STATS
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Job{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", userId='").append(userId).append('\'');
+        sb.append(", toolId=").append(toolId);
+        sb.append(", toolName='").append(toolName).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", startTime=").append(startTime);
+        sb.append(", endTime=").append(endTime);
+        sb.append(", outputError='").append(outputError).append('\'');
+        sb.append(", execution='").append(execution).append('\'');
+        sb.append(", executable='").append(executable).append('\'');
+        sb.append(", commandLine='").append(commandLine).append('\'');
+        sb.append(", visits=").append(visits);
+        sb.append(", status=").append(status);
+        sb.append(", diskUsage=").append(diskUsage);
+        sb.append(", outDirId=").append(outDirId);
+        sb.append(", tmpOutDirUri=").append(tmpOutDirUri);
+        sb.append(", input=").append(input);
+        sb.append(", output=").append(output);
+        sb.append(", tags=").append(tags);
+        sb.append(", params=").append(params);
+        sb.append(", attributes=").append(attributes);
+        sb.append(", resourceManagerAttributes=").append(resourceManagerAttributes);
+        sb.append(", error='").append(error).append('\'');
+        sb.append(", errorDescription='").append(errorDescription).append('\'');
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public Job setId(long id) {
+        this.id = id;
+        return this;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Job setName(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public Job setUserId(String userId) {
+        this.userId = userId;
+        return this;
+    }
+
+    public long getToolId() {
+        return toolId;
+    }
+
+    public Job setToolId(long toolId) {
+        this.toolId = toolId;
+        return this;
+    }
+
+    public String getExecutable() {
+        return executable;
+    }
+
+    public Job setExecutable(String executable) {
+        this.executable = executable;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public Job setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public Job setDescription(String description) {
+        this.description = description;
+        return this;
+    }
+
+    public long getStartTime() {
+        return startTime;
+    }
+
+    public Job setStartTime(long startTime) {
+        this.startTime = startTime;
+        return this;
+    }
+
+    public long getEndTime() {
+        return endTime;
+    }
+
+    public Job setEndTime(long endTime) {
+        this.endTime = endTime;
+        return this;
+    }
+
+    public String getOutputError() {
+        return outputError;
+    }
+
+    public Job setOutputError(String outputError) {
+        this.outputError = outputError;
+        return this;
+    }
+
+    public String getExecution() {
+        return execution;
+    }
+
+    public Job setExecution(String execution) {
+        this.execution = execution;
+        return this;
+    }
+
+    public String getCommandLine() {
+        return commandLine;
+    }
+
+    public Job setCommandLine(String commandLine) {
+        this.commandLine = commandLine;
+        return this;
+    }
+
+    public long getVisits() {
+        return visits;
+    }
+
+    public Job setVisits(long visits) {
+        this.visits = visits;
+        return this;
+    }
+
+    public JobStatus getStatus() {
+        return status;
+    }
+
+    public Job setStatus(JobStatus status) {
+        this.status = status;
+        return this;
+    }
+
+    public long getDiskUsage() {
+        return diskUsage;
+    }
+
+    public Job setDiskUsage(long diskUsage) {
+        this.diskUsage = diskUsage;
+        return this;
+    }
+
+    public long getOutDirId() {
+        return outDirId;
+    }
+
+    public Job setOutDirId(long outDirId) {
+        this.outDirId = outDirId;
+        return this;
+    }
+
+    public URI getTmpOutDirUri() {
+        return tmpOutDirUri;
+    }
+
+    public Job setTmpOutDirUri(URI tmpOutDirUri) {
+        this.tmpOutDirUri = tmpOutDirUri;
+        return this;
+    }
+
+    public List<Long> getInput() {
+        return input;
+    }
+
+    public Job setInput(List<Long> input) {
+        this.input = input;
+        return this;
+    }
+
+    public List<Long> getOutput() {
+        return output;
+    }
+
+    public Job setOutput(List<Long> output) {
+        this.output = output;
+        return this;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public Job setTags(List<String> tags) {
+        this.tags = tags;
+        return this;
+    }
+
+    public Job setAcl(List<JobAclEntry> acl) {
+        this.acl = acl;
+        return this;
+    }
+
+    public Map<String, String> getParams() {
+        return params;
+    }
+
+    public Job setParams(Map<String, String> params) {
+        this.params = params;
+        return this;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public Job setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
+        return this;
+    }
+
+    public Map<String, Object> getResourceManagerAttributes() {
+        return resourceManagerAttributes;
+    }
+
+    public Job setResourceManagerAttributes(Map<String, Object> resourceManagerAttributes) {
+        this.resourceManagerAttributes = resourceManagerAttributes;
+        return this;
+    }
+
+    public String getError() {
+        return error;
+    }
+
+    public Job setError(String error) {
+        this.error = error;
+        return this;
+    }
+
+    public String getErrorDescription() {
+        return errorDescription;
+    }
+
+    public Job setErrorDescription(String errorDescription) {
+        this.errorDescription = errorDescription;
+        return this;
+    }
+
+    public String getToolName() {
+        return toolName;
+    }
+
+    public Job setToolName(String toolName) {
+        this.toolName = toolName;
+        return this;
+    }
+
 }

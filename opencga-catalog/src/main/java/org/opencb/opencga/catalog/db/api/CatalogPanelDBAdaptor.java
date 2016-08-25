@@ -6,7 +6,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.DiseasePanel;
-import org.opencb.opencga.catalog.models.acls.DiseasePanelAcl;
+import org.opencb.opencga.catalog.models.acls.permissions.DiseasePanelAclEntry;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -18,7 +18,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * Created by pfurio on 01/06/16.
  */
-public interface CatalogPanelDBAdaptor extends CatalogDBAdaptor<DiseasePanel> {
+public interface CatalogPanelDBAdaptor extends CatalogAclDBAdaptor<DiseasePanel, DiseasePanelAclEntry> {
 
     enum QueryParams implements QueryParam {
         ID("id", INTEGER, ""),
@@ -30,13 +30,13 @@ public interface CatalogPanelDBAdaptor extends CatalogDBAdaptor<DiseasePanel> {
         REGIONS("regions", TEXT_ARRAY, ""),
         VARIANTS("variants", TEXT_ARRAY, ""),
 
-        STATUS_STATUS("status.status", TEXT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
 
-        ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
-        ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
+        ACL("acl", TEXT_ARRAY, ""),
+        ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
+        ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),
 
         STUDY_ID("studyId", INTEGER_ARRAY, "");
 
@@ -99,18 +99,27 @@ public interface CatalogPanelDBAdaptor extends CatalogDBAdaptor<DiseasePanel> {
 
     QueryResult<DiseasePanel> getPanel(long diseasePanelId, QueryOptions options) throws CatalogDBException;
 
-    default QueryResult<DiseasePanelAcl> getPanelAcl(long panelId, String member) throws CatalogDBException {
+    default QueryResult<DiseasePanelAclEntry> getPanelAcl(long panelId, String member) throws CatalogDBException {
         return getPanelAcl(panelId, Arrays.asList(member));
     }
 
-    QueryResult<DiseasePanelAcl> getPanelAcl(long panelId, List<String> members) throws CatalogDBException;
+    QueryResult<DiseasePanelAclEntry> getPanelAcl(long panelId, List<String> members) throws CatalogDBException;
 
-    QueryResult<DiseasePanelAcl> setPanelAcl(long panelId, DiseasePanelAcl acl, boolean override) throws CatalogDBException;
+    QueryResult<DiseasePanelAclEntry> setPanelAcl(long panelId, DiseasePanelAclEntry acl, boolean override) throws CatalogDBException;
 
-    void unsetPanelAcl(long panelId, List<String> members) throws CatalogDBException;
+    void unsetPanelAcl(long panelId, List<String> members, List<String> permissions) throws CatalogDBException;
 
     void unsetPanelAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
 
     long getStudyIdByPanelId(long panelId) throws CatalogDBException;
+
+    /**
+     * Remove all the Acls defined for the member in the resource.
+     *
+     * @param studyId study id where the Acls will be removed from.
+     * @param member member from whom the Acls will be removed.
+     * @throws CatalogDBException if any problem occurs during the removal.
+     */
+    void removeAclsFromStudy(long studyId, String member) throws CatalogDBException;
 
 }

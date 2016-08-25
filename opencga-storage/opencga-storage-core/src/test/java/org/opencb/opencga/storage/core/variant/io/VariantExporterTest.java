@@ -32,7 +32,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -120,8 +120,7 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
                 .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), 0)
                 .append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), returnedSamples);
         Path outputVcf = getTmpRootDir().resolve("hts_sf_" + EXPORTED_FILE_NAME);
-        VariantVcfExporter variantVcfExporter = new VariantVcfExporter();
-        int failedVariants = variantVcfExporter.export(dbAdaptor.iterator(query, new QueryOptions(QueryOptions.SORT, true)), studyConfiguration
+        int failedVariants = VariantVcfExporter.htsExport(dbAdaptor.iterator(query, new QueryOptions(QueryOptions.SORT, true)), studyConfiguration
                 , new GZIPOutputStream(new FileOutputStream(outputVcf.toFile())), new QueryOptions(VariantDBAdaptor.VariantQueryParams
                         .RETURNED_SAMPLES.key(), returnedSamples));
 
@@ -137,8 +136,7 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
         query.append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), STUDY_NAME);
 //                .append(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
         Path outputVcf = getTmpRootDir().resolve("hts_mf_" + EXPORTED_FILE_NAME);
-        VariantVcfExporter variantVcfExporter = new VariantVcfExporter();
-        int failedVariants = variantVcfExporter.export(dbAdaptor.iterator(query, null), studyConfiguration,
+        int failedVariants = VariantVcfExporter.htsExport(dbAdaptor.iterator(query, null), studyConfiguration,
                 new GZIPOutputStream(new FileOutputStream(outputVcf.toFile())), null);
 
         assertEquals(0, failedVariants);
@@ -200,18 +198,18 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
             assertEquals("At variant " + originalVariant, originalVariant.getReference(), exportedVariant.getReference());
             assertEquals("At variant " + originalVariant, originalVariant.getStart(), exportedVariant.getStart());
             assertEquals("At variant " + originalVariant, originalVariant.getEnd(), exportedVariant.getEnd());
-            assertEquals("At variant " + originalVariant, originalVariant.getIds(), exportedVariant.getIds());
+            assertWithConflicts(originalVariant, () -> assertEquals("At variant " + originalVariant, originalVariant.getIds(), exportedVariant.getIds()));
             assertEquals("At variant " + originalVariant, originalVariant.getStudies().size(), exportedVariant.getStudies().size());
             assertEquals("At variant " + originalVariant, originalVariant.getSampleNames("f", "s"), exportedVariant.getSampleNames("f",
                     "s"));
             StudyEntry originalSourceEntry = originalVariant.getStudy("s");
             StudyEntry exportedSourceEntry = exportedVariant.getStudy("s");
             for (String sampleName : originalSourceEntry.getSamplesName()) {
-                assertEquals("For sample '" + sampleName + "', id "
-                        + studyConfiguration.getSampleIds().get(sampleName)
-                        + ", in " + originalVariant,
+                assertWithConflicts(exportedVariant, () -> assertEquals("For sample '" + sampleName + "', id "
+                                + studyConfiguration.getSampleIds().get(sampleName)
+                                + ", in " + originalVariant,
                         originalSourceEntry.getSampleData(sampleName, "GT"),
-                        exportedSourceEntry.getSampleData(sampleName, "GT").replace("0/0", "0|0"));
+                        exportedSourceEntry.getSampleData(sampleName, "GT").replace("0/0", "0|0")));
             }
         }
         return originalVariants.size();

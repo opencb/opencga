@@ -25,7 +25,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.commons.utils.CryptoUtils;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
@@ -72,24 +72,24 @@ public class DocumentToVariantConverterTest {
         variant.addStudyEntry(studyEntry);
 
         //Setup mongoVariant
-        mongoVariant = new Document("_id", "1_1000_A_C")
-                .append(DocumentToVariantConverter.IDS_FIELD, variant.getIds())
-                .append(DocumentToVariantConverter.TYPE_FIELD, variant.getType().name())
+        mongoVariant = new Document("_id", " 1:      1000:A:C")
                 .append(DocumentToVariantConverter.CHROMOSOME_FIELD, variant.getChromosome())
                 .append(DocumentToVariantConverter.START_FIELD, variant.getStart())
                 .append(DocumentToVariantConverter.END_FIELD, variant.getStart())
                 .append(DocumentToVariantConverter.LENGTH_FIELD, variant.getLength())
                 .append(DocumentToVariantConverter.REFERENCE_FIELD, variant.getReference())
                 .append(DocumentToVariantConverter.ALTERNATE_FIELD, variant.getAlternate())
+                .append(DocumentToVariantConverter.TYPE_FIELD, variant.getType().name())
+                .append(DocumentToVariantConverter.IDS_FIELD, variant.getIds())
                 .append(DocumentToVariantConverter.ANNOTATION_FIELD, Collections.emptyList());
 
         LinkedList chunkIds = new LinkedList();
         chunkIds.add("1_1_1k");
         chunkIds.add("1_0_10k");
-        mongoVariant.append("_at", new Document("chunkIds", chunkIds));
+        mongoVariant.append(DocumentToVariantConverter.AT_FIELD, new Document("chunkIds", chunkIds));
 
         LinkedList hgvs = new LinkedList();
-        hgvs.add(new Document("type", "genomic").append("name", "1:g.1000A>C"));
+//        hgvs.add(new Document("type", "genomic").append("name", "1:g.1000A>C"));
         mongoVariant.append("hgvs", hgvs);
     }
 
@@ -192,16 +192,16 @@ public class DocumentToVariantConverterTest {
 
         // SNV
         Variant v1 = new Variant("1", 1000, 1000, "A", "C");
-        assertEquals("1_1000_A_C", converter.buildStorageId(v1));
+        assertEquals(" 1:      1000:A:C", converter.buildStorageId(v1));
 
         // Indel
         Variant v2 = new Variant("1", 1000, 1002, "", "CA");
-        assertEquals("1_1000__CA", converter.buildStorageId(v2));
+        assertEquals(" 1:      1000::CA", converter.buildStorageId(v2));
 
         // Structural
         String alt = "ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGT";
         Variant v3 = new Variant("1", 1000, 1002, "TAG", alt);
-        assertEquals("1_1000_TAG_" + new String(CryptoUtils.encryptSha1(alt)), converter.buildStorageId(v3));
+        assertEquals(" 1:      1000:TAG:" + new String(CryptoUtils.encryptSha1(alt)), converter.buildStorageId(v3));
     }
 
 }

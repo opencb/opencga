@@ -1,7 +1,7 @@
 package org.opencb.opencga.server.rest;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.ga4gh.methods.SearchVariantsRequest;
 import org.ga4gh.methods.SearchVariantsResponse;
 import org.ga4gh.models.Variant;
@@ -31,9 +31,8 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.
 @Api(value = "GA4GH", position = 13, description = "Global Alliance for Genomics & Health RESTful API")
 public class Ga4ghWSServer extends OpenCGAWSServer {
 
-    public Ga4ghWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                         @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+    public Ga4ghWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest);
     }
 
     @POST
@@ -44,10 +43,10 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
         String method = "ga4gh/variants/search";
         try {
 
-            if (request.getVariantSetIds() == null || request.getVariantSetIds().isEmpty()) {
+            if (request.getVariantSetId() == null || request.getVariantSetId().isEmpty()) {
                 return createErrorResponse(method, "Required referenceName or referenceId");
             }
-            queryOptions.append(STUDIES.key(), request.getVariantSetIds());
+            queryOptions.append(STUDIES.key(), request.getVariantSetId());
             String studyIdStr = queryOptions.getAsStringList(STUDIES.key()).get(0);
             long studyId = catalogManager.getStudyId(studyIdStr);
 
@@ -55,7 +54,11 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
             if (request.getCallSetIds() != null) {
                 queryOptions.append(RETURNED_SAMPLES.key(), request.getCallSetIds());
             }
-            CharSequence chr = request.getReferenceName() != null ? request.getReferenceName() : request.getReferenceId();
+
+            CharSequence chr = null;
+            if (request.getReferenceName() != null) {
+                chr = request.getReferenceName();
+            }
             if (chr == null) {
                 return createErrorResponse(method, "Required referenceName or referenceId");
             }

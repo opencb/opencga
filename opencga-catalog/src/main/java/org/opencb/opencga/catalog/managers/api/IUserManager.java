@@ -4,7 +4,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Filter;
+import org.opencb.opencga.catalog.models.QueryFilter;
 import org.opencb.opencga.catalog.models.User;
 
 import java.io.IOException;
@@ -19,8 +19,9 @@ public interface IUserManager extends ResourceManager<String, User> {
      *
      * @param sessionId SessionId
      * @return UserId owner of the sessionId. Empty string if SessionId does not match.
+     * @throws CatalogException when the session id does not correspond to any user or the token has expired.
      */
-    String getUserId(String sessionId);
+    String getUserId(String sessionId) throws CatalogException;
 
     /**
      * Create a new user.
@@ -43,20 +44,20 @@ public interface IUserManager extends ResourceManager<String, User> {
      * Gets the user information.
      *
      * @param userId       User id
-     * @param lastActivity If lastActivity matches with the one in Catalog, return an empty QueryResult.
+     * @param lastModified If lastModified matches with the one in Catalog, return an empty QueryResult.
      * @param options      QueryOptions
      * @param sessionId    SessionId of the user performing this operation.
      * @return The requested user
      * @throws CatalogException CatalogException
      */
-    QueryResult<User> read(String userId, String lastActivity, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult<User> read(String userId, String lastModified, QueryOptions options, String sessionId) throws CatalogException;
 
     void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException;
 
     @Deprecated
     QueryResult<ObjectMap> login(String userId, String password, String sessionIp) throws CatalogException, IOException;
 
-    QueryResult resetPassword(String userId, String email) throws CatalogException;
+    QueryResult resetPassword(String userId) throws CatalogException;
 
     @Deprecated
     QueryResult<ObjectMap> loginAsAnonymous(String sessionIp) throws CatalogException, IOException;
@@ -66,10 +67,10 @@ public interface IUserManager extends ResourceManager<String, User> {
     @Deprecated
     QueryResult logoutAnonymous(String sessionId) throws CatalogException;
 
-    void addQueryFilter(String sessionId, Filter filter) throws CatalogException;
+    void addQueryFilter(String sessionId, QueryFilter queryFilter) throws CatalogException;
 
     QueryResult<Long> deleteQueryFilter(String sessionId, String filterId) throws CatalogException;
 
-    QueryResult<Filter> getQueryFilter(String sessionId, String filterId) throws CatalogException;
+    QueryResult<QueryFilter> getQueryFilter(String sessionId, String filterId) throws CatalogException;
 
 }

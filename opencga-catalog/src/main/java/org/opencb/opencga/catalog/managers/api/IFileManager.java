@@ -1,17 +1,17 @@
 package org.opencb.opencga.catalog.managers.api;
 
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Dataset;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.FileTree;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.models.acls.DatasetAcl;
-import org.opencb.opencga.catalog.models.acls.FileAcl;
+import org.opencb.opencga.catalog.models.acls.permissions.DatasetAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 
 import java.io.DataInputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -94,7 +94,18 @@ public interface IFileManager extends ResourceManager<Long, File> {
 
     QueryResult<File> rename(long fileId, String newName, String sessionId) throws CatalogException;
 
+    QueryResult<File> delete(String fileIdStr, QueryOptions options, String sessionId) throws CatalogException, IOException;
+
+    QueryResult<File> link(URI uriOrigin, String pathDestiny, long studyId, ObjectMap params, String sessionId)
+            throws CatalogException, IOException;
+
+    QueryResult<FileTree> getFileTree(String fileIdStr, Query query, QueryOptions queryOptions, int maxDepth, String sessionId)
+            throws CatalogException;
+
+    @Deprecated
     QueryResult<File> unlink(long fileId, String sessionId) throws CatalogException;
+
+    QueryResult<File> unlink(String fileIdStr, QueryOptions options, String sessionId) throws CatalogException, IOException;
 
     /**
      * Retrieve the file Acls for the given members in the file.
@@ -106,9 +117,10 @@ public interface IFileManager extends ResourceManager<Long, File> {
      * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
      * the file id is not valid or the members given do not exist.
      */
-    QueryResult<FileAcl> getFileAcls(String fileStr, List<String> members, String sessionId) throws CatalogException;
-    default List<QueryResult<FileAcl>> getFileAcls(List<String> fileIds, List<String> members, String sessionId) throws CatalogException {
-        List<QueryResult<FileAcl>> result = new ArrayList<>(fileIds.size());
+    QueryResult<FileAclEntry> getFileAcls(String fileStr, List<String> members, String sessionId) throws CatalogException;
+    default List<QueryResult<FileAclEntry>> getFileAcls(List<String> fileIds, List<String> members, String sessionId)
+            throws CatalogException {
+        List<QueryResult<FileAclEntry>> result = new ArrayList<>(fileIds.size());
         for (String fileStr : fileIds) {
             result.add(getFileAcls(fileStr, members, sessionId));
         }
@@ -229,10 +241,10 @@ public interface IFileManager extends ResourceManager<Long, File> {
      * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
      * the dataset id is not valid or the members given do not exist.
      */
-    QueryResult<DatasetAcl> getDatasetAcls(String datasetStr, List<String> members, String sessionId) throws CatalogException;
-    default List<QueryResult<DatasetAcl>> getDatasetAcls(List<String> datasetIds, List<String> members, String sessionId)
+    QueryResult<DatasetAclEntry> getDatasetAcls(String datasetStr, List<String> members, String sessionId) throws CatalogException;
+    default List<QueryResult<DatasetAclEntry>> getDatasetAcls(List<String> datasetIds, List<String> members, String sessionId)
             throws CatalogException {
-        List<QueryResult<DatasetAcl>> result = new ArrayList<>(datasetIds.size());
+        List<QueryResult<DatasetAclEntry>> result = new ArrayList<>(datasetIds.size());
         for (String datasetId : datasetIds) {
             result.add(getDatasetAcls(datasetId, members, sessionId));
         }
@@ -245,4 +257,15 @@ public interface IFileManager extends ResourceManager<Long, File> {
 
     DataInputStream head(long fileId, int lines, QueryOptions options, String sessionId) throws CatalogException;
 
+    /**
+     * Index variants or alignments.
+     *
+     * @param fileIdStr Comma separated list of file ids (directories or files)
+     * @param type Type of the file(s) to be indexed (VCF or BAM)
+     * @param params Object map containing the extra parameters for the indexation.
+     * @param sessionId session id of the user asking for the index.
+     * @return .
+     * @throws CatalogException when the files or folders are not in catalog or the study does not match between them.
+     * */
+    QueryResult index(String fileIdStr, String type, Map<String, String> params, String sessionId) throws CatalogException;
 }

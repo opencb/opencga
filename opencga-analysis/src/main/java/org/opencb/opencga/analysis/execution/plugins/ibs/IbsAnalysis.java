@@ -4,11 +4,11 @@ import org.opencb.biodata.tools.variant.algorithm.IdentityByState;
 import org.opencb.biodata.tools.variant.algorithm.IdentityByStateClustering;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.beans.Analysis;
-import org.opencb.opencga.analysis.beans.Execution;
-import org.opencb.opencga.analysis.beans.Option;
+import org.opencb.opencga.catalog.models.tool.Manifest;
+import org.opencb.opencga.catalog.models.tool.Execution;
+import org.opencb.opencga.catalog.models.tool.Option;
 import org.opencb.opencga.analysis.execution.plugins.OpenCGAAnalysis;
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
@@ -31,7 +31,7 @@ public class IbsAnalysis extends OpenCGAAnalysis {
 
     public static final String OUTDIR = "outdir";
     public static final String PLUGIN_ID = "ibs_plugin";
-    private final Analysis manifest;
+    private final Manifest manifest;
 
     public IbsAnalysis() {
         List<Option> validParams = Arrays.asList(
@@ -41,11 +41,11 @@ public class IbsAnalysis extends OpenCGAAnalysis {
                 new Execution("default", "default", "", Collections.emptyList(), Collections.emptyList(), OUTDIR, 
                         validParams, Collections.emptyList(), null, null)
         );
-        manifest = new Analysis(null, "0.1.0", PLUGIN_ID, "IBS plugin", "", "", "", null, Collections.emptyList(), executions, null, null);
+        manifest = new Manifest(null, "0.1.0", PLUGIN_ID, "IBS plugin", "", "", "", null, Collections.emptyList(), executions, null, null);
     }
 
     @Override
-    public Analysis getManifest() {
+    public Manifest getManifest() {
         return manifest;
     }
 

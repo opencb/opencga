@@ -7,7 +7,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Dataset;
-import org.opencb.opencga.catalog.models.acls.DatasetAcl;
+import org.opencb.opencga.catalog.models.acls.permissions.DatasetAclEntry;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -19,7 +19,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * Created by pfurio on 04/05/16.
  */
-public interface CatalogDatasetDBAdaptor extends CatalogDBAdaptor<Dataset> {
+public interface CatalogDatasetDBAdaptor extends CatalogAclDBAdaptor<Dataset, DatasetAclEntry> {
 
     enum QueryParams implements QueryParam {
 
@@ -29,12 +29,12 @@ public interface CatalogDatasetDBAdaptor extends CatalogDBAdaptor<Dataset> {
         DESCRIPTION("description", TEXT, ""),
         FILES("files", INTEGER_ARRAY, ""),
         STATUS("status", TEXT_ARRAY, ""),
-        STATUS_STATUS("status.status", TEXT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
-        ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
-        ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
+        ACL("acl", TEXT_ARRAY, ""),
+        ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
+        ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
@@ -129,16 +129,29 @@ public interface CatalogDatasetDBAdaptor extends CatalogDBAdaptor<Dataset> {
      */
     QueryResult<Long> extractFilesFromDatasets(Query query, List<Long> fileIds) throws CatalogDBException;
 
-    default QueryResult<DatasetAcl> getDatasetAcl(long datasetId, String member) throws CatalogDBException {
+    default QueryResult<DatasetAclEntry> getDatasetAcl(long datasetId, String member) throws CatalogDBException {
         return getDatasetAcl(datasetId, Arrays.asList(member));
     }
 
-    QueryResult<DatasetAcl> getDatasetAcl(long datasetId, List<String> members) throws CatalogDBException;
+    @Deprecated
+    QueryResult<DatasetAclEntry> getDatasetAcl(long datasetId, List<String> members) throws CatalogDBException;
 
-    QueryResult<DatasetAcl> setDatasetAcl(long datasetId, DatasetAcl acl, boolean override) throws CatalogDBException;
+    @Deprecated
+    QueryResult<DatasetAclEntry> setDatasetAcl(long datasetId, DatasetAclEntry acl, boolean override) throws CatalogDBException;
 
-    void unsetDatasetAcl(long datasetId, List<String> members) throws CatalogDBException;
+    @Deprecated
+    void unsetDatasetAcl(long datasetId, List<String> members, List<String> permissions) throws CatalogDBException;
 
+    @Deprecated
     void unsetDatasetAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
+
+    /**
+     * Remove all the Acls defined for the member in the resource.
+     *
+     * @param studyId study id where the Acls will be removed from.
+     * @param member member from whom the Acls will be removed.
+     * @throws CatalogDBException if any problem occurs during the removal.
+     */
+    void removeAclsFromStudy(long studyId, String member) throws CatalogDBException;
 
 }

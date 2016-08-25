@@ -59,27 +59,63 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
 //    public static final String GENE_FIELD = "gene";
 
     public static final Map<String, String> FIELDS_MAP;
+    public static final Set<String> REQUIRED_FIELDS_SET;
+    public static final Set<String> EXCLUDE_STUDIES_SAMPLES_DATA_FIELD;
+    public static final Set<String> EXCLUDE_STUDIES_FILES_FIELD;
+
 
     static {
-        FIELDS_MAP = new HashMap<>();
-        FIELDS_MAP.put("chromosome", CHROMOSOME_FIELD);
-        FIELDS_MAP.put("start", START_FIELD);
-        FIELDS_MAP.put("end", END_FIELD);
-        FIELDS_MAP.put("length", LENGTH_FIELD);
-        FIELDS_MAP.put("reference", REFERENCE_FIELD);
-        FIELDS_MAP.put("alternate", ALTERNATE_FIELD);
-        FIELDS_MAP.put("ids", IDS_FIELD);
-        FIELDS_MAP.put("type", TYPE_FIELD);
-        FIELDS_MAP.put("hgvs", HGVS_FIELD);
-//        FIELDS_MAP.put("hgvs.type", HGVS_FIELD + "." + HGVS_TYPE_FIELD);
-//        FIELDS_MAP.put("hgvs.name", HGVS_FIELD + "." + HGVS_NAME_FIELD);
-        FIELDS_MAP.put("sourceEntries", STUDIES_FIELD);
-        FIELDS_MAP.put("annotation", ANNOTATION_FIELD);
-        FIELDS_MAP.put("annotation.additionalAttributes", CUSTOM_ANNOTATION_FIELD);
-        FIELDS_MAP.put("sourceEntries.cohortStats", STATS_FIELD);
+        Set<String> requiredFieldsSet = new HashSet<>();
+        requiredFieldsSet.add(CHROMOSOME_FIELD);
+        requiredFieldsSet.add(START_FIELD);
+        requiredFieldsSet.add(END_FIELD);
+        requiredFieldsSet.add(REFERENCE_FIELD);
+        requiredFieldsSet.add(ALTERNATE_FIELD);
+        requiredFieldsSet.add(TYPE_FIELD);
+        REQUIRED_FIELDS_SET = Collections.unmodifiableSet(requiredFieldsSet);
+
+        HashSet<String> samplesData = new HashSet<>();
+        samplesData.add("studies.samplesData");
+        samplesData.add("samplesData");
+        samplesData.add("samples");
+        EXCLUDE_STUDIES_SAMPLES_DATA_FIELD = Collections.unmodifiableSet(samplesData);
+
+        HashSet<String> files = new HashSet<>();
+        files.add("studies.files");
+        files.add("files");
+        EXCLUDE_STUDIES_FILES_FIELD = Collections.unmodifiableSet(files);
+
+        Map<String, String> fieldsMap = new HashMap<>();
+        fieldsMap.put("chromosome", CHROMOSOME_FIELD);
+        fieldsMap.put("start", START_FIELD);
+        fieldsMap.put("end", END_FIELD);
+        fieldsMap.put("length", LENGTH_FIELD);
+        fieldsMap.put("reference", REFERENCE_FIELD);
+        fieldsMap.put("alternate", ALTERNATE_FIELD);
+        fieldsMap.put("ids", IDS_FIELD);
+        fieldsMap.put("type", TYPE_FIELD);
+        fieldsMap.put("hgvs", HGVS_FIELD);
+//        fieldsMap.put("hgvs.type", HGVS_FIELD + "." + HGVS_TYPE_FIELD);
+//        fieldsMap.put("hgvs.name", HGVS_FIELD + "." + HGVS_NAME_FIELD);
+        fieldsMap.put("sourceEntries", STUDIES_FIELD);
+        fieldsMap.put("studies", STUDIES_FIELD);
+        for (String key : EXCLUDE_STUDIES_SAMPLES_DATA_FIELD) {
+            fieldsMap.put(key, null);
+        }
+        for (String key : EXCLUDE_STUDIES_FILES_FIELD) {
+            fieldsMap.put(key, null);
+        }
+        fieldsMap.put("annotation", ANNOTATION_FIELD);
+        fieldsMap.put("annotation.additionalAttributes", CUSTOM_ANNOTATION_FIELD);
+        fieldsMap.put("sourceEntries.cohortStats", STATS_FIELD);
+        fieldsMap.put("studies.stats", STATS_FIELD);
+        fieldsMap.put("stats", STATS_FIELD);
+        fieldsMap.put("annotation", ANNOTATION_FIELD);
+        FIELDS_MAP = Collections.unmodifiableMap(fieldsMap);
     }
 
-    private DocumentToStudyVariantEntryConverter variantSourceEntryConverter;
+    private DocumentToStudyVariantEntryConverter variantStudyEntryConverter;
+    private Set<Integer> returnStudies;
     private DocumentToVariantAnnotationConverter variantAnnotationConverter;
     private DocumentToVariantStatsConverter statsConverter;
     private final VariantStringIdComplexTypeConverter idConverter = new VariantStringIdComplexTypeConverter();
@@ -100,15 +136,36 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
      * the studies the variant was read from can be provided in case those
      * should be processed during the conversion.
      *
-     * @param variantSourceEntryConverter The object used to convert the files
+     * @param variantStudyEntryConverter The object used to convert the files
      * @param statsConverter Stats converter
      */
-    public DocumentToVariantConverter(DocumentToStudyVariantEntryConverter variantSourceEntryConverter,
+    public DocumentToVariantConverter(DocumentToStudyVariantEntryConverter variantStudyEntryConverter,
                                       DocumentToVariantStatsConverter statsConverter) {
-        this.variantSourceEntryConverter = variantSourceEntryConverter;
+        this(variantStudyEntryConverter, statsConverter, null);
+    }
+
+    /**
+     * Create a converter between {@link Variant} and {@link Document} entities. A converter for
+     * the studies the variant was read from can be provided in case those
+     * should be processed during the conversion.
+     *
+     * @param variantStudyEntryConverter The object used to convert the files
+     * @param statsConverter Stats converter
+     * @param returnStudies List of studies to return
+     */
+    public DocumentToVariantConverter(DocumentToStudyVariantEntryConverter variantStudyEntryConverter,
+                                      DocumentToVariantStatsConverter statsConverter, Collection<Integer> returnStudies) {
+        this.variantStudyEntryConverter = variantStudyEntryConverter;
         this.variantAnnotationConverter = new DocumentToVariantAnnotationConverter();
         this.statsConverter = statsConverter;
         addDefaultId = true;
+        if (returnStudies != null) {
+            if (returnStudies instanceof Set) {
+                this.returnStudies = (Set<Integer>) returnStudies;
+            } else {
+                this.returnStudies = new HashSet<>(returnStudies);
+            }
+        }
     }
 
 
@@ -146,12 +203,15 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
         }
 
         // Files
-        if (variantSourceEntryConverter != null) {
-            List mongoFiles = (List) object.get(STUDIES_FIELD);
+        if (variantStudyEntryConverter != null) {
+            List mongoFiles = object.get(STUDIES_FIELD, List.class);
             if (mongoFiles != null) {
                 for (Object o : mongoFiles) {
                     Document dbo = (Document) o;
-                    variant.addStudyEntry(variantSourceEntryConverter.convertToDataModelType(dbo));
+                    if (returnStudies == null
+                            || returnStudies.contains(((Number) dbo.get(DocumentToStudyVariantEntryConverter.STUDYID_FIELD)).intValue())) {
+                        variant.addStudyEntry(variantStudyEntryConverter.convertToDataModelType(dbo));
+                    }
                 }
             }
         }
@@ -223,10 +283,10 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
         mongoVariant.append(HGVS_FIELD, hgvs);
 
         // Files
-        if (variantSourceEntryConverter != null) {
+        if (variantStudyEntryConverter != null) {
             List<Document> mongoFiles = new LinkedList<>();
             for (StudyEntry archiveFile : variant.getStudies()) {
-                mongoFiles.add(variantSourceEntryConverter.convertToStorageType(archiveFile));
+                mongoFiles.add(variantStudyEntryConverter.convertToStorageType(archiveFile));
             }
             mongoVariant.append(STUDIES_FIELD, mongoFiles);
         }
@@ -282,10 +342,14 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
 //        return builder.toString();
     }
 
-
     public static String toShortFieldName(String longFieldName) {
+        if (FIELDS_MAP.containsKey(longFieldName)) {
+            return FIELDS_MAP.get(longFieldName);
+        }
+//        int idx = longFieldName.indexOf(".");
         if (longFieldName.contains(".")) {
             String[] split = longFieldName.split("\\.");
+//            return FIELDS_MAP.get(longFieldName.substring(idx));
             return FIELDS_MAP.get(split[0]);
         }
         return FIELDS_MAP.get(longFieldName);

@@ -6,34 +6,44 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Admin;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.schema.types.PFloat;
+import org.apache.phoenix.schema.types.PFloatArray;
+import org.apache.phoenix.schema.types.PInteger;
+import org.apache.phoenix.schema.types.PUnsignedInt;
 import org.apache.tools.ant.types.Commandline;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
+import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.getTmpRootDir;
 
 /**
  * Created on 15/10/15
@@ -48,7 +58,7 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
     class HadoopExternalResource extends ExternalResource implements HadoopVariantStorageManagerTestUtils {
 
         @Override
-        protected void before() throws Throwable {
+        public void before() throws Throwable {
             if (utility.get() == null) {
                 utility.set(new HBaseTestingUtility());
                 utility.get().startMiniCluster(1);
@@ -64,7 +74,7 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
         }
 
         @Override
-        protected void after() {
+        public void after() {
             try {
                 try {
                     if (utility.get() != null) {
@@ -78,20 +88,24 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
             }
         }
 
+        public Configuration getConf() {
+            return configuration.get();
+        }
+
         private void checkHBaseMiniCluster() throws IOException {
-            HBaseManager hBaseManager = new HBaseManager(configuration.get());
             Connection con = ConnectionFactory.createConnection(configuration.get());
+            HBaseManager hBaseManager = new HBaseManager(configuration.get(), con);
 
             String tableName = "table";
             byte[] columnFamily = Bytes.toBytes("0");
-            hBaseManager.createTableIfNeeded(con, tableName, columnFamily, Compression.Algorithm.NONE);
-            hBaseManager.act(con, tableName, table -> {
+            hBaseManager.createTableIfNeeded(tableName, columnFamily, Compression.Algorithm.NONE);
+            hBaseManager.act(tableName, table -> {
                 table.put(Arrays.asList(new Put(Bytes.toBytes("r1")).addColumn(columnFamily, Bytes.toBytes("c"), Bytes.toBytes("value 1")),
                         new Put(Bytes.toBytes("r2")).addColumn(columnFamily, Bytes.toBytes("c"), Bytes.toBytes("value 2")),
                         new Put(Bytes.toBytes("r2")).addColumn(columnFamily, Bytes.toBytes("c2"), Bytes.toBytes("value 3"))));
             });
 
-            hBaseManager.act(con, tableName, table -> {
+            hBaseManager.act(tableName, table -> {
                 table.getScanner(columnFamily).forEach(result -> {
                     System.out.println("Row: " + Bytes.toString(result.getRow()));
                     for (Map.Entry<byte[], byte[]> entry : result.getFamilyMap(columnFamily).entrySet()) {
@@ -116,14 +130,31 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
 
         HadoopVariantStorageManager manager = new HadoopVariantStorageManager();
 
-        InputStream is = HadoopVariantStorageManagerTestUtils.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
-        StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
+        //Make a copy of the configuration
+        Configuration conf = new Configuration(false);
+        StorageConfiguration storageConfiguration = getStorageConfiguration(conf);
+
+        manager.setConfiguration(storageConfiguration, HadoopVariantStorageManager.STORAGE_ENGINE_ID);
+        manager.mrExecutor = new TestMRExecutor(HadoopVariantStorageManagerTestUtils.configuration.get());
+        manager.conf = conf;
+        return manager;
+    }
+
+    static StorageConfiguration getStorageConfiguration(Configuration conf) throws IOException {
+        StorageConfiguration storageConfiguration;
+        try (InputStream is = HadoopVariantStorageManagerTestUtils.class.getClassLoader().getResourceAsStream("storage-configuration.yml")) {
+            storageConfiguration = StorageConfiguration.load(is);
+        }
+        return updateStorageConfiguration(storageConfiguration, conf);
+    }
+
+    static StorageConfiguration updateStorageConfiguration(StorageConfiguration storageConfiguration, Configuration conf) throws IOException {
         storageConfiguration.setDefaultStorageEngineId(HadoopVariantStorageManager.STORAGE_ENGINE_ID);
         StorageEtlConfiguration variantConfiguration = storageConfiguration.getStorageEngine(HadoopVariantStorageManager.STORAGE_ENGINE_ID).getVariant();
         ObjectMap options = variantConfiguration.getOptions();
 
-        //Make a copy of the configuration
-        Configuration conf = new Configuration(false);
+        options.put(HadoopVariantStorageManager.EXTERNAL_MR_EXECUTOR, TestMRExecutor.class);
+        TestMRExecutor.staticConfiguration = conf;
         HadoopVariantStorageManagerTestUtils.configuration.get().forEach(e -> conf.set(e.getKey(), e.getValue()));
 
         options.put(GenomeHelper.CONFIG_HBASE_ADD_DEPENDENCY_JARS, false);
@@ -143,11 +174,7 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
         options.put(HadoopVariantStorageManager.OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY, intermediateDirectory);
 
         variantConfiguration.getDatabase().setHosts(Collections.singletonList("hbase://" + HadoopVariantStorageManagerTestUtils.configuration.get().get(HConstants.ZOOKEEPER_QUORUM)));
-
-        manager.setConfiguration(storageConfiguration, HadoopVariantStorageManager.STORAGE_ENGINE_ID);
-        manager.mrExecutor = new TestMRExecutor(HadoopVariantStorageManagerTestUtils.configuration.get());
-        manager.conf = conf;
-        return manager;
+        return storageConfiguration;
     }
 
     @Override
@@ -162,7 +189,12 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
 
     class TestMRExecutor implements MRExecutor {
 
+        private static Configuration staticConfiguration;
         private final Configuration configuration;
+
+        public TestMRExecutor() {
+            this.configuration = new Configuration(staticConfiguration);
+        }
 
         public TestMRExecutor(Configuration configuration) {
             this.configuration = configuration;
@@ -228,5 +260,7 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
             return 0;
         }
     }
+
+
 
 }

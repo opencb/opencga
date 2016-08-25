@@ -17,6 +17,14 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import org.junit.Test;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
+
+import java.util.Arrays;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by imedina on 07/04/16.
@@ -26,8 +34,14 @@ public class CatalogMongoMetaDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     @Test
     public void createIndex() throws Exception {
         catalogDBAdaptor.getCatalogMetaDBAdaptor().createIndexes();
-
         catalogDBAdaptor.getCatalogMetaDBAdaptor().createIndexes();
+    }
+
+    @Test
+    public void getAcl() throws CatalogDBException {
+        QueryResult<StudyAclEntry> aclQueryResult = catalogDBAdaptor.getCatalogMetaDBAdaptor().getDaemonAcl(Arrays.asList("admin"));
+        assertEquals(1, aclQueryResult.getNumResults());
+        assertEquals("admin", aclQueryResult.first().getMember());
     }
 
 }
