@@ -52,8 +52,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
     private StorageManagerFactory storageManagerFactory;
 
 
-    public HadoopVariantStorageManagerTestUtils.HadoopExternalResource hadoopExternalResource =
-            new HadoopVariantStorageManagerTestUtils.HadoopExternalResource();
+    public HadoopVariantStorageManagerTestUtils.HadoopExternalResource hadoopExternalResource;
 
     public OpenCGATestExternalResource() {
         this(false);
@@ -68,7 +67,19 @@ public class OpenCGATestExternalResource extends ExternalResource {
         super.before();
 
         catalogManagerExternalResource.before();
+
         if (storageHadoop) {
+            try {
+                String name = HadoopVariantStorageManagerTestUtils.class.getName();
+                Class.forName(name);
+            } catch (ClassNotFoundException e) {
+                logger.error("Missing dependency opencga-storage-hadoop!");
+                throw e;
+            }
+        }
+
+        if (storageHadoop) {
+            hadoopExternalResource = new HadoopVariantStorageManagerTestUtils.HadoopExternalResource();
             hadoopExternalResource.before();
         }
         opencgaHome = isolateOpenCGA();
