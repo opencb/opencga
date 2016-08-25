@@ -37,7 +37,7 @@ public class SGEManager {
     static {
         STATE_DIC = new HashMap<>();
         STATE_DIC.put("r", RUNNING);
-        STATE_DIC.put("t", TRANSFERRED);
+        STATE_DIC.put("t", QUEUED);
         STATE_DIC.put("qw", QUEUED);
         STATE_DIC.put("Eqw", ERROR);
     }

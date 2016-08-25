@@ -16,6 +16,7 @@ import java.util.Objects;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt
  */
+@Deprecated
 public class SgeExecutorManager implements ExecutorManager {
     protected static Logger logger = LoggerFactory.getLogger(SgeExecutorManager.class);
 

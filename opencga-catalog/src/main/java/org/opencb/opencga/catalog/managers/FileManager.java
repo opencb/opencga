@@ -178,6 +178,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     @Override
     public Long getFileId(String userId, String fileStr) throws CatalogException {
+        logger.info("Looking for file {}", fileStr);
         if (StringUtils.isNumeric(fileStr)) {
             return Long.parseLong(fileStr);
         }
@@ -2000,11 +2001,45 @@ public class FileManager extends AbstractManager implements IFileManager {
             }
         }
 
-        Long outDirId = getFileId(userId, params.get("outdir"));
+        String outDirPath = params.get("outdir");
+        if (outDirPath != null && !StringUtils.isNumeric(outDirPath) && outDirPath.contains("/") && !outDirPath.endsWith("/")) {
+            outDirPath = outDirPath + "/";
+        }
+        long outDirId = getFileId(userId, outDirPath);
         if (outDirId > 0) {
             authorizationManager.checkFilePermission(outDirId, userId, FileAclEntry.FilePermissions.CREATE);
             if (fileDBAdaptor.getStudyIdByFileId(outDirId) != studyId) {
                 throw new CatalogException("The output directory does not correspond to the same study of the files");
+            }
+        } else if (outDirPath != null) {
+            ObjectMap parsedSampleStr = parseFeatureId(userId, outDirPath);
+            String path = (String) parsedSampleStr.get("featureName");
+            logger.info("Outdir {}", path);
+            if (path.contains("/")) {
+                if (!path.endsWith("/")) {
+                    path = path + "/";
+                }
+                // It is a path, so we will try to create a folder
+                createFolder(studyId, path, new File.FileStatus(), true, "", QueryOptions.empty(), sessionId);
+                outDirId = getFileId(userId, path);
+                logger.info("Outdir {} -> {}", outDirId, path);
+            }
+        } else {
+            if (fileFolderIdList.size() == 1) {
+                // Leave the output files in the same directory
+                long fileId = fileFolderIdList.get(0);
+                QueryResult<File> file = fileDBAdaptor.getFile(fileId, QueryOptions.empty());
+                if (file.getNumResults() == 1) {
+                    if (file.first().getType().equals(File.Type.DIRECTORY)) {
+                        outDirId = fileId;
+                    } else {
+                        outDirId = getParent(fileId, QueryOptions.empty(), sessionId).first().getId();
+                    }
+                }
+            } else {
+                // Leave the output files in the root directory
+                outDirId = getFileId(userId, studyId + ":/");
+                logger.info("Getting out dir from {}:/", studyId);
             }
         }
 

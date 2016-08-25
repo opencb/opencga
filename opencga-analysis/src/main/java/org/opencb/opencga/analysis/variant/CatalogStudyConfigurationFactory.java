@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.storage;
+package org.opencb.opencga.analysis.variant;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.models.variant.VariantSource;

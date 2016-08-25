@@ -27,6 +27,7 @@ import java.util.Objects;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Deprecated
 public class LocalExecutorManager implements ExecutorManager {
     protected static Logger logger = LoggerFactory.getLogger(LocalExecutorManager.class);
 

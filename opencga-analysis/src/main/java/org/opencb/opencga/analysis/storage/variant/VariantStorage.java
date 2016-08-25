@@ -26,7 +26,7 @@ import org.opencb.opencga.analysis.JobFactory;
 import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
-import org.opencb.opencga.analysis.storage.CatalogStudyConfigurationFactory;
+import org.opencb.opencga.analysis.variant.CatalogStudyConfigurationFactory;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;

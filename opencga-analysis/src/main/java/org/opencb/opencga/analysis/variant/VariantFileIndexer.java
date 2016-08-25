@@ -37,6 +37,7 @@ import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,20 +87,19 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         objectMapper.writer()
                 .writeValue(outdir.resolve("job.status").toFile(), new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
 
-
         Thread hook = new Thread(() -> {
             try {
                 // If the status has not been changed by the method and is still running, we assume that the execution failed.
                 Job.JobStatus status = objectMapper.reader(Job.JobStatus.class).readValue(outdir.resolve("job.status").toFile());
                 if (status.getName().equalsIgnoreCase(Job.JobStatus.RUNNING)) {
-                    objectMapper.writer().writeValue(outdir.resolve("job.status").toFile(), new Job.JobStatus(Job.JobStatus.ERROR, "Job finished with an error."));
+                    objectMapper.writer().writeValue(outdir.resolve("job.status").toFile(), new Job.JobStatus(Job.JobStatus.ERROR,
+                            "Job finished with an error."));
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         });
         Runtime.getRuntime().addShutdownHook(hook);
-
 
         if (options == null) {
             options = new QueryOptions();
@@ -121,7 +121,6 @@ public class VariantFileIndexer extends AbstractFileIndexer {
 
         long studyIdByInputFileId = fileManager.getStudyId(inputFile.getId());
         Study study = catalogManager.getStudyManager().read(studyIdByInputFileId, QueryOptions.empty(), sessionId).getResult().get(0);
-
 
         // We read all input files from fileId. This can either be a single file and then we just use it,
         // or this can be a directory, in that case we use all VCF files in that directory or subdirectory
@@ -177,19 +176,33 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         variantStorageManager.getOptions().putAll(options);
 //        VariantStorageETL variantStorageETL = variantStorageManager.newStorageETL(true);
 
+        String fileStatus;
         List<File> filesToIndex;
-        if (!transform && load) {
-            // Just load the file
+        if ((transform && load) || (!transform && !load)) {
+            fileStatus = FileIndex.IndexStatus.INDEXING;
+            filesToIndex = filterTransformFiles(inputFiles);
+        } else if (transform) {
+            fileStatus = FileIndex.IndexStatus.TRANSFORMING;
+            filesToIndex = filterTransformFiles(inputFiles);
+        } else {
+            fileStatus = FileIndex.IndexStatus.LOADING;
             // First we need to get the origianl VCF files
             filesToIndex = filterLoadFiles(inputFiles, studyIdByInputFileId, sessionId);
-        } else {
-            // Index file
-            filesToIndex = filterTransformFiles(inputFiles);
         }
+
+//        if (!transform && load) {
+//            // Just load the file
+//            // First we need to get the origianl VCF files
+//            filesToIndex = filterLoadFiles(inputFiles, studyIdByInputFileId, sessionId);
+//        } else {
+//            // Index file
+//            filesToIndex = filterTransformFiles(inputFiles);
+//        }
 
         List<URI> fileUris = new ArrayList<>(filesToIndex.size());
         for (File file : filesToIndex) {
             fileUris.add(file.getUri());
+            fileManager.updateFileIndexStatus(file, fileStatus, sessionId);
         }
 
         List<StorageETLResult> storageETLResults = variantStorageManager.index(fileUris, outdir.toUri(), false, transform, load);
@@ -243,11 +256,21 @@ public class VariantFileIndexer extends AbstractFileIndexer {
             }
         }
 
+        // Update study configuration
+        try {
+            StudyConfigurationManager studyConfigurationManager = StorageManagerFactory.get()
+                    .getVariantStorageManager(dataStore.getStorageEngine())
+                    .getDBAdaptor(dataStore.getDbName()).getStudyConfigurationManager();
+            new CatalogStudyConfigurationFactory(catalogManager)
+                    .updateStudyConfigurationFromCatalog(studyIdByInputFileId, studyConfigurationManager, sessionId);
+        } catch (StorageManagerException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+            logger.error("An error occurred when trying to update the study configuration. Error {}", e.getMessage());
+            e.printStackTrace();
+        }
+
         objectMapper.writer()
                 .writeValue(outdir.resolve("job.status").toFile(), new Job.JobStatus(Job.JobStatus.DONE, "Job has just started"));
         Runtime.getRuntime().removeShutdownHook(hook);
-
-
     }
 
     private void updateDefaultCohorts(File file, Study study, QueryOptions options, String sessionId) throws CatalogException {

@@ -165,18 +165,20 @@ public class IndexDaemon extends MonitorParentDaemon {
             } catch (CatalogException e) {
                 logger.warn("Could not update job {} to status error", job.getId());
             }
+            closeSessionId(job);
         } else {
             String status = executorManager.status(tmpOutdirPath, job);
             if (!status.equalsIgnoreCase(Job.JobStatus.UNKNOWN) && !status.equalsIgnoreCase(Job.JobStatus.RUNNING)) {
                 registerStorageETLResults(job, tmpOutdirPath);
                 logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.RUNNING, status);
-                String sessionId = (String) job.getResourceManagerAttributes().get("sessionId");
+                String sessionId = (String) job.getAttributes().get("sessionId");
                 ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, sessionId);
                 try {
                     outputRecorder.recordJobOutputAndPostProcess(job, status);
                 } catch (CatalogException | IOException e) {
                     logger.error(e.getMessage());
                 }
+                closeSessionId(job);
             }
 
 //            Path jobStatusFile = tmpOutdirPath.resolve("job.status");
@@ -203,6 +205,27 @@ public class IndexDaemon extends MonitorParentDaemon {
 //                logger.debug("Call executor status not yet implemented.");
 ////                    executorManager.status(job).equalsIgnoreCase()
 //            }
+        }
+    }
+
+    private void closeSessionId(Job job) {
+        String sessionId = ((String) job.getAttributes().get("sessionId"));
+
+        String userId;
+        try {
+            userId = catalogManager.getUserManager().getUserId(sessionId);
+            catalogManager.getUserManager().logout(userId, sessionId);
+        } catch (CatalogException e) {
+            logger.error("An error occurred when trying to close the session id: {}", e.getMessage());
+        } finally {
+            // Remove the session id from the job attributes
+            job.getAttributes().remove("sessionId");
+            ObjectMap params = new ObjectMap(CatalogJobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
+            try {
+                catalogManager.getJobManager().update(job.getId(), params, QueryOptions.empty(), this.sessionId);
+            } catch (CatalogException e) {
+                logger.error("Could not remove session id from attributes of job {}. {}", job.getId(), e.getMessage());
+            }
         }
     }
 
@@ -338,10 +361,10 @@ public class IndexDaemon extends MonitorParentDaemon {
             Job.JobStatus jobStatus = new Job.JobStatus(Job.JobStatus.QUEUED, "The job is in the queue waiting to be executed");
             updateObjectMap.put(CatalogJobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
             updateObjectMap.put(CatalogJobDBAdaptor.QueryParams.COMMAND_LINE.key(), commandLine.toString());
+            job.getAttributes().put("sessionId", userSessionId);
 
             updateObjectMap.put(CatalogJobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
 
-            job.getResourceManagerAttributes().put("sessionId", userSessionId);
             job.getResourceManagerAttributes().put(AbstractExecutor.STDOUT, stdout);
             job.getResourceManagerAttributes().put(AbstractExecutor.STDERR, stderr);
             job.getResourceManagerAttributes().put(AbstractExecutor.OUTDIR, path.toString());
