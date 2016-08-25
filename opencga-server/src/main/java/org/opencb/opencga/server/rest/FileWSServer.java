@@ -33,6 +33,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
@@ -1278,6 +1279,22 @@ public class FileWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
         try {
             return createOkResponse(catalogManager.removeFileAcl(fileIdsStr, memberId, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{folderId}/scan")
+    @ApiOperation(value = "Scans a folder", position = 6)
+    public Response scan(@PathParam(value = "folderId") @FormDataParam("folderId") String folderIdStr,
+                         @ApiParam(value = "calculateChecksum") @QueryParam("calculateChecksum") @DefaultValue("false") boolean calculateChecksum) {
+        try {
+            long folderId = catalogManager.getFileId(folderIdStr, sessionId);
+            File directory = catalogManager.getFile(folderId, sessionId).first();
+            List<File> scan = new FileScanner(catalogManager)
+                    .scan(directory, null, FileScanner.FileScannerPolicy.REPLACE, calculateChecksum, false, sessionId);
+            return createOkResponse(new QueryResult<>("Scan", 0, scan.size(), scan.size(), "", "", scan));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

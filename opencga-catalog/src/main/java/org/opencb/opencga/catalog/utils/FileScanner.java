@@ -207,6 +207,9 @@ public class FileScanner {
             URI generatedFile = directoryToScan.relativize(uri);
             String filePath = URI.create(directory.getPath()).resolve(generatedFile).toString();
 //            String filePath = Paths.get(directory.getPath(), generatedFile.toString()).toString();
+            if (generatedFile.getPath().endsWith("/")) {
+                filePath += "/";
+            }
 
             Query query = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), filePath);
             QueryResult<File> searchFile = catalogManager.searchFile(studyId, query, sessionId);
