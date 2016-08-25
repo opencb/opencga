@@ -228,9 +228,16 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
         } else {
             mongoAnnotation = (Document) object.get(ANNOTATION_FIELD);
         }
-        if (mongoAnnotation != null) {
-            VariantAnnotation annotation = variantAnnotationConverter
-                    .convertToDataModelType(mongoAnnotation, object.get(CUSTOM_ANNOTATION_FIELD, Document.class));
+        Document customAnnotation = object.get(CUSTOM_ANNOTATION_FIELD, Document.class);
+        if (mongoAnnotation != null || customAnnotation != null) {
+            VariantAnnotation annotation;
+            if (mongoAnnotation != null) {
+                annotation = variantAnnotationConverter
+                        .convertToDataModelType(mongoAnnotation, customAnnotation);
+            } else {
+                annotation = new VariantAnnotation();
+                annotation.setAdditionalAttributes(variantAnnotationConverter.convertAdditionalAttributesToDataModelType(customAnnotation));
+            }
             annotation.setChromosome(variant.getChromosome());
             annotation.setAlternate(variant.getAlternate());
             annotation.setReference(variant.getReference());

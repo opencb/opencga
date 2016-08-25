@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
@@ -361,11 +362,11 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
      *
      * @param query       Region to update
      * @param name        Custom annotation name.
-     * @param annotation  Custom annotation for the region
+     * @param attribute   Custom annotation for the region
      * @param options     Other options
      * @return            Result of the insertion
      */
-    QueryResult updateCustomAnnotations(Query query, String name, ObjectMap annotation, QueryOptions options);
+    QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, QueryOptions options);
 
     QueryResult deleteAnnotation(String annotationId, Query query, QueryOptions queryOptions);
 

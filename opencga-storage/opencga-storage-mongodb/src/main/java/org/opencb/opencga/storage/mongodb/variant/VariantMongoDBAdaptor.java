@@ -35,6 +35,7 @@ import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.stats.VariantStats;
@@ -798,9 +799,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult updateCustomAnnotations(Query query, String name, ObjectMap annotation, QueryOptions options) {
+    public QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, QueryOptions options) {
         Document queryDocument = parseQuery(query);
-        Document updateDocument = Document.parse(annotation.toJson());
+        Document updateDocument = DocumentToVariantAnnotationConverter.convertToStorageType(attribute);
         return variantsCollection.update(queryDocument,
                 Updates.set(DocumentToVariantConverter.CUSTOM_ANNOTATION_FIELD + "." + name, updateDocument),
                 new QueryOptions(MULTI, true));
@@ -1114,7 +1115,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             if (query.containsKey(VariantQueryParams.ANNOT_CUSTOM.key())) {
                 String value = query.getString(VariantQueryParams.ANNOT_CUSTOM.key());
                 addCompListQueryFilter(DocumentToVariantConverter.CUSTOM_ANNOTATION_FIELD, value, builder, true);
-                System.out.println("builder.get() = " + builder.get());
             }
 
             if (query.containsKey(VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key())) {

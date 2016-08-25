@@ -317,7 +317,8 @@ public class DocumentToVariantAnnotationConverter
         }
 
         if (customAnnotation != null) {
-            va.setAdditionalAttributes(new HashMap<>(customAnnotation));
+            Map<String, AdditionalAttribute> additionalAttributes = convertAdditionalAttributesToDataModelType(customAnnotation);
+            va.setAdditionalAttributes(additionalAttributes);
         }
 
         return va;
@@ -390,6 +391,18 @@ public class DocumentToVariantAnnotationConverter
 
         return null;
 
+    }
+
+    public Map<String, AdditionalAttribute> convertAdditionalAttributesToDataModelType(Document customAnnotation) {
+        Map<String, AdditionalAttribute> attributeMap = new HashMap<>();
+        for (String key : customAnnotation.keySet()) {
+            Document document = customAnnotation.get(key, Document.class);
+            HashMap<String, String> map = new HashMap<>();
+            document.forEach((k, value) -> map.put(k, value.toString()));
+            AdditionalAttribute attribute = new AdditionalAttribute(map);
+            attributeMap.put(key, attribute);
+        }
+        return attributeMap;
     }
 
     @Override
@@ -584,6 +597,7 @@ public class DocumentToVariantAnnotationConverter
         return document;
     }
 
+
     private <T> List generateClinicalDBList(List<T> objectList) {
         List list = new ArrayList(objectList.size());
         if (objectList != null) {
@@ -629,5 +643,18 @@ public class DocumentToVariantAnnotationConverter
         return dbObject;
     }
 
+    public Document convertToStorageType(Map<String, AdditionalAttribute> attributes) {
+        Document document = new Document();
+        attributes.forEach((key, attribute) -> {
+            document.put(key, convertToStorageType(attribute));
+        });
+        return document;
+    }
+
+    public static Document convertToStorageType(AdditionalAttribute attribute) {
+        Document document = new Document();
+        document.putAll(attribute.getAttribute());
+        return document;
+    }
 
 }

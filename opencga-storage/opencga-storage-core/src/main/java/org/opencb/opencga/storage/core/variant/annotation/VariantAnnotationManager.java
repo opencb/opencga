@@ -24,6 +24,7 @@ import org.opencb.biodata.formats.io.FormatReaderWrapper;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -51,9 +52,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPInputStream;
@@ -261,7 +260,12 @@ public class VariantAnnotationManager {
         final int numConsumers = options.getInt(NUM_WRITERS, 6);
         final String key = options.getString(CUSTOM_ANNOTATION_KEY, "default");
 
-        ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numConsumers, batchSize, numConsumers * 2, true, false);
+        ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
+                .setNumTasks(numConsumers)
+                .setBatchSize(batchSize)
+                .setAbortOnFail(true)
+                .setSorted(false)
+                .build();
 
 
         Path path = Paths.get(uri);
@@ -275,8 +279,9 @@ public class VariantAnnotationManager {
                             for (Gff gff : gffList) {
                                 Region region = new Region(normalizeChromosome(gff.getSequenceName()), gff.getStart(), gff.getEnd());
                                 Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
-                                dbAdaptor.updateCustomAnnotations(query, key,
-                                        new ObjectMap("feature", gff.getFeature()), new QueryOptions());
+                                dbAdaptor.updateCustomAnnotations(
+                                        query, key, new AdditionalAttribute(Collections.singletonMap("feature", gff.getFeature())),
+                                        QueryOptions.empty());
                             }
                             return Collections.emptyList();
                         }, null, config);
@@ -298,10 +303,11 @@ public class VariantAnnotationManager {
                             for (Bed bed: bedList) {
                                 Region region = new Region(normalizeChromosome(bed.getChromosome()), bed.getStart(), bed.getEnd());
                                 Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
-                                ObjectMap annotation = new ObjectMap("name", bed.getName())
-                                        .append("score", bed.getScore())
-                                        .append("strand", bed.getStrand());
-                                dbAdaptor.updateCustomAnnotations(query, key, annotation, new QueryOptions());
+                                Map<String, String> annotation = new HashMap<>(3);
+                                annotation.put("name", bed.getName());
+                                annotation.put(("score"), String.valueOf(bed.getScore()));
+                                annotation.put(("strand"), bed.getStrand());
+                                dbAdaptor.updateCustomAnnotations(query, key, new AdditionalAttribute(annotation), QueryOptions.empty());
                             }
                             return Collections.emptyList();
                         }, null, config);
@@ -325,8 +331,9 @@ public class VariantAnnotationManager {
                         for (Variant variant : variantList) {
                             Region region = new Region(normalizeChromosome(variant.getChromosome()), variant.getStart(), variant.getEnd());
                             Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
-                            ObjectMap annotation = new ObjectMap("annotation", variant.getAnnotation());
-                            dbAdaptor.updateCustomAnnotations(query, key, annotation, new QueryOptions());
+                            Map<String, String> info = variant.getStudies().get(0).getFiles().get(0).getAttributes();
+                            AdditionalAttribute attribute = new AdditionalAttribute(info);
+                            dbAdaptor.updateCustomAnnotations(query, key, attribute, new QueryOptions());
                         }
                         return Collections.emptyList();
                     }, null, config);

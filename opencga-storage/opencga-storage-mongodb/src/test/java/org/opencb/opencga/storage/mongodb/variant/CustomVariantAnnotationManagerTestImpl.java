@@ -7,5 +7,8 @@ import org.opencb.opencga.storage.core.variant.annotation.CustomVariantAnnotatio
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CustomVariantAnnotationManagerTestImpl extends CustomVariantAnnotationManagerTest implements MongoVariantStorageManagerTestUtils{
+public class CustomVariantAnnotationManagerTestImpl
+        extends CustomVariantAnnotationManagerTest
+        implements MongoVariantStorageManagerTestUtils {
+
 }
