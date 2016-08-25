@@ -18,6 +18,7 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
@@ -98,15 +99,16 @@ public class ToolsCommandExecutor extends OpencgaCommandExecutor {
 
     private QueryResponse<Tool> search() throws CatalogException, IOException {
         logger.debug("Searching tool");
+        Query query = new Query();
         QueryOptions queryOptions = new QueryOptions();
         if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.id)) {
-            queryOptions.put("id", toolsCommandOptions.searchCommandOptions.id);
+            query.put("id", toolsCommandOptions.searchCommandOptions.id);
         }
         if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.userId)) {
-            queryOptions.put("userId", toolsCommandOptions.searchCommandOptions.userId);
+            query.put("userId", toolsCommandOptions.searchCommandOptions.userId);
         }
         if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.alias)) {
-            queryOptions.put("alias", toolsCommandOptions.searchCommandOptions.alias);
+            query.put("alias", toolsCommandOptions.searchCommandOptions.alias);
         }
 
         if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.include)) {
@@ -122,7 +124,7 @@ public class ToolsCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put(QueryOptions.SKIP, toolsCommandOptions.searchCommandOptions.skip);
         }
         queryOptions.put("count", toolsCommandOptions.searchCommandOptions.count);
-        return openCGAClient.getToolClient().get(toolsCommandOptions.searchCommandOptions.id, queryOptions);
+        return openCGAClient.getToolClient().search(query, queryOptions);
     }
 
     private QueryResponse<Tool> update() throws CatalogException, IOException {

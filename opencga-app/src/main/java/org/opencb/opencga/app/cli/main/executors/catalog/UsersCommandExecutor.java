@@ -45,11 +45,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         this.usersCommandOptions = usersCommandOptions;
     }
 
-    public UsersCommandExecutor(OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions, UserCommandOptions usersCommandOptions) {
 
-        super(commonOptions, getParsedSubCommand(usersCommandOptions.getjCommander()).startsWith("log"));
-        this.usersCommandOptions = usersCommandOptions;
-    }
 
     @Override
     public void execute() throws Exception {
@@ -68,6 +64,12 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "info":
                 queryResponse = info();
+                break;
+            case "delete":
+                delete();
+                break;
+            case "update":
+                queryResponse = update();
                 break;
             case "projects":
                 queryResponse = projects();
@@ -211,10 +213,39 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         logoutSessionFile();
 //        logoutSession();
     }
-    private void resetPasword(){
+
+    private void resetPasword() throws CatalogException, IOException {
         logger.debug("Resetting the user password and sending a new one to the e-mail stored in catalog.");
-        //TODO: in the ws not is required the email but in the UserClient the function resetPassowrd need the email.
-        // openCGAClient.getUserClient().resetPassword()
+        openCGAClient.getUserClient().resetPassword(new ObjectMap());
+    }
+
+    private void delete() throws CatalogException, IOException {
+        logger.debug("Deleting user");
+        openCGAClient.getUserClient().delete(usersCommandOptions.deleteCommandOptions.user, new ObjectMap());
+    }
+
+    private QueryResponse<User> update() throws CatalogException, IOException {
+        logger.debug("Updating user");
+
+        ObjectMap objectMap = new ObjectMap();
+        if (StringUtils.isNotEmpty(usersCommandOptions.updateCommandOptions.name)) {
+            objectMap.put(CatalogUserDBAdaptor.QueryParams.NAME.key(), usersCommandOptions.updateCommandOptions.name);
+        }
+        if (StringUtils.isNotEmpty(usersCommandOptions.updateCommandOptions.email)) {
+            objectMap.put(CatalogUserDBAdaptor.QueryParams.EMAIL.key(), usersCommandOptions.updateCommandOptions.email);
+        }
+        if (StringUtils.isNotEmpty(usersCommandOptions.updateCommandOptions.organization)) {
+            objectMap.put(CatalogUserDBAdaptor.QueryParams.ORGANIZATION.key(), usersCommandOptions.updateCommandOptions.organization);
+        }
+        if (StringUtils.isNotEmpty(usersCommandOptions.updateCommandOptions.attributes)) {
+            objectMap.put(CatalogUserDBAdaptor.QueryParams.ATTRIBUTES.key(), usersCommandOptions.updateCommandOptions.attributes);
+        }
+        if (StringUtils.isNotEmpty(usersCommandOptions.updateCommandOptions.configs)) {
+            objectMap.put("configs", usersCommandOptions.updateCommandOptions.configs);
+        }
+        return openCGAClient.getUserClient().update(usersCommandOptions.updateCommandOptions.user, objectMap);
+
+
     }
 
 }

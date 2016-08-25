@@ -124,6 +124,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
         String studyId = jobsCommandOptions.searchCommandOptions.studyId;
         String name = jobsCommandOptions.searchCommandOptions.name;
+        String toolName = jobsCommandOptions.searchCommandOptions.toolName;
         String status = jobsCommandOptions.searchCommandOptions.status;
         String ownerId = jobsCommandOptions.searchCommandOptions.ownerId;
         String date = jobsCommandOptions.searchCommandOptions.date;
@@ -141,6 +142,9 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         }
         if (StringUtils.isNotEmpty(name)) {
             query.put(CatalogJobDBAdaptor.QueryParams.NAME.key(), name);
+        }
+        if (StringUtils.isNotEmpty(toolName)) {
+            query.put(CatalogJobDBAdaptor.QueryParams.TOOL_NAME.key(), toolName);
         }
         if (StringUtils.isNotEmpty(status)) {
             query.put(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), status);
@@ -169,7 +173,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(skip)) {
             queryOptions.put(QueryOptions.SKIP, skip);
         }
-
+        queryOptions.put("count", jobsCommandOptions.searchCommandOptions.count);
         return openCGAClient.getJobClient().search(query, queryOptions);
     }
 
@@ -217,7 +221,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
             objectMap.put(CatalogJobDBAdaptor.QueryParams.ATTRIBUTES.key(), jobsCommandOptions.groupByCommandOptions.attributes);
         }
         return openCGAClient.getJobClient().groupBy(jobsCommandOptions.groupByCommandOptions.studyId,
-                jobsCommandOptions.groupByCommandOptions.by,objectMap);
+                jobsCommandOptions.groupByCommandOptions.fields,objectMap);
     }
 
 }

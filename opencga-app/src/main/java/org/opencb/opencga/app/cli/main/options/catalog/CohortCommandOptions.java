@@ -102,13 +102,11 @@ public class CohortCommandOptions {
         @Parameter(names = {"--description"}, description = "cohort description", required = false, arity = 1)
         public String description;
 
-        @Parameter(names = {"--sample-ids"}, description = "Sample ids for the cohort (CSV)",
-                required = false, arity = 1)
+        @Parameter(names = {"--sample-ids"}, description = "Sample ids for the cohort (CSV)", required = false, arity = 1)
         public String sampleIds;
 
         @Parameter(names = {"--variable"}, description = "Categorical variable name to use to create cohorts, must go together the "
-                + "parameter variable-set-id",
-                required = false, arity = 1)
+                + "parameter variable-set-id", required = false, arity = 1)
         public String variable;
     }
 
@@ -142,8 +140,7 @@ public class CohortCommandOptions {
         public boolean count;
     }
 
-    @Parameters(commandNames = {"stats"},
-            commandDescription = "Calculate variant stats for a set of cohorts.")
+    @Parameters(commandNames = {"stats"}, commandDescription = "Calculate variant stats for a set of cohorts.")
     public class StatsCommandOptions extends BaseCohortsCommand {
 
         @Parameter(names = {"--calculate"}, description = "Calculate cohort stats", arity = 0)
@@ -155,8 +152,7 @@ public class CohortCommandOptions {
         @Parameter(names = {"--log"}, description = "Log level", required = false, arity = 1)
         public String log = "";
 
-        @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file",
-                required = false, arity = 1)
+        @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
         public String outdirId = "";
 
     }
@@ -191,10 +187,8 @@ public class CohortCommandOptions {
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--by"},
-                description = "Comma separated list of fields by which to group by.",
-                required = true, arity = 1)
-        public String by;
+        @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
+        public String fields;
 
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;

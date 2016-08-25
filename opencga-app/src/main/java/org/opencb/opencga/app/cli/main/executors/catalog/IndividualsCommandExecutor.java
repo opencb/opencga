@@ -139,9 +139,9 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(individualsCommandOptions.createCommandOptions.motherId)) {
             objectMap.put(CatalogIndividualDBAdaptor.QueryParams.MOTHER_ID.key(), individualsCommandOptions.createCommandOptions.motherId);
         }
-        if (StringUtils.isNotEmpty(individualsCommandOptions.createCommandOptions.sex)) {
-            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.createCommandOptions.sex);
-        }
+
+        objectMap.put(CatalogIndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.createCommandOptions.sex);
+
 
         return openCGAClient.getIndividualClient().create(individualsCommandOptions.createCommandOptions.studyId,
                 individualsCommandOptions.createCommandOptions.name, objectMap);
@@ -209,6 +209,13 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
                     individualsCommandOptions.searchCommandOptions.annotationSetName);
         }
 
+        if (StringUtils.isNotEmpty(individualsCommandOptions.searchCommandOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, individualsCommandOptions.searchCommandOptions.include);
+        }
+        if (StringUtils.isNotEmpty(individualsCommandOptions.searchCommandOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, individualsCommandOptions.searchCommandOptions.exclude);
+        }
+
         if (StringUtils.isNotEmpty(individualsCommandOptions.searchCommandOptions.skip)) {
             queryOptions.put(QueryOptions.SKIP, individualsCommandOptions.searchCommandOptions.skip);
         }
@@ -216,6 +223,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(individualsCommandOptions.searchCommandOptions.limit)) {
             queryOptions.put(QueryOptions.LIMIT, individualsCommandOptions.searchCommandOptions.limit);
         }
+        queryOptions.put("count", individualsCommandOptions.searchCommandOptions.count);
 
         return openCGAClient.getIndividualClient().search(query, queryOptions);
     }
@@ -241,9 +249,9 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(individualsCommandOptions.updateCommandOptions.motherId)) {
             objectMap.put(CatalogIndividualDBAdaptor.QueryParams.MOTHER_ID.key(), individualsCommandOptions.updateCommandOptions.motherId);
         }
-        if (StringUtils.isNotEmpty(individualsCommandOptions.updateCommandOptions.sex)) {
-            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.updateCommandOptions.sex);
-        }
+
+        objectMap.put(CatalogIndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.updateCommandOptions.sex);
+
         if (StringUtils.isNotEmpty(individualsCommandOptions.updateCommandOptions.ethnicity)) {
             objectMap.put(CatalogIndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.updateCommandOptions.ethnicity);
         }
@@ -277,9 +285,9 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(individualsCommandOptions.groupByCommandOptions.family)) {
             objectMap.put(CatalogIndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.groupByCommandOptions.family);
         }
-        if (StringUtils.isNotEmpty(individualsCommandOptions.groupByCommandOptions.sex)) {
-            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.groupByCommandOptions.sex);
-        }
+
+        objectMap.put(CatalogIndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.groupByCommandOptions.sex);
+
         if (StringUtils.isNotEmpty(individualsCommandOptions.groupByCommandOptions.ethnicity)) {
             objectMap.put(CatalogIndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.groupByCommandOptions.ethnicity);
         }
@@ -304,7 +312,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         }
 
         return openCGAClient.getIndividualClient().groupBy(
-                individualsCommandOptions.groupByCommandOptions.studyId, individualsCommandOptions.groupByCommandOptions.by, objectMap);
+                individualsCommandOptions.groupByCommandOptions.studyId, individualsCommandOptions.groupByCommandOptions.fields, objectMap);
     }
 
 }

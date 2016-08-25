@@ -598,10 +598,10 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                     studiesCommandOptions.variantsCommandOptions.missingGenotypes);
         }
 
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.annotationExists)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(),
-                    studiesCommandOptions.variantsCommandOptions.annotationExists);
-        }
+
+        queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(),
+                studiesCommandOptions.variantsCommandOptions.annotationExists);
+
 
         if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.genotype)) {
             queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.GENOTYPE.key(),
@@ -700,21 +700,15 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                     studiesCommandOptions.variantsCommandOptions.unknownGenotype);
         }
 
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.samplesMetadata)) {
-            queryOptions.put("samplesMetadata", studiesCommandOptions.variantsCommandOptions.samplesMetadata);
-        }
 
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.sort)) {
-            queryOptions.put("sort", studiesCommandOptions.variantsCommandOptions.sort);
-        }
+        queryOptions.put("samplesMetadata", studiesCommandOptions.variantsCommandOptions.samplesMetadata);
+        queryOptions.put("sort", studiesCommandOptions.variantsCommandOptions.sort);
 
         if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.groupBy)) {
             queryOptions.put("groupBy", studiesCommandOptions.variantsCommandOptions.groupBy);
         }
 
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.histogram)) {
-            queryOptions.put("histogram", studiesCommandOptions.variantsCommandOptions.histogram);
-        }
+        queryOptions.put("histogram", studiesCommandOptions.variantsCommandOptions.histogram);
 
         if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.interval)) {
             queryOptions.put("interval", studiesCommandOptions.variantsCommandOptions.interval);

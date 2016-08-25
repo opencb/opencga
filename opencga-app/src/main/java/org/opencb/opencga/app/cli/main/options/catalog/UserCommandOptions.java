@@ -14,6 +14,8 @@ public class UserCommandOptions {
 
     public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
+    public UpdateCommandOptions updateCommandOptions;
+    public DeleteCommandOptions deleteCommandOptions;
     public ProjectsCommandOptions projectsCommandOptions;
     public LoginCommandOptions loginCommandOptions;
     public LogoutCommandOptions logoutCommandOptions;
@@ -28,6 +30,8 @@ public class UserCommandOptions {
 
         this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
+        this.updateCommandOptions = new UpdateCommandOptions();
+        this.deleteCommandOptions = new DeleteCommandOptions();
         this.projectsCommandOptions = new ProjectsCommandOptions();
         this.loginCommandOptions = new LoginCommandOptions();
         this.logoutCommandOptions = new LogoutCommandOptions();
@@ -53,7 +57,7 @@ public class UserCommandOptions {
         @Parameter(names = {"--user-name"}, description = "User name", required = true, arity = 1)
         public String userName;
 
-        @Parameter(names = {"--user-password"}, description = "User password", required = true,  password = true, arity = 0)
+        @Parameter(names = {"--user-password"}, description = "User password", required = true,  password = true, arity = 1)
         public String userPassword;
 
         @Parameter(names = {"--user-email"}, description = "User email", required = true, arity = 1)
@@ -90,6 +94,30 @@ public class UserCommandOptions {
         public String lastModified;
     }
 
+    @Parameters(commandNames = {"update"}, commandDescription = "Update some user attributes using GET method")
+    public class UpdateCommandOptions extends BaseUserCommand {
+
+        @Parameter(names = {"--name"}, description = "Name", arity = 1)
+        public String name;
+
+        @Parameter(names = {"--email"}, description = "Email", arity = 1)
+        public String email;
+
+        @Parameter(names = {"--organization"}, description = "Organization", arity = 1)
+        public String organization;
+
+        @Parameter(names = {"--attributes"}, description = "Attributes", arity = 1)
+        public String attributes;
+
+        @Parameter(names = {"--configs"}, description = "Configs", arity = 1)
+        public String configs;
+
+    }
+
+    @Parameters(commandNames = {"delete"}, commandDescription = "Delete an user [NO TESTED]")
+    public class DeleteCommandOptions extends BaseUserCommand {
+
+    }
 
     @Parameters(commandNames = {"projects"}, commandDescription = "List all projects and studies from a selected user")
     public class ProjectsCommandOptions extends BaseUserCommand {

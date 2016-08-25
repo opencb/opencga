@@ -89,8 +89,7 @@ public class UserClient extends AbstractParentClient<User, User> {
         return execute;
     }
 
-    public QueryResponse<User> resetPassword(String email, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "email", email);
+    public QueryResponse<User> resetPassword(ObjectMap params) throws CatalogException, IOException {
         return execute(USERS_URL, getUserId(), "change-password", params, GET, User.class);
     }
 

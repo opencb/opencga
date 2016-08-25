@@ -255,7 +255,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             objectMap.put(CatalogCohortDBAdaptor.QueryParams.NATTRIBUTES.key(), cohortsCommandOptions.groupByCommandOptions.nattributes);
         }
         return openCGAClient.getCohortClient().groupBy(cohortsCommandOptions.groupByCommandOptions.studyId,
-                cohortsCommandOptions.groupByCommandOptions.by,objectMap);
+                cohortsCommandOptions.groupByCommandOptions.fields,objectMap);
     }
 
 }

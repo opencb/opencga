@@ -281,7 +281,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
                     samplesCommandOptions.groupByCommandOptions.annotation);
         }
         return openCGAClient.getSampleClient().groupBy(samplesCommandOptions.groupByCommandOptions.studyId,
-                samplesCommandOptions.groupByCommandOptions.by,objectMap);
+                samplesCommandOptions.groupByCommandOptions.fields,objectMap);
     }
 
 }

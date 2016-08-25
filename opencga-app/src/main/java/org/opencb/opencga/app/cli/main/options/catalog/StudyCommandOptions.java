@@ -483,8 +483,8 @@ public class StudyCommandOptions {
         public String missingGenotypes;
 
         @Parameter(names = {"--annotation-exists"}, description = "Specify if the variant annotation must exists.",
-                arity = 1)
-        public String annotationExists;
+                arity = 0)
+        public boolean annotationExists;
 
         @Parameter(names = {"--genotype"}, description = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}"
                 + "(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1", arity = 1)
@@ -562,22 +562,22 @@ public class StudyCommandOptions {
         public String unknownGenotype;
 
         @Parameter(names = {"--samples-metadata"}, description = "Returns the samples metadata group by studyId, instead of the variants",
-                arity = 1)
-        public String samplesMetadata;
+                arity = 0)
+        public boolean samplesMetadata;
 
-        @Parameter(names = {"--sort"}, description = "Sort the results", arity = 1)
-        public String sort;
+        @Parameter(names = {"--sort"}, description = "Sort the results", arity = 0)
+        public boolean sort;
 
         @Parameter(names = {"--group-by"}, description = "Group variants by: [ct, gene, ensemblGene]", arity = 1)
         public String groupBy;
 
-        @Parameter(names = {"--count"}, description = "Count results", arity = 1)
-        public String count;
+        @Parameter(names = {"--count"}, description = "Count results", arity = 0)
+        public boolean count;
 
-        @Parameter(names = {"--histogram"}, description = "Histogram interval size, default:2000", arity = 1)
-        public String histogram;
+        @Parameter(names = {"--histogram"}, description = "Calculate histogram. Requires one region.", arity = 0)
+        public boolean histogram;
 
-        @Parameter(names = {"--interval"}, description = "Variants in specific files", arity = 1)
+        @Parameter(names = {"--interval"}, description = "Histogram interval size. Default:2000", arity = 1)
         public String interval;
 
         @Parameter(names = {"--merge"}, description = "Merge results", arity = 1)

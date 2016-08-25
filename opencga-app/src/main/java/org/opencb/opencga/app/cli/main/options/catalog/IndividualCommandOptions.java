@@ -8,6 +8,7 @@ import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
+import org.opencb.opencga.catalog.models.Individual;
 
 /**
  * Created by sgallego on 6/14/16.
@@ -78,7 +79,6 @@ public class IndividualCommandOptions {
         public String id;
     }
 
-
     @Parameters(commandNames = {"create"}, commandDescription = "Create sample.")
     public class CreateCommandOptions {
 
@@ -100,10 +100,9 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--mother-id"}, description = "MotherId", required = false, arity = 1)
         public String motherId;
 
-        @Parameter(names = {"--sex"}, description = "Sex", required = false)
-        public String sex;
+        @Parameter(names = {"--sex"}, description = "Sex. (MALE, FEMALE, UNKNOWN, UNDETERMINED). Default: UNKNOWN", required = false)
+        public Individual.Sex sex = Individual.Sex.UNKNOWN;
     }
-
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get individual information")
     public class InfoCommandOptions extends BaseIndividualsCommand {
@@ -189,7 +188,7 @@ public class IndividualCommandOptions {
         public String family;
 
         @Parameter(names = {"--sex"}, description = "Sex", required = false)
-        public String sex;
+        public Individual.Sex sex = Individual.Sex.UNKNOWN;
 
         @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
         public String ethnicity;
@@ -201,23 +200,19 @@ public class IndividualCommandOptions {
 
     }
 
-
     @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy cohort")
     public class GroupByCommandOptions {
 
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--by"},
-                description = "Comma separated list of fields by which to group by.",
-                required = true, arity = 1)
-        public String by;
+        @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
+        public String fields;
 
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
-        @Parameter(names = {"--ids"}, description = "Comma separated list of ids.",
-                required = false, arity = 1)
+        @Parameter(names = {"--ids"}, description = "Comma separated list of ids.", required = false, arity = 1)
         public String id;
 
         @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 0)
@@ -233,7 +228,7 @@ public class IndividualCommandOptions {
         public String family;
 
         @Parameter(names = {"--sex"}, description = "Sex", required = false)
-        public String sex;
+        public Individual.Sex sex = Individual.Sex.UNKNOWN;
 
         @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
         public String ethnicity;
