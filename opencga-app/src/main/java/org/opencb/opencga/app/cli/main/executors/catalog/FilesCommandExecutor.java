@@ -217,7 +217,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
     private QueryResponse search() throws CatalogException, IOException {
         logger.debug("Searching files");
-        //FIXME check and put the correct format for type and bioformat. See StudiesCommandExecutor search
+        //FIXME check and put the correct format for type and bioformat. See StudiesCommandExecutor search param type. Is better
         Query query = new Query();
         QueryOptions queryOptions = new QueryOptions();
 

@@ -702,7 +702,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
 
         queryOptions.put("samplesMetadata", studiesCommandOptions.variantsCommandOptions.samplesMetadata);
-        queryOptions.put("sort", studiesCommandOptions.variantsCommandOptions.sort);
+        queryOptions.put(QueryOptions.SORT, studiesCommandOptions.variantsCommandOptions.sort);
 
         if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.groupBy)) {
             queryOptions.put("groupBy", studiesCommandOptions.variantsCommandOptions.groupBy);
