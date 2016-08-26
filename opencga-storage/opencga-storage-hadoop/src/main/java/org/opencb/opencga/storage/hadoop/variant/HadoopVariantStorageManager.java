@@ -597,7 +597,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
                 }
             }
 
-            Path metaPath = new Path(VariantReaderUtils.getMetaFromInputFile(input.toString()));
+            Path metaPath = new Path(VariantReaderUtils.getMetaFromTransformedFile(input.toString()));
             FileSystem fs = null;
             try {
                 fs = FileSystem.get(conf);

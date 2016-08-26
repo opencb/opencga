@@ -66,7 +66,7 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
         Path input = Paths.get(inputUri.getPath());
         String table = archiveTableCredentials.getTable();
         String fileName = input.getFileName().toString();
-        Path sourcePath = input.getParent().resolve(VariantReaderUtils.getMetaFromInputFile(fileName));
+        Path sourcePath = input.getParent().resolve(VariantReaderUtils.getMetaFromTransformedFile(fileName));
 
         if (!VariantReaderUtils.isProto(fileName)) {
             throw new NotImplementedException("Direct loading only available for PROTO files.");

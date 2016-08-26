@@ -298,7 +298,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
                     logger.info("Copied to hdfs in {}s", (System.currentTimeMillis() - startTime) / 1000.0);
 
                     startTime = System.currentTimeMillis();
-                    URI fileInput = URI.create(VariantReaderUtils.getMetaFromInputFile(input.toString()));
+                    URI fileInput = URI.create(VariantReaderUtils.getMetaFromTransformedFile(input.toString()));
                     org.apache.hadoop.fs.Path fileOutputPath = new org.apache.hadoop.fs.Path(
                             output.resolve(Paths.get(fileInput.getPath()).getFileName().toString()));
                     logger.info("Copy from {} to {}", new org.apache.hadoop.fs.Path(fileInput).toUri(), fileOutputPath.toUri());

@@ -237,7 +237,7 @@ public abstract class VariantStorageETL implements StorageETL {
 
         Path outputMalformedVariants = output.resolve(fileName + "." + VariantReaderUtils.MALFORMED_FILE + ".txt");
         Path outputVariantsFile = output.resolve(fileName + "." + VariantReaderUtils.VARIANTS_FILE + "." + format + extension);
-        Path outputMetaFile = output.resolve(fileName + "." + VariantReaderUtils.METADATA_FILE_FORMAT_GZ);
+        Path outputMetaFile = VariantReaderUtils.getMetaFromTransformedFile(outputVariantsFile);
 
         // Close at the end!
         final MalformedVariantHandler malformedHandler;

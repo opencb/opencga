@@ -5,18 +5,18 @@ import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.tools.variant.VariantFileUtils;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.zip.GZIPInputStream;
+import java.util.regex.Pattern;
 
 /**
  * Created on 31/03/16.
@@ -30,7 +30,9 @@ public class VariantReaderUtils {
     public static final String METADATA_FILE = "file";
     public static final String METADATA_FORMAT = "json";
     public static final String METADATA_FILE_FORMAT_GZ = METADATA_FILE + "." + METADATA_FORMAT + ".gz";
-    public static final String METADATA_FILE_FORMAT = METADATA_FILE + "." + METADATA_FORMAT;
+
+    private static final Pattern VALID_META = Pattern.compile("^.+\\." + METADATA_FILE + "\\." + METADATA_FORMAT + "\\.gz$");
+    private static final Pattern VALID_VARIANTS = Pattern.compile("^.+\\." + VARIANTS_FILE + "\\.(avro|json|proto)(\\.(gz|snappy))?$");
 
     /**
      * Get a variant data reader depending on the type of the input file.
@@ -60,7 +62,7 @@ public class VariantReaderUtils {
     protected static VariantJsonReader getVariantJsonReader(Path input, VariantSource source) throws StorageManagerException {
         VariantJsonReader variantJsonReader;
         if (isJson(input.toString())) {
-            String sourceFile = getMetaFromInputFile(input.toAbsolutePath().toString());
+            String sourceFile = getMetaFromTransformedFile(input.toAbsolutePath().toString());
             variantJsonReader = new VariantJsonReader(source, input.toAbsolutePath().toString(), sourceFile);
         } else {
             throw variantInputNotSupported(input);
@@ -71,7 +73,7 @@ public class VariantReaderUtils {
     protected static VariantAvroReader getVariantAvroReader(Path input, VariantSource source) throws StorageManagerException {
         VariantAvroReader variantAvroReader;
         if (isAvro(input.toString())) {
-            String sourceFile = getMetaFromInputFile(input.toAbsolutePath().toString());
+            String sourceFile = getMetaFromTransformedFile(input.toAbsolutePath().toString());
             variantAvroReader = new VariantAvroReader(input.toAbsolutePath().toFile(), new File(sourceFile), source);
         } else {
             throw variantInputNotSupported(input);
@@ -79,10 +81,14 @@ public class VariantReaderUtils {
         return variantAvroReader;
     }
 
-    public static String getMetaFromInputFile(String input) {
-        return input.replace(VARIANTS_FILE + ".", METADATA_FILE + ".")
-                .replace(METADATA_FILE + ".avro", METADATA_FILE_FORMAT)
-                .replace(METADATA_FILE + ".proto", METADATA_FILE_FORMAT);
+    public static Path getMetaFromTransformedFile(Path variantsFile) {
+        return Paths.get(getMetaFromTransformedFile(variantsFile.toString()));
+    }
+
+    public static String getMetaFromTransformedFile(String variantsFile) {
+        checkTransformedVariants(variantsFile);
+        int idx = variantsFile.indexOf(VARIANTS_FILE);
+        return new StringBuilder().append(variantsFile, 0, idx).append(METADATA_FILE_FORMAT_GZ).toString();
     }
 
     /**
@@ -124,11 +130,8 @@ public class VariantReaderUtils {
         }
 
         // If it's a sourceFile
-        if (input.toString().endsWith(METADATA_FILE_FORMAT_GZ) || input.toString().endsWith(METADATA_FILE_FORMAT)) {
-            boolean gzip = input.toString().endsWith(METADATA_FILE_FORMAT_GZ);
-            try (InputStream inputStream = gzip
-                    ? new GZIPInputStream(new FileInputStream(input.toFile()))
-                    : new FileInputStream(input.toFile())) {
+        if (input.toString().endsWith(METADATA_FILE_FORMAT_GZ)) {
+            try (InputStream inputStream = FileUtils.newInputStream(input)) {
                 return VariantReaderUtils.readVariantSource(inputStream);
             } catch (IOException | RuntimeException e) {
                 throw new StorageManagerException("Unable to read VariantSource", e);
@@ -170,5 +173,24 @@ public class VariantReaderUtils {
         return false;
     }
 
+    public static void checkTransformedVariants(String file) {
+        if (!isTransformedVariants(file)){
+            throw new IllegalArgumentException("Not a valid transformed variants file : " + file);
+        }
+    }
+
+    public static boolean isTransformedVariants(String file) {
+        return VALID_VARIANTS.matcher(file).find();
+    }
+
+    public static void checkMetaFile(String file) {
+        if (!isMetaFile(file)){
+            throw new IllegalArgumentException("Not a valid transformed variants metadata file : " + file);
+        }
+    }
+
+    public static boolean isMetaFile(String file) {
+        return VALID_META.matcher(file).find();
+    }
 
 }
