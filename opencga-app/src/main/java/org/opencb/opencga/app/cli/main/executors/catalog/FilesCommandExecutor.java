@@ -224,7 +224,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         o.putIfNotNull("outDir", filesCommandOptions.indexCommandOptions.outdir);
         o.putIfNotNull("transform", filesCommandOptions.indexCommandOptions.transform);
         o.putIfNotNull("load", filesCommandOptions.indexCommandOptions.load);
-        o.putIfNotNull("excludeGenotypes", filesCommandOptions.indexCommandOptions.excludeGenotype);
         o.putIfNotNull("includeExtraFields", filesCommandOptions.indexCommandOptions.extraFields);
         o.putIfNotNull("aggregated", filesCommandOptions.indexCommandOptions.aggregated);
         o.putIfNotNull("calculateStats", filesCommandOptions.indexCommandOptions.calculateStats);

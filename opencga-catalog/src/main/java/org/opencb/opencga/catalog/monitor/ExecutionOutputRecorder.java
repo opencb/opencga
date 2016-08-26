@@ -27,11 +27,13 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.utils.FileScanner;
+import org.opencb.opencga.core.common.UriUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -65,9 +67,11 @@ public class ExecutionOutputRecorder {
 
     }
 
-    public void recordJobOutputAndPostProcess(Job job, String status) throws CatalogException, IOException {
+    public void recordJobOutputAndPostProcess(Job job, String status) throws CatalogException, IOException, URISyntaxException {
         /** Modifies the job to set the output and endTime. **/
-        Path tmpOutdirPath = Paths.get(catalogManager.getCatalogConfiguration().getTempJobsDir(), "J_" + job.getId());
+        URI uri = UriUtils.createUri(catalogManager.getCatalogConfiguration().getTempJobsDir());
+        Path tmpOutdirPath = Paths.get(uri.getPath()).resolve("J_" + job.getId());
+//        Path tmpOutdirPath = Paths.get(catalogManager.getCatalogConfiguration().getTempJobsDir(), "J_" + job.getId());
         this.ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutdirPath.toUri());
         recordJobOutput(job, tmpOutdirPath);
         updateJobStatus(job, new Job.JobStatus(status));
@@ -114,6 +118,7 @@ public class ExecutionOutputRecorder {
         FileScanner fileScanner = new FileScanner(catalogManager);
         List<File> files;
         try {
+            logger.info("Scanning files from {} to move to {}", outDir.getPath(), tmpOutdirPath);
             files = fileScanner.scan(outDir, tmpOutDirUri, fileScannerPolicy, calculateChecksum, true, job.getId(), sessionId);
         } catch (IOException e) {
             logger.warn("IOException when scanning temporal directory. Error: {}", e.getMessage());

@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 
 /**
  * Created by imedina on 16/06/16.
@@ -59,14 +60,15 @@ public class MonitorService {
     protected static Logger logger;
 
 
-    public MonitorService(String password, CatalogConfiguration catalogConfiguration, String appHome) throws IOException {
+    public MonitorService(String password, CatalogConfiguration catalogConfiguration, String appHome)
+            throws IOException, URISyntaxException {
         this.catalogConfiguration = catalogConfiguration;
         this.appHome = appHome;
 
         init(password);
     }
 
-    private void init(String password) throws IOException {
+    private void init(String password) throws IOException, URISyntaxException {
         logger = LoggerFactory.getLogger(this.getClass());
 
         try {

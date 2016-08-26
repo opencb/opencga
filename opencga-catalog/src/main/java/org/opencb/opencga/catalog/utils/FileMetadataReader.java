@@ -426,6 +426,7 @@ public class FileMetadataReader {
      * @param sessionId     User sessionId
      * @throws CatalogException if a Catalog error occurs
      */
+    @Deprecated
     public void updateVariantFileStats(Job job, String sessionId) throws CatalogException {
         long studyId = catalogManager.getStudyIdByJobId(job.getId());
         Query query = new Query()

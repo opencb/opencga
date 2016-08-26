@@ -599,7 +599,6 @@ public class FileWSServer extends OpenCGAWSServer {
                           @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr,
                           @ApiParam("Boolean indicating that only the transform step will be run") @DefaultValue("false") @QueryParam("transform") boolean transform,
                           @ApiParam("Boolean indicating that only the load step will be run") @DefaultValue("false") @QueryParam("load") boolean load,
-                          @ApiParam("Boolean indicating to exclude the genotype information") @DefaultValue("false") @QueryParam("excludeGenotypes") boolean excludeGenotypes,
                           @ApiParam("Comma separated list of fields to be include in the index") @QueryParam("includeExtraFields") String includeExtraFields,
                           @ApiParam("Type of aggregated VCF file: none, basic, EVS or ExAC") @DefaultValue("none") @QueryParam("aggregated") String aggregated,
                           @ApiParam("Calculate indexed variants statistics after the load step") @DefaultValue("false") @QueryParam("calculateStats") boolean calculateStats,
@@ -611,7 +610,6 @@ public class FileWSServer extends OpenCGAWSServer {
         addParamIfNotNull(params, "outdir", outDirStr);
         addParamIfTrue(params, "transform", transform);
         addParamIfTrue(params, "load", load);
-        addParamIfTrue(params, "exclude-genotypes", excludeGenotypes);
         addParamIfNotNull(params, "include-extra-fields", includeExtraFields);
         addParamIfNotNull(params, "aggregated", aggregated);
         addParamIfTrue(params, "calculate-stats", calculateStats);

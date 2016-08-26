@@ -624,6 +624,17 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
+    public QueryResult<Long> count(Query query, String sessionId) throws CatalogException {
+        // Check the user exists in catalog
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        if (query == null) {
+            return new QueryResult<>("count");
+        }
+
+        return fileDBAdaptor.count(query);
+    }
+
+    @Override
     public QueryResult<File> readAll(String path, boolean recursive, Query query, QueryOptions options, String sessionId)
             throws CatalogException {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
@@ -2023,7 +2034,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                 if (!path.endsWith("/")) {
                     path = path + "/";
                 }
-                // It is a path, so we will try to create a folder
+                // It is a path, so we will try to create the folder
                 createFolder(studyId, path, new File.FileStatus(), true, "", QueryOptions.empty(), sessionId);
                 outDirId = getFileId(userId, path);
                 logger.info("Outdir {} -> {}", outDirId, path);
@@ -2093,6 +2104,10 @@ public class FileManager extends AbstractManager implements IFileManager {
 
                     fileIdList.add(file.first().getId());
                 }
+            }
+
+            if (fileIdList.size() == 0) {
+                throw new CatalogException("Cannot send to index. No files could be found to be indexed.");
             }
 
             String fileIds = StringUtils.join(fileIdList, ",");

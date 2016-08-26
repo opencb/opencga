@@ -96,6 +96,8 @@ public interface IFileManager extends ResourceManager<Long, File> {
 
     QueryResult<File> readAll(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
+    QueryResult<Long> count(Query query, String sessionId) throws CatalogException;
+
     /**
      * Look for files inside the path.
      *

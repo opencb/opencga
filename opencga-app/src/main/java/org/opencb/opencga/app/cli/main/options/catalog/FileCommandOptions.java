@@ -260,10 +260,6 @@ public class FileCommandOptions {
         @Parameter(names = {"-o", "--outdir"}, description = "Catalog directory where transformed index files will be stored", arity = 1)
         public String outdir;
 
-        @Deprecated
-        @Parameter(names = {"--exclude-genotypes"}, description = "Index excluding the genotype information [DEPRECATED]")
-        public boolean excludeGenotype;
-
         @Parameter(names = {"--include-extra-fields"}, description = "Index including other genotype fields [CSV]")
         public String extraFields;
 
