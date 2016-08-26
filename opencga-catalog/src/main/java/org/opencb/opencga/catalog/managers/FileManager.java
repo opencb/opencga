@@ -27,8 +27,7 @@ import org.opencb.opencga.catalog.models.acls.permissions.DatasetAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
-import org.opencb.opencga.catalog.utils.BioformatDetector;
-import org.opencb.opencga.catalog.utils.FormatDetector;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
@@ -53,6 +52,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     private static final Comparator<File> ROOT_LAST_COMPARATOR;
 
     protected static Logger logger;
+    private FileMetadataReader fileMetadataReader;
 
     public static final String SKIP_TRASH = "SKIP_TRASH";
     public static final String DELETE_EXTERNAL_FILES = "DELETE_EXTERNAL_FILES";
@@ -81,6 +81,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                        CatalogIOManagerFactory ioManagerFactory, CatalogConfiguration catalogConfiguration) {
         super(authorizationManager, authenticationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
                 catalogConfiguration);
+        fileMetadataReader = new FileMetadataReader(this.catalogManager);
     }
 
     public static List<String> getParentPaths(String filePath) {
@@ -1258,7 +1259,6 @@ public class FileManager extends AbstractManager implements IFileManager {
                             Collections.emptyList(), -1, Collections.emptyList(), Collections.emptyList(), null, Collections.emptyMap(),
                             Collections.emptyMap());
                     fileDBAdaptor.createFile(studyId, folder, new QueryOptions());
-
                 } else {
                     throw new CatalogException("The path " + catalogPath + " does not exist in catalog.");
                 }
@@ -1281,14 +1281,16 @@ public class FileManager extends AbstractManager implements IFileManager {
             // Create the file
             if (fileDBAdaptor.count(query).first() == 0) {
                 long diskUsage = Files.size(Paths.get(uriOrigin));
-                File.Bioformat bioformat = BioformatDetector.detect(uriOrigin);
-                File.Format format = FormatDetector.detect(uriOrigin);
+//                File.Bioformat bioformat = BioformatDetector.detect(uriOrigin);
+//                File.Format format = FormatDetector.detect(uriOrigin);
 
-                File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, format, bioformat, uriOrigin,
-                        filePath.toString(), userId, TimeUtils.getTime(), TimeUtils.getTime(), description,
+                File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.NONE,
+                        uriOrigin, filePath.toString(), userId, TimeUtils.getTime(), TimeUtils.getTime(), description,
                         new File.FileStatus(File.FileStatus.READY), true, diskUsage, -1, Collections.emptyList(), -1,
                         Collections.emptyList(), Collections.emptyList(), null, Collections.emptyMap(), Collections.emptyMap());
-                return fileDBAdaptor.createFile(studyId, subfile, new QueryOptions());
+                QueryResult<File> file = fileDBAdaptor.createFile(studyId, subfile, new QueryOptions());
+                fileMetadataReader.setMetadataInformation(file.first(), file.first().getUri(), QueryOptions.empty(), sessionId, false);
+                return file;
             } else {
                 throw new CatalogException("Cannot link " + filePath.getFileName().toString() + ". A file with the same name was found"
                         + " in the same path.");
@@ -1339,15 +1341,17 @@ public class FileManager extends AbstractManager implements IFileManager {
 
                         if (fileDBAdaptor.count(query).first() == 0) {
                             long diskUsage = Files.size(filePath);
-                            File.Bioformat bioformat = BioformatDetector.detect(filePath.toUri());
-                            File.Format format = FormatDetector.detect(filePath.toUri());
+//                            File.Bioformat bioformat = BioformatDetector.detect(filePath.toUri());
+//                            File.Format format = FormatDetector.detect(filePath.toUri());
                             // If the file does not exist, we create it
-                            File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, format, bioformat,
-                                    filePath.toUri(), destinyPath, userId, TimeUtils.getTime(), TimeUtils.getTime(), description,
-                                    new File.FileStatus(File.FileStatus.READY), true, diskUsage, -1, Collections.emptyList(), -1,
-                                    Collections.emptyList(), Collections.emptyList(), null, Collections.emptyMap(), Collections.emptyMap());
-                            fileDBAdaptor.createFile(studyId, subfile, new QueryOptions());
-
+                            File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
+                                    File.Bioformat.NONE, filePath.toUri(), destinyPath, userId, TimeUtils.getTime(), TimeUtils.getTime(),
+                                    description, new File.FileStatus(File.FileStatus.READY), true, diskUsage, -1, Collections.emptyList(),
+                                    -1, Collections.emptyList(), Collections.emptyList(), null, Collections.emptyMap(),
+                                    Collections.emptyMap());
+                            QueryResult<File> file = fileDBAdaptor.createFile(studyId, subfile, new QueryOptions());
+                            fileMetadataReader.setMetadataInformation(file.first(), file.first().getUri(), QueryOptions.empty(), sessionId,
+                                    false);
                         } else {
                             throw new CatalogException("Cannot link the file " + filePath.getFileName().toString()
                                     + ". There is already a file in the path " + destinyPath + " with the same name.");
