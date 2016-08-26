@@ -63,7 +63,7 @@ class WS:
 
     @staticmethod
     def check_server_response(response):
-        if response == 200 or response == 500:
+        if response == 200:
             return True
         else:
             return False
