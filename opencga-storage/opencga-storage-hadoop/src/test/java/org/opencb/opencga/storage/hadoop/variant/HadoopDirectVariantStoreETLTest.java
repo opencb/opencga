@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.hadoop.conf.Configuration;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -26,6 +27,8 @@ import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  *
  */
+@Ignore
+@Deprecated
 public class HadoopDirectVariantStoreETLTest implements HadoopVariantStorageManagerTestUtils {
 
 //    @ClassRule

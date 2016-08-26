@@ -138,7 +138,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
         }
 //        checkLoadedFilesS1S2(studyConfiguration, dbAdaptor);
 
-        assertThat(studyConfiguration.getIndexedFiles(), hasItems(1, 2));
+        assertThat(studyConfiguration.getIndexedFiles(), hasItems(0, 1));
     }
 
     @Test
@@ -435,6 +435,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
             System.out.println(variant);
         }
 
+//        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
         checkArchiveTableTimeStamp(dbAdaptor);
         checkLoadedVariants(expectedVariants, dbAdaptor, PLATINUM_SKIP_VARIANTS);
 
@@ -493,7 +494,11 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
                 new QueryOptions("archive", true))
                 .forEachRemaining(variant -> {
                     if (VARIANT_TYPES.contains(variant.getType())) {
-                        variants.add(variant.toString());
+                        String string = variant.toString();
+                        if ("M:516:-:CA".equals(string) || "1:10231:C:-".equals(string)) {
+                            System.out.println("Variant " + string + " found in file " + fileId);
+                        }
+                        variants.add(string);
                     }
 //                    variantCounts.compute(variant.getType().toString(), (s, integer) -> integer == null ? 1 : (integer + 1));
                 });

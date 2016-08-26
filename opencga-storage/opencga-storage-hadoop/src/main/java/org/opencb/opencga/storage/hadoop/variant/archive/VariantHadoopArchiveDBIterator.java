@@ -153,4 +153,7 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
         return this;
     }
 
+    public ResultScanner getResultScanner() {
+        return resultScanner;
+    }
 }
