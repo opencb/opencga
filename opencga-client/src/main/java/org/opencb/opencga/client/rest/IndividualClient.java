@@ -48,13 +48,15 @@ public class IndividualClient extends AnnotationClient<Individual, IndividualAcl
 
     public QueryResponse<Individual> annotate(String individualId, String annotateSetName, ObjectMap params)
             throws CatalogException, IOException {
+        //TODO param: method for GET o POST
         params = addParamsToObjectMap(params, "annotateSetName", annotateSetName);
         return execute(INDIVIDUALS_URL, individualId, "annotate", params, GET, Individual.class);
     }
 
-    public QueryResponse<Individual> groupBy(String studyId, String by, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "studyId", studyId, "by", by);
+    public QueryResponse<Individual> groupBy(String studyId, String fields, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "studyId", studyId, "fields", fields);
         return execute(INDIVIDUALS_URL, "groupBy", params, GET, Individual.class);
     }
+    //TODO param: method for GET o POST for POST /{version}/individuals/{individualId}/annotationSets/{annotationSetName}/update
 
 }

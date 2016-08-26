@@ -41,6 +41,7 @@ public class UserClient extends AbstractParentClient<User, User> {
     }
 
     public QueryResponse<User> create(String user, String password, ObjectMap params) {
+        //TODO param: method for GET o POST
         QueryResponse<User> response = null;
         params = addParamsToObjectMap(params, "userId", user, "password", password);
         try {
@@ -81,6 +82,7 @@ public class UserClient extends AbstractParentClient<User, User> {
 
     public QueryResponse<User> changePassword(String currentPassword, String newPassword, ObjectMap params)
             throws CatalogException, IOException {
+        //TODO param: method for GET o POST
         params = addParamsToObjectMap(params, "password", currentPassword, "npassword", newPassword);
         QueryResponse<User> execute = execute(USERS_URL, getUserId(), "change-password", params, POST, User.class);
         if (!execute.getError().isEmpty()) {
@@ -94,6 +96,7 @@ public class UserClient extends AbstractParentClient<User, User> {
     }
 
     public QueryResponse<User> update(ObjectMap params) throws CatalogException, IOException {
+        //TODO param: method for GET o POST
         return execute(USERS_URL, getUserId(), "update", params, GET, User.class);
     }
 

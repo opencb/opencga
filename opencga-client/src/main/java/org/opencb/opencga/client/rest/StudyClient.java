@@ -66,6 +66,7 @@ public class StudyClient extends AbstractParentClient<Study, StudyAclEntry> {
 
     public QueryResponse<Study> create(String projectId, String studyName, String studyAlias, ObjectMap params)
             throws CatalogException, IOException {
+        //TODO param: method for GET o POST
         params = addParamsToObjectMap(params, "projectId", projectId, "name", studyName, "alias", studyAlias);
         return execute(STUDY_URL, "create", params, GET, Study.class);
     }
@@ -158,6 +159,7 @@ public class StudyClient extends AbstractParentClient<Study, StudyAclEntry> {
 
     public QueryResponse<Study> update(String studyId, ObjectMap params) throws CatalogException, IOException {
         ObjectMap body = new ObjectMap("body", params);
+        //TODO param: method for GET o POST
         return execute(STUDY_URL, studyId, "update", body, POST, Study.class);
     }
 

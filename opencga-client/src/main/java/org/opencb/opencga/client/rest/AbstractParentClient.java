@@ -95,12 +95,14 @@ public abstract class AbstractParentClient<T, A> {
     }
 
     public QueryResponse<T> search(Query query, QueryOptions options) throws IOException {
+        //TODO param: method for GET o POST
         ObjectMap myQuery = new ObjectMap(query);
         myQuery.putAll(options);
         return execute(category, "search", myQuery, GET, clazz);
     }
 
     public QueryResponse<T> update(String id, ObjectMap params) throws CatalogException, IOException {
+        //TODO param: method for GET o POST
         return execute(category, id, "update", params, GET, clazz);
     }
 

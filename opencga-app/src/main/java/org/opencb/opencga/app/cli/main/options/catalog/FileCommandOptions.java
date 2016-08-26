@@ -490,7 +490,7 @@ public class FileCommandOptions {
         @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
         public boolean parents;
     }
-
+    //---- POST ---//
     @Parameters(commandNames = {"upload"}, commandDescription = "Upload a physical local file to catalog.")
     public class UploadCommandOptions {
 
@@ -758,4 +758,7 @@ public class FileCommandOptions {
         public boolean count;
 
     }
+
+
+
 }
