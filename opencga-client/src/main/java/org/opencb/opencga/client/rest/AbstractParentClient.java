@@ -98,6 +98,11 @@ public abstract class AbstractParentClient<T, A> {
         //TODO param: method for GET o POST
         ObjectMap myQuery = new ObjectMap(query);
         myQuery.putAll(options);
+        if(options.containsKey("method")){
+            if(options.get("method").equals("POST")){
+                return execute(category, "search", myQuery, GET, clazz);
+            }
+        }
         return execute(category, "search", myQuery, GET, clazz);
     }
 
