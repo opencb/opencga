@@ -66,8 +66,12 @@ public class StudyClient extends AbstractParentClient<Study, StudyAclEntry> {
 
     public QueryResponse<Study> create(String projectId, String studyName, String studyAlias, ObjectMap params)
             throws CatalogException, IOException {
-        //TODO param: method for GET o POST
         params = addParamsToObjectMap(params, "projectId", projectId, "name", studyName, "alias", studyAlias);
+        if(params.containsKey("method")) {
+            if (params.get("method").equals("POST")) {
+                execute(STUDY_URL, "create", params, POST, Study.class);
+            }
+        }
         return execute(STUDY_URL, "create", params, GET, Study.class);
     }
 

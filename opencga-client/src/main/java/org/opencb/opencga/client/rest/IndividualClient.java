@@ -48,8 +48,12 @@ public class IndividualClient extends AnnotationClient<Individual, IndividualAcl
 
     public QueryResponse<Individual> annotate(String individualId, String annotateSetName, ObjectMap params)
             throws CatalogException, IOException {
-        //TODO param: method for GET o POST
         params = addParamsToObjectMap(params, "annotateSetName", annotateSetName);
+        if(params.containsKey("method")) {
+            if (params.get("method").equals("POST")) {
+                execute(INDIVIDUALS_URL, individualId, "annotate", params, POST, Individual.class);
+            }
+        }
         return execute(INDIVIDUALS_URL, individualId, "annotate", params, GET, Individual.class);
     }
 

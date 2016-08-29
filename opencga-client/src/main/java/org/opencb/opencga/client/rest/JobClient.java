@@ -43,7 +43,11 @@ public class JobClient extends AbstractParentClient<Job, JobAclEntry> {
 
     public QueryResponse<Job> create(String studyId, String jobName, String toolId, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "studyId", studyId, "name", jobName, "toolId", toolId);
-        //TODO param: method for GET o POST
+        if(params.containsKey("method")) {
+            if (params.get("method").equals("POST")) {
+                execute(JOBS_URL, "create", params, POST, Job.class);
+            }
+        }
         return execute(JOBS_URL, "create", params, GET, Job.class);
     }
 
