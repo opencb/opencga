@@ -148,33 +148,23 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<User> info() throws CatalogException, IOException {
         logger.debug("User info");
         QueryOptions queryOptions = new QueryOptions();
-        if (StringUtils.isNotEmpty(usersCommandOptions.infoCommandOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, usersCommandOptions.infoCommandOptions.include);
-        }
-        if (StringUtils.isNotEmpty(usersCommandOptions.infoCommandOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, usersCommandOptions.infoCommandOptions.exclude);
-        }
-        if (StringUtils.isNotEmpty(usersCommandOptions.infoCommandOptions.lastModified)) {
-            queryOptions.put(CatalogUserDBAdaptor.QueryParams.LAST_MODIFIED.key(), usersCommandOptions.infoCommandOptions.lastModified);
-        }
+
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, usersCommandOptions.infoCommandOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, usersCommandOptions.infoCommandOptions.exclude);
+        queryOptions.putIfNotEmpty(CatalogUserDBAdaptor.QueryParams.LAST_MODIFIED.key(), usersCommandOptions.infoCommandOptions.lastModified);
+
         return openCGAClient.getUserClient().get(queryOptions);
     }
 
     private QueryResponse<Project> projects() throws CatalogException, IOException {
         logger.debug("List all projects and studies of user");
         QueryOptions queryOptions = new QueryOptions();
-        if (StringUtils.isNotEmpty(usersCommandOptions.projectsCommandOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, usersCommandOptions.projectsCommandOptions.include);
-        }
-        if (StringUtils.isNotEmpty(usersCommandOptions.projectsCommandOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, usersCommandOptions.projectsCommandOptions.exclude);
-        }
-        if (StringUtils.isNotEmpty(usersCommandOptions.projectsCommandOptions.include)) {
-            queryOptions.put(QueryOptions.LIMIT, usersCommandOptions.projectsCommandOptions.limit);
-        }
-        if (StringUtils.isNotEmpty(usersCommandOptions.projectsCommandOptions.exclude)) {
-            queryOptions.put(QueryOptions.SKIP, usersCommandOptions.projectsCommandOptions.skip);
-        }
+
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, usersCommandOptions.projectsCommandOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, usersCommandOptions.projectsCommandOptions.exclude);
+        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, usersCommandOptions.projectsCommandOptions.limit);
+        queryOptions.putIfNotEmpty(QueryOptions.SKIP, usersCommandOptions.projectsCommandOptions.skip);
+
         return openCGAClient.getUserClient().getProjects(queryOptions);
     }
 
@@ -228,21 +218,13 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Updating user");
 
         ObjectMap objectMap = new ObjectMap();
-        if (StringUtils.isNotEmpty(usersCommandOptions.updateCommandOptions.name)) {
-            objectMap.put(CatalogUserDBAdaptor.QueryParams.NAME.key(), usersCommandOptions.updateCommandOptions.name);
-        }
-        if (StringUtils.isNotEmpty(usersCommandOptions.updateCommandOptions.email)) {
-            objectMap.put(CatalogUserDBAdaptor.QueryParams.EMAIL.key(), usersCommandOptions.updateCommandOptions.email);
-        }
-        if (StringUtils.isNotEmpty(usersCommandOptions.updateCommandOptions.organization)) {
-            objectMap.put(CatalogUserDBAdaptor.QueryParams.ORGANIZATION.key(), usersCommandOptions.updateCommandOptions.organization);
-        }
-        if (StringUtils.isNotEmpty(usersCommandOptions.updateCommandOptions.attributes)) {
-            objectMap.put(CatalogUserDBAdaptor.QueryParams.ATTRIBUTES.key(), usersCommandOptions.updateCommandOptions.attributes);
-        }
-        if (StringUtils.isNotEmpty(usersCommandOptions.updateCommandOptions.configs)) {
-            objectMap.put("configs", usersCommandOptions.updateCommandOptions.configs);
-        }
+
+        objectMap.putIfNotEmpty(CatalogUserDBAdaptor.QueryParams.NAME.key(), usersCommandOptions.updateCommandOptions.name);
+        objectMap.putIfNotEmpty(CatalogUserDBAdaptor.QueryParams.EMAIL.key(), usersCommandOptions.updateCommandOptions.email);
+        objectMap.putIfNotEmpty(CatalogUserDBAdaptor.QueryParams.ORGANIZATION.key(), usersCommandOptions.updateCommandOptions.organization);
+        objectMap.putIfNotEmpty(CatalogUserDBAdaptor.QueryParams.ATTRIBUTES.key(), usersCommandOptions.updateCommandOptions.attributes);
+        objectMap.putIfNotEmpty("configs", usersCommandOptions.updateCommandOptions.configs);
+
         return openCGAClient.getUserClient().update(usersCommandOptions.updateCommandOptions.user, objectMap);
 
 

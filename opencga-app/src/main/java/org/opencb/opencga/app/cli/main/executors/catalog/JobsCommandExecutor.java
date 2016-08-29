@@ -137,42 +137,19 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         Query query = new Query();
         QueryOptions queryOptions = new QueryOptions();
 
-        if (StringUtils.isNotEmpty(studyId)) {
-            query.put(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), studyId );
-        }
-        if (StringUtils.isNotEmpty(name)) {
-            query.put(CatalogJobDBAdaptor.QueryParams.NAME.key(), name);
-        }
-        if (StringUtils.isNotEmpty(toolName)) {
-            query.put(CatalogJobDBAdaptor.QueryParams.TOOL_NAME.key(), toolName);
-        }
-        if (StringUtils.isNotEmpty(status)) {
-            query.put(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), status);
-        }
-        if (StringUtils.isNotEmpty(ownerId)) {
-            query.put(CatalogJobDBAdaptor.QueryParams.USER_ID.key(), ownerId);
-        }
-        if (StringUtils.isNotEmpty(date)) {
-            query.put(CatalogJobDBAdaptor.QueryParams.CREATION_DATE.key(), date);
-        }
-        if (StringUtils.isNotEmpty(input)) {
-            query.put(CatalogJobDBAdaptor.QueryParams.INPUT.key(), input);
-        }
-        if (StringUtils.isNotEmpty(output)) {
-            query.put(CatalogJobDBAdaptor.QueryParams.OUTPUT.key(), output);
-        }
-        if (StringUtils.isNotEmpty(include)) {
-            queryOptions.put(QueryOptions.INCLUDE, include);
-        }
-        if (StringUtils.isNotEmpty(exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, exclude);
-        }
-        if (StringUtils.isNotEmpty(limit)) {
-            queryOptions.put(QueryOptions.LIMIT, limit);
-        }
-        if (StringUtils.isNotEmpty(skip)) {
-            queryOptions.put(QueryOptions.SKIP, skip);
-        }
+        query.putIfNotEmpty(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), studyId );
+        query.putIfNotEmpty(CatalogJobDBAdaptor.QueryParams.NAME.key(), name);
+        query.putIfNotEmpty(CatalogJobDBAdaptor.QueryParams.TOOL_NAME.key(), toolName);
+        query.putIfNotEmpty(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), status);
+        query.putIfNotEmpty(CatalogJobDBAdaptor.QueryParams.USER_ID.key(), ownerId);
+        query.putIfNotEmpty(CatalogJobDBAdaptor.QueryParams.CREATION_DATE.key(), date);
+        query.putIfNotEmpty(CatalogJobDBAdaptor.QueryParams.INPUT.key(), input);
+        query.putIfNotEmpty(CatalogJobDBAdaptor.QueryParams.OUTPUT.key(), output);
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, exclude);
+        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, limit);
+        queryOptions.putIfNotEmpty(QueryOptions.SKIP, skip);
+
         queryOptions.put("count", jobsCommandOptions.searchCommandOptions.count);
         return openCGAClient.getJobClient().search(query, queryOptions);
     }
@@ -196,30 +173,16 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Group by job");
 
         ObjectMap objectMap = new ObjectMap();
-        if (StringUtils.isNotEmpty(jobsCommandOptions.groupByCommandOptions.id)) {
-            objectMap.put(CatalogJobDBAdaptor.QueryParams.ID.key(), jobsCommandOptions.groupByCommandOptions.id);
-        }
-        if (StringUtils.isNotEmpty(jobsCommandOptions.groupByCommandOptions.name)) {
-            objectMap.put(CatalogJobDBAdaptor.QueryParams.NAME.key(), jobsCommandOptions.groupByCommandOptions.name);
-        }
-        if (StringUtils.isNotEmpty(jobsCommandOptions.groupByCommandOptions.path)) {
-            objectMap.put(CatalogJobDBAdaptor.QueryParams.OUT_DIR_ID.key(), jobsCommandOptions.groupByCommandOptions.path);
-        }
-        if (StringUtils.isNotEmpty(jobsCommandOptions.groupByCommandOptions.status)) {
-            objectMap.put(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), jobsCommandOptions.groupByCommandOptions.status);
-        }
-        if (StringUtils.isNotEmpty(jobsCommandOptions.groupByCommandOptions.ownerId)) {
-            objectMap.put(CatalogJobDBAdaptor.QueryParams.USER_ID.key(), jobsCommandOptions.groupByCommandOptions.ownerId);
-        }
-        if (StringUtils.isNotEmpty(jobsCommandOptions.groupByCommandOptions.creationDate)) {
-            objectMap.put(CatalogJobDBAdaptor.QueryParams.CREATION_DATE.key(), jobsCommandOptions.groupByCommandOptions.creationDate);
-        }
-        if (StringUtils.isNotEmpty(jobsCommandOptions.groupByCommandOptions.description)) {
-            objectMap.put(CatalogJobDBAdaptor.QueryParams.DESCRIPTION.key(), jobsCommandOptions.groupByCommandOptions.description);
-        }
-        if (StringUtils.isNotEmpty(jobsCommandOptions.groupByCommandOptions.attributes)) {
-            objectMap.put(CatalogJobDBAdaptor.QueryParams.ATTRIBUTES.key(), jobsCommandOptions.groupByCommandOptions.attributes);
-        }
+
+        objectMap.putIfNotEmpty(CatalogJobDBAdaptor.QueryParams.ID.key(), jobsCommandOptions.groupByCommandOptions.id);
+        objectMap.putIfNotEmpty(CatalogJobDBAdaptor.QueryParams.NAME.key(), jobsCommandOptions.groupByCommandOptions.name);
+        objectMap.putIfNotEmpty(CatalogJobDBAdaptor.QueryParams.OUT_DIR_ID.key(), jobsCommandOptions.groupByCommandOptions.path);
+        objectMap.putIfNotEmpty(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), jobsCommandOptions.groupByCommandOptions.status);
+        objectMap.putIfNotEmpty(CatalogJobDBAdaptor.QueryParams.USER_ID.key(), jobsCommandOptions.groupByCommandOptions.ownerId);
+        objectMap.putIfNotEmpty(CatalogJobDBAdaptor.QueryParams.CREATION_DATE.key(), jobsCommandOptions.groupByCommandOptions.creationDate);
+        objectMap.putIfNotEmpty(CatalogJobDBAdaptor.QueryParams.DESCRIPTION.key(), jobsCommandOptions.groupByCommandOptions.description);
+        objectMap.putIfNotEmpty(CatalogJobDBAdaptor.QueryParams.ATTRIBUTES.key(), jobsCommandOptions.groupByCommandOptions.attributes);
+
         return openCGAClient.getJobClient().groupBy(jobsCommandOptions.groupByCommandOptions.studyId,
                 jobsCommandOptions.groupByCommandOptions.fields,objectMap);
     }

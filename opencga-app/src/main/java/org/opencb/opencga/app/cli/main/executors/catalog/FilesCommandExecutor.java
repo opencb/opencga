@@ -221,75 +221,30 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         Query query = new Query();
         QueryOptions queryOptions = new QueryOptions();
 
-        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.id)) {
-            query.put(CatalogFileDBAdaptor.QueryParams.ID.key(), filesCommandOptions.searchCommandOptions.id);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.name)) {
-            query.put(CatalogFileDBAdaptor.QueryParams.NAME.key(), filesCommandOptions.searchCommandOptions.name);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.path)) {
-            query.put(CatalogFileDBAdaptor.QueryParams.PATH.key(), filesCommandOptions.searchCommandOptions.path);
-        }
-
+        query.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.ID.key(), filesCommandOptions.searchCommandOptions.id);
+        query.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.NAME.key(), filesCommandOptions.searchCommandOptions.name);
+        query.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.PATH.key(), filesCommandOptions.searchCommandOptions.path);
         query.putIfNotNull(CatalogFileDBAdaptor.QueryParams.TYPE.key(), filesCommandOptions.searchCommandOptions.type);
         query.putIfNotNull(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), filesCommandOptions.searchCommandOptions.bioformat);
+        query.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.FORMAT.key(), filesCommandOptions.searchCommandOptions.format);
+        query.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.STATUS.key(), filesCommandOptions.searchCommandOptions.status);
+        query.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), filesCommandOptions.searchCommandOptions.directory);
+        query.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.OWNER_ID.key(), filesCommandOptions.searchCommandOptions.ownerId);
+        query.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.CREATION_DATE.key(), filesCommandOptions.searchCommandOptions.creationDate);
+        query.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.MODIFICATION_DATE.key(),
+                filesCommandOptions.groupByCommandOptions.modificationDate);
+        query.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.DESCRIPTION.key(), filesCommandOptions.searchCommandOptions.description);
+        query.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.DISK_USAGE.key(), filesCommandOptions.searchCommandOptions.diskUsage);
+        query.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), filesCommandOptions.searchCommandOptions.sampleIds);
+        query.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.JOB_ID.key(), filesCommandOptions.searchCommandOptions.jobId);
+        query.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.ATTRIBUTES.key(), filesCommandOptions.searchCommandOptions.attributes);
+        query.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.NATTRIBUTES.key(), filesCommandOptions.searchCommandOptions.nattributes);
+        query.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), filesCommandOptions.searchCommandOptions.sampleIds);
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, filesCommandOptions.searchCommandOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, filesCommandOptions.searchCommandOptions.exclude);
+        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, filesCommandOptions.searchCommandOptions.limit);
+        queryOptions.putIfNotEmpty(QueryOptions.SKIP, filesCommandOptions.searchCommandOptions.skip);
 
-        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.format)) {
-            query.put(CatalogFileDBAdaptor.QueryParams.FORMAT.key(), filesCommandOptions.searchCommandOptions.format);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.status)) {
-            query.put(CatalogFileDBAdaptor.QueryParams.STATUS.key(), filesCommandOptions.searchCommandOptions.status);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.directory)) {
-            query.put(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), filesCommandOptions.searchCommandOptions.directory);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.ownerId)) {
-            query.put(CatalogFileDBAdaptor.QueryParams.OWNER_ID.key(), filesCommandOptions.searchCommandOptions.ownerId);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.creationDate)) {
-            query.put(CatalogFileDBAdaptor.QueryParams.CREATION_DATE.key(), filesCommandOptions.searchCommandOptions.creationDate);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.modificationDate)) {
-            query.put(CatalogFileDBAdaptor.QueryParams.MODIFICATION_DATE.key(),
-                    filesCommandOptions.groupByCommandOptions.modificationDate);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.description)) {
-            query.put(CatalogFileDBAdaptor.QueryParams.DESCRIPTION.key(), filesCommandOptions.searchCommandOptions.description);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.diskUsage)) {
-            query.put(CatalogFileDBAdaptor.QueryParams.DISK_USAGE.key(), filesCommandOptions.searchCommandOptions.diskUsage);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.sampleIds)) {
-            query.put(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), filesCommandOptions.searchCommandOptions.sampleIds);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.jobId)) {
-            query.put(CatalogFileDBAdaptor.QueryParams.JOB_ID.key(), filesCommandOptions.searchCommandOptions.jobId);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.attributes)) {
-            query.put(CatalogFileDBAdaptor.QueryParams.ATTRIBUTES.key(), filesCommandOptions.searchCommandOptions.attributes);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.nattributes)) {
-            query.put(CatalogFileDBAdaptor.QueryParams.NATTRIBUTES.key(), filesCommandOptions.searchCommandOptions.nattributes);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.sampleIds)) {
-            query.put(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), filesCommandOptions.searchCommandOptions.sampleIds);
-        }
-
-        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, filesCommandOptions.searchCommandOptions.include);
-        }
-
-        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, filesCommandOptions.searchCommandOptions.exclude);
-        }
-
-        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, filesCommandOptions.searchCommandOptions.limit);
-        }
-
-        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, filesCommandOptions.searchCommandOptions.skip);
-        }
         queryOptions.put("count", filesCommandOptions.searchCommandOptions.count);
         return openCGAClient.getFileClient().search(query,queryOptions);
     }
@@ -298,21 +253,10 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Listing files in folder");
 
         QueryOptions queryOptions = new QueryOptions();
-        if (StringUtils.isNotEmpty(filesCommandOptions.listCommandOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, filesCommandOptions.listCommandOptions.include);
-        }
-
-        if (StringUtils.isNotEmpty(filesCommandOptions.listCommandOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, filesCommandOptions.listCommandOptions.exclude);
-        }
-
-        if (StringUtils.isNotEmpty(filesCommandOptions.listCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, filesCommandOptions.listCommandOptions.limit);
-        }
-
-        if (StringUtils.isNotEmpty(filesCommandOptions.listCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, filesCommandOptions.listCommandOptions.skip);
-        }
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, filesCommandOptions.listCommandOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, filesCommandOptions.listCommandOptions.exclude);
+        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, filesCommandOptions.listCommandOptions.limit);
+        queryOptions.putIfNotEmpty(QueryOptions.SKIP, filesCommandOptions.listCommandOptions.skip);
         queryOptions.put("count", filesCommandOptions.listCommandOptions.count);
 
         return openCGAClient.getFileClient().getFiles(filesCommandOptions.listCommandOptions.folderId, queryOptions);
@@ -353,24 +297,13 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Fetch alignments from a BAM file");
 
         QueryOptions queryOptions = new QueryOptions();
-        if (StringUtils.isNotEmpty(filesCommandOptions.alignmentCommandOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, filesCommandOptions.alignmentCommandOptions.include);
-        }
 
-        if (StringUtils.isNotEmpty(filesCommandOptions.alignmentCommandOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, filesCommandOptions.alignmentCommandOptions.exclude);
-        }
-
-        if (StringUtils.isNotEmpty(filesCommandOptions.alignmentCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, filesCommandOptions.alignmentCommandOptions.limit);
-        }
-
-        if (StringUtils.isNotEmpty(filesCommandOptions.alignmentCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, filesCommandOptions.alignmentCommandOptions.skip);
-        }
-        if(filesCommandOptions.alignmentCommandOptions.count) {
+            queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, filesCommandOptions.alignmentCommandOptions.include);
+            queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, filesCommandOptions.alignmentCommandOptions.exclude);
+            queryOptions.putIfNotEmpty(QueryOptions.LIMIT, filesCommandOptions.alignmentCommandOptions.limit);
+            queryOptions.putIfNotEmpty(QueryOptions.SKIP, filesCommandOptions.alignmentCommandOptions.skip);
             queryOptions.put("count", filesCommandOptions.alignmentCommandOptions.count);
-        }
+
         return openCGAClient.getFileClient().alignments(filesCommandOptions.alignmentCommandOptions.id, queryOptions);
     }
 
@@ -494,58 +427,24 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         QueryOptions queryOptions = new QueryOptions();
 
-        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.id)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.ID.key(), filesCommandOptions.groupByCommandOptions.id);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.name)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.NAME.key(), filesCommandOptions.groupByCommandOptions.name);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.path)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.PATH.key(), filesCommandOptions.groupByCommandOptions.path);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.type)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.TYPE.key(), filesCommandOptions.groupByCommandOptions.type);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.bioformat)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), filesCommandOptions.groupByCommandOptions.bioformat);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.format)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.FORMAT.key(), filesCommandOptions.groupByCommandOptions.format);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.status)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.STATUS.key(), filesCommandOptions.groupByCommandOptions.status);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.directory)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), filesCommandOptions.groupByCommandOptions.directory);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.ownerId)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.OWNER_ID.key(), filesCommandOptions.groupByCommandOptions.ownerId);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.creationDate)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.CREATION_DATE.key(), filesCommandOptions.groupByCommandOptions.creationDate);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.modificationDate)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.MODIFICATION_DATE.key(),
-                    filesCommandOptions.groupByCommandOptions.modificationDate);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.description)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.DESCRIPTION.key(), filesCommandOptions.groupByCommandOptions.description);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.diskUsage)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.DISK_USAGE.key(), filesCommandOptions.groupByCommandOptions.diskUsage);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.sampleIds)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), filesCommandOptions.groupByCommandOptions.sampleIds);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.jobId)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.JOB_ID.key(), filesCommandOptions.groupByCommandOptions.jobId);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.attributes)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.ATTRIBUTES.key(), filesCommandOptions.groupByCommandOptions.attributes);
-        }
-        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.nattributes)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.NATTRIBUTES.key(), filesCommandOptions.groupByCommandOptions.nattributes);
-        }
+        queryOptions.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.ID.key(), filesCommandOptions.groupByCommandOptions.id);
+        queryOptions.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.NAME.key(), filesCommandOptions.groupByCommandOptions.name);
+        queryOptions.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.PATH.key(), filesCommandOptions.groupByCommandOptions.path);
+        queryOptions.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.TYPE.key(), filesCommandOptions.groupByCommandOptions.type);
+        queryOptions.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), filesCommandOptions.groupByCommandOptions.bioformat);
+        queryOptions.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.FORMAT.key(), filesCommandOptions.groupByCommandOptions.format);
+        queryOptions.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.STATUS.key(), filesCommandOptions.groupByCommandOptions.status);
+        queryOptions.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), filesCommandOptions.groupByCommandOptions.directory);
+        queryOptions.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.OWNER_ID.key(), filesCommandOptions.groupByCommandOptions.ownerId);
+        queryOptions.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.CREATION_DATE.key(), filesCommandOptions.groupByCommandOptions.creationDate);
+        queryOptions.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.MODIFICATION_DATE.key(),
+                filesCommandOptions.groupByCommandOptions.modificationDate);
+        queryOptions.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.DESCRIPTION.key(), filesCommandOptions.groupByCommandOptions.description);
+        queryOptions.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.DISK_USAGE.key(), filesCommandOptions.groupByCommandOptions.diskUsage);
+        queryOptions.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), filesCommandOptions.groupByCommandOptions.sampleIds);
+        queryOptions.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.JOB_ID.key(), filesCommandOptions.groupByCommandOptions.jobId);
+        queryOptions.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.ATTRIBUTES.key(), filesCommandOptions.groupByCommandOptions.attributes);
+        queryOptions.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.NATTRIBUTES.key(), filesCommandOptions.groupByCommandOptions.nattributes);
 
         return openCGAClient.getFileClient().groupBy(filesCommandOptions.groupByCommandOptions.studyId,
                 filesCommandOptions.groupByCommandOptions.fields, queryOptions);

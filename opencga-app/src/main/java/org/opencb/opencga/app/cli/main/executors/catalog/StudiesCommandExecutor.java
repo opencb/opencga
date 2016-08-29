@@ -244,23 +244,11 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         String battributes = studiesCommandOptions.searchCommandOptions.battributes;
 //        String groups = studiesCommandOptions.searchCommandOptions.groups;
 //        String groupsUsers = studiesCommandOptions.searchCommandOptions.groupsUsers;
+        query.putIfNotEmpty(CatalogStudyDBAdaptor.QueryParams.ID.key(), id );
 
-
-        if (StringUtils.isNotEmpty(id)) {
-            query.put(CatalogStudyDBAdaptor.QueryParams.ID.key(), id );
-        }
-
-        if (StringUtils.isNotEmpty(projectId)) {
-            query.put(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId);
-        }
-
-        if (StringUtils.isNotEmpty(name)) {
-            query.put(CatalogStudyDBAdaptor.QueryParams.NAME.key(), name);
-        }
-
-        if (StringUtils.isNotEmpty(alias)) {
-            query.put(CatalogStudyDBAdaptor.QueryParams.ALIAS.key(), alias);
-        }
+        query.putIfNotEmpty(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId);
+        query.putIfNotEmpty(CatalogStudyDBAdaptor.QueryParams.NAME.key(), name);
+        query.putIfNotEmpty(CatalogStudyDBAdaptor.QueryParams.ALIAS.key(), alias);
 
         if (StringUtils.isNotEmpty(type)) {
             try {
@@ -270,42 +258,16 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                 return null;
             }
         }
+        query.putIfNotEmpty(CatalogStudyDBAdaptor.QueryParams.CREATION_DATE.key(), creationDate);
+        query.putIfNotEmpty(CatalogStudyDBAdaptor.QueryParams.STATUS_NAME.key(), status);
+        query.putIfNotEmpty(CatalogStudyDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
+        query.putIfNotEmpty(CatalogStudyDBAdaptor.QueryParams.NATTRIBUTES.key(), nattributes);
+        query.putIfNotEmpty(CatalogStudyDBAdaptor.QueryParams.BATTRIBUTES.key(), battributes);
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.searchCommandOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.searchCommandOptions.exclude);
+        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, studiesCommandOptions.searchCommandOptions.limit);
+        queryOptions.putIfNotEmpty(QueryOptions.SKIP, studiesCommandOptions.searchCommandOptions.skip);
 
-        if (StringUtils.isNotEmpty(creationDate)) {
-            query.put(CatalogStudyDBAdaptor.QueryParams.CREATION_DATE.key(), creationDate);
-        }
-
-        if (StringUtils.isNotEmpty(status)) {
-            query.put(CatalogStudyDBAdaptor.QueryParams.STATUS_NAME.key(), status);
-        }
-
-        if (StringUtils.isNotEmpty(attributes)) {
-            query.put(CatalogStudyDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
-        }
-
-        if (StringUtils.isNotEmpty(nattributes)) {
-            query.put(CatalogStudyDBAdaptor.QueryParams.NATTRIBUTES.key(), nattributes);
-        }
-
-        if (StringUtils.isNotEmpty(battributes)) {
-            query.put(CatalogStudyDBAdaptor.QueryParams.BATTRIBUTES.key(), battributes);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.searchCommandOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, studiesCommandOptions.searchCommandOptions.include);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.searchCommandOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, studiesCommandOptions.searchCommandOptions.exclude);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.searchCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.searchCommandOptions.limit);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.searchCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.searchCommandOptions.skip);
-        }
         queryOptions.put("count", studiesCommandOptions.searchCommandOptions.count);
 
         return openCGAClient.getStudyClient().search(query, queryOptions);
@@ -531,204 +493,82 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Listing variants of a study.");
 
         QueryOptions queryOptions = new QueryOptions();
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.ids)) {
-            queryOptions.put("ids", studiesCommandOptions.variantsCommandOptions.ids);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.region)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.REGION.key(), studiesCommandOptions.variantsCommandOptions.region);
-        }
 
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.chromosome)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(),
-                    studiesCommandOptions.variantsCommandOptions.chromosome);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.gene)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.GENE.key(), studiesCommandOptions.variantsCommandOptions.gene);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.type)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.TYPE.key(), studiesCommandOptions.variantsCommandOptions.type);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.reference)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.REFERENCE.key(),
-                    studiesCommandOptions.variantsCommandOptions.reference);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.alternate)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ALTERNATE.key(),
-                    studiesCommandOptions.variantsCommandOptions.alternate);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.returnedStudies)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(),
-                    studiesCommandOptions.variantsCommandOptions.returnedStudies);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.returnedSamples)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(),
-                    studiesCommandOptions.variantsCommandOptions.returnedSamples);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.returnedFiles)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(),
-                    studiesCommandOptions.variantsCommandOptions.returnedFiles);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.files)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.FILES.key(), studiesCommandOptions.variantsCommandOptions.files);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.maf)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), studiesCommandOptions.variantsCommandOptions.maf);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.mgf)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.STATS_MGF.key(), studiesCommandOptions.variantsCommandOptions.mgf);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.missingAlleles)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.MISSING_ALLELES.key(),
-                    studiesCommandOptions.variantsCommandOptions.missingAlleles);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.missingGenotypes)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.MISSING_GENOTYPES.key(),
+        queryOptions.putIfNotEmpty("ids", studiesCommandOptions.variantsCommandOptions.ids);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.REGION.key(), studiesCommandOptions.variantsCommandOptions.region);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(),
+                studiesCommandOptions.variantsCommandOptions.chromosome);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.GENE.key(), studiesCommandOptions.variantsCommandOptions.gene);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.TYPE.key(), studiesCommandOptions.variantsCommandOptions.type);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.REFERENCE.key(),
+                studiesCommandOptions.variantsCommandOptions.reference);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ALTERNATE.key(),
+                studiesCommandOptions.variantsCommandOptions.alternate);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(),
+                studiesCommandOptions.variantsCommandOptions.returnedStudies);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(),
+                studiesCommandOptions.variantsCommandOptions.returnedSamples);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(),
+                studiesCommandOptions.variantsCommandOptions.returnedFiles);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.FILES.key(), studiesCommandOptions.variantsCommandOptions.files);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), studiesCommandOptions.variantsCommandOptions.maf);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.STATS_MGF.key(), studiesCommandOptions.variantsCommandOptions.mgf);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.MISSING_ALLELES.key(),
+                studiesCommandOptions.variantsCommandOptions.missingAlleles);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.MISSING_GENOTYPES.key(),
                     studiesCommandOptions.variantsCommandOptions.missingGenotypes);
-        }
-
-
         queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(),
                 studiesCommandOptions.variantsCommandOptions.annotationExists);
-
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.genotype)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.GENOTYPE.key(),
-                    studiesCommandOptions.variantsCommandOptions.genotype);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.annot_ct)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(),
-                    studiesCommandOptions.variantsCommandOptions.annot_ct);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.annot_xref)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_XREF.key(),
-                    studiesCommandOptions.variantsCommandOptions.annot_xref);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.annot_biotype)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_BIOTYPE.key(),
-                    studiesCommandOptions.variantsCommandOptions.annot_biotype);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.polyphen)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POLYPHEN.key(),
-                    studiesCommandOptions.variantsCommandOptions.polyphen);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.sift)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_SIFT.key(), studiesCommandOptions.variantsCommandOptions.sift);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.conservation)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION.key(),
-                    studiesCommandOptions.variantsCommandOptions.conservation);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.annotPopulationMaf)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),
-                    studiesCommandOptions.variantsCommandOptions.annotPopulationMaf);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.alternate_frequency)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
-                    studiesCommandOptions.variantsCommandOptions.alternate_frequency);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.reference_frequency)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_REFERENCE_FREQUENCY.key(),
-                    studiesCommandOptions.variantsCommandOptions.reference_frequency);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.transcriptionFlags)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_TRANSCRIPTION_FLAGS.key(),
-                    studiesCommandOptions.variantsCommandOptions.transcriptionFlags);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.geneTraitId)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_GENE_TRAITS_ID.key(),
-                    studiesCommandOptions.variantsCommandOptions.geneTraitId);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.geneTraitName)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_GENE_TRAITS_NAME.key(),
-                    studiesCommandOptions.variantsCommandOptions.geneTraitName);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.hpo)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_HPO.key(),
-                    studiesCommandOptions.variantsCommandOptions.hpo);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.go)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_GO.key(),
-                    studiesCommandOptions.variantsCommandOptions.go);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.expression)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_EXPRESSION.key(),
-                    studiesCommandOptions.variantsCommandOptions.expression);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.proteinKeyword)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_KEYWORDS.key(),
-                    studiesCommandOptions.variantsCommandOptions.proteinKeyword);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.drug)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_DRUG.key(),
-                    studiesCommandOptions.variantsCommandOptions.drug);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.functionalScore)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key(),
-                    studiesCommandOptions.variantsCommandOptions.functionalScore);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.unknownGenotype)) {
-            queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.UNKNOWN_GENOTYPE.key(),
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.GENOTYPE.key(),
+                studiesCommandOptions.variantsCommandOptions.genotype);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(),
+                studiesCommandOptions.variantsCommandOptions.annot_ct);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_XREF.key(),
+                studiesCommandOptions.variantsCommandOptions.annot_xref);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_BIOTYPE.key(),
+                studiesCommandOptions.variantsCommandOptions.annot_biotype);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POLYPHEN.key(),
+                studiesCommandOptions.variantsCommandOptions.polyphen);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_SIFT.key(), studiesCommandOptions.variantsCommandOptions.sift);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION.key(),
+                studiesCommandOptions.variantsCommandOptions.conservation);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),
+                studiesCommandOptions.variantsCommandOptions.annotPopulationMaf);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
+                studiesCommandOptions.variantsCommandOptions.alternate_frequency);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_REFERENCE_FREQUENCY.key(),
+                studiesCommandOptions.variantsCommandOptions.reference_frequency);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_TRANSCRIPTION_FLAGS.key(),
+                studiesCommandOptions.variantsCommandOptions.transcriptionFlags);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_GENE_TRAITS_ID.key(),
+                studiesCommandOptions.variantsCommandOptions.geneTraitId);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_GENE_TRAITS_NAME.key(),
+                studiesCommandOptions.variantsCommandOptions.geneTraitName);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_HPO.key(),
+                studiesCommandOptions.variantsCommandOptions.hpo);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_GO.key(),
+                studiesCommandOptions.variantsCommandOptions.go);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_EXPRESSION.key(),
+                studiesCommandOptions.variantsCommandOptions.expression);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_KEYWORDS.key(),
+                studiesCommandOptions.variantsCommandOptions.proteinKeyword);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_DRUG.key(),
+                studiesCommandOptions.variantsCommandOptions.drug);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key(),
+                studiesCommandOptions.variantsCommandOptions.functionalScore);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.UNKNOWN_GENOTYPE.key(),
                     studiesCommandOptions.variantsCommandOptions.unknownGenotype);
-        }
-
-
         queryOptions.put("samplesMetadata", studiesCommandOptions.variantsCommandOptions.samplesMetadata);
         queryOptions.put(QueryOptions.SORT, studiesCommandOptions.variantsCommandOptions.sort);
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.groupBy)) {
-            queryOptions.put("groupBy", studiesCommandOptions.variantsCommandOptions.groupBy);
-        }
-
+        queryOptions.putIfNotEmpty("groupBy", studiesCommandOptions.variantsCommandOptions.groupBy);
         queryOptions.put("histogram", studiesCommandOptions.variantsCommandOptions.histogram);
+        queryOptions.putIfNotEmpty("interval", studiesCommandOptions.variantsCommandOptions.interval);
+        queryOptions.putIfNotEmpty("merge", studiesCommandOptions.variantsCommandOptions.merge);
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.variantsCommandOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.variantsCommandOptions.exclude);
+        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, studiesCommandOptions.variantsCommandOptions.limit);
+        queryOptions.putIfNotEmpty(QueryOptions.SKIP, studiesCommandOptions.variantsCommandOptions.skip);
 
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.interval)) {
-            queryOptions.put("interval", studiesCommandOptions.variantsCommandOptions.interval);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.merge)) {
-            queryOptions.put("merge", studiesCommandOptions.variantsCommandOptions.merge);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, studiesCommandOptions.variantsCommandOptions.include);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, studiesCommandOptions.variantsCommandOptions.exclude);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.variantsCommandOptions.limit);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.variantsCommandOptions.skip);
-        }
         queryOptions.put("count", studiesCommandOptions.variantsCommandOptions.count);
 
         return openCGAClient.getStudyClient().getVariants(studiesCommandOptions.variantsCommandOptions.id, queryOptions);
@@ -771,20 +611,12 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         QueryOptions queryOptions = new QueryOptions();
 
-        if (StringUtils.isNotEmpty(studiesCommandOptions.groupsUpdateCommandOptions.addUsers)) {
-            queryOptions.put(StudyClient.GroupUpdateParams.ADD_USERS.key(),
-                    studiesCommandOptions.groupsUpdateCommandOptions.addUsers);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.groupsUpdateCommandOptions.setUsers)) {
-            queryOptions.put(StudyClient.GroupUpdateParams.SET_USERS.key(),
-                    studiesCommandOptions.groupsUpdateCommandOptions.setUsers);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.groupsUpdateCommandOptions.removeUsers)) {
-            queryOptions.put(StudyClient.GroupUpdateParams.REMOVE_USERS.key(),
+        queryOptions.putIfNotEmpty(StudyClient.GroupUpdateParams.ADD_USERS.key(),
+                studiesCommandOptions.groupsUpdateCommandOptions.addUsers);
+        queryOptions.putIfNotEmpty(StudyClient.GroupUpdateParams.SET_USERS.key(),
+                studiesCommandOptions.groupsUpdateCommandOptions.setUsers);
+        queryOptions.putIfNotEmpty(StudyClient.GroupUpdateParams.REMOVE_USERS.key(),
                     studiesCommandOptions.groupsUpdateCommandOptions.removeUsers);
-        }
 
         return openCGAClient.getStudyClient().updateGroup(studiesCommandOptions.groupsUpdateCommandOptions.id,
                 studiesCommandOptions.groupsUpdateCommandOptions.groupId, queryOptions);

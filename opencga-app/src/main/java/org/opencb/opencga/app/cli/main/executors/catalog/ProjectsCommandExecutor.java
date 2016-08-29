@@ -99,21 +99,14 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap objectMap = new ObjectMap();
 
-        if (StringUtils.isNotEmpty(projectsCommandOptions.updateCommandOptions.name)) {
-            objectMap.put(CatalogProjectDBAdaptor.QueryParams.NAME.key(), projectsCommandOptions.updateCommandOptions.name);
-        }
-        if (StringUtils.isNotEmpty(projectsCommandOptions.updateCommandOptions.description)) {
-            objectMap.put(CatalogProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.updateCommandOptions.description);
-        }
-        if (StringUtils.isNotEmpty(projectsCommandOptions.updateCommandOptions.organization)) {
-            objectMap.put(CatalogProjectDBAdaptor.QueryParams.ORGANIZATION.key(), projectsCommandOptions.updateCommandOptions.organization);
-        }
+        objectMap.putIfNotEmpty(CatalogProjectDBAdaptor.QueryParams.NAME.key(), projectsCommandOptions.updateCommandOptions.name);
+        objectMap.putIfNotEmpty(CatalogProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.updateCommandOptions.description);
+        objectMap.putIfNotEmpty(CatalogProjectDBAdaptor.QueryParams.ORGANIZATION.key(), projectsCommandOptions.updateCommandOptions.organization);
+
         //if (StringUtils.isNotEmpty(projectsCommandOptions.updateCommandOptions.status)) {
         //    objectMap.put(CatalogProjectDBAdaptor.QueryParams.STATUS_NAME.key(), projectsCommandOptions.updateCommandOptions.status);
         //}
-        if (StringUtils.isNotEmpty(projectsCommandOptions.updateCommandOptions.attributes)) {
-            objectMap.put(CatalogProjectDBAdaptor.QueryParams.ATTRIBUTES.key(), projectsCommandOptions.updateCommandOptions.attributes);
-        }
+        objectMap.putIfNotEmpty(CatalogProjectDBAdaptor.QueryParams.ATTRIBUTES.key(), projectsCommandOptions.updateCommandOptions.attributes);
 
         return openCGAClient.getProjectClient().update(projectsCommandOptions.updateCommandOptions.id, objectMap);
     }
@@ -128,18 +121,11 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Getting all studies the from a project ");
         QueryOptions queryOptions = new QueryOptions();
 
-        if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, projectsCommandOptions.studiesCommandOptions.include);
-        }
-        if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE,projectsCommandOptions.studiesCommandOptions.exclude);
-        }
-        if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, projectsCommandOptions.studiesCommandOptions.limit);
-        }
-        if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, projectsCommandOptions.studiesCommandOptions.skip);
-        }
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, projectsCommandOptions.studiesCommandOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE,projectsCommandOptions.studiesCommandOptions.exclude);
+        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, projectsCommandOptions.studiesCommandOptions.limit);
+        queryOptions.putIfNotEmpty(QueryOptions.SKIP, projectsCommandOptions.studiesCommandOptions.skip);
+
         return openCGAClient.getProjectClient().getStudies(projectsCommandOptions.studiesCommandOptions.id, queryOptions);
     }
 
