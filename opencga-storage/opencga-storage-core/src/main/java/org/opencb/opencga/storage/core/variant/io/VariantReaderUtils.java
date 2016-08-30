@@ -174,7 +174,7 @@ public class VariantReaderUtils {
     }
 
     public static void checkTransformedVariants(String file) {
-        if (!isTransformedVariants(file)){
+        if (!isTransformedVariants(file)) {
             throw new IllegalArgumentException("Not a valid transformed variants file : " + file);
         }
     }
@@ -184,7 +184,7 @@ public class VariantReaderUtils {
     }
 
     public static void checkMetaFile(String file) {
-        if (!isMetaFile(file)){
+        if (!isMetaFile(file)) {
             throw new IllegalArgumentException("Not a valid transformed variants metadata file : " + file);
         }
     }
