@@ -1,7 +1,9 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
@@ -9,6 +11,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
@@ -54,6 +57,14 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
                 configuration, storageEngineId, LoggerFactory.getLogger(HadoopDirectVariantStorageETL.class),
                 dbAdaptor, variantReaderUtils,
                 options, archiveCredentials, mrExecutor, conf);
+    }
+
+    @Override
+    public URI preTransform(URI input) throws StorageManagerException, IOException, FileFormatException {
+        if (StringUtils.isEmpty(options.getString(Options.TRANSFORM_FORMAT.key()))) {
+            options.put(Options.TRANSFORM_FORMAT.key(), "proto");
+        }
+        return super.preTransform(input);
     }
 
     /**

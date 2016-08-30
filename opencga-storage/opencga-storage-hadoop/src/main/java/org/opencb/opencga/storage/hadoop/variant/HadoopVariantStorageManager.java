@@ -63,6 +63,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     public static final String HADOOP_LOAD_ARCHIVE_BATCH_SIZE = "hadoop.load.archive.batch.size";
     public static final String HADOOP_LOAD_VARIANT_BATCH_SIZE = "hadoop.load.variant.batch.size";
     public static final String HADOOP_LOAD_DIRECT = "hadoop.load.direct";
+    public static final boolean HADOOP_LOAD_DIRECT_DEFAULT = true;
 
     public static final String EXTERNAL_MR_EXECUTOR = "opencga.external.mr.executor";
     public static final String ARCHIVE_TABLE_PREFIX = "opencga_study_";
@@ -254,7 +255,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         if (extraOptions != null) {
             options.putAll(extraOptions);
         }
-        boolean directLoad = options.getBoolean(HADOOP_LOAD_DIRECT, false);
+        boolean directLoad = options.getBoolean(HADOOP_LOAD_DIRECT, HADOOP_LOAD_DIRECT_DEFAULT);
         VariantHadoopDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
         Configuration hadoopConfiguration = null == dbAdaptor ? null : dbAdaptor.getConfiguration();
         hadoopConfiguration = hadoopConfiguration == null ? getHadoopConfiguration(options) : hadoopConfiguration;
