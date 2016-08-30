@@ -6,6 +6,7 @@ import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -400,7 +401,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         }
     }
 
-    public HBaseCredentials buildCredentials(String table) throws IllegalStateException {
+    public HBaseCredentials buildCredentials(String table) throws StorageManagerException {
         StorageEtlConfiguration vStore = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant();
 
         DatabaseCredentials db = vStore.getDatabase();
@@ -412,10 +413,20 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         }
         String target = hostList.get(0);
         try {
-            URI uri = new URI(target);
-            String server = uri.getHost();
-            Integer port = uri.getPort() > 0 ? uri.getPort() : 60000;
-            String zookeeperPath = uri.getPath();
+            String server;
+            Integer port;
+            String zookeeperPath;
+            if (target == null || target.isEmpty()) {
+                Configuration conf = getHadoopConfiguration(getOptions());
+                server = conf.get(HConstants.ZOOKEEPER_QUORUM);
+                port = 60000;
+                zookeeperPath = conf.get(HConstants.ZOOKEEPER_ZNODE_PARENT);
+            } else {
+                URI uri = new URI(target);
+                server = uri.getHost();
+                port = uri.getPort() > 0 ? uri.getPort() : 60000;
+                zookeeperPath = uri.getPath();
+            }
             HBaseCredentials credentials = new HBaseCredentials(server, table, user, pass, port);
             if (!StringUtils.isBlank(zookeeperPath)) {
                 credentials = new HBaseCredentials(server, table, user, pass, port, zookeeperPath);

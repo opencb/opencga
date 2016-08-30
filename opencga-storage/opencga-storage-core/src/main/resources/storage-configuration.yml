@@ -96,8 +96,7 @@ storageEngines:
   options: {}
   alignment:
     manager: "org.opencb.opencga.storage.hadoop.alignment.MongoDBAlignmentStorageManager"
-    options:
-      fs.defaultFS: "${OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS}"
+    options: {}
     database:
       hosts:
       - "${OPENCGA.STORAGE.VARIANT.DB.HOSTS}"
@@ -127,7 +126,7 @@ storageEngines:
       # See opencb/opencga#352 for more info.
       opencga.storage.hadoop.mapreduce.scanner.timeout: 300000
       #Hadoop options
-      fs.defaultFS: "${OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS}"
+      #fs.defaultFS: "${OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS}"
     database:
       hosts:
       - "${OPENCGA.STORAGE.HADOOP.VARIANT.DB.HOSTS}"
