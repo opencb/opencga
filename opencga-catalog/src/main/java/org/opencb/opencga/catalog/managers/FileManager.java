@@ -482,11 +482,27 @@ public class FileManager extends AbstractManager implements IFileManager {
             newList.add(CatalogFileDBAdaptor.QueryParams.TYPE.key());
             queryOptions.put(QueryOptions.INCLUDE, newList);
         } else {
-            queryOptions.put(QueryOptions.INCLUDE, CatalogFileDBAdaptor.QueryParams.TYPE.key());
+            // Avoid excluding type
+            if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
+                List<String> asStringListOld = queryOptions.getAsStringList(QueryOptions.EXCLUDE);
+                if (asStringListOld.contains(CatalogFileDBAdaptor.QueryParams.TYPE.key())) {
+                    // Remove type from exclude options
+                    if (asStringListOld.size() > 1) {
+                        List<String> toExclude = new ArrayList<>(asStringListOld.size() - 1);
+                        for (String s : asStringListOld) {
+                            if (!s.equalsIgnoreCase(CatalogFileDBAdaptor.QueryParams.TYPE.key())) {
+                                toExclude.add(s);
+                            }
+                        }
+                        queryOptions.put(QueryOptions.EXCLUDE, StringUtils.join(toExclude.toArray(), ","));
+                    } else {
+                        queryOptions.remove(QueryOptions.EXCLUDE);
+                    }
+                }
+            }
         }
 
-        // FIXME use userManager instead of userDBAdaptor
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
 
         // Check 1. No comma-separated values are valid, only one single File or Directory can be deleted.
         Long fileId = getFileId(userId, fileIdStr);

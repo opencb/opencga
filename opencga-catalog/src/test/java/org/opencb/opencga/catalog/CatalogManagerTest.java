@@ -747,8 +747,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testGetTreeView() throws CatalogException {
-        QueryResult<FileTree> fileTree = catalogManager.getFileManager().getFileTree("user@1000G:phase1:", new Query(), new QueryOptions(),
-                5, sessionIdUser);
+        QueryResult<FileTree> fileTree = catalogManager.getFileManager().getFileTree("user@1000G:phase1:", new Query(),
+                new QueryOptions(QueryOptions.EXCLUDE, CatalogFileDBAdaptor.QueryParams.TYPE.key()), 5, sessionIdUser);
         assertEquals(8, fileTree.getNumResults());
     }
 

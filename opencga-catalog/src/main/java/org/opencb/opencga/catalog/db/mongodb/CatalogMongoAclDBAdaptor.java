@@ -160,9 +160,9 @@ public class CatalogMongoAclDBAdaptor<T extends AbstractAclEntry> implements Acl
                 .append(QueryParams.ACL_MEMBER.key(), member);
         Bson update = new Document("$pull", new Document("acl", new Document("member", member)));
         QueryResult<UpdateResult> updateResult = collection.update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
-        if (updateResult.first().getModifiedCount() == 0) {
-            throw new CatalogDBException("remove ACL: An error occurred when trying to remove the ACLs defined for " + member);
-        }
+//        if (updateResult.first().getModifiedCount() == 0) {
+//            throw new CatalogDBException("remove ACL: An error occurred when trying to remove the ACLs defined for " + member);
+//        }
         logger.debug("Remove all the Acls for member {} in study {}", member, studyId);
     }
 

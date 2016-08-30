@@ -296,20 +296,20 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         List<Document> groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(CatalogFileDBAdaptor.QueryParams.OWNER_ID.key(), "pfurio"),
                 CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), new QueryOptions()).getResult();
 
-        assertEquals("ALIGNMENT", groupByBioformat.get(0).get("_id"));
+        assertEquals("ALIGNMENT", ((Document) groupByBioformat.get(0).get("_id")).get(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key()));
         assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(0).get("features"));
 
-        assertEquals("NONE", groupByBioformat.get(1).get("_id"));
+        assertEquals("NONE", ((Document) groupByBioformat.get(1).get("_id")).get(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key()));
         assertEquals(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt", "data/"), groupByBioformat.get(1).get("features"));
 
         groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(CatalogFileDBAdaptor.QueryParams.OWNER_ID.key(), "pfurio")
                 .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), 14), // MINECO study
                 CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), new QueryOptions()).getResult();
 
-        assertEquals("ALIGNMENT", groupByBioformat.get(0).get("_id"));
+        assertEquals("ALIGNMENT", ((Document) groupByBioformat.get(0).get("_id")).get(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key()));
         assertEquals(Arrays.asList("m_alignment.bam"), groupByBioformat.get(0).get("features"));
 
-        assertEquals("NONE", groupByBioformat.get(1).get("_id"));
+        assertEquals("NONE", ((Document) groupByBioformat.get(1).get("_id")).get(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key()));
         assertEquals(Arrays.asList("m_file1.txt", "data/"), groupByBioformat.get(1).get("features"));
 
     }

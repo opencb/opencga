@@ -232,10 +232,12 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.updateGroup(Long.toString(s1), groupAdmin, null, studyAdminUser2, null, ownerSessionId);
         assertFalse(getGroupMap().get(groupAdmin).getUserIds().contains(studyAdminUser2));
 
-        // Cannot remove group with defined ACLs
-        thrown.expect(CatalogDBException.class);
-        thrown.expectMessage("ACL defined");
+//        // Cannot remove group with defined ACLs
+//        thrown.expect(CatalogDBException.class);
+//        thrown.expectMessage("ACL defined");
         catalogManager.deleteGroup(Long.toString(s1), groupAdmin, ownerSessionId);
+        assertNull(getGroupMap().get(groupAdmin));
+
     }
 
     @Test
