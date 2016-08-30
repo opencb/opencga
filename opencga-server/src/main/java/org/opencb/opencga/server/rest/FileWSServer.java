@@ -137,14 +137,23 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/create-folder")
     @ApiOperation(value = "Create a folder in the catalog environment", position = 2, response = File.class)
     public Response createFolder(@ApiParam(value = "Study id", required = true) @QueryParam("studyId") String studyIdStr,
-                                 @ApiParam(value = "Path where the folder is to be created", required = true) @QueryParam("folder") String folder,
+                                 @ApiParam(value = "CSV list of paths where the folders will be created", required = true) @QueryParam("folders") String folders,
                                  @ApiParam(value = "Create the parent directories if they do not exist", required = false)
                                  @QueryParam("parents") @DefaultValue("false") boolean parents) {
         try {
-            java.nio.file.Path folderPath = Paths.get(convertPath(folder));
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
-            QueryResult queryResult = catalogManager.createFolder(studyId, folderPath, parents, queryOptions, sessionId);
-            return createOkResponse(queryResult);
+            String[] folderList = (String[]) convertPathList(folders).toArray();
+
+            List<QueryResult> queryResultList = new ArrayList<>(folderList.length);
+            for (String folder : folderList) {
+                try {
+                    java.nio.file.Path folderPath = Paths.get(convertPath(folder));
+                    queryResultList.add(catalogManager.createFolder(studyId, folderPath, parents, queryOptions, sessionId));
+                } catch (CatalogException e) {
+                    queryResultList.add(new QueryResult<>("Create folder", -1, 0, 0, "", e.getMessage(), Collections.emptyList()));
+                }
+            }
+            return createOkResponse(queryResultList);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
