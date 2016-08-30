@@ -1153,6 +1153,10 @@ public class FileManager extends AbstractManager implements IFileManager {
             catalogPath = Paths.get("");
             authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_FILES);
         } else {
+            if (pathDestiny.startsWith("/")) {
+                pathDestiny = pathDestiny.substring(1);
+            }
+
             catalogPath = Paths.get(pathDestiny);
 
             // Check if the destiny is a directory
