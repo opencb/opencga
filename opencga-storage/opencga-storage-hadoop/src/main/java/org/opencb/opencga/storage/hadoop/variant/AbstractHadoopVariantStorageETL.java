@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.avro.generic.GenericRecord;
@@ -11,6 +10,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantNormalizer;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -18,10 +18,14 @@ import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
+import org.opencb.biodata.tools.variant.converter.VariantToVcfSliceConverter;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.hpg.bigdata.core.io.ProtoFileWriter;
+import org.opencb.opencga.core.common.ProgressLogger;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
@@ -43,9 +47,9 @@ import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
 import org.slf4j.Logger;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -53,9 +57,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
-import java.util.zip.GZIPInputStream;
+import java.util.function.Supplier;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager.*;
 
@@ -125,16 +130,18 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
         // Stats calculator
         VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
 
-        VariantVcfHtsjdkReader dataReader = null;
+        VariantReader dataReader = null;
         try {
-            InputStream inputStream = new FileInputStream(input.toFile());
-            if (input.toString().endsWith("gz")) {
-                inputStream = new GZIPInputStream(inputStream);
-            }
+            if (VariantReaderUtils.isVcf(input.toString())) {
+                InputStream inputStream = FileUtils.newInputStream(input);
 
-            dataReader = new VariantVcfHtsjdkReader(inputStream, source, normalizer);
-            if (null != malformatedHandler) {
-                dataReader.registerMalformatedVcfHandler(malformatedHandler);
+                VariantVcfHtsjdkReader reader = new VariantVcfHtsjdkReader(inputStream, source, normalizer);
+                if (null != malformatedHandler) {
+                    reader.registerMalformatedVcfHandler(malformatedHandler);
+                }
+                dataReader = reader;
+            } else {
+                dataReader = VariantReaderUtils.getVariantReader(input, source);
             }
         } catch (IOException e) {
             throw new StorageManagerException("Unable to read from " + input, e);
@@ -143,60 +150,106 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
         // Transformer
         VcfMeta meta = new VcfMeta(source);
         ArchiveHelper helper = new ArchiveHelper(conf, meta);
-        VariantHbaseTransformTask transformTask = new VariantHbaseTransformTask(helper, null);
+        ProgressLogger progressLogger = new ProgressLogger("Transform proto:").setBatchSize(100000);
 
         logger.info("Generating output file {}", outputVariantsFile);
 
-        long[] t = new long[]{0, 0, 0};
-        long last = System.nanoTime();
-        Long start = System.currentTimeMillis();
-        long end = System.currentTimeMillis();
-        try {
-            dataReader.open();
-            dataReader.pre();
-            dataWriter.open();
-            dataWriter.pre();
-            transformTask.pre();
-            statsCalculator.pre();
+        long start = System.currentTimeMillis();
+        long end;
+        // FIXME
+        if (options.getBoolean("transform.proto.parallel")) {
+            VariantSliceReader sliceReader = new VariantSliceReader(helper.getChunkSize(), dataReader);
 
-            start = System.currentTimeMillis();
-            last = System.nanoTime();
-            // Process data
-            List<Variant> read = dataReader.read(batchSize);
-            t[0] += System.nanoTime() - last;
-            last = System.nanoTime();
-            while (!read.isEmpty()) {
-                statsCalculator.apply(read);
-                List<VcfSliceProtos.VcfSlice> slices = transformTask.apply(read);
-                t[1] += System.nanoTime() - last;
+            // Use a supplier to avoid concurrent modifications of non thread safe objects.
+            Supplier<ParallelTaskRunner.TaskWithException<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice, ?>> supplier =
+                    () -> {
+                        VariantToVcfSliceConverter converter = new VariantToVcfSliceConverter();
+                        return batch -> {
+                            List<VcfSliceProtos.VcfSlice> slices = new ArrayList<>(batch.size());
+                            for (ImmutablePair<Long, List<Variant>> pair : batch) {
+                                slices.add(converter.convert(pair.getRight(), pair.getLeft().intValue()));
+                                progressLogger.increment(pair.getRight().size());
+                            }
+                            return slices;
+                        };
+                    };
+
+            ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
+                    .setNumTasks(options.getInt(Options.TRANSFORM_THREADS.key(), 1))
+                    .setBatchSize(1)
+                    .setAbortOnFail(true)
+                    .setSorted(false)
+                    .setCapacity(1)
+                    .build();
+
+            ParallelTaskRunner<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice> ptr;
+            ptr = new ParallelTaskRunner<>(sliceReader, supplier, dataWriter, config);
+
+            try {
+                ptr.run();
+            } catch (ExecutionException e) {
+                throw new StorageManagerException(String.format("Error while Transforming file %s into %s", input, outputVariantsFile), e);
+            }
+            end = System.currentTimeMillis();
+        } else {
+            VariantHbaseTransformTask transformTask = new VariantHbaseTransformTask(helper, null);
+            long[] t = new long[]{0, 0, 0};
+            long last = System.nanoTime();
+
+            try {
+                dataReader.open();
+                dataReader.pre();
+                dataWriter.open();
+                dataWriter.pre();
+                transformTask.pre();
+                statsCalculator.pre();
+
+                start = System.currentTimeMillis();
                 last = System.nanoTime();
-                dataWriter.write(slices);
-                t[2] += System.nanoTime() - last;
-                last = System.nanoTime();
-                read = dataReader.read(batchSize);
+                // Process data
+                List<Variant> read = dataReader.read(batchSize);
                 t[0] += System.nanoTime() - last;
                 last = System.nanoTime();
+                while (!read.isEmpty()) {
+                    progressLogger.increment(read.size());
+                    statsCalculator.apply(read);
+                    List<VcfSliceProtos.VcfSlice> slices = transformTask.apply(read);
+                    t[1] += System.nanoTime() - last;
+                    last = System.nanoTime();
+                    dataWriter.write(slices);
+                    t[2] += System.nanoTime() - last;
+                    last = System.nanoTime();
+                    read = dataReader.read(batchSize);
+                    t[0] += System.nanoTime() - last;
+                    last = System.nanoTime();
+                }
+                List<VcfSliceProtos.VcfSlice> drain = transformTask.drain();
+                t[1] += System.nanoTime() - last;
+                last = System.nanoTime();
+                dataWriter.write(drain);
+                t[2] += System.nanoTime() - last;
+
+                end = System.currentTimeMillis();
+
+                source.getMetadata().put(VariantFileUtils.VARIANT_FILE_HEADER, dataReader.getHeader());
+                statsCalculator.post();
+                transformTask.post();
+                dataReader.post();
+                dataWriter.post();
+
+                end = System.currentTimeMillis();
+                logger.info("Times for reading: {}, transforming {}, writing {}",
+                        TimeUnit.NANOSECONDS.toSeconds(t[0]),
+                        TimeUnit.NANOSECONDS.toSeconds(t[1]),
+                        TimeUnit.NANOSECONDS.toSeconds(t[2]));
+            } catch (Exception e) {
+                throw new StorageManagerException(String.format("Error while Transforming file %s into %s", input, outputVariantsFile), e);
+            } finally {
+                dataWriter.close();
+                dataReader.close();
             }
-            List<VcfSliceProtos.VcfSlice> drain = transformTask.drain();
-            t[1] += System.nanoTime() - last;
-            last = System.nanoTime();
-            dataWriter.write(drain);
-            t[2] += System.nanoTime() - last;
-
-            end = System.currentTimeMillis();
-
-            source.getMetadata().put(VariantFileUtils.VARIANT_FILE_HEADER, dataReader.getHeader());
-            statsCalculator.post();
-            transformTask.post();
-            dataReader.post();
-            dataWriter.post();
-        } catch (Exception e) {
-            throw new StorageManagerException(
-                    String.format("Error while Transforming file %s into %s ", input, outputVariantsFile), e);
-        } finally {
-            dataWriter.close();
-            dataReader.close();
         }
+
         ObjectMapper jsonObjectMapper = new ObjectMapper();
         jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
         jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
@@ -205,13 +258,9 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
         try {
             String sourceJsonString = variantSourceObjectWriter.writeValueAsString(source);
             StringDataWriter.write(outputMetaFile, Collections.singletonList(sourceJsonString));
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            throw new StorageManagerException("Error writing meta file", e);
         }
-        logger.info("Times for reading: {}, transforming {}, writing {}",
-                TimeUnit.NANOSECONDS.toSeconds(t[0]),
-                TimeUnit.NANOSECONDS.toSeconds(t[1]),
-                TimeUnit.NANOSECONDS.toSeconds(t[2]));
         return new ImmutablePair<>(start, end);
     }
 
@@ -249,7 +298,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
                     logger.info("Copied to hdfs in {}s", (System.currentTimeMillis() - startTime) / 1000.0);
 
                     startTime = System.currentTimeMillis();
-                    URI fileInput = URI.create(VariantReaderUtils.getMetaFromInputFile(input.toString()));
+                    URI fileInput = URI.create(VariantReaderUtils.getMetaFromTransformedFile(input.toString()));
                     org.apache.hadoop.fs.Path fileOutputPath = new org.apache.hadoop.fs.Path(
                             output.resolve(Paths.get(fileInput.getPath()).getFileName().toString()));
                     logger.info("Copy from {} to {}", new org.apache.hadoop.fs.Path(fileInput).toUri(), fileOutputPath.toUri());
@@ -420,6 +469,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
 
         List<BatchFileOperation> batches = studyConfiguration.getBatches();
         BatchFileOperation batchFileOperation;
+        boolean newOperation = false;
         if (!batches.isEmpty()) {
             batchFileOperation = batches.get(batches.size() - 1);
             BatchFileOperation.Status currentStatus = batchFileOperation.currentStatus();
@@ -427,6 +477,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
             switch (currentStatus) {
                 case READY:
                     batchFileOperation = new BatchFileOperation(jobOperationName, fileIds, batchFileOperation.getTimestamp() + 1);
+                    newOperation = true;
                     break;
                 case DONE:
                 case RUNNING:
@@ -450,9 +501,12 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
             }
         } else {
             batchFileOperation = new BatchFileOperation(jobOperationName, fileIds, 1);
+            newOperation = true;
         }
         batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
-        batches.add(batchFileOperation);
+        if (newOperation) {
+            batches.add(batchFileOperation);
+        }
         return batchFileOperation;
     }
 

@@ -58,11 +58,6 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         init(skipDuration);
     }
 
-    public void reloadConfig(OpencgaCliOptionsParser.OpencgaCommonCommandOptions options) {
-        init(options.logLevel, options.verbose, options.conf);
-        init(false);
-    }
-
     private void init(boolean skipDuration) {
         try {
             this.writer = new JsonWriter();

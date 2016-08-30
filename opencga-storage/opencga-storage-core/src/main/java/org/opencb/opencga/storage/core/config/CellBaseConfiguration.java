@@ -106,6 +106,7 @@ public class CellBaseConfiguration {
     public ClientConfiguration toClientConfiguration() {
         ClientConfiguration clientConfiguration = new ClientConfiguration();
         clientConfiguration.setVersion(this.getVersion());
+        clientConfiguration.setDefaultSpecies("hsapiens");
         RestConfig rest = new RestConfig();
         List<String> hosts = new ArrayList<>(this.getHosts().size());
         for (String host : this.getHosts()) {

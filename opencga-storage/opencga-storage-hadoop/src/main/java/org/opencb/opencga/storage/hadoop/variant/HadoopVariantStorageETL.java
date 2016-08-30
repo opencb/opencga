@@ -36,7 +36,7 @@ public class HadoopVariantStorageETL extends AbstractHadoopVariantStorageETL {
 
     protected void loadArch(URI input) throws StorageManagerException {
         int studyId = getStudyId();
-        URI vcfMeta = URI.create(VariantReaderUtils.getMetaFromInputFile(input.toString()));
+        URI vcfMeta = URI.create(VariantReaderUtils.getMetaFromTransformedFile(input.toString()));
         int fileId = options.getInt(Options.FILE_ID.key());
 
         String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");

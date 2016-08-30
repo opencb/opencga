@@ -404,7 +404,11 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 //        } else {
 //            return variant.getStart() + Math.max(variant.getReference().length() - 1, -1 /* 0 */);
 //        }
-        return variant.getEnd();
+        if (EnumSet.of(VariantType.SYMBOLIC, VariantType.CNV).contains(variant.getType())) {
+            return variant.getStart();
+        } else {
+            return variant.getEnd();
+        }
     }
 
     protected void processVariantTryCatch(Document document, Variant emptyVar, MongoDBOperations mongoDBOps) {

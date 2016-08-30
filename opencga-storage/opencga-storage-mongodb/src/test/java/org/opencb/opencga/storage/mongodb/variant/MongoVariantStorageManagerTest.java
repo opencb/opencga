@@ -414,6 +414,7 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
         int i = 0;
         Logger logger = LoggerFactory.getLogger("Test");
         AtomicBoolean success = new AtomicBoolean(false);
+        final int MAX_EXECUTIONS = 15;
         while (true) {
             final int execution = ++i;
             Thread thread = new Thread(() -> {
@@ -431,6 +432,10 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
             });
             logger.warn("+-----------------------+");
             logger.warn("+   Execution : " + execution);
+            if (execution == MAX_EXECUTIONS) {
+                logger.warn("+   Last Execution!");
+                sleep += TimeUnit.MINUTES.toMillis(5);
+            }
             logger.warn("+-----------------------+");
             thread.start();
             sleep += 1000;
@@ -443,8 +448,8 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
                 logger.info("Exit. Success = " + success.get());
                 break;
             }
-            // Finish in less than 15 executions
-            assertTrue(execution < 15);
+            // Finish in less than MAX_EXECUTIONS executions
+            assertTrue(execution < MAX_EXECUTIONS);
         }
         // Do at least one interruption
         assertTrue(i > 1);

@@ -234,12 +234,10 @@ public abstract class VariantStorageETL implements StorageETL {
             throw new IllegalArgumentException("Unknown compression method " + compression);
         }
 
-        // TODO Create a utility to determine which extensions are variants files
-        final VariantVcfFactory factory = createVariantVcfFactory(source, fileName);
 
         Path outputMalformedVariants = output.resolve(fileName + "." + VariantReaderUtils.MALFORMED_FILE + ".txt");
         Path outputVariantsFile = output.resolve(fileName + "." + VariantReaderUtils.VARIANTS_FILE + "." + format + extension);
-        Path outputMetaFile = output.resolve(fileName + "." + VariantReaderUtils.METADATA_FILE_FORMAT_GZ);
+        Path outputMetaFile = VariantReaderUtils.getMetaFromTransformedFile(outputVariantsFile);
 
         // Close at the end!
         final MalformedVariantHandler malformedHandler;
@@ -248,6 +246,13 @@ public abstract class VariantStorageETL implements StorageETL {
         } catch (IOException e) {
             throw new StorageManagerException(e.getMessage(), e);
         }
+
+        ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
+                .setNumTasks(numTasks)
+                .setBatchSize(batchSize)
+                .setCapacity(capacity)
+                .setSorted(true)
+                .build();
 
         logger.info("Transforming variants using {} into {} ...", parser, format);
         long start, end;
@@ -313,6 +318,8 @@ public abstract class VariantStorageETL implements StorageETL {
                         statsCalculator, includeSrc, generateReferenceBlocks)
                         .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
             } else {
+                // TODO Create a utility to determine which extensions are variants files
+                final VariantVcfFactory factory = createVariantVcfFactory(source, fileName);
                 logger.info("Using Biodata to read variants.");
                 final VariantSource finalSource = source;
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
@@ -328,7 +335,7 @@ public abstract class VariantStorageETL implements StorageETL {
                         dataReader,
                         taskSupplier,
                         dataWriter,
-                        new ParallelTaskRunner.Config(numTasks, batchSize, capacity, false)
+                        config
                 );
             } catch (Exception e) {
                 throw new StorageManagerException("Error while creating ParallelTaskRunner", e);
@@ -363,6 +370,8 @@ public abstract class VariantStorageETL implements StorageETL {
                         outputMetaFile, statsCalculator, includeSrc, generateReferenceBlocks)
                         .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
             } else {
+                // TODO Create a utility to determine which extensions are variants files
+                final VariantVcfFactory factory = createVariantVcfFactory(source, fileName);
                 logger.info("Using Biodata to read variants.");
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
                 taskSupplier = () -> new VariantJsonTransformTask(factory, finalSource, outputMetaFile, statsCalculator, includeSrc)
@@ -376,7 +385,7 @@ public abstract class VariantStorageETL implements StorageETL {
                         dataReader,
                         taskSupplier,
                         dataWriter,
-                        new ParallelTaskRunner.Config(numTasks, batchSize, capacity, false)
+                        config
                 );
             } catch (Exception e) {
                 throw new StorageManagerException("Error while creating ParallelTaskRunner", e);
@@ -393,7 +402,7 @@ public abstract class VariantStorageETL implements StorageETL {
         } else if ("proto".equals(format)) {
             //Read VariantSource
             source = VariantStorageManager.readVariantSource(input, source);
-            Pair<Long, Long> times =  processProto(input, fileName, output, source, outputVariantsFile, outputMetaFile,
+            Pair<Long, Long> times = processProto(input, fileName, output, source, outputVariantsFile, outputMetaFile,
                     includeSrc, parser, generateReferenceBlocks, batchSize, extension, compression, malformedHandler);
             start = times.getKey();
             end = times.getValue();

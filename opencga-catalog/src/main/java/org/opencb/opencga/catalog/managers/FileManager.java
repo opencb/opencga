@@ -75,9 +75,10 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     public FileManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager, AuditManager auditManager,
-                       CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                       CatalogConfiguration catalogConfiguration) {
-        super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogConfiguration);
+                       CatalogManager catalogManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory,
+                       CatalogIOManagerFactory ioManagerFactory, CatalogConfiguration catalogConfiguration) {
+        super(authorizationManager, authenticationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
+                catalogConfiguration);
     }
 
     public static List<String> getParentPaths(String filePath) {
@@ -1905,6 +1906,138 @@ public class FileManager extends AbstractManager implements IFileManager {
     public DataInputStream head(long fileId, int lines, QueryOptions options, String sessionId) throws CatalogException {
         return download(fileId, 0, lines, options, sessionId);
     }
+
+    @Override
+    public QueryResult index(String fileIdStr, String type, Map<String, String> params, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        List<Long> fileFolderIdList = getFileIds(userId, fileIdStr);
+
+        long studyId = -1;
+        // Check we can index all of them
+        for (Long fileId : fileFolderIdList) {
+            if (fileId == -1) {
+                throw new CatalogException("Could not find file or folder " + fileIdStr);
+            }
+
+            long studyIdByFileId = fileDBAdaptor.getStudyIdByFileId(fileId);
+
+            if (studyId == -1) {
+                studyId = studyIdByFileId;
+            } else if (studyId != studyIdByFileId) {
+                throw new CatalogException("Cannot index files coming from different studies.");
+            }
+
+        }
+
+        Long outDirId = getFileId(userId, params.get("outdir"));
+        if (outDirId > 0) {
+            authorizationManager.checkFilePermission(outDirId, userId, FileAclEntry.FilePermissions.CREATE);
+            if (fileDBAdaptor.getStudyIdByFileId(outDirId) != studyId) {
+                throw new CatalogException("The output directory does not correspond to the same study of the files");
+            }
+        }
+
+        QueryResult<Job> jobQueryResult = null;
+        if (type.equals("VCF")) {
+            List<Long> fileIdList = new ArrayList<>();
+
+            for (Long fileId : fileFolderIdList) {
+                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                        CatalogFileDBAdaptor.QueryParams.PATH.key(),
+                        CatalogFileDBAdaptor.QueryParams.URI.key(),
+                        CatalogFileDBAdaptor.QueryParams.TYPE.key(),
+                        CatalogFileDBAdaptor.QueryParams.FORMAT.key(),
+                        CatalogFileDBAdaptor.QueryParams.INDEX.key())
+                );
+                QueryResult<File> file = fileDBAdaptor.getFile(fileId, queryOptions);
+
+                if (file.getNumResults() != 1) {
+                    throw new CatalogException("Could not find file or folder " + fileIdStr);
+                }
+
+                if (File.Type.DIRECTORY.equals(file.first().getType())) {
+                    // Retrieve all the VCF files that can be found within the directory
+                    String path = file.first().getPath().endsWith("/") ? file.first().getPath() : file.first().getPath() + "/";
+                    Query query = new Query(CatalogFileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.VCF, File.Format.GVCF))
+                            .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^" + path + "*");
+                    QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, queryOptions);
+
+                    if (fileQueryResult.getNumResults() == 0) {
+                        throw new CatalogException("No VCF files could be found in directory " + file.first().getPath());
+                    }
+
+                    for (File fileTmp : fileQueryResult.getResult()) {
+                        authorizationManager.checkFilePermission(fileTmp.getId(), userId, FileAclEntry.FilePermissions.VIEW);
+                        authorizationManager.checkFilePermission(fileTmp.getId(), userId, FileAclEntry.FilePermissions.UPDATE);
+
+                        fileIdList.add(fileTmp.getId());
+                    }
+
+                } else {
+                    if (!File.Format.VCF.equals(file.first().getFormat()) && !File.Format.GVCF.equals(file.first().getFormat())) {
+                        throw new CatalogException("The file " + file.first().getName() + " is not a VCF file.");
+                    }
+
+                    authorizationManager.checkFilePermission(file.first().getId(), userId, FileAclEntry.FilePermissions.VIEW);
+                    authorizationManager.checkFilePermission(file.first().getId(), userId, FileAclEntry.FilePermissions.UPDATE);
+
+                    fileIdList.add(file.first().getId());
+                }
+            }
+
+            String fileIds = StringUtils.join(fileIdList, ",");
+            params.put("file-id", fileIds);
+            params.put("outdir", Long.toString(outDirId));
+            List<Long> outputList = outDirId > 0 ? Arrays.asList(outDirId) : Collections.emptyList();
+            jobQueryResult = catalogManager.getJobManager().queue(studyId, "VariantIndex", "opencga-analysis.sh", params, fileIdList,
+                    outputList, outDirId, userId);
+
+        } else if (type.equals("BAM")) {
+            logger.debug("Index bam files to do");
+            jobQueryResult = new QueryResult<>();
+        }
+
+        return jobQueryResult;
+    }
+
+//    private void indexVariants(File file, long outDirId, ObjectMap params) throws CatalogException {
+//
+//        long studyId = fileDBAdaptor.getStudyIdByFileId(file.getId());
+//
+//        if (outDirId > 0) {
+//            // Check that the input file and the output file corresponds to the same study
+//            long studyIdByFileId = fileDBAdaptor.getStudyIdByFileId(outDirId);
+//            if (studyId != studyIdByFileId) {
+//                throw new CatalogException("The study of the file to be indexed is different from the study where the index file will be "
+//                        + "saved.");
+//            }
+//        } else {
+//            // Obtain the id of the directory where the file is stored to store the indexed files
+//            Path parent = Paths.get(file.getPath()).getParent();
+//            String parentPath;
+//            if (parent == null) {
+//                parentPath = "";
+//            } else {
+//                parentPath = parent.toString().endsWith("/") ? parent.toString() : parent.toString() + "/";
+//            }
+//            Query query = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^" + parentPath);
+//            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CatalogFileDBAdaptor.QueryParams.ID.key());
+//            QueryResult<File> outputFileDir = fileDBAdaptor.get(query, queryOptions);
+//
+//            if (outputFileDir.getNumResults() != 1) {
+//                logger.error("Could not obtain the id for the path {} for the file {} with id {}", parentPath, file.getPath(),
+//                        file.getId());
+//                throw new CatalogException("Internal error: Could not obtain the path to store indexed file");
+//            }
+//
+//            outDirId = outputFileDir.first().getId();
+//        }
+//
+//
+//
+//
+//
+//    }
 
     @Override
     public QueryResult<FileAclEntry> getFileAcls(String fileStr, List<String> members, String sessionId) throws CatalogException {

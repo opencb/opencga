@@ -4,6 +4,7 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.core.common.IOUtils;
@@ -23,8 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.Collections;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Created by jacobo on 31/05/15.
@@ -40,6 +40,30 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
     public static final String STUDY_NAME = "1000g";
     public static final String DB_NAME = "opencga_variants_test";
     public static final int FILE_ID = 6;
+    public static final Set<String> VARIANTS_WITH_CONFLICTS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+            "22:16080425:TA:-",
+            "22:16080425:T:C",
+            "22:16080426:A:G",
+            "22:16136748:ATTA:-",
+            "22:16136749:T:A",
+            "22:16137302:G:C",
+            "22:16137301:AG:-",
+            "22:16206615:C:A",
+            "22:16206615:-:C",
+            "22:16285168:-:CAAAC", // <-- This won't be a conflict with the new var end.
+            "22:16285169:T:G",
+            "22:16464051:T:C",
+            "22:16482314:C:T",
+            "22:16482314:C:-",
+            "22:16532311:A:C",
+            "22:16532321:A:T",
+            "22:16538352:A:C",
+            "22:16555584:CT:-",
+            "22:16555584:C:T",
+            "22:16556120:AGTGTTCTGGAATCCTATGTGAGGGACAAACACTCACACCCTCAGAGG:-",
+            "22:16556162:C:T",
+            "22:16614404:G:A"
+    )));
 
     protected static URI inputUri;
     protected static URI smallInputUri;
@@ -110,11 +134,15 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
     }
 
     public URI newOutputUri() throws IOException {
+        return newOutputUri(1);
+    }
+
+    public URI newOutputUri(int extraCalls) throws IOException {
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
         // stackTrace[0] = "Thread.currentThread"
         // stackTrace[1] = "newOutputUri"
         // stackTrace[2] =  caller method
-        String testName = stackTrace[2].getMethodName();
+        String testName = stackTrace[2 + extraCalls].getMethodName();
         int c = 0;
         URI outputUri = VariantStorageManagerTestUtils.outputUri.resolve("test_" + testName + "/");
         while (Paths.get(outputUri).toFile().exists()) {
@@ -270,5 +298,16 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
         return new StudyConfiguration(STUDY_ID, STUDY_NAME);
     }
 
+    public void assertWithConflicts(Variant variant, Runnable assertCondition) {
+        try {
+            assertCondition.run();
+        } catch (AssertionError e) {
+            if (VARIANTS_WITH_CONFLICTS.contains(variant.toString())) {
+                logger.error(e.getMessage());
+            } else {
+                throw e;
+            }
+        }
+    }
 
 }

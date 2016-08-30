@@ -111,7 +111,8 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
 
         long count = Arrays.stream(VariantTableMapper.TARGET_VARIANT_TYPE)
                 .map(type -> source.getStats().getVariantTypeCount(type))
-                .reduce((a, b) -> a + b).orElse(0).longValue();
+                .reduce((a, b) -> a + b)
+                .orElse(0).longValue();
         assertEquals(count, totalCount);
         assertEquals(totalCount, partialCount1 + partialCount2);
     }
@@ -191,6 +192,7 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
             return num;
         });
         System.out.println("End query from HBase : " + DB_NAME);
+        System.out.println(source.getStats().getVariantTypeCounts());
         long count = Arrays.stream(VariantTableMapper.TARGET_VARIANT_TYPE)
                 .map(type -> source.getStats().getVariantTypeCount(type))
                 .reduce((a, b) -> a + b).orElse(0).longValue();

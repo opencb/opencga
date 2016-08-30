@@ -127,7 +127,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(9));
 
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
-        checkLoadedVariants(dbAdaptor, studyConfigurationMultiFile, true, false, expectedNumVariants - 8);
+        checkLoadedVariants(dbAdaptor, studyConfigurationMultiFile, true, false, expectedNumVariants);
 
 
         //Load, in a new study, the same dataset in one single file
@@ -152,10 +152,11 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
             assertTrue(variant.toString(), map.containsKey(studyConfigurationMultiFile.getStudyName()));
             assertTrue(variant.toString(), map.containsKey(studyConfigurationSingleFile.getStudyName()));
-            assertEquals(variant.toString(), map.get(studyConfigurationSingleFile.getStudyName()).getSamplesData().toString(), map.get(studyConfigurationMultiFile
-                    .getStudyName()).getSamplesData().toString());
+            String expected = map.get(studyConfigurationSingleFile.getStudyName()).getSamplesData().toString();
+            String actual = map.get(studyConfigurationMultiFile.getStudyName()).getSamplesData().toString();
+            assertWithConflicts(variant, () -> assertEquals(variant.toString(), expected, actual));
         }
-        assertEquals(expectedNumVariants - 8, numVariants);
+        assertEquals(expectedNumVariants, numVariants);
 
     }
 
