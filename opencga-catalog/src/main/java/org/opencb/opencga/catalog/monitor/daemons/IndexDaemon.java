@@ -176,8 +176,9 @@ public class IndexDaemon extends MonitorParentDaemon {
                     outputRecorder.recordJobOutputAndPostProcess(job, status);
                 } catch (CatalogException | IOException | URISyntaxException e) {
                     logger.error(e.getMessage());
+                } finally {
+                    closeSessionId(job);
                 }
-                closeSessionId(job);
             }
 
 //            Path jobStatusFile = tmpOutdirPath.resolve("job.status");

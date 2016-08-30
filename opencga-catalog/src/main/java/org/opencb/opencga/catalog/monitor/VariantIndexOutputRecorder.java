@@ -46,7 +46,7 @@ public class VariantIndexOutputRecorder {
             ObjectMap params = new ObjectMap(job.getAttributes());
             try {
                 storageETLresults = objectReader.readValue(tmpOutdirPath.resolve("storageETLresults").toFile());
-                params = new ObjectMap("storageETLResult", storageETLresults);
+                params .putIfNotNull("storageETLResult", storageETLresults);
                 ObjectMap attributes = new ObjectMap(CatalogJobDBAdaptor.QueryParams.ATTRIBUTES.key(), params);
                 catalogManager.getJobManager().update(job.getId(), attributes, QueryOptions.empty(), sessionId);
                 job.setAttributes(params);
