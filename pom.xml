@@ -38,10 +38,10 @@
     <properties>
         <opencga.version>0.8-dev</opencga.version>
         <java.version>1.8</java.version>
-        <biodata.version>0.8.0-SNAPSHOT</biodata.version>
+        <biodata.version>0.8.0</biodata.version>
         <cellbase.version>4.5.0-beta</cellbase.version>
-        <java-common-libs.version>3.3.0-SNAPSHOT</java-common-libs.version>
-        <hpg-bigdata.version>0.6-SNAPSHOT</hpg-bigdata.version>
+        <java-common-libs.version>3.3.0</java-common-libs.version>
+        <hpg-bigdata.version>0.6.0</hpg-bigdata.version>
         <jackson.version>2.6.6</jackson.version>
         <jersey.version>2.23</jersey.version>
         <hadoop.version>2.7.1</hadoop.version>
@@ -247,7 +247,7 @@
             <dependency>
                 <groupId>org.opencb.hpg-bigdata</groupId>
                 <artifactId>hpg-bigdata-tools</artifactId>
-                <version>0.6-SNAPSHOT</version>
+                <version>${hpg-bigdata.version}</version>
             </dependency>
 
             <!-- General dependencies -->
