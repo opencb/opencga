@@ -131,13 +131,12 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         boolean addDependencyJar = conf.getBoolean(GenomeHelper.CONFIG_HBASE_ADD_DEPENDENCY_JARS, true);
         initMapReduceJob(inTable, outTable, job, scan, addDependencyJar);
 
-        getStudyConfigurationManager().close();
-
         boolean succeed = executeJob(job);
         if (!succeed) {
             getLog().error("error with job!");
         }
 
+        getStudyConfigurationManager().close();
 
         return succeed ? 0 : 1;
     }
