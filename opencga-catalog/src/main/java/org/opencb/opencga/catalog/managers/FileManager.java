@@ -1150,9 +1150,17 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (!ioManager.exists(uriOrigin)) {
             throw new CatalogIOException("File " + uriOrigin + " does not exist");
         }
+        Query query = new Query()
+                .append(CatalogFileDBAdaptor.QueryParams.URI.key(), uriOrigin)
+                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!="
+                        + File.FileStatus.REMOVED);
+        QueryResult<Long> count = fileDBAdaptor.count(query);
+        if (count.first() > 0) {
+            throw new CatalogException(uriOrigin + " was already linked to catalog.");
+        }
 
         studyDBAdaptor.checkStudyId(studyId);
-
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
         boolean parents = params.getBoolean("parents", false);
@@ -1181,7 +1189,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             }
 
             // Check if the folder exists
-            Query query = new Query()
+            query = new Query()
                     .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                     .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), catalogPath.toString() + "/");
             if (fileDBAdaptor.count(query).first() == 0) {
@@ -1189,23 +1197,32 @@ public class FileManager extends AbstractManager implements IFileManager {
                     // Get the base URI where the files are located in the study
                     URI studyURI = getStudyUri(studyId);
 
-                    // Create the directories that are necessary in catalog except for the main folder that will be linked
-                    createParents(studyId, userId, studyURI, catalogPath.getParent(), true);
+                    if (Paths.get(uriOrigin).toFile().isDirectory()) {
+                        // Create the directories that are necessary in catalog except for the main folder that will be linked
+                        createParents(studyId, userId, studyURI, catalogPath.getParent(), true);
 
-                    // Create them in the disk
-                    if (catalogPath.getParent() != null) {
-                        URI directory = Paths.get(studyURI).resolve(catalogPath.getParent()).toUri();
+                        // Create them in the disk
+                        if (catalogPath.getParent() != null) {
+                            URI directory = Paths.get(studyURI).resolve(catalogPath.getParent()).toUri();
+                            catalogIOManagerFactory.get(directory).createDirectory(directory, true);
+                        }
+
+                        // Create the folder with external
+                        File folder = new File(-1, catalogPath.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
+                                File.Bioformat.NONE, uriOrigin, catalogPath.toString() + "/", userId, TimeUtils.getTime(),
+                                TimeUtils.getTime(), description, new File.FileStatus(File.FileStatus.READY), true, 0, -1,
+                                Collections.emptyList(), -1, Collections.emptyList(), Collections.emptyList(), null, Collections.emptyMap(),
+                                Collections.emptyMap());
+                        fileDBAdaptor.createFile(studyId, folder, new QueryOptions());
+                    } else {
+                        // Create the directories that are necessary in catalog except for the main folder that will be linked
+                        createParents(studyId, userId, studyURI, catalogPath, true);
+
+                        // Create them in the disk
+                        URI directory = Paths.get(studyURI).resolve(catalogPath).toUri();
                         catalogIOManagerFactory.get(directory).createDirectory(directory, true);
+
                     }
-
-                    // Create the folder with external
-                    File folder = new File(-1, catalogPath.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
-                            File.Bioformat.NONE, uriOrigin, catalogPath.toString() + "/", userId, TimeUtils.getTime(), TimeUtils.getTime(),
-                            description, new File.FileStatus(File.FileStatus.READY), true, 0, -1,
-                            Collections.emptyList(), -1, Collections.emptyList(), Collections.emptyList(), null, Collections.emptyMap(),
-                            Collections.emptyMap());
-                    fileDBAdaptor.createFile(studyId, folder, new QueryOptions());
-
                 } else {
                     throw new CatalogException("The path " + catalogPath + " does not exist in catalog.");
                 }
@@ -1221,7 +1238,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             Path filePath = catalogPath.resolve(pathOrigin.getFileName());
 
             // Check if there is already a file in the same path
-            Query query = new Query()
+            query = new Query()
                     .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                     .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), filePath.toString());
 
@@ -1346,11 +1363,11 @@ public class FileManager extends AbstractManager implements IFileManager {
                 }
             });
 
-            Query query = new Query()
+            query = new Query()
                     .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), catalogPath.toString());
+                    .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^" + catalogPath.toString() + "*");
 
-            return fileDBAdaptor.get(query, new QueryOptions());
+            return fileDBAdaptor.get(query, new QueryOptions(QueryOptions.LIMIT, 100));
         }
 
     }
@@ -1382,18 +1399,19 @@ public class FileManager extends AbstractManager implements IFileManager {
             throw new CatalogException("Only previously linked files can be unlinked. Please, use delete instead.");
         }
 
+        String suffixName = ".REMOVED_" + TimeUtils.getTime();
+        String basePath = Paths.get(file.getPath()).toString();
+        String suffixedPath = basePath + suffixName;
         if (file.getType().equals(File.Type.FILE)) {
             logger.debug("Unlinking file {}", file.getUri().toString());
 
-            ObjectMap update = new ObjectMap(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED);
+            ObjectMap update = new ObjectMap()
+                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED)
+                    .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), suffixedPath);
 
             return fileDBAdaptor.delete(file.getId(), update, new QueryOptions());
         } else {
             logger.debug("Unlinking folder {}", file.getUri().toString());
-            String suffixName = ".REMOVED_" + TimeUtils.getTime();
-            String basePath = Paths.get(file.getPath()).toString();
-            String suffixedPath = basePath + suffixName;
-
 
             Files.walkFileTree(Paths.get(file.getUri()), new SimpleFileVisitor<Path>() {
                 @Override
