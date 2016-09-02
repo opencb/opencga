@@ -34,11 +34,11 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.ToolManager;
-import org.opencb.opencga.analysis.AnalysisOutputRecorder;
+import org.opencb.opencga.catalog.monitor.ExecutionOutputRecorder;
 import org.opencb.opencga.catalog.models.tool.Execution;
 import org.opencb.opencga.catalog.models.tool.InputParam;
 import org.opencb.opencga.analysis.JobFactory;
-import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
+import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
@@ -904,7 +904,7 @@ public class OpenCGAMainOld {
                         }
 
                         /** Record output **/
-                        AnalysisOutputRecorder outputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
+                        ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, sessionId);
                         if (c.discardOutput) {
                             CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(job.getTmpOutDirUri());
                             if (ioManager.exists(job.getTmpOutDirUri())) {

@@ -83,9 +83,6 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         //new File Id
         long newFileId = getNewId();
         file.setId(newFileId);
-        if (file.getOwnerId() == null) {
-            file.setOwnerId(ownerId);
-        }
         Document fileDocument = fileConverter.convertToStorageType(file);
         fileDocument.append(PRIVATE_STUDY_ID, studyId);
         fileDocument.append(PRIVATE_ID, newFileId);
@@ -338,11 +335,6 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public String getFileOwnerId(long fileId) throws CatalogDBException {
-        return getFile(fileId, null).getResult().get(0).getOwnerId();
-    }
-
-    @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
@@ -392,15 +384,30 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         acceptedEnums.put(QueryParams.FORMAT.key(), File.Format.class);
         acceptedEnums.put(QueryParams.BIOFORMAT.key(), File.Bioformat.class);
         // acceptedEnums.put("fileStatus", File.FileStatusEnum.class);
-        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
-            fileParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
-            fileParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
-        }
         try {
             filterEnumParams(parameters, fileParameters, acceptedEnums);
         } catch (CatalogDBException e) {
             e.printStackTrace();
             throw new CatalogDBException("File update: It was impossible updating the files. " + e.getMessage());
+        }
+
+        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
+            fileParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
+            fileParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
+        }
+        if (parameters.containsKey(QueryParams.RELATED_FILES.key())) {
+            Object o = parameters.get(QueryParams.RELATED_FILES.key());
+            if (o instanceof List<?>) {
+                List<Document> relatedFiles = new ArrayList<>(((List<?>) o).size());
+                for (Object relatedFile : ((List<?>) o)) {
+                    relatedFiles.add(getMongoDBDocument(relatedFile, "RelatedFile"));
+                }
+                fileParameters.put(QueryParams.RELATED_FILES.key(), relatedFiles);
+            }
+        }
+        if (parameters.containsKey(QueryParams.INDEX_TRANSFORMED_FILE.key())) {
+            fileParameters.put(QueryParams.INDEX_TRANSFORMED_FILE.key(),
+                    getMongoDBDocument(parameters.get(QueryParams.INDEX_TRANSFORMED_FILE.key()), "TransformedFile"));
         }
 
         String[] acceptedLongParams = {QueryParams.DISK_USAGE.key()};
@@ -431,7 +438,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         filterMapParams(parameters, fileParameters, acceptedMapParams);
         // Fixme: Attributes and stats can be also parsed to numeric or boolean
 
-        String[] acceptedObjectParams = {"index"};
+        String[] acceptedObjectParams = {QueryParams.INDEX.key()};
         filterObjectParams(parameters, fileParameters, acceptedObjectParams);
 
         if (!fileParameters.isEmpty()) {

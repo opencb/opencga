@@ -289,7 +289,7 @@ public class JobManager extends AbstractManager implements IJobManager {
     public QueryResult<Job> read(Long jobId, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         authorizationManager.checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.VIEW);
         QueryResult<Job> queryResult = jobDBAdaptor.getJob(jobId, options);
         return queryResult;
@@ -436,11 +436,13 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public QueryResult<Job> queue(long studyId, String jobName, String executable, Map<String, String> params, List<Long> input,
-                                  List<Long> output, long outDirId, String userId) throws CatalogException {
+    public QueryResult<Job> queue(long studyId, String jobName, String executable, Job.Type type, Map<String, String> params,
+                                  List<Long> input, List<Long> output, long outDirId, String userId, Map<String, Object> attributes)
+            throws CatalogException {
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_JOBS);
 
-        Job job = new Job(jobName, userId, executable, input, output, outDirId, params);
+        Job job = new Job(jobName, userId, executable, type, input, output, outDirId, params);
+        job.setAttributes(attributes);
         return jobDBAdaptor.createJob(studyId, job, new QueryOptions());
     }
 

@@ -185,22 +185,14 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         logger.debug("Updating the study");
 
-        ObjectMap objectMap = new ObjectMap();
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull(CatalogStudyDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.updateCommandOptions.name);
+        params.putIfNotNull(CatalogStudyDBAdaptor.QueryParams.TYPE.key(), studiesCommandOptions.updateCommandOptions.type);
+        params.putIfNotNull(CatalogStudyDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.updateCommandOptions.description);
+        params.putIfNotNull(CatalogStudyDBAdaptor.QueryParams.STATS.key(), studiesCommandOptions.updateCommandOptions.stats);
+        params.putIfNotNull(CatalogStudyDBAdaptor.QueryParams.ATTRIBUTES.key(), studiesCommandOptions.updateCommandOptions.attributes);
 
-        if (StringUtils.isNotEmpty(studiesCommandOptions.updateCommandOptions.name)) {
-            objectMap.put(CatalogFileDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.updateCommandOptions.name);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.updateCommandOptions.type)) {
-            objectMap.put(CatalogFileDBAdaptor.QueryParams.TYPE.key(), studiesCommandOptions.updateCommandOptions.type);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.updateCommandOptions.description)) {
-            objectMap.put(CatalogFileDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.updateCommandOptions.description);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.updateCommandOptions.status)) {
-            objectMap.put(CatalogFileDBAdaptor.QueryParams.STATUS.key(), studiesCommandOptions.updateCommandOptions.status);
-        }
-
-        return openCGAClient.getStudyClient().update(studiesCommandOptions.updateCommandOptions.id, objectMap);
+        return openCGAClient.getStudyClient().update(studiesCommandOptions.updateCommandOptions.id, params);
     }
 
     private QueryResponse<Study> delete() throws CatalogException, IOException {
@@ -247,7 +239,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         String status = studiesCommandOptions.searchCommandOptions.status;
         String attributes = studiesCommandOptions.searchCommandOptions.attributes;
         String nattributes = studiesCommandOptions.searchCommandOptions.nattributes;
-        boolean battributes = studiesCommandOptions.searchCommandOptions.battributes;
+        String battributes = studiesCommandOptions.searchCommandOptions.battributes;
 //        String groups = studiesCommandOptions.searchCommandOptions.groups;
 //        String groupsUsers = studiesCommandOptions.searchCommandOptions.groupsUsers;
 
@@ -293,7 +285,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             query.put(CatalogStudyDBAdaptor.QueryParams.NATTRIBUTES.key(), nattributes);
         }
 
-        if (battributes) {
+        if (StringUtils.isNotEmpty(battributes)) {
             query.put(CatalogStudyDBAdaptor.QueryParams.BATTRIBUTES.key(), battributes);
         }
 

@@ -484,6 +484,7 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     /**
+<<<<<<< HEAD
      * File methods
      * ***************************
      */
@@ -1314,7 +1315,7 @@ public class CatalogManagerTest extends GenericTest {
         }
 
         File stagedFile = catalogManager.createFile(studyId, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE,
-                "folder/subfolder/subsubfolder/my_staged.txt", null, null, null, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null,
+                "folder/subfolder/subsubfolder/my_staged.txt", null, null, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null,
                 -1, null, null, true, null, sessionIdUser).first();
 
         thrown.expect(CatalogException.class);
@@ -1360,6 +1361,8 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     /**
+=======
+>>>>>>> feature-new-index
      * Job methods
      * ***************************
      */

@@ -187,7 +187,7 @@ public class CatalogManager implements AutoCloseable {
         authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptorFactory, catalogConfiguration);
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager);
         sessionManager = new DefaultSessionManager(catalogDBAdaptorFactory);
-        userManager = new UserManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+        userManager = new UserManager(authorizationManager, authenticationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
         fileManager = new FileManager(authorizationManager, authenticationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
@@ -824,10 +824,6 @@ public class CatalogManager implements AutoCloseable {
      * ***************************
      */
 
-    public String getFileOwner(long fileId) throws CatalogException {
-        return fileManager.getUserId(fileId);
-    }
-
     public long getStudyIdByFileId(long fileId) throws CatalogException {
         return fileManager.getStudyId(fileId);
     }
@@ -835,7 +831,7 @@ public class CatalogManager implements AutoCloseable {
     //create file with byte[]
     public QueryResult<File> createFile(long studyId, File.Format format, File.Bioformat bioformat, String path, byte[] bytes, String
             description, boolean parents, String sessionId) throws CatalogException, IOException {
-        QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, null,
+        QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null,
                 description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, sessionId);
         new CatalogFileUtils(this).upload(new ByteArrayInputStream(bytes), queryResult.first(), sessionId, false, false, true);
         return getFile(queryResult.first().getId(), sessionId);
@@ -843,7 +839,7 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<File> createFile(long studyId, File.Format format, File.Bioformat bioformat, String path, URI fileLocation, String
             description, boolean parents, String sessionId) throws CatalogException, IOException {
-        QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, null,
+        QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null,
                 description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, sessionId);
         new CatalogFileUtils(this).upload(fileLocation, queryResult.first(), null, sessionId, false, false, true, true, Long.MAX_VALUE);
         return getFile(queryResult.first().getId(), sessionId);
@@ -851,17 +847,17 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<File> createFile(long studyId, File.Format format, File.Bioformat bioformat, String path, String description,
                                         boolean parents, long jobId, String sessionId) throws CatalogException {
-        return fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, null, description, null, 0, -1, null,
+        return fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, description, null, 0, -1, null,
                 jobId, null, null, parents, null, sessionId);
     }
 
 
     public QueryResult<File> createFile(long studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path,
-                                        String ownerId, String creationDate, String description, File.FileStatus status, long diskUsage,
-                                        long experimentId, List<Long> sampleIds, long jobId, Map<String, Object> stats,
-                                        Map<String, Object> attributes, boolean parents, QueryOptions options, String sessionId)
+                                        String creationDate, String description, File.FileStatus status, long diskUsage, long experimentId,
+                                        List<Long> sampleIds, long jobId, Map<String, Object> stats, Map<String, Object> attributes,
+                                        boolean parents, QueryOptions options, String sessionId)
             throws CatalogException {
-        return fileManager.create(studyId, type, format, bioformat, path, ownerId, creationDate, description, status,
+        return fileManager.create(studyId, type, format, bioformat, path, creationDate, description, status,
                 diskUsage, experimentId, sampleIds, jobId, stats, attributes, parents, options, sessionId);
     }
 
@@ -1925,5 +1921,9 @@ public class CatalogManager implements AutoCloseable {
 
     public CatalogConfiguration getCatalogConfiguration() {
         return catalogConfiguration;
+    }
+
+    public SessionManager getSessionManager() {
+        return sessionManager;
     }
 }

@@ -43,6 +43,7 @@ public class CatalogConfiguration {
     private String toolsDir;
 
     private Admin admin;
+    private Auth auth;
     private Monitor monitor;
     private Execution execution;
     private Audit audit;
@@ -106,6 +107,7 @@ public class CatalogConfiguration {
         sb.append(", tempJobsDir='").append(tempJobsDir).append('\'');
         sb.append(", toolsDir='").append(toolsDir).append('\'');
         sb.append(", admin=").append(admin);
+        sb.append(", auth=").append(auth);
         sb.append(", monitor=").append(monitor);
         sb.append(", execution=").append(execution);
         sb.append(", audit=").append(audit);
@@ -185,6 +187,15 @@ public class CatalogConfiguration {
 
     public CatalogConfiguration setAdmin(Admin admin) {
         this.admin = admin;
+        return this;
+    }
+
+    public Auth getAuth() {
+        return auth;
+    }
+
+    public CatalogConfiguration setAuth(Auth auth) {
+        this.auth = auth;
         return this;
     }
 

@@ -195,7 +195,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     public Response searchAnnotationSetGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
                                            @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
                                            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
-                                           @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                           @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(catalogManager.getIndividualManager().searchAnnotationSetAsMap(individualStr, variableSetId, annotation, sessionId));
@@ -211,7 +211,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @Path("/{individualId}/annotationSets/info")
     @ApiOperation(value = "Return all the annotation sets of the individual [NOT TESTED]", position = 12)
     public Response infoAnnotationSetGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
-                                         @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                         @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(catalogManager.getIndividualManager().getAllAnnotationSetsAsMap(individualStr, sessionId));
@@ -282,7 +282,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Return the annotation set [NOT TESTED]", position = 16)
     public Response infoAnnotationGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
                                       @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
-                                      @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                      @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(catalogManager.getIndividualManager().getAnnotationSetAsMap(individualStr, annotationSetName, sessionId));

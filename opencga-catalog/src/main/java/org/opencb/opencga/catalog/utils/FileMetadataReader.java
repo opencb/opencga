@@ -75,7 +75,7 @@ public class FileMetadataReader {
             path += Paths.get(fileUri.getPath()).getFileName().toString();
         }
 
-        QueryResult<File> fileResult = catalogManager.createFile(studyId, type, format, bioformat, path, null, null, description,
+        QueryResult<File> fileResult = catalogManager.createFile(studyId, type, format, bioformat, path, null, description,
                 new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, options, sessionId);
 
         File modifiedFile = null;
@@ -426,6 +426,7 @@ public class FileMetadataReader {
      * @param sessionId     User sessionId
      * @throws CatalogException if a Catalog error occurs
      */
+    @Deprecated
     public void updateVariantFileStats(Job job, String sessionId) throws CatalogException {
         long studyId = catalogManager.getStudyIdByJobId(job.getId());
         Query query = new Query()

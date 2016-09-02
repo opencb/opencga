@@ -17,18 +17,18 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
-import org.apache.commons.lang3.StringUtils;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.catalog.VariableCommandOptions;
-import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.VariableSet;
 
+import java.io.File;
 import java.io.IOException;
 
 /**
@@ -68,6 +68,9 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
             case "delete":
                 queryResponse = delete();
                 break;
+            case "field-add":
+                queryResponse = fieldAdd();
+                break;
             case "field-delete":
                 queryResponse = fieldDelete();
                 break;
@@ -87,18 +90,15 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Creating variable");
 
         QueryOptions queryOptions = new QueryOptions();
-        if (StringUtils.isNotEmpty(variableCommandOptions.createCommandOptions.studyId)) {
-            queryOptions.put(CatalogProjectDBAdaptor.QueryParams.STUDY_ID.key(), variableCommandOptions.createCommandOptions.studyId);
-        }
-        if (StringUtils.isNotEmpty(variableCommandOptions.createCommandOptions.name)) {
-            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.NAME.key(), variableCommandOptions.createCommandOptions.name);
-        }
-        queryOptions.put("unique", variableCommandOptions.createCommandOptions.unique);
-        if (StringUtils.isNotEmpty(variableCommandOptions.createCommandOptions.description)) {
-            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.DESCRIPTION.key(), variableCommandOptions.createCommandOptions.description);
-        }
+
+        queryOptions.putIfNotNull("unique", variableCommandOptions.createCommandOptions.unique);
+        queryOptions.putIfNotNull("description", variableCommandOptions.createCommandOptions.description);
+
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectMap variables = mapper.readValue(new File(variableCommandOptions.createCommandOptions.jsonFile), ObjectMap.class);
+
         return openCGAClient.getVariableClient().create(variableCommandOptions.createCommandOptions.studyId,
-                variableCommandOptions.createCommandOptions.name,  queryOptions);
+                variableCommandOptions.createCommandOptions.name, variables.get("variables"), queryOptions);
     }
 
     private QueryResponse info() throws CatalogException {
@@ -112,35 +112,16 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
         query.put(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(),variableCommandOptions.searchCommandOptions.studyId);
 
         QueryOptions queryOptions = new QueryOptions();
-        if (StringUtils.isNotEmpty(variableCommandOptions.searchCommandOptions.id)) {
-            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.ID.key(), variableCommandOptions.searchCommandOptions.id);
-        }
+        queryOptions.putIfNotNull("id", variableCommandOptions.searchCommandOptions.id);
+        queryOptions.putIfNotNull("name", variableCommandOptions.searchCommandOptions.name);
+        queryOptions.putIfNotNull("description", variableCommandOptions.searchCommandOptions.description);
+        queryOptions.putIfNotNull("attributes", variableCommandOptions.searchCommandOptions.attributes);
 
-        if (StringUtils.isNotEmpty(variableCommandOptions.searchCommandOptions.name)) {
-            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.NAME.key(), variableCommandOptions.searchCommandOptions.name);
-        }
-        if (StringUtils.isNotEmpty(variableCommandOptions.searchCommandOptions.description)) {
-            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.DESCRIPTION.key(), variableCommandOptions.searchCommandOptions.description);
-        }
-        if (StringUtils.isNotEmpty(variableCommandOptions.searchCommandOptions.attributes)) {
-            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.ATTRIBUTES.key(),
-                    variableCommandOptions.searchCommandOptions.attributes);
-        }
-
-        if (StringUtils.isNotEmpty(variableCommandOptions.searchCommandOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, variableCommandOptions.searchCommandOptions.include);
-        }
-        if (StringUtils.isNotEmpty(variableCommandOptions.searchCommandOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, variableCommandOptions.searchCommandOptions.exclude);
-        }
-        if (StringUtils.isNotEmpty(variableCommandOptions.searchCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, variableCommandOptions.searchCommandOptions.limit);
-        }
-        if (StringUtils.isNotEmpty(variableCommandOptions.searchCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, variableCommandOptions.searchCommandOptions.skip);
-        }
-
-        queryOptions.put("count", variableCommandOptions.searchCommandOptions.count);
+        queryOptions.putIfNotNull(QueryOptions.INCLUDE, variableCommandOptions.searchCommandOptions.include);
+        queryOptions.putIfNotNull(QueryOptions.EXCLUDE, variableCommandOptions.searchCommandOptions.exclude);
+        queryOptions.putIfNotNull(QueryOptions.LIMIT, variableCommandOptions.searchCommandOptions.limit);
+        queryOptions.putIfNotNull(QueryOptions.SKIP, variableCommandOptions.searchCommandOptions.skip);
+        queryOptions.putIfNotNull("count", variableCommandOptions.searchCommandOptions.count);
 
         return openCGAClient.getVariableClient().search(query, queryOptions);
     }
@@ -148,13 +129,17 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<VariableSet> update() throws CatalogException, IOException {
         logger.debug("Updating variable");
         ObjectMap objectMap = new ObjectMap();
-        if (StringUtils.isNotEmpty(variableCommandOptions.updateCommandOptions.name)) {
-            objectMap.put(CatalogSampleDBAdaptor.QueryParams.NAME.key(), variableCommandOptions.updateCommandOptions.name);
+        objectMap.putIfNotNull("name", variableCommandOptions.updateCommandOptions.name);
+        objectMap.putIfNotNull("description", variableCommandOptions.updateCommandOptions.description);
+
+        Object variables = null;
+        if (variableCommandOptions.updateCommandOptions.jsonFile != null
+                && !variableCommandOptions.updateCommandOptions.jsonFile.isEmpty()) {
+            ObjectMapper mapper = new ObjectMapper();
+            variables = mapper.readValue(new File(variableCommandOptions.updateCommandOptions.jsonFile), ObjectMap.class).get("variables");
         }
-        if (StringUtils.isNotEmpty(variableCommandOptions.updateCommandOptions.description)) {
-            objectMap.put(CatalogSampleDBAdaptor.QueryParams.DESCRIPTION.key(), variableCommandOptions.updateCommandOptions.description);
-        }
-        return openCGAClient.getVariableClient().update(variableCommandOptions.updateCommandOptions.id, objectMap);
+
+        return openCGAClient.getVariableClient().update(variableCommandOptions.updateCommandOptions.id, variables, objectMap);
     }
 
     private QueryResponse<VariableSet> delete() throws CatalogException, IOException {
@@ -162,6 +147,17 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap objectMap = new ObjectMap();
         return openCGAClient.getVariableClient().delete(variableCommandOptions.deleteCommandOptions.id, objectMap);
     }
+
+    private QueryResponse<VariableSet> fieldAdd() throws CatalogException, IOException {
+        logger.debug("Adding variables to variable set");
+
+        ObjectMapper mapper = new ObjectMapper();
+        Object variables = mapper.readValue(new File(variableCommandOptions.fieldAddCommandOptions.jsonFile), ObjectMap.class)
+                .get("variables");
+
+        return openCGAClient.getVariableClient().addVariable(variableCommandOptions.fieldAddCommandOptions.id, variables);
+    }
+
 
     private QueryResponse<VariableSet> fieldDelete() throws CatalogException, IOException {
         logger.debug("Deleting the variable field");

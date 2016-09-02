@@ -1,12 +1,12 @@
 package org.opencb.opencga.catalog.managers.api;
 
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Dataset;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.FileTree;
-import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.DatasetAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 
@@ -36,12 +36,24 @@ public interface IFileManager extends ResourceManager<Long, File> {
     @Deprecated
     URI getFileUri(URI studyUri, String relativeFilePath) throws CatalogException;
 
+
+
     /*-------------*/
     /* ID METHODS  */
     /*-------------*/
-    String getUserId(long fileId) throws CatalogException;
-
     Long getStudyId(long fileId) throws CatalogException;
+
+    /**
+     * Obtains the numeric file id given a string.
+     *
+     * @param fileStr File id in string format. Could be one of [id | user@aliasProject:aliasStudy:{fileName|path}
+     *                | user@aliasStudy:{fileName|path} | aliasStudy:{fileName|path} | {fileName|path}].
+     * @param studyId study id where the file will be looked for.
+     * @param sessionId session id of the user asking for the file.
+     * @return the numeric file id.
+     * @throws CatalogException when more than one file id is found.
+     */
+    Long getFileId(String fileStr, long studyId, String sessionId) throws CatalogException;
 
     /**
      * Obtains the numeric file id given a string.
@@ -70,23 +82,44 @@ public interface IFileManager extends ResourceManager<Long, File> {
         return fileIds;
     }
 
+    void matchUpVariantFiles(List<File> avroFiles, String sessionId) throws CatalogException;
+
     @Deprecated
     Long getFileId(String fileId) throws CatalogException;
 
     boolean isExternal(File file) throws CatalogException;
 
+    QueryResult<FileIndex>  updateFileIndexStatus(File file, String newStatus, String sessionId) throws CatalogException;
+
+
     /*--------------*/
     /* CRUD METHODS */
     /*--------------*/
-    QueryResult<File> create(long studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path, String ownerId,
-                             String creationDate, String description, File.FileStatus status, long diskUsage, long experimentId,
-                             List<Long> sampleIds, long jobId, Map<String, Object> stats, Map<String, Object> attributes,
-                             boolean parents, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult<File> create(long studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path, String creationDate,
+                             String description, File.FileStatus status, long diskUsage, long experimentId, List<Long> sampleIds,
+                             long jobId, Map<String, Object> stats, Map<String, Object> attributes, boolean parents, QueryOptions options,
+                             String sessionId) throws CatalogException;
 
     QueryResult<File> createFolder(long studyId, String path, File.FileStatus status, boolean parents, String description,
                                    QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<File> readAll(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
+
+    QueryResult<Long> count(Query query, String sessionId) throws CatalogException;
+
+    /**
+     * Look for files inside the path.
+     *
+     * @param path Directory where the files are to be found.
+     * @param recursive Boolean indicating whether to look inside the folder recursively.
+     * @param query Query object.
+     * @param options Query options object.
+     * @param sessionId session id of the user doing the query.
+     * @return A queryResult object containing the files found.
+     * @throws CatalogException catalogException.
+     */
+    QueryResult<File> readAll(String path, boolean recursive, Query query, QueryOptions options, String sessionId)
+            throws CatalogException;
 
     QueryResult<File> getParent(long fileId, QueryOptions options, String sessionId) throws CatalogException;
 

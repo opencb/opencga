@@ -21,10 +21,7 @@ import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.net.URI;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -32,6 +29,7 @@ import java.util.Map;
 public class Job extends AbstractAcl<JobAclEntry> {
 
     /* Attributes known keys */
+    @Deprecated
     public static final String TYPE = "type";
     public static final String INDEXED_FILE_ID = "indexedFileId";
     /* ResourceManagerAttributes known keys */
@@ -44,11 +42,12 @@ public class Job extends AbstractAcl<JobAclEntry> {
     public static final String ERRNO_ABORTED = "ERRNO_ABORTED";
 
     static {
-        ERROR_DESCRIPTIONS = new HashMap<>();
-        ERROR_DESCRIPTIONS.put(ERRNO_NONE, null);
-        ERROR_DESCRIPTIONS.put(ERRNO_NO_QUEUE, "Unable to queue job");
-        ERROR_DESCRIPTIONS.put(ERRNO_FINISH_ERROR, "Job finished with exit value != 0");
-        ERROR_DESCRIPTIONS.put(ERRNO_ABORTED, "Job aborted");
+        HashMap<String, String> map = new HashMap<>();
+        map.put(ERRNO_NONE, null);
+        map.put(ERRNO_NO_QUEUE, "Unable to queue job");
+        map.put(ERRNO_FINISH_ERROR, "Job finished with exit value != 0");
+        map.put(ERRNO_ABORTED, "Job aborted");
+        ERROR_DESCRIPTIONS = Collections.unmodifiableMap(map);
     }
 
     private long id;
@@ -62,11 +61,12 @@ public class Job extends AbstractAcl<JobAclEntry> {
     /**
      * Tool to be executed.
      */
+    @Deprecated
     private long toolId;
 
-    @Deprecated
     private String toolName;
 
+    private Type type;
     /**
      * Job creation date.
      */
@@ -83,6 +83,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
      */
     private long endTime;
     private String outputError;
+    @Deprecated
     private String execution;
     private String executable;
     private String commandLine;
@@ -90,6 +91,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
     private JobStatus status;
     private long diskUsage;
     private long outDirId;
+    @Deprecated
     private URI tmpOutDirUri;
     private List<Long> input;    // input files to this job
     private List<Long> output;   // output files of this job
@@ -106,11 +108,10 @@ public class Job extends AbstractAcl<JobAclEntry> {
     public Job() {
     }
 
-    public Job(String name, String userId, String executable, List<Long> input, List<Long> output, long outDirId,
+    public Job(String name, String userId, String executable, Type type, List<Long> input, List<Long> output, long outDirId,
                Map<String, String> params) {
-        this(-1, name, userId, -1, executable, TimeUtils.getTime(), "", -1, -1, "", "", "", 0, new JobStatus(JobStatus.PREPARED), -1,
-                outDirId, null, input, output, Collections.emptyList(), Collections.emptyList(), params, new HashMap<>(),
-                new HashMap<>(), "", "");
+        this(-1, name, userId, -1, "", type, TimeUtils.getTime(), "", -1, -1, "", "", executable, "", 0, new JobStatus(JobStatus.PREPARED),
+                -1, outDirId, null, input, output, new ArrayList<>(), params, new HashMap<>(), new HashMap<>(), "", "");
     }
 
     public Job(String name, String userId, String toolName, String description, String commandLine, long outDirId,
@@ -245,6 +246,44 @@ public class Job extends AbstractAcl<JobAclEntry> {
         this.errorDescription = errorDescription;
     }
 
+    public Job(long id, String name, String userId, long toolId, String toolName, Type type, String creationDate, String description,
+               long startTime, long endTime, String outputError, String execution, String executable, String commandLine, long visits,
+               JobStatus status, long diskUsage, long outDirId, URI tmpOutDirUri, List<Long> input, List<Long> output, List<String> tags,
+               Map<String, String> params, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, String error,
+               String errorDescription) {
+        this.id = id;
+        this.name = name;
+        this.userId = userId;
+        this.toolId = toolId;
+        this.toolName = toolName;
+        this.type = type;
+        this.creationDate = creationDate;
+        this.description = description;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.outputError = outputError;
+        this.execution = execution;
+        this.executable = executable;
+        this.commandLine = commandLine;
+        this.visits = visits;
+        this.status = status;
+        this.diskUsage = diskUsage;
+        this.outDirId = outDirId;
+        this.tmpOutDirUri = tmpOutDirUri;
+        this.input = input;
+        this.output = output;
+        this.tags = tags;
+        this.params = params;
+        this.attributes = attributes;
+        this.resourceManagerAttributes = resourceManagerAttributes;
+        if (this.resourceManagerAttributes == null) {
+            this.resourceManagerAttributes = new HashMap<>();
+        }
+        this.resourceManagerAttributes.putIfAbsent(Job.JOB_SCHEDULER_NAME, "");
+        this.error = error;
+        this.errorDescription = errorDescription;
+    }
+
     public static class JobStatus extends Status {
 
         /**
@@ -267,6 +306,10 @@ public class Job extends AbstractAcl<JobAclEntry> {
          * ERROR status means that the job finished with an error.
          */
         public static final String ERROR = "ERROR";
+        /**
+         * UNKNOWN status means that the job status could not be obtained.
+         */
+        public static final String UNKNOWN = "UNKNOWN";
 
         public JobStatus(String status, String message) {
             if (isValid(status)) {
@@ -289,7 +332,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
                 return true;
             }
             if (status != null && (status.equals(PREPARED) || status.equals(QUEUED) || status.equals(RUNNING) || status.equals(DONE)
-                    || status.equals(ERROR))) {
+                    || status.equals(ERROR) || status.equals(UNKNOWN))) {
                 return true;
             }
             return false;
@@ -300,7 +343,8 @@ public class Job extends AbstractAcl<JobAclEntry> {
     public enum Type {
         ANALYSIS,
         INDEX,
-        COHORT_STATS
+        COHORT_STATS,
+        TOOL
     }
 
     @Override
@@ -311,6 +355,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
         sb.append(", userId='").append(userId).append('\'');
         sb.append(", toolId=").append(toolId);
         sb.append(", toolName='").append(toolName).append('\'');
+        sb.append(", type=").append(type);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", startTime=").append(startTime);
@@ -369,6 +414,15 @@ public class Job extends AbstractAcl<JobAclEntry> {
 
     public Job setToolId(long toolId) {
         this.toolId = toolId;
+        return this;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public Job setType(Type type) {
+        this.type = type;
         return this;
     }
 

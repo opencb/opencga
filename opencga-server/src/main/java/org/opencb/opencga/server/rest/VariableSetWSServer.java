@@ -57,6 +57,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "description", required = false) @QueryParam("description") String description,
                               @ApiParam(value = "variables", required = true) List<Variable> variables) {
         try {
+            logger.info("variables: {}", variables);
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
             QueryResult<VariableSet> queryResult = catalogManager.createVariableSet(studyId, name, unique, description, null, variables,
                     sessionId);
@@ -122,21 +123,23 @@ public class VariableSetWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/{variableSetId}/update")
-    @ApiOperation(value = "Update some variableSet attributes using GET method [PENDING]", position = 3)
-    public Response update(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") String variableSetId,
-                           @ApiParam(value = "name", required = true) @QueryParam("name") String name,
-                           @ApiParam(value = "description", required = false) @QueryParam("description") String description) throws IOException {
-        return createErrorResponse("update - GET", "PENDING");
-    }
+//    @GET
+//    @Path("/{variableSetId}/update")
+//    @ApiOperation(value = "Update some variableSet attributes using GET method [PENDING]", position = 3)
+//    public Response update(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") String variableSetId,
+//                           @ApiParam(value = "name", required = true) @QueryParam("name") String name,
+//                           @ApiParam(value = "description", required = false) @QueryParam("description") String description) throws IOException {
+//        return createErrorResponse("update - GET", "PENDING");
+//    }
 
     @POST
     @Path("/{variableSetId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some variableSet attributes using POST method [PENDING]", position = 3, response = VariableSet.class)
     public Response updateByPost(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") String variableSetId,
-                                 @ApiParam(value = "params", required = true) Map<String, Object> params) {
+                                 @ApiParam(value = "name") @QueryParam("name") String name,
+                                 @ApiParam(value = "description") @QueryParam("description") String description,
+                                 @ApiParam(value = "params") Map<String, Object> params) {
         return createErrorResponse("update - POST", "PENDING");
     }
 

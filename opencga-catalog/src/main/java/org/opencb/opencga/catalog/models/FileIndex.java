@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.models;
 
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -23,6 +24,7 @@ import java.util.Map;
  */
 public class FileIndex {
 
+    @Deprecated
     private String userId;
     private String creationDate;
     private IndexStatus status;
@@ -30,28 +32,27 @@ public class FileIndex {
     @Deprecated
     private long jobId;
 
+    private TransformedFile transformedFile;
     private LocalFileIndex localFileIndex;
 
     private Map<String, Object> attributes;
 
 
     public FileIndex() {
+        this(null, null, null, -1, Collections.emptyMap());
     }
 
     public FileIndex(String userId, String creationDate, IndexStatus status, long jobId, Map<String, Object> attributes) {
-        this.userId = userId;
-        this.creationDate = creationDate;
-        this.status = status;
-        this.jobId = jobId;
-        this.attributes = attributes;
+        this(userId, creationDate, status, jobId, null, null, attributes);
     }
 
-    public FileIndex(String userId, String creationDate, IndexStatus status, long jobId, LocalFileIndex localFileIndex,
-                     Map<String, Object> attributes) {
+    public FileIndex(String userId, String creationDate, IndexStatus status, long jobId, TransformedFile transformedFile,
+                     LocalFileIndex localFileIndex, Map<String, Object> attributes) {
         this.userId = userId;
         this.creationDate = creationDate;
-        this.status = status;
+        this.status = status != null ? status : new IndexStatus(IndexStatus.NONE);
         this.jobId = jobId;
+        this.transformedFile = transformedFile;
         this.localFileIndex = localFileIndex;
         this.attributes = attributes;
     }
@@ -97,6 +98,46 @@ public class FileIndex {
                 return true;
             }
             return false;
+        }
+    }
+
+    public static class TransformedFile {
+        private long id;
+        private long metadataId;
+
+        public TransformedFile() {
+        }
+
+        public TransformedFile(long id, long metadataId) {
+            this.id = id;
+            this.metadataId = metadataId;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("TransformedFile{");
+            sb.append("id=").append(id);
+            sb.append(", metadataId=").append(metadataId);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public long getId() {
+            return id;
+        }
+
+        public TransformedFile setId(long id) {
+            this.id = id;
+            return this;
+        }
+
+        public long getMetadataId() {
+            return metadataId;
+        }
+
+        public TransformedFile setMetadataId(long metadataId) {
+            this.metadataId = metadataId;
+            return this;
         }
     }
 
@@ -147,6 +188,7 @@ public class FileIndex {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", jobId=").append(jobId);
+        sb.append(", transformedFile=").append(transformedFile);
         sb.append(", localFileIndex=").append(localFileIndex);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -180,12 +222,29 @@ public class FileIndex {
         return this;
     }
 
+//    public FileIndex setStatus(String status) {
+//        if (IndexStatus.isValid(status)) {
+//            this.status.setName(status);
+//            this.status.setCurrentDate();
+//        }
+//        return this;
+//    }
+
     public long getJobId() {
         return jobId;
     }
 
     public FileIndex setJobId(long jobId) {
         this.jobId = jobId;
+        return this;
+    }
+
+    public TransformedFile getTransformedFile() {
+        return transformedFile;
+    }
+
+    public FileIndex setTransformedFile(TransformedFile transformedFile) {
+        this.transformedFile = transformedFile;
         return this;
     }
 

@@ -54,7 +54,7 @@ public class UserClient extends AbstractParentClient<User, User> {
     QueryResponse<ObjectMap> login(String user, String password) {
         QueryResponse<ObjectMap> response = null;
         try {
-            response = execute(USERS_URL, user, "login", createParamsMap("password", password), POST, ObjectMap.class);
+            response = execute(USERS_URL, user, "login", createParamsMap("password", password), GET, ObjectMap.class);
         } catch (IOException e) {
             e.printStackTrace();
         }

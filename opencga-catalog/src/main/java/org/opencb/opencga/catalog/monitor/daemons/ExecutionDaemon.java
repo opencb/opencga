@@ -35,18 +35,26 @@ import java.util.Map;
 public class ExecutionDaemon extends MonitorParentDaemon {
 
     private int runningJobs;
+    private String binHome;
 
-    public ExecutionDaemon(int interval, String sessionId, CatalogManager catalogManager) {
+    public ExecutionDaemon(int interval, String sessionId, CatalogManager catalogManager, String appHome) {
         super(interval, sessionId, catalogManager);
+        this.binHome = appHome + "/bin/";
     }
 
     @Override
     public void run() {
 
         IJobManager jobManager = catalogManager.getJobManager();
-        Query runningJobsQuery = new Query(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING);
-        Query queuedJobsQuery = new Query(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED);
-        Query preparedJobsQuery = new Query(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.PREPARED);
+        Query runningJobsQuery = new Query()
+                .append(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING)
+                .append(CatalogJobDBAdaptor.QueryParams.TYPE.key(), "!=" + Job.Type.INDEX);
+        Query queuedJobsQuery = new Query()
+                .append(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED)
+                .append(CatalogJobDBAdaptor.QueryParams.TYPE.key(), "!=" + Job.Type.INDEX);
+        Query preparedJobsQuery = new Query()
+                .append(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.PREPARED)
+                .append(CatalogJobDBAdaptor.QueryParams.TYPE.key(), "!=" + Job.Type.INDEX);
         QueryOptions queryOptions = new QueryOptions();
 
         while (!exit) {
@@ -119,6 +127,8 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.QUEUED, Job.JobStatus.RUNNING);
 
         try {
+            logger.info("Running job {}" + job.getName());
+
             catalogManager.getJobManager().update(
                     job.getId(), new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING),
                     new QueryOptions(), sessionId);
@@ -129,7 +139,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     }
 
     private void checkPreparedJob(Job job) {
-        StringBuilder commandLine = new StringBuilder(job.getExecutable()).append(" ");
+        StringBuilder commandLine = new StringBuilder(binHome).append(job.getExecutable()).append(" ");
         for (Map.Entry<String, String> param : job.getParams().entrySet()) {
             commandLine
                     .append("--")
