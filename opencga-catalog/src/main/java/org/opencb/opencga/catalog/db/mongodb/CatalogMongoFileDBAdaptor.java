@@ -83,9 +83,6 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         //new File Id
         long newFileId = getNewId();
         file.setId(newFileId);
-        if (file.getOwnerId() == null) {
-            file.setOwnerId(ownerId);
-        }
         Document fileDocument = fileConverter.convertToStorageType(file);
         fileDocument.append(PRIVATE_STUDY_ID, studyId);
         fileDocument.append(PRIVATE_ID, newFileId);
@@ -335,11 +332,6 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     public List<Long> getStudyIdsByFileIds(String fileIds) throws CatalogDBException {
         Bson query = parseQuery(new Query(QueryParams.ID.key(), fileIds));
         return fileCollection.distinct(PRIVATE_STUDY_ID, query, Long.class).getResult();
-    }
-
-    @Override
-    public String getFileOwnerId(long fileId) throws CatalogDBException {
-        return getFile(fileId, null).getResult().get(0).getOwnerId();
     }
 
     @Override

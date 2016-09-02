@@ -1049,7 +1049,7 @@ public class FileManagerTest extends GenericTest {
         }
 
         File stagedFile = catalogManager.createFile(studyId, File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE,
-                "folder/subfolder/subsubfolder/my_staged.txt", null, null, null, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null,
+                "folder/subfolder/subsubfolder/my_staged.txt", null, null, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null,
                 -1, null, null, true, null, sessionIdUser).first();
 
         thrown.expect(CatalogException.class);
@@ -1097,8 +1097,7 @@ public class FileManagerTest extends GenericTest {
     @Test
     public void testUpdateIndexStatus() throws CatalogException {
         long studyId = catalogManager.getStudyManager().getStudyId("user", "user@1000G:phase1");
-        QueryResult<File> fileResult = fileManager.create(studyId, File.Type.FILE, File.Format.VCF, File.Bioformat.VARIANT, "data/test.vcf",
-                "user", "", "description", new File.FileStatus(File.FileStatus.STAGE), 0, -1, Collections.emptyList(), -1,
+        QueryResult<File> fileResult = fileManager.create(studyId, File.Type.FILE, File.Format.VCF, File.Bioformat.VARIANT, "data/test.vcf", "", "description", new File.FileStatus(File.FileStatus.STAGE), 0, -1, Collections.emptyList(), -1,
                 Collections.emptyMap(), Collections.emptyMap(), true, QueryOptions.empty(), sessionIdUser);
 
         fileManager.updateFileIndexStatus(fileResult.first(), FileIndex.IndexStatus.TRANSFORMED, sessionIdUser);

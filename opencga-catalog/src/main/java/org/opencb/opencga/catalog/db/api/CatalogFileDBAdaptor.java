@@ -152,8 +152,6 @@ public interface CatalogFileDBAdaptor extends CatalogAclDBAdaptor<File, FileAclE
 
     List<Long> getStudyIdsByFileIds(String fileIds) throws CatalogDBException;
 
-    String getFileOwnerId(long fileId) throws CatalogDBException;
-
     /***
      * Inserts the passed file in the database.
      *

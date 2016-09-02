@@ -168,11 +168,6 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public String getUserId(long fileId) throws CatalogException {
-        return fileDBAdaptor.getFileOwnerId(fileId);
-    }
-
-    @Override
     public Long getStudyId(long fileId) throws CatalogException {
         return fileDBAdaptor.getStudyIdByFileId(fileId);
     }
@@ -338,12 +333,12 @@ public class FileManager extends AbstractManager implements IFileManager {
     public QueryResult<File> createFolder(long studyId, String path, File.FileStatus status, boolean parents, String description,
                                           QueryOptions options, String sessionId) throws CatalogException {
         return create(studyId, File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE,
-                path, null, null, description, status, 0, -1, null, -1, null, null,
+                path, null, description, status, 0, -1, null, -1, null, null,
                 parents, options, sessionId);
     }
 
     @Override
-    public QueryResult<File> create(long studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path, String ownerId,
+    public QueryResult<File> create(long studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path,
                                     String creationDate, String description, File.FileStatus status, long diskUsage, long experimentId,
                                     List<Long> sampleIds, long jobId, Map<String, Object> stats, Map<String, Object> attributes,
                                     boolean parents, QueryOptions options, String sessionId) throws CatalogException {
@@ -355,7 +350,6 @@ public class FileManager extends AbstractManager implements IFileManager {
         type = ParamUtils.defaultObject(type, File.Type.FILE);
         format = ParamUtils.defaultObject(format, File.Format.PLAIN);  //TODO: Inference from the file name
         bioformat = ParamUtils.defaultObject(bioformat, File.Bioformat.NONE);
-        ownerId = ParamUtils.defaultString(ownerId, userId);
         creationDate = ParamUtils.defaultString(creationDate, TimeUtils.getTime());
         description = ParamUtils.defaultString(description, "");
         if (type == File.Type.FILE) {
@@ -404,7 +398,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 //                path, ownerId, creationDate, description, status, diskUsage, experimentId, sampleIds, jobId,
 //                new LinkedList<>(), stats, attributes);
 
-        File file = new File(-1, Paths.get(path).getFileName().toString(), type, format, bioformat, uri, path, ownerId, TimeUtils.getTime(),
+        File file = new File(-1, Paths.get(path).getFileName().toString(), type, format, bioformat, uri, path, TimeUtils.getTime(),
                 TimeUtils.getTime(), description, status, false, diskUsage, experimentId, sampleIds, jobId, Collections.emptyList(),
                 Collections.emptyList(), null, stats, attributes);
 
@@ -425,7 +419,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             if (parents) {
                 newParent = true;
                 parentFileId = create(studyId, File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, parent.toString(),
-                        file.getOwnerId(), file.getCreationDate(), "", new File.FileStatus(File.FileStatus.READY), 0, -1,
+                        file.getCreationDate(), "", new File.FileStatus(File.FileStatus.READY), 0, -1,
                         Collections.<Long>emptyList(), -1, Collections.<String, Object>emptyMap(),
                         Collections.<String, Object>emptyMap(), true,
                         options, sessionId).first().getId();
@@ -741,7 +735,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             move(fileId, parameters.getString("path"), options, sessionId);
         }
 
-        String ownerId = fileDBAdaptor.getFileOwnerId(fileId);
+        String ownerId = studyDBAdaptor.getStudyOwnerId(fileDBAdaptor.getStudyIdByFileId(fileId));
         QueryResult queryResult = fileDBAdaptor.update(fileId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
         userDBAdaptor.updateUserLastModified(ownerId);
@@ -1207,7 +1201,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         // Create the folder in catalog
         File folder = new File(-1, path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
-                stringPath, userId, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY),
+                stringPath, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY),
                 false, 0, -1, Collections.emptyList(), -1, Collections.emptyList(), Collections.emptyList(), null, null, null);
         fileDBAdaptor.createFile(studyId, folder, new QueryOptions());
     }
@@ -1265,7 +1259,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
                     // Create the folder with external
                     File folder = new File(-1, catalogPath.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
-                            File.Bioformat.NONE, uriOrigin, catalogPath.toString() + "/", userId, TimeUtils.getTime(), TimeUtils.getTime(),
+                            File.Bioformat.NONE, uriOrigin, catalogPath.toString() + "/", TimeUtils.getTime(), TimeUtils.getTime(),
                             description, new File.FileStatus(File.FileStatus.READY), true, 0, -1,
                             Collections.emptyList(), -1, Collections.emptyList(), Collections.emptyList(), null, Collections.emptyMap(),
                             Collections.emptyMap());
@@ -1296,7 +1290,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 //                File.Format format = FormatDetector.detect(uriOrigin);
 
                 File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.NONE,
-                        uriOrigin, filePath.toString(), userId, TimeUtils.getTime(), TimeUtils.getTime(), description,
+                        uriOrigin, filePath.toString(), TimeUtils.getTime(), TimeUtils.getTime(), description,
                         new File.FileStatus(File.FileStatus.READY), true, diskUsage, -1, Collections.emptyList(), -1,
                         Collections.emptyList(), Collections.emptyList(), null, Collections.emptyMap(), Collections.emptyMap());
                 QueryResult<File> file = fileDBAdaptor.createFile(studyId, subfile, new QueryOptions());
@@ -1326,7 +1320,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                         if (fileDBAdaptor.count(query).first() == 0) {
                             // If the folder does not exist, we create it
                             File folder = new File(-1, dir.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
-                                    File.Bioformat.NONE, dir.toUri(), destinyPath, userId, TimeUtils.getTime(), TimeUtils.getTime(),
+                                    File.Bioformat.NONE, dir.toUri(), destinyPath, TimeUtils.getTime(), TimeUtils.getTime(),
                                     description, new File.FileStatus(File.FileStatus.READY), true, 0, -1,
                                     Collections.emptyList(), -1, Collections.emptyList(), Collections.emptyList(), null,
                                     Collections.emptyMap(), Collections.emptyMap());
@@ -1356,7 +1350,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 //                            File.Format format = FormatDetector.detect(filePath.toUri());
                             // If the file does not exist, we create it
                             File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
-                                    File.Bioformat.NONE, filePath.toUri(), destinyPath, userId, TimeUtils.getTime(), TimeUtils.getTime(),
+                                    File.Bioformat.NONE, filePath.toUri(), destinyPath, TimeUtils.getTime(), TimeUtils.getTime(),
                                     description, new File.FileStatus(File.FileStatus.READY), true, diskUsage, -1, Collections.emptyList(),
                                     -1, Collections.emptyList(), Collections.emptyList(), null, Collections.emptyMap(),
                                     Collections.emptyMap());
