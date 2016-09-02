@@ -22,6 +22,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -139,6 +140,27 @@ public class FileScannerTest {
         assertEquals(File.FileStatus.READY, replacedFile.getStatus().getName());
         assertEquals(file.getId(), replacedFile.getId());
         assertFalse(replacedFile.getAttributes().get("checksum").equals(file.getAttributes().get("checksum")));
+    }
+
+    @Test
+    public void testRegisterFiles() throws IOException, CatalogException {
+        CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString());
+        Files.createDirectory(directory.resolve("s/"));
+        CatalogManagerTest.createDebugFile(directory.resolve("s/file2.txt").toString());
+
+        List<Path> filePaths = new ArrayList<>(2);
+        filePaths.add(directory.resolve("file1.txt"));
+        filePaths.add(directory.resolve("s/file2.txt"));
+        FileScanner fileScanner = new FileScanner(catalogManager);
+        List<File> files = fileScanner.registerFiles(folder, filePaths, FileScanner.FileScannerPolicy.DELETE, true, false, sessionIdUser);
+
+        assertEquals(2, files.size());
+        for (File file : files) {
+            assertTrue(Paths.get(file.getUri()).toFile().exists());
+        }
+        for (Path filePath : filePaths) {
+            assertTrue(filePath.toFile().exists());
+        }
     }
 
 

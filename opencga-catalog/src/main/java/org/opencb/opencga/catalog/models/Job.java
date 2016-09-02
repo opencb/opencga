@@ -61,9 +61,9 @@ public class Job extends AbstractAcl<JobAclEntry> {
     /**
      * Tool to be executed.
      */
+    @Deprecated
     private long toolId;
 
-    @Deprecated
     private String toolName;
 
     private Type type;
@@ -83,6 +83,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
      */
     private long endTime;
     private String outputError;
+    @Deprecated
     private String execution;
     private String executable;
     private String commandLine;
@@ -342,7 +343,8 @@ public class Job extends AbstractAcl<JobAclEntry> {
     public enum Type {
         ANALYSIS,
         INDEX,
-        COHORT_STATS
+        COHORT_STATS,
+        TOOL
     }
 
     @Override

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.models;
 
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -23,6 +24,7 @@ import java.util.Map;
  */
 public class FileIndex {
 
+    @Deprecated
     private String userId;
     private String creationDate;
     private IndexStatus status;
@@ -37,6 +39,7 @@ public class FileIndex {
 
 
     public FileIndex() {
+        this(null, null, null, -1, Collections.emptyMap());
     }
 
     public FileIndex(String userId, String creationDate, IndexStatus status, long jobId, Map<String, Object> attributes) {
@@ -47,7 +50,7 @@ public class FileIndex {
                      LocalFileIndex localFileIndex, Map<String, Object> attributes) {
         this.userId = userId;
         this.creationDate = creationDate;
-        this.status = status;
+        this.status = status != null ? status : new IndexStatus(IndexStatus.NONE);
         this.jobId = jobId;
         this.transformedFile = transformedFile;
         this.localFileIndex = localFileIndex;
@@ -98,9 +101,12 @@ public class FileIndex {
         }
     }
 
-    public class TransformedFile {
+    public static class TransformedFile {
         private long id;
         private long metadataId;
+
+        public TransformedFile() {
+        }
 
         public TransformedFile(long id, long metadataId) {
             this.id = id;

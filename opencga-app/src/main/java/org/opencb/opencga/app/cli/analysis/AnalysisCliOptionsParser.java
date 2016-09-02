@@ -374,11 +374,19 @@ public class AnalysisCliOptionsParser {
 //        @Parameter(names = {"--study-id"}, description = "Unque ID for the study", arity = 1)
 //        public long studyId;
 
-        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
-        public String fileId = VariantStorageManager.Options.FILE_ID.defaultValue().toString();
+        @Parameter(names = {"--file-id"}, description = "CSV of file ids to be indexed", required = true, arity = 1)
+        public String fileId = null;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Unique ID for the file", required = false, arity = 1)
-        public String outdirId = null;
+        @Parameter(names = {"--transformed-files"}, description = "CSV of paths corresponding to the location of the transformed files.",
+                required = false, arity = 1)
+        public String transformedPaths = null;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
+        public String outdir = null;
+
+        @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
+                + "transformed files will not be registered in catalog.", required = false, arity = 1)
+        public String catalogPath = null;
 
         @Parameter(names = {"--exclude-genotypes"}, description = "Index excluding the genotype information")
         public boolean excludeGenotype = false;

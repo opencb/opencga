@@ -42,7 +42,6 @@ import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.monitor.ExecutionOutputRecorder;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.core.common.ProgressLogger;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -320,8 +319,8 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         throw new UnsupportedOperationException();
     }
 
-    private void index() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException,
-            StorageManagerException, InstantiationException, IllegalAccessException {
+    private void index() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException, StorageManagerException,
+            InstantiationException, IllegalAccessException, URISyntaxException {
         AnalysisCliOptionsParser.IndexVariantCommandOptions cliOptions = variantCommandOptions.indexVariantCommandOptions;
 
         QueryOptions queryOptions = new QueryOptions();
@@ -332,6 +331,9 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         queryOptions.put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), cliOptions.extraFields);
         queryOptions.put(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), cliOptions.excludeGenotype);
         queryOptions.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), cliOptions.aggregated);
+
+        queryOptions.putIfNotNull(VariantFileIndexer.CATALOG_PATH, cliOptions.catalogPath);
+        queryOptions.putIfNotNull(VariantFileIndexer.TRANSFORMED_FILES, cliOptions.transformedPaths);
 
         queryOptions.put(VariantStorageManager.Options.ANNOTATE.key(), cliOptions.annotate);
         if (cliOptions.annotator != null) {
@@ -358,7 +360,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         * */
 
         VariantFileIndexer variantFileIndexer = new VariantFileIndexer(catalogConfiguration, storageConfiguration);
-        variantFileIndexer.index(cliOptions.fileId, cliOptions.outdirId, sessionId, queryOptions);
+        variantFileIndexer.index(cliOptions.fileId, cliOptions.outdir, sessionId, queryOptions);
 
 //        long inputFileId = catalogManager.getFileId(cliOptions.fileId);
 //
@@ -366,10 +368,10 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 //        if (isEmpty(cliOptions.job.jobId)) {
 //            Job job;
 //            long outDirId;
-//            if (cliOptions.outdirId == null) {
+//            if (cliOptions.outdir == null) {
 //                outDirId = catalogManager.getFileParent(inputFileId, null, sessionId).first().getId();
 //            } else  {
-//                outDirId = catalogManager.getFileId(cliOptions.outdirId);
+//                outDirId = catalogManager.getFileId(cliOptions.outdir);
 //            }
 //
 //            AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);

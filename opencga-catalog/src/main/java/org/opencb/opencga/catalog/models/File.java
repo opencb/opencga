@@ -50,6 +50,7 @@ public class File extends AbstractAcl<FileAclEntry> {
     private String path;
 
     private String creationDate;
+    @Deprecated
     private String modificationDate;
 
     private String description;
@@ -106,7 +107,7 @@ public class File extends AbstractAcl<FileAclEntry> {
         this.jobId = jobId;
         this.relatedFiles = relatedFiles;
         this.acl = acl;
-        this.index = index;
+        this.index = index != null ? index : new FileIndex();
         this.stats = stats;
         this.attributes = attributes;
     }
@@ -233,7 +234,10 @@ public class File extends AbstractAcl<FileAclEntry> {
         public enum Relation {
             PRODUCED_FROM,
             PART_OF_PAIR,
-            PEDIGREE
+            PEDIGREE;
+        }
+
+        public RelatedFile() {
         }
 
         public RelatedFile(long fileId, Relation relation) {

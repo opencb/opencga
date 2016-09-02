@@ -173,6 +173,23 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
+    public Long getFileId(String fileStr, long studyId, String sessionId) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+
+        logger.info("Looking for file {}", fileStr);
+        if (StringUtils.isNumeric(fileStr)) {
+            return Long.parseLong(fileStr);
+        }
+
+        // Resolve the studyIds and filter the fileStr
+        ObjectMap parsedSampleStr = parseFeatureId(userId, fileStr);
+        List<Long> studyIds = Arrays.asList(studyId);
+        String fileName = parsedSampleStr.getString("featureName");
+
+        return getFileId(studyIds, fileName);
+    }
+
+    @Override
     public Long getFileId(String userId, String fileStr) throws CatalogException {
         logger.info("Looking for file {}", fileStr);
         if (StringUtils.isNumeric(fileStr)) {
@@ -184,6 +201,97 @@ public class FileManager extends AbstractManager implements IFileManager {
         List<Long> studyIds = getStudyIds(parsedSampleStr);
         String fileName = parsedSampleStr.getString("featureName");
 
+        return getFileId(studyIds, fileName);
+    }
+
+    @Override
+    public void matchUpVariantFiles(List<File> avroFiles, String sessionId) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        for (File avroFile : avroFiles) {
+            authorizationManager.checkFilePermission(avroFile.getId(), userId, FileAclEntry.FilePermissions.UPDATE);
+            if (!File.Format.AVRO.equals(avroFile.getFormat())) {
+                // Skip the file.
+                logger.warn("The file {} is not a proper AVRO file", avroFile.getName());
+                continue;
+            }
+
+            Long studyId = getStudyId(avroFile.getId());
+            String variantPathName = avroFile.getPath().replace(".variants.avro.gz", "");
+            logger.info("Looking for vcf file in path {}", variantPathName);
+            Query query = new Query()
+                    .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), variantPathName)
+                    .append(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
+//                    .append(CatalogFileDBAdaptor.QueryParams.INDEX_TRANSFORMED_FILE.key(), null);
+            QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, QueryOptions.empty());
+
+            if (fileQueryResult.getNumResults() == 0) {
+                // Search in the whole study
+                String variantFileName = avroFile.getName().replace(".variants.avro.gz", "");
+                logger.info("Looking for vcf file by name {}", variantFileName);
+                query = new Query()
+                        .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(CatalogFileDBAdaptor.QueryParams.NAME.key(), variantFileName)
+                        .append(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
+//                        .append(CatalogFileDBAdaptor.QueryParams.INDEX_TRANSFORMED_FILE.key(), null);
+                fileQueryResult = fileDBAdaptor.get(query, QueryOptions.empty());
+            }
+
+            if (fileQueryResult.getNumResults() == 0 || fileQueryResult.getNumResults() > 1) {
+                // VCF file not found
+                logger.warn("The vcf file corresponding to the file " + avroFile.getName() + " could not be found");
+                continue;
+            }
+            File vcf = fileQueryResult.first();
+
+            // Look for the json file. It should be in the same directory where the avro file is.
+            String jsonPathName = avroFile.getPath().replace(".variants.avro.gz", ".file.json.gz");
+            query = new Query()
+                    .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), jsonPathName)
+                    .append(CatalogFileDBAdaptor.QueryParams.FORMAT.key(), File.Format.JSON);
+            fileQueryResult = fileDBAdaptor.get(query, QueryOptions.empty());
+            if (fileQueryResult.getNumResults() != 1) {
+                // Skip. This should not ever happen
+                logger.warn("The json file corresponding to the file " + avroFile.getName() + " could not be found");
+                continue;
+            }
+            File json = fileQueryResult.first();
+
+            /* Update relations */
+
+            // Update json file
+            logger.debug("Updating json relation");
+            List<File.RelatedFile> relatedFiles = json.getRelatedFiles();
+            if (relatedFiles == null) {
+                relatedFiles = new ArrayList<>();
+            }
+            relatedFiles.add(new File.RelatedFile(vcf.getId(), File.RelatedFile.Relation.PRODUCED_FROM));
+            ObjectMap params = new ObjectMap(CatalogFileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFiles);
+            fileDBAdaptor.update(json.getId(), params);
+//            update(json.getId(), params, QueryOptions.empty(), sessionId);
+
+            // Update avro file
+            logger.debug("Updating avro relation");
+            relatedFiles = avroFile.getRelatedFiles();
+            if (relatedFiles == null) {
+                relatedFiles = new ArrayList<>();
+            }
+            relatedFiles.add(new File.RelatedFile(vcf.getId(), File.RelatedFile.Relation.PRODUCED_FROM));
+            params = new ObjectMap(CatalogFileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFiles);
+            fileDBAdaptor.update(avroFile.getId(), params);
+//            update(avroFile.getId(), params, QueryOptions.empty(), sessionId);
+
+            // Update vcf file
+            logger.debug("Updating vcf relation");
+            FileIndex.TransformedFile transformedFile = new FileIndex.TransformedFile(avroFile.getId(), json.getId());
+            params = new ObjectMap(CatalogFileDBAdaptor.QueryParams.INDEX_TRANSFORMED_FILE.key(), transformedFile);
+            fileDBAdaptor.update(vcf.getId(), params);
+//            update(vcf.getId(), params, QueryOptions.empty(), sessionId);
+        }
+    }
+
+    private Long getFileId(List<Long> studyIds, String fileName) throws CatalogException {
         if (fileName.startsWith("/")) {
             fileName = fileName.substring(1);
         }
@@ -267,7 +375,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public void updateFileIndexStatus(File file, String newStatus, String sessionId) throws CatalogException {
+    public QueryResult<FileIndex> updateFileIndexStatus(File file, String newStatus, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getUserId(sessionId);
         authorizationManager.checkFilePermission(file.getId(), userId, FileAclEntry.FilePermissions.UPDATE);
 
@@ -287,6 +395,8 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
         ObjectMap params = new ObjectMap(CatalogFileDBAdaptor.QueryParams.INDEX.key(), index);
         fileDBAdaptor.update(file.getId(), params);
+
+        return new QueryResult<>("Update file index", 0, 1, 1, "", "", Arrays.asList(index));
     }
 
     public boolean isRootFolder(File file) throws CatalogException {
@@ -700,6 +810,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                 case "index":
                 case "sampleIds":
                 case "jobId":
+                case "relatedFiles":
                     break;
                 case "uri":
                     logger.info("File {id: " + fileId + "} uri modified. New value: " + parameters.get("uri"));

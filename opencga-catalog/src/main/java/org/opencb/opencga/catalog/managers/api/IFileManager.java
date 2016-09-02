@@ -6,10 +6,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Dataset;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.FileTree;
-import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.DatasetAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 
@@ -49,6 +46,18 @@ public interface IFileManager extends ResourceManager<Long, File> {
     /**
      * Obtains the numeric file id given a string.
      *
+     * @param fileStr File id in string format. Could be one of [id | user@aliasProject:aliasStudy:{fileName|path}
+     *                | user@aliasStudy:{fileName|path} | aliasStudy:{fileName|path} | {fileName|path}].
+     * @param studyId study id where the file will be looked for.
+     * @param sessionId session id of the user asking for the file.
+     * @return the numeric file id.
+     * @throws CatalogException when more than one file id is found.
+     */
+    Long getFileId(String fileStr, long studyId, String sessionId) throws CatalogException;
+
+    /**
+     * Obtains the numeric file id given a string.
+     *
      * @param userId User id of the user asking for the file id.
      * @param fileStr File id in string format. Could be one of [id | user@aliasProject:aliasStudy:{fileName|path}
      *                | user@aliasStudy:{fileName|path} | aliasStudy:{fileName|path} | {fileName|path}].
@@ -73,12 +82,14 @@ public interface IFileManager extends ResourceManager<Long, File> {
         return fileIds;
     }
 
+    void matchUpVariantFiles(List<File> avroFiles, String sessionId) throws CatalogException;
+
     @Deprecated
     Long getFileId(String fileId) throws CatalogException;
 
     boolean isExternal(File file) throws CatalogException;
 
-    void updateFileIndexStatus(File file, String newStatus, String sessionId) throws CatalogException;
+    QueryResult<FileIndex>  updateFileIndexStatus(File file, String newStatus, String sessionId) throws CatalogException;
 
 
     /*--------------*/
