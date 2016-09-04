@@ -296,7 +296,6 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         LinkedHashSet<Integer> indexedFiles = getStudyConfiguration().getIndexedFiles();
         Set<String> archiveFileIds = indexedFiles.stream().filter(k -> !currFileIds.contains(k)).map(s -> s.toString())
                 .collect(Collectors.toSet());
-        archiveFileIds.clear();
         if (archiveFileIds.isEmpty()) {
             if (getLog().isDebugEnabled()) {
                 getLog().debug("No files found to search for in archive table");

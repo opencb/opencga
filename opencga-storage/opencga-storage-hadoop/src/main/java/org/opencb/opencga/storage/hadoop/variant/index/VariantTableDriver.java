@@ -9,11 +9,14 @@ import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.util.ToolRunner;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
  */
 public class VariantTableDriver extends AbstractVariantTableDriver {
+    protected static final Logger LOG = LoggerFactory.getLogger(VariantTableDriver.class);
 
     public static final String JOB_OPERATION_NAME = "Load";
 
@@ -48,7 +51,13 @@ public class VariantTableDriver extends AbstractVariantTableDriver {
     }
 
     public static void main(String[] args) throws Exception {
-        System.exit(privateMain(args, null, new VariantTableDriver()));
+        try {
+            System.exit(privateMain(args, null, new VariantTableDriver()));
+        } catch (Exception e) {
+            LOG.error("Problems", e);
+            System.err.println("");
+            e.printStackTrace();
+        }
     }
 
     public static int privateMain(String[] args, Configuration conf, VariantTableDriver driver) throws Exception {
