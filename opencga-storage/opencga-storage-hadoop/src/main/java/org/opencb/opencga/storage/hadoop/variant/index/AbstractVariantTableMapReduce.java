@@ -35,6 +35,7 @@ import java.util.stream.Collectors;
  */
 public abstract class AbstractVariantTableMapReduce extends TableMapper<ImmutableBytesWritable, Mutation> {
     public static final String COUNTER_GROUP_NAME = "OPENCGA.HBASE";
+    public static final String SPECIFIC_PUT = "opencga.storage.hadoop.hbase.merge.use_specific_put";
     private Logger LOG = LoggerFactory.getLogger(this.getClass());
 
     private VariantTableHelper helper;
@@ -187,8 +188,9 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
         for (Variant variant : analysisVar) {
             VariantTableStudyRow row = new VariantTableStudyRow(variant, studyId, idMapping);
             rows.add(row);
+            boolean specificPut = context.getConfiguration().getBoolean(SPECIFIC_PUT, true);
             Put put = null;
-            if (null != newSampleIds) {
+            if (specificPut && null != newSampleIds) {
                 put = row.createSpecificPut(getHelper(), newSampleIds);
             } else {
                 put = row.createPut(getHelper());
