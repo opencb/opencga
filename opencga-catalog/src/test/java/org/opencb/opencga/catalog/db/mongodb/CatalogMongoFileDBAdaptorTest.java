@@ -255,12 +255,14 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     @Test
     public void testDistinct() throws Exception {
 
-        List<String> distinctOwners = catalogFileDBAdaptor.distinct(new Query(), CatalogFileDBAdaptor.QueryParams.OWNER_ID.key()).getResult();
+//        List<String> distinctOwners = catalogFileDBAdaptor.distinct(new Query(), CatalogFileDBAdaptor.QueryParams.OWNER_ID.key()).getResult();
         List<String> distinctTypes = catalogFileDBAdaptor.distinct(new Query(), CatalogFileDBAdaptor.QueryParams.TYPE.key()).getResult();
-        assertEquals(Arrays.asList("imedina", "pfurio"), distinctOwners);
+//        assertEquals(Arrays.asList("imedina", "pfurio"), distinctOwners);
         assertEquals(Arrays.asList("DIRECTORY","FILE"), distinctTypes);
 
-        List<String> distinctFormats = catalogFileDBAdaptor.distinct(new Query(CatalogFileDBAdaptor.QueryParams.OWNER_ID.key(), "pfurio"),
+        List<Long> pfurioStudies = Arrays.asList(9L, 14L);
+        List<String> distinctFormats = catalogFileDBAdaptor.distinct(
+                new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), pfurioStudies),
                 CatalogFileDBAdaptor.QueryParams.FORMAT.key()).getResult();
         assertEquals(Arrays.asList("UNKNOWN", "COMMA_SEPARATED_VALUES", "BAM"), distinctFormats);
 
@@ -274,8 +276,9 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
     @Test
     public void testRank() throws Exception {
+        List<Long> pfurioStudies = Arrays.asList(9L, 14L);
         List<Document> rankedFilesPerDiskUsage = catalogFileDBAdaptor.rank(
-                new Query(CatalogFileDBAdaptor.QueryParams.OWNER_ID.key(), "pfurio"),
+                new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), pfurioStudies),
                 CatalogFileDBAdaptor.QueryParams.DISK_USAGE.key(), 100, false).getResult();
 
         assertEquals(3, rankedFilesPerDiskUsage.size());
@@ -292,8 +295,9 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
     @Test
     public void testGroupBy() throws Exception {
+        List<Long> pfurioStudies = Arrays.asList(9L, 14L);
 
-        List<Document> groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(CatalogFileDBAdaptor.QueryParams.OWNER_ID.key(), "pfurio"),
+        List<Document> groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), pfurioStudies),
                 CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), new QueryOptions()).getResult();
 
         assertEquals("ALIGNMENT", ((Document) groupByBioformat.get(0).get("_id")).get(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key()));
@@ -302,8 +306,7 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         assertEquals("NONE", ((Document) groupByBioformat.get(1).get("_id")).get(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key()));
         assertEquals(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt", "data/"), groupByBioformat.get(1).get("features"));
 
-        groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(CatalogFileDBAdaptor.QueryParams.OWNER_ID.key(), "pfurio")
-                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), 14), // MINECO study
+        groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), 14), // MINECO study
                 CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), new QueryOptions()).getResult();
 
         assertEquals("ALIGNMENT", ((Document) groupByBioformat.get(0).get("_id")).get(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key()));
@@ -317,7 +320,9 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     @Test
     public void testGroupBy1() throws Exception {
 
-        List<Document> groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(CatalogFileDBAdaptor.QueryParams.OWNER_ID.key(), "pfurio"),
+        List<Long> pfurioStudies = Arrays.asList(9L, 14L);
+        List<Document> groupByBioformat = catalogFileDBAdaptor.groupBy(
+                new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), pfurioStudies),
                 Arrays.asList(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), CatalogFileDBAdaptor.QueryParams.TYPE.key()),
                 new QueryOptions()).getResult();
 
@@ -336,18 +341,20 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
     @Test
     public void testGroupByDates() throws Exception {
+        List<Long> pfurioStudies = Arrays.asList(9L, 14L);
 
-        List<Document> groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(CatalogFileDBAdaptor.QueryParams.OWNER_ID.key(), "pfurio"),
+        List<Document> groupByBioformat = catalogFileDBAdaptor.groupBy(
+                new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), pfurioStudies),
                 Arrays.asList(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), CatalogFileDBAdaptor.QueryParams.TYPE.key(), "day"),
                 new QueryOptions()).getResult();
 
         assertEquals(3, groupByBioformat.size());
 
-        assertEquals(5, ((Document) groupByBioformat.get(0).get("_id")).size()); // Alignment - File
-        assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(0).get("features"));
+        assertEquals(5, ((Document) groupByBioformat.get(0).get("_id")).size()); // None - File
+        assertEquals(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt"), groupByBioformat.get(0).get("features"));
 
-        assertEquals(5, ((Document) groupByBioformat.get(1).get("_id")).size()); // None - File
-        assertEquals(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt"), groupByBioformat.get(1).get("features"));
+        assertEquals(5, ((Document) groupByBioformat.get(1).get("_id")).size()); // Alignment - File
+        assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(1).get("features"));
 
         assertEquals(5, ((Document) groupByBioformat.get(2).get("_id")).size()); // None - Folder
         assertEquals(Arrays.asList("data/"), groupByBioformat.get(2).get("features"));
