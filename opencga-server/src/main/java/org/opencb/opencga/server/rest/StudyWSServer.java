@@ -24,8 +24,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
 import org.opencb.opencga.catalog.utils.FileScanner;
-import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
@@ -123,26 +123,16 @@ public class StudyWSServer extends OpenCGAWSServer {
                            @ApiParam(defaultValue = "attributes") @DefaultValue("") @QueryParam("attributes") String attributes,
                            @ApiParam(defaultValue = "stats") @DefaultValue("") @QueryParam("stats") String stats) throws IOException {
         try {
-            ObjectMap objectMap = new ObjectMap();
-            if(!name.isEmpty()) {
-                objectMap.put("name", name);
-            }
-            if(!type.isEmpty()) {
-                objectMap.put("type", type);
-            }
-            if(!description.isEmpty()) {
-                objectMap.put("description", description);
-            }
-            if(!attributes.isEmpty()) {
-                objectMap.put("attributes", attributes);
-            }
-            if(!stats.isEmpty()) {
-                objectMap.put("stats", stats);
-            }
+            ObjectMap params = new ObjectMap();
+            params.putIfNotEmpty("name", name);
+            params.putIfNotEmpty("type", type);
+            params.putIfNotEmpty("description", description);
+            params.putIfNotEmpty("attributes", attributes);
+            params.putIfNotEmpty("stats", stats);
 
-            logger.debug(objectMap.toJson());
+            logger.debug(params.toJson());
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
-            QueryResult result = catalogManager.modifyStudy(studyId, objectMap, sessionId);
+            QueryResult result = catalogManager.modifyStudy(studyId, params, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -425,7 +415,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             ObjectMap indexAttributes = new ObjectMap(file.getIndex().getAttributes());
             DataStore dataStore;
             try {
-                dataStore = AnalysisFileIndexer.getDataStore(catalogManager, Integer.parseInt(studyIdStr), File.Bioformat.VARIANT, sessionId);
+                dataStore = AbstractFileIndexer.getDataStore(catalogManager, Integer.parseInt(studyIdStr), File.Bioformat.VARIANT, sessionId);
             } catch (CatalogException e) {
                 e.printStackTrace();
                 return createErrorResponse(e);
@@ -748,8 +738,8 @@ public class StudyWSServer extends OpenCGAWSServer {
         public String name;
         public Study.Type type;
         public String description;
-        public String status;
-        public String lastModified;
+//        public String status;
+//        public String lastModified;
 //        public long diskUsage;
 //        public String cipher;
 
@@ -766,7 +756,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response updateByPost(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                  @ApiParam(value = "params", required = true) UpdateStudy updateParams) {
         try {
-            long studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
             QueryResult queryResult = catalogManager.modifyStudy(studyId, new QueryOptions(jsonObjectMapper.writeValueAsString(updateParams)), sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {

@@ -25,9 +25,9 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisOutputRecorder;
-import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
+import org.opencb.opencga.catalog.monitor.ExecutionOutputRecorder;
+import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
+import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
@@ -66,7 +66,7 @@ public class DaemonLoop implements Runnable {
     private CatalogManager catalogManager;
 
     private static Logger logger = LoggerFactory.getLogger(DaemonLoop.class);
-    private AnalysisOutputRecorder analysisOutputRecorder;
+    private ExecutionOutputRecorder analysisOutputRecorder;
     private String sessionId;
 
     public DaemonLoop(Properties properties) {
@@ -108,7 +108,7 @@ public class DaemonLoop implements Runnable {
             e.printStackTrace();
             exit = true;
         }
-        analysisOutputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
+        analysisOutputRecorder = new ExecutionOutputRecorder(catalogManager, sessionId);
 
         while (!exit) {
             try {
@@ -190,7 +190,7 @@ public class DaemonLoop implements Runnable {
                         case Job.JobStatus.PREPARED:
                             try {
                                 ExecutorManager.execute(catalogManager, job, sessionId);
-                            } catch (AnalysisExecutionException e) {
+                            } catch (ExecutionException e) {
                                 ObjectMap params = new ObjectMap("status", Job.JobStatus.ERROR);
                                 String error = Job.ERRNO_NO_QUEUE;
                                 params.put("error", error);

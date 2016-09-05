@@ -23,28 +23,19 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
-import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
+import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.storage.app.StorageMain;
-import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -210,7 +201,7 @@ public class OpenCGAWSServerTest {
      * Do not execute Job using its command line, won't find the opencga-storage.sh
      * Call directly to the OpenCGAStorageMain
      */
-    private Job runStorageJob(String sessionId, Job storageJob) throws AnalysisExecutionException, IOException, CatalogException {
+    private Job runStorageJob(String sessionId, Job storageJob) throws AnalysisExecutionException, IOException, CatalogException, ExecutionException {
         String[] args = Commandline.translateCommandline(storageJob.getCommandLine());
         storageJob.setCommandLine("Executing Storage CLI " + storageJob.getCommandLine());
         StorageMain.privateMain((Arrays.copyOfRange(args, 1, args.length)));

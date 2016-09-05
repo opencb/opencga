@@ -67,8 +67,10 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         List<Long> studyIds = getStudyIds(parsedSampleStr);
         String sampleName = parsedSampleStr.getString("featureName");
 
-        Query query = new Query(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
-                .append(CatalogSampleDBAdaptor.QueryParams.NAME.key(), sampleName);
+        Query query = new Query()
+                .append(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(CatalogSampleDBAdaptor.QueryParams.NAME.key(), sampleName)
+                .append(CatalogSampleDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
         QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "projects.studies.samples.id");
         QueryResult<Sample> queryResult = sampleDBAdaptor.get(query, qOptions);
         if (queryResult.getNumResults() > 1) {

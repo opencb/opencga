@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis.execution.executors;
+package org.opencb.opencga.catalog.monitor.executors.old;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -11,11 +11,12 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 
-/**
+/*
  * Created on 26/11/15
  *
- * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt
  */
+@Deprecated
 public class SgeExecutorManager implements ExecutorManager {
     protected static Logger logger = LoggerFactory.getLogger(SgeExecutorManager.class);
 

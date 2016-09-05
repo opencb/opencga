@@ -26,7 +26,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.JobFactory;
-import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
+import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
+import org.opencb.opencga.analysis.variant.CatalogStudyConfigurationFactory;
+import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
@@ -68,6 +70,7 @@ import java.util.stream.Collectors;
  * ?????????????????????????????
  *
  */
+@Deprecated
 public class AnalysisFileIndexer {
 
     //Properties
@@ -223,7 +226,7 @@ public class AnalysisFileIndexer {
             originalFile = inputFile;
         }
 
-        final DataStore dataStore = getDataStore(catalogManager, catalogManager.getStudyIdByFileId(originalFile.getId()), originalFile.getBioformat(), sessionId);
+        final DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, catalogManager.getStudyIdByFileId(originalFile.getId()), originalFile.getBioformat(), sessionId);
 
         /** Check if file can be indexed **/
         if (originalFile.getIndex() != null) {
@@ -416,25 +419,6 @@ public class AnalysisFileIndexer {
         catalogManager.modifyFile(fileId, new ObjectMap("index", index), sessionId);
     }
 
-    public static DataStore getDataStore(CatalogManager catalogManager, long studyId, File.Bioformat bioformat, String sessionId) throws CatalogException {
-        Study study = catalogManager.getStudy(studyId, sessionId).first();
-        DataStore dataStore;
-        if (study.getDataStores() != null && study.getDataStores().containsKey(bioformat)) {
-            dataStore = study.getDataStores().get(bioformat);
-        } else {
-            long projectId = catalogManager.getProjectIdByStudyId(study.getId());
-            Project project = catalogManager.getProject(projectId, new QueryOptions("include", Arrays.asList("projects.alias", "projects.dataStores")), sessionId).first();
-            if (project.getDataStores() != null && project.getDataStores().containsKey(bioformat)) {
-                dataStore = project.getDataStores().get(bioformat);
-            } else { //get default datastore
-                String userId = catalogManager.getUserIdByStudyId(studyId); //Must use the UserByStudyId instead of the file owner.
-                String alias = project.getAlias();
-                dataStore = new DataStore(StorageManagerFactory.get().getDefaultStorageManagerName(), Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX, "opencga_") + userId + "_" + alias);
-            }
-        }
-        return dataStore;
-    }
-
     /**
      *
      * @param study                     Study where file is located
@@ -449,7 +433,6 @@ public class AnalysisFileIndexer {
      *
      * @throws CatalogException
      */
-
     private String createCommandLine(Study study, File originalFile, File inputFile, List<Sample> sampleList,
                                      long outDirId, URI outDirUri, String randomString, final ObjectMap indexAttributes, final DataStore dataStore,
                                      String sessionId, QueryOptions options)

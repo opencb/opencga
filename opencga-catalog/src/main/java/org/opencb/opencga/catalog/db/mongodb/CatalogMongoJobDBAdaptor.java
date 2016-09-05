@@ -588,6 +588,9 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
             jobParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
+        if (parameters.containsKey(QueryParams.STATUS.key()) && parameters.get(QueryParams.STATUS.key()) instanceof Job.JobStatus) {
+            jobParameters.put(QueryParams.STATUS.key(), getMongoDBDocument(parameters.get(QueryParams.STATUS.key()), "Job.JobStatus"));
+        }
 
         String[] acceptedIntParams = {QueryParams.VISITS.key(), };
         filterIntParams(parameters, jobParameters, acceptedIntParams);

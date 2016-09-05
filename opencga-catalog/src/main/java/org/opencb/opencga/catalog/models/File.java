@@ -49,9 +49,8 @@ public class File extends AbstractAcl<FileAclEntry> {
     private URI uri;
     private String path;
 
-    @Deprecated
-    private String ownerId;
     private String creationDate;
+    @Deprecated
     private String modificationDate;
 
     private String description;
@@ -79,16 +78,16 @@ public class File extends AbstractAcl<FileAclEntry> {
     public File() {
     }
 
-    public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId, String description,
-                FileStatus status, long diskUsage) {
-        this(-1, name, type, format, bioformat, null, path, ownerId, TimeUtils.getTime(), TimeUtils.getTime(), description, status, false,
+    public File(String name, Type type, Format format, Bioformat bioformat, String path, String description, FileStatus status,
+                long diskUsage) {
+        this(-1, name, type, format, bioformat, null, path, TimeUtils.getTime(), TimeUtils.getTime(), description, status, false,
                 diskUsage, -1, Collections.emptyList(), -1, Collections.emptyList(), Collections.emptyList(), null, Collections.emptyMap(),
                 Collections.emptyMap());
     }
 
-    public File(long id, String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String ownerId, String
-            creationDate, String modificationDate, String description, FileStatus status, boolean external, long diskUsage, long
-            experimentId, List<Long> sampleIds, long jobId, List<RelatedFile> relatedFiles, List<FileAclEntry> acl, FileIndex index,
+    public File(long id, String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String creationDate,
+                String modificationDate, String description, FileStatus status, boolean external, long diskUsage, long experimentId,
+                List<Long> sampleIds, long jobId, List<RelatedFile> relatedFiles, List<FileAclEntry> acl, FileIndex index,
                 Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -97,7 +96,6 @@ public class File extends AbstractAcl<FileAclEntry> {
         this.bioformat = bioformat;
         this.uri = uri;
         this.path = path;
-        this.ownerId = ownerId;
         this.creationDate = creationDate;
         this.modificationDate = modificationDate;
         this.description = description;
@@ -109,7 +107,7 @@ public class File extends AbstractAcl<FileAclEntry> {
         this.jobId = jobId;
         this.relatedFiles = relatedFiles;
         this.acl = acl;
-        this.index = index;
+        this.index = index != null ? index : new FileIndex();
         this.stats = stats;
         this.attributes = attributes;
     }
@@ -236,7 +234,10 @@ public class File extends AbstractAcl<FileAclEntry> {
         public enum Relation {
             PRODUCED_FROM,
             PART_OF_PAIR,
-            PEDIGREE
+            PEDIGREE;
+        }
+
+        public RelatedFile() {
         }
 
         public RelatedFile(long fileId, Relation relation) {
@@ -282,7 +283,6 @@ public class File extends AbstractAcl<FileAclEntry> {
         sb.append(", bioformat=").append(bioformat);
         sb.append(", uri=").append(uri);
         sb.append(", path='").append(path).append('\'');
-        sb.append(", ownerId='").append(ownerId).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", modificationDate='").append(modificationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
@@ -361,15 +361,6 @@ public class File extends AbstractAcl<FileAclEntry> {
 
     public File setPath(String path) {
         this.path = path;
-        return this;
-    }
-
-    public String getOwnerId() {
-        return ownerId;
-    }
-
-    public File setOwnerId(String ownerId) {
-        this.ownerId = ownerId;
         return this;
     }
 

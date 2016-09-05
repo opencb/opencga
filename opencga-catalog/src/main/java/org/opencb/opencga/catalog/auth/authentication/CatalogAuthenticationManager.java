@@ -9,6 +9,7 @@ import org.opencb.opencga.catalog.db.api.CatalogMetaDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
@@ -45,12 +46,18 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
     public boolean authenticate(String userId, String password, boolean throwException) throws CatalogException {
         String cypherPassword = (password.length() != 40) ? cypherPassword(password) : password;
         String storedPassword;
+        boolean validSessionId = false;
         if (userId.equals("admin")) {
             storedPassword = metaDBAdaptor.getAdminPassword();
+            validSessionId = metaDBAdaptor.checkValidAdminSession(password);
         } else {
             storedPassword = userDBAdaptor.getUser(userId, new QueryOptions(QueryOptions.INCLUDE, "password"), null).first().getPassword();
+            QueryResult<Session> session = userDBAdaptor.getSession(userId, password);
+            if (session.getNumResults() > 0) {
+                validSessionId = true;
+            }
         }
-        if (storedPassword.equals(cypherPassword)) {
+        if (storedPassword.equals(cypherPassword) || validSessionId) {
             return true;
         } else {
             if (throwException) {

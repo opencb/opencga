@@ -152,7 +152,7 @@ public interface IJobManager extends ResourceManager<Long, Job> {
         return groupBy(studyId, query, field, options, sessionId);
     }
 
-    QueryResult<Job> queue(long studyId, String jobName, String executable, Map<String, String> params, List<Long> input,
-                           List<Long> output, long outDirId, String userId) throws CatalogException;
+    QueryResult<Job> queue(long studyId, String jobName, String executable, Job.Type type, Map<String, String> params, List<Long> input,
+                           List<Long> output, long outDirId, String userId, Map<String, Object> attributes) throws CatalogException;
 
 }

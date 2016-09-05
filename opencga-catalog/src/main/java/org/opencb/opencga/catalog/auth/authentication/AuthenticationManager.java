@@ -12,7 +12,7 @@ public interface AuthenticationManager {
      * Authenticate the user against the Authentication server.
      *
      * @param userId         UserId to authenticate
-     * @param password       Users password
+     * @param password       Users password or sessionId.
      * @param throwException Throw exception if authentication fails
      * @return User's authentication
      * @throws CatalogException CatalogException

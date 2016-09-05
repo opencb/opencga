@@ -737,7 +737,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoAnnotationDBAdaptor
             query.put(QueryParams.STATUS_NAME.key(), Status.TRASHED + "," + Status.DELETED);
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_NAME.key());
             Sample sample = get(query, options).first();
-            throw new CatalogDBException("The sample {" + id + "} was already " + sample.getStatus().getName());
+            throw new CatalogDBException("The sample " + id + " was already " + sample.getStatus().getName());
         }
 
         // If we don't find the force parameter, we check first if the file could be deleted.

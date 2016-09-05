@@ -221,10 +221,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap o = new ObjectMap();
         o.putIfNotNull("studyId", filesCommandOptions.indexCommandOptions.studyId);
-        o.putIfNotNull("outDir", filesCommandOptions.indexCommandOptions.outdirId);
+        o.putIfNotNull("outDir", filesCommandOptions.indexCommandOptions.outdir);
         o.putIfNotNull("transform", filesCommandOptions.indexCommandOptions.transform);
         o.putIfNotNull("load", filesCommandOptions.indexCommandOptions.load);
-        o.putIfNotNull("excludeGenotypes", filesCommandOptions.indexCommandOptions.excludeGenotype);
         o.putIfNotNull("includeExtraFields", filesCommandOptions.indexCommandOptions.extraFields);
         o.putIfNotNull("aggregated", filesCommandOptions.indexCommandOptions.aggregated);
         o.putIfNotNull("calculateStats", filesCommandOptions.indexCommandOptions.calculateStats);

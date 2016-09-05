@@ -210,6 +210,7 @@ public class OpencgaCliOptionsParser {
         variableSubCommands.addCommand("search", variableCommandOptions.searchCommandOptions);
         variableSubCommands.addCommand("delete", variableCommandOptions.deleteCommandOptions);
         variableSubCommands.addCommand("update", variableCommandOptions.updateCommandOptions);
+        variableSubCommands.addCommand("field-add", variableCommandOptions.fieldAddCommandOptions);
         variableSubCommands.addCommand("field-delete", variableCommandOptions.fieldDeleteCommandOptions);
         variableSubCommands.addCommand("field-rename", variableCommandOptions.fieldRenameCommandOptions);
 

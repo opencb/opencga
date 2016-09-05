@@ -248,30 +248,26 @@ public class FileCommandOptions {
         @Parameter(names = {"--id"}, description = "Comma separated list of file ids (files or directories)", required = true, arity = 1)
         public String fileIds;
 
-        @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = false, arity = 1)
+        @Parameter(names = {"-s", "--study-id"}, description = "The study id or alias where you want to load the data", arity = 1)
         public String studyId;
 
         @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
-        public boolean transform = false;
+        public boolean transform;
 
         @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
-        public boolean load = false;
+        public boolean load;
 
-        @Parameter(names = {"--outdir"}, description = "Directory where transformed index files will be stored", required = false, arity = 1)
-        public String outdirId = null;
-
-        @Parameter(names = {"--exclude-genotypes"}, description = "Index excluding the genotype information")
-        public boolean excludeGenotype = false;
+        @Parameter(names = {"-o", "--outdir"}, description = "Catalog directory where transformed index files will be stored", arity = 1)
+        public String outdir;
 
         @Parameter(names = {"--include-extra-fields"}, description = "Index including other genotype fields [CSV]")
-        public String extraFields = "";
+        public String extraFields;
 
         @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
         public String aggregated = "NONE";
 
-//        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF " +
-//                "file")
-//        public String aggregationMappingFile = null;
+        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file", arity = 1)
+        public String aggregationMappingFile;
 //
 //        @Parameter(names = {"--gvcf"}, description = "The input file is in gvcf format")
 //        public boolean gvcf;
@@ -280,10 +276,10 @@ public class FileCommandOptions {
 //        public boolean bgzip;
 
         @Parameter(names = {"--calculate-stats"}, description = "Calculate indexed variants statistics after the load step")
-        public boolean calculateStats = false;
+        public boolean calculateStats;
 
         @Parameter(names = {"--annotate"}, description = "Annotate indexed variants after the load step")
-        public boolean annotate = false;
+        public boolean annotate;
 //
 //        @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
 //        public org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource annotator = null;
@@ -365,8 +361,7 @@ public class FileCommandOptions {
     }
 
 
-    @Parameters(commandNames = {"relink"}, commandDescription = "Change file location. Provided file must be either STAGED or an external" +
-            " file")
+    @Parameters(commandNames = {"relink"}, commandDescription = "Change location of linked or STAGED file.")
     class RelinkCommandOptions extends BaseFileCommand {
 
         @Parameter(names = {"-i", "--input"}, description = "File location", required = true, arity = 1)

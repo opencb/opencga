@@ -29,7 +29,6 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -271,9 +270,20 @@ public abstract class AbstractParentClient<T, A> {
 //                }
 //            }
 
+            if (params != null) {
+                for (String s : params.keySet()) {
+                    if (!s.equals("body")) {
+                        path = path.queryParam(s, params.get(s));
+                    }
+                }
+            }
+
+//            ObjectMap json = new ObjectMap("body", params.get("body"));
+
             System.out.println("POST URL: " + path.getUri().toURL());
-            jsonString = path.request().accept(MediaType.APPLICATION_JSON).post(Entity.entity(params, MediaType.APPLICATION_JSON),
-                    String.class);
+//            jsonString = path.request().accept(MediaType.APPLICATION_JSON).post(Entity.entity(json, MediaType.APPLICATION_JSON),
+//                    String.class);est().accept(MediaType.APPLICATION_JSON).post(Entity.entity(json, MediaType.APPLICATION_JSON),
+            jsonString = path.request().post(Entity.json(params.get("body")), String.class);
         }
         return parseResult(jsonString, clazz);
     }

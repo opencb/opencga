@@ -55,6 +55,8 @@ public interface CatalogFileDBAdaptor extends CatalogAclDBAdaptor<File, FileAclE
         STATUS_DATE("status.date", TEXT, ""),
         @Deprecated
         FILE_STATUS("status.name", TEXT, ""),
+        RELATED_FILES("relatedFiles", TEXT_ARRAY, ""),
+        RELATED_FILES_RELATION("relatedFiles.relation", TEXT, ""),
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
         EXPERIMENT_ID("experimentId", INTEGER_ARRAY, ""),
         SAMPLE_IDS("sampleIds", INTEGER_ARRAY, ""),
@@ -75,6 +77,7 @@ public interface CatalogFileDBAdaptor extends CatalogAclDBAdaptor<File, FileAclE
         INDEX_STATUS_NAME("index.status.name", TEXT, ""),
         INDEX_STATUS_MESSAGE("index.status.message", TEXT, ""),
         INDEX_JOB_ID("index.jobId", TEXT, ""),
+        INDEX_TRANSFORMED_FILE("index.transformedFile", TEXT_ARRAY, ""),
 
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
@@ -151,8 +154,6 @@ public interface CatalogFileDBAdaptor extends CatalogAclDBAdaptor<File, FileAclE
     long getStudyIdByFileId(long fileId) throws CatalogDBException;
 
     List<Long> getStudyIdsByFileIds(String fileIds) throws CatalogDBException;
-
-    String getFileOwnerId(long fileId) throws CatalogDBException;
 
     /***
      * Inserts the passed file in the database.

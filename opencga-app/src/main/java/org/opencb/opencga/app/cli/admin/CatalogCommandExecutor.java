@@ -214,7 +214,8 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
     private void daemons() throws Exception {
         if (catalogCommandOptions.daemonCatalogCommandOptions.start) {
             // Server crated and started
-            MonitorService monitorService = new MonitorService(catalogCommandOptions.daemonCatalogCommandOptions.commonOptions.adminPassword, catalogConfiguration);
+            MonitorService monitorService = new MonitorService(catalogCommandOptions.daemonCatalogCommandOptions.commonOptions.adminPassword,
+                    catalogConfiguration, appHome);
             monitorService.start();
             monitorService.blockUntilShutdown();
             logger.info("Shutting down OpenCGA Storage REST server");

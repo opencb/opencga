@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -18,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -165,13 +167,21 @@ public abstract class AbstractManager {
         String aliasProject = (String) parameters.get("project");
         String aliasStudy = (String) parameters.get("study");
 
+        if (aliasStudy != null && StringUtils.isNumeric(aliasStudy)) {
+            return Arrays.asList(Long.parseLong(aliasStudy));
+        }
+
         List<Long> projectIds = new ArrayList<>();
         if (aliasProject != null) {
-            long projectId = projectDBAdaptor.getProjectId(ownerId, aliasProject);
-            if (projectId == -1) {
-                throw new CatalogException("Error: Could not retrieve any project for the user " + ownerId);
+            if (StringUtils.isNumeric(aliasProject)) {
+                projectIds = Arrays.asList(Long.parseLong(aliasProject));
+            } else {
+                long projectId = projectDBAdaptor.getProjectId(ownerId, aliasProject);
+                if (projectId == -1) {
+                    throw new CatalogException("Error: Could not retrieve any project for the user " + ownerId);
+                }
+                projectIds.add(projectId);
             }
-            projectIds.add(projectId);
         } else {
             QueryResult<Project> allProjects = projectDBAdaptor.getAllProjects(ownerId,
                     new QueryOptions(QueryOptions.INCLUDE, "projects.id"));

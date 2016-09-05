@@ -22,6 +22,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.VariableSet;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 
 /**
@@ -38,16 +39,25 @@ public class VariableSetClient extends AbstractParentClient<VariableSet, Variabl
         this.clazz = VariableSet.class;
     }
 
-    public QueryResponse<VariableSet> create(String studyId, String variableSetName, ObjectMap params)
+    public QueryResponse<VariableSet> create(String studyId, String variableSetName, Object variables, ObjectMap params)
             throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "studyId", studyId, "name", variableSetName);
-        return execute(VARIABLES_URL, "create", params, GET, VariableSet.class);
+        params = addParamsToObjectMap(params, "studyId", studyId, "name", variableSetName, "body", variables);
+        return execute(VARIABLES_URL, "create", params, POST, VariableSet.class);
     }
 
-    // FIXME: The way to do this is via POST, not GET
-    public QueryResponse<VariableSet> addVariable(String variableSetid, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "variableSetId", variableSetid);
-        return execute(VARIABLES_URL, "field/add", params, GET, VariableSet.class);
+    public QueryResponse<VariableSet> update(String id, @Nullable Object variables, ObjectMap params) throws CatalogException, IOException {
+        if (variables != null) {
+            params.append("body", variables);
+        }
+        return execute(category, id, "update", params, POST, clazz);
+    }
+
+    public QueryResponse<VariableSet> addVariable(String variableSetid, Object variables)
+            throws CatalogException, IOException {
+        ObjectMap params = new ObjectMap()
+                .append("body", variables)
+                .append("variableSetId", variableSetid);
+        return execute(VARIABLES_URL, "field/add", params, POST, VariableSet.class);
     }
 
     public QueryResponse<VariableSet> deleteVariable(String variableSetid, String variable, ObjectMap params)
