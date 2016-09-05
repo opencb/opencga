@@ -23,6 +23,7 @@ import java.util.Map;
 /**
  * Created by pfurio on 26/08/16.
  */
+@Deprecated
 public class VariantIndexOutputRecorder {
 
     private CatalogManager catalogManager;
@@ -38,6 +39,7 @@ public class VariantIndexOutputRecorder {
         this.objectReader = new ObjectMapper().reader(new TypeReference<List<Map>>(){});
     }
 
+    @Deprecated
     public void registerStorageETLResults(Job job, Path tmpOutdirPath) {
         logger.debug("Updating storage ETL Results");
         File fileResults = tmpOutdirPath.resolve("storageETLresults").toFile();

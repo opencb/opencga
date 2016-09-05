@@ -29,12 +29,10 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.api.IJobManager;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.monitor.ExecutionOutputRecorder;
-import org.opencb.opencga.catalog.monitor.VariantIndexOutputRecorder;
 import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -56,7 +54,7 @@ public class IndexDaemon extends MonitorParentDaemon {
 
     private ObjectMapper objectMapper;
 
-    private VariantIndexOutputRecorder variantIndexOutputRecorder;
+//    private VariantIndexOutputRecorder variantIndexOutputRecorder;
 
     public IndexDaemon(int interval, String sessionId, CatalogManager catalogManager, String appHome)
             throws URISyntaxException, CatalogIOException {
@@ -65,7 +63,7 @@ public class IndexDaemon extends MonitorParentDaemon {
         URI uri = UriUtils.createUri(catalogManager.getCatalogConfiguration().getTempJobsDir());
         this.tempJobFolder = Paths.get(uri.getPath());
         this.catalogIOManager = catalogManager.getCatalogIOManagerFactory().get("file");
-        this.variantIndexOutputRecorder = new VariantIndexOutputRecorder(catalogManager, catalogIOManager, sessionId);
+//        this.variantIndexOutputRecorder = new VariantIndexOutputRecorder(catalogManager, catalogIOManager, sessionId);
     }
 
     @Override
@@ -163,18 +161,22 @@ public class IndexDaemon extends MonitorParentDaemon {
                 outputRecorder.updateJobStatus(job, jobStatus);
             } catch (CatalogException e) {
                 logger.warn("Could not update job {} to status error", job.getId());
+            } finally {
+                closeSessionId(job);
             }
-            closeSessionId(job);
         } else {
             String status = executorManager.status(tmpOutdirPath, job);
             if (!status.equalsIgnoreCase(Job.JobStatus.UNKNOWN) && !status.equalsIgnoreCase(Job.JobStatus.RUNNING)) {
-                variantIndexOutputRecorder.registerStorageETLResults(job, tmpOutdirPath);
+//                variantIndexOutputRecorder.registerStorageETLResults(job, tmpOutdirPath);
                 logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.RUNNING, status);
                 String sessionId = (String) job.getAttributes().get("sessionId");
                 ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, sessionId);
                 try {
-                    outputRecorder.recordJobOutputAndPostProcess(job, status);
-                } catch (CatalogException | IOException | URISyntaxException e) {
+//                    outputRecorder.recordJobOutputAndPostProcess(job, status);
+                    outputRecorder.updateJobStatus(job, new Job.JobStatus(status));
+                    logger.info("Removing temporal directory.");
+                    this.catalogIOManager.deleteDirectory(UriUtils.createUri(tmpOutdirPath.toString()));
+                } catch (CatalogException | URISyntaxException e) {
                     logger.error(e.getMessage());
                 } finally {
                     closeSessionId(job);
@@ -299,6 +301,7 @@ public class IndexDaemon extends MonitorParentDaemon {
 
         // we assume job.output equals params.outdir
         job.getParams().put("outdir", path.toString());
+        job.getParams().put("path", Long.toString(job.getOutDirId()));
         for (Map.Entry<String, String> param : job.getParams().entrySet()) {
             commandLine.append(" ")
                     .append("--").append(param.getKey());
