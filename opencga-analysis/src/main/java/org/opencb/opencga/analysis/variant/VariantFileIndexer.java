@@ -98,7 +98,9 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         logger = LoggerFactory.getLogger(VariantFileIndexer.class);
     }
 
-    public void index(String fileIds, String outdirString, String sessionId, QueryOptions options) throws CatalogException, AnalysisExecutionException, IOException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageManagerException, URISyntaxException {
+    public void index(String fileIds, String outdirString, String sessionId, QueryOptions options)
+            throws CatalogException, AnalysisExecutionException, IOException, IllegalAccessException, InstantiationException,
+            ClassNotFoundException, StorageManagerException, URISyntaxException {
 
         Path outdir = Paths.get(outdirString);
         FileUtils.checkDirectory(outdir, true);
@@ -251,6 +253,11 @@ public class VariantFileIndexer extends AbstractFileIndexer {
 
         // Only if we are not transforming or if a path has been passed, we will update catalog information
         if (!step.equals(Type.TRANSFORM) || options.get(CATALOG_PATH) != null) {
+            if (!step.equals(Type.LOAD) && options.get(CATALOG_PATH) != null) {
+                // Copy results to catalog
+                copyResult(outdir, catalogPathId, sessionId);
+            }
+
             updateFileInfo(study, filesToIndex, storageETLResults, outdir, options, sessionId);
 
             // Update study configuration
@@ -263,11 +270,6 @@ public class VariantFileIndexer extends AbstractFileIndexer {
             } catch (StorageManagerException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
                 logger.error("An error occurred when trying to update the study configuration. Error {}", e.getMessage());
                 e.printStackTrace();
-            }
-
-            if (!step.equals(Type.LOAD) && options.get(CATALOG_PATH) != null) {
-                // Copy results to catalog
-                copyResult(outdir, catalogPathId, sessionId);
             }
         }
 

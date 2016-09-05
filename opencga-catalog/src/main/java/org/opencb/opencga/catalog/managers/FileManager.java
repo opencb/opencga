@@ -221,8 +221,12 @@ public class FileManager extends AbstractManager implements IFileManager {
             Query query = new Query()
                     .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                     .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), variantPathName)
-                    .append(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
-//                    .append(CatalogFileDBAdaptor.QueryParams.INDEX_TRANSFORMED_FILE.key(), null);
+                    .append(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT)
+                    .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), Arrays.asList(
+                            FileIndex.IndexStatus.NONE, FileIndex.IndexStatus.TRANSFORMING, FileIndex.IndexStatus.INDEXING,
+                            FileIndex.IndexStatus.READY
+                    ));
+
             QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
 
             if (fileQueryResult.getNumResults() == 0) {
@@ -232,7 +236,11 @@ public class FileManager extends AbstractManager implements IFileManager {
                 query = new Query()
                         .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                         .append(CatalogFileDBAdaptor.QueryParams.NAME.key(), variantFileName)
-                        .append(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
+                        .append(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT)
+                        .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), Arrays.asList(
+                                FileIndex.IndexStatus.NONE, FileIndex.IndexStatus.TRANSFORMING, FileIndex.IndexStatus.INDEXING,
+                                FileIndex.IndexStatus.READY
+                        ));
 //                        .append(CatalogFileDBAdaptor.QueryParams.INDEX_TRANSFORMED_FILE.key(), null);
                 fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
             }
@@ -284,8 +292,19 @@ public class FileManager extends AbstractManager implements IFileManager {
 
             // Update vcf file
             logger.debug("Updating vcf relation");
-            FileIndex.TransformedFile transformedFile = new FileIndex.TransformedFile(avroFile.getId(), json.getId());
-            params = new ObjectMap(CatalogFileDBAdaptor.QueryParams.INDEX_TRANSFORMED_FILE.key(), transformedFile);
+            FileIndex index = vcf.getIndex();
+            if (index.getTransformedFile() == null) {
+                index.setTransformedFile(new FileIndex.TransformedFile(avroFile.getId(), json.getId()));
+            }
+            String status = vcf.getIndex().getStatus().getName();
+            if (FileIndex.IndexStatus.NONE.equals(status) || FileIndex.IndexStatus.TRANSFORMING.equals(status)) {
+                index.setStatus(new FileIndex.IndexStatus(FileIndex.IndexStatus.TRANSFORMED));
+            }
+//            FileIndex.TransformedFile transformedFile = new FileIndex.TransformedFile(avroFile.getId(), json.getId());
+//            params = new ObjectMap()
+//                    .append(CatalogFileDBAdaptor.QueryParams.INDEX_TRANSFORMED_FILE.key(), transformedFile)
+//                    .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.TRANSFORMED);
+            params = new ObjectMap(CatalogFileDBAdaptor.QueryParams.INDEX.key(), index);
             fileDBAdaptor.update(vcf.getId(), params);
 //            update(vcf.getId(), params, new QueryOptions(), sessionId);
         }
@@ -1442,14 +1461,29 @@ public class FileManager extends AbstractManager implements IFileManager {
                         uriOrigin, filePath.toString(), TimeUtils.getTime(), TimeUtils.getTime(), description,
                         new File.FileStatus(File.FileStatus.READY), true, diskUsage, -1, Collections.emptyList(), -1,
                         Collections.emptyList(), Collections.emptyList(), null, Collections.emptyMap(), Collections.emptyMap());
-                QueryResult<File> file = fileDBAdaptor.createFile(studyId, subfile, new QueryOptions());
-                fileMetadataReader.setMetadataInformation(file.first(), file.first().getUri(), new QueryOptions(), sessionId, false);
-                return file;
+                QueryResult<File> queryResult = fileDBAdaptor.createFile(studyId, subfile, new QueryOptions());
+                File file = fileMetadataReader.setMetadataInformation(queryResult.first(), queryResult.first().getUri(),
+                        new QueryOptions(), sessionId, false);
+                queryResult.setResult(Arrays.asList(file));
+
+                // If it is an avro file, we will try to link it with the correspondent original file
+                try {
+                    if (File.Format.AVRO.equals(file.getFormat())) {
+                        matchUpVariantFiles(Arrays.asList(file), sessionId);
+                    }
+                } catch (CatalogException e) {
+                    logger.warn("Matching avro to variant file: {}", e.getMessage());
+                }
+
+                return queryResult;
             } else {
                 throw new CatalogException("Cannot link " + filePath.getFileName().toString() + ". A file with the same name was found"
                         + " in the same path.");
             }
         } else {
+            // This list will contain the list of avro files detected during the link
+            List<File> avroFiles = new ArrayList<>();
+
             // Link all the files and folders present in the uri
             Files.walkFileTree(pathOrigin, new SimpleFileVisitor<Path>() {
                 @Override
@@ -1503,9 +1537,13 @@ public class FileManager extends AbstractManager implements IFileManager {
                                     description, new File.FileStatus(File.FileStatus.READY), true, diskUsage, -1, Collections.emptyList(),
                                     -1, Collections.emptyList(), Collections.emptyList(), null, Collections.emptyMap(),
                                     Collections.emptyMap());
-                            QueryResult<File> file = fileDBAdaptor.createFile(studyId, subfile, new QueryOptions());
-                            fileMetadataReader.setMetadataInformation(file.first(), file.first().getUri(), new QueryOptions(), sessionId,
-                                    false);
+                            QueryResult<File> queryResult = fileDBAdaptor.createFile(studyId, subfile, new QueryOptions());
+                            File file = fileMetadataReader.setMetadataInformation(queryResult.first(), queryResult.first().getUri(),
+                                    new QueryOptions(), sessionId, false);
+                            if (File.Format.AVRO.equals(file.getFormat())) {
+                                logger.info("Detected avro file {}", file.getPath());
+                                avroFiles.add(file);
+                            }
                         } else {
                             throw new CatalogException("Cannot link the file " + filePath.getFileName().toString()
                                     + ". There is already a file in the path " + destinyPath + " with the same name.");
@@ -1556,6 +1594,15 @@ public class FileManager extends AbstractManager implements IFileManager {
                     return FileVisitResult.CONTINUE;
                 }
             });
+
+            // Try to link avro files with their corresponding original files if any
+            try {
+                if (avroFiles.size() > 0) {
+                    matchUpVariantFiles(avroFiles, sessionId);
+                }
+            } catch (CatalogException e) {
+                logger.warn("Matching avro to variant file: {}", e.getMessage());
+            }
 
             query = new Query()
                     .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
