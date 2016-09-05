@@ -205,7 +205,9 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         assertTrue(groups.get(groupAdmin).getUserIds().contains(externalUser));
 //        thrown.expect(CatalogException.class);
 //        catalogManager.addUsersToGroup(s1, groupMember, externalUser, ownerSessionId);
-        catalogManager.updateGroup(Long.toString(s1), groupMember, externalUser, null, null, ownerSessionId);
+        catalogManager.updateGroup(Long.toString(s1), groupAdmin, null, externalUser, null, ownerSessionId);
+        catalogManager.createGroup(Long.toString(s1), groupMember, externalUser, ownerSessionId);
+//        catalogManager.updateGroup(Long.toString(s1), groupMember, externalUser, null, null, ownerSessionId);
         groups = getGroupMap();
         assertTrue(groups.get(groupMember).getUserIds().contains(externalUser));
         assertTrue(!groups.get(groupAdmin).getUserIds().contains(externalUser));
@@ -320,6 +322,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         assertEquals(externalUser, studyAcls.first().getMember());
 
         // Change role
+        catalogManager.removeStudyAcl(Long.toString(s1), externalUser, studyAdmin1SessionId);
         catalogManager.createStudyAcls(Long.toString(s1), externalUser, "", AuthorizationManager.ROLE_ANALYST, studyAdmin1SessionId);
         studyAcls = catalogManager.getStudyAcl(Long.toString(s1), externalUser, studyAdmin1SessionId);
         assertEquals(1, studyAcls.getNumResults());

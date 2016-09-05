@@ -208,7 +208,7 @@ public class FileScanner {
             URI generatedFile = directoryToScan.relativize(uri);
             String filePath = URI.create(directory.getPath()).resolve(generatedFile).toString();
 //            String filePath = Paths.get(directory.getPath(), generatedFile.toString()).toString();
-            if (generatedFile.getPath().endsWith("/")) {
+            if (generatedFile.getPath().endsWith("/") && !filePath.endsWith("/")) {
                 filePath += "/";
             }
 

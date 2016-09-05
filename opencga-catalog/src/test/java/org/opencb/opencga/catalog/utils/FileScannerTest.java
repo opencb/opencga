@@ -129,7 +129,7 @@ public class FileScannerTest {
         File file = catalogManager.createFile(study.getId(), File.Format.PLAIN, File.Bioformat.NONE, folder.getPath() + "file1.txt",
                 CatalogManagerTest.createDebugFile().toURI(), "", false, sessionIdUser).first();
 
-        File file2 = catalogManager.createFile(study.getId(), File.Format.PLAIN, File.Bioformat.NONE, folder.getPath() + "s/file2.txt",
+        catalogManager.createFile(study.getId(), File.Format.PLAIN, File.Bioformat.NONE, folder.getPath() + "s/file2.txt",
                 CatalogManagerTest.createDebugFile().toURI(), "", true, sessionIdUser).first();
 
         FileScanner fileScanner = new FileScanner(catalogManager);
