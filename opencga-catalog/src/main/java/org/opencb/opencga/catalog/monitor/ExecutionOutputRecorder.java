@@ -109,7 +109,7 @@ public class ExecutionOutputRecorder {
         logger.debug("Scan the temporal output directory ({}) from a job to find all generated files.", tmpOutDirUri);
         File outDir;
         try {
-            outDir = catalogManager.getFileManager().read(job.getOutDirId(), QueryOptions.empty(), sessionId).getResult().get(0);
+            outDir = catalogManager.getFileManager().read(job.getOutDirId(), new QueryOptions(), sessionId).getResult().get(0);
         } catch (CatalogException e) {
             logger.error("Cannot find file {}. Error: {}", job.getOutDirId(), e.getMessage());
             throw e;
@@ -181,7 +181,7 @@ public class ExecutionOutputRecorder {
                 jobStatus.setMessage("The finished with an unexpected error");
             }
             ObjectMap params = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
-            catalogManager.getJobManager().update(job.getId(), params, QueryOptions.empty(), sessionId);
+            catalogManager.getJobManager().update(job.getId(), params, new QueryOptions(), sessionId);
         } else {
             logger.error("This code should never be executed.");
             throw new CatalogException("Job status = null");
@@ -204,7 +204,7 @@ public class ExecutionOutputRecorder {
 //                jobStatus.setName(Job.JobStatus.ERROR);
 //            }
 //            ObjectMap params = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
-//            catalogManager.getJobManager().update(job.getId(), params, QueryOptions.empty(), sessionId);
+//            catalogManager.getJobManager().update(job.getId(), params, new QueryOptions(), sessionId);
 //            // Delete job.status file
 //            ioManager.deleteFile(path.toUri());
 //        } else {

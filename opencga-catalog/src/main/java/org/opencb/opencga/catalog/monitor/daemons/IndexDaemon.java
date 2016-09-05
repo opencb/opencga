@@ -225,7 +225,7 @@ public class IndexDaemon extends MonitorParentDaemon {
                 Job.JobStatus jobStatus = new Job.JobStatus(Job.JobStatus.RUNNING, "The job is running");
                 ObjectMap objectMap = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
                 try {
-                    catalogManager.getJobManager().update(job.getId(), objectMap, QueryOptions.empty(), sessionId);
+                    catalogManager.getJobManager().update(job.getId(), objectMap, new QueryOptions(), sessionId);
                 } catch (CatalogException e) {
                     logger.warn("Could not update job {} to status running", job.getId());
                 }
@@ -243,7 +243,7 @@ public class IndexDaemon extends MonitorParentDaemon {
 //                if (jobStatus != null && !jobStatus.getName().equalsIgnoreCase(Job.JobStatus.QUEUED)) {
 //                    ObjectMap objectMap = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING);
 //                    try {
-//                        catalogManager.getJobManager().update(job.getId(), objectMap, QueryOptions.empty(), sessionId);
+//                        catalogManager.getJobManager().update(job.getId(), objectMap, new QueryOptions(), sessionId);
 //                    } catch (CatalogException e) {
 //                        logger.warn("Could not update job {} to status running", job.getId());
 //                    }
@@ -253,7 +253,7 @@ public class IndexDaemon extends MonitorParentDaemon {
 //                if (!status.equalsIgnoreCase(Job.JobStatus.QUEUED)) {
 //                    ObjectMap objectMap = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING);
 //                    try {
-//                        catalogManager.getJobManager().update(job.getId(), objectMap, QueryOptions.empty(), sessionId);
+//                        catalogManager.getJobManager().update(job.getId(), objectMap, new QueryOptions(), sessionId);
 //                    } catch (CatalogException e) {
 //                        logger.warn("Could not update job {} to status running", job.getId());
 //                    }
@@ -365,7 +365,7 @@ public class IndexDaemon extends MonitorParentDaemon {
             job.getAttributes().remove("sessionId");
             ObjectMap params = new ObjectMap(CatalogJobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
             try {
-                catalogManager.getJobManager().update(job.getId(), params, QueryOptions.empty(), this.sessionId);
+                catalogManager.getJobManager().update(job.getId(), params, new QueryOptions(), this.sessionId);
             } catch (CatalogException e) {
                 logger.error("Could not remove session id from attributes of job {}. {}", job.getId(), e.getMessage());
             }

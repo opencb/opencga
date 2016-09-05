@@ -283,6 +283,17 @@ public class FileManagerTest extends GenericTest {
 
         // Now we try to create it into a folder that does not exist with parents = false
         thrown.expect(CatalogException.class);
+        thrown.expectMessage("already linked");
+        catalogManager.link(uri, "myDirectory2", Long.toString(studyId), new ObjectMap(), sessionIdUser);
+    }
+
+    @Test
+    public void testLinkFolder2() throws CatalogException, IOException {
+        // We will link the same folders that are already created in this study into another folder
+        URI uri = Paths.get(catalogManager.getStudyUri(studyId)).resolve("data").toUri();
+
+        // Now we try to create it into a folder that does not exist with parents = false
+        thrown.expect(CatalogException.class);
         thrown.expectMessage("not exist");
         catalogManager.link(uri, "myDirectory2", Long.toString(studyId), new ObjectMap(), sessionIdUser);
     }
@@ -1098,10 +1109,10 @@ public class FileManagerTest extends GenericTest {
     public void testUpdateIndexStatus() throws CatalogException {
         long studyId = catalogManager.getStudyManager().getStudyId("user", "user@1000G:phase1");
         QueryResult<File> fileResult = fileManager.create(studyId, File.Type.FILE, File.Format.VCF, File.Bioformat.VARIANT, "data/test.vcf", "", "description", new File.FileStatus(File.FileStatus.STAGE), 0, -1, Collections.emptyList(), -1,
-                Collections.emptyMap(), Collections.emptyMap(), true, QueryOptions.empty(), sessionIdUser);
+                Collections.emptyMap(), Collections.emptyMap(), true, new QueryOptions(), sessionIdUser);
 
         fileManager.updateFileIndexStatus(fileResult.first(), FileIndex.IndexStatus.TRANSFORMED, sessionIdUser);
-        QueryResult<File> read = fileManager.read(fileResult.first().getId(), QueryOptions.empty(), sessionIdUser);
+        QueryResult<File> read = fileManager.read(fileResult.first().getId(), new QueryOptions(), sessionIdUser);
         assertEquals(FileIndex.IndexStatus.TRANSFORMED, read.first().getIndex().getStatus().getName());
     }
 }

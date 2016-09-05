@@ -1017,7 +1017,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     public QueryResult<Study> getStudiesFromUser(String userId, QueryOptions queryOptions) throws CatalogDBException {
         QueryResult<Study> result = new QueryResult<>("Get studies from user");
 
-        QueryResult<Project> allProjects = dbAdaptorFactory.getCatalogProjectDbAdaptor().getAllProjects(userId, QueryOptions.empty());
+        QueryResult<Project> allProjects = dbAdaptorFactory.getCatalogProjectDbAdaptor().getAllProjects(userId, new QueryOptions());
         if (allProjects.getNumResults() == 0) {
             return result;
         }

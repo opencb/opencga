@@ -128,7 +128,7 @@ public class LocalExecutorManager implements ExecutorManager {
         logger.info("==========================================");
 
         closeOutputStreams(com);
-        return catalogManager.getJobManager().read(job.getId(), QueryOptions.empty(), sessionId);
+        return catalogManager.getJobManager().read(job.getId(), new QueryOptions(), sessionId);
 //        return postExecuteCommand(job, com, null);
     }
 

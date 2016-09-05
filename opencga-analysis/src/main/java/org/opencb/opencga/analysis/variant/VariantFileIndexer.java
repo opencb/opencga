@@ -169,7 +169,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
                 throw new CatalogException("Cannot index files coming from different studies.");
             }
 
-            File inputFile = fileManager.read(fileIdLong, QueryOptions.empty(), sessionId).first();
+            File inputFile = fileManager.read(fileIdLong, new QueryOptions(), sessionId).first();
 
             if (inputFile.getType() == File.Type.FILE) {
                 inputFiles.add(inputFile);
@@ -199,7 +199,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
 
         logger.debug("Index - Number of files to be indexed: {}, list of files: {}", inputFiles.size(), inputFiles.toString());
 
-        Study study = catalogManager.getStudyManager().read(studyIdByInputFileId, QueryOptions.empty(), sessionId).getResult().get(0);
+        Study study = catalogManager.getStudyManager().read(studyIdByInputFileId, new QueryOptions(), sessionId).getResult().get(0);
 
         // We get the credentials of the Datastore to insert the variants
         DataStore dataStore = getDataStore(catalogManager, studyIdByInputFileId, File.Bioformat.VARIANT, sessionId);
@@ -265,7 +265,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
                 e.printStackTrace();
             }
 
-            if (!step.equals(Type.LOAD)) {
+            if (!step.equals(Type.LOAD) && options.get(CATALOG_PATH) != null) {
                 // Copy results to catalog
                 copyResult(outdir, catalogPathId, sessionId);
             }
@@ -277,10 +277,10 @@ public class VariantFileIndexer extends AbstractFileIndexer {
     }
 
     private void copyResult(Path tmpOutdirPath, long catalogPathOutDir, String sessionId) throws CatalogException, IOException {
-        File outDir = fileManager.read(catalogPathOutDir, QueryOptions.empty(), sessionId).first();
+        File outDir = fileManager.read(catalogPathOutDir, new QueryOptions(), sessionId).first();
 
         FileScanner fileScanner = new FileScanner(catalogManager);
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutdirPath.toUri());
+//        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutdirPath.toUri());
 
         List<File> files;
         try {
@@ -433,7 +433,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
             Map<String, Object> attributes = indexedFile.getAttributes();
             attributes.put("storageETLResult", storageETLResult);
             ObjectMap params = new ObjectMap(CatalogFileDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
-            fileManager.update(indexedFile.getId(), params, QueryOptions.empty(), sessionId);
+            fileManager.update(indexedFile.getId(), params, new QueryOptions(), sessionId);
 
             // Update index status
             fileManager.updateFileIndexStatus(indexedFile, index.getStatus().getName(), sessionId);
@@ -480,7 +480,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
                 VariantSource variantSource = new ObjectMapper().readValue(is, VariantSource.class);
                 VariantGlobalStats stats = variantSource.getStats();
                 ObjectMap params = new ObjectMap(CatalogFileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(VARIANT_STATS, stats));
-                fileManager.update(inputFile.getId(), params, QueryOptions.empty(), sessionId);
+                fileManager.update(inputFile.getId(), params, new QueryOptions(), sessionId);
             } catch (IOException e) {
                 throw new CatalogException("Error reading file \"" + statsFile + "\"", e);
             }
@@ -526,12 +526,12 @@ public class VariantFileIndexer extends AbstractFileIndexer {
                     options.getBoolean(FileMetadataReader.CREATE_MISSING_SAMPLES, true), false, options, sessionId);
         } else {
             Query query = new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), file.getSampleIds());
-            sampleList = catalogManager.getSampleManager().readAll(study.getId(), query, QueryOptions.empty(), sessionId).getResult();
+            sampleList = catalogManager.getSampleManager().readAll(study.getId(), query, new QueryOptions(), sessionId).getResult();
         }
 
         Cohort defaultCohort;
         Query query = new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT);
-        QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(study.getId(), query, QueryOptions.empty(), sessionId);
+        QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(study.getId(), query, new QueryOptions(), sessionId);
 
         if (cohorts.getResult().isEmpty()) {
             defaultCohort = catalogManager.getCohortManager().create(study.getId(), StudyEntry.DEFAULT_COHORT, Study.Type.COLLECTION,
@@ -628,7 +628,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
                                 + "registered avro file");
                         throw new CatalogException("Internal error. No avro file could be found for file " + file.getId());
                     }
-                    QueryResult<File> avroQueryResult = fileManager.read(avroId, QueryOptions.empty(), sessionId);
+                    QueryResult<File> avroQueryResult = fileManager.read(avroId, new QueryOptions(), sessionId);
                     if (avroQueryResult.getNumResults() != 1) {
                         logger.error("This code should never be executed. No avro file could be found under ");
                         throw new CatalogException("Internal error. No avro file could be found under id " + avroId);
@@ -671,7 +671,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
                     logger.error("This code should never be executed. Every transformed avro file should come from a registered vcf file");
                     throw new CatalogException("Internal error. No vcf file could be found for file " + file.getId());
                 }
-                QueryResult<File> vcfQueryResult = fileManager.read(vcfId, QueryOptions.empty(), sessionId);
+                QueryResult<File> vcfQueryResult = fileManager.read(vcfId, new QueryOptions(), sessionId);
                 if (vcfQueryResult.getNumResults() != 1) {
                     logger.error("This code should never be executed. No vcf file could be found for vcf id " + vcfId);
                     throw new CatalogException("Internal error. No vcf file could be found under id " + vcfId);
@@ -755,7 +755,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
                 .append(CatalogFileDBAdaptor.QueryParams.NAME.key(), destinyFileName)
                 .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
-        QueryResult<File> fileQueryResult = fileManager.readAll(parent.toString(), true, query, QueryOptions.empty(), sessionId);
+        QueryResult<File> fileQueryResult = fileManager.readAll(parent.toString(), true, query, new QueryOptions(), sessionId);
         if (fileQueryResult.getNumResults() == 1) {
             return fileQueryResult.first();
         }

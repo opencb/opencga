@@ -19,7 +19,7 @@ public abstract class AbstractFileIndexer {
 
     public static DataStore getDataStore(CatalogManager catalogManager, long studyId, File.Bioformat bioformat, String sessionId)
             throws CatalogException {
-        Study study = catalogManager.getStudyManager().read(studyId, QueryOptions.empty(), sessionId).first();
+        Study study = catalogManager.getStudyManager().read(studyId, new QueryOptions(), sessionId).first();
         DataStore dataStore;
         if (study.getDataStores() != null && study.getDataStores().containsKey(bioformat)) {
             dataStore = study.getDataStores().get(bioformat);
