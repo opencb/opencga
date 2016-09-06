@@ -455,7 +455,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         aggregates.add(Aggregates.match(parseQuery(query)));
 
         // Check include
-        if (options != null && options.containsKey(QueryOptions.INCLUDE)) {
+        if (options != null && options.get(QueryOptions.INCLUDE) != null) {
             List<String> includeList = new ArrayList<>();
             List<String> optionsAsStringList = options.getAsStringList(QueryOptions.INCLUDE);
             includeList.addAll(optionsAsStringList.stream().collect(Collectors.toList()));
@@ -503,7 +503,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         aggregates.add(Aggregates.unwind("$projects"));
 
         // Check include & excludes
-        if (options != null && options.containsKey(QueryOptions.INCLUDE)) {
+        if (options != null && options.get(QueryOptions.INCLUDE) != null) {
             List<String> includeList = new ArrayList<>();
             List<String> optionsAsStringList = options.getAsStringList(QueryOptions.INCLUDE);
             includeList.addAll(optionsAsStringList.stream().collect(Collectors.toList()));
