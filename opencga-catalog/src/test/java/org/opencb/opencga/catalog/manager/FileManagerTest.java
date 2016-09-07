@@ -299,6 +299,22 @@ public class FileManagerTest extends GenericTest {
     }
 
     @Test
+    public void testLinkFolder3() throws CatalogException, IOException {
+        URI uri = Paths.get(catalogManager.getStudyUri(studyId)).resolve("data").toUri();
+        catalogManager.link(uri, null, Long.toString(studyId), new ObjectMap(), sessionIdUser);
+
+        // Make sure that the path of the files linked do not start with /
+        Query query = new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(CatalogFileDBAdaptor.QueryParams.EXTERNAL.key(), true);
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CatalogFileDBAdaptor.QueryParams.PATH.key());
+        QueryResult<File> fileQueryResult = catalogManager.getFileManager().readAll(query, queryOptions, sessionIdUser);
+        assertEquals(5, fileQueryResult.getNumResults());
+        for (File file : fileQueryResult.getResult()) {
+            assertTrue(!file.getPath().startsWith("/"));
+        }
+    }
+
+    @Test
     public void testUnlinkFolder() throws CatalogException, IOException {
         URI uri = Paths.get(catalogManager.getStudyUri(studyId)).resolve("data").toUri();
         catalogManager.link(uri, "myDirectory", Long.toString(studyId), new ObjectMap("parents", true), sessionIdUser);

@@ -1496,6 +1496,10 @@ public class FileManager extends AbstractManager implements IFileManager {
                             destinyPath += "/";
                         }
 
+                        if (destinyPath.startsWith("/")) {
+                            destinyPath = destinyPath.substring(1);
+                        }
+
                         Query query = new Query()
                                 .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                                 .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), destinyPath);
@@ -1522,6 +1526,10 @@ public class FileManager extends AbstractManager implements IFileManager {
                 public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs) throws IOException {
                     try {
                         String destinyPath = filePath.toString().replace(Paths.get(uriOrigin).toString(), catalogPath.toString());
+
+                        if (destinyPath.startsWith("/")) {
+                            destinyPath = destinyPath.substring(1);
+                        }
 
                         Query query = new Query()
                                 .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
