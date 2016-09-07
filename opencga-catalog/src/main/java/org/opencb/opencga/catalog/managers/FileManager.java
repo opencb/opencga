@@ -2,10 +2,14 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
@@ -35,11 +39,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_STATS;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -300,13 +307,25 @@ public class FileManager extends AbstractManager implements IFileManager {
             if (FileIndex.IndexStatus.NONE.equals(status) || FileIndex.IndexStatus.TRANSFORMING.equals(status)) {
                 index.setStatus(new FileIndex.IndexStatus(FileIndex.IndexStatus.TRANSFORMED));
             }
+            params = new ObjectMap(CatalogFileDBAdaptor.QueryParams.INDEX.key(), index);
+            fileDBAdaptor.update(vcf.getId(), params);
 //            FileIndex.TransformedFile transformedFile = new FileIndex.TransformedFile(avroFile.getId(), json.getId());
 //            params = new ObjectMap()
 //                    .append(CatalogFileDBAdaptor.QueryParams.INDEX_TRANSFORMED_FILE.key(), transformedFile)
 //                    .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.TRANSFORMED);
-            params = new ObjectMap(CatalogFileDBAdaptor.QueryParams.INDEX.key(), index);
-            fileDBAdaptor.update(vcf.getId(), params);
+
 //            update(vcf.getId(), params, new QueryOptions(), sessionId);
+
+            // Update variant stats
+            Path statsFile = Paths.get(json.getUri().getRawPath());
+            try (InputStream is = FileUtils.newInputStream(statsFile)) {
+                VariantSource variantSource = new ObjectMapper().readValue(is, VariantSource.class);
+                VariantGlobalStats stats = variantSource.getStats();
+                params = new ObjectMap(CatalogFileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(VARIANT_STATS, stats));
+                update(vcf.getId(), params, new QueryOptions(), sessionId);
+            } catch (IOException e) {
+                throw new CatalogException("Error reading file \"" + statsFile + "\"", e);
+            }
         }
     }
 
@@ -1612,9 +1631,10 @@ public class FileManager extends AbstractManager implements IFileManager {
                 logger.warn("Matching avro to variant file: {}", e.getMessage());
             }
 
-            query = new Query()
-                    .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^" + catalogPath.toString() + "*");
+            query = new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+            if (!catalogPath.toString().isEmpty()) {
+                query.append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^" + catalogPath.toString() + "*");
+            }
 
             return fileDBAdaptor.get(query, new QueryOptions(QueryOptions.LIMIT, 100));
         }
