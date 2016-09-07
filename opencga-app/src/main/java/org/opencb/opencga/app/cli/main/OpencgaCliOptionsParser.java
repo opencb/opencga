@@ -76,6 +76,7 @@ public class OpencgaCliOptionsParser {
         userSubCommands.addCommand("create", usersCommandOptions.createCommandOptions);
         userSubCommands.addCommand("info", usersCommandOptions.infoCommandOptions);
         userSubCommands.addCommand("update", usersCommandOptions.updateCommandOptions);
+        userSubCommands.addCommand("change-password", usersCommandOptions.changePaswordCommandOptions);
         userSubCommands.addCommand("delete", usersCommandOptions.deleteCommandOptions);
         userSubCommands.addCommand("projects", usersCommandOptions.projectsCommandOptions);
         userSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);

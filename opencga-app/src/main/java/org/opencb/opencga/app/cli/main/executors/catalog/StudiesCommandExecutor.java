@@ -18,6 +18,7 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import org.apache.commons.lang3.StringUtils;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -161,6 +162,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         String type = studiesCommandOptions.createCommandOptions.type;
 
         ObjectMap o = new ObjectMap();
+
         if (description != null) {
             o.append(CatalogStudyDBAdaptor.QueryParams.DESCRIPTION.key(), description);
         }

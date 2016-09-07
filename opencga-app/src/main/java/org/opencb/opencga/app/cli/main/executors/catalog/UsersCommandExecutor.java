@@ -71,6 +71,9 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
             case "update":
                 queryResponse = update();
                 break;
+            case "change-password":
+                queryResponse = changePassword();
+                break;
             case "projects":
                 queryResponse = projects();
                 break;
@@ -226,8 +229,11 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         objectMap.putIfNotEmpty("configs", usersCommandOptions.updateCommandOptions.configs);
 
         return openCGAClient.getUserClient().update(usersCommandOptions.updateCommandOptions.user, objectMap);
+    }
 
-
+    private QueryResponse<User> changePassword () throws CatalogException, IOException {
+        return openCGAClient.getUserClient().changePassword(usersCommandOptions.changePaswordCommandOptions.password,
+                usersCommandOptions.changePaswordCommandOptions.npassword, new ObjectMap());
     }
 
 }

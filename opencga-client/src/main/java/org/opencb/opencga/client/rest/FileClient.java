@@ -93,7 +93,7 @@ public class FileClient extends AbstractParentClient<File, FileAclEntry> {
 
     public QueryResponse<File> update(String fileId, ObjectMap params) throws CatalogException, IOException {
 
-        if(params.containsKey("method")) {
+        if (params.containsKey("method")) {
             if (params.get("method").equals("POST")) {
                 execute(FILES_URL, fileId, "update", params, POST, File.class);
             }

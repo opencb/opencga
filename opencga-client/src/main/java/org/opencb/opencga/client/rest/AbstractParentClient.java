@@ -95,20 +95,20 @@ public abstract class AbstractParentClient<T, A> {
     }
 
     public QueryResponse<T> search(Query query, QueryOptions options) throws IOException {
-        //TODO param: method for GET o POST
         ObjectMap myQuery = new ObjectMap(query);
         myQuery.putAll(options);
-        if(options.containsKey("method")){
-            if(options.get("method").equals("POST")){
-                return execute(category, "search", myQuery, GET, clazz);
-            }
-        }
         return execute(category, "search", myQuery, GET, clazz);
     }
 
     public QueryResponse<T> update(String id, ObjectMap params) throws CatalogException, IOException {
-        //TODO param: method for GET o POST
-        return execute(category, id, "update", params, GET, clazz);
+        //TODO REVISAR
+        if (params.containsKey("method") && params.get("method").equals("GET")) {
+            return execute(category, id, "update", params, GET, clazz);
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        String json = mapper.writeValueAsString(params);
+        ObjectMap p = new ObjectMap("body", json);
+        return execute(category, id, "update", p, POST, clazz);
     }
 
     public QueryResponse<T> delete(String id, ObjectMap params) throws CatalogException, IOException {

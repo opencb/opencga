@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.client.rest;
 
+import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -58,7 +59,6 @@ public class StudyClient extends AbstractParentClient<Study, StudyAclEntry> {
 
     protected StudyClient(String userId, String sessionId, ClientConfiguration configuration) {
         super(userId, sessionId, configuration);
-
         this.category = STUDY_URL;
         this.clazz = Study.class;
         this.aclClass = StudyAclEntry.class;
@@ -66,15 +66,34 @@ public class StudyClient extends AbstractParentClient<Study, StudyAclEntry> {
 
     public QueryResponse<Study> create(String projectId, String studyName, String studyAlias, ObjectMap params)
             throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "projectId", projectId, "name", studyName, "alias", studyAlias);
-        if(params.containsKey("method")) {
-            if (params.get("method").equals("POST")) {
-                execute(STUDY_URL, "create", params, POST, Study.class);
+        if (params.containsKey("method")) {
+            if (params.get("method").equals("GET")) {
+                params = addParamsToObjectMap(params, "projectId", projectId, "name", studyName, "alias", studyAlias);
+                return execute(STUDY_URL, "create", params, GET, Study.class);
             }
         }
-        return execute(STUDY_URL, "create", params, GET, Study.class);
+        params = addParamsToObjectMap(params, "name", studyName, "alias", studyAlias);
+        ObjectMapper mapper = new ObjectMapper();
+        String json = "[" + mapper.writeValueAsString(params) + "]";
+        ObjectMap p = new ObjectMap("body", json);
+        p = addParamsToObjectMap(p, "projectId", projectId);
+        return execute(STUDY_URL, "create", p, POST, Study.class);
     }
 
+    public QueryResponse<Study> search(Query query, QueryOptions options) throws IOException {
+        ObjectMap myQuery = new ObjectMap(query);
+        myQuery.putAll(options);
+        if (options.containsKey("method")) {
+            if (options.get("method").equals("GET")) {
+                return execute(category, "search", myQuery, GET, clazz);
+            }
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        String json = mapper.writeValueAsString(query);
+        ObjectMap p = new ObjectMap("body", json);
+        p.putAll(options);
+        return execute(category, "search", p, POST, clazz);
+    }
     public QueryResponse<StudySummary> getSummary(String studyId, QueryOptions options) throws CatalogException, IOException {
         return execute(STUDY_URL, studyId, "summary", options, GET, StudySummary.class);
     }
@@ -148,9 +167,15 @@ public class StudyClient extends AbstractParentClient<Study, StudyAclEntry> {
     }
 
     public QueryResponse<Study> update(String studyId, ObjectMap params) throws CatalogException, IOException {
-        ObjectMap body = new ObjectMap("body", params);
-        //TODO param: method for GET o POST
-        return execute(STUDY_URL, studyId, "update", body, POST, Study.class);
+        if (params.containsKey("method")) {
+            if (params.get("method").equals("GET")) {
+                return execute(STUDY_URL, studyId, "update", params, GET, Study.class);
+            }
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        String json = mapper.writeValueAsString(params);
+        ObjectMap p = new ObjectMap("body", json);
+        return execute(STUDY_URL, studyId, "update", p, POST, Study.class);
     }
 
     public QueryResponse<Study> delete(String studyId, ObjectMap params) throws CatalogException, IOException {

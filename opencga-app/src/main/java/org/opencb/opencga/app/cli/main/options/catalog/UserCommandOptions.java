@@ -15,6 +15,7 @@ public class UserCommandOptions {
     public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
+    public ChangePaswordCommandOptions changePaswordCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
     public ProjectsCommandOptions projectsCommandOptions;
     public LoginCommandOptions loginCommandOptions;
@@ -31,6 +32,7 @@ public class UserCommandOptions {
         this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
+        this.changePaswordCommandOptions = new ChangePaswordCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.projectsCommandOptions = new ProjectsCommandOptions();
         this.loginCommandOptions = new LoginCommandOptions();
@@ -113,6 +115,15 @@ public class UserCommandOptions {
         public String configs;
 
     }
+    @Parameters(commandNames = {"change-password"}, commandDescription = "Update some user attributes using GET method")
+    public class ChangePaswordCommandOptions{
+
+        @Parameter(names = {"--password"}, description = "password", arity = 1, required = true)
+        public String password;
+
+        @Parameter(names = {"--npassword"}, description = "new password", arity = 1, required = true)
+        public String npassword;
+    }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete an user [NO TESTED]")
     public class DeleteCommandOptions extends BaseUserCommand {
@@ -154,7 +165,7 @@ public class UserCommandOptions {
         @Parameter(names = {"-u", "--user"}, description = "UserId", required = true, arity = 1)
         public String user;
 
-        @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, required = false, password = true)
+        @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, required = true, password = true)
         public String password;
 
         @Parameter(names = {"-S","--session-id"}, description = "SessionId", arity = 1, required = false, hidden = true)
