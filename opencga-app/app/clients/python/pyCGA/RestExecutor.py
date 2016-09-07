@@ -1,8 +1,10 @@
 import json
 import os
+
+import re
 import requests
 import logging
-from pyCGA.Exceptions import LoginException, ServerResponseException, WSErrorException
+from pyCGA.Exceptions import LoginException, ServerResponseException, WSErrorException, FileAlreadyExists
 from pathlib import Path
 from requests_toolbelt import threaded
 
@@ -62,6 +64,8 @@ class WS:
         self.r_session = requests.Session()
 
     @staticmethod
+    # All exception are treat in the same way (as wide exceptions)
+    # but the 'file already exists' one, TODO: Work to improve this and define better the error types from Catalog
     def check_server_response(response):
         if response == 200:
             return True
@@ -146,8 +150,30 @@ class WS:
                             yield self.get_result(response.json())[3]
 
         else:
-            logging.error("WS Failed, status: " + str(response.status_code))
-            raise ServerResponseException("WS Failed, status: " + str(response.status_code))
+            try:
+                r = response.json()
+            except:
+                logging.error("WS Failed, status: " + str(response.status_code))
+                raise ServerResponseException("WS Failed, status: " + str(response.status_code))
+
+            qs = r['queryOptions']
+            error = r['error']
+            is_file_exist_error = re.match('.* File from study .* already exists', error)
+            if not is_file_exist_error:
+                logging.error("WS Failed, status: " + str(response.status_code))
+                raise ServerResponseException("WS Failed, status: " + str(response.status_code))
+            else:
+                if 'folder' in qs:
+                    e = qs['folder']
+                elif 'uri' in qs:
+                    e = qs['uri']
+                elif 'path' in qs:
+                    e = qs['path']
+                else:
+                    e = 'Unidentified File or Folder'
+                logging.error('WS Failed, File or Folder: ' + str(e) + ' already exists/')
+                raise FileAlreadyExists(e)
+
 
     def run_ws_post(self, url, data):
         """
