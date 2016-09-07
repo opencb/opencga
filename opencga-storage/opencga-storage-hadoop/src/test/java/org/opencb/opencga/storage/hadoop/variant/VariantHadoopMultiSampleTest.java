@@ -54,7 +54,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();
 
-    public static final List<VariantType> VARIANT_TYPES = Arrays.asList(VariantTableMapper.TARGET_VARIANT_TYPE);
+    public static final List<VariantType> VARIANT_TYPES = Arrays.asList(VariantTableMapper.getTargetVariantType());
 
     // Variants that are wrong in the platinum files that should not be included
     private static final HashSet<String> PLATINUM_SKIP_VARIANTS = new HashSet<>(Arrays.asList("M:515:G:A", "1:10352:T:A"));
