@@ -71,9 +71,9 @@ public class IndexDaemon extends MonitorParentDaemon {
 
         IJobManager jobManager = catalogManager.getJobManager();
 
-        // TODO: Sort results by date
-        Query runningJobsQuery = new Query(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING);
-        runningJobsQuery.put(CatalogJobDBAdaptor.QueryParams.TYPE.key(), Job.Type.INDEX);
+        Query runningJobsQuery = new Query()
+                .append(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING)
+                .append(CatalogJobDBAdaptor.QueryParams.TYPE.key(), Job.Type.INDEX);
 
         Query queuedJobsQuery = new Query(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED);
         queuedJobsQuery.put(CatalogJobDBAdaptor.QueryParams.TYPE.key(), Job.Type.INDEX);
@@ -81,7 +81,10 @@ public class IndexDaemon extends MonitorParentDaemon {
         Query preparedJobsQuery = new Query(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.PREPARED);
         preparedJobsQuery.put(CatalogJobDBAdaptor.QueryParams.TYPE.key(), Job.Type.INDEX);
 
-        QueryOptions queryOptions = new QueryOptions();
+        // Sort jobs by creation date
+        QueryOptions queryOptions = new QueryOptions()
+                .append(QueryOptions.SORT, CatalogJobDBAdaptor.QueryParams.CREATION_DATE.key())
+                .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
 
         objectMapper = new ObjectMapper();
 

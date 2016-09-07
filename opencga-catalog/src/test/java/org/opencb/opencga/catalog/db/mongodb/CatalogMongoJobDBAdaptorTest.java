@@ -1,13 +1,18 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import org.junit.Test;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.core.common.TimeUtils;
 
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 
 import static org.junit.Assert.*;
 
@@ -111,6 +116,51 @@ public class CatalogMongoJobDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         Job jobAfter = catalogJobDBAdaptor.getJob(jobId, null).first();
         assertTrue(jobBefore.getVisits() == jobAfter.getVisits() - 1);
         assertTrue(visits == jobAfter.getVisits());
+    }
+
+    @Test
+    public void getJobsOrderedByDate() throws CatalogDBException {
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+
+        // Job with current date
+        Job job1 = new Job();
+        job1.setName("job1");
+        job1.setCreationDate(TimeUtils.getTime());
+
+        // Job with current date one hour before
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(new Date());
+        cal.add(Calendar.HOUR, -1);
+        Date oneHourBack = cal.getTime();
+
+        Job job2 = new Job();
+        job2.setName("job2");
+        job2.setCreationDate(TimeUtils.getTime(oneHourBack));
+
+        // We create the jobs
+        catalogJobDBAdaptor.createJob(studyId, job1, new QueryOptions());
+        catalogJobDBAdaptor.createJob(studyId, job2, new QueryOptions());
+
+        // Obtain the jobs in descending order
+        QueryOptions queryOptions = new QueryOptions()
+                .append(QueryOptions.SORT, CatalogJobDBAdaptor.QueryParams.CREATION_DATE.key())
+                .append(QueryOptions.ORDER, QueryOptions.DESCENDING);
+
+
+        QueryResult<Job> jobQueryResult1 = catalogJobDBAdaptor.get(new Query(), queryOptions);
+
+        assertTrue("job1".equals(jobQueryResult1.getResult().get(0).getName()));
+        assertTrue("job2".equals(jobQueryResult1.getResult().get(1).getName()));
+
+        // Obtain the jobs in ascending order
+        queryOptions = new QueryOptions()
+                .append(QueryOptions.SORT, CatalogJobDBAdaptor.QueryParams.CREATION_DATE.key())
+                .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
+
+        QueryResult<Job> jobQueryResult2 = catalogJobDBAdaptor.get(new Query(), queryOptions);
+
+        assertTrue("job2".equals(jobQueryResult2.getResult().get(0).getName()));
+        assertTrue("job1".equals(jobQueryResult2.getResult().get(1).getName()));
     }
 
 }

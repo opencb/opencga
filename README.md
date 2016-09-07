@@ -96,20 +96,28 @@ For changing particular settings during buildings you can create a profile in _~
                 <OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD></OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD>
 
                 <OPENCGA.ANALYSIS.EXECUTION.MANAGER>LOCAL</OPENCGA.ANALYSIS.EXECUTION.MANAGER>
+                <OPENCGA.CLIENT.HOST>http://localhost:8080/opencga/</OPENCGA.CLIENT.HOST>
 
-                <OPENCGA.CELLBASE.HOST>http://bioinfodev.hpc.cam.ac.uk/cellbase/webservices/rest/</OPENCGA.CELLBASE.HOST>
-                <OPENCGA.CELLBASE.VERSION>v3</OPENCGA.CELLBASE.VERSION>
+                <OPENCGA.CELLBASE.HOST>http://bioinfodev.hpc.cam.ac.uk/cellbase-dev-v4.0/webservices/rest/</OPENCGA.CELLBASE.HOST>
+                <OPENCGA.CELLBASE.VERSION>v4</OPENCGA.CELLBASE.VERSION>
             </properties>
         </profile>
         
+**_OPENCGA.INSTALLATION.DIR_** is really important and should point to the directory where the build contents of opencga will be placed. This property will be read by Tomcat when initializing OpenCGA to know where the configuration files are located. If this is not properly set, none of the webservices will work.
 
-Remember that **_develop_** branch dependencies are not ensured to be deployed at Maven Central, you may need to clone and install **_develop_** branches from OpenCB _biodata_, _datastore_ and _cellbase_ repositories. After this you should have this file structure in **_opencga-app/build_**:
+**_OPENCGA.CLIENT.HOST_** will be used by the OpenCGA command line and should point to the url where the OpenCGA rest webservices will be available.
 
-    opencga-app/build/
-    ├── analysis
-    ├── bin
-    ├── conf
-    └── libs
+Remember that **_develop_** branch dependencies are not ensured to be deployed at Maven Central, you may need to clone and install **_develop_** branches from OpenCB _biodata_, _datastore_, _cellbase_ and _hpg-bigdata_ repositories. After this you should have this file structure in **_opencga/build_**:
+
+    opencga/build/
+    ├── bin/
+    ├── conf/
+    ├── examples/
+    ├── libs/
+    ├── LICENSE
+    ├── opencga.war
+    ├── README.md
+    └── tools/
 
 You can copy the content of the _build_ folder into any directory such as _/opt/opencga_.
 

@@ -55,7 +55,10 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         Query preparedJobsQuery = new Query()
                 .append(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.PREPARED)
                 .append(CatalogJobDBAdaptor.QueryParams.TYPE.key(), "!=" + Job.Type.INDEX);
-        QueryOptions queryOptions = new QueryOptions();
+        // Sort jobs by creation date
+        QueryOptions queryOptions = new QueryOptions()
+                .append(QueryOptions.SORT, CatalogJobDBAdaptor.QueryParams.CREATION_DATE.key())
+                .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
 
         while (!exit) {
             try {
