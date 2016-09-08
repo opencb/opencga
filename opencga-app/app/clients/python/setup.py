@@ -8,7 +8,7 @@ reqs = [
 setup(
     name='pyCGA',
     packages=['pyCGA', 'pyCGA.Utils'],
-    version='0.2.1',
+    version='0.2.3',
     scripts=[os.path.join(os.path.dirname(__file__),'pyCGA/Scripts/pyCGA'), os.path.join(os.path.dirname(__file__),'pyCGA/Scripts/pyCGAIdConverter'),
              os.path.join(os.path.dirname(__file__),'pyCGA/Scripts/pyCGAVariantFetcher'), os.path.join(os.path.dirname(__file__),'pyCGA/Scripts/pyCGALogin')],
     url='',
