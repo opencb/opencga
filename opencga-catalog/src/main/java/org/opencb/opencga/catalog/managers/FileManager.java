@@ -480,9 +480,27 @@ public class FileManager extends AbstractManager implements IFileManager {
     @Override
     public QueryResult<File> createFolder(long studyId, String path, File.FileStatus status, boolean parents, String description,
                                           QueryOptions options, String sessionId) throws CatalogException {
-        return create(studyId, File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE,
-                path, null, description, status, 0, -1, null, -1, null, null,
-                parents, options, sessionId);
+        ParamUtils.checkPath(path, "folderPath");
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        if (path.startsWith("/")) {
+            path = path.substring(1);
+        }
+        if (!path.endsWith("/")) {
+            path = path + "/";
+        }
+        Query query = new Query()
+                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), path);
+        QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, options);
+        if (fileQueryResult.getNumResults() == 0) {
+            return create(studyId, File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, path, null, description, status, 0, -1,
+                    null, -1, null, null, parents, options, sessionId);
+        }
+        // The folder already exists
+        // Check if the user had permissions
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkFilePermission(fileQueryResult.first().getId(), userId, FileAclEntry.FilePermissions.CREATE);
+        return fileQueryResult;
     }
 
     @Override
@@ -540,6 +558,24 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
 
         URI uri = Paths.get(getStudyUri(studyId)).resolve(path).toUri();
+
+        // Check if it already exists
+        Query query = new Query()
+                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), path)
+                .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";" + File.FileStatus.DELETED
+                        + ";" + File.FileStatus.DELETING + ";" + File.FileStatus.PENDING_DELETE + ";" + File.FileStatus.REMOVED);
+        if (fileDBAdaptor.count(query).first() > 0) {
+            logger.warn("The file {} already exists in catalog", path);
+        }
+        query = new Query()
+                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(CatalogFileDBAdaptor.QueryParams.URI.key(), uri)
+                .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";" + File.FileStatus.DELETED
+                        + ";" + File.FileStatus.DELETING + ";" + File.FileStatus.PENDING_DELETE + ";" + File.FileStatus.REMOVED);
+        if (fileDBAdaptor.count(query).first() > 0) {
+            logger.warn("The uri {} of the file is already in catalog but on a different path", uri);
+        }
 
         //Create file object
 //        File file = new File(-1, Paths.get(path).getFileName().toString(), type, format, bioformat,
@@ -1378,18 +1414,64 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (!ioManager.exists(uriOrigin)) {
             throw new CatalogIOException("File " + uriOrigin + " does not exist");
         }
-        Query query = new Query()
-                .append(CatalogFileDBAdaptor.QueryParams.URI.key(), uriOrigin)
-                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!="
-                        + File.FileStatus.REMOVED);
-        QueryResult<Long> count = fileDBAdaptor.count(query);
-        if (count.first() > 0) {
-            throw new CatalogException(uriOrigin + " was already linked to catalog.");
-        }
 
         studyDBAdaptor.checkStudyId(studyId);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_FILES);
+
+        pathDestiny = ParamUtils.defaultString(pathDestiny, "");
+        if (pathDestiny.startsWith("/")) {
+            pathDestiny.substring(1);
+        }
+        if (!pathDestiny.isEmpty() && !pathDestiny.endsWith("/")) {
+            pathDestiny = pathDestiny + "/";
+        }
+
+        // Check if the uri was already linked to that same path
+        Query query = new Query()
+                .append(CatalogFileDBAdaptor.QueryParams.URI.key(), "~^" + uriOrigin + "[^/]*/?$")
+//                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), pathDestiny)
+                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!="
+                        + File.FileStatus.REMOVED)
+                .append(CatalogFileDBAdaptor.QueryParams.EXTERNAL.key(), true);
+        if (!pathDestiny.isEmpty()) {
+            query.append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^" + pathDestiny + "[^/]*/?$");
+        }
+
+        if (fileDBAdaptor.count(query).first() > 0) {
+            // Create a regular expression on URI to return everything linked from that URI
+            query.put(CatalogFileDBAdaptor.QueryParams.URI.key(), "~^" + uriOrigin);
+            query.remove(CatalogFileDBAdaptor.QueryParams.PATH.key());
+
+            // Limit the number of results and only some fields
+            QueryOptions queryOptions = new QueryOptions()
+                    .append(QueryOptions.LIMIT, 100)
+                    .append(QueryOptions.INCLUDE, Arrays.asList(
+                            CatalogFileDBAdaptor.QueryParams.ID.key(),
+                            CatalogFileDBAdaptor.QueryParams.NAME.key(),
+                            CatalogFileDBAdaptor.QueryParams.TYPE.key(),
+                            CatalogFileDBAdaptor.QueryParams.PATH.key(),
+                            CatalogFileDBAdaptor.QueryParams.URI.key(),
+                            CatalogFileDBAdaptor.QueryParams.FORMAT.key(),
+                            CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key()
+                    ));
+
+            return fileDBAdaptor.get(query, queryOptions);
+        }
+
+        // Check if the uri was linked to other path
+        query = new Query()
+                .append(CatalogFileDBAdaptor.QueryParams.URI.key(), "~^" + uriOrigin + "[^/]*/?$")
+                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!="
+                        + File.FileStatus.REMOVED)
+                .append(CatalogFileDBAdaptor.QueryParams.EXTERNAL.key(), true);
+        if (fileDBAdaptor.count(query).first() > 0) {
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CatalogFileDBAdaptor.QueryParams.PATH.key());
+            String path = fileDBAdaptor.get(query, queryOptions).first().getPath();
+            throw new CatalogException(uriOrigin + " was already linked to catalog on a different path " + path);
+        }
 
         boolean parents = params.getBoolean("parents", false);
         // FIXME: Implement resync
@@ -1397,29 +1479,16 @@ public class FileManager extends AbstractManager implements IFileManager {
         String description = params.getString("description", "");
 
         // Because pathDestiny can be null, we will use catalogPath as the virtual destiny where the files will be located in catalog.
-        Path catalogPath;
+        Path catalogPath = Paths.get(pathDestiny);
 
-        if (pathDestiny == null || pathDestiny.isEmpty()) {
+        if (pathDestiny.isEmpty()) {
             // If no destiny is given, everything will be linked to the root folder of the study.
-            // FIXME use / as a empty
-            catalogPath = Paths.get("");
             authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_FILES);
         } else {
-            if (pathDestiny.startsWith("/")) {
-                pathDestiny = pathDestiny.substring(1);
-            }
-
-            catalogPath = Paths.get(pathDestiny);
-
-            // Check if the destiny is a directory
-            if (catalogPath.toFile().isFile()) {
-                throw new CatalogException("Error: The destiny catalog path must be a directory.");
-            }
-
             // Check if the folder exists
             query = new Query()
                     .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), catalogPath.toString() + "/");
+                    .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), pathDestiny);
             if (fileDBAdaptor.count(query).first() == 0) {
                 if (parents) {
                     // Get the base URI where the files are located in the study
@@ -1449,14 +1518,13 @@ public class FileManager extends AbstractManager implements IFileManager {
                         // Create them in the disk
                         URI directory = Paths.get(studyURI).resolve(catalogPath).toUri();
                         catalogIOManagerFactory.get(directory).createDirectory(directory, true);
-
                     }
                 } else {
                     throw new CatalogException("The path " + catalogPath + " does not exist in catalog.");
                 }
             } else {
                 // Check if the user has permissions to link files in the directory
-                long fileId = fileDBAdaptor.getFileId(studyId, catalogPath.toString() + "/");
+                long fileId = fileDBAdaptor.getFileId(studyId, pathDestiny);
                 authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.CREATE);
             }
         }
@@ -1631,12 +1699,28 @@ public class FileManager extends AbstractManager implements IFileManager {
                 logger.warn("Matching avro to variant file: {}", e.getMessage());
             }
 
-            query = new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-            if (!catalogPath.toString().isEmpty()) {
-                query.append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^" + catalogPath.toString() + "*");
-            }
+            // Check if the uri was already linked to that same path
+            query = new Query()
+                    .append(CatalogFileDBAdaptor.QueryParams.URI.key(), "~^" + uriOrigin)
+                    .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!="
+                            + File.FileStatus.REMOVED)
+                    .append(CatalogFileDBAdaptor.QueryParams.EXTERNAL.key(), true);
 
-            return fileDBAdaptor.get(query, new QueryOptions(QueryOptions.LIMIT, 100));
+            // Limit the number of results and only some fields
+            QueryOptions queryOptions = new QueryOptions()
+                    .append(QueryOptions.LIMIT, 100)
+                    .append(QueryOptions.INCLUDE, Arrays.asList(
+                            CatalogFileDBAdaptor.QueryParams.ID.key(),
+                            CatalogFileDBAdaptor.QueryParams.NAME.key(),
+                            CatalogFileDBAdaptor.QueryParams.TYPE.key(),
+                            CatalogFileDBAdaptor.QueryParams.PATH.key(),
+                            CatalogFileDBAdaptor.QueryParams.URI.key(),
+                            CatalogFileDBAdaptor.QueryParams.FORMAT.key(),
+                            CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key()
+                    ));
+
+            return fileDBAdaptor.get(query, queryOptions);
         }
 
     }

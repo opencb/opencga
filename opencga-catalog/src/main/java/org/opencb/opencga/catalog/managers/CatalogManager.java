@@ -863,14 +863,13 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<File> createFolder(long studyId, Path folderPath, boolean parents, QueryOptions options, String sessionId)
             throws CatalogException {
-        ParamUtils.checkPath(folderPath, "folderPath");
-        return fileManager.createFolder(studyId, folderPath.toString() + "/", null, parents, null, options, sessionId);
+        return fileManager.createFolder(studyId, folderPath.toString(), null, parents, null, options, sessionId);
     }
 
     public QueryResult<File> createFolder(long studyId, Path folderPath, File.FileStatus status, boolean parents, String description,
                                           QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkPath(folderPath, "folderPath");
-        return fileManager.createFolder(studyId, folderPath.toString() + "/", status, parents, description, options, sessionId);
+        return fileManager.createFolder(studyId, folderPath.toString(), status, parents, description, options, sessionId);
     }
 
     public QueryResult delete(String fileIdStr, QueryOptions queryOptions, String sessionId) throws CatalogException, IOException {
