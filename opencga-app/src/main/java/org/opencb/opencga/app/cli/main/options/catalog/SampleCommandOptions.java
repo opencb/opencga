@@ -210,8 +210,8 @@ public class SampleCommandOptions {
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--by"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
-        public String by;
+        @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
+        public String fields;
 
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;

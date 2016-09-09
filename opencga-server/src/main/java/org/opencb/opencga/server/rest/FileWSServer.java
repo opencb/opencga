@@ -1208,7 +1208,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/groupBy")
     @ApiOperation(value = "Group files by several fields", position = 24, response = QueryResponse.class)
-    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("by") String by,
+    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("fields") String fields,
                             @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyStr,
                             @ApiParam(value = "Comma separated list of ids.", required = false) @DefaultValue("") @QueryParam("id") String ids,
                             @ApiParam(value = "Comma separated list of names.", required = false) @DefaultValue("") @QueryParam("name") String names,
@@ -1233,7 +1233,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
             logger.debug("query = " + query.toJson());
             logger.debug("queryOptions = " + qOptions.toJson());
-            QueryResult result = catalogManager.fileGroupBy(query, qOptions, by, sessionId);
+            QueryResult result = catalogManager.fileGroupBy(query, qOptions, fields, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -75,10 +75,14 @@ public class OpencgaCliOptionsParser {
         JCommander userSubCommands = jCommander.getCommands().get("users");
         userSubCommands.addCommand("create", usersCommandOptions.createCommandOptions);
         userSubCommands.addCommand("info", usersCommandOptions.infoCommandOptions);
+        userSubCommands.addCommand("update", usersCommandOptions.updateCommandOptions);
+        userSubCommands.addCommand("change-password", usersCommandOptions.changePaswordCommandOptions);
+        userSubCommands.addCommand("delete", usersCommandOptions.deleteCommandOptions);
         userSubCommands.addCommand("projects", usersCommandOptions.projectsCommandOptions);
         userSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);
         userSubCommands.addCommand("logout", usersCommandOptions.logoutCommandOptions);
-        // TODO: "password" -> Allow to change and reset the password
+        userSubCommands.addCommand("reset-password", usersCommandOptions.resetPasswordCommandOptions);
+        // TODO: "password" -> Allow to change
 
         projectCommandOptions = new ProjectCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("projects", projectCommandOptions);
@@ -129,6 +133,7 @@ public class OpencgaCliOptionsParser {
         fileSubCommands.addCommand("list", fileCommandOptions.listCommandOptions);
         fileSubCommands.addCommand("index", fileCommandOptions.indexCommandOptions);
         fileSubCommands.addCommand("alignment", fileCommandOptions.alignmentCommandOptions);
+        fileSubCommands.addCommand("content", fileCommandOptions.contentCommandOptions);
 //        fileSubCommands.addCommand("fetch", fileCommandOptions.fetchCommandOptions);
         fileSubCommands.addCommand("update", fileCommandOptions.updateCommandOptions);
         fileSubCommands.addCommand("upload", fileCommandOptions.uploadCommandOptions);
@@ -137,12 +142,13 @@ public class OpencgaCliOptionsParser {
         fileSubCommands.addCommand("relink", fileCommandOptions.relinkCommandOptions);
         fileSubCommands.addCommand("delete", fileCommandOptions.deleteCommandOptions);
         fileSubCommands.addCommand("refresh", fileCommandOptions.refreshCommandOptions);
+        fileSubCommands.addCommand("variants", fileCommandOptions.variantsCommandOptions);
         fileSubCommands.addCommand("acl", fileCommandOptions.aclsCommandOptions);
         fileSubCommands.addCommand("acl-create", fileCommandOptions.aclsCreateCommandOptions);
         fileSubCommands.addCommand("acl-member-delete", fileCommandOptions.aclsMemberDeleteCommandOptions);
         fileSubCommands.addCommand("acl-member-info", fileCommandOptions.aclsMemberInfoCommandOptions);
         fileSubCommands.addCommand("acl-member-update", fileCommandOptions.aclsMemberUpdateCommandOptions);
-        // TODO: "content", "groupBy", "variants"
+
 
         jobCommandOptions = new JobCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("jobs", jobCommandOptions);
@@ -153,7 +159,12 @@ public class OpencgaCliOptionsParser {
         jobSubCommands.addCommand("visit", jobCommandOptions.visitCommandOptions);
         jobSubCommands.addCommand("delete", jobCommandOptions.deleteCommandOptions);
         jobSubCommands.addCommand("group-by", jobCommandOptions.groupByCommandOptions);
-        // TODO: "acls", 
+        jobSubCommands.addCommand("acl", jobCommandOptions.aclsCommandOptions);
+        jobSubCommands.addCommand("acl-create", jobCommandOptions.aclsCreateCommandOptions);
+        jobSubCommands.addCommand("acl-member-delete", jobCommandOptions.aclsMemberDeleteCommandOptions);
+        jobSubCommands.addCommand("acl-member-info", jobCommandOptions.aclsMemberInfoCommandOptions);
+        jobSubCommands.addCommand("acl-member-update", jobCommandOptions.aclsMemberUpdateCommandOptions);
+
        // jobSubCommands.addCommand("finished", jobCommandOptions.doneJobCommandOptions);
        // jobSubCommands.addCommand("status", jobCommandOptions.statusCommandOptions);
        // jobSubCommands.addCommand("run", jobCommandOptions.runJobCommandOptions);
@@ -223,6 +234,7 @@ public class OpencgaCliOptionsParser {
         cohortSubCommands.addCommand("update", cohortCommandOptions.updateCommandOptions);
         cohortSubCommands.addCommand("delete", cohortCommandOptions.deleteCommandOptions);
         cohortSubCommands.addCommand("stats", cohortCommandOptions.statsCommandOptions);
+        cohortSubCommands.addCommand("groupBy", cohortCommandOptions.groupByCommandOptions);
         cohortSubCommands.addCommand("acl", cohortCommandOptions.aclsCommandOptions);
         cohortSubCommands.addCommand("acl-create", cohortCommandOptions.aclsCreateCommandOptions);
         cohortSubCommands.addCommand("acl-member-delete", cohortCommandOptions.aclsMemberDeleteCommandOptions);
@@ -234,7 +246,7 @@ public class OpencgaCliOptionsParser {
         cohortSubCommands.addCommand("annotation-sets-search", cohortCommandOptions.annotationSearchCommandOptions);
         cohortSubCommands.addCommand("annotation-sets-update", cohortCommandOptions.annotationUpdateCommandOptions);
         cohortSubCommands.addCommand("annotation-sets-delete", cohortCommandOptions.annotationDeleteCommandOptions);
-        // TODO: "groupby",
+
 
         toolCommandOptions = new ToolCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("tools", toolCommandOptions);

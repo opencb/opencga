@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.client.rest;
 
+import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -58,7 +59,6 @@ public class StudyClient extends AbstractParentClient<Study, StudyAclEntry> {
 
     protected StudyClient(String userId, String sessionId, ClientConfiguration configuration) {
         super(userId, sessionId, configuration);
-
         this.category = STUDY_URL;
         this.clazz = Study.class;
         this.aclClass = StudyAclEntry.class;
@@ -66,10 +66,34 @@ public class StudyClient extends AbstractParentClient<Study, StudyAclEntry> {
 
     public QueryResponse<Study> create(String projectId, String studyName, String studyAlias, ObjectMap params)
             throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "projectId", projectId, "name", studyName, "alias", studyAlias);
-        return execute(STUDY_URL, "create", params, GET, Study.class);
+        if (params.containsKey("method")) {
+            if (params.get("method").equals("GET")) {
+                params = addParamsToObjectMap(params, "projectId", projectId, "name", studyName, "alias", studyAlias);
+                return execute(STUDY_URL, "create", params, GET, Study.class);
+            }
+        }
+        params = addParamsToObjectMap(params, "name", studyName, "alias", studyAlias);
+        ObjectMapper mapper = new ObjectMapper();
+        String json = "[" + mapper.writeValueAsString(params) + "]";
+        ObjectMap p = new ObjectMap("body", json);
+        p = addParamsToObjectMap(p, "projectId", projectId);
+        return execute(STUDY_URL, "create", p, POST, Study.class);
     }
 
+    public QueryResponse<Study> search(Query query, QueryOptions options) throws IOException {
+        ObjectMap myQuery = new ObjectMap(query);
+        myQuery.putAll(options);
+        if (options.containsKey("method")) {
+            if (options.get("method").equals("GET")) {
+                return execute(category, "search", myQuery, GET, clazz);
+            }
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        String json = mapper.writeValueAsString(query);
+        ObjectMap p = new ObjectMap("body", json);
+        p.putAll(options);
+        return execute(category, "search", p, POST, clazz);
+    }
     public QueryResponse<StudySummary> getSummary(String studyId, QueryOptions options) throws CatalogException, IOException {
         return execute(STUDY_URL, studyId, "summary", options, GET, StudySummary.class);
     }
@@ -118,10 +142,10 @@ public class StudyClient extends AbstractParentClient<Study, StudyAclEntry> {
         return execute(STUDY_URL, studyId, "groups", params, GET, ObjectMap.class);
     }
 
-    public QueryResponse<ObjectMap> deleteGroup(String studyId, String groupId, String users, QueryOptions options)
+    public QueryResponse<ObjectMap> deleteGroup(String studyId, String groupId, QueryOptions options)
             throws CatalogException, IOException {
         ObjectMap params = new ObjectMap(options);
-        params = addParamsToObjectMap(params, "groupId", groupId, "addUsers", users);
+        params = addParamsToObjectMap(params, "groupId", groupId);
         return execute(STUDY_URL, studyId, "groups", params, GET, ObjectMap.class);
     }
 
@@ -142,23 +166,16 @@ public class StudyClient extends AbstractParentClient<Study, StudyAclEntry> {
         return execute(STUDY_URL, studyId, "groups", params, GET, ObjectMap.class);
     }
 
- /*
-   public QueryResponse<StudyAcl> share(String studyId, String roleId, String members, ObjectMap params)
-            throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "role", roleId, "members", members);
-        params.putIfAbsent("override", false);
-        return execute(STUDY_URL, studyId, "assignRole", params, StudyAcl.class);
-    }
-
-    @Override
-    public QueryResponse<Object> unshare(String studyId, String members, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "members", members);
-        return execute(STUDY_URL, studyId, "removeRole", params, Object.class);
-    }*/
-
     public QueryResponse<Study> update(String studyId, ObjectMap params) throws CatalogException, IOException {
-        ObjectMap body = new ObjectMap("body", params);
-        return execute(STUDY_URL, studyId, "update", body, POST, Study.class);
+        if (params.containsKey("method")) {
+            if (params.get("method").equals("GET")) {
+                return execute(STUDY_URL, studyId, "update", params, GET, Study.class);
+            }
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        String json = mapper.writeValueAsString(params);
+        ObjectMap p = new ObjectMap("body", json);
+        return execute(STUDY_URL, studyId, "update", p, POST, Study.class);
     }
 
     public QueryResponse<Study> delete(String studyId, ObjectMap params) throws CatalogException, IOException {

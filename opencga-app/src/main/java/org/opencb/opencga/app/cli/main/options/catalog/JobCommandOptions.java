@@ -100,18 +100,6 @@ public class JobCommandOptions {
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
-
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
-
-        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
-        public String skip;
-
-        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
-        public String limit;
-
         @Parameter(names = {"--ids"}, description = "Comma separated list of job ids", arity = 1)
         public String id;
 
@@ -120,6 +108,9 @@ public class JobCommandOptions {
 
         @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
         public String name;
+
+        @Parameter(names = {"--tool-name"}, description = "Tool name.", required = false, arity = 1)
+        public String toolName;
 
         @Parameter(names = {"--status"}, description = "Status.", required = false, arity = 1)
         public String status;
@@ -135,6 +126,21 @@ public class JobCommandOptions {
 
         @Parameter(names = {"--output-files"}, description = "Comma separated list of output file ids.", required = false, arity = 1)
         public String outputFiles;
+
+        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+        public String include;
+
+        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+        public String exclude;
+
+        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
+        public String skip;
+
+        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
+        public String limit;
+
+        @Parameter(names = {"--count"}, description = "Total number of results.", required = false, arity = 0)
+        public boolean count;
 
     }
 
@@ -156,16 +162,13 @@ public class JobCommandOptions {
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--by"},
-                description = "Comma separated list of fields by which to group by.",
-                required = true, arity = 1)
-        public String by;
+        @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
+        public String fields;
 
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
-        @Parameter(names = {"--ids"}, description = "Comma separated list of ids.",
-                required = false, arity = 1)
+        @Parameter(names = {"--ids"}, description = "Comma separated list of ids.", required = false, arity = 1)
         public String id;
 
         @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)

@@ -302,7 +302,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                      @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") long fatherId,
                                      @ApiParam(value = "motherId", required = false) @QueryParam("motherId") long motherId,
                                      @ApiParam(value = "family", required = false) @QueryParam("family") String family,
-                                     @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
+                                     @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
                                      @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity
                                       ) {
         try {
@@ -384,14 +384,14 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @GET
     @Path("/groupBy")
     @ApiOperation(value = "Group individuals by several fields", position = 10)
-    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("by") String by,
+    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("fields") String fields,
                             @ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                             @ApiParam(value = "id", required = false) @QueryParam("id") String ids,
                             @ApiParam(value = "name", required = false) @QueryParam("name") String names,
                             @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") String fatherId,
                             @ApiParam(value = "motherId", required = false) @QueryParam("motherId") String motherId,
                             @ApiParam(value = "family", required = false) @QueryParam("family") String family,
-                            @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
+                            @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
                             @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
                             @ApiParam(value = "species", required = false) @QueryParam("species") String species,
                             @ApiParam(value = "population", required = false) @QueryParam("population") String population,
@@ -405,7 +405,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
             logger.debug("query = " + query.toJson());
             logger.debug("queryOptions = " + qOptions.toJson());
-            QueryResult result = catalogManager.individualGroupBy(query, qOptions, by, sessionId);
+            QueryResult result = catalogManager.individualGroupBy(query, qOptions, fields, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

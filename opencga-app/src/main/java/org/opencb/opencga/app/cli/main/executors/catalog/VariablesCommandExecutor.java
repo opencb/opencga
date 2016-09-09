@@ -116,7 +116,6 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putIfNotNull("name", variableCommandOptions.searchCommandOptions.name);
         queryOptions.putIfNotNull("description", variableCommandOptions.searchCommandOptions.description);
         queryOptions.putIfNotNull("attributes", variableCommandOptions.searchCommandOptions.attributes);
-
         queryOptions.putIfNotNull(QueryOptions.INCLUDE, variableCommandOptions.searchCommandOptions.include);
         queryOptions.putIfNotNull(QueryOptions.EXCLUDE, variableCommandOptions.searchCommandOptions.exclude);
         queryOptions.putIfNotNull(QueryOptions.LIMIT, variableCommandOptions.searchCommandOptions.limit);
@@ -157,7 +156,6 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
 
         return openCGAClient.getVariableClient().addVariable(variableCommandOptions.fieldAddCommandOptions.id, variables);
     }
-
 
     private QueryResponse<VariableSet> fieldDelete() throws CatalogException, IOException {
         logger.debug("Deleting the variable field");
