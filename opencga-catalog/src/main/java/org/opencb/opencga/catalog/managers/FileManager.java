@@ -336,8 +336,8 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         // We search as a path
         Query query = new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
-                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), fileName)
-                .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY");
+                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), fileName);
+//                .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY");
         QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "projects.studies.files.id");
         QueryResult<File> pathQueryResult = fileDBAdaptor.get(query, qOptions);
         if (pathQueryResult.getNumResults() > 1) {
@@ -347,8 +347,8 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (!fileName.contains("/")) {
             // We search as a fileName as well
             query = new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
-                    .append(CatalogFileDBAdaptor.QueryParams.NAME.key(), fileName)
-                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY");
+                    .append(CatalogFileDBAdaptor.QueryParams.NAME.key(), fileName);
+//                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY");
             QueryResult<File> nameQueryResult = fileDBAdaptor.get(query, qOptions);
             if (nameQueryResult.getNumResults() > 1) {
                 throw new CatalogException("Error: More than one file id found based on " + fileName);
@@ -642,6 +642,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     @Override
     public QueryResult<File> read(Long id, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 //        authorizationManager.checkFilePermission(id, userId, CatalogPermission.READ);
@@ -880,6 +881,9 @@ public class FileManager extends AbstractManager implements IFileManager {
             throws CatalogException {
         ParamUtils.checkObj(parameters, "Parameters");
         ParamUtils.checkParameter(sessionId, "sessionId");
+        if (fileId <= 0) {
+            throw new CatalogException("File not found.");
+        }
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         File file = read(fileId, null, sessionId).first();
 

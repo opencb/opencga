@@ -1003,14 +1003,11 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response update(@ApiParam(value = "File id") @PathParam(value = "fileId") String fileIdStr) {
         try {
             ObjectMap parameters = new ObjectMap();
-            for (String param : params.keySet()) {
-                if (param.equalsIgnoreCase("sid"))
-                    continue;
-                String value = params.get(param).get(0);
-                parameters.put(param, value);
-            }
+            QueryOptions qOptions = new QueryOptions();
+            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, parameters, qOptions);
+            
             long fileId = catalogManager.getFileId(convertPath(fileIdStr), sessionId);
-            QueryResult queryResult = catalogManager.modifyFile(fileId, parameters, sessionId);
+            QueryResult queryResult = catalogManager.getFileManager().update(fileId, parameters, qOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1346,7 +1343,7 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     private List<String> convertPathList(String path) {
-        if (path.contains(",")) {
+        if (path != null && path.contains(",")) {
             String[] split = path.split(",");
             List pathList = new ArrayList(split.length);
             for (String s : split) {
