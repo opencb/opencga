@@ -93,7 +93,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "projectId") @QueryParam("projectId") String projectId,
                                   @ApiParam(value = "name") @QueryParam("name") String name,
                                   @ApiParam(value = "alias") @QueryParam("alias") String alias,
-                                  @ApiParam(value = "type") @QueryParam("type") String type,
+                                  @ApiParam(value = "type") @QueryParam("Comma separated list of type") String type,
                                   @ApiParam(value = "creationDate") @QueryParam("creationDate") String creationDate,
                                   @ApiParam(value = "status") @QueryParam("status") String status,
                                   @ApiParam(value = "attributes") @QueryParam("attributes") String attributes,
@@ -353,7 +353,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/alignments")
-    @ApiOperation(value = "Fetch alignments", position = 11, response = Alignment[].class)
+    @ApiOperation(value = "Fetch alignments. [PENDING]", position = 11, response = Alignment[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),

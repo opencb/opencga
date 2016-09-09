@@ -143,9 +143,9 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         String variable = cohortsCommandOptions.createCommandOptions.variable;
 
         ObjectMap o = new ObjectMap();
-        o.append(CatalogCohortDBAdaptor.QueryParams.TYPE.key(),description);
+        o.append(CatalogCohortDBAdaptor.QueryParams.TYPE.key(),cohortsCommandOptions.createCommandOptions.type);
         o.append(CatalogCohortDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),variableSetId);
-        o.append(CatalogCohortDBAdaptor.QueryParams.DESCRIPTION.key(),sampleIds);
+        o.append(CatalogCohortDBAdaptor.QueryParams.DESCRIPTION.key(),description);
         o.append(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(),sampleIds);
         o.append(CatalogCohortDBAdaptor.QueryParams.VARIABLE_NAME.key(),variable);
         return openCGAClient.getCohortClient().create(studyId, cohortName, o);
@@ -153,26 +153,23 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
     private QueryResponse<Cohort> info() throws CatalogException, IOException {
         logger.debug("Getting cohort information");
-        return openCGAClient.getCohortClient().get(cohortsCommandOptions.infoCommandOptions.id, null);
+        QueryOptions queryOptions = new QueryOptions();
+
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, cohortsCommandOptions.infoCommandOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, cohortsCommandOptions.infoCommandOptions.exclude);
+
+        return openCGAClient.getCohortClient().get(cohortsCommandOptions.infoCommandOptions.id, queryOptions);
     }
 
     private QueryResponse<Sample> samples() throws CatalogException, IOException {
         logger.debug("Listing samples belonging to a cohort");
         QueryOptions queryOptions = new QueryOptions();
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, cohortsCommandOptions.samplesCommandOptions.include);
-        }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, cohortsCommandOptions.samplesCommandOptions.exclude);
-        }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, cohortsCommandOptions.samplesCommandOptions.limit);
-        }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, cohortsCommandOptions.samplesCommandOptions.skip);
-        }
-        queryOptions.put("count", cohortsCommandOptions.samplesCommandOptions.count);
 
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, cohortsCommandOptions.samplesCommandOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, cohortsCommandOptions.samplesCommandOptions.exclude);
+        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, cohortsCommandOptions.samplesCommandOptions.limit);
+        queryOptions.putIfNotEmpty(QueryOptions.SKIP, cohortsCommandOptions.samplesCommandOptions.skip);
+        queryOptions.put("count", cohortsCommandOptions.samplesCommandOptions.count);
         return openCGAClient.getCohortClient().getSamples(cohortsCommandOptions.samplesCommandOptions.id, queryOptions);
     }
 
@@ -181,18 +178,12 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap objectMap = new ObjectMap();
 
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.updateCommandOptions.name)) {
-            objectMap.put(CatalogCohortDBAdaptor.QueryParams.NAME.key(), cohortsCommandOptions.updateCommandOptions.name);
-        }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.updateCommandOptions.creationDate)) {
-            objectMap.put(CatalogCohortDBAdaptor.QueryParams.CREATION_DATE.key(), cohortsCommandOptions.updateCommandOptions.creationDate);
-        }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.updateCommandOptions.description)) {
-            objectMap.put(CatalogCohortDBAdaptor.QueryParams.DESCRIPTION.key(), cohortsCommandOptions.updateCommandOptions.description);
-        }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.updateCommandOptions.samples)) {
-            objectMap.put(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.updateCommandOptions.samples);
-        }
+        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.NAME.key(), cohortsCommandOptions.updateCommandOptions.name);
+        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.CREATION_DATE.key(), cohortsCommandOptions.updateCommandOptions.creationDate);
+        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.DESCRIPTION.key(), cohortsCommandOptions.updateCommandOptions.description);
+        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.updateCommandOptions.samples);
+
+        //TODO objectMap.put("method", "POST");
 
         return openCGAClient.getCohortClient().update(cohortsCommandOptions.updateCommandOptions.id, objectMap);
     }
@@ -209,12 +200,9 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         Query query = new Query();
         queryOptions.put("calculate", cohortsCommandOptions.statsCommandOptions.calculate);
         queryOptions.put("delete", cohortsCommandOptions.statsCommandOptions.delete);
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.statsCommandOptions.log)){
-            queryOptions.put("log", cohortsCommandOptions.statsCommandOptions.log);
-        }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.statsCommandOptions.outdirId)){
-            queryOptions.put(CatalogJobDBAdaptor.QueryParams.OUT_DIR_ID.key(), cohortsCommandOptions.statsCommandOptions.outdirId);
-        }
+        queryOptions.putIfNotEmpty("log", cohortsCommandOptions.statsCommandOptions.log);
+        queryOptions.putIfNotEmpty(CatalogJobDBAdaptor.QueryParams.OUT_DIR_ID.key(), cohortsCommandOptions.statsCommandOptions.outdirId);
+
 
         return openCGAClient.getCohortClient().getStats(cohortsCommandOptions.statsCommandOptions.id, query, queryOptions);
     }
@@ -223,32 +211,18 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Group by cohorts");
 
         ObjectMap objectMap = new ObjectMap();
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.groupByCommandOptions.id)) {
-            objectMap.put(CatalogCohortDBAdaptor.QueryParams.ID.key(), cohortsCommandOptions.groupByCommandOptions.id);
-        }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.groupByCommandOptions.name)) {
-            objectMap.put(CatalogCohortDBAdaptor.QueryParams.NAME.key(), cohortsCommandOptions.groupByCommandOptions.name);
-        }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.groupByCommandOptions.type)) {
-            objectMap.put(CatalogCohortDBAdaptor.QueryParams.TYPE.key(), cohortsCommandOptions.groupByCommandOptions.type);
-        }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.groupByCommandOptions.status)) {
-            objectMap.put(CatalogCohortDBAdaptor.QueryParams.STATUS_NAME.key(), cohortsCommandOptions.groupByCommandOptions.status);
-        }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.groupByCommandOptions.creationDate)) {
-            objectMap.put(CatalogCohortDBAdaptor.QueryParams.CREATION_DATE.key(), cohortsCommandOptions.groupByCommandOptions.creationDate);
-        }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.groupByCommandOptions.sampleIds)) {
-            objectMap.put(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.groupByCommandOptions.sampleIds);
-        }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.groupByCommandOptions.attributes)) {
-            objectMap.put(CatalogCohortDBAdaptor.QueryParams.ATTRIBUTES.key(), cohortsCommandOptions.groupByCommandOptions.attributes);
-        }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.groupByCommandOptions.nattributes)) {
-            objectMap.put(CatalogCohortDBAdaptor.QueryParams.NATTRIBUTES.key(), cohortsCommandOptions.groupByCommandOptions.nattributes);
-        }
+
+        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.ID.key(), cohortsCommandOptions.groupByCommandOptions.id);
+        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.NAME.key(), cohortsCommandOptions.groupByCommandOptions.name);
+        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.TYPE.key(), cohortsCommandOptions.groupByCommandOptions.type);
+        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.STATUS_NAME.key(), cohortsCommandOptions.groupByCommandOptions.status);
+        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.CREATION_DATE.key(), cohortsCommandOptions.groupByCommandOptions.creationDate);
+        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.groupByCommandOptions.sampleIds);
+        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.ATTRIBUTES.key(), cohortsCommandOptions.groupByCommandOptions.attributes);
+        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.NATTRIBUTES.key(), cohortsCommandOptions.groupByCommandOptions.nattributes);
+
         return openCGAClient.getCohortClient().groupBy(cohortsCommandOptions.groupByCommandOptions.studyId,
-                cohortsCommandOptions.groupByCommandOptions.by,objectMap);
+                cohortsCommandOptions.groupByCommandOptions.fields,objectMap);
     }
 
 }

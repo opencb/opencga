@@ -202,7 +202,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "", required = false) @QueryParam("creationDate") String creationDate,
                            @ApiParam(value = "", required = false) @QueryParam("description") String description,
-                           @ApiParam(value = "Comma separated values of sampleIds. Will replace all existing sampleIds", required = true) @QueryParam("samples") String samples) {
+                           @ApiParam(value = "Comma separated values of sampleIds. Will replace all existing sampleIds", required = false) @QueryParam("samples") String samples) {
         try {
             long cohortId = catalogManager.getCohortId(cohortStr, sessionId);
             // TODO: Change queryOptions, queryOptions
@@ -483,7 +483,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @GET
     @Path("/groupBy")
     @ApiOperation(value = "Group cohorts by several fields", position = 24)
-    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("by") String by,
+    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("fields") String fields,
                             @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyStr,
                             @ApiParam(value = "Comma separated list of ids.", required = false) @DefaultValue("") @QueryParam("id") String ids,
                             @ApiParam(value = "Comma separated list of names.", required = false) @DefaultValue("") @QueryParam("name") String names,
@@ -500,7 +500,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
             logger.debug("query = " + query.toJson());
             logger.debug("queryOptions = " + qOptions.toJson());
-            QueryResult result = catalogManager.cohortGroupBy(query, qOptions, by, sessionId);
+            QueryResult result = catalogManager.cohortGroupBy(query, qOptions, fields, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

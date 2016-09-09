@@ -101,7 +101,14 @@ public abstract class AbstractParentClient<T, A> {
     }
 
     public QueryResponse<T> update(String id, ObjectMap params) throws CatalogException, IOException {
-        return execute(category, id, "update", params, GET, clazz);
+        //TODO REVISAR
+        if (params.containsKey("method") && params.get("method").equals("GET")) {
+            return execute(category, id, "update", params, GET, clazz);
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        String json = mapper.writeValueAsString(params);
+        ObjectMap p = new ObjectMap("body", json);
+        return execute(category, id, "update", p, POST, clazz);
     }
 
     public QueryResponse<T> delete(String id, ObjectMap params) throws CatalogException, IOException {

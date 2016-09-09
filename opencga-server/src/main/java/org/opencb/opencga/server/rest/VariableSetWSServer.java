@@ -55,7 +55,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "name", required = true) @QueryParam("name") String name,
                               @ApiParam(value = "unique", required = false) @QueryParam("unique") Boolean unique,
                               @ApiParam(value = "description", required = false) @QueryParam("description") String description,
-                              @ApiParam(value = "variables", required = true) List<Variable> variables) {
+                              @ApiParam(name = "variables", value = "Variables of the variable set", required = true) List<Variable> variables) {
         try {
             logger.info("variables: {}", variables);
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);

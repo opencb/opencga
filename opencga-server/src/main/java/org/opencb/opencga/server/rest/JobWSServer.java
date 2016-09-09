@@ -358,7 +358,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @GET
     @Path("/groupBy")
     @ApiOperation(value = "Group jobs by several fields", position = 10)
-    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("by") String by,
+    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("fields") String fields,
                             @ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
                             @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyId,
                             @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
@@ -376,7 +376,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
             logger.debug("query = " + query.toJson());
             logger.debug("queryOptions = " + qOptions.toJson());
-            QueryResult result = catalogManager.jobGroupBy(query, qOptions, by, sessionId);
+            QueryResult result = catalogManager.jobGroupBy(query, qOptions, fields, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
