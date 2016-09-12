@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Id Considerations in OpenCGA &mdash; pyCGA 0.1.0 documentation</title>
+  <title>Id Considerations in OpenCGA &mdash; pyCGA 0.2.0 documentation</title>
   
 
   
@@ -30,7 +30,7 @@
   
 
   
-    <link rel="top" title="pyCGA 0.1.0 documentation" href="index.html"/>
+    <link rel="top" title="pyCGA 0.2.0 documentation" href="index.html"/>
         <link rel="next" title="Web Services API" href="web_services.html"/>
         <link rel="prev" title="Quick-start" href="quick_start.html"/> 
 
@@ -45,17 +45,27 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-nav-search">
-        
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
 
-        
-          <a href="documentation.html" class="icon icon-home"> pyCGA
-        
+          
+            <a href="documentation.html" class="icon icon-home"> pyCGA
+          
 
-        
-        </a>
+          
+          </a>
 
-        
+          
+            
+            
+              <div class="version">
+                0.2.0
+              </div>
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -64,21 +74,17 @@
   </form>
 </div>
 
-        
-      </div>
+          
+        </div>
 
-      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
-          
-              <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#requirements">Requirements</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#install">Install</a></li>
-</ul>
-</li>
+            
+            
+                <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quick_start.html">Quick-start</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="">Id Considerations in OpenCGA</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Id Considerations in OpenCGA</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#ids-in-opencga">Ids in OpenCGA</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#pycgaidconverter">pyCGAIdConverter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#commandline-options">CommandLine Options</a></li>
@@ -91,32 +97,17 @@
 <li class="toctree-l1"><a class="reference internal" href="queries_from_python.html">How To Use API from python</a></li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="pyCGA.html">PyCGA</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#pycgalogin">PyCGALogin</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#admin-tools">User Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#file-tools">File Tools</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="pyCGA.html#use-case-example">Use case example</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#sample-tools">Sample Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#individuals-tools">Individuals Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#variable-sets-tools">Variable Sets Tools</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="pyVariantFetcher.html">pyCGAVariantFetcher</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="pyVariantFetcher.html#commandline-options">CommandLine Options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pyVariantFetcher.html#examples">Examples</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="pyCGA.html">PyCGA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pyVariantFetcher.html">pyCGAVariantFetcher</a></li>
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="new_web_services.html">How to implement new web services parsers</a></li>
 </ul>
 
+            
           
-        
+        </div>
       </div>
-      &nbsp;
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
@@ -131,7 +122,13 @@
       
       <div class="wy-nav-content">
         <div class="rst-content">
-          <div role="navigation" aria-label="breadcrumbs navigation">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="documentation.html">Docs</a> &raquo;</li>
       
@@ -144,7 +141,8 @@
   </ul>
   <hr/>
 </div>
-          <div role="main" class="document">
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <div class="section" id="how-to-use-ids">
 <span id="id-considerations-in-opencga"></span><h1>Id Considerations in OpenCGA<a class="headerlink" href="#how-to-use-ids" title="Permalink to this headline">¶</a></h1>
@@ -176,10 +174,10 @@ stored in the database.</p>
 <div class="section" id="commandline-options">
 <h2>CommandLine Options<a class="headerlink" href="#commandline-options" title="Permalink to this headline">¶</a></h2>
 <p>This program can be used to get the apropiate Sample/individualID from openCGA</p>
-<pre class="literal-block">
-usage: pyCGAIdConverter [-h] --studyID study Id [--inputIDType Input Id Type] [--outputIDType Output Id Type]
-                        [--IdBatch Id batch | --Id [Id [Id ...]]]
-</pre>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGAIdConverter</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">studyID</span> <span class="n">study</span> <span class="n">Id</span> <span class="p">[</span><span class="o">--</span><span class="n">inputIDType</span> <span class="n">Input</span> <span class="n">Id</span> <span class="n">Type</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">outputIDType</span> <span class="n">Output</span> <span class="n">Id</span> <span class="n">Type</span><span class="p">]</span>
+                        <span class="p">[</span><span class="o">--</span><span class="n">IdBatch</span> <span class="n">Id</span> <span class="n">batch</span> <span class="o">|</span> <span class="o">--</span><span class="n">Id</span> <span class="p">[</span><span class="n">Id</span> <span class="p">[</span><span class="n">Id</span> <span class="o">...</span><span class="p">]]]</span>
+</pre></div>
+</div>
 <dl class="docutils">
 <dt>Options:</dt>
 <dd><table class="first last docutils option-list" frame="void" rules="none">
@@ -215,11 +213,11 @@ usage: pyCGAIdConverter [-h] --studyID study Id [--inputIDType Input Id Type] [-
 <div class="section" id="common-use-examples">
 <h2>Common use examples<a class="headerlink" href="#common-use-examples" title="Permalink to this headline">¶</a></h2>
 <p>Get the Individual Name using the Sample Name:</p>
-<div class="highlight-python"><div class="highlight"><pre>pyCGAIdConverter [sid] --host [hostname] --studyID [studyID] --inputIDType SampleName --outputIDType IndividualName --Id [sampleName]
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">pyCGAIdConverter</span> <span class="p">[</span><span class="n">sid</span><span class="p">]</span> <span class="o">--</span><span class="n">host</span> <span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">--</span><span class="n">studyID</span> <span class="p">[</span><span class="n">studyID</span><span class="p">]</span> <span class="o">--</span><span class="n">inputIDType</span> <span class="n">SampleName</span> <span class="o">--</span><span class="n">outputIDType</span> <span class="n">IndividualName</span> <span class="o">--</span><span class="n">Id</span> <span class="p">[</span><span class="n">sampleName</span><span class="p">]</span>
 </pre></div>
 </div>
 <p>Get the Sample Name using the Individual Name:</p>
-<div class="highlight-python"><div class="highlight"><pre>pyCGAIdConverter [sid] --host [hostname] --studyID [studyID] --inputIDType IndividualName --outputIDType SampleName --Id [IndividualName]
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">pyCGAIdConverter</span> <span class="p">[</span><span class="n">sid</span><span class="p">]</span> <span class="o">--</span><span class="n">host</span> <span class="p">[</span><span class="n">hostname</span><span class="p">]</span> <span class="o">--</span><span class="n">studyID</span> <span class="p">[</span><span class="n">studyID</span><span class="p">]</span> <span class="o">--</span><span class="n">inputIDType</span> <span class="n">IndividualName</span> <span class="o">--</span><span class="n">outputIDType</span> <span class="n">SampleName</span> <span class="o">--</span><span class="n">Id</span> <span class="p">[</span><span class="n">IndividualName</span><span class="p">]</span>
 </pre></div>
 </div>
 <div class="admonition note">
@@ -231,6 +229,7 @@ sample, (i,e the last example can retrieve more than line per each given Id).</p
 </div>
 
 
+           </div>
           </div>
           <footer>
   
@@ -249,9 +248,10 @@ sample, (i,e the last example can retrieve more than line per each given Id).</p
   <div role="contentinfo">
     <p>
         &copy; Copyright 2015, Antonio Rueda, Mathew Parker, Razvan Sultana.
+
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -269,7 +269,7 @@ sample, (i,e the last example can retrieve more than line per each given Id).</p
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.0',
+            VERSION:'0.2.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

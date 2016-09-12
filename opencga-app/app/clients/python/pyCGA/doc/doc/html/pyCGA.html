@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>PyCGA &mdash; pyCGA 0.1.0 documentation</title>
+  <title>PyCGA &mdash; pyCGA 0.2.0 documentation</title>
   
 
   
@@ -30,7 +30,7 @@
   
 
   
-    <link rel="top" title="pyCGA 0.1.0 documentation" href="index.html"/>
+    <link rel="top" title="pyCGA 0.2.0 documentation" href="index.html"/>
         <link rel="next" title="pyCGAVariantFetcher" href="pyVariantFetcher.html"/>
         <link rel="prev" title="How To Use API from python" href="queries_from_python.html"/> 
 
@@ -45,17 +45,27 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-nav-search">
-        
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
 
-        
-          <a href="documentation.html" class="icon icon-home"> pyCGA
-        
+          
+            <a href="documentation.html" class="icon icon-home"> pyCGA
+          
 
-        
-        </a>
+          
+          </a>
 
-        
+          
+            
+            
+              <div class="version">
+                0.2.0
+              </div>
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -64,36 +74,26 @@
   </form>
 </div>
 
-        
-      </div>
+          
+        </div>
 
-      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
-          
-              <ul>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#requirements">Requirements</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#install">Install</a></li>
-</ul>
-</li>
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quick_start.html">Quick-start</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ids.html">Id Considerations in OpenCGA</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ids.html#ids-in-opencga">Ids in OpenCGA</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ids.html#pycgaidconverter">pyCGAIdConverter</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ids.html#commandline-options">CommandLine Options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ids.html#common-use-examples">Common use examples</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="ids.html">Id Considerations in OpenCGA</a></li>
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="web_services.html">Web Services API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="queries_from_python.html">How To Use API from python</a></li>
 </ul>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="">PyCGA</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">PyCGA</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#pycgalogin">PyCGALogin</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#admin-tools">User Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#user-tools">User Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#file-tools">File Tools</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#use-case-example">Use case example</a></li>
 </ul>
@@ -103,20 +103,16 @@
 <li class="toctree-l2"><a class="reference internal" href="#variable-sets-tools">Variable Sets Tools</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="pyVariantFetcher.html">pyCGAVariantFetcher</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="pyVariantFetcher.html#commandline-options">CommandLine Options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pyVariantFetcher.html#examples">Examples</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="pyVariantFetcher.html">pyCGAVariantFetcher</a></li>
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="new_web_services.html">How to implement new web services parsers</a></li>
 </ul>
 
+            
           
-        
+        </div>
       </div>
-      &nbsp;
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
@@ -131,7 +127,13 @@
       
       <div class="wy-nav-content">
         <div class="rst-content">
-          <div role="navigation" aria-label="breadcrumbs navigation">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="documentation.html">Docs</a> &raquo;</li>
       
@@ -144,7 +146,8 @@
   </ul>
   <hr/>
 </div>
-          <div role="main" class="document">
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <div class="section" id="pycga">
 <h1>PyCGA<a class="headerlink" href="#pycga" title="Permalink to this headline">¶</a></h1>
@@ -154,18 +157,18 @@ the application you should log out. Both actions can be done using a simple comm
 <div class="section" id="pycgalogin">
 <h2>PyCGALogin<a class="headerlink" href="#pycgalogin" title="Permalink to this headline">¶</a></h2>
 <p>This tool provide the interface to log in and logout to the system</p>
-<pre class="literal-block">
-usage: pyCGALogin [-h] {login,logout} ...
-</pre>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGALogin</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">{</span><span class="n">login</span><span class="p">,</span><span class="n">logout</span><span class="p">}</span> <span class="o">...</span>
+</pre></div>
+</div>
 <dl class="docutils">
 <dt>Sub-commands:</dt>
 <dd><dl class="first last docutils">
 <dt><strong>login</strong></dt>
 <dd><p class="first">Use this command to log in the system and get a Session Id</p>
-<pre class="literal-block">
-usage: pyCGALogin login [-h] --host OpenCGA Host [--instance instance] --admin
-                        User --pwd Password
-</pre>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGALogin</span> <span class="n">login</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">host</span> <span class="n">OpenCGA</span> <span class="n">Host</span> <span class="p">[</span><span class="o">--</span><span class="n">instance</span> <span class="n">instance</span><span class="p">]</span> <span class="o">--</span><span class="n">user</span>
+                        <span class="n">User</span> <span class="p">[</span><span class="o">--</span><span class="n">pwd</span> <span class="n">Password</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">debug</span><span class="p">]</span>
+</pre></div>
+</div>
 <dl class="last docutils">
 <dt>Options:</dt>
 <dd><table class="first last docutils option-list" frame="void" rules="none">
@@ -180,11 +183,14 @@ usage: pyCGALogin login [-h] --host OpenCGA Host [--instance instance] --admin
 </tr>
 <tr><td>&nbsp;</td><td>Optional</td></tr>
 <tr><td class="option-group">
-<kbd><span class="option">--admin</span></kbd></td>
+<kbd><span class="option">--user</span></kbd></td>
 <td>Required. User name</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--pwd</span></kbd></td>
 <td>Required. User password</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--debug=False</span></kbd></td>
+<td>Optional. Store log in /home/user/openCGA.log</td></tr>
 </tbody>
 </table>
 </dd>
@@ -192,9 +198,9 @@ usage: pyCGALogin login [-h] --host OpenCGA Host [--instance instance] --admin
 </dd>
 <dt><strong>logout</strong></dt>
 <dd><p class="first">Use this command to log out, using your current Session Id</p>
-<pre class="literal-block">
-usage: pyCGALogin logout [-h] --admin User
-</pre>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGALogin</span> <span class="n">logout</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">user</span> <span class="n">User</span>
+</pre></div>
+</div>
 <dl class="last docutils">
 <dt>Options:</dt>
 <dd><table class="first last docutils option-list" frame="void" rules="none">
@@ -202,7 +208,7 @@ usage: pyCGALogin logout [-h] --admin User
 <col class="description" />
 <tbody valign="top">
 <tr><td class="option-group">
-<kbd><span class="option">--admin</span></kbd></td>
+<kbd><span class="option">--user</span></kbd></td>
 <td>Required. User name</td></tr>
 </tbody>
 </table>
@@ -216,27 +222,27 @@ usage: pyCGALogin logout [-h] --admin User
 lines to perform complex actions in Catalog. In this guide you are going to find how to call these programs from the linux
 terminal and several example to use cases. PyCGA application it is compounded of 12 tools distributed in 5 sections:</p>
 <ul class="simple">
-<li><a class="reference internal" href="#users-docs"><span>User Tools</span></a></li>
-<li><a class="reference internal" href="#files-docs"><span>File Tools</span></a></li>
-<li><a class="reference internal" href="#samples-docs"><span>Sample Tools</span></a></li>
-<li><a class="reference internal" href="#individuals-docs"><span>Individuals Tools</span></a></li>
-<li><a class="reference internal" href="#variablesets-docs"><span>Variable Sets Tools</span></a></li>
+<li><a class="reference internal" href="#users-docs"><span class="std std-ref">User Tools</span></a></li>
+<li><a class="reference internal" href="#files-docs"><span class="std std-ref">File Tools</span></a></li>
+<li><a class="reference internal" href="#samples-docs"><span class="std std-ref">Sample Tools</span></a></li>
+<li><a class="reference internal" href="#individuals-docs"><span class="std std-ref">Individuals Tools</span></a></li>
+<li><a class="reference internal" href="#variablesets-docs"><span class="std std-ref">Variable Sets Tools</span></a></li>
 </ul>
 </div>
-<div class="section" id="admin-tools">
-<span id="users-docs"></span><h2>User Tools<a class="headerlink" href="#admin-tools" title="Permalink to this headline">¶</a></h2>
-<pre class="literal-block">
-usage: pyCGA users [-h] {create,delete,acl} ...
-</pre>
+<div class="section" id="user-tools">
+<span id="users-docs"></span><h2>User Tools<a class="headerlink" href="#user-tools" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGA</span> <span class="n">users</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">{</span><span class="n">create</span><span class="p">,</span><span class="n">delete</span><span class="p">,</span><span class="n">acl</span><span class="p">}</span> <span class="o">...</span>
+</pre></div>
+</div>
 <dl class="docutils">
 <dt>Sub-commands:</dt>
 <dd><dl class="first last docutils">
 <dt><strong>create</strong></dt>
-<dd><p class="first">Use this command to create a new admin, only administrators are allowed to perform this action</p>
-<pre class="literal-block">
-usage: pyCGA users create [-h] --admin admin --name name --email email --pwd
-                          password --org organization
-</pre>
+<dd><p class="first">Use this command to create a new user, only administrators are allowed to perform this action</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGA</span> <span class="n">users</span> <span class="n">create</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">user</span> <span class="n">user</span> <span class="o">--</span><span class="n">name</span> <span class="n">name</span> <span class="o">--</span><span class="n">email</span> <span class="n">email</span> <span class="o">--</span><span class="n">pwd</span>
+                          <span class="n">password</span> <span class="o">--</span><span class="n">org</span> <span class="n">organization</span>
+</pre></div>
+</div>
 <dl class="last docutils">
 <dt>Options:</dt>
 <dd><table class="first last docutils option-list" frame="void" rules="none">
@@ -244,7 +250,7 @@ usage: pyCGA users create [-h] --admin admin --name name --email email --pwd
 <col class="description" />
 <tbody valign="top">
 <tr><td class="option-group">
-<kbd><span class="option">--admin</span></kbd></td>
+<kbd><span class="option">--user</span></kbd></td>
 <td>Required. User name</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--name</span></kbd></td>
@@ -264,10 +270,10 @@ usage: pyCGA users create [-h] --admin admin --name name --email email --pwd
 </dl>
 </dd>
 <dt><strong>delete</strong></dt>
-<dd><p class="first">Use this command to delete a existing admin, only administrators are allowed to perform this action</p>
-<pre class="literal-block">
-usage: pyCGA users delete [-h] --userId UserId
-</pre>
+<dd><p class="first">Use this command to delete a existing user, only administrators are allowed to perform this action</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGA</span> <span class="n">users</span> <span class="n">delete</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">userId</span> <span class="n">UserId</span>
+</pre></div>
+</div>
 <dl class="last docutils">
 <dt>Options:</dt>
 <dd><table class="first last docutils option-list" frame="void" rules="none">
@@ -283,10 +289,10 @@ usage: pyCGA users delete [-h] --userId UserId
 </dl>
 </dd>
 <dt><strong>acl</strong></dt>
-<dd><p class="first">Use this command to check the permission of an existing admin</p>
-<pre class="literal-block">
-usage: pyCGA users acl [-h] --userId UserId
-</pre>
+<dd><p class="first">Use this command to check the permission of an existing user</p>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGA</span> <span class="n">users</span> <span class="n">acl</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">userId</span> <span class="n">UserId</span>
+</pre></div>
+</div>
 <dl class="last docutils">
 <dt>Options:</dt>
 <dd><table class="first last docutils option-list" frame="void" rules="none">
@@ -308,19 +314,19 @@ usage: pyCGA users acl [-h] --userId UserId
 <div class="section" id="file-tools">
 <span id="files-docs"></span><h2>File Tools<a class="headerlink" href="#file-tools" title="Permalink to this headline">¶</a></h2>
 <p>methods for files</p>
-<pre class="literal-block">
-usage: pyCGA files [-h]
-                   {index,info,query_stats,search_by_sample,link_file} ...
-</pre>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGA</span> <span class="n">files</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span>
+                   <span class="p">{</span><span class="n">index</span><span class="p">,</span><span class="n">info</span><span class="p">,</span><span class="n">query_stats</span><span class="p">,</span><span class="n">search_by_sample</span><span class="p">,</span><span class="n">link_file</span><span class="p">}</span> <span class="o">...</span>
+</pre></div>
+</div>
 <dl class="docutils">
 <dt>Sub-commands:</dt>
 <dd><dl class="first last docutils">
 <dt><strong>index</strong></dt>
 <dd><p class="first">index a bam or vcf file</p>
-<pre class="literal-block">
-usage: pyCGA files index [-h] --fileId file id [--outdir output directory]
-                         [--annotate] --studyId StudyId
-</pre>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGA</span> <span class="n">files</span> <span class="n">index</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">fileId</span> <span class="n">file</span> <span class="nb">id</span> <span class="p">[</span><span class="o">--</span><span class="n">outdir</span> <span class="n">output</span> <span class="n">directory</span><span class="p">]</span>
+                         <span class="p">[</span><span class="o">--</span><span class="n">annotate</span><span class="p">]</span> <span class="o">--</span><span class="n">studyId</span> <span class="n">StudyId</span>
+</pre></div>
+</div>
 <dl class="last docutils">
 <dt>Options:</dt>
 <dd><table class="first last docutils option-list" frame="void" rules="none">
@@ -347,9 +353,9 @@ usage: pyCGA files index [-h] --fileId file id [--outdir output directory]
 </dd>
 <dt><strong>info</strong></dt>
 <dd><p class="first">reetrieve info on a file given its id</p>
-<pre class="literal-block">
-usage: pyCGA files info [-h] --fileId file id --subset file id --field file id
-</pre>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGA</span> <span class="n">files</span> <span class="n">info</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">fileId</span> <span class="n">file</span> <span class="nb">id</span> <span class="o">--</span><span class="n">subset</span> <span class="n">file</span> <span class="nb">id</span> <span class="o">--</span><span class="n">field</span> <span class="n">file</span> <span class="nb">id</span>
+</pre></div>
+</div>
 <dl class="last docutils">
 <dt>Options:</dt>
 <dd><table class="first last docutils option-list" frame="void" rules="none">
@@ -372,11 +378,11 @@ usage: pyCGA files info [-h] --fileId file id --subset file id --field file id
 </dd>
 <dt><strong>query_stats</strong></dt>
 <dd><p class="first">retrieve info on a file given its id</p>
-<pre class="literal-block">
-usage: pyCGA files query_stats [-h] --studyId study id --fileType file type
-                               ALIGNMENT o VARIANTS --query query e.g
-                               BAM_HEADER_MACHINE.MACHINE
-</pre>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGA</span> <span class="n">files</span> <span class="n">query_stats</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">studyId</span> <span class="n">study</span> <span class="nb">id</span> <span class="o">--</span><span class="n">fileType</span> <span class="n">file</span> <span class="nb">type</span>
+                               <span class="n">ALIGNMENT</span> <span class="n">o</span> <span class="n">VARIANTS</span> <span class="o">--</span><span class="n">query</span> <span class="n">query</span> <span class="n">e</span><span class="o">.</span><span class="n">g</span>
+                               <span class="n">BAM_HEADER_MACHINE</span><span class="o">.</span><span class="n">MACHINE</span>
+</pre></div>
+</div>
 <dl class="last docutils">
 <dt>Options:</dt>
 <dd><table class="first last docutils option-list" frame="void" rules="none">
@@ -399,12 +405,12 @@ usage: pyCGA files query_stats [-h] --studyId study id --fileType file type
 </dd>
 <dt><strong>search_by_sample</strong></dt>
 <dd><p class="first">retrieve the ids and the path of the files</p>
-<pre class="literal-block">
-usage: pyCGA files search_by_sample [-h] --studyId study id --fileType file
-                                    type ALIGNMENT or VARIANTS --sampleName
-                                    [Sample Name [Sample Name ...]]
-                                    [--path path]
-</pre>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGA</span> <span class="n">files</span> <span class="n">search_by_sample</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">studyId</span> <span class="n">study</span> <span class="nb">id</span> <span class="o">--</span><span class="n">fileType</span> <span class="n">file</span>
+                                    <span class="nb">type</span> <span class="n">ALIGNMENT</span> <span class="ow">or</span> <span class="n">VARIANTS</span> <span class="o">--</span><span class="n">sampleName</span>
+                                    <span class="p">[</span><span class="n">Sample</span> <span class="n">Name</span> <span class="p">[</span><span class="n">Sample</span> <span class="n">Name</span> <span class="o">...</span><span class="p">]]</span>
+                                    <span class="p">[</span><span class="o">--</span><span class="n">path</span> <span class="n">path</span><span class="p">]</span>
+</pre></div>
+</div>
 <dl class="last docutils">
 <dt>Options:</dt>
 <dd><table class="first last docutils option-list" frame="void" rules="none">
@@ -430,11 +436,11 @@ usage: pyCGA files search_by_sample [-h] --studyId study id --fileType file
 </dd>
 <dt><strong>link_file</strong></dt>
 <dd><p class="first">link a single file</p>
-<pre class="literal-block">
-usage: pyCGA files link_file [-h] --studyId study id --uri full path to file
-                             [--sampleId catalog sample id for file] --path
-                             Path in catalog
-</pre>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGA</span> <span class="n">files</span> <span class="n">link_file</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">studyId</span> <span class="n">study</span> <span class="nb">id</span> <span class="o">--</span><span class="n">uri</span> <span class="n">full</span> <span class="n">path</span> <span class="n">to</span> <span class="n">file</span>
+                             <span class="p">[</span><span class="o">--</span><span class="n">sampleId</span> <span class="n">catalog</span> <span class="n">sample</span> <span class="nb">id</span> <span class="k">for</span> <span class="n">file</span><span class="p">]</span> <span class="o">--</span><span class="n">path</span>
+                             <span class="n">Path</span> <span class="ow">in</span> <span class="n">catalog</span>
+</pre></div>
+</div>
 <dl class="last docutils">
 <dt>Options:</dt>
 <dd><table class="first last docutils option-list" frame="void" rules="none">
@@ -472,17 +478,17 @@ usage: pyCGA files link_file [-h] --studyId study id --uri full path to file
 <div class="section" id="sample-tools">
 <span id="samples-docs"></span><h2>Sample Tools<a class="headerlink" href="#sample-tools" title="Permalink to this headline">¶</a></h2>
 <p>methods for samples</p>
-<pre class="literal-block">
-usage: pyCGA samples [-h] {search_by_name,search_by_annotation,annotate} ...
-</pre>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGA</span> <span class="n">samples</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">{</span><span class="n">search_by_name</span><span class="p">,</span><span class="n">search_by_annotation</span><span class="p">,</span><span class="n">annotate</span><span class="p">}</span> <span class="o">...</span>
+</pre></div>
+</div>
 <dl class="docutils">
 <dt>Sub-commands:</dt>
 <dd><dl class="first last docutils">
 <dt><strong>search_by_name</strong></dt>
 <dd><p class="first">Undocumented</p>
-<pre class="literal-block">
-usage: pyCGA samples search_by_name [-h] --name URI --studyId StudyId
-</pre>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGA</span> <span class="n">samples</span> <span class="n">search_by_name</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">name</span> <span class="n">URI</span> <span class="o">--</span><span class="n">studyId</span> <span class="n">StudyId</span>
+</pre></div>
+</div>
 <dl class="last docutils">
 <dt>Options:</dt>
 <dd><table class="first last docutils option-list" frame="void" rules="none">
@@ -502,11 +508,11 @@ usage: pyCGA samples search_by_name [-h] --name URI --studyId StudyId
 </dd>
 <dt><strong>search_by_annotation</strong></dt>
 <dd><p class="first">Undocumented</p>
-<pre class="literal-block">
-usage: pyCGA samples search_by_annotation [-h] --variableSetName
-                                          variableSetName --studyId StudyId
-                                          --queries [queries [queries ...]]
-</pre>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGA</span> <span class="n">samples</span> <span class="n">search_by_annotation</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">variableSetName</span>
+                                          <span class="n">variableSetName</span> <span class="o">--</span><span class="n">studyId</span> <span class="n">StudyId</span>
+                                          <span class="o">--</span><span class="n">queries</span> <span class="p">[</span><span class="n">queries</span> <span class="p">[</span><span class="n">queries</span> <span class="o">...</span><span class="p">]]</span>
+</pre></div>
+</div>
 <dl class="last docutils">
 <dt>Options:</dt>
 <dd><table class="first last docutils option-list" frame="void" rules="none">
@@ -530,12 +536,12 @@ usage: pyCGA samples search_by_annotation [-h] --variableSetName
 </dd>
 <dt><strong>annotate</strong></dt>
 <dd><p class="first">Undocumented</p>
-<pre class="literal-block">
-usage: pyCGA samples annotate [-h] --variableSetName variableSetName
-                              --sampleName sampleName --annotationSetName
-                              annotationSetName --jsonFile jsonFile --studyId
-                              StudyId
-</pre>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGA</span> <span class="n">samples</span> <span class="n">annotate</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">variableSetName</span> <span class="n">variableSetName</span>
+                              <span class="o">--</span><span class="n">sampleName</span> <span class="n">sampleName</span> <span class="o">--</span><span class="n">annotationSetName</span>
+                              <span class="n">annotationSetName</span> <span class="o">--</span><span class="n">jsonFile</span> <span class="n">jsonFile</span> <span class="o">--</span><span class="n">studyId</span>
+                              <span class="n">StudyId</span>
+</pre></div>
+</div>
 <dl class="last docutils">
 <dt>Options:</dt>
 <dd><table class="first last docutils option-list" frame="void" rules="none">
@@ -571,21 +577,21 @@ usage: pyCGA samples annotate [-h] --variableSetName variableSetName
 <div class="section" id="individuals-tools">
 <span id="individuals-docs"></span><h2>Individuals Tools<a class="headerlink" href="#individuals-tools" title="Permalink to this headline">¶</a></h2>
 <p>methods for individuals</p>
-<pre class="literal-block">
-usage: pyCGA individuals [-h]
-                         {create,search,search_by_annotation,annotate} ...
-</pre>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGA</span> <span class="n">individuals</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span>
+                         <span class="p">{</span><span class="n">create</span><span class="p">,</span><span class="n">search</span><span class="p">,</span><span class="n">search_by_annotation</span><span class="p">,</span><span class="n">annotate</span><span class="p">}</span> <span class="o">...</span>
+</pre></div>
+</div>
 <dl class="docutils">
 <dt>Sub-commands:</dt>
 <dd><dl class="first last docutils">
 <dt><strong>create</strong></dt>
 <dd><p class="first">create an individual and assign samples to that individual</p>
-<pre class="literal-block">
-usage: pyCGA individuals create [-h] --name name --gender name
-                                [--family family] [--fatherId fatherid]
-                                [--motherId motherid] --studyId StudyId
-                                --wellIds wellids
-</pre>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGA</span> <span class="n">individuals</span> <span class="n">create</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">name</span> <span class="n">name</span> <span class="o">--</span><span class="n">gender</span> <span class="n">name</span>
+                                <span class="p">[</span><span class="o">--</span><span class="n">family</span> <span class="n">family</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">fatherId</span> <span class="n">fatherid</span><span class="p">]</span>
+                                <span class="p">[</span><span class="o">--</span><span class="n">motherId</span> <span class="n">motherid</span><span class="p">]</span> <span class="o">--</span><span class="n">studyId</span> <span class="n">StudyId</span>
+                                <span class="o">--</span><span class="n">wellIds</span> <span class="n">wellids</span>
+</pre></div>
+</div>
 <dl class="last docutils">
 <dt>Options:</dt>
 <dd><table class="first last docutils option-list" frame="void" rules="none">
@@ -620,9 +626,9 @@ usage: pyCGA individuals create [-h] --name name --gender name
 </dd>
 <dt><strong>search</strong></dt>
 <dd><p class="first">search individuals given the individual name (participant id</p>
-<pre class="literal-block">
-usage: pyCGA individuals search [-h] --name name --studyId StudyId
-</pre>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGA</span> <span class="n">individuals</span> <span class="n">search</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">name</span> <span class="n">name</span> <span class="o">--</span><span class="n">studyId</span> <span class="n">StudyId</span>
+</pre></div>
+</div>
 <dl class="last docutils">
 <dt>Options:</dt>
 <dd><table class="first last docutils option-list" frame="void" rules="none">
@@ -642,13 +648,13 @@ usage: pyCGA individuals search [-h] --name name --studyId StudyId
 </dd>
 <dt><strong>search_by_annotation</strong></dt>
 <dd><p class="first">Undocumented</p>
-<pre class="literal-block">
-usage: pyCGA individuals search_by_annotation [-h] --variableSetName
-                                              variableSetName --studyId
-                                              StudyId --queries
-                                              [queries [queries ...]]
-                                              --outfile outfile
-</pre>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGA</span> <span class="n">individuals</span> <span class="n">search_by_annotation</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">variableSetName</span>
+                                              <span class="n">variableSetName</span> <span class="o">--</span><span class="n">studyId</span>
+                                              <span class="n">StudyId</span> <span class="o">--</span><span class="n">queries</span>
+                                              <span class="p">[</span><span class="n">queries</span> <span class="p">[</span><span class="n">queries</span> <span class="o">...</span><span class="p">]]</span>
+                                              <span class="o">--</span><span class="n">outfile</span> <span class="n">outfile</span>
+</pre></div>
+</div>
 <dl class="last docutils">
 <dt>Options:</dt>
 <dd><table class="first last docutils option-list" frame="void" rules="none">
@@ -675,12 +681,12 @@ usage: pyCGA individuals search_by_annotation [-h] --variableSetName
 </dd>
 <dt><strong>annotate</strong></dt>
 <dd><p class="first">Undocumented</p>
-<pre class="literal-block">
-usage: pyCGA individuals annotate [-h] --variableSetName variableSetName
-                                  --individualName individualName
-                                  --annotationSetName annotationSetName
-                                  --jsonFile jsonFile --studyId StudyId
-</pre>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGA</span> <span class="n">individuals</span> <span class="n">annotate</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">variableSetName</span> <span class="n">variableSetName</span>
+                                  <span class="o">--</span><span class="n">individualName</span> <span class="n">individualName</span>
+                                  <span class="o">--</span><span class="n">annotationSetName</span> <span class="n">annotationSetName</span>
+                                  <span class="o">--</span><span class="n">jsonFile</span> <span class="n">jsonFile</span> <span class="o">--</span><span class="n">studyId</span> <span class="n">StudyId</span>
+</pre></div>
+</div>
 <dl class="last docutils">
 <dt>Options:</dt>
 <dd><table class="first last docutils option-list" frame="void" rules="none">
@@ -716,18 +722,18 @@ usage: pyCGA individuals annotate [-h] --variableSetName variableSetName
 </div>
 <div class="section" id="variable-sets-tools">
 <span id="variablesets-docs"></span><h2>Variable Sets Tools<a class="headerlink" href="#variable-sets-tools" title="Permalink to this headline">¶</a></h2>
-<pre class="literal-block">
-usage: pyCGA variables [-h] {create} ...
-</pre>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGA</span> <span class="n">variables</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">{</span><span class="n">create</span><span class="p">}</span> <span class="o">...</span>
+</pre></div>
+</div>
 <dl class="docutils">
 <dt>Sub-commands:</dt>
 <dd><dl class="first last docutils">
 <dt><strong>create</strong></dt>
 <dd><p class="first">Create new annotation Set</p>
-<pre class="literal-block">
-usage: pyCGA variables create [-h] --name NameOfVariableSet --studyId studyID
-                              --json json [--format format]
-</pre>
+<div class="highlight-default"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">pyCGA</span> <span class="n">variables</span> <span class="n">create</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="o">--</span><span class="n">name</span> <span class="n">NameOfVariableSet</span> <span class="o">--</span><span class="n">studyId</span> <span class="n">studyID</span>
+                              <span class="o">--</span><span class="n">json</span> <span class="n">json</span> <span class="p">[</span><span class="o">--</span><span class="nb">format</span> <span class="nb">format</span><span class="p">]</span>
+</pre></div>
+</div>
 <dl class="last docutils">
 <dt>Options:</dt>
 <dd><table class="first last docutils option-list" frame="void" rules="none">
@@ -761,6 +767,7 @@ usage: pyCGA variables create [-h] --name NameOfVariableSet --studyId studyID
 </div>
 
 
+           </div>
           </div>
           <footer>
   
@@ -779,9 +786,10 @@ usage: pyCGA variables create [-h] --name NameOfVariableSet --studyId studyID
   <div role="contentinfo">
     <p>
         &copy; Copyright 2015, Antonio Rueda, Mathew Parker, Razvan Sultana.
+
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -799,7 +807,7 @@ usage: pyCGA variables create [-h] --name NameOfVariableSet --studyId studyID
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.0',
+            VERSION:'0.2.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true
