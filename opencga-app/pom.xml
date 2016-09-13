@@ -331,6 +331,32 @@
                     <version>${opencga.version}</version>
                 </dependency>
             </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.8</version>
+                        <executions>
+                            <execution>
+                                <id>install-hadoop</id>
+                                <phase>install</phase>
+                                <configuration>
+                                    <target>
+                                        <echo>Copying hadoop jar with dependencies to ${build.dir}</echo>
+                                        <exec executable="cp">
+                                            <arg value="${project.basedir}/../opencga-storage/opencga-storage-hadoop/target/opencga-storage-hadoop-${opencga.version}-jar-with-dependencies.jar"/>
+                                            <arg value="${build.dir}"/>
+                                        </exec>
+                                    </target>
+                                </configuration>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>

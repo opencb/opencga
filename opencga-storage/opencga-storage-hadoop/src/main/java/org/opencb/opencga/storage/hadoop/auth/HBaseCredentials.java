@@ -20,6 +20,7 @@ public class HBaseCredentials implements OpenCGACredentials {
      * @deprecated Use default value from {@link org.apache.hadoop.hbase.HConstants}
      */
     private static final Integer DEFAULT_PORT = 60000;
+    private static final String DEFAULT_HOST = "auto";
     private final String host;
     private final int hbasePort;
     private final String table;
@@ -42,6 +43,9 @@ public class HBaseCredentials implements OpenCGACredentials {
 
     public HBaseCredentials(String host, String table, String user, String pass, Integer hbasePort,
                             String zookeeperZnode) {
+        if (host.equals(DEFAULT_HOST)) {
+            host = "";
+        }
         this.host = host;
         this.hbasePort = hbasePort;
         this.table = table;
@@ -117,7 +121,8 @@ public class HBaseCredentials implements OpenCGACredentials {
     public URI getHostUri() {
         String zooPath = StringUtils.equals(DEFAULT_ZOOKEEPER_ZNODE_PARENT, getZookeeperZnode()) ? null : getZookeeperZnode();
         try {
-            return new URI("hbase", null, getHost(), getHbasePort(), zooPath, null, null);
+            String host = StringUtils.defaultIfEmpty(getHost(), DEFAULT_HOST);
+            return new URI("hbase", null, host, getHbasePort(), zooPath, null, null);
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException(e.getMessage(), e);
         }
