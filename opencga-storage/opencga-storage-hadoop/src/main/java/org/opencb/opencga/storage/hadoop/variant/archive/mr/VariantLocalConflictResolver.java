@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.hadoop.variant.archive.mr;
 
-import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -16,7 +15,8 @@ import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static htsjdk.variant.vcf.VCFConstants.*;
+import static htsjdk.variant.vcf.VCFConstants.GENOTYPE_FILTER_KEY;
+import static htsjdk.variant.vcf.VCFConstants.GENOTYPE_KEY;
 import static org.opencb.biodata.models.variant.VariantVcfFactory.FILTER;
 import static org.opencb.biodata.models.variant.VariantVcfFactory.QUAL;
 import static org.opencb.biodata.models.variant.avro.VariantType.NO_VARIATION;
@@ -75,7 +75,7 @@ public class VariantLocalConflictResolver {
                     Variant variant = collect.get(0);
                     variant.setStart(Math.min(variant.getStart(), q.getStart()));
                     variant.setEnd(Math.max(variant.getEnd(), q.getEnd()));
-                    variant.setLength((variant.getEnd() - variant.getStart())+1);
+                    variant.setLength((variant.getEnd() - variant.getStart()) + 1);
                 } else {
                     // fit into place (before and after)
                     fillNoCall(resolved, q);
@@ -168,11 +168,11 @@ public class VariantLocalConflictResolver {
         return holes;
     }
 
-    private static List<Pair<Integer,Integer>> buildRegions(List<Variant> target) {
-        return target.stream().map( v -> buildRegions(v)).flatMap(l -> l.stream()).collect(Collectors.toList());
+    private static List<Pair<Integer, Integer>> buildRegions(List<Variant> target) {
+        return target.stream().map(v -> buildRegions(v)).flatMap(l -> l.stream()).collect(Collectors.toList());
     }
 
-    private static List<Pair<Integer,Integer>> buildRegions(Variant target) {
+    private static List<Pair<Integer, Integer>> buildRegions(Variant target) {
         List<Variant> vlst = new ArrayList<Variant>();
         vlst.add(target);
         vlst.addAll(expandToVariants(target));
@@ -228,7 +228,7 @@ public class VariantLocalConflictResolver {
         if (conflict && (isInsertion(a) || isInsertion(b))) {
             // in case of insertions
             if (isInsertion(a) != isInsertion(b)) { // one of them insertion
-                conflict = isInsertion(a)? isInsertionCovered(a, b) : isInsertionCovered(b, a);
+                conflict = isInsertion(a) ? isInsertionCovered(a, b) : isInsertionCovered(b, a);
             }
         }
         return conflict;
@@ -516,7 +516,7 @@ public class VariantLocalConflictResolver {
         }
         se.setSamplesData(oLst);
         se.setSecondaryAlternates(new ArrayList<>());
-        for(FileEntry fe : se.getFiles()) {
+        for (FileEntry fe : se.getFiles()) {
             Map<String, String> feAttr = fe.getAttributes();
             if (null == feAttr) {
                 feAttr = new HashMap<>();

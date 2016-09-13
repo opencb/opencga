@@ -386,8 +386,33 @@ public class VariantVcfExporter implements DataWriter<Variant> {
 
             for (String sampleName : studyEntry.getOrderedSamplesName()) {
                 Map<String, String> sampleData = studyEntry.getSampleData(sampleName);
-                String gt = sampleData.get("GT");
-                if (gt != null) {
+                String gtStr = sampleData.get("GT");
+                String genotypeFilter = sampleData.get("FT");
+
+                if (gtStr != null) {
+                    List<String> gtSplit = new ArrayList<>(Arrays.asList(gtStr.split(",")));
+                    List<String> ftSplit = new ArrayList<>(Arrays.asList(
+                            (StringUtils.isBlank(genotypeFilter) ? "." : genotypeFilter).split(",")));
+                    boolean filterIsMatching = gtSplit.size() == ftSplit.size();
+                    String gt = gtSplit.get(0);
+                    String ft = ftSplit.get(0);
+                    if (gtSplit.size() > 1) {
+//                        HashSet<String> set = new HashSet<>(gtSplit);
+                        int idx = gtSplit.indexOf("0/0");
+                        if (filterIsMatching) {
+                            ftSplit.remove(idx);
+                        }
+                        gtSplit.remove(idx);
+                        if (gtSplit.size() > 1) {
+                            gt = ".";
+                            ft = ".";
+                        } else if (gtSplit.size() == 1) {
+                            gt = gtSplit.get(0);
+                            if (filterIsMatching) {
+                                ft = ftSplit.get(0);
+                            }
+                        }
+                    }
                     org.opencb.biodata.models.feature.Genotype genotype =
                             new org.opencb.biodata.models.feature.Genotype(gt, reference, alternate);
                     List<Allele> alleles = new ArrayList<>();
@@ -398,10 +423,10 @@ public class VariantVcfExporter implements DataWriter<Variant> {
                             alleles.add(Allele.create(".", false)); // genotype of a secondary alternate, or an actual missing
                         }
                     }
-                    String genotypeFilter = sampleData.get("FT");
-                    if (StringUtils.isBlank(genotypeFilter)) {
+
+                    if (StringUtils.isBlank(ft)) {
                         genotypeFilter = ".";
-                    } else if (StringUtils.equals("PASS", genotypeFilter)) {
+                    } else if (StringUtils.equals("PASS", ft)) {
                         genotypeFilter = "1";
                     } else {
                         genotypeFilter = "0";

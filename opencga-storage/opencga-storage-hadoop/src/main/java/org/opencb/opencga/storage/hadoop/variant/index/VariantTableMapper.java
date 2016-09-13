@@ -267,7 +267,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
 
     private Collection<Variant> buildOverlappingNonRedundantSet(Variant var, List<Variant> archiveVar) {
         List<Variant> overlap =
-                archiveVar.stream().filter(v -> var.overlapWith(v, true)).collect(Collectors.toList());
+                archiveVar.stream().filter(v -> VariantMerger.hasAnyOverlap(var, v)).collect(Collectors.toList());
         Set<String> origCalls = new HashSet<>();
         List<Variant> uniqueList = new ArrayList<>();
         for (Variant variant : overlap) {
