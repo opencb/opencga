@@ -17,6 +17,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.ISampleManager;
+import org.opencb.opencga.catalog.managers.api.IUserManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
@@ -28,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -38,6 +40,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
 
     protected static Logger logger = LoggerFactory.getLogger(SampleManager.class);
+    private IUserManager userManager;
 
     @Deprecated
     public SampleManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager, AuditManager auditManager,
@@ -47,9 +50,11 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     public SampleManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager, AuditManager auditManager,
-                         CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                         CatalogConfiguration catalogConfiguration) {
-        super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogConfiguration);
+                         CatalogManager catalogManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory,
+                         CatalogIOManagerFactory ioManagerFactory, CatalogConfiguration catalogConfiguration) {
+        super(authorizationManager, authenticationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
+                catalogConfiguration);
+        this.userManager = catalogManager.getUserManager();
     }
 
     @Override
@@ -275,6 +280,92 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
+    public List<QueryResult<Sample>> delete(String sampleIdStr, QueryOptions options, String sessionId)
+            throws CatalogException, IOException {
+        ParamUtils.checkParameter(sampleIdStr, "id");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        String userId = userManager.getUserId(sessionId);
+        List<Long> sampleIds = getSampleIds(userId, sampleIdStr);
+
+        List<QueryResult<Sample>> queryResultList = new ArrayList<>(sampleIds.size());
+        for (Long sampleId : sampleIds) {
+            QueryResult<Sample> queryResult = null;
+            try {
+                authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.DELETE);
+                queryResult = sampleDBAdaptor.delete(sampleId, options);
+                auditManager.recordDeletion(AuditRecord.Resource.sample, sampleId, userId, queryResult.first(), null, null);
+            } catch (CatalogAuthorizationException e) {
+                auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.Action.delete, AuditRecord.Magnitude.high, sampleId,
+                        userId, null, null, e.getMessage(), null);
+                queryResult = new QueryResult<>("Delete sample " + sampleId);
+                queryResult.setErrorMsg(e.getMessage());
+            } catch (CatalogException e) {
+                e.printStackTrace();
+                queryResult = new QueryResult<>("Delete sample " + sampleId);
+                queryResult.setErrorMsg(e.getMessage());
+            } finally {
+                queryResultList.add(queryResult);
+            }
+        }
+
+        return queryResultList;
+    }
+
+    @Override
+    public List<QueryResult<Sample>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CatalogSampleDBAdaptor.QueryParams.ID.key());
+        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, queryOptions);
+        List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
+        String sampleIdStr = StringUtils.join(sampleIds, ",");
+        return delete(sampleIdStr, options, sessionId);
+    }
+
+    @Override
+    public List<QueryResult<Sample>> restore(String sampleIdStr, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(sampleIdStr, "id");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        String userId = userManager.getUserId(sessionId);
+        List<Long> sampleIds = getSampleIds(userId, sampleIdStr);
+
+        List<QueryResult<Sample>> queryResultList = new ArrayList<>(sampleIds.size());
+        for (Long sampleId : sampleIds) {
+            QueryResult<Sample> queryResult = null;
+            try {
+                authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.DELETE);
+                queryResult = sampleDBAdaptor.restore(sampleId, options);
+                auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.Action.restore, AuditRecord.Magnitude.medium, sampleId,
+                        userId, Status.DELETED, Status.READY, "Sample restore", new ObjectMap());
+            } catch (CatalogAuthorizationException e) {
+                auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.Action.restore, AuditRecord.Magnitude.high, sampleId,
+                        userId, null, null, e.getMessage(), null);
+                queryResult = new QueryResult<>("Restore sample " + sampleId);
+                queryResult.setErrorMsg(e.getMessage());
+            } catch (CatalogException e) {
+                e.printStackTrace();
+                queryResult = new QueryResult<>("Restore sample " + sampleId);
+                queryResult.setErrorMsg(e.getMessage());
+            } finally {
+                queryResultList.add(queryResult);
+            }
+        }
+
+        return queryResultList;
+    }
+
+    @Override
+    public List<QueryResult<Sample>> restore(Query query, QueryOptions options, String sessionId) throws CatalogException {
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CatalogSampleDBAdaptor.QueryParams.ID.key());
+        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, queryOptions);
+        List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
+        String sampleIdStr = StringUtils.join(sampleIds, ",");
+        return restore(sampleIdStr, options, sessionId);
+    }
+
+    @Override
     public QueryResult<SampleAclEntry> getSampleAcls(String sampleStr, List<String> members, String sessionId) throws CatalogException {
         long startTime = System.currentTimeMillis();
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
@@ -393,23 +484,40 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.UPDATE);
 
+        for (Map.Entry<String, Object> param : parameters.entrySet()) {
+            CatalogSampleDBAdaptor.QueryParams queryParam = CatalogSampleDBAdaptor.QueryParams.getParam(param.getKey());
+            switch (queryParam) {
+                case SOURCE:
+                case NAME:
+                case INDIVIDUAL_ID:
+                case DESCRIPTION:
+                case ATTRIBUTES:
+                    break;
+                case NATTRIBUTES:
+                case BATTRIBUTES:
+                case STATUS_NAME:
+                case STATUS_MSG:
+                case STATUS_DATE:
+                case STUDY_ID:
+                case ACL:
+                case ACL_MEMBER:
+                case ACL_PERMISSIONS:
+                case ANNOTATION_SETS:
+                case VARIABLE_SET_ID:
+                case ANNOTATION_SET_NAME:
+                case ANNOTATION:
+                case ID:
+                default:
+                    throw new CatalogException("Cannot update " + queryParam);
+            }
+        }
+
+        // TODO: Change this for ObjectMap
         options.putAll(parameters);
         QueryResult<Sample> queryResult = sampleDBAdaptor.modifySample(sampleId, options);
         auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userId, parameters, null, null);
         return queryResult;
 
-    }
-
-    @Override
-    public QueryResult<Sample> delete(Long sampleId, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(sampleId, "sampleId");
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-
-        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.DELETE);
-
-        QueryResult<Sample> queryResult = sampleDBAdaptor.delete(sampleId, new QueryOptions());
-        auditManager.recordDeletion(AuditRecord.Resource.sample, sampleId, userId, queryResult.first(), null, null);
-        return queryResult;
     }
 
     @Override

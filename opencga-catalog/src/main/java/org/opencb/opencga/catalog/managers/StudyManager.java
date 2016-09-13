@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -50,9 +51,10 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     }
 
     public StudyManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager, AuditManager auditManager,
-                        CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                        CatalogConfiguration catalogConfiguration) {
-        super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogConfiguration);
+                        CatalogManager catalogManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory,
+                        CatalogIOManagerFactory ioManagerFactory, CatalogConfiguration catalogConfiguration) {
+        super(authorizationManager, authenticationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
+                catalogConfiguration);
     }
 
     @Override
@@ -351,7 +353,22 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
 
     @Override
-    public QueryResult<Study> delete(Long id, QueryOptions options, String sessionId) throws CatalogException {
+    public List<QueryResult<Study>> delete(String ids, QueryOptions options, String sessionId) throws CatalogException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<QueryResult<Study>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<QueryResult<Study>> restore(String ids, QueryOptions options, String sessionId) throws CatalogException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<QueryResult<Study>> restore(Query query, QueryOptions options, String sessionId) throws CatalogException {
         throw new UnsupportedOperationException();
     }
 

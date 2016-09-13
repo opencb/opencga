@@ -274,7 +274,7 @@ public class OpenCGAWSServer {
      */
     protected static void parseQueryParams(Map<String, List<String>> params,
                                            Function<String, org.opencb.commons.datastore.core.QueryParam> getParam,
-                                           Query query, QueryOptions queryOptions) {
+                                           ObjectMap query, QueryOptions queryOptions) {
         for (Map.Entry<String, List<String>> entry : params.entrySet()) {
             String param = entry.getKey();
             int indexOf = param.indexOf('.');
@@ -287,10 +287,15 @@ public class OpenCGAWSServer {
             }
 
             // Exceptions
-            if (param.equals("status")) {
+            if (param.equalsIgnoreCase("status")) {
                 query.put("status.name", entry.getValue().get(0));
                 query.remove("status");
                 queryOptions.remove("status");
+            }
+
+            if (param.equalsIgnoreCase("sid")) {
+                query.remove("sid");
+                queryOptions.remove("sid");
             }
         }
         logger.debug("parseQueryParams: Query {}, queryOptions {}", query.safeToString(), queryOptions.safeToString());

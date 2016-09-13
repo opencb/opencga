@@ -22,6 +22,7 @@ import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Properties;
 
@@ -39,10 +40,11 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     }
 
     public ProjectManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                          AuditManager auditManager,
+                          AuditManager auditManager, CatalogManager catalogManager,
                           CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                           CatalogConfiguration catalogConfiguration) {
-        super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogConfiguration);
+        super(authorizationManager, authenticationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
+                catalogConfiguration);
     }
 
     @Override
@@ -223,7 +225,22 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     }
 
     @Override
-    public QueryResult<Project> delete(Long id, QueryOptions options, String sessionId) throws CatalogException {
+    public List<QueryResult<Project>> delete(String ids, QueryOptions options, String sessionId) throws CatalogException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<QueryResult<Project>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<QueryResult<Project>> restore(String ids, QueryOptions options, String sessionId) throws CatalogException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<QueryResult<Project>> restore(Query query, QueryOptions options, String sessionId) throws CatalogException {
         throw new UnsupportedOperationException();
     }
 

@@ -106,7 +106,7 @@ public class FileScannerTest {
         File file = catalogManager.createFile(study.getId(), File.Format.PLAIN, File.Bioformat.NONE, folder.getPath() + "file1.txt",
                 CatalogManagerTest.createDebugFile().toURI(), "", false, sessionIdUser).first();
 
-        catalogManager.delete(Long.toString(file.getId()), new QueryOptions(), sessionIdUser);
+        catalogManager.getFileManager().delete(Long.toString(file.getId()), new QueryOptions(), sessionIdUser);
 
         file = catalogManager.getFile(file.getId(), sessionIdUser).first();
         assertEquals(File.FileStatus.TRASHED, file.getStatus().getName());

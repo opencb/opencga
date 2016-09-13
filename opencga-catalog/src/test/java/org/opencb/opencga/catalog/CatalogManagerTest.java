@@ -1220,15 +1220,22 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
-    public void testDeleteSample() throws CatalogException {
+    public void testDeleteSample() throws CatalogException, IOException {
         long studyId = catalogManager.getStudyId("user@1000G:phase1");
         long sampleId = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
 
-        QueryResult<Sample> queryResult = catalogManager.deleteSample(sampleId, new QueryOptions(), sessionIdUser);
-        assertEquals(sampleId, queryResult.first().getId());
+        List<QueryResult<Sample>> queryResult = catalogManager.getSampleManager()
+                .delete(Long.toString(sampleId), new QueryOptions(), sessionIdUser);
+        assertEquals(sampleId, queryResult.get(0).first().getId());
 
-        QueryResult<Sample> sample = catalogManager.getSample(sampleId, new QueryOptions(), sessionIdUser);
-        assertEquals(Status.TRASHED, sample.first().getStatus().getName());
+        Query query = new Query()
+                .append(CatalogSampleDBAdaptor.QueryParams.ID.key(), sampleId)
+                .append(CatalogSampleDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
+
+        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().readAll(studyId, query, new QueryOptions(), sessionIdUser);
+//        QueryResult<Sample> sample = catalogManager.getSample(sampleId, new QueryOptions(), sessionIdUser);
+        assertEquals(1, sampleQueryResult.getNumResults());
+        assertTrue(sampleQueryResult.first().getName().contains(".DELETED"));
     }
 
     /*
@@ -1361,7 +1368,7 @@ public class CatalogManagerTest extends GenericTest {
     /*                    */
 
     @Test
-    public void testDeleteCohort() throws CatalogException {
+    public void testDeleteCohort() throws CatalogException, IOException {
         long studyId = catalogManager.getStudyId("user@1000G:phase1");
 
         long sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
@@ -1378,7 +1385,8 @@ public class CatalogManagerTest extends GenericTest {
         assertTrue(myCohort.getSamples().contains(sampleId2));
         assertTrue(myCohort.getSamples().contains(sampleId3));
 
-        Cohort myDeletedCohort = catalogManager.deleteCohort(myCohort.getId(), null, sessionIdUser).first();
+        Cohort myDeletedCohort = catalogManager.getCohortManager().delete(Long.toString(myCohort.getId()), null, sessionIdUser).get(0)
+                .first();
 
         assertEquals(myCohort.getId(), myDeletedCohort.getId());
 

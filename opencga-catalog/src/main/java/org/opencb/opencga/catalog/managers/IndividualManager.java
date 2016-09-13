@@ -17,6 +17,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IIndividualManager;
+import org.opencb.opencga.catalog.managers.api.IUserManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
@@ -28,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -37,6 +39,7 @@ import java.util.stream.Collectors;
 public class IndividualManager extends AbstractManager implements IIndividualManager {
 
     protected static Logger logger = LoggerFactory.getLogger(IndividualManager.class);
+    private IUserManager userManager;
 
     @Deprecated
     public IndividualManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
@@ -47,10 +50,12 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     }
 
     public IndividualManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                             AuditManager auditManager,
+                             AuditManager auditManager, CatalogManager catalogManager,
                              CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                              CatalogConfiguration catalogConfiguration) {
-        super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogConfiguration);
+        super(authorizationManager, authenticationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
+                catalogConfiguration);
+        this.userManager = catalogManager.getUserManager();
     }
 
     @Deprecated
@@ -126,6 +131,49 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         authorizationManager.filterIndividuals(userId, studyId, queryResult.getResult());
         queryResult.setNumResults(queryResult.getResult().size());
         return queryResult;
+    }
+
+    @Override
+    public List<QueryResult<Individual>> restore(String individualIdStr, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(individualIdStr, "id");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        String userId = userManager.getUserId(sessionId);
+        List<Long> individualIds = getIndividualIds(userId, individualIdStr);
+
+        List<QueryResult<Individual>> queryResultList = new ArrayList<>(individualIds.size());
+        for (Long individualId : individualIds) {
+            QueryResult<Individual> queryResult = null;
+            try {
+                authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.DELETE);
+                queryResult = individualDBAdaptor.restore(individualId, options);
+                auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.restore, AuditRecord.Magnitude.medium,
+                        individualId, userId, Status.DELETED, Status.READY, "Individual restore", new ObjectMap());
+            } catch (CatalogAuthorizationException e) {
+                auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.restore, AuditRecord.Magnitude.high,
+                        individualId, userId, null, null, e.getMessage(), null);
+                queryResult = new QueryResult<>("Restore individual " + individualId);
+                queryResult.setErrorMsg(e.getMessage());
+            } catch (CatalogException e) {
+                e.printStackTrace();
+                queryResult = new QueryResult<>("Restore individual " + individualId);
+                queryResult.setErrorMsg(e.getMessage());
+            } finally {
+                queryResultList.add(queryResult);
+            }
+        }
+
+        return queryResultList;
+    }
+
+    @Override
+    public List<QueryResult<Individual>> restore(Query query, QueryOptions options, String sessionId) throws CatalogException {
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CatalogIndividualDBAdaptor.QueryParams.ID.key());
+        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
+        List<Long> individualIds = individualQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList());
+        String individualStr = StringUtils.join(individualIds, ",");
+        return restore(individualStr, options, sessionId);
     }
 
     @Override
@@ -392,16 +440,46 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     }
 
     @Override
-    public QueryResult<Individual> delete(Long individualId, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(sessionId, "sessionId");
-        ParamUtils.defaultObject(options, QueryOptions::new);
+    public List<QueryResult<Individual>> delete(String individualIdStr, QueryOptions options, String sessionId)
+            throws CatalogException, IOException {
+        ParamUtils.checkParameter(individualIdStr, "id");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.DELETE);
+        String userId = userManager.getUserId(sessionId);
+        List<Long> individualIds = getIndividualIds(userId, individualIdStr);
 
-        QueryResult<Individual> queryResultBefore = individualDBAdaptor.deleteIndividual(individualId, options);
-//        auditManager.recordCreation(AuditRecord.Resource.individual, individualId, userId, queryResultBefore.first(), null, null);
-        return queryResultBefore;
+        List<QueryResult<Individual>> queryResultList = new ArrayList<>(individualIds.size());
+        for (Long individualId : individualIds) {
+            QueryResult<Individual> queryResult = null;
+            try {
+                authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.DELETE);
+                queryResult = individualDBAdaptor.deleteIndividual(individualId, options);
+                auditManager.recordDeletion(AuditRecord.Resource.individual, individualId, userId, queryResult.first(), null, null);
+            } catch (CatalogAuthorizationException e) {
+                auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.delete, AuditRecord.Magnitude.high,
+                        individualId, userId, null, null, e.getMessage(), null);
+                queryResult = new QueryResult<>("Delete individual " + individualId);
+                queryResult.setErrorMsg(e.getMessage());
+            } catch (CatalogException e) {
+                e.printStackTrace();
+                queryResult = new QueryResult<>("Delete individual " + individualId);
+                queryResult.setErrorMsg(e.getMessage());
+            } finally {
+                queryResultList.add(queryResult);
+            }
+        }
+
+        return queryResultList;
+    }
+
+    @Override
+    public List<QueryResult<Individual>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CatalogIndividualDBAdaptor.QueryParams.ID.key());
+        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
+        List<Long> individualIds = individualQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList());
+        String individualStr = StringUtils.join(individualIds, ",");
+        return delete(individualStr, options, sessionId);
     }
 
     @Override

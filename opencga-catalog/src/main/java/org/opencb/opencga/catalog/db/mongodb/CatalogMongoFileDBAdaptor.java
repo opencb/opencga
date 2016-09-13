@@ -112,7 +112,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     public QueryResult<File> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
-            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!=" + File.FileStatus.REMOVED);
         }
         Bson bson;
         try {
@@ -138,7 +138,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<File> getFile(long fileId, QueryOptions options) throws CatalogDBException {
         checkFileId(fileId);
-        Query query = new Query(QueryParams.ID.key(), fileId).append(QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.DELETED);
+        Query query = new Query(QueryParams.ID.key(), fileId);
         return get(query, options);
     }
 

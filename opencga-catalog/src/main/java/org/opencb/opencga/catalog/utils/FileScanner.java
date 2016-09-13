@@ -223,8 +223,8 @@ public class FileScanner {
                     case DELETE:
                         logger.info("Deleting file { id:" + existingFile.getId() + ", path:\"" + existingFile.getPath() + "\" }");
                         // Delete completely the file/folder !
-                        catalogManager.delete(Long.toString(existingFile.getId()), new QueryOptions(FileManager.SKIP_TRASH, true),
-                                sessionId);
+                        catalogManager.getUserManager().delete(Long.toString(existingFile.getId()),
+                                new QueryOptions(FileManager.SKIP_TRASH, true), sessionId);
                         break;
                     case REPLACE:
                         file = existingFile;
@@ -327,8 +327,8 @@ public class FileScanner {
                     case DELETE:
                         logger.info("Deleting file { id:" + existingFile.getId() + ", path:\"" + existingFile.getPath() + "\" }");
                         // Delete completely the file/folder !
-                        catalogManager.delete(Long.toString(existingFile.getId()), new QueryOptions(FileManager.SKIP_TRASH, true),
-                                sessionId);
+                        catalogManager.getUserManager().delete(Long.toString(existingFile.getId()),
+                                new QueryOptions(FileManager.SKIP_TRASH, true), sessionId);
                         break;
                     case REPLACE:
                         file = existingFile;

@@ -94,18 +94,11 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
         String disease = panelsCommandOptions.createCommandOptions.disease;
 
         ObjectMap o = new ObjectMap();
-        if (StringUtils.isNotEmpty(panelsCommandOptions.createCommandOptions.description)) {
-            o.append(CatalogPanelDBAdaptor.QueryParams.DESCRIPTION.key(), panelsCommandOptions.createCommandOptions.description);
-        }
-        if (StringUtils.isNotEmpty(panelsCommandOptions.createCommandOptions.genes)) {
-            o.append(CatalogPanelDBAdaptor.QueryParams.GENES.key(), panelsCommandOptions.createCommandOptions.genes);
-        }
-        if (StringUtils.isNotEmpty(panelsCommandOptions.createCommandOptions.regions)) {
-            o.append(CatalogPanelDBAdaptor.QueryParams.REGIONS.key(), panelsCommandOptions.createCommandOptions.regions);
-        }
-        if (StringUtils.isNotEmpty(panelsCommandOptions.createCommandOptions.variants)) {
-            o.append(CatalogPanelDBAdaptor.QueryParams.VARIANTS.key(), panelsCommandOptions.createCommandOptions.variants);
-        }
+
+        o.putIfNotEmpty(CatalogPanelDBAdaptor.QueryParams.DESCRIPTION.key(), panelsCommandOptions.createCommandOptions.description);
+        o.putIfNotEmpty(CatalogPanelDBAdaptor.QueryParams.GENES.key(), panelsCommandOptions.createCommandOptions.genes);
+        o.putIfNotEmpty(CatalogPanelDBAdaptor.QueryParams.REGIONS.key(), panelsCommandOptions.createCommandOptions.regions);
+        o.putIfNotEmpty(CatalogPanelDBAdaptor.QueryParams.VARIANTS.key(), panelsCommandOptions.createCommandOptions.variants);
 
         return openCGAClient.getPanelClient().create(panelsCommandOptions.createCommandOptions.studyId, name, disease, o);
     }
@@ -113,12 +106,10 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<DiseasePanel> info() throws CatalogException, IOException  {
         logger.debug("Getting panel information");
         QueryOptions o = new QueryOptions();
-        if (StringUtils.isNotEmpty(panelsCommandOptions.infoCommandOptions.include)) {
-            o.append(QueryOptions.INCLUDE, panelsCommandOptions.infoCommandOptions.include);
-        }
-        if (StringUtils.isNotEmpty(panelsCommandOptions.infoCommandOptions.exclude)) {
-            o.append(QueryOptions.EXCLUDE, panelsCommandOptions.infoCommandOptions.exclude);
-        }
+
+        o.putIfNotEmpty(QueryOptions.INCLUDE, panelsCommandOptions.infoCommandOptions.include);
+        o.putIfNotEmpty(QueryOptions.EXCLUDE, panelsCommandOptions.infoCommandOptions.exclude);
+
         return openCGAClient.getPanelClient().get(panelsCommandOptions.createCommandOptions.studyId, o);
     }
 }

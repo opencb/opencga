@@ -12,3 +12,19 @@ class ServerResponseException(Exception):
 
     def __str__(self):
         return repr(self.e)
+
+
+class FileAlreadyExists(Exception):
+    def __init__(self, value):
+        self.e = value
+
+    def __str__(self):
+        return repr(self.e)
+
+
+class WSErrorException(Exception):
+    def __init__(self, value):
+        self.e = value
+
+    def __str__(self):
+        return repr(self.e)

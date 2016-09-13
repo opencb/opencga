@@ -18,6 +18,7 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
@@ -81,48 +82,28 @@ public class ToolsCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Tool> info() throws CatalogException, IOException {
         logger.debug("Getting tool information");
         QueryOptions queryOptions = new QueryOptions();
-        if (StringUtils.isNotEmpty(toolsCommandOptions.infoCommandOptions.id)) {
-            queryOptions.put("id", toolsCommandOptions.infoCommandOptions.id);
-        }
-        if (StringUtils.isNotEmpty(toolsCommandOptions.infoCommandOptions.execution)) {
-            queryOptions.put("execution", toolsCommandOptions.infoCommandOptions.execution);
-        }
-        if (StringUtils.isNotEmpty(toolsCommandOptions.infoCommandOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, toolsCommandOptions.infoCommandOptions.include);
-        }
-        if (StringUtils.isNotEmpty(toolsCommandOptions.infoCommandOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, toolsCommandOptions.infoCommandOptions.exclude);
-        }
+
+        queryOptions.putIfNotEmpty("id", toolsCommandOptions.infoCommandOptions.id);
+        queryOptions.putIfNotEmpty("execution", toolsCommandOptions.infoCommandOptions.execution);
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, toolsCommandOptions.infoCommandOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, toolsCommandOptions.infoCommandOptions.exclude);
+
         return openCGAClient.getToolClient().get(toolsCommandOptions.infoCommandOptions.id, queryOptions);
     }
 
     private QueryResponse<Tool> search() throws CatalogException, IOException {
         logger.debug("Searching tool");
+        Query query = new Query();
         QueryOptions queryOptions = new QueryOptions();
-        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.id)) {
-            queryOptions.put("id", toolsCommandOptions.searchCommandOptions.id);
-        }
-        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.userId)) {
-            queryOptions.put("userId", toolsCommandOptions.searchCommandOptions.userId);
-        }
-        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.alias)) {
-            queryOptions.put("alias", toolsCommandOptions.searchCommandOptions.alias);
-        }
-
-        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, toolsCommandOptions.searchCommandOptions.include);
-        }
-        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, toolsCommandOptions.searchCommandOptions.exclude);
-        }
-        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, toolsCommandOptions.searchCommandOptions.limit);
-        }
-        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, toolsCommandOptions.searchCommandOptions.skip);
-        }
+        query.putIfNotEmpty("id", toolsCommandOptions.searchCommandOptions.id);
+        query.putIfNotEmpty("userId", toolsCommandOptions.searchCommandOptions.userId);
+        query.putIfNotEmpty("alias", toolsCommandOptions.searchCommandOptions.alias);
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, toolsCommandOptions.searchCommandOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, toolsCommandOptions.searchCommandOptions.exclude);
+        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, toolsCommandOptions.searchCommandOptions.limit);
+        queryOptions.putIfNotEmpty(QueryOptions.SKIP, toolsCommandOptions.searchCommandOptions.skip);
         queryOptions.put("count", toolsCommandOptions.searchCommandOptions.count);
-        return openCGAClient.getToolClient().get(toolsCommandOptions.searchCommandOptions.id, queryOptions);
+        return openCGAClient.getToolClient().search(query, queryOptions);
     }
 
     private QueryResponse<Tool> update() throws CatalogException, IOException {

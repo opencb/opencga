@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.admin;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -27,6 +28,7 @@ import org.opencb.opencga.catalog.models.User;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 
 /**
  * Created by imedina on 02/03/15.
@@ -136,7 +138,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         catalogManager.logout(usersCommandOptions.createUserCommandOptions.userId, login.getString("sessionId"));
     }
 
-    private void delete() throws CatalogException {
+    private void delete() throws CatalogException, IOException {
         if (usersCommandOptions.deleteUserCommandOptions.databaseUser != null) {
             catalogConfiguration.getDatabase().setUser(usersCommandOptions.deleteUserCommandOptions.databaseUser);
         }
@@ -160,9 +162,16 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
         catalogManager.validateAdminPassword();
 
-        User user = catalogManager.deleteUser(usersCommandOptions.deleteUserCommandOptions.userId,
-                new QueryOptions("force", true), null).first();
-        System.out.println("The user has been successfully deleted from the database: " + user.toString());
+        List<QueryResult<User>> deletedUsers = catalogManager.getUserManager()
+                .delete(usersCommandOptions.deleteUserCommandOptions.userId, new QueryOptions("force", true), null);
+        for (QueryResult<User> deletedUser : deletedUsers) {
+            User user = deletedUser.first();
+            if (user != null) {
+                System.out.println("The user has been successfully deleted from the database: " + user.toString());
+            } else {
+                System.out.println(deletedUser.getErrorMsg());
+            }
+        }
     }
 
     private void setDiskQuota() throws CatalogException {

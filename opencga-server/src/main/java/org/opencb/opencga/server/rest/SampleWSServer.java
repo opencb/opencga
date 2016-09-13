@@ -290,21 +290,27 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{sampleId}/delete")
     @ApiOperation(value = "Delete a sample", position = 9)
-    public Response delete(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr) {
+    public Response delete(@ApiParam(value = "Comma separated list of sample ids", required = true) @PathParam("sampleId") String sampleStr) {
         try {
-            // FIXME: The id resolution should not go here
-            long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
-            QueryResult<Sample> queryResult = catalogManager.deleteSample(sampleId, queryOptions, sessionId);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
+            List<QueryResult<Sample>> delete = catalogManager.getSampleManager().delete(sampleStr, queryOptions, sessionId);
+            return createOkResponse(delete);
+        } catch (CatalogException | IOException e) {
             return createErrorResponse(e);
         }
+//        try {
+//            // FIXME: The id resolution should not go here
+//            long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
+//            QueryResult<Sample> queryResult = catalogManager.deleteSample(sampleId, queryOptions, sessionId);
+//            return createOkResponse(queryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
     }
 
     @GET
     @Path("/groupBy")
     @ApiOperation(value = "Group samples by several fields", position = 10)
-    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("by") String by,
+    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("fields") String fields,
                             @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyIdStr,
                             @ApiParam(value = "Comma separated list of ids.") @QueryParam("id") String id,
                             @ApiParam(value = "Comma separated list of names.") @QueryParam("name") String name,
@@ -320,7 +326,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
             logger.debug("query = " + query.toJson());
             logger.debug("queryOptions = " + qOptions.toJson());
-            QueryResult result = catalogManager.sampleGroupBy(query, qOptions, by, sessionId);
+            QueryResult result = catalogManager.sampleGroupBy(query, qOptions, fields, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

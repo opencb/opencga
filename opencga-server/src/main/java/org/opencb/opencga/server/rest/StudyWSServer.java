@@ -93,7 +93,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "projectId") @QueryParam("projectId") String projectId,
                                   @ApiParam(value = "name") @QueryParam("name") String name,
                                   @ApiParam(value = "alias") @QueryParam("alias") String alias,
-                                  @ApiParam(value = "type") @QueryParam("type") String type,
+                                  @ApiParam(value = "type") @QueryParam("Comma separated list of type") String type,
                                   @ApiParam(value = "creationDate") @QueryParam("creationDate") String creationDate,
                                   @ApiParam(value = "status") @QueryParam("status") String status,
                                   @ApiParam(value = "attributes") @QueryParam("attributes") String attributes,
@@ -353,7 +353,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/alignments")
-    @ApiOperation(value = "Fetch alignments", position = 11, response = Alignment[].class)
+    @ApiOperation(value = "Fetch alignments. [PENDING]", position = 11, response = Alignment[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
@@ -670,13 +670,14 @@ public class StudyWSServer extends OpenCGAWSServer {
                     "<il><b>id</b>, <b>lastModified</b> and <b>diskUsage</b> parameters will be ignored.<br></il>" +
                     "<il><b>type</b> accepted values: [<b>'CASE_CONTROL', 'CASE_SET', 'CONTROL_SET', 'FAMILY', 'PAIRED', 'TRIO'</b>].<br></il>" +
                     "<ul>")
-    public Response createStudyPOST(@ApiParam(value = "projectId", required = true) @QueryParam("projectId") String projectIdStr,
+    public Response createStudyPOST(@ApiParam(value = "Project id or alias", required = true) @QueryParam("projectId") String projectIdStr,
                                     @ApiParam(value="studies", required = true) List<Study> studies) {
 //        List<Study> catalogStudies = new LinkedList<>();
         List<QueryResult<Study>> queryResults = new LinkedList<>();
         long projectId;
         try {
-            projectId = catalogManager.getProjectId(projectIdStr);
+            String userId = catalogManager.getUserManager().getUserId(sessionId);
+            projectId = catalogManager.getProjectManager().getProjectId(userId, projectIdStr);
         } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e);

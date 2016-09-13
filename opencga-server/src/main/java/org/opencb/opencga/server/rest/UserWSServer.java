@@ -32,6 +32,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 
@@ -239,10 +240,10 @@ public class UserWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{userId}/delete")
     @ApiOperation(value = "Delete an user [NO TESTED]", position = 10)
-    public Response delete(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId) {
+    public Response delete(@ApiParam(value = "userIds", required = true) @PathParam("userId") String userId) {
         try {
-            catalogManager.deleteUser(userId, null, sessionId);
-            return createOkResponse("User '" + userId + "' deleted");
+            List<QueryResult<User>> deletedUsers = catalogManager.getUserManager().delete(userId, queryOptions, sessionId);
+            return createOkResponse(deletedUsers);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

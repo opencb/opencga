@@ -14,9 +14,13 @@ public class UserCommandOptions {
 
     public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
+    public UpdateCommandOptions updateCommandOptions;
+    public ChangePaswordCommandOptions changePaswordCommandOptions;
+    public DeleteCommandOptions deleteCommandOptions;
     public ProjectsCommandOptions projectsCommandOptions;
     public LoginCommandOptions loginCommandOptions;
     public LogoutCommandOptions logoutCommandOptions;
+    public ResetPasswordCommandOptions resetPasswordCommandOptions;
     public JCommander jCommander;
 
     public OpencgaCommonCommandOptions commonCommandOptions;
@@ -27,9 +31,13 @@ public class UserCommandOptions {
 
         this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
+        this.updateCommandOptions = new UpdateCommandOptions();
+        this.changePaswordCommandOptions = new ChangePaswordCommandOptions();
+        this.deleteCommandOptions = new DeleteCommandOptions();
         this.projectsCommandOptions = new ProjectsCommandOptions();
         this.loginCommandOptions = new LoginCommandOptions();
         this.logoutCommandOptions = new LogoutCommandOptions();
+        this.resetPasswordCommandOptions = new ResetPasswordCommandOptions();
     }
 
     public JCommander getjCommander() {
@@ -51,7 +59,7 @@ public class UserCommandOptions {
         @Parameter(names = {"--user-name"}, description = "User name", required = true, arity = 1)
         public String userName;
 
-        @Parameter(names = {"--user-password"}, description = "User password", required = true,  password = true, arity = 0)
+        @Parameter(names = {"--user-password"}, description = "User password", required = true,  password = true, arity = 1)
         public String userPassword;
 
         @Parameter(names = {"--user-email"}, description = "User email", required = true, arity = 1)
@@ -59,9 +67,6 @@ public class UserCommandOptions {
 
         @Parameter(names = {"--user-organization"}, description = "User organization", required = false, arity = 1)
         public String userOrganization;
-
-        @Parameter(names = {"--user-DiskQuota"}, description = "User disk quota", required = false, arity = 1)
-        public Long userDiskQuota;
 
         @Parameter(names = {"--project-name"}, description = "Project name. Default: Default", required = false, arity = 1)
         public String projectName;
@@ -86,11 +91,44 @@ public class UserCommandOptions {
         @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
         public String exclude;
 
-        @Parameter(names = {"--last-activity"}, description = "If matches with the user's last activity, return " +
+        @Parameter(names = {"--last-modified"}, description = "If matches with the user's last activity, return " +
                 "an empty QueryResult", arity = 1, required = false)
-        public String lastActivity;
+        public String lastModified;
     }
 
+    @Parameters(commandNames = {"update"}, commandDescription = "Update some user attributes using GET method")
+    public class UpdateCommandOptions extends BaseUserCommand {
+
+        @Parameter(names = {"--name"}, description = "Name", arity = 1)
+        public String name;
+
+        @Parameter(names = {"--email"}, description = "Email", arity = 1)
+        public String email;
+
+        @Parameter(names = {"--organization"}, description = "Organization", arity = 1)
+        public String organization;
+
+        @Parameter(names = {"--attributes"}, description = "Attributes", arity = 1)
+        public String attributes;
+
+        @Parameter(names = {"--configs"}, description = "Configs", arity = 1)
+        public String configs;
+
+    }
+    @Parameters(commandNames = {"change-password"}, commandDescription = "Update some user attributes using GET method")
+    public class ChangePaswordCommandOptions{
+
+        @Parameter(names = {"--password"}, description = "password", arity = 1, required = true)
+        public String password;
+
+        @Parameter(names = {"--npassword"}, description = "new password", arity = 1, required = true)
+        public String npassword;
+    }
+
+    @Parameters(commandNames = {"delete"}, commandDescription = "Delete an user [NO TESTED]")
+    public class DeleteCommandOptions extends BaseUserCommand {
+
+    }
 
     @Parameters(commandNames = {"projects"}, commandDescription = "List all projects and studies from a selected user")
     public class ProjectsCommandOptions extends BaseUserCommand {
@@ -127,7 +165,7 @@ public class UserCommandOptions {
         @Parameter(names = {"-u", "--user"}, description = "UserId", required = true, arity = 1)
         public String user;
 
-        @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, required = false, password = true)
+        @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, required = true, password = true)
         public String password;
 
         @Parameter(names = {"-S","--session-id"}, description = "SessionId", arity = 1, required = false, hidden = true)
@@ -141,6 +179,11 @@ public class UserCommandOptions {
     public class LogoutCommandOptions {
         @Parameter(names = {"--session-id", "-S"}, description = "SessionId", required = false, arity = 1, hidden = true)
         public String sessionId;
+    }
+
+    @Parameters(commandNames = {"reset-password"}, commandDescription = "Reset password")
+    public class ResetPasswordCommandOptions extends BaseUserCommand {
+
     }
 
 

@@ -298,6 +298,46 @@ public class FileManagerTest extends GenericTest {
         catalogManager.link(uri, "myDirectory2", Long.toString(studyId), new ObjectMap(), sessionIdUser);
     }
 
+    // This test is just to make sure that the paths once we have linked do not start with /
+    @Test
+    public void testLinkFolder3() throws CatalogException, IOException {
+        URI uri = Paths.get(catalogManager.getStudyUri(studyId)).resolve("data").toUri();
+        catalogManager.link(uri, null, Long.toString(studyId), new ObjectMap(), sessionIdUser);
+
+        // Make sure that the path of the files linked do not start with /
+        Query query = new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(CatalogFileDBAdaptor.QueryParams.EXTERNAL.key(), true);
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CatalogFileDBAdaptor.QueryParams.PATH.key());
+        QueryResult<File> fileQueryResult = catalogManager.getFileManager().readAll(query, queryOptions, sessionIdUser);
+        assertEquals(5, fileQueryResult.getNumResults());
+        for (File file : fileQueryResult.getResult()) {
+            assertTrue(!file.getPath().startsWith("/"));
+        }
+    }
+
+    // This test will make sure that we can link several times the same uri into the same path with same results and without crashing
+    // However, if we try to link to a different path, we will fail
+    @Test
+    public void testLinkFolder4() throws CatalogException, IOException {
+        URI uri = Paths.get(catalogManager.getStudyUri(studyId)).resolve("data").toUri();
+        QueryResult<File> allFiles = catalogManager.link(uri, null, Long.toString(studyId), new ObjectMap(), sessionIdUser);
+        assertEquals(5, allFiles.getNumResults());
+
+        QueryResult<File> sameAllFiles = catalogManager.link(uri, null, Long.toString(studyId), new ObjectMap(), sessionIdUser);
+        assertEquals(allFiles.getNumResults(), sameAllFiles.getNumResults());
+
+        List<File> result = allFiles.getResult();
+        for (int i = 0; i < result.size(); i++) {
+            assertEquals(allFiles.getResult().get(i).getId(), sameAllFiles.getResult().get(i).getId());
+            assertEquals(allFiles.getResult().get(i).getPath(), sameAllFiles.getResult().get(i).getPath());
+            assertEquals(allFiles.getResult().get(i).getUri(), sameAllFiles.getResult().get(i).getUri());
+        }
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("already linked");
+        catalogManager.link(uri, "data", Long.toString(studyId), new ObjectMap(), sessionIdUser);
+    }
+
     @Test
     public void testUnlinkFolder() throws CatalogException, IOException {
         URI uri = Paths.get(catalogManager.getStudyUri(studyId)).resolve("data").toUri();
@@ -358,6 +398,38 @@ public class FileManagerTest extends GenericTest {
         System.out.println("folder = " + folder);
         System.out.println(catalogManager.getFileUri(folder));
 
+    }
+
+    @Test
+    public void testCreateFolderAlreadyExists() throws Exception {
+        long projectId = catalogManager.getAllProjects("user2", null, sessionIdUser2).first().getId();
+        long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser2).first().getId();
+
+        Set<String> paths = catalogManager.getAllFiles(studyId, new Query("type", File.Type.DIRECTORY), new QueryOptions(), sessionIdUser2)
+                .getResult().stream().map(File::getPath).collect(Collectors.toSet());
+        assertEquals(3, paths.size());
+        assertTrue(paths.contains(""));             //root
+        assertTrue(paths.contains("data/"));        //data
+        assertTrue(paths.contains("analysis/"));    //analysis
+
+        Path folderPath = Paths.get("data", "new", "folder");
+        File folder = catalogManager.getFileManager().createFolder(studyId, folderPath.toString(), null, true, null, null, sessionIdUser2)
+                .first();
+
+        assertNotNull(folder);
+        assertTrue(folder.getPath().contains(folderPath.toString()));
+
+        // When creating the same folder, we should not complain and return it directly
+        File sameFolder = catalogManager.getFileManager().createFolder(studyId, folderPath.toString(), null, true, null, null,
+                sessionIdUser2).first();
+        assertNotNull(sameFolder);
+        assertEquals(folder.getPath(), sameFolder.getPath());
+        assertEquals(folder.getId(), sameFolder.getId());
+
+        // However, a user without create permissions will receive an exception
+        thrown.expect(CatalogAuthorizationException.class);
+        thrown.expectMessage("Permission denied");
+        catalogManager.getFileManager().createFolder(studyId, folderPath.toString(), null, true, null, null, sessionIdUser3);
     }
 
     @Test
@@ -902,7 +974,7 @@ public class FileManagerTest extends GenericTest {
         catalogManager.modifyFile(fileQueryResult.first().getId(), objectMap, sessionIdUser);
 
         try {
-            catalogManager.delete(Long.toString(fileQueryResult.first().getId()), null, sessionIdUser);
+            catalogManager.getFileManager().delete(Long.toString(fileQueryResult.first().getId()), null, sessionIdUser);
             fail("The call should prohibit deleting a folder in status missing");
         } catch (CatalogException e) {
             assertTrue(e.getMessage().contains("cannot be deleted"));
@@ -913,7 +985,7 @@ public class FileManagerTest extends GenericTest {
         catalogManager.modifyFile(fileQueryResult.first().getId(), objectMap, sessionIdUser);
 
         try {
-            catalogManager.delete(Long.toString(fileQueryResult.first().getId()), null, sessionIdUser);
+            catalogManager.getFileManager().delete(Long.toString(fileQueryResult.first().getId()), null, sessionIdUser);
             fail("The call should prohibit deleting a folder in status staged");
         } catch (CatalogException e) {
             assertTrue(e.getMessage().contains("cannot be deleted"));
@@ -941,7 +1013,7 @@ public class FileManagerTest extends GenericTest {
         assertEquals(6, numResults);
 
         // We delete it
-        catalogManager.delete(Long.toString(file.getId()), null, sessionIdUser);
+        catalogManager.getFileManager().delete(Long.toString(file.getId()), null, sessionIdUser);
 
         // The files should have been moved to trashed status
         numResults = catalogManager.searchFile(studyId, query, sessionIdUser).getNumResults();
@@ -974,7 +1046,7 @@ public class FileManagerTest extends GenericTest {
 
         // We delete it
         QueryOptions queryOptions = new QueryOptions(FileManager.SKIP_TRASH, true);
-        catalogManager.delete(Long.toString(file.getId()), queryOptions, sessionIdUser);
+        catalogManager.getFileManager().delete(Long.toString(file.getId()), queryOptions, sessionIdUser);
 
         // The files should have been moved to trashed status
         numResults = catalogManager.searchFile(studyId, query, sessionIdUser).getNumResults();
@@ -994,7 +1066,7 @@ public class FileManagerTest extends GenericTest {
         List<File> result = catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"),
                 new QueryOptions(), sessionIdUser).getResult();
         for (File file : result) {
-            catalogManager.delete(Long.toString(file.getId()), null, sessionIdUser);
+            catalogManager.getFileManager().delete(Long.toString(file.getId()), null, sessionIdUser);
         }
         CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
         catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(),
@@ -1007,7 +1079,7 @@ public class FileManagerTest extends GenericTest {
         result = catalogManager.getAllFiles(studyId2, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(),
                 sessionIdUser).getResult();
         for (File file : result) {
-            catalogManager.delete(Long.toString(file.getId()), null, sessionIdUser);
+            catalogManager.getFileManager().delete(Long.toString(file.getId()), null, sessionIdUser);
         }
         catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(),
                 sessionIdUser).getResult().forEach(f -> {
@@ -1065,7 +1137,7 @@ public class FileManagerTest extends GenericTest {
 
         thrown.expect(CatalogException.class);
         try {
-            catalogManager.delete(Long.toString(folder.getId()), null, sessionIdUser);
+            catalogManager.getFileManager().delete(Long.toString(folder.getId()), null, sessionIdUser);
         } finally {
             assertEquals("Folder name should not be modified", folder.getPath(), catalogManager.getFile(folder.getId(), sessionIdUser)
                     .first().getPath());
@@ -1088,17 +1160,23 @@ public class FileManagerTest extends GenericTest {
 
     private void deleteFolderAndCheck(long deletable) throws CatalogException, IOException {
         List<File> allFilesInFolder;
-        catalogManager.delete(Long.toString(deletable), null, sessionIdUser);
+        catalogManager.getFileManager().delete(Long.toString(deletable), null, sessionIdUser);
 
-        File file = catalogManager.getFile(deletable, sessionIdUser).first();
-        assertTrue(file.getStatus().getName().equals(File.FileStatus.TRASHED));
+        long studyIdByFileId = catalogManager.getFileManager().getStudyId(deletable);
 
-        allFilesInFolder = catalogManager.getAllFilesInFolder(deletable, null, sessionIdUser).getResult();
-        allFilesInFolder = catalogManager.searchFile(
-                catalogManager.getStudyIdByFileId(deletable),
-                new Query("directory", catalogManager.getFile(deletable, sessionIdUser).first().getPath() + ".*"),
-                null, sessionIdUser).getResult();
+        Query query = new Query()
+                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyIdByFileId)
+                .append(CatalogFileDBAdaptor.QueryParams.ID.key(), deletable)
+                .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, CatalogFileDBAdaptor.QueryParams.PATH.key());
+        QueryResult<File> fileQueryResult = catalogManager.getFileManager().readAll(query, options, sessionIdUser);
+        assertEquals(1, fileQueryResult.getNumResults());
 
+//        allFilesInFolder = catalogManager.getAllFilesInFolder(deletable, null, sessionIdUser).getResult();
+        query = new Query()
+                .append(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), fileQueryResult.first().getPath() + ".*")
+                .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
+        allFilesInFolder = catalogManager.searchFile(studyIdByFileId, query, null, sessionIdUser).getResult();
 
         for (File subFile : allFilesInFolder) {
             assertTrue(subFile.getStatus().getName().equals(File.FileStatus.TRASHED));

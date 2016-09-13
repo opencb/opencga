@@ -127,8 +127,6 @@ public interface IFileManager extends ResourceManager<Long, File> {
 
     QueryResult<File> rename(long fileId, String newName, String sessionId) throws CatalogException;
 
-    QueryResult<File> delete(String fileIdStr, QueryOptions options, String sessionId) throws CatalogException, IOException;
-
     QueryResult<File> link(URI uriOrigin, String pathDestiny, long studyId, ObjectMap params, String sessionId)
             throws CatalogException, IOException;
 

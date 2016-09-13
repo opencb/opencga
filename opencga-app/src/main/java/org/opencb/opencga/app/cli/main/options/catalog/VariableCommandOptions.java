@@ -153,17 +153,17 @@ public class VariableCommandOptions {
     @Parameters(commandNames = {"field-delete"}, commandDescription = "Delete one field from a variable set")
     public class FieldDeleteCommandOptions extends BaseVariableCommand {
 
-        @Parameter(names = {"--name"}, description = "Name.", required = true, arity = 0)
+        @Parameter(names = {"--name"}, description = "Name.", required = true, arity = 1)
         public String name;
     }
 
     @Parameters(commandNames = {"field-rename"}, commandDescription = "Rename the field id of a field in a variable set")
     public class FieldRenameCommandOptions extends BaseVariableCommand {
 
-        @Parameter(names = {"--oldName"}, description = "Old Name.", required = true, arity = 0)
+        @Parameter(names = {"--old-name"}, description = "Old Name.", required = true, arity = 1)
         public String oldName;
 
-        @Parameter(names = {"--newName"}, description = "New Name.", required = true, arity = 0)
+        @Parameter(names = {"--new-name"}, description = "New Name.", required = true, arity = 1)
         public String newName;
     }
 

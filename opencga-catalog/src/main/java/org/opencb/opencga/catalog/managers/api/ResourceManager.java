@@ -6,6 +6,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -60,15 +61,51 @@ public interface ResourceManager<I, R> {
     QueryResult<R> update(I id, ObjectMap parameters, QueryOptions options, String sessionId) throws CatalogException;
 
     /**
-     * Delete an specified entry from Catalog.
+     * Delete entries from Catalog.
      *
-     * @param id        Id of the object to delete
+     * @param ids       Comma separated list of ids corresponding to the objects to delete
      * @param options   Deleting options.
      * @param sessionId sessionId
-     * @return The deleted object
+     * @return A list with the deleted objects
+     * @throws CatalogException CatalogException
+     * @throws IOException IOException.
+     */
+    List<QueryResult<R>> delete(String ids, QueryOptions options, String sessionId) throws CatalogException, IOException;
+
+    /**
+     * Delete the entries satisfying the query.
+     *
+     * @param query     Query of the objects to be deleted.
+     * @param options   Deleting options.
+     * @param sessionId sessionId.
+     * @return A list with the deleted objects.
+     * @throws CatalogException CatalogException
+     * @throws IOException IOException.
+     */
+    List<QueryResult<R>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException;
+
+    /**
+     * Restore deleted entries from Catalog.
+     *
+     * @param ids       Comma separated list of ids of the objects to restore.
+     * @param options   Restore options.
+     * @param sessionId sessionId.
+     * @return A list with the restored objects.
      * @throws CatalogException CatalogException
      */
-    QueryResult<R> delete(I id, QueryOptions options, String sessionId) throws CatalogException;
+    List<QueryResult<R>> restore(String ids, QueryOptions options, String sessionId) throws CatalogException;
+
+    /**
+     * Restore the entries satisfying the query.
+     *
+     * @param query     Query of the objects to be restored.
+     * @param options   Restore options.
+     * @param sessionId sessionId.
+     * @return A list with the restored objects.
+     * @throws CatalogException CatalogException
+     */
+    List<QueryResult<R>> restore(Query query, QueryOptions options, String sessionId) throws CatalogException;
+
 
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.

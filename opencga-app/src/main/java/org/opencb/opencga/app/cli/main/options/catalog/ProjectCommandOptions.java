@@ -102,8 +102,8 @@ public class ProjectCommandOptions {
         @Parameter(names = {"-o", "--organization"}, description = "Organization", required = false, arity = 1)
         public String organization;
 
-        @Parameter(names = {"-s", "--status"}, description = "Status", required = false, arity = 1)
-        public String status;
+        //@Parameter(names = {"-s", "--status"}, description = "Status", required = false, arity = 1)
+        //public String status;
 
         @Parameter(names = {"-a", "--attributes"}, description = "Attributes", required = false, arity = 1)
         public String attributes;
