@@ -694,8 +694,32 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoAnnotationDBAdaptor
         final String[] acceptedIntParams = {QueryParams.ID.key(), QueryParams.INDIVIDUAL_ID.key()};
         filterIntParams(parameters, sampleParameters, acceptedIntParams);
 
-        final String[] acceptedMapParams = {"attributes"};
+        final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, sampleParameters, acceptedMapParams);
+
+        if (parameters.containsKey(QueryParams.NAME.key())) {
+            // That can only be done to one sample...
+            QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions());
+            if (sampleQueryResult.getNumResults() == 0) {
+                throw new CatalogDBException("Update sample: No sample found to be updated");
+            }
+            if (sampleQueryResult.getNumResults() > 1) {
+                throw new CatalogDBException("Update sample: Cannot update name parameter. More than one sample found to be updated.");
+            }
+
+            // Check that the new sample name is still unique
+            long studyId = getStudyIdBySampleId(sampleQueryResult.first().getId());
+
+            Query tmpQuery = new Query()
+                    .append(QueryParams.NAME.key(), parameters.get(QueryParams.NAME.key()))
+                    .append(QueryParams.STUDY_ID.key(), studyId);
+            QueryResult<Long> count = count(tmpQuery);
+            if (count.getResult().get(0) > 0) {
+                throw new CatalogDBException("Sample { name: '" + parameters.get(QueryParams.NAME.key()) + "'} already exists.");
+            }
+
+            sampleParameters.put(QueryParams.NAME.key(), parameters.get(QueryParams.NAME.key()));
+        }
 
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
             sampleParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
@@ -718,7 +742,10 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoAnnotationDBAdaptor
         if (update.getNumTotalResults() != 1) {
             throw new CatalogDBException("Could not update sample with id " + id);
         }
-        return endQuery("Update sample", startTime, getSample(id, null));
+        Query query = new Query()
+                .append(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_NAME.key(), "!=EMPTY");
+        return endQuery("Update sample", startTime, get(query, new QueryOptions()));
     }
 
     // TODO: Check clean
@@ -733,14 +760,16 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoAnnotationDBAdaptor
         checkSampleId(id);
         // Check the sample is active
         Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.READY);
-        if (count(query).first() == 0) {
-            query.put(QueryParams.STATUS_NAME.key(), Status.TRASHED + "," + Status.DELETED);
+        QueryOptions tmpOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.NAME.key());
+        QueryResult<Sample> sampleQueryResult = get(query, tmpOptions);
+        if (sampleQueryResult.getNumResults() == 0) {
+            query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_NAME.key());
             Sample sample = get(query, options).first();
             throw new CatalogDBException("The sample " + id + " was already " + sample.getStatus().getName());
         }
 
-        // If we don't find the force parameter, we check first if the file could be deleted.
+        // If we don't find the force parameter, we check first if the sample could be deleted.
         if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
             checkCanDelete(id);
         }
@@ -749,12 +778,15 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoAnnotationDBAdaptor
             deleteReferencesToSample(id);
         }
 
-        // Change the status of the sample to deleted
-        setStatus(id, Status.TRASHED);
+        // Update the sample
+        String suffixName = ".DELETED_" + TimeUtils.getTime();
+        ObjectMap objectMap = new ObjectMap()
+                .append(QueryParams.NAME.key(), sampleQueryResult.first().getName() + suffixName)
+                .append(QueryParams.STATUS_NAME.key(), Status.DELETED);
+        update(id, objectMap);
 
         query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_NAME.key(), Status.TRASHED);
-
+                .append(QueryParams.STATUS_NAME.key(), Status.DELETED);
         return endQuery("Delete sample", startTime, get(query, queryOptions));
     }
 

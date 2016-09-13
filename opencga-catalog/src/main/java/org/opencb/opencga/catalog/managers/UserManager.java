@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -26,9 +27,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -256,32 +259,47 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult<User> delete(String userId, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(userId, "userId");
+    public List<QueryResult<User>> delete(String userIdList, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(userIdList, "userIdList");
 
-        if (sessionId != null && !sessionId.isEmpty()) {
-            ParamUtils.checkParameter(sessionId, "sessionId");
-            checkSessionId(userId, sessionId);
-        } else {
-            if (catalogConfiguration.getAdmin().getPassword() == null || catalogConfiguration.getAdmin().getPassword().isEmpty()) {
-                throw new CatalogException("Nor the administrator password nor the session id could be found. The user could not be "
-                        + "deleted.");
+        List<String> userIds = Arrays.asList(userIdList.split(","));
+        List<QueryResult<User>> deletedUsers = new ArrayList<>(userIds.size());
+        for (String userId : userIds) {
+            if (sessionId != null && !sessionId.isEmpty()) {
+                ParamUtils.checkParameter(sessionId, "sessionId");
+                checkSessionId(userId, sessionId);
+            } else {
+                if (catalogConfiguration.getAdmin().getPassword() == null || catalogConfiguration.getAdmin().getPassword().isEmpty()) {
+                    throw new CatalogException("Nor the administrator password nor the session id could be found. The user could not be "
+                            + "deleted.");
+                }
+                authenticationManager.authenticate("admin", catalogConfiguration.getAdmin().getPassword(), true);
             }
-            authenticationManager.authenticate("admin", catalogConfiguration.getAdmin().getPassword(), true);
-        }
 
-        QueryResult<User> deletedUser = userDBAdaptor.delete(userId, options);
-//
-//        if (userIdBySessionId.equals(userId) || authorizationManager.getUserRole(userIdBySessionId).equals(User.Role.ADMIN)) {
-//            try {
-//                catalogIOManagerFactory.getDefault().deleteUser(userId);
-//            } catch (CatalogIOException e) {
-//                e.printStackTrace();
-//            }
-//        }
-//        user.setId("deleteUser");
-        auditManager.recordDeletion(AuditRecord.Resource.user, userId, userId, deletedUser.first(), null, null);
-        return deletedUser;
+            QueryResult<User> deletedUser = userDBAdaptor.delete(userId, options);
+            auditManager.recordDeletion(AuditRecord.Resource.user, userId, userId, deletedUser.first(), null, null);
+            deletedUsers.add(deletedUser);
+        }
+        return deletedUsers;
+    }
+
+    @Override
+    public List<QueryResult<User>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CatalogUserDBAdaptor.QueryParams.ID.key());
+        QueryResult<User> userQueryResult = userDBAdaptor.get(query, queryOptions);
+        List<String> userIds = userQueryResult.getResult().stream().map(User::getId).collect(Collectors.toList());
+        String userIdStr = StringUtils.join(userIds, ",");
+        return delete(userIdStr, options, sessionId);
+    }
+
+    @Override
+    public List<QueryResult<User>> restore(String ids, QueryOptions options, String sessionId) throws CatalogException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<QueryResult<User>> restore(Query query, QueryOptions options, String sessionId) throws CatalogException {
+        throw new UnsupportedOperationException();
     }
 
     @Override

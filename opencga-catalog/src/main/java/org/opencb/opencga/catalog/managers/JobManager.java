@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -19,7 +20,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IJobManager;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.managers.api.IUserManager;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Group;
+import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
@@ -28,6 +33,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
@@ -40,6 +46,9 @@ import java.util.stream.Collectors;
 public class JobManager extends AbstractManager implements IJobManager {
 
     protected static Logger logger = LoggerFactory.getLogger(JobManager.class);
+    private IUserManager userManager;
+
+    public static final String DELETE_FILES = "deleteFiles";
 
     public JobManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager, AuditManager auditManager,
                       CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
@@ -52,6 +61,7 @@ public class JobManager extends AbstractManager implements IJobManager {
                       CatalogIOManagerFactory ioManagerFactory, CatalogConfiguration catalogConfiguration) {
         super(authorizationManager, authenticationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
                 catalogConfiguration);
+        this.userManager = catalogManager.getUserManager();
     }
 
     @Deprecated
@@ -345,24 +355,70 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public QueryResult<Job> delete(Long jobId, QueryOptions options, String sessionId) throws CatalogException {
+    public List<QueryResult<Job>> delete(String jobIdStr, QueryOptions options, String sessionId) throws CatalogException, IOException {
+        ParamUtils.checkParameter(jobIdStr, "id");
         ParamUtils.checkParameter(sessionId, "sessionId");
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.DELETE);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        QueryResult<Job> queryResult = jobDBAdaptor.delete(jobId, new QueryOptions());
-        // Delete the output files of the job if they are not in use.
-        // TODO: Add an if clause to do this only when the user does not want to keep the output files.
-        // 2. Check the output files that were created with the deleted jobs.
-        Query query = new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), queryResult.first().getOutput());
-        try {
-            fileDBAdaptor.delete(query, new QueryOptions());
-        } catch (CatalogDBException e) {
-            logger.info("Delete job { Job: " + queryResult.first() + " }:" + e.getMessage());
+        boolean deleteFiles = options.getBoolean(DELETE_FILES);
+        options.remove(DELETE_FILES);
+
+        String userId = userManager.getUserId(sessionId);
+        List<Long> jobIds = getJobIds(userId, jobIdStr);
+
+        List<QueryResult<Job>> queryResultList = new ArrayList<>(jobIds.size());
+        for (Long jobId : jobIds) {
+            QueryResult<Job> queryResult = null;
+            try {
+                authorizationManager.checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.DELETE);
+                queryResult = jobDBAdaptor.delete(jobId, options);
+                auditManager.recordDeletion(AuditRecord.Resource.job, jobId, userId, queryResult.first(), null, null);
+            } catch (CatalogAuthorizationException e) {
+                auditManager.recordAction(AuditRecord.Resource.job, AuditRecord.Action.delete, AuditRecord.Magnitude.high,
+                        jobId, userId, null, null, e.getMessage(), null);
+                queryResult = new QueryResult<>("Delete job " + jobId);
+                queryResult.setErrorMsg(e.getMessage());
+            } catch (CatalogException e) {
+                e.printStackTrace();
+                queryResult = new QueryResult<>("Delete job " + jobId);
+                queryResult.setErrorMsg(e.getMessage());
+            } finally {
+                queryResultList.add(queryResult);
+            }
+
+            // Delete the output files of the job if they are not in use.
+            // 2. Check the output files that were created with the deleted jobs.
+            if (deleteFiles) {
+                Query query = new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), queryResult.first().getOutput());
+                try {
+                    catalogManager.getFileManager().delete(query, new QueryOptions(), sessionId);
+                } catch (CatalogDBException e) {
+                    logger.info("Error deleting files from job { Job: " + queryResult.first() + " }:" + e.getMessage());
+                }
+            }
+
         }
 
-        auditManager.recordDeletion(AuditRecord.Resource.job, jobId, userId, queryResult.first(), null, null);
-        return queryResult;
+        return queryResultList;
+    }
+
+    @Override
+    public List<QueryResult<Job>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CatalogJobDBAdaptor.QueryParams.ID.key());
+        QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, queryOptions);
+        List<Long> jobIds = jobQueryResult.getResult().stream().map(Job::getId).collect(Collectors.toList());
+        String jobStr = StringUtils.join(jobIds, ",");
+        return delete(jobStr, options, sessionId);
+    }
+
+    @Override
+    public List<QueryResult<Job>> restore(String ids, QueryOptions options, String sessionId) throws CatalogException {
+        throw new NotImplementedException("Cannot restore jobs. Restore job not implemented.");
+    }
+
+    @Override
+    public List<QueryResult<Job>> restore(Query query, QueryOptions options, String sessionId) throws CatalogException {
+        throw new NotImplementedException("Cannot restore jobs. Restore job not implemented.");
     }
 
     @Override

@@ -290,15 +290,21 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{sampleId}/delete")
     @ApiOperation(value = "Delete a sample", position = 9)
-    public Response delete(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr) {
+    public Response delete(@ApiParam(value = "Comma separated list of sample ids", required = true) @PathParam("sampleId") String sampleStr) {
         try {
-            // FIXME: The id resolution should not go here
-            long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
-            QueryResult<Sample> queryResult = catalogManager.deleteSample(sampleId, queryOptions, sessionId);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
+            List<QueryResult<Sample>> delete = catalogManager.getSampleManager().delete(sampleStr, queryOptions, sessionId);
+            return createOkResponse(delete);
+        } catch (CatalogException | IOException e) {
             return createErrorResponse(e);
         }
+//        try {
+//            // FIXME: The id resolution should not go here
+//            long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
+//            QueryResult<Sample> queryResult = catalogManager.deleteSample(sampleId, queryOptions, sessionId);
+//            return createOkResponse(queryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
     }
 
     @GET

@@ -1198,7 +1198,7 @@ public class FileWSServer extends OpenCGAWSServer {
             QueryOptions qOptions = new QueryOptions(queryOptions)
                     .append(FileManager.DELETE_EXTERNAL_FILES, deleteExternal)
                     .append(FileManager.SKIP_TRASH, skipTrash);
-            QueryResult result = catalogManager.delete(convertPath(fileIdStr), qOptions, sessionId);
+            List<QueryResult<File>> result = catalogManager.getFileManager().delete(convertPath(fileIdStr), qOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -191,17 +191,17 @@ public class CatalogManager implements AutoCloseable {
                 catalogIOManagerFactory, catalogConfiguration);
         fileManager = new FileManager(authorizationManager, authenticationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
-        studyManager = new StudyManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+        studyManager = new StudyManager(authorizationManager, authenticationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
-        projectManager = new ProjectManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+        projectManager = new ProjectManager(authorizationManager, authenticationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
         jobManager = new JobManager(authorizationManager, authenticationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, this.catalogConfiguration);
-        sampleManager = new SampleManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+        sampleManager = new SampleManager(authorizationManager, authenticationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
-        individualManager = new IndividualManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+        individualManager = new IndividualManager(authorizationManager, authenticationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
-        cohortManager = new CohortManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+        cohortManager = new CohortManager(authorizationManager, authenticationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
     }
 
@@ -525,10 +525,6 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<User> modifyUser(String userId, ObjectMap parameters, String sessionId)
             throws CatalogException {
         return userManager.update(userId, parameters, null, sessionId);  //TODO: Add query options
-    }
-
-    public QueryResult<User> deleteUser(String userId, QueryOptions queryOptions, String sessionId) throws CatalogException {
-        return userManager.delete(userId, queryOptions, sessionId);
     }
 
     /*
@@ -872,12 +868,6 @@ public class CatalogManager implements AutoCloseable {
         return fileManager.createFolder(studyId, folderPath.toString(), status, parents, description, options, sessionId);
     }
 
-    public QueryResult delete(String fileIdStr, QueryOptions queryOptions, String sessionId) throws CatalogException, IOException {
-        return fileManager.delete(fileIdStr, queryOptions, sessionId);
-    }
-
-
-
     @Deprecated
     public QueryResult moveFile(long fileId, String newPath, QueryOptions options, String sessionId) throws CatalogException {
         return fileManager.move(fileId, newPath, options, sessionId);
@@ -1132,11 +1122,6 @@ public class CatalogManager implements AutoCloseable {
         return jobManager.visit(jobId, sessionId);
     }
 
-    public QueryResult deleteJob(long jobId, String sessionId) throws CatalogException {
-        return jobManager.delete(jobId, null, sessionId);
-    }
-
-
     public QueryResult<Job> getJob(long jobId, QueryOptions options, String sessionId) throws CatalogException {
         return jobManager.read(jobId, options, sessionId);
     }
@@ -1262,10 +1247,6 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<Individual> modifyIndividual(long individualId, QueryOptions options, String sessionId) throws CatalogException {
         return individualManager.update(individualId, options, options, sessionId);
-    }
-
-    public QueryResult<Individual> deleteIndividual(long individualId, QueryOptions options, String sessionId) throws CatalogException {
-        return individualManager.delete(individualId, options, sessionId);
     }
 
 //    @Deprecated
@@ -1534,8 +1515,10 @@ public class CatalogManager implements AutoCloseable {
         return individualManager.deleteAnnotation(individualId, annotationId, sessionId);
     }
 
+    @Deprecated
     public QueryResult<Sample> deleteSample(long sampleId, QueryOptions options, String sessionId) throws CatalogException {
-        return sampleManager.delete(sampleId, options, sessionId);
+        return null;
+//        return sampleManager.delete(sampleId, options, sessionId);
     }
 
     public QueryResult individualGroupBy(Query query, QueryOptions qOptions, String fields, String sessionId) throws CatalogException {
@@ -1616,10 +1599,6 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<Cohort> modifyCohort(long cohortId, ObjectMap updateParams, QueryOptions options, String sessionId)
             throws CatalogException {
         return cohortManager.update(cohortId, updateParams, options, sessionId);
-    }
-
-    public QueryResult<Cohort> deleteCohort(long cohortId, QueryOptions options, String sessionId) throws CatalogException {
-        return cohortManager.delete(cohortId, options, sessionId);
     }
 
     public List<QueryResult<CohortAclEntry>> getAllCohortAcls(String cohortIdsStr, String sessionId) throws CatalogException {

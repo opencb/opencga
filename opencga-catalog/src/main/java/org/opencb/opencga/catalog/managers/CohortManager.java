@@ -17,6 +17,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.ICohortManager;
+import org.opencb.opencga.catalog.managers.api.IUserManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
@@ -27,10 +28,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -39,11 +38,14 @@ import java.util.stream.Collectors;
 public class CohortManager extends AbstractManager implements ICohortManager {
 
     protected static Logger logger = LoggerFactory.getLogger(CohortManager.class);
+    private IUserManager userManager;
 
     public CohortManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager, AuditManager auditManager,
-                         CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                         CatalogConfiguration catalogConfiguration) {
-        super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogConfiguration);
+                         CatalogManager catalogManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory,
+                         CatalogIOManagerFactory ioManagerFactory, CatalogConfiguration catalogConfiguration) {
+        super(authorizationManager, authenticationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
+                catalogConfiguration);
+        this.userManager = catalogManager.getUserManager();
     }
 
     @Override
@@ -181,13 +183,88 @@ public class CohortManager extends AbstractManager implements ICohortManager {
     }
 
     @Override
-    public QueryResult<Cohort> delete(Long cohortId, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.DELETE);
+    public List<QueryResult<Cohort>> delete(String cohortIdStr, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(cohortIdStr, "id");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        QueryResult<Cohort> queryResult = cohortDBAdaptor.deleteCohort(cohortId, options);
-        auditManager.recordDeletion(AuditRecord.Resource.cohort, cohortId, userId, queryResult.first(), null, null);
-        return queryResult;
+        String userId = userManager.getUserId(sessionId);
+        List<Long> cohortIds = getCohortIds(userId, cohortIdStr);
+
+        List<QueryResult<Cohort>> queryResultList = new ArrayList<>(cohortIds.size());
+        for (Long cohortId : cohortIds) {
+            QueryResult<Cohort> queryResult = null;
+            try {
+                authorizationManager.checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.DELETE);
+                queryResult = cohortDBAdaptor.deleteCohort(cohortId, options);
+                auditManager.recordDeletion(AuditRecord.Resource.cohort, cohortId, userId, queryResult.first(), null, null);
+            } catch (CatalogAuthorizationException e) {
+                auditManager.recordAction(AuditRecord.Resource.cohort, AuditRecord.Action.delete, AuditRecord.Magnitude.high, cohortId,
+                        userId, null, null, e.getMessage(), null);
+                queryResult = new QueryResult<>("Delete cohort " + cohortId);
+                queryResult.setErrorMsg(e.getMessage());
+            } catch (CatalogException e) {
+                e.printStackTrace();
+                queryResult = new QueryResult<>("Delete cohort " + cohortId);
+                queryResult.setErrorMsg(e.getMessage());
+            } finally {
+                queryResultList.add(queryResult);
+            }
+        }
+
+        return queryResultList;
+    }
+
+    @Override
+    public List<QueryResult<Cohort>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CatalogCohortDBAdaptor.QueryParams.ID.key());
+        QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(query, queryOptions);
+        List<Long> cohortIds = cohortQueryResult.getResult().stream().map(Cohort::getId).collect(Collectors.toList());
+        String cohortIdStr = StringUtils.join(cohortIds, ",");
+        return delete(cohortIdStr, options, sessionId);
+    }
+
+    @Override
+    public List<QueryResult<Cohort>> restore(String cohortIdStr, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(cohortIdStr, "id");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        String userId = userManager.getUserId(sessionId);
+        List<Long> cohortIds = getCohortIds(userId, cohortIdStr);
+
+        List<QueryResult<Cohort>> queryResultList = new ArrayList<>(cohortIds.size());
+        for (Long cohortId : cohortIds) {
+            QueryResult<Cohort> queryResult = null;
+            try {
+            authorizationManager.checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.DELETE);
+            queryResult = cohortDBAdaptor.restore(cohortId, options);
+            auditManager.recordAction(AuditRecord.Resource.cohort, AuditRecord.Action.restore, AuditRecord.Magnitude.medium, cohortId,
+                    userId, Status.DELETED, Cohort.CohortStatus.INVALID, "Cohort restore", new ObjectMap());
+            } catch (CatalogAuthorizationException e) {
+                auditManager.recordAction(AuditRecord.Resource.cohort, AuditRecord.Action.restore, AuditRecord.Magnitude.high, cohortId,
+                        userId, null, null, e.getMessage(), null);
+                queryResult = new QueryResult<>("Restore cohort " + cohortId);
+                queryResult.setErrorMsg(e.getMessage());
+            } catch (CatalogException e) {
+                e.printStackTrace();
+                queryResult = new QueryResult<>("Restore cohort " + cohortId);
+                queryResult.setErrorMsg(e.getMessage());
+            } finally {
+                queryResultList.add(queryResult);
+            }
+        }
+
+        return queryResultList;
+    }
+
+    @Override
+    public List<QueryResult<Cohort>> restore(Query query, QueryOptions options, String sessionId) throws CatalogException {
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CatalogCohortDBAdaptor.QueryParams.ID.key());
+        QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(query, queryOptions);
+        List<Long> cohortIds = cohortQueryResult.getResult().stream().map(Cohort::getId).collect(Collectors.toList());
+        String cohortIdStr = StringUtils.join(cohortIds, ",");
+        return restore(cohortIdStr, options, sessionId);
     }
 
     @Override

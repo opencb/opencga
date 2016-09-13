@@ -17,11 +17,13 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.exception.VersionException;
@@ -308,21 +310,27 @@ public class JobWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{jobId}/delete")
+    @Path("/{jobIds}/delete")
     @ApiOperation(value = "Delete job", position = 4)
-    public Response delete(@ApiParam(value = "jobId", required = true) @PathParam("jobId") long jobId,
+    public Response delete(@ApiParam(value = "Comma separated list of job ids", required = true) @PathParam("jobIds") String jobIds,
                            @ApiParam(value = "deleteFiles", required = false) @DefaultValue("true") @QueryParam("deleteFiles") boolean deleteFiles) {
         try {
-            List<QueryResult> results = new LinkedList<>();
-            if (deleteFiles) {
-                QueryResult<Job> jobQueryResult = catalogManager.getJob(jobId, null, sessionId);
-                for (Long fileId : jobQueryResult.getResult().get(0).getOutput()) {
-                    QueryResult queryResult = catalogManager.delete(Long.toString(fileId), queryOptions, sessionId);
-                    results.add(queryResult);
-                }
-            }
-            results.add(catalogManager.deleteJob(jobId, sessionId));
-            return createOkResponse(results);
+            QueryOptions options = new QueryOptions(JobManager.DELETE_FILES, deleteFiles);
+            List<QueryResult<Job>> delete = catalogManager.getJobManager().delete(jobIds, options, sessionId);
+            return createOkResponse(delete);
+//            List<QueryResult> results = new LinkedList<>();
+//            if (deleteFiles) {
+//                QueryResult<Job> jobQueryResult = catalogManager.getJob(jobId, null, sessionId);
+//                List<Long> output = jobQueryResult.getResult().get(0).getOutput();
+//                String filesToDelete = StringUtils.join(output, ",");
+//                results.addAll(catalogManager.getFileManager().delete(filesToDelete, queryOptions, sessionId));
+////                for (Long fileId : jobQueryResult.getResult().get(0).getOutput()) {
+////                    QueryResult queryResult = catalogManager.delete(Long.toString(fileId), queryOptions, sessionId);
+////                    results.add(queryResult);
+////                }
+//            }
+//            results.add(catalogManager.deleteJob(jobId, sessionId));
+//            return createOkResponse(results);
         } catch (CatalogException | IOException e) {
             return createErrorResponse(e);
         }

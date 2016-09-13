@@ -350,11 +350,11 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
         assertEquals(3, groupByBioformat.size());
 
-        assertEquals(5, ((Document) groupByBioformat.get(0).get("_id")).size()); // None - File
-        assertEquals(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt"), groupByBioformat.get(0).get("features"));
+        assertEquals(5, ((Document) groupByBioformat.get(0).get("_id")).size()); // Alignment - File
+        assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(0).get("features"));
 
-        assertEquals(5, ((Document) groupByBioformat.get(1).get("_id")).size()); // Alignment - File
-        assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(1).get("features"));
+        assertEquals(5, ((Document) groupByBioformat.get(1).get("_id")).size()); // None - File
+        assertEquals(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt"), groupByBioformat.get(1).get("features"));
 
         assertEquals(5, ((Document) groupByBioformat.get(2).get("_id")).size()); // None - Folder
         assertEquals(Arrays.asList("data/"), groupByBioformat.get(2).get("features"));

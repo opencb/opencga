@@ -343,11 +343,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{individualId}/delete")
+    @Path("/{individualIds}/delete")
     @ApiOperation(value = "Delete individual information", position = 7)
-    public Response deleteIndividual(@ApiParam(value = "individualId", required = true) @PathParam("individualId") long individualId) {
+    public Response deleteIndividual(@ApiParam(value = "Comma separated list of individual ids", required = true) @PathParam("individualIds") String individualIds) {
         try {
-            QueryResult<Individual> queryResult = catalogManager.deleteIndividual(individualId, queryOptions, sessionId);
+            List<QueryResult<Individual>> queryResult = catalogManager.getIndividualManager().delete(individualIds, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

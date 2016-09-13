@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -245,10 +246,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                         variantStorage.calculateStats(outdirId, cohortIds, sessionId, new QueryOptions(queryOptions));
                 return createOkResponse(jobQueryResult);
             } else if (delete) {
-                List<QueryResult<Cohort>> results = new LinkedList<>();
-                for (Long cohortId : cohortIds) {
-                    results.add(catalogManager.deleteCohort(cohortId, queryOptions, sessionId));
-                }
+                List<QueryResult<Cohort>> results = catalogManager.getCohortManager().delete(cohortIdsCsv, queryOptions, sessionId);
                 return createOkResponse(results);
             } else {
                 long studyId = catalogManager.getStudyIdByCohortId(cohortIds.get(0));
@@ -266,9 +264,10 @@ public class CohortWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Delete cohort.", position = 5)
     public Response deleteCohort(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortStr) {
         try {
-            long cohortId = catalogManager.getCohortId(cohortStr, sessionId);
-            return createOkResponse(catalogManager.deleteCohort(cohortId, queryOptions, sessionId));
-        } catch (Exception e) {
+//            long cohortId = catalogManager.getCohortId(cohortStr, sessionId);
+            List<QueryResult<Cohort>> delete = catalogManager.getCohortManager().delete(cohortStr, queryOptions, sessionId);
+            return createOkResponse(delete);
+        } catch (CatalogException | IOException e) {
             return createErrorResponse(e);
         }
     }
