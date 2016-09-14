@@ -70,11 +70,15 @@ public class StudyClient extends AbstractParentClient<Study, StudyAclEntry> {
             if (params.get("method").equals("GET")) {
                 params = addParamsToObjectMap(params, "projectId", projectId, "name", studyName, "alias", studyAlias);
                 return execute(STUDY_URL, "create", params, GET, Study.class);
+            } else {
+                params.remove("method");
             }
         }
         params = addParamsToObjectMap(params, "name", studyName, "alias", studyAlias);
         ObjectMapper mapper = new ObjectMapper();
         String json = "[" + mapper.writeValueAsString(params) + "]";
+        //String json = mapper.writeValueAsString(params);
+        System.out.println("Json: " + json);
         ObjectMap p = new ObjectMap("body", json);
         p = addParamsToObjectMap(p, "projectId", projectId);
         return execute(STUDY_URL, "create", p, POST, Study.class);
@@ -83,13 +87,16 @@ public class StudyClient extends AbstractParentClient<Study, StudyAclEntry> {
     public QueryResponse<Study> search(Query query, QueryOptions options) throws IOException {
         ObjectMap myQuery = new ObjectMap(query);
         myQuery.putAll(options);
-        if (options.containsKey("method")) {
-            if (options.get("method").equals("GET")) {
+        if (myQuery.containsKey("method")) {
+            if (myQuery.get("method").equals("GET")) {
                 return execute(category, "search", myQuery, GET, clazz);
+            } else {
+                query.remove("method");
             }
         }
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(query);
+        System.out.println("Json: " + json);
         ObjectMap p = new ObjectMap("body", json);
         p.putAll(options);
         return execute(category, "search", p, POST, clazz);
@@ -138,21 +145,17 @@ public class StudyClient extends AbstractParentClient<Study, StudyAclEntry> {
     public QueryResponse<ObjectMap> createGroup(String studyId, String groupId, String users, QueryOptions options)
             throws CatalogException, IOException {
         ObjectMap params = new ObjectMap(options);
-        params = addParamsToObjectMap(params, "groupId", groupId, "addUsers", users);
-        return execute(STUDY_URL, studyId, "groups", params, GET, ObjectMap.class);
+        params = addParamsToObjectMap(params, "groupId", groupId, "users", users);
+        return execute(STUDY_URL, studyId, "groups", null, "create", params, GET, ObjectMap.class);
     }
 
     public QueryResponse<ObjectMap> deleteGroup(String studyId, String groupId, QueryOptions options)
             throws CatalogException, IOException {
-        ObjectMap params = new ObjectMap(options);
-        params = addParamsToObjectMap(params, "groupId", groupId);
-        return execute(STUDY_URL, studyId, "groups", params, GET, ObjectMap.class);
+        return execute(STUDY_URL, studyId, "groups", groupId, "delete", options, GET, ObjectMap.class);
     }
 
     public QueryResponse<ObjectMap> updateGroup(String studyId, String groupId, ObjectMap objectMap) throws CatalogException, IOException {
-        ObjectMap params = new ObjectMap(objectMap);
-        params = addParamsToObjectMap(params, "groupId", groupId);
-        return execute(STUDY_URL, studyId, "groups", params, GET, ObjectMap.class);
+        return execute(STUDY_URL, studyId, "groups", groupId, "update", objectMap, GET, ObjectMap.class);
     }
 
     public QueryResponse<ObjectMap> groups(String studyId, ObjectMap objectMap) throws CatalogException, IOException {
@@ -161,9 +164,7 @@ public class StudyClient extends AbstractParentClient<Study, StudyAclEntry> {
     }
 
     public QueryResponse<ObjectMap> infoGroup(String studyId,  String groupId, ObjectMap objectMap) throws CatalogException, IOException {
-        ObjectMap params = new ObjectMap(objectMap);
-        params = addParamsToObjectMap(params, "groupId", groupId);
-        return execute(STUDY_URL, studyId, "groups", params, GET, ObjectMap.class);
+        return execute(STUDY_URL, studyId, "groups", groupId, "info", objectMap, GET, ObjectMap.class);
     }
 
     public QueryResponse<Study> update(String studyId, ObjectMap params) throws CatalogException, IOException {

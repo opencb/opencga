@@ -89,7 +89,6 @@ public class UserClient extends AbstractParentClient<User, User> {
     }*/
     QueryResponse<ObjectMap> login(String user, String password) {
         QueryResponse<ObjectMap> response = null;
-        //TODO TEST
         ObjectMap p = new ObjectMap("password", password);
         ObjectMapper mapper = new ObjectMapper();
         try {

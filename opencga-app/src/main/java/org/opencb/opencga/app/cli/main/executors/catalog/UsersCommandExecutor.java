@@ -182,6 +182,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
             String session = openCGAClient.login(user, password);
             // write session file
             saveSessionFile(user, session);
+            System.out.println("You have been logged correctly");
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -192,6 +193,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
             String sessionId = usersCommandOptions.loginCommandOptions.sessionId;
             if (StringUtils.isNotEmpty(sessionId)) {
                 openCGAClient.setSessionId(sessionId);
+                System.out.println("You have been logged correctly");
             } else {
                 // load user session file
 
