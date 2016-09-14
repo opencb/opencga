@@ -42,6 +42,7 @@
         <cellbase.version>4.0.0-rc</cellbase.version>
         <java-common-libs.version>3.1.0</java-common-libs.version>
         <hpg-bigdata.version>0.5.1</hpg-bigdata.version>
+        <ga4gh.version>0.5.1.1</ga4gh.version>
         <jackson.version>2.5.4</jackson.version>
         <jersey.version>2.19</jersey.version>
     </properties>
@@ -207,6 +208,11 @@
                 <groupId>org.opencb.hpg-bigdata</groupId>
                 <artifactId>hpg-bigdata-core</artifactId>
                 <version>${hpg-bigdata.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.ga4gh</groupId>
+                <artifactId>ga4gh</artifactId>
+                <version>${ga4gh.version}</version>
             </dependency>
 
             <!-- General dependencies -->
