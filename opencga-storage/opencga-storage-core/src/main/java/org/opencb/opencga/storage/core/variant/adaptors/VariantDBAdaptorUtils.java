@@ -1,11 +1,16 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.core.Gene;
+import org.opencb.cellbase.core.api.GeneDBAdaptor;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -18,11 +23,32 @@ import java.util.stream.Collectors;
  */
 public class VariantDBAdaptorUtils {
 
-    public static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
+    public static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=?|!?=?~|==?)([^=<>~!]+.*)$");
 
     public static final String OR = ",";
     public static final String AND = ";";
     public static final String IS = ":";
+    public static final Map<String, String> PROJECT_FIELD_ALIAS;
+
+    public static final String SAMPLES_FIELD = "samples";
+    public static final String STUDIES_FIELD = "studies";
+    public static final String STATS_FIELD = "stats";
+    public static final String ANNOTATION_FIELD = "annotation";
+
+    static {
+        Map<String, String> map =  new HashMap<>();
+        map.put("studies.samplesData", SAMPLES_FIELD);
+        map.put("samplesData", SAMPLES_FIELD);
+        map.put(SAMPLES_FIELD, SAMPLES_FIELD);
+        map.put("sourceEntries", STUDIES_FIELD);
+        map.put("studies.cohortStats", STATS_FIELD);
+        map.put("studies.stats", STATS_FIELD);
+        map.put("sourceEntries.stats", STATS_FIELD);
+        map.put(STATS_FIELD, STATS_FIELD);
+        map.put(STUDIES_FIELD, STUDIES_FIELD);
+        map.put(ANNOTATION_FIELD, ANNOTATION_FIELD);
+        PROJECT_FIELD_ALIAS = Collections.unmodifiableMap(map);
+    }
 
     private VariantDBAdaptor adaptor;
 
@@ -182,6 +208,48 @@ public class VariantDBAdaptorUtils {
         return sampleId;
     }
 
+    public Set<String> getReturnedFields(QueryOptions options) {
+        Set<String> returnedFields;
+
+        List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
+        if (includeList != null && !includeList.isEmpty()) {
+//            System.out.println("includeList = " + includeList);
+            returnedFields = new HashSet<>();
+            for (String include : includeList) {
+                returnedFields.add(PROJECT_FIELD_ALIAS.get(include));
+            }
+            if (returnedFields.contains(STUDIES_FIELD)) {
+                returnedFields.add(SAMPLES_FIELD);
+                returnedFields.add(STATS_FIELD);
+            } else if (returnedFields.contains(SAMPLES_FIELD) || returnedFields.contains(STATS_FIELD)) {
+                returnedFields.add(STUDIES_FIELD);
+            }
+
+        } else {
+            List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
+            if (excludeList != null && !excludeList.isEmpty()) {
+//                System.out.println("excludeList = " + excludeList);
+                returnedFields = new HashSet<>(PROJECT_FIELD_ALIAS.values());
+                for (String exclude : excludeList) {
+                    returnedFields.remove(PROJECT_FIELD_ALIAS.get(exclude));
+                }
+            } else {
+                returnedFields = new HashSet<>(PROJECT_FIELD_ALIAS.values());
+            }
+        }
+//        System.out.println("returnedFields = " + returnedFields);
+        return returnedFields;
+    }
+
+    public List<String> getReturnedSamples(Query query, QueryOptions options) {
+        if (!getReturnedFields(options).contains(SAMPLES_FIELD)) {
+            return Collections.singletonList("none");
+        } else {
+            //Remove the studyName, if any
+            return getReturnedSamples(query);
+        }
+    }
+
     public List<String> getReturnedSamples(Query query) {
         return query.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key())
                 .stream()
@@ -214,6 +282,50 @@ public class VariantDBAdaptorUtils {
             cohortId = cohortIdNullable;
         }
         return cohortId;
+    }
+
+
+    public Set<String> getGenesByGo(List<String> goValues) {
+        System.out.println("goValues = " + goValues);
+        Set<String> genes = new HashSet<>();
+        QueryOptions params = new QueryOptions(QueryOptions.INCLUDE, "name,chromosome,start,end");
+        try {
+            List<QueryResult<Gene>> responses = adaptor.getCellBaseClient().getGeneClient().get(goValues, params)
+                    .getResponse();
+            for (QueryResult<Gene> response : responses) {
+                for (Gene gene : response.getResult()) {
+                    genes.add(gene.getName());
+                }
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return genes;
+    }
+
+    public Set<String> getGenesByExpression(List<String> expressionValues) {
+        Set<String> genes = new HashSet<>();
+        QueryOptions params = new QueryOptions(QueryOptions.INCLUDE, "name,chromosome,start,end");
+
+        // The number of results for each expression value may be huge. Query one by one
+        for (String expressionValue : expressionValues) {
+            try {
+                String[] split = expressionValue.split(":");
+                expressionValue = split[0];
+                // TODO: Add expression value {UP, DOWN}. See https://github.com/opencb/cellbase/issues/245
+                Query cellbaseQuery = new Query(GeneDBAdaptor.QueryParams.ANNOTATION_EXPRESSION_TISSUE.key(), expressionValue);
+                List<QueryResult<Gene>> responses = adaptor.getCellBaseClient().getGeneClient().search(cellbaseQuery, params)
+                        .getResponse();
+                for (QueryResult<Gene> response : responses) {
+                    for (Gene gene : response.getResult()) {
+                        genes.add(gene.getName());
+                    }
+                }
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        return genes;
     }
 
     /**

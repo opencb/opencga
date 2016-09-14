@@ -53,6 +53,7 @@ import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
@@ -225,7 +226,9 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                                 queryOptions.add("annotations", cliOptions.annotations);
                             }
 //                            VariantVcfExporter.htsExport(iterator, studyConfiguration, outputStream, queryOptions);
-                            exporter = new VariantVcfExporter(studyConfiguration, outputStream, queryOptions);
+                            long studyId = variantFetcher.getMainStudyId(query);
+                            VariantSourceDBAdaptor sourceDBAdaptor = variantFetcher.getSourceDBAdaptor((int) studyId, sessionId);
+                            exporter = new VariantVcfExporter(studyConfiguration, sourceDBAdaptor, outputStream, queryOptions);
                         } else {
                             throw new IllegalArgumentException("No study found named " + query.getAsStringList(RETURNED_STUDIES.key()).get(0));
                         }

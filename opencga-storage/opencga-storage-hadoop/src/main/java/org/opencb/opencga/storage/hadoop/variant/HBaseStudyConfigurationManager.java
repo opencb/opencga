@@ -59,7 +59,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
 
     @Override
     protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
-        logger.info("Get StudyConfiguration " + studyId + " from DB " + tableName);
+        logger.debug("Get StudyConfiguration " + studyId + " from DB " + tableName);
         return internalGetStudyConfiguration(getStudies(options).inverse().get(studyId), timeStamp, options);
     }
 
@@ -95,7 +95,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         long startTime = System.currentTimeMillis();
         String error = null;
         List<StudyConfiguration> studyConfigurationList = Collections.emptyList();
-        logger.info("Get StudyConfiguration {} from DB {}", studyName, tableName);
+        logger.debug("Get StudyConfiguration {} from DB {}", studyName, tableName);
         if (StringUtils.isEmpty(studyName)) {
             return new QueryResult<>("", (int) (System.currentTimeMillis() - startTime),
                     studyConfigurationList.size(), studyConfigurationList.size(), "", "", studyConfigurationList);
@@ -140,6 +140,8 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         updateStudiesSummary(studyConfiguration.getStudyName(), studyConfiguration.getStudyId(), options);
         byte[] columnQualifier = Bytes.toBytes(studyConfiguration.getStudyName());
 
+        studyConfiguration.getHeaders().clear(); // REMOVE: stored in Archive table
+
         try {
             getHBaseManager().act(tableName, table -> {
                 byte[] bytes = objectMapper.writeValueAsBytes(studyConfiguration);
@@ -161,25 +163,25 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         get.addColumn(genomeHelper.getColumnFamily(), studiesSummaryColumn);
         try {
             if (!getHBaseManager().act(tableName, (table, admin) -> admin.tableExists(table.getName()))) {
-                logger.info("Get StudyConfiguration summary TABLE_NO_EXISTS");
+                logger.debug("Get StudyConfiguration summary TABLE_NO_EXISTS");
                 return HashBiMap.create();
             }
             return getHBaseManager().act(tableName, table -> {
                 Result result = table.get(get);
                 if (result.isEmpty()) {
-                    logger.info("Get StudyConfiguration summary EMPTY");
+                    logger.debug("Get StudyConfiguration summary EMPTY");
                     return HashBiMap.create();
                 } else {
                     byte[] value = result.getValue(genomeHelper.getColumnFamily(), studiesSummaryColumn);
                     Map<String, Integer> map = objectMapper.readValue(value, Map.class);
-                    logger.info("Get StudyConfiguration summary {}", map);
+                    logger.debug("Get StudyConfiguration summary {}", map);
 
                     return HashBiMap.create(map);
                 }
             });
         } catch (IOException e) {
             e.printStackTrace();
-            logger.info("Get StudyConfiguration summary ERROR");
+            logger.warn("Get StudyConfiguration summary ERROR");
             return HashBiMap.create();
         }
     }
