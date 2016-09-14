@@ -53,6 +53,9 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             case "create":
                 create();
                 break;
+            case "import":
+                importUsers();
+                break;
             case "delete":
                 delete();
                 break;
@@ -63,6 +66,10 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                 logger.error("Subcommand not valid");
                 break;
         }
+
+    }
+
+    private void importUsers() {
 
     }
 

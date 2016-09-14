@@ -10,14 +10,17 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.config.AuthenticationOrigin;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.CatalogMetaDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IUserManager;
+import org.opencb.opencga.catalog.models.Account;
 import org.opencb.opencga.catalog.models.QueryFilter;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
@@ -26,10 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -126,7 +126,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         organization = organization != null ? organization : "";
         checkUserExists(id);
 
-        User user = new User(id, name, email, "", organization, new User.UserStatus());
+        User user = new User(id, name, email, "", organization, User.UserStatus.READY);
 
         if (diskQuota != null && diskQuota > 0L) {
             user.setDiskQuota(diskQuota);
@@ -175,6 +175,91 @@ public class UserManager extends AbstractManager implements IUserManager {
                 catalogIOManagerFactory.getDefault().deleteUser(user.getId());
             }
             throw e;
+        }
+    }
+
+    @Override
+    public List<QueryResult<User>> importFromExternalAuthOrigin(String authOrigin, String accountType, ObjectMap params,
+                                                                String adminPassword) throws CatalogException {
+        // Validate the admin password.
+        ParamUtils.checkParameter(adminPassword, "Admin password or session id");
+        authenticationManager.authenticate("admin", adminPassword, true);
+
+        // Obtain the authentication origin parameters
+        CatalogMetaDBAdaptor metaDBAdaptor = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor();
+        QueryResult<AuthenticationOrigin> authenticationOrigin = metaDBAdaptor.getAuthenticationOrigin(authOrigin);
+        if (authenticationOrigin.getNumResults() == 0) {
+            throw new CatalogException("The authentication origin id " + authOrigin + " does not correspond with any id in our database.");
+        }
+
+        // Check account type
+        if (accountType != null) {
+            if (!Account.FULL.equalsIgnoreCase(accountType) && !Account.GUEST.equalsIgnoreCase(accountType)) {
+                throw new CatalogException("The account type specified does not correspond with any of the valid ones. Valid account types:"
+                        + Account.FULL + " and " + Account.GUEST);
+            }
+        }
+
+        String type;
+        if (Account.GUEST.equalsIgnoreCase(accountType)) {
+            type = Account.GUEST;
+        } else {
+            type = Account.FULL;
+        }
+
+
+        // Obtain the users from LDAP
+
+        QueryOptions queryOptions = new QueryOptions();
+        List<QueryResult<User>> resultList = new LinkedList();
+
+        // FOR ALL USERS...
+        // Check if the user already exists in catalog
+        String userId = null;
+        if (userDBAdaptor.userExists(userId)) {
+            resultList.add(new QueryResult<>(userId, -1, 0, 0, "", "User " + userId + " already exists", Collections.emptyList()));
+            // If the account of the user is the same, check the groups
+//            continue;
+        }
+
+        // Create the users in catalog
+        Account account = new Account().setType(type).setAuthOrigin(authenticationOrigin.first().getId());
+
+        if (params.get("expirationDate") != null) {
+//            account.setExpirationDate(...);
+        }
+
+        User user = new User(userId, userId, "", "", "organization", account, User.UserStatus.READY, "", -1, -1, new ArrayList<>(),
+                new ArrayList<>(), new ArrayList<>(), new HashMap<>(), new HashMap<>());
+
+        QueryResult<User> userQueryResult = userDBAdaptor.insertUser(user, queryOptions);
+        userQueryResult.setId(userId);
+
+        resultList.add(userQueryResult);
+// Check the groups
+
+        return resultList;
+    }
+
+    private void checkGroupsFromExternalUser(String userId, List<String> groupIds, List<String> studyIds) throws CatalogException {
+        for (String studyStr : studyIds) {
+            long studyId = catalogManager.getStudyManager().getStudyId(userId, studyStr);
+            if (studyId < 1) {
+                throw new CatalogException("Study " + studyStr + " not found.");
+            }
+
+            // TODO: What do we do with admin session id when logging in? We will need to update the groups.
+            //catalogManager.getSessionManager().createToken("admin", "private")
+            for (String groupId : groupIds) {
+//                try {
+//                    catalogManager.getStudyManager().updateGroup(Long.toString(studyId), groupId, userId, null, null, )
+//                } catch (CatalogDBException e) {
+//                    // The user already belonged to the group.
+//                } catch (CatalogException e) {
+//                    // The group does not exist.
+//                }
+            }
+
         }
     }
 
@@ -344,21 +429,29 @@ public class UserManager extends AbstractManager implements IUserManager {
 
     }
 
-    @Deprecated
     @Override
     public QueryResult<ObjectMap> login(String userId, String password, String sessionIp) throws CatalogException, IOException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(password, "password");
         ParamUtils.checkParameter(sessionIp, "sessionIp");
 
+        QueryResult<User> user = userDBAdaptor.getUser(userId, new QueryOptions(), "");
+        if (user.getNumResults() == 0) {
+            throw new CatalogException("The user id " + userId + " does not exist.");
+        }
+
+        // Check that the authentication id is valid
+        String authId = user.first().getAccount().getAuthOrigin();
+        // Obtain authentication manager from the map ...
+//        QueryResult<AuthenticationOrigin> authOrigin = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().getAuthenticationOrigin(authId);
+//        if (authOrigin.getNumResults() == 0) {
+//            throw new CatalogException("Authentication id " + authId + " not found.");
+//        }
+
+
+
         authenticationManager.authenticate(userId, password, true);
-
-        Session session = new Session(sessionIp, 20);
-
-        // FIXME This should code above
-        return userDBAdaptor.login(userId, (password.length() != 40)
-                ? CatalogAuthenticationManager.cypherPassword(password)
-                : password, session);
+        return catalogManager.getSessionManager().createToken(userId, sessionIp);
     }
 
     @Override

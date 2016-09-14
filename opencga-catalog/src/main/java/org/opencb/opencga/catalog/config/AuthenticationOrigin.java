@@ -5,7 +5,7 @@ import java.util.Map;
 /**
  * Created by pfurio on 02/09/16.
  */
-public class Auth {
+public class AuthenticationOrigin {
 
     private String id;
     private String mode;
@@ -13,10 +13,10 @@ public class Auth {
     private String port;
     private Map<String, Object> options;
 
-    public Auth() {
+    public AuthenticationOrigin() {
     }
 
-    public Auth(String id, String mode, String host, String port, Map<String, Object> options) {
+    public AuthenticationOrigin(String id, String mode, String host, String port, Map<String, Object> options) {
         this.id = id;
         this.mode = mode;
         this.host = host;
@@ -40,7 +40,7 @@ public class Auth {
         return id;
     }
 
-    public Auth setId(String id) {
+    public AuthenticationOrigin setId(String id) {
         this.id = id;
         return this;
     }
@@ -49,7 +49,7 @@ public class Auth {
         return mode;
     }
 
-    public Auth setMode(String mode) {
+    public AuthenticationOrigin setMode(String mode) {
         this.mode = mode;
         return this;
     }
@@ -58,7 +58,7 @@ public class Auth {
         return host;
     }
 
-    public Auth setHost(String host) {
+    public AuthenticationOrigin setHost(String host) {
         this.host = host;
         return this;
     }
@@ -67,7 +67,7 @@ public class Auth {
         return port;
     }
 
-    public Auth setPort(String port) {
+    public AuthenticationOrigin setPort(String port) {
         this.port = port;
         return this;
     }
@@ -76,7 +76,7 @@ public class Auth {
         return options;
     }
 
-    public Auth setOptions(Map<String, Object> options) {
+    public AuthenticationOrigin setOptions(Map<String, Object> options) {
         this.options = options;
         return this;
     }

@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.config.Admin;
+import org.opencb.opencga.catalog.config.AuthenticationOrigin;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogMetaDBAdaptor;
@@ -191,6 +192,13 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor implements 
         adminDocument.put("sessions", new ArrayList<>());
         metadataObject.put("admin", adminDocument);
 
+        // Authentication origins
+        List<Document> authenticationOriginList = new ArrayList<>(catalogConfiguration.getAuthenticationOrigin().size());
+        for (AuthenticationOrigin authenticationOrigin : catalogConfiguration.getAuthenticationOrigin()) {
+            authenticationOriginList.add(getMongoDBDocument(authenticationOrigin, "AuthenticationOrigin"));
+        }
+        metadataObject.put("authenticationOrigins", authenticationOriginList);
+
         List<StudyAclEntry> acls = catalogConfiguration.getAcl();
         List<Document> aclList = new ArrayList<>(acls.size());
         for (StudyAclEntry acl : acls) {
@@ -266,5 +274,22 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor implements 
             result = parseObject(((Document) aggregate.getResult().get(0).get("acl")), StudyAclEntry.class);
         }
         return endQuery("get daemon Acl", startTime, Arrays.asList(result));
+    }
+
+    @Override
+    public QueryResult<AuthenticationOrigin> getAuthenticationOrigin(String authId) throws CatalogDBException {
+        long startTime = startQuery();
+
+        Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, "METADATA"));
+        Bson unwind = Aggregates.unwind("$authenticationOrigins");
+        Bson match2 = Aggregates.match(Filters.in("authenticationOrigins.id", authId));
+        Bson project = Aggregates.project(Projections.include("authenticationOrigins"));
+
+        QueryResult<Document> aggregate = metaCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
+        AuthenticationOrigin result = null;
+        if (aggregate.getNumResults() == 1) {
+            result = parseObject(((Document) aggregate.getResult().get(0).get("authenticationOrigins")), AuthenticationOrigin.class);
+        }
+        return endQuery("get authenticationOrigin", startTime, Arrays.asList(result));
     }
 }

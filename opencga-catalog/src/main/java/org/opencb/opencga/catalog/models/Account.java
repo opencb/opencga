@@ -1,5 +1,9 @@
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.core.common.TimeUtils;
+
+import java.util.Calendar;
+
 /**
  * Created by pfurio on 02/09/16.
  */
@@ -9,27 +13,38 @@ public class Account {
     public static final String FULL = "full";
 
     private String type;
-    private String expirationDate;
     private String creationDate;
-    private String authMode;
+    private String expirationDate;
+    private String authOrigin;
 
     public Account() {
+        String creationDate = TimeUtils.getTime();
+
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(TimeUtils.toDate(creationDate));
+        cal.add(Calendar.YEAR, +1);
+        String expirationDate = TimeUtils.getTime(cal.getTime());
+
+        this.type = FULL;
+        this.creationDate = creationDate;
+        this.expirationDate = expirationDate;
+        this.authOrigin = "catalog";
     }
 
-    public Account(String type, String expirationDate, String creationDate, String authMode) {
+    public Account(String type, String creationDate, String expirationDate, String authOrigin) {
         this.type = type;
         this.expirationDate = expirationDate;
         this.creationDate = creationDate;
-        this.authMode = authMode;
+        this.authOrigin = authOrigin;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Account{");
         sb.append("type='").append(type).append('\'');
-        sb.append(", expirationDate='").append(expirationDate).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
-        sb.append(", authMode='").append(authMode).append('\'');
+        sb.append(", expirationDate='").append(expirationDate).append('\'');
+        sb.append(", authOrigin='").append(authOrigin).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -61,12 +76,12 @@ public class Account {
         return this;
     }
 
-    public String getAuthMode() {
-        return authMode;
+    public String getAuthOrigin() {
+        return authOrigin;
     }
 
-    public Account setAuthMode(String authMode) {
-        this.authMode = authMode;
+    public Account setAuthOrigin(String authOrigin) {
+        this.authOrigin = authOrigin;
         return this;
     }
 }

@@ -6,6 +6,7 @@ package org.opencb.opencga.catalog.db.api;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.config.AuthenticationOrigin;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
@@ -23,5 +24,7 @@ public interface CatalogMetaDBAdaptor {
     boolean checkValidAdminSession(String id);
 
     QueryResult<StudyAclEntry> getDaemonAcl(List<String> members) throws CatalogDBException;
+
+    QueryResult<AuthenticationOrigin> getAuthenticationOrigin(String authId) throws CatalogDBException;
 
 }

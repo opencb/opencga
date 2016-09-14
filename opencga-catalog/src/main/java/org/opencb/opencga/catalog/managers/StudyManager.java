@@ -712,7 +712,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     @Override
     public QueryResult<Group> updateGroup(String studyStr, String groupId, @Nullable String addUsers, @Nullable String removeUsers,
                                           @Nullable String setUsers, String sessionId) throws CatalogException {
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
         long studyId = getStudyId(userId, studyStr);
         studyDBAdaptor.checkStudyId(studyId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);

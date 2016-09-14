@@ -4,10 +4,12 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.QueryFilter;
 import org.opencb.opencga.catalog.models.User;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -41,6 +43,18 @@ public interface IUserManager extends ResourceManager<String, User> {
                              QueryOptions options, String adminPassword) throws CatalogException;
 
     /**
+     * This method can only be run by the admin user. It will import users from other authentication origins such as LDAP, Kerberos, etc
+     * into catalog.
+     *
+     * @param authOrigin Id present in the catalog configuration of the authentication origin.
+     * @param accountType Type of the account to be created for the imported users (guest, full).
+     * @param params Object map containing other parameters that are useful to import users.
+     * @param adminPassword Admin password.
+     * @return A list of users that have been imported.
+     */
+    List<QueryResult<User>> importFromExternalAuthOrigin(String authOrigin, String accountType, ObjectMap params, String adminPassword) throws CatalogException;
+
+    /**
      * Gets the user information.
      *
      * @param userId       User id
@@ -54,7 +68,6 @@ public interface IUserManager extends ResourceManager<String, User> {
 
     void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException;
 
-    @Deprecated
     QueryResult<ObjectMap> login(String userId, String password, String sessionIp) throws CatalogException, IOException;
 
     /**

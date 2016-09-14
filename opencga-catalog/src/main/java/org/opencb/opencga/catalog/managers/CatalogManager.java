@@ -142,7 +142,7 @@ public class CatalogManager implements AutoCloseable {
 
         if (!catalogDBAdaptorFactory.isCatalogDBReady()) {
             catalogDBAdaptorFactory.initializeCatalogDB(new Admin());
-            User admin = new User("admin", "admin", "admin@email.com", "", "openCB", new User.UserStatus());
+            User admin = new User("admin", "admin", "admin@email.com", "", "openCB", User.UserStatus.READY);
             catalogDBAdaptorFactory.getCatalogUserDBAdaptor().insertUser(admin, null);
             authenticationManager.newPassword("admin", "admin");
         }
@@ -470,12 +470,7 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<ObjectMap> login(String userId, String password, String sessionIp) throws CatalogException, IOException {
-        ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(password, "password");
-        ParamUtils.checkParameter(sessionIp, "sessionIp");
-
-        authenticationManager.authenticate(userId, password, true);
-        return sessionManager.createToken(userId, sessionIp);
+        return userManager.login(userId, password, sessionIp);
     }
 
     public QueryResult logout(String userId, String sessionId) throws CatalogException {
