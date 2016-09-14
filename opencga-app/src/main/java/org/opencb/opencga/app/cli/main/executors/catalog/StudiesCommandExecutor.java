@@ -161,7 +161,8 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         String description = studiesCommandOptions.createCommandOptions.description;
         String type = studiesCommandOptions.createCommandOptions.type;
 
-        ObjectMap o = new ObjectMap("method", "GET");
+        //ObjectMap o = new ObjectMap("method", "GET");
+        ObjectMap o = new ObjectMap();
 
         if (description != null) {
             o.append(CatalogStudyDBAdaptor.QueryParams.DESCRIPTION.key(), description);
@@ -231,7 +232,8 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         logger.debug("Searching study");
 
-        Query query = new Query("method", "GET");
+
+        Query query = new Query();
         QueryOptions queryOptions = new QueryOptions();
 
         String id = studiesCommandOptions.searchCommandOptions.id;
