@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.utils;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 
 import java.nio.file.Path;
@@ -11,17 +12,15 @@ import java.util.regex.Pattern;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class ParamUtils {
-    public static void checkId(int id, String name) throws CatalogParameterException {
+    public static void checkId(long id, String name) throws CatalogParameterException {
         if (id < 0) {
-            throw new CatalogParameterException("Error in id: '" + name + "' is not valid: "
-                    + id + ".");
+            throw new CatalogParameterException("Error in id: '" + name + "' is not valid: " + id + ".");
         }
     }
 
     public static void checkParameter(String param, String name) throws CatalogParameterException {
-        if (param == null || param.isEmpty() || param.equals("null")) {
-            throw new CatalogParameterException("Error in parameter: parameter '" + name + "' is null or empty: "
-                    + param + ".");
+        if (StringUtils.isEmpty(param) || param.equals("null")) {
+            throw new CatalogParameterException("Error in parameter: parameter '" + name + "' is null or empty: " + param + ".");
         }
     }
 
@@ -42,7 +41,7 @@ public class ParamUtils {
     }
 
     public static void checkRegion(String regionStr, String name) throws CatalogParameterException {
-        if (Pattern.matches("^([a-zA-Z0-9])+:([0-9])+-([0-9])+$", regionStr)) {//chr:start-end
+        if (Pattern.matches("^([a-zA-Z0-9])+:([0-9])+-([0-9])+$", regionStr)) { //chr:start-end
             throw new CatalogParameterException("region '" + name + "' is not valid");
         }
     }

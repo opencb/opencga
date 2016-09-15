@@ -24,8 +24,7 @@ import java.util.Set;
  */
 public class VariableSet {
 
-    //TODO Is this field really needed?
-    private int id;
+    private long id;
     private String name;
     private boolean unique;
     private String description;
@@ -36,8 +35,7 @@ public class VariableSet {
     public VariableSet() {
     }
 
-    public VariableSet(int id, String name, boolean unique, String description, Set<Variable> variables,
-                       Map<String, Object> attributes) {
+    public VariableSet(long id, String name, boolean unique, String description, Set<Variable> variables, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.unique = unique;
@@ -48,61 +46,69 @@ public class VariableSet {
 
     @Override
     public String toString() {
-        return "VariableSet{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", unique=" + unique +
-                ", description='" + description + '\'' +
-                ", variables=" + variables +
-                ", attributes=" + attributes +
-                '}';
+        final StringBuilder sb = new StringBuilder("VariableSet{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", unique=").append(unique);
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", variables=").append(variables);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public VariableSet setId(long id) {
         this.id = id;
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public VariableSet setName(String name) {
         this.name = name;
+        return this;
     }
 
     public boolean isUnique() {
         return unique;
     }
 
-    public void setUnique(boolean unique) {
+    public VariableSet setUnique(boolean unique) {
         this.unique = unique;
+        return this;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public VariableSet setDescription(String description) {
         this.description = description;
+        return this;
     }
 
     public Set<Variable> getVariables() {
         return variables;
     }
 
-    public void setVariables(Set<Variable> variables) {
+    public VariableSet setVariables(Set<Variable> variables) {
         this.variables = variables;
+        return this;
     }
 
     public Map<String, Object> getAttributes() {
         return attributes;
     }
 
-    public void setAttributes(Map<String, Object> attributes) {
+    public VariableSet setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+        return this;
     }
+
 }

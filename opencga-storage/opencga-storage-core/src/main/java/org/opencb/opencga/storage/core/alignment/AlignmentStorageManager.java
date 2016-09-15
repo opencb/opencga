@@ -16,30 +16,36 @@
 
 package org.opencb.opencga.storage.core.alignment;
 
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMFileReader;
 import org.opencb.biodata.formats.alignment.io.AlignmentDataReader;
+import org.opencb.biodata.formats.alignment.io.AlignmentRegionDataReader;
 import org.opencb.biodata.formats.alignment.io.AlignmentRegionDataWriter;
 import org.opencb.biodata.formats.alignment.sam.io.AlignmentBamDataReader;
 import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.biodata.formats.alignment.io.AlignmentRegionDataReader;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
+
+import org.opencb.biodata.tools.alignment.AlignmentFileUtils;
+import org.opencb.biodata.tools.alignment.tasks.AlignmentRegionCoverageCalculatorTask;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.storage.core.StorageETL;
 import org.opencb.opencga.storage.core.StorageManager;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataReader;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataWriter;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentJsonDataReader;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentJsonDataWriter;
-import org.opencb.opencga.storage.core.alignment.tasks.AlignmentRegionCoverageCalculatorTask;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -51,23 +57,9 @@ import java.util.List;
 /**
  * Created by jacobo on 14/08/14.
  */
-public abstract class AlignmentStorageManager extends StorageManager<DataWriter<AlignmentRegion>, AlignmentDBAdaptor> {
+public abstract class AlignmentStorageManager extends StorageManager<AlignmentDBAdaptor> implements StorageETL {
 
-//    public static final String MEAN_COVERAGE_SIZE_LIST = "mean_coverage_size_list";
-//    public static final String PLAIN = "plain";
-//    public static final String TRANSFORM_REGION_SIZE = "transform.region_size";
-//    public static final String TRANSFORM_COVERAGE_CHUNK_SIZE = "transform.coverage_chunk_size";
-//    public static final String WRITE_COVERAGE = "transform.write_coverage";
-//    public static final String STUDY = "study";
-//    public static final String FILE_ID = "fileId";
-//    public static final String FILE_ALIAS = "fileAlias";
-//    public static final String WRITE_ALIGNMENTS = "writeAlignments";
-//    public static final String INCLUDE_COVERAGE = "includeCoverage";
-//    public static final String CREATE_BAM_INDEX = "createBai";
-//    public static final String ENCRYPT = "encrypt";
-//    public static final String COPY_FILE = "copy";
-//    public static final String DB_NAME = "database.name";
-//    public static final String TOOLS_SAMTOOLS = "tools.samtools";
+    protected StorageEtlConfiguration storageEtlConfiguration;
 
     public enum Options {
         MEAN_COVERAGE_SIZE_LIST ("mean_coverage_size_list", Arrays.asList("200", "10000")),
@@ -81,10 +73,12 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         WRITE_ALIGNMENTS ("writeAlignments", false),
         INCLUDE_COVERAGE ("includeCoverage", true),
         CREATE_BAM_INDEX ("createBai", true),
+        ADJUST_QUALITY("adjustQuality", false),
         ENCRYPT ("encrypt", false),
         COPY_FILE ("copy", false),
         DB_NAME ("database.name", "opencga"),
-        TOOLS_SAMTOOLS ("tools.samtools", null);
+        @Deprecated
+        TOOLS_SAMTOOLS("tools.samtools", null);
 
         private final String key;
         private final Object value;
@@ -101,10 +95,8 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         @SuppressWarnings("unchecked")
         public <T> T defaultValue() {
             return (T) value;
-        }    
+        }
     }
-    
-    private StorageEtlConfiguration storageEtlConfiguration;
 
     public AlignmentStorageManager() {
         logger = LoggerFactory.getLogger(AlignmentStorageManager.class);
@@ -121,45 +113,50 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
     }
 
     @Override
-    public URI extract(URI input, URI ouput) {
+    public void setConfiguration(StorageConfiguration configuration, String storageEngineId) {
+        super.setConfiguration(configuration, storageEngineId);
+        storageEtlConfiguration = configuration.getStorageEngine(storageEngineId).getAlignment();
+    }
+
+    @Override
+    public URI extract(URI input, URI ouput) throws StorageManagerException {
         return input;
     }
 
     @Override
     public URI preTransform(URI inputUri) throws IOException, FileFormatException {
-        checkUri(inputUri, "input file");
+        UriUtils.checkUri(inputUri, "input file", "file");
         Path input = Paths.get(inputUri.getPath());
-        checkBamFile(new FileInputStream(input.toFile()), input.getFileName().toString());  //Check if BAM file is sorted
+        AlignmentFileUtils.checkBamOrCramFile(new FileInputStream(input.toFile()), input.getFileName().toString(), true);
         return inputUri;
     }
 
     /**
-     * if FILE_ALIAS == null
-     *  FILE_ALIAS = fileName - ".bam"
-     *
+     * If FILE_ALIAS == null.
+     * FILE_ALIAS = fileName - ".bam"
+     * <p>
      * if ENCRYPT
-     *  Copy into the output path                   : <outputPath>/<FILE_ALIAS>.encrypt.bam                 (pending)
+     * Copy into the output path                   : <outputPath>/<FILE_ALIAS>.encrypt.bam                 (pending)
      * if !ENCRYPT && COPY_FILE
-     *  Encrypt into the output path                : <outputPath>/<FILE_ALIAS>.bam                         (pending)
+     * Encrypt into the output path                : <outputPath>/<FILE_ALIAS>.bam                         (pending)
      * if CREATE_BAM_INDEX
-     *  Create the bai with the samtools            : <outputPath>/<FILE_ALIAS>.bam.bai
+     * Create the bai with the samtools            : <outputPath>/<FILE_ALIAS>.bam.bai
      * if WRITE_ALIGNMENTS
-     *  Write Json alignments                       : <outputPath>/<FILE_ALIAS>.bam.alignments.json[.gz]
+     * Write Json alignments                       : <outputPath>/<FILE_ALIAS>.bam.alignments.json[.gz]
      * if INCLUDE_COVERAGE
-     *  Calculate the coverage                      : <outputPath>/<FILE_ALIAS>.bam.coverage.json[.gz]
+     * Calculate the coverage                      : <outputPath>/<FILE_ALIAS>.bam.coverage.json[.gz]
      * if INCLUDE_COVERAGE && MEAN_COVERAGE_SIZE_LIST
-     *  Calculate the meanCoverage                  : <outputPath>/<FILE_ALIAS>.bam.mean-coverage.json[.gz]
+     * Calculate the meanCoverage                  : <outputPath>/<FILE_ALIAS>.bam.mean-coverage.json[.gz]
      *
-     *
-     * @param inputUri      Sorted bam file
-     * @param pedigree      Not used
-     * @param outputUri     Output path where files are created
+     * @param inputUri  Sorted bam file
+     * @param pedigree  Not used
+     * @param outputUri Output path where files are created
      * @throws IOException
      * @throws FileFormatException
      */
     @Override
     public URI transform(URI inputUri, URI pedigree, URI outputUri)
-            throws IOException, FileFormatException {
+            throws IOException, FileFormatException, StorageManagerException {
 
         Path input = Paths.get(inputUri.getPath());
         FileUtils.checkFile(input);
@@ -169,27 +166,29 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
 
         // Check if a BAM file is passed and it is sorted.
         // Only binaries and sorted BAM files are accepted at this point.
-        checkBamFile(new FileInputStream(input.toFile()), input.getFileName().toString());
+        AlignmentFileUtils.checkBamOrCramFile(new FileInputStream(input.toFile()), input.getFileName().toString(), true);
 
-        storageEtlConfiguration = configuration.getStorageEngine(storageEngineId).getAlignment();
+        ObjectMap options = storageEtlConfiguration.getOptions();
+        boolean plain = options.getBoolean(Options.PLAIN.key, Options.PLAIN.defaultValue());
+        boolean createBai = options.getBoolean(Options.CREATE_BAM_INDEX.key(), Options.CREATE_BAM_INDEX
+                .defaultValue());
+        boolean includeCoverage = options.getBoolean(Options.INCLUDE_COVERAGE.key, Options.INCLUDE_COVERAGE
+                .defaultValue());
+        boolean writeJsonAlignments = options.getBoolean(Options.WRITE_ALIGNMENTS.key, Options
+                .WRITE_ALIGNMENTS.defaultValue());
 
-        boolean plain = storageEtlConfiguration.getOptions().getBoolean(Options.PLAIN.key, Options.PLAIN.defaultValue());
-        boolean createBai = storageEtlConfiguration.getOptions().getBoolean(Options.CREATE_BAM_INDEX.key(), Options.CREATE_BAM_INDEX.defaultValue());
-        boolean includeCoverage = storageEtlConfiguration.getOptions().getBoolean(Options.INCLUDE_COVERAGE.key, Options.INCLUDE_COVERAGE.defaultValue());
-        boolean writeJsonAlignments = storageEtlConfiguration.getOptions().getBoolean(Options.WRITE_ALIGNMENTS.key, Options.WRITE_ALIGNMENTS.defaultValue());
-
-        int regionSize = storageEtlConfiguration.getOptions().getInt(Options.TRANSFORM_REGION_SIZE.key, Options.TRANSFORM_REGION_SIZE.defaultValue());
+        int regionSize = options.getInt(Options.TRANSFORM_REGION_SIZE.key, Options.TRANSFORM_REGION_SIZE
+                .defaultValue());
 
         //1 Encrypt
         //encrypt(encrypt, bamFile, fileId, output, copy);
 
         //2 Index (bai)
-        if(createBai) {
-            Path bamIndexPath = createBai(input, output);
+        if (createBai) {
+            Path bamIndexPath = AlignmentFileUtils.createIndex(input, output.resolve(input.getFileName().toString() + ".bai"));
         }
 
         //3 Calculate Coverage and transform
-
         //Tasks
         // tasks.add(new AlignmentRegionCompactorTask(new SqliteSequenceDBAdaptor(sqliteSequenceDBPath)));
         List<Task<AlignmentRegion>> tasks = new LinkedList<>();
@@ -202,34 +201,37 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         String outputFile = null;
 
         // We set the different coverage size regions
-        if(includeCoverage) {
+        if (includeCoverage) {
             AlignmentRegionCoverageCalculatorTask coverageCalculatorTask = new AlignmentRegionCoverageCalculatorTask();
-            List<String> meanCoverageSizeList = storageEtlConfiguration.getOptions().getAsStringList(Options.MEAN_COVERAGE_SIZE_LIST.key);
+            List<String> meanCoverageSizeList = options.getAsStringList(Options.MEAN_COVERAGE_SIZE_LIST.key);
             meanCoverageSizeList.forEach(coverageCalculatorTask::addMeanCoverageCalculator);
             tasks.add(coverageCalculatorTask);
         }
 
         // TODO
         // This must be deleted, alignments are not stored any more in JSON
-        if(writeJsonAlignments) {
+        if (writeJsonAlignments) {
             AlignmentJsonDataWriter alignmentDataWriter = new AlignmentJsonDataWriter(reader, jsonOutputFiles, !plain);
             writers.add(new AlignmentRegionDataWriter(alignmentDataWriter));
             outputFile = alignmentDataWriter.getAlignmentFilename();
         }
 
-        if(includeCoverage) {
-            boolean writeMeanCoverage = !storageEtlConfiguration.getOptions().getList(Options.MEAN_COVERAGE_SIZE_LIST.key, Options.MEAN_COVERAGE_SIZE_LIST.defaultValue()).isEmpty();
-            boolean writeCoverage = storageEtlConfiguration.getOptions().getBoolean(Options.WRITE_COVERAGE.key, Options.WRITE_COVERAGE.defaultValue());
+        if (includeCoverage) {
+            boolean writeMeanCoverage = !options.getList(Options.MEAN_COVERAGE_SIZE_LIST.key, Options
+                    .MEAN_COVERAGE_SIZE_LIST.defaultValue()).isEmpty();
+            boolean writeCoverage = options.getBoolean(Options.WRITE_COVERAGE.key, Options.WRITE_COVERAGE
+                    .defaultValue());
             AlignmentCoverageJsonDataWriter alignmentCoverageJsonDataWriter =
                     new AlignmentCoverageJsonDataWriter(jsonOutputFiles, writeCoverage, writeMeanCoverage, !plain);
             alignmentCoverageJsonDataWriter.setChunkSize(
-                    storageEtlConfiguration.getOptions().getInt(Options.TRANSFORM_COVERAGE_CHUNK_SIZE.key, Options.TRANSFORM_COVERAGE_CHUNK_SIZE.defaultValue()));
+                    options.getInt(Options.TRANSFORM_COVERAGE_CHUNK_SIZE.key, Options
+                            .TRANSFORM_COVERAGE_CHUNK_SIZE.defaultValue()));
             writers.add(alignmentCoverageJsonDataWriter);
-            if(outputFile == null) {
+            if (outputFile == null) {
                 outputFile = alignmentCoverageJsonDataWriter.getCoverageFilename();
             }
         }
-        if(writers.isEmpty()) {
+        if (writers.isEmpty()) {
             logger.warn("No writers for transform-alignments!");
             return inputUri;
         }
@@ -255,24 +257,29 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
     }
 
     @Override
-    public boolean testConnection(String dbName) {
-        return true;
+    public void testConnection() throws StorageManagerException {
+    }
+
+    @Override
+    public StorageETL newStorageETL(boolean connected) {
+        return this;
     }
 
     protected Path encrypt(String encrypt, Path bamFile, String fileName, Path outdir, boolean copy) throws IOException {
         logger.info("Copying file. Encryption : " + encrypt);
         long start = System.currentTimeMillis();
-        if(fileName == null || fileName.isEmpty()) {
+        if (fileName == null || fileName.isEmpty()) {
             fileName = bamFile.getFileName().toString();
         } else {
             fileName += ".bam";
         }
         Path destFile;
-        switch(encrypt){
+        switch (encrypt) {
             case "aes-256": {
                 destFile = outdir.resolve(fileName + ".encrypt");
 //                InputStream inputStream = new BufferedInputStream(new FileInputStream(sortBam.toFile()), 50000000);
-//                OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(bamFile.toFile()), 50000000);       //TODO: ENCRYPT OUTPUT
+//                OutputStream outputStream = new BufferedOutputStream(new FileOutputStream(bamFile.toFile()), 50000000);       //TODO:
+// ENCRYPT OUTPUT
 //
 //                SAMFileReader reader = new SAMFileReader(inputStream);
 //                BAMFileWriter writer = new BAMFileWriter(outputStream, bamFile.toFile());
@@ -304,36 +311,6 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         return destFile;
     }
 
-    @Deprecated
-    protected Path sortAlignmentsFile(Path input, Path outdir) throws IOException {
-        Path sortBam;
-        SAMFileReader reader = new SAMFileReader(input.toFile());
-        switch (reader.getFileHeader().getSortOrder()) {
-            case coordinate:
-                sortBam = input;
-                logger.info("File sorted.");
-                break;
-            case queryname:
-            case unsorted:
-            default:
-                sortBam = outdir.resolve(input.getFileName().toString() + ".sort.bam");
-                String sortCommand = "samtools sort -f " + input.toAbsolutePath().toString() + " " + sortBam.toString();
-                logger.info("Sorting file : " + sortCommand);
-                long start = System.currentTimeMillis();
-                try {
-                    Runtime.getRuntime().exec( sortCommand ).waitFor();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                long end = System.currentTimeMillis();
-                logger.info("end - start = " + (end - start)/1000.0+"s");
-                break;
-        }
-        reader.close();
-        return sortBam;
-    }
-
-
     protected AlignmentJsonDataReader getAlignmentJsonDataReader(URI input) throws IOException {
         if (!input.getScheme().equals("file")) {
             throw new IOException("URI is not a valid path");
@@ -342,16 +319,16 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         String baseFileName = input.getPath();
         String alignmentFile = baseFileName;
         String headerFile;
-        if(baseFileName.endsWith(".bam")){
-            alignmentFile = baseFileName + (Paths.get(baseFileName + ".alignments.json").toFile().exists() ?
-                    ".alignments.json" :
-                    ".alignments.json.gz");
-            headerFile = baseFileName + (Paths.get(baseFileName + ".header.json").toFile().exists() ?
-                    ".header.json" :
-                    ".header.json.gz");
-        } else if(baseFileName.endsWith(".alignments.json")){
+        if (baseFileName.endsWith(".bam")) {
+            alignmentFile = baseFileName + (Paths.get(baseFileName + ".alignments.json").toFile().exists()
+                    ? ".alignments.json"
+                    : ".alignments.json.gz");
+            headerFile = baseFileName + (Paths.get(baseFileName + ".header.json").toFile().exists()
+                    ? ".header.json"
+                    : ".header.json.gz");
+        } else if (baseFileName.endsWith(".alignments.json")) {
             headerFile = baseFileName.replaceFirst("alignments\\.json$", "header.json");
-        } else if(baseFileName.endsWith(".alignments.json.gz")){
+        } else if (baseFileName.endsWith(".alignments.json.gz")) {
             headerFile = baseFileName.replaceFirst("alignments\\.json\\.gz$", "header.json.gz");
         } else {
             throw new IOException("Invalid input file : " + input.toString());
@@ -370,16 +347,16 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         String baseFileName = input.toString();
         String meanCoverageFile;
         String regionCoverageFile = baseFileName;
-        if(baseFileName.endsWith(".bam")){
-            regionCoverageFile = baseFileName + (Paths.get(baseFileName + ".coverage.json").toFile().exists() ?
-                    ".coverage.json" :
-                    ".coverage.json.gz");
-            meanCoverageFile = baseFileName + (Paths.get(baseFileName + ".mean-coverage.json").toFile().exists() ?
-                    ".mean-coverage.json" :
-                    ".mean-coverage.json.gz");
-        } else if(baseFileName.endsWith(".coverage.json")){
+        if (baseFileName.endsWith(".bam")) {
+            regionCoverageFile = baseFileName + (Paths.get(baseFileName + ".coverage.json").toFile().exists()
+                    ? ".coverage.json"
+                    : ".coverage.json.gz");
+            meanCoverageFile = baseFileName + (Paths.get(baseFileName + ".mean-coverage.json").toFile().exists()
+                    ? ".mean-coverage.json"
+                    : ".mean-coverage.json.gz");
+        } else if (baseFileName.endsWith(".coverage.json")) {
             meanCoverageFile = baseFileName.replaceFirst("coverage\\.json$", "mean-coverage.json");
-        } else if(baseFileName.endsWith(".coverage.json.gz")){
+        } else if (baseFileName.endsWith(".coverage.json.gz")) {
             meanCoverageFile = baseFileName.replaceFirst("coverage\\.json\\.gz$", "mean-coverage.json.gz");
         } else {
             return null;
@@ -388,66 +365,8 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
         return new AlignmentCoverageJsonDataReader(regionCoverageFile, meanCoverageFile);
     }
 
-    public Path createBai(Path input, Path output) throws IOException {
-        //            Path bamIndexFile = output.resolve(fileAlias + ".bam.bai");
-        Path bamIndexPath = output.resolve(input.getFileName().toString() + ".bai");
-        if (!Files.exists(bamIndexPath)) {
-            Path samtoolsPath = Paths.get(configuration.getStorageEngine(storageEngineId).getAlignment().getOptions().getString(Options.TOOLS_SAMTOOLS.key, Options.TOOLS_SAMTOOLS.defaultValue()));
-            String samtoolsBin;
-            if (samtoolsPath != null && samtoolsPath.toFile().exists() && samtoolsPath.toFile().canExecute()) {
-                samtoolsBin = samtoolsPath.toFile().getAbsolutePath();
-                logger.debug("samtools binary set to '{}' file", samtoolsBin);
-            } else {
-                samtoolsBin = "samtools";
-                logger.debug("samtools binary taken from PATH, check configuration variable '{}: {}'", Options.TOOLS_SAMTOOLS.key, samtoolsPath);
-            }
-
-            long start = System.currentTimeMillis();
-            String indexBai = samtoolsBin + " index " + input.toString(); //  + " " + bamIndexFile.toString();
-            logger.info("Creating BAM index: '{}'", indexBai);
-            try {
-                Runtime.getRuntime().exec(indexBai).waitFor();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            long end = System.currentTimeMillis();
-            logger.info("end - start = " + (end - start) / 1000.0 + "s");
-        }
-        return bamIndexPath;
-    }
-
-    /**
-     * Check if the file is a sorted binary bam file.
-     * @param is            Bam InputStream
-     * @param bamFileName   Bam FileName
-     * @throws IOException
-     */
-    protected void checkBamFile(InputStream is, String bamFileName) throws IOException {
-        SAMFileReader reader = new SAMFileReader(is);
-        boolean binary = reader.isBinary();
-        SAMFileHeader.SortOrder sortOrder = reader.getFileHeader().getSortOrder();
-        reader.close();
-
-        if (!binary) {
-            throw new IOException("Expected binary SAM file. File " + bamFileName + " is not binary.");
-        }
-
-        switch (sortOrder) {
-            case coordinate:
-                logger.debug("BAM file '{}' is sorted.", bamFileName);
-                break;
-            case queryname:
-            case unsorted:
-            default:
-                throw new IOException("Expected sorted BAM file. " +
-                        "File " + bamFileName + " is an unsorted bam (" + sortOrder.name() + ")");
-        }
-    }
-
-    protected void checkUri(URI uri, String uriName) throws IOException {
-        if(uri == null || uri.getScheme() != null && !uri.getScheme().equals("file")) {
-            throw new IOException("Expected file:// uri scheme for " + uriName);
-        }
+    public ObjectMap getOptions() {
+        return storageEtlConfiguration.getOptions();
     }
 
 }

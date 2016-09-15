@@ -23,18 +23,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.core.client.CellBaseClient;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 //import org.opencb.cellbase.core.db.DBAdaptorFactory;
@@ -46,9 +50,9 @@ import java.util.stream.Collectors;
  */
 public class CellBaseVariantAnnotator extends VariantAnnotator {
 
-
     private final JsonFactory factory;
-    private final QueryOptions queryOptions = new QueryOptions("post", true).append("exclude", "expression");
+    private final org.opencb.commons.datastore.core.QueryOptions queryOptions =
+            new org.opencb.commons.datastore.core.QueryOptions("post", true).append("exclude", "expression");
     //    private VariantAnnotationDBAdaptor variantAnnotationDBAdaptor = null;
 //    private VariationDBAdaptor variationDBAdaptor = null;
 //    private DBAdaptorFactory dbAdaptorFactory = null;
@@ -67,14 +71,14 @@ public class CellBaseVariantAnnotator extends VariantAnnotator {
 //    public static final String CELLBASE_DB_TIMEOUT = "CELLBASE.DB.TIMEOUT";
 
 
-
     protected static Logger logger = LoggerFactory.getLogger(CellBaseVariantAnnotator.class);
 
     public CellBaseVariantAnnotator(StorageConfiguration storageConfiguration, ObjectMap options) throws VariantAnnotatorException {
         this(storageConfiguration, options, true);
     }
 
-    public CellBaseVariantAnnotator(StorageConfiguration storageConfiguration, ObjectMap options, boolean restConnection) throws VariantAnnotatorException {
+    public CellBaseVariantAnnotator(StorageConfiguration storageConfiguration, ObjectMap options, boolean restConnection)
+            throws VariantAnnotatorException {
         super(storageConfiguration, options);
 
         this.factory = new JsonFactory();
@@ -152,7 +156,7 @@ public class CellBaseVariantAnnotator extends VariantAnnotator {
 //    }
 
     private static void checkNotNull(String value, String name) throws VariantAnnotatorException {
-        if(value == null || value.isEmpty()) {
+        if (value == null || value.isEmpty()) {
             throw new VariantAnnotatorException("Missing defaultValue: " + name);
         }
     }
@@ -176,12 +180,15 @@ public class CellBaseVariantAnnotator extends VariantAnnotator {
         List<Variant> nonStructuralVariants = new ArrayList<>(variants.size());
         for (Variant variant : variants) {
             // If Variant is SV some work is needed
-            if(variant.getAlternate().length() + variant.getReference().length() > Variant.SV_THRESHOLD*2) {       //TODO: Manage SV variants
+            if (variant.getAlternate().length() + variant.getReference().length() > Variant.SV_THRESHOLD * 2) { // TODO: Manage SV variants
 //                logger.info("Skip variant! {}", genomicVariant);
-                logger.info("Skip variant! {}", variant.getChromosome() + ":" +
-                        variant.getStart() + ":" +
-                        (variant.getReference().length() > 10? variant.getReference().substring(0,10) + "...[" + variant.getReference().length() + "]" : variant.getReference()) + ":" +
-                        (variant.getAlternate().length() > 10? variant.getAlternate().substring(0,10) + "...[" + variant.getAlternate().length() + "]" : variant.getAlternate())
+                logger.info("Skip variant! {}", variant.getChromosome() + ":" + variant.getStart() + ":"
+                        + (variant.getReference().length() > 10
+                        ? variant.getReference().substring(0, 10) + "...[" + variant.getReference().length() + "]"
+                        : variant.getReference()) + ":"
+                        + (variant.getAlternate().length() > 10
+                        ? variant.getAlternate().substring(0, 10) + "...[" + variant.getAlternate().length() + "]"
+                        : variant.getAlternate())
                 );
                 logger.debug("Skip variant! {}", variant);
             } else {
@@ -192,7 +199,9 @@ public class CellBaseVariantAnnotator extends VariantAnnotator {
     }
 
     private List<VariantAnnotation> getVariantAnnotationsREST(List<Variant> variants) throws IOException {
-        org.opencb.commons.datastore.core.QueryResponse<QueryResult<VariantAnnotation>> queryResponse;
+
+//        org.opencb.commons.datastore.core.QueryResponse<org.opencb.commons.datastore.core.QueryResult<VariantAnnotation>> queryResponse;
+        QueryResponse<VariantAnnotation> queryResponse;
 
         boolean queryError = false;
         try {
@@ -206,27 +215,28 @@ public class CellBaseVariantAnnotator extends VariantAnnotator {
                     CellBaseClient.Category.genomic,
                     CellBaseClient.SubCategory.variant,
                     variants,
-                    new org.opencb.commons.datastore.core.QueryOptions(queryOptions));
+                    new QueryOptions(queryOptions));
             if (queryResponse == null) {
                 logger.warn("CellBase REST fail. Returned null. {} for variants {}", cellBaseClient.getLastQuery(),
                         variants.stream().map(Variant::toString).collect(Collectors.joining(",")));
 
                 queryError = true;
             }
-        } catch (JsonProcessingException | javax.ws.rs.ProcessingException e ) {
+
+        } catch (JsonProcessingException | javax.ws.rs.ProcessingException e) {
             logger.warn("CellBase REST fail. Error parsing " + cellBaseClient.getLastQuery() + " for variants "
                     + variants.stream().map(Variant::toString).collect(Collectors.joining(",")), e);
             queryError = true;
             queryResponse = null;
         }
 
-        if(queryResponse != null && queryResponse.getResponse().size() != variants.size()) {
+        if (queryResponse != null && queryResponse.getResponse().size() != variants.size()) {
             logger.warn("QueryResult size (" + queryResponse.getResponse().size() + ") != variants size (" + variants.size() + ").");
             //throw new IOException("QueryResult size != " + variants.size() + ". " + queryResponse);
             queryError = true;
         }
 
-        if(queryError) {
+        if (queryError) {
 //            logger.warn("CellBase REST error. {}", cellBaseClient.getLastQuery());
 
             if (variants.size() == 1) {
@@ -245,6 +255,7 @@ public class CellBaseVariantAnnotator extends VariantAnnotator {
             }
             return variantAnnotationList;
         }
+
 
         List<QueryResult<VariantAnnotation>> queryResults = queryResponse.getResponse();
 

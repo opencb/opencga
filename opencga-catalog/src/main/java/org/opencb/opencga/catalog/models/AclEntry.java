@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.models;
 /**
  * Created by jacobo on 11/09/14.
  */
+@Deprecated
 public class AclEntry {
 
     public static final String USER_OTHERS_ID = "*";
@@ -43,27 +44,52 @@ public class AclEntry {
 
     @Override
     public String toString() {
-        return "Acl{" +
-                "userId='" + userId + '\'' +
-                ", read=" + read +
-                ", write=" + write +
-                ", execute=" + execute +
-                ", delete=" + delete +
-                '}';
+        final StringBuilder sb = new StringBuilder("SampleAcl{");
+        sb.append("userId='").append(userId).append('\'');
+        sb.append(", read=").append(read);
+        sb.append(", write=").append(write);
+        sb.append(", execute=").append(execute);
+        sb.append(", delete=").append(delete);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    @Override
+    public int hashCode() {
+        int result = userId.hashCode();
+        result = 31 * result + (read ? 1 : 0);
+        result = 31 * result + (write ? 1 : 0);
+        result = 31 * result + (execute ? 1 : 0);
+        result = 31 * result + (delete ? 1 : 0);
+        return result;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof AclEntry)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof AclEntry)) {
+            return false;
+        }
 
         AclEntry acl = (AclEntry) o;
 
-        if (delete != acl.delete) return false;
-        if (execute != acl.execute) return false;
-        if (read != acl.read) return false;
-        if (write != acl.write) return false;
-        if (!userId.equals(acl.userId)) return false;
+        if (delete != acl.delete) {
+            return false;
+        }
+        if (execute != acl.execute) {
+            return false;
+        }
+        if (read != acl.read) {
+            return false;
+        }
+        if (write != acl.write) {
+            return false;
+        }
+        if (!userId.equals(acl.userId)) {
+            return false;
+        }
 
         return true;
     }

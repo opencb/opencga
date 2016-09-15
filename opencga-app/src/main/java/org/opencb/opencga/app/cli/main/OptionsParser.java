@@ -19,7 +19,8 @@ package org.opencb.opencga.app.cli.main;
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.IParameterSplitter;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
@@ -29,6 +30,7 @@ import java.util.*;
 /**
  * Created by jacobo on 29/09/14.
  */
+@Deprecated
 public class OptionsParser {
 
     private final JCommander jcommander;
@@ -689,7 +691,7 @@ public class OptionsParser {
             List<File.Bioformat> bioformats;
 
             @Parameter(names = {"--status"}, description = "File status. CSV", required = false, arity = 1)
-            List<File.Status> status;
+            List<String> status;
 
         }
 
@@ -762,7 +764,7 @@ public class OptionsParser {
             CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"-id", "--cohort-id"}, description = "Cohort id", required = true, arity = 1)
-            int id;
+            long id;
         }
 
         @Parameters(commandNames = {CreateCommand.COMMAND_NAME}, commandDescription = "Create a cohort")
@@ -782,8 +784,8 @@ public class OptionsParser {
             @Parameter(names = {"--name"}, description = "cohort name", required = false, arity = 1)
             String name;
 
-            @Parameter(names = {"--variable-set-id"}, description = "VariableSetId", required = false, arity = 1)
-            int variableSetId;
+            @Parameter(names = {"--variable-set"}, description = "VariableSetId", required = false, arity = 1)
+            String variableSet;
 
             @Parameter(names = {"--description"}, description = "cohort description", required = false, arity = 1)
             String description;
@@ -795,7 +797,7 @@ public class OptionsParser {
             String variable;
 
             @Parameter(names = {"--type"}, description = "Cohort type", required = false, arity = 1)
-            Cohort.Type type;
+            Study.Type type;
 
             @Parameter(names = {"--from-aggregation-mapping-file"}, description = "If the study is aggregated, basic cohorts without samples may be extracted from the mapping file", required = false, arity = 1)
             String tagmap = null;
@@ -813,7 +815,7 @@ public class OptionsParser {
             CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"-id", "--cohort-id"}, description = "Cohort id", required = true, arity = 1)
-            int id;
+            long id;
         }
 
         @Parameters(commandNames = {StatsCommand.COMMAND_NAME}, commandDescription = "Calculate variant stats for a set of cohorts.")
@@ -828,7 +830,7 @@ public class OptionsParser {
             CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"-id", "--cohort-id"}, description = "CSV Cohort id list", required = false)
-            List<Integer> cohortIds;
+            List<Long> cohortIds;
 
             @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
             String outdir = "";
@@ -884,7 +886,7 @@ public class OptionsParser {
             CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"-id", "--sample-id"}, description = "Sample id", required = true, arity = 1)
-            int id;
+            long id;
         }
 
         @Parameters(commandNames = {"info"}, commandDescription = "Get samples information")
@@ -924,7 +926,7 @@ public class OptionsParser {
             CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"--variable-set-id"}, description = "VariableSetId that represents the pedigree file", required = false, arity = 1)
-            int variableSetId;
+            long variableSetId;
 
             @Parameter(names = {"--pedigree-id"}, description = "Pedigree file id already loaded in OpenCGA", required = true, arity = 1)
             String pedigreeFileId;
@@ -941,6 +943,7 @@ public class OptionsParser {
         final InfoCommand infoCommand;
         final DoneJobCommand doneJobCommand;
         final StatusCommand statusCommand;
+        final RunJobCommand runJobCommand;
 
         public JobsCommands(JCommander jcommander) {
             jcommander.addCommand(this);
@@ -948,6 +951,7 @@ public class OptionsParser {
             tools.addCommand(this.infoCommand = new InfoCommand());
             tools.addCommand(this.doneJobCommand = new DoneJobCommand());
             tools.addCommand(this.statusCommand = new StatusCommand());
+            tools.addCommand(this.runJobCommand = new RunJobCommand());
         }
 
         @Parameters(commandNames = {"info"}, commandDescription = "Get job information")
@@ -959,7 +963,7 @@ public class OptionsParser {
             CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"-id", "--job-id"}, description = "Job id", required = true, arity = 1)
-            int id;
+            long id;
         }
 
         @Parameters(commandNames = {"finished"}, commandDescription = "Notify catalog that a job have finished.")
@@ -971,7 +975,7 @@ public class OptionsParser {
             CommonOptions cOpt = commonOptions;
 
             @Parameter(names = {"-id", "--job-id"}, description = "Job id", required = true, arity = 1)
-            int id;
+            long id;
 
             @Parameter(names = {"--error"}, description = "Job finish with error", required = false, arity = 0)
             boolean error;
@@ -993,6 +997,38 @@ public class OptionsParser {
 
             @Parameter(names = {"--study-id"}, description = "Study id", required = false, arity = 1)
             String studyId;
+        }
+
+        @Parameters(commandNames = {"run"}, commandDescription = "Executes a job.")
+        class RunJobCommand {
+
+            @ParametersDelegate
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            CommonOptions cOpt = commonOptions;
+
+            @Parameter(names = {"-t", "--tool-id"}, description = "", required = true, arity = 1)
+            String toolId;
+
+            @Parameter(names = {"-s", "--study-id"}, description = "Study id", required = true, arity = 1)
+            String studyId;
+
+            @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = true, arity = 1)
+            String outdir;
+
+            @Parameter(names = {"-e", "--execution"}, description = "", required = false, arity = 1)
+            String execution;
+
+            @Parameter(names = {"-n", "--name"}, description = "", required = true, arity = 1)
+            String name;
+
+            @Parameter(names = {"-d", "--description"}, description = "", required = false, arity = 1)
+            String description;
+
+            @DynamicParameter(names = "-P", description = "Parameters", hidden = false)
+            ObjectMap params = new ObjectMap();
+
         }
     }
 

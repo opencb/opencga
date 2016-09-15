@@ -13,5 +13,7 @@ public interface VariantStorageTest {
 
     void clearDB(String dbName) throws Exception;
 
-    int getExpectedNumLoadedVariants(VariantSource source) throws Exception;
+    default int getExpectedNumLoadedVariants(VariantSource source) throws Exception {
+        return source.getStats().getNumRecords();
+    }
 }

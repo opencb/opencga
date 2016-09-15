@@ -19,7 +19,7 @@ package org.opencb.opencga.catalog.exceptions;
 /**
  * Created by jacobo on 12/12/14.
  */
-public class CatalogException extends Exception  {
+public class CatalogException extends Exception {
 
     public CatalogException(String message) {
         super(message);

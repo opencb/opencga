@@ -20,16 +20,6 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.zip.GZIPOutputStream;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -40,32 +30,42 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.zip.GZIPOutputStream;
+
 /**
- *
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
 public class VariantJsonWriter implements VariantWriter {
-    
+
     private VariantSource source;
     private Path outdir;
-    
+
     protected JsonFactory factory;
     protected ObjectMapper jsonObjectMapper;
-    
+
     protected JsonGenerator variantsGenerator;
     protected JsonGenerator fileGenerator;
-    
+
     private OutputStream variantsStream;
     private OutputStream fileStream;
 
     private long numVariantsWritten;
-    private boolean includeSrc;
+    private boolean includeSrc = false;
     private boolean includeStats;
-    private boolean includeSamples;
+    private boolean includeSamples = true;
 
     public VariantJsonWriter(VariantSource source, Path outdir) {
         this.source = source;
-        this.outdir = (outdir != null) ? outdir : Paths.get("").toAbsolutePath(); 
+        this.outdir = (outdir != null) ? outdir : Paths.get("").toAbsolutePath();
         this.factory = new JsonFactory();
         this.jsonObjectMapper = new ObjectMapper(this.factory);
         this.numVariantsWritten = 0;
@@ -102,7 +102,7 @@ public class VariantJsonWriter implements VariantWriter {
             close();
             return false;
         }
-        
+
         return true;
     }
 
@@ -141,19 +141,20 @@ public class VariantJsonWriter implements VariantWriter {
                 variantsGenerator.writeObject(variant);
                 variantsGenerator.writeRaw('\n');
             } catch (IOException ex) {
-                Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, variant.getChromosome() + ":" + variant.getStart(), ex);
-            close();
+                Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, variant.getChromosome() + ":" + variant.getStart(),
+                        ex);
+                close();
                 return false;
             }
         }
-        
+
         numVariantsWritten += batch.size();
         if (numVariantsWritten % 1000 == 0) {
-            Variant lastVariantInBatch = batch.get(batch.size()-1);
-            Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.INFO, "{0}\tvariants written upto position {1}:{2}", 
+            Variant lastVariantInBatch = batch.get(batch.size() - 1);
+            Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.INFO, "{0}\tvariants written upto position {1}:{2}",
                     new Object[]{numVariantsWritten, lastVariantInBatch.getChromosome(), lastVariantInBatch.getStart()});
         }
-        
+
         return true;
     }
 
@@ -162,7 +163,7 @@ public class VariantJsonWriter implements VariantWriter {
         try {
             variantsStream.flush();
             variantsGenerator.flush();
-            
+
             fileGenerator.writeObject(source);
             fileStream.flush();
             fileGenerator.flush();
@@ -202,6 +203,7 @@ public class VariantJsonWriter implements VariantWriter {
     }
 
     @Override
-    public void includeEffect(boolean effect) { }
+    public void includeEffect(boolean effect) {
+    }
 
 }

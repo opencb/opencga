@@ -16,8 +16,9 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.core.common.StringUtils;
+import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+
 
 /**
  * Created by jacobo on 11/09/14.
@@ -33,8 +34,8 @@ public class Session {
         this(StringUtils.randomString(20), "", TimeUtils.getTime(), "");
     }
 
-    public Session(String ip) {
-        this(StringUtils.randomString(20), ip, TimeUtils.getTime(), "");
+    public Session(String ip, int length) {
+        this(StringUtils.randomString(length), ip, TimeUtils.getTime(), "");
     }
 
     public Session(String id, String ip, String logout) {
@@ -50,12 +51,13 @@ public class Session {
 
     @Override
     public String toString() {
-        return "Session{" +
-                "id='" + id + '\'' +
-                ", ip='" + ip + '\'' +
-                ", login='" + login + '\'' +
-                ", logout='" + logout + '\'' +
-                '}';
+        final StringBuilder sb = new StringBuilder("Session{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", ip='").append(ip).append('\'');
+        sb.append(", login='").append(login).append('\'');
+        sb.append(", logout='").append(logout).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getId() {
@@ -88,5 +90,10 @@ public class Session {
 
     public void setLogout(String logout) {
         this.logout = logout;
+    }
+
+    public String generateNewId(int length) {
+        this.id = StringUtils.randomString(length);
+        return id;
     }
 }

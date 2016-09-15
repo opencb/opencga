@@ -1,11 +1,12 @@
 from __future__ import print_function
+
+import getpass
 import json
 import sys
-
-from pyCGA.CatalogWS import Users, Variables, Files, Individuals, Samples, Studies
-from GELpyCGA.AdditionalMethods import AnnotationSet
+from hashlib import sha1
+from pyCGA.CatalogWS import Users, Variables, Files, Individuals, Samples
 from pyCGA.Exceptions import ServerResponseException
-from pyCGA.ExpandedMethods import check_user_acls, link_file_and_update_sample
+from pyCGA.ExpandedMethods import check_user_acls, link_file_and_update_sample, AnnotationSet
 from pyCGA.Utils.AvroSchema import AvroSchemaFile
 
 __author__ = 'antonior'
@@ -25,8 +26,13 @@ class Methods:
         """
         user = Users({"host": args.host, "sid": ""}, instance=args.instance)
         try:
-            sid = user.login_method(args.user, args.pwd)[0].get("sessionId")
+            if args.pwd:
+                pwd = sha1(args.pwd).hexdigest()
+            else:
+                pwd = sha1(getpass.getpass()).hexdigest()
+            sid = user.login_method(args.user, pwd)[0].get("sessionId")
             print(sid)
+            return sid
         except ServerResponseException as e:
             print(str(e), file=sys.stderr)
 
@@ -44,7 +50,6 @@ class Methods:
             for sample in acls[acl]["samples"]:
                 print("\t" + str(sample))
 
-
     @staticmethod
     def user_logout(args):
         """
@@ -55,8 +60,6 @@ class Methods:
         user = Users()
         user.logout_method(args.user)
         print("Successfully Log out")
-
-
 
     @staticmethod
     def users_create(args):
@@ -113,19 +116,19 @@ class Methods:
         except ServerResponseException as e:
             print(e, file=sys.stderr)
 
-
     @staticmethod
     def files_query_stats(args):
         """
         Method to query stats stored with files.... generic so user has to specify certain aspects
 
-        Call: python pyCGA [--host hostname] sid query stats --fileType (ALIGNMENT or VARIANTS) --query (e.g BAM_HEADER_MACHINE.MACHINE)
+        Call: python pyCGA query stats --fileType (ALIGNMENT or VARIANTS) --query (e.g BAM_HEADER_MACHINE.MACHINE)
 
         :param args:
         """
         file_instance = Files()
-        # TODO: Test this ---big change--
+        # TODO: move to expanded methods
         try:
+
             results = file_instance.search(studyId=str(args.studyId), bioformat=args.fileType,
                                                 include="projects.studies.files.name,projects.studies.files.stats." +args.query)
             # print(json.dumps(result, indent=4))
@@ -138,9 +141,9 @@ class Methods:
                 if "stats" in result:
                     try:
                         if isinstance(result["stats"][level1], list) and result["stats"][level1]!=[]:
-                            print(result["name"] + "\t" + ",".join([term[level2] for term in result["stats"][level1]]))
+                            print(result["name"] + "\t" + ",".join(map(str, [term[level2] for term in result["stats"][level1]])))
                         elif isinstance(result["stats"][level1], dict):
-                            print(result["name"] + "\t" + result["stats"][level1][level2])
+                            print(result["name"] + "\t" + str(result["stats"][level1][level2]))
                         else:
                             print(result["name"] + "\t" + "ERROR")
                     except:
@@ -238,15 +241,13 @@ class Methods:
         try:
             individualId = individual.create(args.studyId, args.name, args.family, args.fatherId,
                                              args.motherId, args.gender)[0]["id"]
-            print(individualId)
             well_ids = args.wellIds.split(",")
             for well in well_ids:
                 try:
                     sampleId = sample.search(args.studyId, name=well)[0]["id"]
                     print(sampleId)
                     try:
-                        print("hello")
-                        result = sample.update(str(sampleId), str(individualId))
+                        sample.update(str(sampleId), individualId=str(individualId))
                     except ServerResponseException as e:
                         print(str(e), file=sys.stderr)
                 except ServerResponseException as e:
@@ -263,21 +264,22 @@ class Methods:
         """
         individual = Individuals()
         sample = Samples()
-        try:
-            individual_result = individual.search(args.studyId, args.name)[0]
+
+        individual_results = individual.search(studyId=args.studyId, name=args.name)
+        for individual_result in individual_results:
             gender = individual_result["gender"]
             individualId = individual_result["id"]
             print("ParticipantId in Catalog: "+ str(individualId))
             try:
-                sample_result = sample.search(args.studyId, individualId=str(individualId))
+                sample_result = sample.search(studyId=args.studyId, individualId=str(individualId))
 
                 for sample in sample_result:
                         print("Sample Name: " + sample["name"])
 
             except ServerResponseException as e:
                 print(str(e), file=sys.stderr)
-        except ServerResponseException as e:
-            print(str(e), file=sys.stderr)
+
+
 
     @staticmethod
     def individuals_search_by_annotation(args):
@@ -338,8 +340,8 @@ class Methods:
         try:
             result = sample.search_by_annotation(args.studyId, args.variableSetName, *args.queries)
             for r in result:
-                print(int(AnnotationSet(*[annotation for annotation in r["annotationSets"] if args.variableSetName in annotation["attributes"]["annotateSetName"]][0]["annotations"]).get_json()["id"]))
-
+                # print(int(AnnotationSet(*[annotation for annotation in r["annotationSets"] if args.variableSetName in annotation["attributes"]["annotateSetName"]][0]["annotations"]).get_json()["id"]))
+                print(AnnotationSet(*[annotation for annotation in r["annotationSets"] if args.variableSetName in annotation["attributes"]["annotateSetName"]][0]["annotations"]).get_json()["name"])
         except ServerResponseException as e:
             print(str(e), file=sys.stderr)
 
@@ -378,7 +380,6 @@ class Methods:
             if args.format == "AVRO":
                 schema = AvroSchemaFile(args.json)
                 data = schema.convert_variable_set(schema.data)
-
                 variable_id = variable.create(args.studyId, args.name, data=data)[0]["id"]
 
             else:
@@ -419,7 +420,6 @@ class Methods:
                     for info in sample_info:
                         yield [id, str(info["id"])]
 
-
             if inputIDType == "IndividualName":
                 if outputIDType == "CatalogIndividualId":
                     individual = Individuals()
@@ -442,7 +442,6 @@ class Methods:
 
                     for info in sample_info:
                         yield [id, str(info["id"])]
-
 
             if inputIDType == "CatalogSampleId":
                 if outputIDType == "CatalogIndividualId":

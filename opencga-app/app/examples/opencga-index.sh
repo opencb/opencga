@@ -9,12 +9,13 @@
 PRGDIR=`dirname "$0"`
 export OPENCGA_HOME=`cd "$PRGDIR/.." >/dev/null; pwd`
 export OPENCGA_BIN=$OPENCGA_HOME'/bin/opencga.sh'
+export OPENCGA_ANALYSIS_BIN=$OPENCGA_HOME'/bin/opencga-analysis.sh'
 
 
 user=admin
-password=admin
-project_alias=1000g
-study_alias=ph1
+password=demo
+project_alias=p1
+study_alias=s1
 uri_arg=""
 study_uri=""
 
@@ -25,6 +26,7 @@ pedigree_file=false
 link=false
 enqueue=""
 annotate=""
+aggrergation="NONE"
 calculateStats=""
 log_level=info
 input_files=()
@@ -32,28 +34,29 @@ input_files_len=0
 database=""
 
 function getFileId() {
-    $OPENCGA_BIN files search --study-id $user@${project_alias}:${study_alias} -u $user -p $password --name $1 --output-format IDS --log-level ${log_level}
+    $OPENCGA_BIN files search --study-id $user@${project_alias}:${study_alias} --session-id $sid --name $1 --output-format IDS --log-level ${log_level}
 }
 
 function main() {
-while getopts "htu:s:i:p:l:U:d:qacxTL" opt; do
+while getopts "htu:s:i:p:l:U:d:qacg:xTL" opt; do
 	#echo $opt "=" $OPTARG
 	case "$opt" in
 	h)
 	    echo "Usage: "
 	    echo "       -h             :   "
-	    echo "       -u user_name   : User name. [admin] "
-	    echo "       -s study_alias : Study alias. [ph1] "
+	    echo "       -u user_name   : User name. [${user}] "
+	    echo "       -s study_alias : Study alias. [${study_alias}] "
 	    echo "    *  -i vcf_file    : VCF input file  "
 	    echo "       -x             : Link file instead of copy  "
 	    echo "       -p ped_file    : Pedigree input file  "
-	    echo "       -l log_level   : error, warn, info, debug [info] "
+	    echo "       -l log_level   : error, warn, info, debug [${log_level}] "
 	    echo "       -d database    : database name [opencga_test_<userId>] "
 	    echo "       -T             : If present it only runs the transform stage. Loading requires -L "
 	    echo "       -L             : If present only the load stage is executed. Transformation requires -T "
 	    echo "       -t             : Transform and Load in 2 steps [DEPRECATED] "
 	    echo "       -a             : Annotate database  "
 	    echo "       -c             : Calculate stats  "
+	    echo "       -g             : Aggregated study type [BASIC], accepted {BASIC, EVS, EXAC} "
 	    echo "       -U uri         : Study URI location "
 	    echo "       -q             : Enqueue index jobs. Leave jobs \"PREPARED\". Require a daemon."
 	    #echo "       -             :   "
@@ -121,6 +124,10 @@ while getopts "htu:s:i:p:l:U:d:qacxTL" opt; do
 	    calculateStats="--calculate-stats"
 	    echo "Calculate stats over cohort ALL"
 	    ;;
+	g)
+	    aggrergation=${OPTARG}
+	    echo "Aggregated stats ${aggrergation}"
+	    ;;
 	q)
 	    enqueue="--enqueue"
 	    echo "Queuing index jobs"
@@ -147,26 +154,36 @@ fi
 
 
 $OPENCGA_BIN users create -u $user -p $password -n $user -e user@email.com --log-level ${log_level}
-$OPENCGA_BIN projects create -a ${project_alias} -d "1000 genomes" -n "1000 Genomes" -u $user -p $password --log-level ${log_level}
-$OPENCGA_BIN users list -u $user -p $password -R
+
+sid=`$OPENCGA_BIN users login -u $user -p $password --log-level ${log_level}`
+
+
+$OPENCGA_BIN projects create -a ${project_alias} -d "Default project" -n "Default project" --session-id $sid --log-level ${log_level}
+$OPENCGA_BIN users list --session-id $sid -R
 
 if [ "$database" == "" ]; then
 	database="opencga_test_${user}"
 fi
 
-$OPENCGA_BIN studies create -a ${study_alias}  -n "Phase 1" -u $user -p $password --project-id $user@${project_alias} -d "Default study" --type CONTROL_SET --log-level ${log_level} $uri_arg "$study_uri" --datastore "variant:mongodb:${database}"
-$OPENCGA_BIN files create-folder -s $user@${project_alias}:${study_alias} -u $user -p $password --log-level ${log_level} --path data/jobs/
+$OPENCGA_BIN studies create -a ${study_alias}  -n "Study ${study_alias}" --session-id $sid --project-id $user@${project_alias} \
+            -d "Default study"                         \
+            --type CONTROL_SET                         \
+            --aggregation-type ${aggrergation}         \
+            $uri_arg "$study_uri"                      \
+            --datastore "variant:mongodb:${database}"  \
+            --log-level ${log_level}
+$OPENCGA_BIN files create-folder -s $user@${project_alias}:${study_alias} --session-id $sid --log-level ${log_level} --path data/jobs/ --parents
 
 
-$OPENCGA_BIN users list -u $user -p $password -R
+$OPENCGA_BIN users list --session-id $sid -R
 
 
 if [ $pedigree_file == false ]; then
 	echo "Do not load ped file"
 else
 	PEDIGREE_FILE_NAME=$(echo $pedigree_file | rev | cut -d / -f1 | rev )
-	$OPENCGA_BIN files create -P -s $user@${project_alias}:${study_alias} -u $user -p $password --input $pedigree_file --path data/peds/ --checksum --output-format IDS  --log-level ${log_level}
-	$OPENCGA_BIN samples load -u $user -p $password --pedigree-id $(getFileId ^${PEDIGREE_FILE_NAME}"$" ) --output-format ID_CSV --log-level ${log_level}
+	$OPENCGA_BIN files create -P -s $user@${project_alias}:${study_alias} --session-id $sid --input $pedigree_file --path data/peds/ --checksum --output-format IDS  --log-level ${log_level}
+	$OPENCGA_BIN samples load --session-id $sid --pedigree-id $(getFileId ^${PEDIGREE_FILE_NAME}"$" ) --output-format ID_CSV --log-level ${log_level}
 fi
 
 for input_file in ${input_files[@]}; do
@@ -177,9 +194,9 @@ for input_file in ${input_files[@]}; do
 
 	if [ -z $VCF_FILE_ID ]; then
 		if [ "$link" == "true" ]; then
-			$OPENCGA_BIN files link -P -s $user@${project_alias}:${study_alias} -u $user -p $password --input $input_file --path data/vcfs/ --checksum --output-format IDS  --log-level ${log_level}
+			$OPENCGA_BIN files link -P -s $user@${project_alias}:${study_alias} --session-id $sid --input $input_file --path data/vcfs/ --checksum --output-format IDS  --log-level ${log_level}
 		else
-			$OPENCGA_BIN files create -P -s $user@${project_alias}:${study_alias} -u $user -p $password --input $input_file --path data/vcfs/ --checksum --output-format IDS  --log-level ${log_level}
+			$OPENCGA_BIN files create -P -s $user@${project_alias}:${study_alias} --session-id $sid --input $input_file --path data/vcfs/ --checksum --output-format IDS  --log-level ${log_level}
 		fi
 		VCF_FILE_ID=$(getFileId ${FILE_NAME}"$" )
 	else
@@ -189,31 +206,31 @@ for input_file in ${input_files[@]}; do
 
 	echo "Added VCF file "$input_file" = "$VCF_FILE_ID
 
-	$OPENCGA_BIN users list -u $user -p $password -R
+	$OPENCGA_BIN users list --session-id $sid -R
 
 	if [ $split_index_job == true ]; then
 		#Transform file
 		if [ $transform_file == true ]; then
 			echo "Transforming file $input_file"
-			$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID --output-format IDS --log-level ${log_level} --transform -o $user@${project_alias}:${study_alias}:data:jobs:
-			$OPENCGA_BIN users list -u $user -p $password -R
-			$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
+			$OPENCGA_ANALYSIS_BIN variant index --session-id $sid --file-id $VCF_FILE_ID --log-level ${log_level} --transform -o $user@${project_alias}:${study_alias}:data:jobs:
+			$OPENCGA_BIN users list --session-id $sid -R
+			$OPENCGA_BIN files info --session-id $sid -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
 		fi
 
 		#Load file
 		if [ $load_file == true ]; then
 			echo "Loading file $input_file"
 			TRANSFORMED_VARIANTS_FILE_ID=$(getFileId ^$FILE_NAME".variants")
-			$OPENCGA_BIN files index -u $user -p $password --file-id $TRANSFORMED_VARIANTS_FILE_ID --log-level ${log_level} --load $annotate $calculateStats  -o $user@${project_alias}:${study_alias}:data:jobs:
-			$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
+			$OPENCGA_ANALYSIS_BIN variant index --session-id $sid --file-id $TRANSFORMED_VARIANTS_FILE_ID --log-level ${log_level} --load $annotate $calculateStats  -o $user@${project_alias}:${study_alias}:data:jobs:
+			$OPENCGA_BIN files info --session-id $sid -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
 		fi
 	else
-		$OPENCGA_BIN files index -u $user -p $password --file-id $VCF_FILE_ID  --log-level ${log_level} $enqueue $annotate $calculateStats  -o $user@${project_alias}:${study_alias}:data:jobs:
-		$OPENCGA_BIN files info -u $user -p $password -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
+		$OPENCGA_ANALYSIS_BIN variant index --session-id $sid --file-id $VCF_FILE_ID  --log-level ${log_level} $enqueue $annotate $calculateStats  -o $user@${project_alias}:${study_alias}:data:jobs:
+		$OPENCGA_BIN files info --session-id $sid -id $VCF_FILE_ID --exclude projects.studies.files.attributes,projects.studies.files.sampleIds
 	fi
 done
 
-$OPENCGA_BIN users list -u $user -p $password -R
+$OPENCGA_BIN users list --session-id $sid -R
 
 }
 

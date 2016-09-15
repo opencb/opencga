@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.app.daemon.rest;
 
-import org.apache.catalina.LifecycleException;
 import org.opencb.opencga.app.daemon.OpenCGADaemon;
 
 import javax.ws.rs.GET;
@@ -28,6 +27,7 @@ import javax.ws.rs.core.Response;
  * Created by jacobo on 23/10/14.
  */
 
+@Deprecated
 @Path("/admin")
 public class AdminServlet extends DaemonServlet {
 
@@ -39,7 +39,7 @@ public class AdminServlet extends DaemonServlet {
     @GET
     @Path("/stop")
     @Produces("text/plain")
-    public Response stop() throws LifecycleException {
+    public Response stop() {
         System.out.println("Stop");
 
         OpenCGADaemon.getDaemon().stop();

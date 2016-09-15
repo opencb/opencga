@@ -18,44 +18,48 @@ package org.opencb.opencga.catalog.models;
 
 import org.opencb.opencga.core.common.TimeUtils;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 11/09/14.
  */
 public class Project {
 
-    private int id;
+    private long id;
     private String name;
     private String alias;
     private String creationDate;
     private String description;
     private String organization;
-    private String status;
-    private String lastActivity;
+    private Status status;
+    private String lastModified;
     private long diskUsage;
 
-    private List<AclEntry> acl;
     private List<Study> studies;
 
     private Map<File.Bioformat, DataStore> dataStores;
     private Map<String, Object> attributes;
 
+
     public Project() {
     }
 
-    public Project(String name, String alias, String description, String status, String organization) {
-        this(-1, name, alias, TimeUtils.getTime(), description, organization, status, null, 0,
-                new LinkedList<AclEntry>(), new LinkedList<Study>(), new HashMap<String, Object>());
-    }
-    public Project(String name, String alias, String creationDate, String description, String status,
-                   String lastActivity, long diskUsage, String organization) {
-        this(-1, name, alias, creationDate, description, organization, status, lastActivity, diskUsage,
-                new LinkedList<AclEntry>(), new LinkedList<Study>(), new HashMap<String, Object>());
+    public Project(String name, String alias, String description, Status status, String organization) {
+        this(-1, name, alias, TimeUtils.getTime(), description, organization, status, null, 0, new LinkedList<>(),
+                new HashMap<>(), new HashMap<>());
     }
 
-    public Project(int id, String name, String alias, String creationDate, String description, String organization,
-                   String status, String lastActivity, long diskUsage, List<AclEntry> acl, List<Study> studies,
+    public Project(String name, String alias, String creationDate, String description, Status status, String lastModified,
+                   long diskUsage, String organization) {
+        this(-1, name, alias, creationDate, description, organization, status, lastModified, diskUsage, new LinkedList<>(),
+                new HashMap<>(),  new HashMap<>());
+    }
+
+    public Project(long id, String name, String alias, String creationDate, String description, String organization, Status status,
+                   String lastModified, long diskUsage, List<Study> studies, Map<File.Bioformat, DataStore> dataStores,
                    Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -64,133 +68,138 @@ public class Project {
         this.description = description;
         this.organization = organization;
         this.status = status;
-        this.lastActivity = lastActivity;
+        this.lastModified = lastModified;
         this.diskUsage = diskUsage;
-        this.acl = acl;
         this.studies = studies;
-        this.dataStores = new HashMap<>();
+        this.dataStores = dataStores;
         this.attributes = attributes;
     }
 
     @Override
     public String toString() {
-        return "Project{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", alias='" + alias + '\'' +
-                ", creationDate='" + creationDate + '\'' +
-                ", description='" + description + '\'' +
-                ", organization='" + organization + '\'' +
-                ", status='" + status + '\'' +
-                ", lastActivity='" + lastActivity + '\'' +
-                ", diskUsage=" + diskUsage +
-                ", acl=" + acl +
-                ", studies=" + studies +
-                ", attributes=" + attributes +
-                '}';
+        final StringBuilder sb = new StringBuilder("Project{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", alias='").append(alias).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", organization='").append(organization).append('\'');
+        sb.append(", status=").append(status);
+        sb.append(", lastModified='").append(lastModified).append('\'');
+        sb.append(", diskUsage=").append(diskUsage);
+        sb.append(", studies=").append(studies);
+        sb.append(", dataStores=").append(dataStores);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public Project setId(long id) {
         this.id = id;
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
+    public Project setName(String name) {
+        this.name = name;
+        return this;
+    }
+
     public String getAlias() {
         return alias;
     }
 
-    public void setAlias(String alias) {
+    public Project setAlias(String alias) {
         this.alias = alias;
-    }
-
-    public void setName(String name) {
-        this.name = name;
+        return this;
     }
 
     public String getCreationDate() {
         return creationDate;
     }
 
-    public void setCreationDate(String creationDate) {
+    public Project setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public Project setDescription(String description) {
         this.description = description;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getLastActivity() {
-        return lastActivity;
-    }
-
-    public void setLastActivity(String lastActivity) {
-        this.lastActivity = lastActivity;
-    }
-
-    public long getDiskUsage() {
-        return diskUsage;
-    }
-
-    public void setDiskUsage(long diskUsage) {
-        this.diskUsage = diskUsage;
-    }
-
-    public List<AclEntry> getAcl() {
-        return acl;
-    }
-
-    public void setAcl(List<AclEntry> acl) {
-        this.acl = acl;
-    }
-
-    public List<Study> getStudies() {
-        return studies;
-    }
-
-    public void setStudies(List<Study> studies) {
-        this.studies = studies;
-    }
-
-    public Map<File.Bioformat, DataStore> getDataStores() {
-        return dataStores;
-    }
-
-    public void setDataStores(Map<File.Bioformat, DataStore> dataStores) {
-        this.dataStores = dataStores;
-    }
-
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
-    public void setAttributes(Map<String, Object> attributes) {
-        this.attributes = attributes;
+        return this;
     }
 
     public String getOrganization() {
         return organization;
     }
 
-    public void setOrganization(String organization) {
+    public Project setOrganization(String organization) {
         this.organization = organization;
+        return this;
     }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public Project setStatus(Status status) {
+        this.status = status;
+        return this;
+    }
+
+    public String getLastModified() {
+        return lastModified;
+    }
+
+    public Project setLastModified(String lastModified) {
+        this.lastModified = lastModified;
+        return this;
+    }
+
+    public long getDiskUsage() {
+        return diskUsage;
+    }
+
+    public Project setDiskUsage(long diskUsage) {
+        this.diskUsage = diskUsage;
+        return this;
+    }
+
+    public List<Study> getStudies() {
+        return studies;
+    }
+
+    public Project setStudies(List<Study> studies) {
+        this.studies = studies;
+        return this;
+    }
+
+    public Map<File.Bioformat, DataStore> getDataStores() {
+        return dataStores;
+    }
+
+    public Project setDataStores(Map<File.Bioformat, DataStore> dataStores) {
+        this.dataStores = dataStores;
+        return this;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public Project setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
+        return this;
+    }
+
 }

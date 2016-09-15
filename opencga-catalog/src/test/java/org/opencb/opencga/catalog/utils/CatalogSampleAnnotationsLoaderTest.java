@@ -16,17 +16,21 @@
 
 package org.opencb.opencga.catalog.utils;
 
-import junit.framework.Assert;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.biodata.models.pedigree.Individual;
 import org.opencb.biodata.models.pedigree.Pedigree;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 
@@ -37,22 +41,24 @@ import java.util.*;
 
 public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
 
+    private static final List<String> populations = Arrays.asList("ACB", "ASW", "BEB", "CDX", "CEU", "CHB", "CHS", "CLM", "ESN", "FIN",
+            "GBR", "GIH", "GWD", "IBS", "ITU", "JPT", "KHV", "LWK", "MSL", "MXL", "PEL", "PJL", "PUR", "STU", "TSI", "YRI");
     private static CatalogSampleAnnotationsLoader loader;
-    private static final List<String> populations = Arrays.asList("ACB", "ASW", "BEB", "CDX", "CEU", "CHB", "CHS", "CLM", "ESN", "FIN", "GBR", "GIH", "GWD", "IBS", "ITU", "JPT", "KHV", "LWK", "MSL", "MXL", "PEL", "PJL", "PUR", "STU", "TSI", "YRI");
     private static Pedigree pedigree;
     private static String sessionId;
     private static File pedFile;
     private static CatalogManager catalogManager;
     private static String userId;
-    private static int studyId;
+    private static long studyId;
 
     @BeforeClass
     public static void beforeClass() throws IOException, CatalogException, URISyntaxException {
-        Properties catalogProperties = new Properties();
-        catalogProperties.load(CatalogSampleAnnotationsLoader.class.getClassLoader().getResourceAsStream("catalog.properties"));
-        catalogManager = new CatalogManager(catalogProperties);
+        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(CatalogSampleAnnotationsLoaderTest.class.getClassLoader()
+                .getClass().getResource("/catalog-configuration-test.yml").openStream());
+        catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager.deleteCatalogDB(true);
+        catalogManager.installCatalogDB();
         loader = new CatalogSampleAnnotationsLoader(catalogManager);
-
 
         String pedFileName = "20130606_g1k.ped";
         URL pedFileURL = CatalogSampleAnnotationsLoader.class.getClassLoader().getResource(pedFileName);
@@ -61,10 +67,11 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         ObjectMap session = catalogManager.loginAsAnonymous("localHost").getResult().get(0);
         sessionId = session.getString("sessionId");
         userId = session.getString("userId");
-        Project project = catalogManager.createProject(userId, "default", "def", "", "ACME", null, sessionId).getResult().get(0);
+        Project project = catalogManager.createProject("default", "def", "", "ACME", null, sessionId).getResult().get(0);
         Study study = catalogManager.createStudy(project.getId(), "default", "def", Study.Type.FAMILY, "", sessionId).getResult().get(0);
         studyId = study.getId();
-        pedFile = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.OTHER_PED, "data/" + pedFileName, "", false, -1, sessionId).getResult().get(0);
+        pedFile = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.OTHER_PED, "data/" + pedFileName, "", false, -1,
+                sessionId).getResult().get(0);
         new CatalogFileUtils(catalogManager).upload(pedFileURL.toURI(), pedFile, null, sessionId, false, false, false, true, 10000000);
         pedFile = catalogManager.getFile(pedFile.getId(), sessionId).getResult().get(0);
     }
@@ -81,16 +88,23 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         Pedigree pedigree = loader.readPedigree(pedFile.getPath());
         VariableSet variableSet = loader.getVariableSetFromPedFile(pedigree);
 
+        System.out.println(new ObjectMapper().defaultPrettyPrintingWriter().writeValueAsString(variableSet));
         validate(pedigree, variableSet);
     }
 
     @Test
     public void testLoadPedigree_GivenVariableSet() throws Exception {
         HashSet<Variable> variables = new HashSet<>();
-        variables.add(new Variable("id", "", Variable.VariableType.NUMERIC, null, true, false, Collections.<String>emptyList(), 0, null, "", null, null));
-        variables.add(new Variable("name", "", Variable.VariableType.TEXT, null, true, false, Collections.<String>emptyList(), 0, null, "", null, null));
-        variables.add(new Variable("fatherId", "", Variable.VariableType.NUMERIC, null, false, false, Collections.<String>emptyList(), 0, null, "", null, null));
-        variables.add(new Variable("Population", "", Variable.VariableType.CATEGORICAL, null, true, false, populations, 0, null, "", null, null));
+        variables.add(new Variable("id", "", Variable.VariableType.NUMERIC, null, true, false, Collections.<String>emptyList(), 0, null,
+                "", null, null));
+        variables.add(new Variable("name", "", Variable.VariableType.TEXT, null, true, false, Collections.<String>emptyList(), 0, null,
+                "", null, null));
+        variables.add(new Variable("fatherId", "", Variable.VariableType.NUMERIC, null, false, false, Collections.<String>emptyList(), 0,
+                null, "", null, null));
+        variables.add(new Variable("Population", "", Variable.VariableType.CATEGORICAL, null, true, false, populations, 0, null, "",
+                null, null));
+        variables.add(new Variable("NonExistingField", "", Variable.VariableType.NUMERIC, "", false, false, Collections.emptyList(), 0, null, "",
+                null, null));
 
         VariableSet variableSet = new VariableSet(5, "", false, "", variables, null);
 
@@ -100,34 +114,42 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
     @Test
     public void testLoadPedigreeCatalog() throws Exception {
         QueryResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedFile, null, sessionId);
-        int variableSetId = sampleQueryResult.getResult().get(0).getAnnotationSets().get(0).getVariableSetId();
+        long variableSetId = sampleQueryResult.getResult().get(0).getAnnotationSets().get(0).getVariableSetId();
 
 //        int variableSetId ;//= sampleQueryResult.getResult().get(0).getAnnotationSets().get(0).getVariableSetId();
 //        sessionId = "nIXANk1L8EmLCRhOwiZQ";
 //        studyId = 2;
 //        variableSetId = 7;
 
-        QueryOptions options = new QueryOptions("variableSetId", variableSetId);
+//        Query query = new Query("variableSetId", variableSetId).append("annotation", "family:GB84");
+        Query query = new Query("variableSetId", variableSetId)
+                .append("annotation.family", "GB84");
+        QueryOptions options = new QueryOptions("limit", 2);
 
-        options.put("annotation", "family:GB84");
-        options.put("limit", 2);
-        System.out.println(catalogManager.getAllSamples(studyId, options, sessionId));
+        QueryResult<Sample> allSamples = catalogManager.getAllSamples(studyId, query, options, sessionId);
+        System.out.println(allSamples);
+        Assert.assertNotEquals(0, allSamples.getNumResults());
+        query.remove("annotation.family");
 
-        options.put("annotation", "sex:2;Population:ITU");
-        QueryResult<Sample> femaleIta = catalogManager.getAllSamples(studyId, options, sessionId);
+        query.put("annotation.sex", "2");
+        query.put("annotation.Population","ITU");
+        QueryResult<Sample> femaleIta = catalogManager.getAllSamples(studyId, query, options, sessionId);
         System.out.println(femaleIta);
+        Assert.assertNotEquals(0, femaleIta.getNumResults());
 
-        options.put("annotation", "sex:1;Population:ITU");
-        QueryResult<Sample> maleIta = catalogManager.getAllSamples(studyId, options, sessionId);
+        query.put("annotation.sex", "1");
+        query.put("annotation.Population", "ITU");
+        QueryResult<Sample> maleIta = catalogManager.getAllSamples(studyId, query, options, sessionId);
         System.out.println(maleIta);
+        Assert.assertNotEquals(0, maleIta.getNumResults());
 
-        options.put("annotation", "Population:ITU");
-        QueryResult<Sample> ita = catalogManager.getAllSamples(studyId, options, sessionId);
+        query.remove("annotation.sex");
+        QueryResult<Sample> ita = catalogManager.getAllSamples(studyId, query, options, sessionId);
         System.out.println(ita);
+        Assert.assertNotEquals(0, ita.getNumResults());
 
         Assert.assertEquals("Fail sample query", ita.getNumTotalResults(), maleIta.getNumTotalResults() + femaleIta.getNumTotalResults());
     }
-
 
 
     private void validate(Pedigree pedigree, VariableSet variableSet) throws CatalogException {
@@ -137,7 +159,8 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
             for (Map.Entry<String, Object> annotationEntry : annotation.entrySet()) {
                 annotationSet.add(new Annotation(annotationEntry.getKey(), annotationEntry.getValue()));
             }
-            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotationSet, "", null), null);
+            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotationSet, "",
+                    null), null);
         }
     }
 }

@@ -16,23 +16,23 @@
 
 package org.opencb.opencga.storage.core.adaptors;
 
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 
 /**
- *
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
+@Deprecated
 public interface StudyDBAdaptor {
-    
+
     QueryResult getAllStudies(QueryOptions options);
-    
+
     QueryResult listStudies();
-    
+
     QueryResult findStudyNameOrStudyId(String studyId, QueryOptions options);
-    
+
     QueryResult getStudyById(String studyId, QueryOptions options);
-    
+
     boolean close();
 
 }

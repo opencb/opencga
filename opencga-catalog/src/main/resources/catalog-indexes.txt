@@ -1,0 +1,63 @@
+{"collection": "user", "fields": {"id": 1}, "options": {}}
+{"collection": "user", "fields": {"sessions.id": 1}, "options": {}}
+{"collection": "user", "fields": {"projects.id": 1}, "options": {}}
+{"collection": "user", "fields": {"projects.alias": 1, "id": 1}, "options": {}}
+
+{"collection": "study", "fields": {"name": 1, "_projectId": 1}, "options": {}}
+{"collection": "study", "fields": {"alias": 1, "_projectId": 1}, "options": {"unique": true}}
+{"collection": "study", "fields": {"status.name": 1}, "options": {}}
+{"collection": "study", "fields": {"acl.member": 1}, "options": {}}
+{"collection": "study", "fields": {"_projectId": 1}, "options": {}}
+
+{"collection": "job", "fields": {"name": 1, "_studyId": 1}, "options": {}}
+{"collection": "job", "fields": {"toolId": 1, "_studyId": 1}, "options": {}}
+{"collection": "job", "fields": {"status.name": 1, "_studyId": 1}, "options": {}}
+{"collection": "job", "fields": {"input": 1}, "options": {}}
+{"collection": "job", "fields": {"output": 1}, "options": {}}
+{"collection": "job", "fields": {"tags": 1, "_studyId": 1}, "options": {}}
+{"collection": "job", "fields": {"acl.member": 1, "_studyId": 1}, "options": {}}
+
+{"collection": "file", "fields": {"name": 1, "_studyId": 1}, "options": {}}
+{"collection": "file", "fields": {"type": 1, "_studyId": 1}, "options": {}}
+{"collection": "file", "fields": {"format": 1, "_studyId": 1}, "options": {}}
+{"collection": "file", "fields": {"bioformat": 1, "_studyId": 1}, "options": {}}
+{"collection": "file", "fields": {"uri": 1, "_studyId": 1}, "options": {}}
+{"collection": "file", "fields": {"path": 1, "_studyId": 1}, "options": {"unique": true}}
+{"collection": "file", "fields": {"status.name": 1, "_studyId": 1}, "options": {}}
+{"collection": "file", "fields": {"sampleIds": 1}, "options": {}}
+{"collection": "file", "fields": {"jobId": 1}, "options": {}}
+{"collection": "file", "fields": {"acl.member": 1, "_studyId": 1}, "options": {}}
+{"collection": "file", "fields": {"_studyId": 1}, "options": {}}
+
+{"collection": "sample", "fields": {"name": 1, "_studyId": 1}, "options": {"unique": true}}
+{"collection": "sample", "fields": {"individualId": 1}, "options": {}}
+{"collection": "sample", "fields": {"acl.member": 1, "_studyId": 1}, "options": {}}
+{"collection": "sample", "fields": {"annotationSets.name": 1}, "options": {}}
+{"collection": "sample", "fields": {"annotationSets.variableSetId": 1}, "options": {}}
+{"collection": "sample", "fields": {"annotationSets.annotations.name": 1, "annotationSets.annotations.value": 1}, "options": {}}
+{"collection": "sample", "fields": {"status.name": 1, "_studyId": 1}, "options": {}}
+{"collection": "sample", "fields": {"ontologyTerms.id": 1}, "options": {}}
+{"collection": "sample", "fields": {"_studyId": 1}, "options": {}}
+
+{"collection": "individual", "fields": {"name": 1, "_studyId": 1}, "options": {"unique": true}}
+{"collection": "individual", "fields": {"family": 1, "_studyId": 1}, "options": {}}
+{"collection": "individual", "fields": {"acl.member": 1, "_studyId": 1}, "options": {}}
+{"collection": "individual", "fields": {"status.name": 1, "_studyId": 1}, "options": {}}
+{"collection": "individual", "fields": {"ontologyTerms.id": 1}, "options": {}}
+{"collection": "individual", "fields": {"annotationSets.name": 1}, "options": {}}
+{"collection": "individual", "fields": {"annotationSets.variableSetId": 1}, "options": {}}
+{"collection": "individual", "fields": {"annotationSets.annotations.name": 1, "annotationSets.annotations.value": 1}, "options": {}}
+{"collection": "individual", "fields": {"_studyId": 1}, "options": {}}
+
+{"collection": "cohort", "fields": {"name": 1, "_studyId": 1}, "options": {"unique": true}}
+{"collection": "cohort", "fields": {"type": 1, "_studyId": 1}, "options": {}}
+{"collection": "cohort", "fields": {"status.name": 1, "_studyId": 1}, "options": {}}
+{"collection": "cohort", "fields": {"acl.member": 1, "_studyId": 1}, "options": {}}
+{"collection": "cohort", "fields": {"annotationSets.name": 1}, "options": {}}
+{"collection": "cohort", "fields": {"annotationSets.variableSetId": 1}, "options": {}}
+{"collection": "cohort", "fields": {"annotationSets.annotations.name": 1, "annotationSets.annotations.value": 1}, "options": {}}
+
+{"collection": "dataset", "fields": {"name": 1, "_studyId": 1}, "options": {"unique": true}}
+{"collection": "dataset", "fields": {"files": 1}, "options": {}}
+{"collection": "dataset", "fields": {"acl.member": 1, "_studyId": 1}, "options": {}}
+{"collection": "dataset", "fields": {"status.name": 1, "_studyId": 1}, "options": {}}

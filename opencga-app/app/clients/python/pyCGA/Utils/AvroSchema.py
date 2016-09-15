@@ -18,6 +18,7 @@ class AvroSchemaFile:
                 multi = False
                 field_type = field["type"]
                 field_name = field["name"]
+                print (" Parse field : %s " % field_name)
 
                 try:
                     desc = field["doc"]
@@ -73,34 +74,42 @@ class AvroSchemaFile:
 
         if field_type == "record":
             fields = field["fields"]
-            variable_set.append({"id": field_name, "required": required, "type": 'OBJECT', "description": desc,
+            variable_set.append({"name": field_name, "required": required, "type": 'OBJECT', "description": desc,
                                  "variableSet": self.convert_variable_set(field), "multiValue": multi})
         elif field_type == "string":
-            variable_set.append({"id": field_name, "required": required, "type": 'TEXT', "description": desc, "multiValue": multi})
+            variable_set.append({"name": field_name, "required": required, "type": 'TEXT', "description": desc, "multiValue": multi})
             if default is not None:
                 variable_set[-1]["defaultValue"] = default
 
         elif field_type == "int" or field_type == "double":
-            variable_set.append({"id": field_name, "required": required, "type": 'NUMERIC', "description": desc, "multiValue": multi})
+            variable_set.append({"name": field_name, "required": required, "type": 'NUMERIC', "description": desc, "multiValue": multi})
             if default is not None:
                 variable_set[-1]["defaultValue"] = default
 
         elif field_type == "boolean":
-            variable_set.append({"id": field_name, "required": required, "type": 'BOOLEAN', "description": desc, "multiValue": multi})
+            variable_set.append({"name": field_name, "required": required, "type": 'BOOLEAN', "description": desc, "multiValue": multi})
             if default is not None:
                 variable_set[-1]["defaultValue"] = default
 
         elif field_type == "map":
-            variable_set.append({"id": field_name, "required": required, "type": 'OBJECT', "description": desc, "multiValue": multi})
+            variable_set.append({"name": field_name, "required": required, "type": 'OBJECT', "description": desc, "multiValue": multi})
             if default is not None:
                 variable_set[-1]["defaultValue"] = default
 
         elif field_type == "enum":
-            symbols = field["type"]["symbols"]
-            variable_set.append({"id": field_name, "required": required, "type": 'CATEGORICAL', "description": desc,
-                                 "allowedValues": symbols, "multiValue": multi})
-            if default is not None:
-                variable_set[-1]["defaultValue"] = default
+            try:
+                symbols = field["type"]["symbols"]
+                variable_set.append({"name": field_name, "required": required, "type": 'CATEGORICAL', "description": desc,
+                                     "allowedValues": symbols, "multiValue": multi})
+                if default is not None:
+                    variable_set[-1]["defaultValue"] = default
+            except:
+                symbols = field["symbols"]
+                variable_set.append({"name": field_name, "required": required, "type": 'CATEGORICAL', "description": desc,
+                                     "allowedValues": symbols, "multiValue": multi})
+                if default is not None:
+                    variable_set[-1]["defaultValue"] = default
+
 
 """
 This is how this work
@@ -109,4 +118,3 @@ a = AvroSchemaFile("/home/antonior/PycharmGEL/GelReportModels/schemas/JSONs/RDPa
 print (a.convert_variable_set(a.data))
 
 """
-

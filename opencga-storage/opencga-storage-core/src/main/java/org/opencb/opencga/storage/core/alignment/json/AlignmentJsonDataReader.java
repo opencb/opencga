@@ -32,13 +32,14 @@ import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 /**
- * Date: 18/06/14
+ * Date: 18/06/14.
+ *
  * @author Jacobo Coll Moragon <jcoll@ebi.ac.uk>
- *     
- * AlignmentsFileName     : <name>.alignments.json.gz
- * HeaderFileName         : <name>.header.json.gz
+ *         <p>
+ *         AlignmentsFileName     : <name>.alignments.json.gz
+ *         HeaderFileName         : <name>.header.json.gz
  */
-public class AlignmentJsonDataReader implements AlignmentDataReader{
+public class AlignmentJsonDataReader implements AlignmentDataReader {
 
     private final String alignmentFilename;
     private final String headerFilename;
@@ -53,11 +54,11 @@ public class AlignmentJsonDataReader implements AlignmentDataReader{
 
     private AlignmentHeader alignmentHeader;
 
-    
-    public AlignmentJsonDataReader(String baseFilename , boolean gzip) {
-        this(baseFilename+(gzip?".alignments.json.gz":".alignments.json"), baseFilename+(gzip?".header.json.gz":".header.json"));
+
+    public AlignmentJsonDataReader(String baseFilename, boolean gzip) {
+        this(baseFilename + (gzip ? ".alignments.json.gz" : ".alignments.json"), baseFilename
+                + (gzip ? ".header.json.gz" : ".header" + ".json"));
     }
-    
 
     public AlignmentJsonDataReader(String alignmentFilename, String headerFilename) {
         this.alignmentFilename = alignmentFilename;
@@ -76,7 +77,7 @@ public class AlignmentJsonDataReader implements AlignmentDataReader{
     public boolean open() {
 
         try {
-            
+
             alignmentsStream = new FileInputStream(alignmentFilename);
             headerStream = new FileInputStream(headerFilename);
 
@@ -100,7 +101,7 @@ public class AlignmentJsonDataReader implements AlignmentDataReader{
         try {
             alignmentsParser = factory.createParser(alignmentsStream);
             headerParser = factory.createParser(headerStream);
-            
+
             alignmentHeader = headerParser.readValueAs(AlignmentHeader.class);
         } catch (IOException e) {
             e.printStackTrace();
@@ -114,7 +115,7 @@ public class AlignmentJsonDataReader implements AlignmentDataReader{
     @Override
     public List<Alignment> read() {
         Alignment elem = readElem();
-        return elem != null? Arrays.asList(elem) : null;
+        return elem != null ? Arrays.asList(elem) : null;
     }
 
     public Alignment readElem() {
@@ -134,15 +135,16 @@ public class AlignmentJsonDataReader implements AlignmentDataReader{
         //List<Alignment> listRecords = new ArrayList<>(batchSize);
         List<Alignment> listRecords = new LinkedList<>();
         Alignment elem;
-        for (int i = 0; i < batchSize ; i++) {
+        for (int i = 0; i < batchSize; i++) {
             elem = readElem();
-            if(elem == null){
+            if (elem == null) {
                 break;
             }
             listRecords.add(elem);
         }
         return listRecords;
     }
+
     @Override
     public boolean post() {
         return true;

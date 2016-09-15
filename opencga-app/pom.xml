@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>0.7.0</version>
+        <version>0.8-dev</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -50,15 +50,15 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-server</artifactId>
             <version>${opencga.version}</version>
-            <type>war</type>
+            <!--<type>war</type>-->
         </dependency>
 
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -76,14 +76,6 @@
             <artifactId>jcommander</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.tomcat.embed</groupId>
-            <artifactId>tomcat-embed-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.tomcat.embed</groupId>
-            <artifactId>tomcat-embed-logging-juli</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
         </dependency>
@@ -96,6 +88,36 @@
             <artifactId>jersey-container-servlet-core</artifactId>
             <version>${jersey.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-catalog</artifactId>
+            <version>${opencga.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-core</artifactId>
+            <version>${opencga.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-hadoop</artifactId>
+            <version>${opencga.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-client</artifactId>
+            <version>${opencga.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -126,16 +148,41 @@
                             <goal>assemble</goal>
                         </goals>
                     </execution>
+                    <!--<execution>-->
+                        <!--<id>daemon-1</id>-->
+                        <!--<phase>package</phase>-->
+                        <!--<goals>-->
+                            <!--<goal>generate-daemons</goal>-->
+                        <!--</goals>-->
+                    <!--</execution>-->
                 </executions>
                 <configuration>
                     <repositoryName>libs</repositoryName>
                     <repositoryLayout>flat</repositoryLayout>
                     <useWildcardClassPath>true</useWildcardClassPath>
-                    <extraJvmArguments>-Xms256m -Xmx4096m</extraJvmArguments>
+                    <!--By default, "etc".-->
+                    <configurationDirectory>conf</configurationDirectory>
+                    <!--Do we need to include the configuration folder in the classpath?-->
+                    <includeConfigurationDirectoryInClasspath>false</includeConfigurationDirectoryInClasspath>
+                    <extraJvmArguments>-Xms256m -Xmx2048m</extraJvmArguments>
                     <programs>
                         <program>
-                            <mainClass>org.opencb.opencga.app.cli.main.OpenCGAMain</mainClass>
+                            <name>opencga-old.sh</name>
+                            <mainClass>org.opencb.opencga.app.cli.main.OpenCGAMainOld</mainClass>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
+                        <program>
                             <name>opencga.sh</name>
+                            <mainClass>org.opencb.opencga.app.cli.main.OpencgaMain</mainClass>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
+                        <program>
+                            <name>opencga-admin.sh</name>
+                            <mainClass>org.opencb.opencga.app.cli.admin.AdminMain</mainClass>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
@@ -143,6 +190,13 @@
                         <program>
                             <name>opencga-daemon.sh</name>
                             <mainClass>org.opencb.opencga.app.daemon.OpenCGADaemon</mainClass>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
+                        <program>
+                            <mainClass>org.opencb.opencga.app.cli.analysis.AnalysisMain</mainClass>
+                            <name>opencga-analysis.sh</name>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
@@ -194,10 +248,23 @@
                                     <arg value="${app.dir}/examples"/>
                                     <arg value="${app.dir}/tools"/>
                                     <arg value="${project.basedir}/../opencga-storage/build/bin"/>
-                                    <arg value="${project.basedir}/../opencga-storage/build/conf"/>
-                                    <arg value="${project.basedir}/../opencga-server/target/opencga.war"/>
                                     <arg value="${project.basedir}/../LICENSE"/>
                                     <arg value="${project.basedir}/../README.md"/>
+                                    <arg value="${build.dir}"/>
+                                </exec>
+
+                                <echo>Coping configuration files</echo>
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/../opencga-core/target/classes/configuration.yml"/>
+                                    <arg value="${project.basedir}/../opencga-catalog/target/classes/catalog-configuration.yml"/>
+                                    <arg value="${project.basedir}/../opencga-storage/opencga-storage-core/target/classes/storage-configuration.yml"/>
+                                    <arg value="${project.basedir}/../opencga-client/target/classes/client-configuration.yml"/>
+                                    <arg value="${build.dir}/conf"/>
+                                </exec>
+
+                                <echo>Coping war file</echo>
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/../opencga-server/target/${opencga.war.name}.war"/>
                                     <arg value="${build.dir}"/>
                                 </exec>
                             </target>
@@ -236,11 +303,10 @@
             <dependencies>
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
-                    <artifactId>opencga-storage-hbase</artifactId>
+                    <artifactId>opencga-storage-hadoop</artifactId>
                     <version>${opencga.version}</version>
                 </dependency>
             </dependencies>
         </profile>
     </profiles>
-
 </project>

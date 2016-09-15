@@ -20,10 +20,11 @@ import org.opencb.biodata.formats.pedigree.io.PedigreePedReader;
 import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
 import org.opencb.biodata.models.pedigree.Individual;
 import org.opencb.biodata.models.pedigree.Pedigree;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,8 +37,8 @@ import java.util.*;
  */
 public class CatalogSampleAnnotationsLoader {
 
-    private final CatalogManager catalogManager;
     private static Logger logger = LoggerFactory.getLogger(CatalogFileUtils.class);
+    private final CatalogManager catalogManager;
 
     public CatalogSampleAnnotationsLoader(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
@@ -47,10 +48,10 @@ public class CatalogSampleAnnotationsLoader {
         this.catalogManager = null;
     }
 
-    public QueryResult<Sample> loadSampleAnnotations(File pedFile, Integer variableSetId, String sessionId) throws CatalogException {
+    public QueryResult<Sample> loadSampleAnnotations(File pedFile, Long variableSetId, String sessionId) throws CatalogException {
 
         URI fileUri = catalogManager.getFileUri(pedFile);
-        int studyId = catalogManager.getStudyIdByFileId(pedFile.getId());
+        long studyId = catalogManager.getStudyIdByFileId(pedFile.getId());
         long auxTime;
         long startTime = System.currentTimeMillis();
 
@@ -75,9 +76,11 @@ public class CatalogSampleAnnotationsLoader {
                 annotationSet.add(new Annotation(annotationEntry.getKey(), annotationEntry.getValue()));
             }
             try {
-                CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotationSet, "", null), null);
+                CatalogAnnotationsValidator.checkAnnotationSet(variableSet, new AnnotationSet("", variableSet.getId(), annotationSet, "",
+                        null), null);
             } catch (CatalogException e) {
-                String message = "Validation with the variableSet {id: " + variableSetId + "} over ped File = {id: " + pedFile.getId() + ", name: \"" + pedFile.getName() + "\"} failed";
+                String message = "Validation with the variableSet {id: " + variableSetId + "} over ped File = {id: " + pedFile.getId()
+                        + ", name: \"" + pedFile.getName() + "\"} failed";
                 logger.info(message);
                 throw new CatalogException(message, e);
             }
@@ -93,13 +96,13 @@ public class CatalogSampleAnnotationsLoader {
                     "Auto-generated VariableSet from File = {id: " + pedFile.getId() + ", name: \"" + pedFile.getName() + "\"}",
                     null, variableSet.getVariables(), sessionId).getResult().get(0);
             variableSetId = variableSet.getId();
-            logger.debug("Added VariableSet = {id: {}} in {}ms", variableSetId, System.currentTimeMillis()-auxTime);
+            logger.debug("Added VariableSet = {id: {}} in {}ms", variableSetId, System.currentTimeMillis() - auxTime);
         }
 
         //Add Samples
-        QueryOptions samplesQuery = new QueryOptions("name", new LinkedList<>(ped.getIndividuals().keySet()));
+        Query samplesQuery = new Query("name", new LinkedList<>(ped.getIndividuals().keySet()));
         Map<String, Sample> loadedSamples = new HashMap<>();
-        for (Sample sample : catalogManager.getAllSamples(studyId, samplesQuery, sessionId).getResult()) {
+        for (Sample sample : catalogManager.getAllSamples(studyId, samplesQuery, null, sessionId).getResult()) {
             loadedSamples.put(sample.getName(), sample);
         }
 
@@ -111,44 +114,47 @@ public class CatalogSampleAnnotationsLoader {
                 logger.info("Sample " + individual.getId() + " already loaded with id : " + sample.getId());
             } else {
                 QueryResult<Sample> sampleQueryResult = catalogManager.createSample(studyId, individual.getId(), pedFile.getName(),
-                        "Sample loaded from the pedigree File = {id: " + pedFile.getId() + ", name: \"" + pedFile.getName() + "\" }"
-                        , Collections.<String, Object>emptyMap(), null, sessionId);
+                        "Sample loaded from the pedigree File = {id: " + pedFile.getId() + ", name: \"" + pedFile.getName() + "\" }",
+                        Collections.emptyMap(), null, sessionId);
                 sample = sampleQueryResult.getResult().get(0);
             }
             sampleMap.put(individual.getId(), sample);
         }
-        logger.debug("Added {} samples in {}ms", ped.getIndividuals().size(), System.currentTimeMillis()-auxTime);
+        logger.debug("Added {} samples in {}ms", ped.getIndividuals().size(), System.currentTimeMillis() - auxTime);
 
         //Annotate Samples
         auxTime = System.currentTimeMillis();
         for (Map.Entry<String, Sample> entry : sampleMap.entrySet()) {
-            Map<String, Object> annotations = getAnnotation(ped.getIndividuals().get(entry.getKey()), sampleMap, variableSet, ped.getFields());
-            catalogManager.annotateSample(entry.getValue().getId(), "Pedigree annotation", variableSetId, annotations, Collections.<String, Object>emptyMap(), false, sessionId);
+            Map<String, Object> annotations = getAnnotation(ped.getIndividuals().get(entry.getKey()), sampleMap, variableSet, ped
+                    .getFields());
+            catalogManager.createSampleAnnotationSet(Long.toString(entry.getValue().getId()), variableSetId, "pedigreeAnnotation",
+                    annotations, Collections.emptyMap(), sessionId);
         }
         logger.debug("Annotated {} samples in {}ms", ped.getIndividuals().size(), System.currentTimeMillis() - auxTime);
 
         //TODO: Create Cohort
 
-        QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, new QueryOptions("variableSetId", variableSetId), sessionId);
-        return new QueryResult<>("loadPedigree", (int)(System.currentTimeMillis() - startTime),
+        QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, new Query("variableSetId", variableSetId),
+                null, sessionId);
+        return new QueryResult<>("loadPedigree", (int) (System.currentTimeMillis() - startTime),
                 sampleMap.size(), sampleMap.size(), null, null, sampleQueryResult.getResult());
     }
 
     /**
-     *
-     * @param individual            Individual from Pedigree file
-     * @param sampleMap             Map<String, Sample>, to relate "sampleName" with "sampleId"
-     * @param variableSet           VariableSet to annotate
-     * @param fields
-     * @return
+     * @param individual  Individual from Pedigree file
+     * @param sampleMap   Map<String, Sample>, to relate "sampleName" with "sampleId"
+     * @param variableSet VariableSet to annotate
+     * @param fields      fields
+     * @return Map<String, Object> Map
      */
-    protected Map<String, Object> getAnnotation(Individual individual, Map<String, Sample> sampleMap, VariableSet variableSet, Map<String, Integer> fields) {
+    protected Map<String, Object> getAnnotation(Individual individual, Map<String, Sample> sampleMap, VariableSet variableSet,
+                                                Map<String, Integer> fields) {
         if (sampleMap == null) {
             sampleMap = new HashMap<>();
         }
         Map<String, Object> annotations = new HashMap<>();
         for (Variable variable : variableSet.getVariables()) {
-            switch (variable.getId()) {
+            switch (variable.getName()) {
                 case "family":
                     annotations.put("family", individual.getFamily());
                     break;
@@ -188,7 +194,10 @@ public class CatalogSampleAnnotationsLoader {
                     }
                     break;
                 default:
-                    annotations.put(variable.getId(), individual.getFields()[fields.get(variable.getId())]);
+                    Integer idx = fields.get(variable.getName());
+                    if (idx != null) {
+                        annotations.put(variable.getName(), individual.getFields()[idx]);
+                    }
                     break;
             }
         }
@@ -201,19 +210,19 @@ public class CatalogSampleAnnotationsLoader {
         List<Variable> variableList = new LinkedList<>();
 
         String category = "PEDIGREE";
-        variableList.add(new Variable("family", category, Variable.VariableType.TEXT,      null, true,
+        variableList.add(new Variable("family", category, Variable.VariableType.TEXT, null, true,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
-        variableList.add(new Variable("id", category, Variable.VariableType.NUMERIC,       null, true,
+        variableList.add(new Variable("id", category, Variable.VariableType.NUMERIC, null, true,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
-        variableList.add(new Variable("name", category, Variable.VariableType.TEXT,        null, true,
+        variableList.add(new Variable("name", category, Variable.VariableType.TEXT, null, true,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
         variableList.add(new Variable("fatherId", category, Variable.VariableType.NUMERIC, null, false,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
-        variableList.add(new Variable("fatherName", category, Variable.VariableType.TEXT,  null, false,
+        variableList.add(new Variable("fatherName", category, Variable.VariableType.TEXT, null, false,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
         variableList.add(new Variable("motherId", category, Variable.VariableType.NUMERIC, null, false,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
-        variableList.add(new Variable("motherName", category, Variable.VariableType.TEXT,  null, false,
+        variableList.add(new Variable("motherName", category, Variable.VariableType.TEXT, null, false,
                 false, Collections.<String>emptyList(), variableList.size(), null, "", null, null));
 
         Set<String> allowedSexValues = new HashSet<>();
@@ -222,19 +231,19 @@ public class CatalogSampleAnnotationsLoader {
             allowedPhenotypeValues.add(individual.getPhenotype());
             allowedSexValues.add(individual.getSex());
         }
-        variableList.add(new Variable("sex", category, Variable.VariableType.CATEGORICAL,   null, true,
+        variableList.add(new Variable("sex", category, Variable.VariableType.CATEGORICAL, null, true,
                 false, new LinkedList<>(allowedSexValues), variableList.size(), null, "", null, null));
-        variableList.add(new Variable("phenotype", category, Variable.VariableType.CATEGORICAL,    null, true,
+        variableList.add(new Variable("phenotype", category, Variable.VariableType.CATEGORICAL, null, true,
                 false, new LinkedList<>(allowedPhenotypeValues), variableList.size(), null, "", null, null));
 
 
-        int categoricalThreshold = (int) (ped.getIndividuals().size()*0.1);
+        int categoricalThreshold = (int) (ped.getIndividuals().size() * 0.1);
         for (Map.Entry<String, Integer> entry : ped.getFields().entrySet()) {
             boolean isNumerical = true;
             Set<String> allowedValues = new HashSet<>();
             for (Individual individual : ped.getIndividuals().values()) {
                 String s = individual.getFields()[entry.getValue()];
-                if(isNumerical) {
+                if (isNumerical) {
                     try {
                         Double.parseDouble(s);
                     } catch (Exception e) {

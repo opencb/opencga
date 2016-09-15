@@ -17,14 +17,14 @@
 package org.opencb.opencga.analysis.storage.variant;
 
 
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
@@ -49,7 +49,7 @@ public abstract class CatalogVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     private static VariantDBAdaptor buildDBAdaptor(CatalogManager catalogManager, String fileId, String sessionId) throws CatalogException, ClassNotFoundException, IllegalAccessException, InstantiationException, StorageManagerException {
-        int id = catalogManager.getFileId(fileId);
+        long id = catalogManager.getFileId(fileId);
         File file = catalogManager.getFile(id, sessionId).getResult().get(0);
         String dbName = file.getAttributes().get("dbName").toString();
         String storageEngine = file.getAttributes().get("storageEngine").toString();
@@ -224,7 +224,7 @@ public abstract class CatalogVariantDBAdaptor implements VariantDBAdaptor {
         QueryOptions options = new QueryOptions("include", Collections.singletonList("projects.studies.id"));
         studyMap = new HashMap<>();
         for (Integer studyId : studies) {
-            QueryResult<Study> fileQueryResult = catalogManager.getStudy(studyId, sessionId, options);
+            QueryResult<Study> fileQueryResult = catalogManager.getStudy(studyId, options, sessionId);
             Study s = fileQueryResult.getResult().get(0);
             studyMap.put(studyId, s);
         }

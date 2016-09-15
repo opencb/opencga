@@ -16,38 +16,64 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
+import org.opencb.opencga.core.common.TimeUtils;
+
 import java.util.*;
 
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Sample {
+public class Sample extends Annotable<SampleAclEntry> {
 
-    private int id;
+    private long id;
     private String name;
     private String source;
-    private int individualId;
+    private long individualId;
+    private String creationDate;
+    private Status status;
     private String description;
+    private List<OntologyTerm> ontologyTerms;
 
-    private List<AclEntry> acl;
-    private List<AnnotationSet> annotationSets;
+//    private List<SampleAclEntry> acl;
+//    private List<AnnotationSet> annotationSets;
 
     private Map<String, Object> attributes;
+
 
     public Sample() {
     }
 
-    public Sample(int id, String name, String source, int individualId, String description) {
-        this(id, name, source, individualId, description, Collections.<AclEntry>emptyList(), new LinkedList<AnnotationSet>(), new HashMap<String, Object>());
+    public Sample(long id, String name, String source, long individualId, String description) {
+        this(id, name, source, individualId, description, Collections.emptyList(), new LinkedList<>(), new HashMap<>());
     }
 
-    public Sample(int id, String name, String source, int individualId, String description,
-                  List<AclEntry> acl, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+    public Sample(long id, String name, String source, long individualId, String description, List<SampleAclEntry> acl,
+                  List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.source = source;
         this.individualId = individualId;
+        this.creationDate = TimeUtils.getTime();
+        this.status = new Status();
         this.description = description;
+        this.ontologyTerms = Collections.emptyList();
+        this.acl = acl;
+        this.annotationSets = annotationSets;
+        this.attributes = attributes;
+    }
+
+    public Sample(long id, String name, String source, long individualId, String creationDate, Status status, String description,
+                  List<OntologyTerm> ontologyTerms, List<SampleAclEntry> acl, List<AnnotationSet> annotationSets,
+                  Map<String, Object> attributes) {
+        this.id = id;
+        this.name = name;
+        this.source = source;
+        this.individualId = individualId;
+        this.creationDate = creationDate;
+        this.status = status;
+        this.description = description;
+        this.ontologyTerms = ontologyTerms;
         this.acl = acl;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
@@ -55,23 +81,27 @@ public class Sample {
 
     @Override
     public String toString() {
-        return "Sample{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", source='" + source + '\'' +
-                ", individualId=" + individualId +
-                ", description='" + description + '\'' +
-                ", acl=" + acl +
-                ", annotationSets=" + annotationSets +
-                ", attributes=" + attributes +
-                '}';
+        final StringBuilder sb = new StringBuilder("Sample{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", source='").append(source).append('\'');
+        sb.append(", individualId=").append(individualId);
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", status=").append(status);
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", ontologyTerms=").append(ontologyTerms);
+        sb.append(", acl=").append(acl);
+        sb.append(", annotationSets=").append(annotationSets);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public Sample setId(int id) {
+    public Sample setId(long id) {
         this.id = id;
         return this;
     }
@@ -94,12 +124,30 @@ public class Sample {
         return this;
     }
 
-    public int getIndividualId() {
+    public long getIndividualId() {
         return individualId;
     }
 
-    public Sample setIndividualId(int individualId) {
+    public Sample setIndividualId(long individualId) {
         this.individualId = individualId;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public Sample setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+        return this;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public Sample setStatus(Status status) {
+        this.status = status;
         return this;
     }
 
@@ -112,23 +160,28 @@ public class Sample {
         return this;
     }
 
-    public List<AclEntry> getAcl() {
-        return acl;
+    public List<OntologyTerm> getOntologyTerms() {
+        return ontologyTerms;
     }
 
-    public Sample setAcl(List<AclEntry> acl) {
+    public Sample setOntologyTerms(List<OntologyTerm> ontologyTerms) {
+        this.ontologyTerms = ontologyTerms;
+        return this;
+    }
+
+    public Sample setAcl(List<SampleAclEntry> acl) {
         this.acl = acl;
         return this;
     }
 
-    public List<AnnotationSet> getAnnotationSets() {
-        return annotationSets;
-    }
-
-    public Sample setAnnotationSets(List<AnnotationSet> annotationSets) {
-        this.annotationSets = annotationSets;
-        return this;
-    }
+//    public List<AnnotationSet> getAnnotationSets() {
+//        return annotationSets;
+//    }
+//
+//    public Sample setAnnotationSets(List<AnnotationSet> annotationSets) {
+//        this.annotationSets = annotationSets;
+//        return this;
+//    }
 
     public Map<String, Object> getAttributes() {
         return attributes;
@@ -138,4 +191,5 @@ public class Sample {
         this.attributes = attributes;
         return this;
     }
+
 }

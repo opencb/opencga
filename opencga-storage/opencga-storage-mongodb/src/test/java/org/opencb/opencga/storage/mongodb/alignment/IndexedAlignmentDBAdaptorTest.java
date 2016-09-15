@@ -19,67 +19,79 @@ package org.opencb.opencga.storage.mongodb.alignment;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.TemporaryFolder;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.alignment.stats.MeanCoverage;
 import org.opencb.biodata.models.alignment.stats.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.tools.alignment.AlignmentFileUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.mongodb.MongoDataStore;
+import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.core.common.IOUtils;
+import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
+import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
+public class IndexedAlignmentDBAdaptorTest extends GenericTest {
 
 
-    private IndexedAlignmentDBAdaptor dbAdaptor;
+    public static final String DB_NAME = "opencga-alignment-test";
+    private static IndexedAlignmentDBAdaptor dbAdaptor;
     //private AlignmentQueryBuilder dbAdaptor;
-    private MongoDBAlignmentStorageManager manager;
-    private Path bamFile;
+    private static MongoDBAlignmentStorageManager manager;
+    private static Path bamFile;
 
-    @Before
-    public void before() throws IOException, FileFormatException {
+    @ClassRule
+    public static TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+    @BeforeClass
+    public static void before() throws IOException, FileFormatException, StorageManagerException, IllegalOpenCGACredentialsException {
         StorageConfiguration storageConfiguration = StorageConfiguration
                 .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
+        StorageEtlConfiguration configuration = storageConfiguration.getStorageEngine(MongoDBAlignmentStorageManager.STORAGE_ENGINE_ID).getAlignment();
         manager = new MongoDBAlignmentStorageManager(storageConfiguration);
 
-        Path rootDir = Paths.get("/tmp/AlignmentDBAdaptorTest/");
-        if (rootDir.toFile().exists()) {
-            IOUtils.deleteDirectory(rootDir);
+        MongoCredentials mongoCredentials = new MongoCredentials(configuration.getDatabase(), DB_NAME);
+        try (MongoDataStoreManager mongoDataStoreManager = new MongoDataStoreManager(mongoCredentials.getDataStoreServerAddresses())) {
+            MongoDataStore mongoDataStore = mongoDataStoreManager.get(DB_NAME);
+            mongoDataStoreManager.drop(DB_NAME);
         }
-        Files.createDirectories(rootDir);
+
+        Path rootDir = temporaryFolder.getRoot().toPath();
         String bamFileName = "HG00096.chrom20.small.bam";
         bamFile = rootDir.resolve(bamFileName);
-        Files.copy(IndexedAlignmentDBAdaptorTest.class.getClassLoader().getResourceAsStream(bamFileName), bamFile, StandardCopyOption.REPLACE_EXISTING);
-        manager.createBai(bamFile, rootDir);
+        System.out.println("bamFile = " + bamFile);
+        Files.copy(IndexedAlignmentDBAdaptorTest.class.getClassLoader().getResourceAsStream(bamFileName), bamFile, StandardCopyOption
+                .REPLACE_EXISTING);
+        AlignmentFileUtils.createIndex(bamFile);
 
-        ObjectMap options = storageConfiguration.getStorageEngine(MongoDBAlignmentStorageManager.STORAGE_ENGINE_ID).getAlignment().getOptions();
+        ObjectMap options = configuration.getOptions();
         options.put(AlignmentStorageManager.Options.FILE_ID.key(), "HG00096");
-        options.put(AlignmentStorageManager.Options.DB_NAME.key(), "opencga-alignment-test");
-        manager.preTransform(bamFile.toUri());
-        manager.transform(bamFile.toUri(), null, rootDir.toUri());
-        manager.postTransform(bamFile.toUri());
-        manager.preLoad(bamFile.toUri(), rootDir.toUri());
-        manager.load(bamFile.toUri());
-        manager.postLoad(bamFile.toUri(), rootDir.toUri());
+        options.put(AlignmentStorageManager.Options.DB_NAME.key(), DB_NAME);
+        StorageETLResult storageETLResult = manager.index(Collections.singletonList(bamFile.toUri()), rootDir.toUri(), true, true, true).get(0);
+        System.out.println("storageETLResult = " + storageETLResult);
 
 //            Path adaptorPath = Paths.get("/media/jacobo/Nusado/opencga/sequence", "human_g1k_v37.fasta.gz.sqlite.db");
-        dbAdaptor = (IndexedAlignmentDBAdaptor) manager.getDBAdaptor("opencga-alignment-test");
+        dbAdaptor = (IndexedAlignmentDBAdaptor) manager.getDBAdaptor(DB_NAME);
     }
 
     @Test
@@ -89,7 +101,7 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
         //qo.put("view_as_pairs", true);
 
         qo.put(IndexedAlignmentDBAdaptor.QO_BAM_PATH, bamFile.toString());
-        qo.put(IndexedAlignmentDBAdaptor.QO_BAI_PATH, bamFile.toString()+".bai");
+        qo.put(IndexedAlignmentDBAdaptor.QO_BAI_PATH, bamFile.toString() + ".bai");
         qo.put(IndexedAlignmentDBAdaptor.QO_PROCESS_DIFFERENCES, false);
 
         //Region region = new Region("20", 20000000, 20000100);
@@ -97,16 +109,16 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
 
         QueryResult alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(Arrays.asList(region), qo);
         printQueryResult(alignmentsByRegion);
-        jsonQueryResult("HG04239",alignmentsByRegion);
+        jsonQueryResult("HG04239", alignmentsByRegion);
 
         qo.put(IndexedAlignmentDBAdaptor.QO_PROCESS_DIFFERENCES, true);
         alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(Arrays.asList(new Region("20", 29829000, 29829500)), qo);
         printQueryResult(alignmentsByRegion);
-        jsonQueryResult("HG04239",alignmentsByRegion);
+        jsonQueryResult("HG04239", alignmentsByRegion);
 
         alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(Arrays.asList(new Region("20", 29829500, 29830000)), qo);
         printQueryResult(alignmentsByRegion);
-        jsonQueryResult("HG04239",alignmentsByRegion);
+        jsonQueryResult("HG04239", alignmentsByRegion);
 
     }
 
@@ -164,24 +176,24 @@ public class IndexedAlignmentDBAdaptorTest  extends GenericTest{
         JsonFactory factory = new JsonFactory();
         ObjectMapper jsonObjectMapper = new ObjectMapper(factory);
         jsonObjectMapper.addMixInAnnotations(Alignment.AlignmentDifference.class, AlignmentDifferenceJsonMixin.class);
-        JsonGenerator generator = factory.createGenerator(new FileOutputStream("/tmp/"+name+"."+qr.getId()+".json"));
+        JsonGenerator generator = factory.createGenerator(new FileOutputStream("/tmp/" + name + "." + qr.getId() + ".json"));
 
         generator.writeObject(qr.getResult());
 
     }
 
-    private void printQueryResult(QueryResult cr){
-        String s = cr.getResultType();
-        System.out.println("cr.getDbTime() = " + cr.getDbTime());
+    private void printQueryResult(QueryResult qr) {
+        String s = qr.getResultType();
+        System.out.println("qr.getDbTime() = " + qr.getDbTime());
         if (s.equals(MeanCoverage.class.getCanonicalName())) {
-            List<MeanCoverage> meanCoverageList = cr.getResult();
-            for(MeanCoverage mc : meanCoverageList){
-                System.out.println(mc.getRegion().toString()+" : " + mc.getCoverage());
+            List<MeanCoverage> meanCoverageList = qr.getResult();
+            for (MeanCoverage mc : meanCoverageList) {
+                System.out.println(mc.getRegion().toString() + " : " + mc.getCoverage());
             }
         } else if (s.equals(RegionCoverage.class.getCanonicalName())) {
-            List<RegionCoverage> regionCoverageList = cr.getResult();
-            for(RegionCoverage rc : regionCoverageList){
-                System.out.print(new Region(rc.getChromosome(), (int) rc.getStart(), (int) rc.getEnd()).toString()+ " (");
+            List<RegionCoverage> regionCoverageList = qr.getResult();
+            for (RegionCoverage rc : regionCoverageList) {
+                System.out.print(new Region(rc.getChromosome(), (int) rc.getStart(), (int) rc.getEnd()).toString() + " (");
                 for (int i = 0; i < rc.getAll().length; i++) {
                     System.out.print(rc.getAll()[i] + ",");
                 }

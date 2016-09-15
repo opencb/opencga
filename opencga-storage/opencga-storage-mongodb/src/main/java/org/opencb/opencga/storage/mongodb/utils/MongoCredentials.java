@@ -16,67 +16,83 @@
 
 package org.opencb.opencga.storage.mongodb.utils;
 
-import com.mongodb.MongoCredential;
-import org.opencb.datastore.core.config.DataStoreServerAddress;
-import org.opencb.datastore.mongodb.MongoDBConfiguration;
+import com.mongodb.MongoException;
+import com.mongodb.client.MongoIterable;
+import org.opencb.commons.datastore.core.DataStoreServerAddress;
+import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
+import org.opencb.commons.datastore.mongodb.MongoDataStore;
+import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.core.auth.OpenCGACredentials;
+import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Properties;
+import java.util.Map;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
  */
 public class MongoCredentials implements OpenCGACredentials {
 
-    List<DataStoreServerAddress> dataStoreServerAddresses;
     private final String mongoDbName;
-    @Deprecated private MongoCredential mongoCredentials;
-    private String authenticationDatabase;
+    private MongoDBConfiguration mongoDBConfiguration;
 
-
-    public MongoCredentials(String mongoHost, int mongoPort, String mongoDbName, String mongoUser, String mongoPassword)
+    public MongoCredentials(String mongoHost, int mongoPort, String mongoDbName, String mongoUser, String mongoPassword,
+                            boolean checkConnection)
             throws IllegalOpenCGACredentialsException {
-        dataStoreServerAddresses = new LinkedList<>();
-        dataStoreServerAddresses.add(new DataStoreServerAddress(mongoHost, mongoPort));
         this.mongoDbName = mongoDbName;
-        if (mongoUser != null && mongoPassword != null) {
-            mongoCredentials = MongoCredential.createMongoCRCredential(mongoUser, mongoDbName, mongoPassword.toCharArray());
-        }
+        mongoDBConfiguration = MongoDBConfiguration.builder()
+                .setUserPassword(mongoUser, mongoPassword)
+                .addServerAddress(new DataStoreServerAddress(mongoHost, mongoPort))
+                .build();
 
-        check();
+        if (checkConnection) {
+            check();
+        }
+    }
+
+    public MongoCredentials(DatabaseCredentials database, String dbName) throws IllegalOpenCGACredentialsException {
+        this(MongoCredentials.parseDataStoreServerAddresses(database.getHosts()), dbName,
+                database.getUser(), database.getPassword(), database.getOptions(), false);
     }
 
     public MongoCredentials(List<DataStoreServerAddress> dataStoreServerAddresses, String dbName, String mongoUser, String mongoPassword)
             throws IllegalOpenCGACredentialsException {
-        this.dataStoreServerAddresses = dataStoreServerAddresses;
+        this(dataStoreServerAddresses, dbName, mongoUser, mongoPassword, Collections.emptyMap(), false);
+    }
+
+    public MongoCredentials(List<DataStoreServerAddress> dataStoreServerAddresses, String dbName, String mongoUser, String mongoPassword,
+                            Map<? extends String, ?> inputOptions, boolean checkConnection)
+            throws IllegalOpenCGACredentialsException {
         this.mongoDbName = dbName;
-        if (mongoUser != null && mongoPassword != null) {
-            mongoCredentials = MongoCredential.createMongoCRCredential(mongoUser, mongoDbName, mongoPassword.toCharArray());
-        }
+        mongoDBConfiguration = MongoDBConfiguration.builder()
+                .setUserPassword(mongoUser, mongoPassword)
+                .setServerAddress(dataStoreServerAddresses)
+                .load(inputOptions == null ? Collections.emptyMap() : inputOptions)
+                .build();
 
-        check();
-    }
-
-    @Deprecated
-    public MongoCredentials(Properties properties) {
-        dataStoreServerAddresses = new LinkedList<>();
-        String mongoHost = properties.getProperty("mongo_host");
-        int mongoPort = Integer.parseInt(properties.getProperty("mongo_port", "-1"));
-        dataStoreServerAddresses.add(new DataStoreServerAddress(mongoHost, mongoPort));
-        this.mongoDbName = properties.getProperty("mongo_db_name");
-        String mongoUser = properties.getProperty("mongo_user", null);
-        String mongoPassword = properties.getProperty("mongo_password", null);
-        if (mongoUser != null && mongoPassword != null) {
-            mongoCredentials = MongoCredential.createMongoCRCredential(mongoUser, mongoDbName, mongoPassword.toCharArray());
+        if (checkConnection) {
+            check();
         }
     }
+
 
     @Override
-    public boolean check() throws IllegalOpenCGACredentialsException {
-        return true;
+    public boolean check() {
+        try (MongoDataStoreManager mongoManager = new MongoDataStoreManager(getDataStoreServerAddresses())) {
+            MongoDataStore db = mongoManager.get(getMongoDbName(), getMongoDBConfiguration());
+            MongoIterable<String> strings = db.getDb().listCollectionNames();
+            int count = 0;
+            for (String string : strings) {
+                count++;
+            }
+            return true;
+        } catch (MongoException e) {
+            //FIXME: Throw IllegalOpenCGACredentialsException ??
+            return false;
+        }
     }
 
     @Override
@@ -84,56 +100,49 @@ public class MongoCredentials implements OpenCGACredentials {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    @Deprecated
-    public MongoCredential getMongoCredentials() {
-        return mongoCredentials;
-    }
-
     public String getMongoDbName() {
         return mongoDbName;
     }
 
     public List<DataStoreServerAddress> getDataStoreServerAddresses() {
-        return dataStoreServerAddresses;
+        return mongoDBConfiguration.getAsList(MongoDBConfiguration.SERVER_ADDRESS, DataStoreServerAddress.class);
     }
 
     public MongoDBConfiguration getMongoDBConfiguration() {
-        MongoDBConfiguration.Builder builder = MongoDBConfiguration.builder()
-                .add("username", this.getUsername());
-        if (this.getPassword() != null) {
-            builder.add("password", new String(this.getPassword()));
-        }
-        if (authenticationDatabase != null && !authenticationDatabase.isEmpty()) {
-            builder.add("authenticationDatabase", authenticationDatabase);
-        }
-        return builder.build();
+        return mongoDBConfiguration;
     }
 
     public String getUsername() {
-        return mongoCredentials != null ? mongoCredentials.getUserName() : null;
+        return mongoDBConfiguration.getString(MongoDBConfiguration.USERNAME);
     }
-    
+
     public char[] getPassword() {
-        return mongoCredentials != null ? mongoCredentials.getPassword() : null;
+        return mongoDBConfiguration.getString(MongoDBConfiguration.PASSWORD, "").toCharArray();
     }
 
     public String getAuthenticationDatabase() {
-        return authenticationDatabase;
+        return mongoDBConfiguration.getString(MongoDBConfiguration.AUTHENTICATION_DATABASE);
     }
 
     public void setAuthenticationDatabase(String authenticationDatabase) {
-        this.authenticationDatabase = authenticationDatabase;
+        mongoDBConfiguration.put(MongoDBConfiguration.AUTHENTICATION_DATABASE, authenticationDatabase);
     }
 
     public static List<DataStoreServerAddress> parseDataStoreServerAddresses(String hosts) {
+        return parseDataStoreServerAddresses(Collections.singletonList(hosts));
+    }
+
+    public static List<DataStoreServerAddress> parseDataStoreServerAddresses(List<String> hosts) {
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : hosts.split(",")) {
-            if (hostPort.contains(":")) {
-                String[] split = hostPort.split(":");
-                Integer port = Integer.valueOf(split[1]);
-                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
-            } else {
-                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
+        for (String host : hosts) {
+            for (String hostPort : host.split(",")) {
+                if (hostPort.contains(":")) {
+                    String[] split = hostPort.split(":");
+                    Integer port = Integer.valueOf(split[1]);
+                    dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
+                } else {
+                    dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
+                }
             }
         }
         return dataStoreServerAddresses;

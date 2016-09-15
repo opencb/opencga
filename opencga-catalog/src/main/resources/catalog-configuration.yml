@@ -1,0 +1,68 @@
+---
+logLevel: "INFO"
+logFile: null
+
+openRegister: false
+userDefaultDiskQuota: 200000
+
+databasePrefix: ${OPENCGA.CATALOG.DB.PREFIX}
+dataDir: ${OPENCGA.CATALOG.ROOTDIR}
+tempJobsDir: ${OPENCGA.CATALOG.JOBS.ROOTDIR}
+toolsDir: "tools"
+
+admin:
+  password: ""
+  email: ""
+
+audit:
+  maxDocuments: 20000000 # Maximum number of documents that will be created in the audit collection.
+  maxSize: 100000000000  # Maximum size that the audit collection will have in bytes.
+  javaClass: ""          # Java class of the audit implementation to be used to audit.
+  exclude: []            # Array of resource:action to select pairwise resource-actions to be excluded for audit purposes.
+
+monitor:
+  daysToRemove: 30
+  executionDaemonInterval: 4000 # number of milliseconds between checks
+  fileDaemonInterval: 8000      # number of milliseconds between checks
+  port: 9092
+
+execution:
+  mode: "local"
+  defaultQueue: ""
+  availableQueues: ""
+  toolsPerQueue: {}
+
+emailServer:
+  host: ${OPENCGA.CATALOG.MAIL.HOST}
+  port: ${OPENCGA.CATALOG.MAIL.PORT}
+  user: ${OPENCGA.CATALOG.MAIL.USER}
+  password: ${OPENCGA.CATALOG.MAIL.PASSWORD}
+  from: ""
+  ssl: false
+
+acl:                 # Do not touch the acl configuration. If this is not properly set, the daemons might not work.
+- member: "admin"
+  permissions:
+  - "VIEW_FILE_HEADERS"
+  - "VIEW_FILE_CONTENTS"
+  - "VIEW_FILES"
+  - "UPDATE_FILES"
+  - "VIEW_JOBS"
+  - "UPDATE_JOBS"
+
+database:
+  hosts:
+  - ${OPENCGA.CATALOG.DB.HOSTS}
+  database: ${OPENCGA.CATALOG.DB.DATABASE}
+  user: ${OPENCGA.CATALOG.DB.USER}
+  password: ${OPENCGA.CATALOG.DB.PASSWORD}
+  options:
+    authenticationDatabase: ${OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE}
+
+authenticationOrigins:
+- id: ${OPENCGA.CATALOG.AUTHENTICATION.ID}
+  mode: ${OPENCGA.CATALOG.AUTHENTICATION.MODE}
+  host: ${OPENCGA.CATALOG.AUTHENTICATION.HOST}
+  options:
+    usersSearch: ${OPENCGA.CATALOG.AUTHENTICATION.OPTIONS.USERS}
+    groupsSearch: ${OPENCGA.CATALOG.AUTHENTICATION.OPTIONS.GROUPS}

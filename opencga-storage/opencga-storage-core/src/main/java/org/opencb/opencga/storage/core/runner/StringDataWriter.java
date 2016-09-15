@@ -32,13 +32,22 @@ import java.util.zip.GZIPOutputStream;
  * Created by jacobo on 25/02/15.
  */
 public class StringDataWriter implements DataWriter<String> {
+
     protected OutputStream os;
     protected final Path path;
+    protected final boolean endLine;
+    protected long writtenLines = 0L;
+
     protected static Logger logger = LoggerFactory.getLogger(StringDataWriter.class);
-    protected long writtenLines = 0l;
 
     public StringDataWriter(Path path) {
         this.path = path;
+        this.endLine = false;
+    }
+
+    public StringDataWriter(Path path, boolean endLine) {
+        this.path = path;
+        this.endLine = endLine;
     }
 
     public static void write(Path path, List<String> batch) {
@@ -98,10 +107,13 @@ public class StringDataWriter implements DataWriter<String> {
     @Override
     public boolean write(String elem) {
         try {
-            if ( ++writtenLines % 1000 == 0) {
+            if (++writtenLines % 1000 == 0) {
                 logger.info("written lines = " + writtenLines);
             }
             os.write(elem.getBytes());
+            if (endLine) {
+                os.write('\n');
+            }
         } catch (IOException e) {
             e.printStackTrace();
             return false;
@@ -114,10 +126,13 @@ public class StringDataWriter implements DataWriter<String> {
         try {
             long start = System.currentTimeMillis();
             for (String b : batch) {
-                if ( ++writtenLines % 1000 == 0) {
+                if (++writtenLines % 1000 == 0) {
                     logger.info("written lines = " + writtenLines);
                 }
                 os.write(b.getBytes());
+                if (endLine) {
+                    os.write('\n');
+                }
             }
             logger.debug("another batch of {} elements written. time: {}ms", batch.size(), System.currentTimeMillis() - start);
         } catch (IOException e) {

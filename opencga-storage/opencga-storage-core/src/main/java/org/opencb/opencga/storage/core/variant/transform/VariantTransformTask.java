@@ -3,10 +3,12 @@ package org.opencb.opencga.storage.core.variant.transform;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderVersion;
+
 import org.apache.avro.generic.GenericRecord;
 import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
 import org.opencb.biodata.models.variant.*;
@@ -25,9 +27,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Created on 25/02/16
+ * Created on 25/02/16.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -37,16 +40,20 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
     protected final VariantSource source;
     protected boolean includeSrc = false;
 
-    protected final static Logger logger = LoggerFactory.getLogger(VariantAvroTransformTask.class);
+    protected final Logger logger = LoggerFactory.getLogger(VariantAvroTransformTask.class);
     protected final VCFCodec vcfCodec;
     protected final VariantContextToVariantConverter converter;
     protected final VariantNormalizer normalizer;
     protected final Path outputFileJsonFile;
     protected final VariantGlobalStatsCalculator variantStatsTask;
+    protected final AtomicLong hts_convert = new AtomicLong(0);
+    protected final AtomicLong avro_convert = new AtomicLong(0);
+    protected final AtomicLong norm_convert = new AtomicLong(0);
 
 
     public VariantTransformTask(VariantFactory factory,
-                                VariantSource source, Path outputFileJsonFile, VariantGlobalStatsCalculator variantStatsTask, boolean includesrc) {
+                                VariantSource source, Path outputFileJsonFile, VariantGlobalStatsCalculator variantStatsTask,
+                                boolean includesrc) {
         this.factory = factory;
         this.source = source;
         this.outputFileJsonFile = outputFileJsonFile;
@@ -59,7 +66,8 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
     }
 
     public VariantTransformTask(VCFHeader header, VCFHeaderVersion version,
-                                VariantSource source, Path outputFileJsonFile, VariantGlobalStatsCalculator variantStatsTask, boolean includeSrc) {
+                                VariantSource source, Path outputFileJsonFile, VariantGlobalStatsCalculator variantStatsTask,
+                                boolean includeSrc, boolean generateReferenceBlocks) {
         this.variantStatsTask = variantStatsTask;
         this.factory = null;
         this.source = source;
@@ -70,6 +78,7 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
         this.vcfCodec.setVCFHeader(header, version);
         this.converter = new VariantContextToVariantConverter(source.getStudyId(), source.getFileId(), source.getSamples());
         this.normalizer = new VariantNormalizer();
+        normalizer.setGenerateReferenceBlocks(generateReferenceBlocks);
     }
 
     @Override
@@ -83,6 +92,7 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
     public List<T> apply(List<String> batch) {
         List<Variant> transformedVariants = new ArrayList<>(batch.size());
         logger.debug("Transforming {} lines", batch.size());
+        long curr = System.currentTimeMillis();
         if (factory != null) {
             for (String line : batch) {
                 if (line.startsWith("#") || line.trim().isEmpty()) {
@@ -90,7 +100,9 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
                 }
                 List<Variant> variants;
                 try {
+                    curr = System.currentTimeMillis();
                     variants = factory.create(source, line);
+                    this.avro_convert.addAndGet(System.currentTimeMillis() - curr);
                 } catch (NotAVariantException e1) {
                     variants = Collections.emptyList();
                 } catch (Exception e) {
@@ -119,16 +131,22 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
             }
         } else {
             List<VariantContext> variantContexts = new ArrayList<>(batch.size());
+            curr = System.currentTimeMillis();
             for (String line : batch) {
                 if (line.startsWith("#") || line.trim().isEmpty()) {
                     continue;
                 }
                 variantContexts.add(vcfCodec.decode(line));
             }
+            this.hts_convert.addAndGet(System.currentTimeMillis() - curr);
 
+            curr = System.currentTimeMillis();
             List<Variant> variants = converter.apply(variantContexts);
+            this.avro_convert.addAndGet(System.currentTimeMillis() - curr);
 
+            curr = System.currentTimeMillis();
             List<Variant> normalizedVariants = normalizer.apply(variants);
+            this.norm_convert.addAndGet(System.currentTimeMillis() - curr);
 
             variantStatsTask.apply(normalizedVariants);
 
@@ -154,6 +172,8 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
+        logger.info(String.format("\nTime txt2hts: %s\nTime hts2avro: %s\nTime avro2norm: %s",
+                this.hts_convert.get(), this.avro_convert.get(), this.norm_convert.get()));
     }
 
     public boolean isIncludeSrc() {

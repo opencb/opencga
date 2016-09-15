@@ -24,7 +24,7 @@ import java.util.Map;
  */
 public class Experiment {
 
-    private int id;
+    private long id;
     private String name;
     private String type;
     private String platform;
@@ -41,14 +41,13 @@ public class Experiment {
     public Experiment() {
     }
 
-    public Experiment(int id, String name, String type, String platform, String manufacturer, String date,
-                      String lab, String center, String responsible, String description) {
-        this(id, name, type, platform, manufacturer, date, lab, center, responsible,
-                description, new HashMap<String, Object>());
+    public Experiment(int id, String name, String type, String platform, String manufacturer, String date, String lab,
+                      String center, String responsible, String description) {
+        this(id, name, type, platform, manufacturer, date, lab, center, responsible, description, new HashMap<>());
     }
 
-    public Experiment(int id, String name, String type, String platform, String manufacturer, String date,
-                      String lab, String center, String responsible, String description, Map<String, Object> attributes) {
+    public Experiment(int id, String name, String type, String platform, String manufacturer, String date,  String lab,
+                      String center, String responsible, String description, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -64,106 +63,119 @@ public class Experiment {
 
     @Override
     public String toString() {
-        return "Experiment{" +
-                "id='" + id + '\'' +
-                ", type='" + type + '\'' +
-                ", platform='" + platform + '\'' +
-                ", manufacturer='" + manufacturer + '\'' +
-                ", date='" + date + '\'' +
-                ", lab='" + lab + '\'' +
-                ", center='" + center + '\'' +
-                ", responsible='" + responsible + '\'' +
-                ", description='" + description + '\'' +
-                ", attributes=" + attributes +
-                '}';
+        final StringBuilder sb = new StringBuilder("Experiment{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", type='").append(type).append('\'');
+        sb.append(", platform='").append(platform).append('\'');
+        sb.append(", manufacturer='").append(manufacturer).append('\'');
+        sb.append(", date='").append(date).append('\'');
+        sb.append(", lab='").append(lab).append('\'');
+        sb.append(", center='").append(center).append('\'');
+        sb.append(", responsible='").append(responsible).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public Experiment setId(long id) {
         this.id = id;
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public Experiment setName(String name) {
         this.name = name;
+        return this;
     }
 
     public String getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public Experiment setType(String type) {
         this.type = type;
+        return this;
     }
 
     public String getPlatform() {
         return platform;
     }
 
-    public void setPlatform(String platform) {
+    public Experiment setPlatform(String platform) {
         this.platform = platform;
+        return this;
     }
 
     public String getManufacturer() {
         return manufacturer;
     }
 
-    public void setManufacturer(String manufacturer) {
+    public Experiment setManufacturer(String manufacturer) {
         this.manufacturer = manufacturer;
+        return this;
     }
 
     public String getDate() {
         return date;
     }
 
-    public void setDate(String date) {
+    public Experiment setDate(String date) {
         this.date = date;
+        return this;
     }
 
     public String getLab() {
         return lab;
     }
 
-    public void setLab(String lab) {
+    public Experiment setLab(String lab) {
         this.lab = lab;
+        return this;
     }
 
     public String getCenter() {
         return center;
     }
 
-    public void setCenter(String center) {
+    public Experiment setCenter(String center) {
         this.center = center;
+        return this;
     }
 
     public String getResponsible() {
         return responsible;
     }
 
-    public void setResponsible(String responsible) {
+    public Experiment setResponsible(String responsible) {
         this.responsible = responsible;
+        return this;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public Experiment setDescription(String description) {
         this.description = description;
+        return this;
     }
 
     public Map<String, Object> getAttributes() {
         return attributes;
     }
 
-    public void setAttributes(Map<String, Object> attributes) {
+    public Experiment setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+        return this;
     }
 
 }

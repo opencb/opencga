@@ -16,29 +16,50 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
-import com.mongodb.DBCursor;
-import com.mongodb.DBObject;
+import com.mongodb.client.FindIterable;
+import com.mongodb.client.MongoCursor;
+import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoPersistentCursor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 
 /**
  * Created by jacobo on 9/01/15.
  */
 public class VariantMongoDBIterator extends VariantDBIterator {
 
-    private DBCursor dbCursor;
-    private DBObjectToVariantConverter dbObjectToVariantConverter;
+    private MongoCursor<Document> dbCursor;
+    private DocumentToVariantConverter documentToVariantConverter;
 
-    VariantMongoDBIterator(DBCursor dbCursor, DBObjectToVariantConverter dbObjectToVariantConverter) { //Package protected
-        this(dbCursor, dbObjectToVariantConverter, 100);
+    //Package protected
+    VariantMongoDBIterator(FindIterable<Document> dbCursor, DocumentToVariantConverter documentToVariantConverter) {
+        this(dbCursor, documentToVariantConverter, 100);
     }
 
-    VariantMongoDBIterator(DBCursor dbCursor, DBObjectToVariantConverter dbObjectToVariantConverter, int batchSize) { //Package protected
-        this.dbCursor = dbCursor;
-        this.dbObjectToVariantConverter = dbObjectToVariantConverter;
-        if(batchSize > 0) {
+    //Package protected
+    VariantMongoDBIterator(FindIterable<Document> dbCursor, DocumentToVariantConverter documentToVariantConverter, int batchSize) {
+        this.documentToVariantConverter = documentToVariantConverter;
+        if (batchSize > 0) {
             dbCursor.batchSize(batchSize);
         }
+        this.dbCursor = dbCursor.iterator();
+    }
+
+    //Package protected
+    static VariantMongoDBIterator persistentIterator(MongoDBCollection collection, Bson query, Bson projection, QueryOptions options,
+                                                     DocumentToVariantConverter converter) {
+        return new VariantMongoDBIterator(new MongoPersistentCursor(collection, query, projection, options), converter);
+    }
+
+    //Package protected
+    VariantMongoDBIterator(MongoCursor<Document> cursor,
+                           DocumentToVariantConverter documentToVariantConverter) {
+        this.documentToVariantConverter = documentToVariantConverter;
+        this.dbCursor = cursor;
     }
 
     @Override
@@ -48,20 +69,12 @@ public class VariantMongoDBIterator extends VariantDBIterator {
 
     @Override
     public Variant next() {
-        long start = System.currentTimeMillis();
-        DBObject dbObject;
-        dbObject = dbCursor.next();
-        timeFetching += System.currentTimeMillis() - start;
-        start = System.currentTimeMillis();
-        Variant variant = dbObjectToVariantConverter.convertToDataModelType(dbObject);
-        timeConverting += System.currentTimeMillis() - start;
-        
-        return variant;
+        Document document = fetch(() -> dbCursor.next());
+        return convert(() -> documentToVariantConverter.convertToDataModelType(document));
     }
 
     @Override
-    public void remove() {
-        throw new UnsupportedOperationException( "can't remove from a cursor" );
+    public void close() {
+        dbCursor.close();
     }
-
 }

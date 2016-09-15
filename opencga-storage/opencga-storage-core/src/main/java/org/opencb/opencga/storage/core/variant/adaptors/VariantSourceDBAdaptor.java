@@ -16,43 +16,63 @@
 
 package org.opencb.opencga.storage.core.variant.adaptors;
 
-import java.util.List;
-
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+
+import java.io.IOException;
+import java.util.Iterator;
 
 /**
- *
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public interface VariantSourceDBAdaptor {
+public interface VariantSourceDBAdaptor extends AutoCloseable {
 
-//    QueryResult<StudyConfiguration> getStudyConfiguration(int studyId, QueryOptions options);
-//
-//    QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);
+    enum VariantSourceQueryParam implements QueryParam {
+        STUDY_ID("studyId", Type.INTEGER_ARRAY),
+        FILE_ID("fileId", Type.INTEGER_ARRAY);
 
-    QueryResult countSources();
+        private final String key;
+        private final Type type;
 
-    QueryResult getAllSources(QueryOptions options);
-    
-    QueryResult getAllSourcesByStudyId(String studyId, QueryOptions options);
+        VariantSourceQueryParam(String key, Type type) {
+            this.key = key;
+            this.type = type;
+        }
 
-    QueryResult getAllSourcesByStudyIds(List<String> studyIds, QueryOptions options);
-    
-    QueryResult getSamplesBySource(String fileId, QueryOptions options);
+        @Override
+        public String key() {
+            return key;
+        }
 
-    QueryResult getSamplesBySources(List<String> fileIds, QueryOptions options);
+        @Override
+        public Type type() {
+            return type;
+        }
 
-    QueryResult getSourceDownloadUrlByName(String filename);
+        @Override
+        public String description() {
+            return "";
+        }
+    }
 
-    List<QueryResult> getSourceDownloadUrlByName(List<String> filenames);
+    QueryResult<Long> count();
 
-    QueryResult getSourceDownloadUrlById(String fileId, String studyId);
+    void updateVariantSource(VariantSource variantSource) throws StorageManagerException;
+
+    Iterator<VariantSource> iterator(Query query, QueryOptions options) throws IOException;
+
+//    QueryResult<String> getSamplesBySource(String fileId, QueryOptions options);
+
+//    QueryResult<String> getSamplesBySources(List<String> fileIds, QueryOptions options);
 
     QueryResult updateSourceStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions queryOptions);
-    
-    boolean close();
+
+    void close() throws IOException;
 
 }

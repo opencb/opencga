@@ -49,18 +49,16 @@ public class SqliteSequenceDBAdaptor extends SequenceDBAdaptor {
     public SqliteSequenceDBAdaptor() {
         sqliteManager = new SqliteManager();
     }
-    /**
-     *
-     * @param input Accept formats: *.properties, *.sqlite.db
-     */
+
+
     public SqliteSequenceDBAdaptor(Path input) {
         this();
-        if(input.toString().endsWith(".fasta") || input.toString().endsWith(".fasta.gz")){
+        if (input.toString().endsWith(".fasta") || input.toString().endsWith(".fasta.gz")) {
             //createDB(input);
             throw new UnsupportedOperationException("Unimplemented. Needs to call \"this.createDB()\" first."); //TODO: Search db?
-        } else if (input.toString().endsWith(".properties")){
+        } else if (input.toString().endsWith(".properties")) {
             throw new UnsupportedOperationException("Unimplemented");
-        } else if(input.toString().endsWith(".sqlite.db")) {
+        } else if (input.toString().endsWith(".sqlite.db")) {
             dbPath = input;
         }
     }
@@ -85,23 +83,24 @@ public class SqliteSequenceDBAdaptor extends SequenceDBAdaptor {
 
 
     /**
-     * Creates the ChunkId for SQLite
-     * @param chromosome  Region name or chromosome
-     * @param pos         Absolute position 1-based
-     * @return            ChunkID. <chromosome>_<pos/CHUNK_SIZE>
+     * Creates the ChunkId for SQLite.
+     *
+     * @param chromosome Region name or chromosome
+     * @param pos        Absolute position 1-based
+     * @return ChunkID. <chromosome>_<pos/CHUNK_SIZE>
      */
-    private String getChunkId(String chromosome, int pos){
-        return String.format("%s_%06d", chromosome, (pos-1)/CHUNK_SIZE);
+    private String getChunkId(String chromosome, int pos) {
+        return String.format("%s_%06d", chromosome, (pos - 1) / CHUNK_SIZE);
     }
 
     /**
      * Returns the sequence stored in the DB of a given region.
      * The stored sequence will be interpreted as 1-based.
-     *      e.g. The first 10 elements will correspond to the region 1-10
+     * e.g. The first 10 elements will correspond to the region 1-10
      *
-     * @param region    Region requested.
-     * @return          Sequence 1-based for [region.start, region.end]
-     * @throws IOException
+     * @param region Region requested.
+     * @return Sequence 1-based for [region.start, region.end]
+     * @throws IOException An exception if file not found
      */
     @Override
     public String getSequence(Region region) throws IOException {
@@ -122,10 +121,10 @@ public class SqliteSequenceDBAdaptor extends SequenceDBAdaptor {
          *  E : region.getEnd()
          */
         List<XObject> query;
-        int chunkStart = (region.getStart() - 1)/CHUNK_SIZE;
-        int chunkEnd = (region.getEnd() - 1)/CHUNK_SIZE;
+        int chunkStart = (region.getStart() - 1) / CHUNK_SIZE;
+        int chunkEnd = (region.getEnd() - 1) / CHUNK_SIZE;
         int regionLength = region.getEnd() - region.getStart() + 1;               //+1 to include last position. [start-end]
-        if(regionLength <= 0){
+        if (regionLength <= 0) {
             return "";      //Reject bad regions.
         }
 
@@ -135,15 +134,15 @@ public class SqliteSequenceDBAdaptor extends SequenceDBAdaptor {
 //                            " WHERE id IS " + region.getChromosome() +
 //                            " AND chunk BETWEEN " + chunkStart + " AND " + chunkEnd );
             query = sqliteManager.query(
-                    "SELECT seq FROM " + SEQUENCE_TABLE +
-                            " WHERE id BETWEEN '" + getChunkId(region.getChromosome(), region.getStart()) + "'"+
-                            " AND '" + getChunkId(region.getChromosome(), region.getEnd()) + "'" );
+                    "SELECT seq FROM " + SEQUENCE_TABLE
+                            + " WHERE id BETWEEN '" + getChunkId(region.getChromosome(), region.getStart()) + "'"
+                            + " AND '" + getChunkId(region.getChromosome(), region.getEnd()) + "'");
         } catch (SQLException e) {
             throw new IOException(e);
         }
 
         String seq = "";
-        for(XObject xo : query){
+        for (XObject xo : query) {
             seq += xo.getString("seq");
         }
 
@@ -151,7 +150,8 @@ public class SqliteSequenceDBAdaptor extends SequenceDBAdaptor {
         int startIndex = (region.getStart() - 1) - chunkStart * CHUNK_SIZE;        // D - A
         int endIndex = startIndex + regionLength;                          //
         //System.out.println(0 + " - " + startIndex + " - " + endIndex  + " - " + seq.length());
-        //System.out.println(chunkStart * CHUNK_SIZE + " - " + region.getStart() + " - " + region.getEnd() + " - " + (chunkEnd+1) * CHUNK_SIZE);
+        //System.out.println(chunkStart * CHUNK_SIZE + " - " + region.getStart() + " - " + region.getEnd() + " - " + (chunkEnd+1) *
+        // CHUNK_SIZE);
         seq = seq.substring(startIndex, endIndex);
 
         return seq;
@@ -163,23 +163,29 @@ public class SqliteSequenceDBAdaptor extends SequenceDBAdaptor {
     }
 
     /**
-     * Creates a <input>.sqlite.db
-     *
+     * Creates a <input>.sqlite.db.
+     * <p>
      * Contents 2 tables:
      * SEQUENCES:
-     *      id          TEXT : <chromosome>_<pos/CHUNK_SIZE>
-     *      seq         TEXT : sequence [ chunk_id*CHUNK_SIZE , (chunk_id+1)*CHUNK_SIZE )
+     * id          TEXT : <chromosome>_<pos/CHUNK_SIZE>
+     * seq         TEXT : sequence [ chunk_id*CHUNK_SIZE , (chunk_id+1)*CHUNK_SIZE )
      * META:
-     *      id          TEXT :
-     *      description TEXT :
-     *      length      TEXT :
+     * id          TEXT :
+     * description TEXT :
+     * length      TEXT :
+     *
      * @param fastaInput Accept formats: *.fasta, *.fasta.gz
+     * @param outdir Destination folder for the index
+     * @return A file object for the index
+     * @throws IOException If any IO problem occurs
+     * @throws SQLException If any problem with SQLite
+     * @throws FileFormatException If format is not correct
      */
     public File index(File fastaInput, Path outdir) throws IOException, SQLException, FileFormatException {
-        if(fastaInput == null || !fastaInput.exists()) {
+        if (fastaInput == null || !fastaInput.exists()) {
             throw new FileNotFoundException("Fasta '" + fastaInput + "' file not found");
         }
-        if(outdir == null) {
+        if (outdir == null) {
             outdir = Paths.get(fastaInput.toPath().toAbsolutePath().getParent().toString());
         }
         Path output = Paths.get(outdir.toAbsolutePath().toString(), fastaInput.getName() + ".sqlite.db");
@@ -208,14 +214,11 @@ public class SqliteSequenceDBAdaptor extends SequenceDBAdaptor {
 
         FastaReader reader;
         Fasta fasta;
-
-
         //Insert Sequences
         reader = new FastaReader(fastaInput.toPath());
-        while((fasta = reader.read()) != null) {
+        while ((fasta = reader.read()) != null) {
             serializeGenomeSequence(fasta);
         }
-
 
         //Create Index
         XObject indices = new XObject();
@@ -251,18 +254,18 @@ public class SqliteSequenceDBAdaptor extends SequenceDBAdaptor {
 
         sqliteManager.insert(meta, META_TABLE);
 
-        int chunks = (fasta.getSeq().length()+CHUNK_SIZE-1)/CHUNK_SIZE; //ceil(length/chunkSize)
+        int chunks = (fasta.getSeq().length() + CHUNK_SIZE - 1) / CHUNK_SIZE; //ceil(length/chunkSize)
         XObject seq = new XObject();
         int end;
-        for(int i = 0; i < chunks; i++){
+        for (int i = 0; i < chunks; i++) {
             //seq.put("id", fasta.getId());
-            seq.put("id", getChunkId(fasta.getId(), i*CHUNK_SIZE));
+            seq.put("id", getChunkId(fasta.getId(), i * CHUNK_SIZE));
             //seq.put("chunk", i);
-            end = (i+1)*CHUNK_SIZE;
-            if(end >= fasta.getSeq().length()){
-                end = fasta.getSeq().length()-1;
+            end = (i + 1) * CHUNK_SIZE;
+            if (end >= fasta.getSeq().length()) {
+                end = fasta.getSeq().length() - 1;
             }
-            seq.put("seq", fasta.getSeq().substring(i*CHUNK_SIZE, end));
+            seq.put("seq", fasta.getSeq().substring(i * CHUNK_SIZE, end));
             sqliteManager.insert(seq, tablename);
         }
 
@@ -319,7 +322,5 @@ public class SqliteSequenceDBAdaptor extends SequenceDBAdaptor {
 //        System.out.println(chromosome + " " + sequenceType + " " + sequenceAssembly + "[" + sequence.length() + "]");
 //        System.out.println("");
 //    }
-
-
 
 }

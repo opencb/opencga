@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage</artifactId>
-        <version>0.7.0</version>
+        <version>0.8-dev</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -37,7 +37,7 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.cellbase</groupId>
-            <artifactId>cellbase-core</artifactId>
+            <artifactId>cellbase-client</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
@@ -46,21 +46,21 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.opencb.datastore</groupId>
-            <artifactId>datastore-core</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.opencb.hpg-bigdata</groupId>
             <artifactId>hpg-bigdata-core</artifactId>
         </dependency>
-
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
         </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
         </dependency>
     </dependencies>
 
@@ -83,7 +83,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>2.3.1</version>
                 <executions>
                     <execution>
                         <id>test-jar</id>

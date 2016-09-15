@@ -30,7 +30,7 @@ import java.util.Properties;
 
 /**
  * TODO: In future, this will call to the metadata DB
- * <p/>
+ * <p>
  * Takes the index from a properties file where "key" is the index, and "defaultValue" is the path to the file.
  * If missing, it's created in "/tmp/files-index.properties"
  */
@@ -38,6 +38,7 @@ import java.util.Properties;
 public class AlignmentMetaDataDBAdaptor {
     private Properties bamFiles;
     private String bamFilesPath;
+
     public AlignmentMetaDataDBAdaptor(String path) {
         bamFilesPath = path;
         bamFiles = new Properties();
@@ -58,18 +59,19 @@ public class AlignmentMetaDataDBAdaptor {
     }
 
     public Path getBaiFromIndex(String index) {
-        Path p = Paths.get(bamFiles.getProperty(index)+".bai");
+        Path p = Paths.get(bamFiles.getProperty(index) + ".bai");
         if (p.toFile().exists()) {
             return p;
         } else {
             return null;
         }
     }
+
     //If path already exists, it is not stored.
     public String registerPath(Path path) {
         String p = path.toAbsolutePath().toString();
         if (bamFiles.containsValue(p)) {
-            return null;//bamFiles.getProperty(p);
+            return null; //bamFiles.getProperty(p);
         } else {
             String index = Integer.toString(bamFiles.size());
             bamFiles.setProperty(index, p);

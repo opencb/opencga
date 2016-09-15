@@ -16,21 +16,22 @@
 
 package org.opencb.opencga.storage.core.config;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by imedina on 30/04/15.
  */
+@JsonIgnoreProperties("storageEngine")
 public class StorageConfiguration {
 
     private String defaultStorageEngineId;
@@ -39,8 +40,9 @@ public class StorageConfiguration {
     private String studyMetadataManager;
 
     private CellBaseConfiguration cellbase;
-    private QueryServerConfiguration server;
+    private ServerConfiguration server;
 
+    private BenchmarkConfiguration benchmark;
     private List<StorageEngineConfiguration> storageEngines;
 
     protected static Logger logger = LoggerFactory.getLogger(StorageConfiguration.class);
@@ -54,31 +56,32 @@ public class StorageConfiguration {
         this.storageEngines = storageEngines;
 
         this.cellbase = new CellBaseConfiguration();
-        this.server = new QueryServerConfiguration();
+        this.server = new ServerConfiguration();
     }
 
-    /**
-     * This method attempts to find and load the configuration from installation directory,
-     * if not exists then loads JAR storage-configuration.yml
-     * @throws IOException
-     */
-    @Deprecated
-    public static StorageConfiguration load() throws IOException {
-        String appHome = System.getProperty("app.home", System.getenv("OPENCGA_HOME"));
-        Path path = Paths.get(appHome + "/conf/storage-configuration.yml");
-        if (appHome != null && Files.exists(path)) {
-            logger.debug("Loading configuration from '{}'", appHome + "/conf/storage-configuration.yml");
-            return StorageConfiguration
-                    .load(new FileInputStream(new File(appHome + "/conf/storage-configuration.yml")));
-        } else {
-            logger.debug("Loading configuration from '{}'",
-                    StorageConfiguration.class.getClassLoader()
-                            .getResourceAsStream("storage-configuration.yml")
-                            .toString());
-            return StorageConfiguration
-                    .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
-        }
-    }
+//    /*
+//     * This method attempts to find and load the configuration from installation directory,
+//     * if not exists then loads JAR storage-configuration.yml.
+//     *
+//     * @throws IOException If any IO problem occurs
+//     */
+//    @Deprecated
+//    public static StorageConfiguration load() throws IOException {
+//        String appHome = System.getProperty("app.home", System.getenv("OPENCGA_HOME"));
+//        Path path = Paths.get(appHome + "/conf/storage-configuration.yml");
+//        if (appHome != null && Files.exists(path)) {
+//            logger.debug("Loading configuration from '{}'", appHome + "/conf/storage-configuration.yml");
+//            return StorageConfiguration
+//                    .load(new FileInputStream(new File(appHome + "/conf/storage-configuration.yml")));
+//        } else {
+//            logger.debug("Loading configuration from '{}'",
+//                    StorageConfiguration.class.getClassLoader()
+//                            .getResourceAsStream("storage-configuration.yml")
+//                            .toString());
+//            return StorageConfiguration
+//                    .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
+//        }
+//    }
 
     public static StorageConfiguration load(InputStream configurationInputStream) throws IOException {
         return load(configurationInputStream, "yaml");
@@ -100,24 +103,12 @@ public class StorageConfiguration {
                 break;
         }
 
-        if(storageConfiguration != null) {
-//            if (storageConfiguration.getDefaultStorageEngineId() != null) {
-//                this.defaultStorageEngineId = storageConfiguration.getDefaultStorageEngineId();
-//            }
-//            if (storageConfiguration.get) {
-//                this.include = sto
-//                  for(conf.d) ...
-//            }
-//            for (StorageEngineConfiguration storageEngineConfiguration : storageConfiguration.getStorageEngines()) {
-//                this.storageEngines.add(storageEngineConfiguration);
-//            }
-        }
         return storageConfiguration;
     }
 
-    public void serialize(OutputStream configurationOututStream) throws IOException {
+    public void serialize(OutputStream configurationOutputStream) throws IOException {
         ObjectMapper jsonMapper = new ObjectMapper(new YAMLFactory());
-        jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOututStream, this);
+        jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOutputStream, this);
     }
 
     public StorageEngineConfiguration getStorageEngine() {
@@ -133,7 +124,7 @@ public class StorageConfiguration {
             }
         }
 
-        if(storageEngineConfiguration == null && storageEngines.size() > 0) {
+        if (storageEngineConfiguration == null && storageEngines.size() > 0) {
             storageEngineConfiguration = storageEngines.get(0);
         }
 
@@ -160,22 +151,23 @@ public class StorageConfiguration {
                 break;
         }
 
-        if(storageEngineConfiguration != null) {
+        if (storageEngineConfiguration != null) {
             this.storageEngines.add(storageEngineConfiguration);
         }
     }
 
     @Override
     public String toString() {
-        return "StorageConfiguration{" +
-                "defaultStorageEngineId='" + defaultStorageEngineId + '\'' +
-                ", logLevel='" + logLevel + '\'' +
-                ", logFile='" + logFile + '\'' +
-                ", studyMetadataManager='" + studyMetadataManager + '\'' +
-                ", cellbase=" + cellbase +
-                ", server=" + server +
-                ", storageEngines=" + storageEngines +
-                '}';
+        final StringBuilder sb = new StringBuilder("StorageConfiguration{");
+        sb.append("defaultStorageEngineId='").append(defaultStorageEngineId).append('\'');
+        sb.append(", logLevel='").append(logLevel).append('\'');
+        sb.append(", logFile='").append(logFile).append('\'');
+        sb.append(", studyMetadataManager='").append(studyMetadataManager).append('\'');
+        sb.append(", cellbase=").append(cellbase);
+        sb.append(", server=").append(server);
+        sb.append(", storageEngines=").append(storageEngines);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getDefaultStorageEngineId() {
@@ -218,12 +210,20 @@ public class StorageConfiguration {
         this.cellbase = cellbase;
     }
 
-    public QueryServerConfiguration getServer() {
+    public ServerConfiguration getServer() {
         return server;
     }
 
-    public void setServer(QueryServerConfiguration server) {
+    public void setServer(ServerConfiguration server) {
         this.server = server;
+    }
+
+    public BenchmarkConfiguration getBenchmark() {
+        return benchmark;
+    }
+
+    public void setBenchmark(BenchmarkConfiguration benchmark) {
+        this.benchmark = benchmark;
     }
 
     public List<StorageEngineConfiguration> getStorageEngines() {
@@ -274,11 +274,11 @@ public class StorageConfiguration {
 //        this.server = server;
 //    }
 //
-//    public List<StorageEngineConfiguration> getStorageEngines() {
+//    public List<StorageEngineConfiguration> getStorageEngine() {
 //        return storageEngines;
 //    }
 //
-//    public void setStorageEngines(List<StorageEngineConfiguration> storageEngines) {
+//    public void setStorageEngine(List<StorageEngineConfiguration> storageEngines) {
 //        this.storageEngines = storageEngines;
 //    }
 //

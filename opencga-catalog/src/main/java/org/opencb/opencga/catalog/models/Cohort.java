@@ -16,52 +16,47 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
- *
- * Set of samples grouped according to criteria
+ *         <p>
+ *         Set of samples grouped according to criteria
  */
-public class Cohort {
+public class Cohort extends Annotable<CohortAclEntry> {
 
-    private int id;
+    private long id;
     private String name;
-    private Type type;
+    private Study.Type type;
     private String creationDate;
-    private Status status;
+    private CohortStatus status;
     private String description;
 
-    private List<Integer> samples;
+    private List<Long> samples;
+    private Family family;
+
+//    private List<CohortAclEntry> acl;
+//    private List<AnnotationSet> annotationSets;
 
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
-    public enum Status {NONE, CALCULATING, READY, INVALID}
-
-    //Represents the criteria of grouping samples in the cohort
-    public enum Type {
-        CASE_CONTROL,
-        CASE_SET,
-        CONTROL_SET,
-        PAIRED,
-        PAIRED_TUMOR,
-        FAMILY,
-        TRIO,
-        COLLECTION
-    }
 
     public Cohort() {
     }
 
-    public Cohort(String name, Type type, String creationDate, String description, List<Integer> samples,
-                  Map<String, Object> attributes) {
-        this(-1, name, type, creationDate, Status.NONE, description, samples, Collections.emptyMap(), attributes);
+    public Cohort(String name, Study.Type type, String creationDate, String description, List<Long> samples,
+                  Map<String, Object> attributes) throws CatalogException {
+        this(-1, name, type, creationDate, new CohortStatus(), description, samples, null, Collections.emptyList(), Collections.emptyList(),
+                Collections.emptyMap(), attributes);
     }
-
-    public Cohort(int id, String name, Type type, String creationDate, Status status, String description, List<Integer> samples,
+    public Cohort(long id, String name, Study.Type type, String creationDate, CohortStatus status, String description,
+                  List<Long> samples, Family family, List<CohortAclEntry> acl, List<AnnotationSet> annotationSets,
                   Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -70,94 +65,207 @@ public class Cohort {
         this.status = status;
         this.description = description;
         this.samples = samples;
+        this.family = family;
+        this.acl = acl;
+        this.annotationSets = annotationSets;
         this.stats = stats;
         this.attributes = attributes;
     }
 
-    @Override
-    public String toString() {
-        return "Cohort{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", type=" + type +
-                ", creationDate='" + creationDate + '\'' +
-                ", status=" + status +
-                ", description='" + description + '\'' +
-                ", samples=" + samples +
-                ", stats=" + stats +
-                ", attributes=" + attributes +
-                '}';
+    public static class CohortStatus extends Status {
+
+        public static final String NONE = "NONE";
+        public static final String CALCULATING = "CALCULATING";
+        public static final String INVALID = "INVALID";
+
+        public CohortStatus(String status, String message) {
+            if (isValid(status)) {
+                init(status, message);
+            } else {
+                throw new IllegalArgumentException("Unknown status " + status);
+            }
+        }
+
+        public CohortStatus(String status) {
+            this(status, "");
+        }
+
+        public CohortStatus() {
+            this(NONE, "");
+        }
+
+        public static boolean isValid(String status) {
+            if (Status.isValid(status)) {
+                return true;
+            }
+            if (status != null && (status.equals(NONE) || status.equals(CALCULATING) || status.equals(INVALID))) {
+                return true;
+            }
+            return false;
+        }
     }
 
-    public int getId() {
+    public class Family {
+
+        private String id;
+        private List<Long> probands;
+
+        public Family(String id, List<Long> probands) {
+            this.id = id;
+            this.probands = probands;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("Family{");
+            sb.append("id='").append(id).append('\'');
+            sb.append(", probands=").append(probands);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public Family setId(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public List<Long> getProbands() {
+            return probands;
+        }
+
+        public Family setProbands(List<Long> probands) {
+            this.probands = probands;
+            return this;
+        }
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Cohort{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", type=").append(type);
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", status=").append(status);
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", samples=").append(samples);
+        sb.append(", family=").append(family);
+        sb.append(", acl=").append(acl);
+        sb.append(", annotationSets=").append(annotationSets);
+        sb.append(", stats=").append(stats);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public Cohort setId(long id) {
         this.id = id;
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public Cohort setName(String name) {
         this.name = name;
+        return this;
     }
 
-    public Type getType() {
+    public Study.Type getType() {
         return type;
     }
 
-    public void setType(Type type) {
+    public Cohort setType(Study.Type type) {
         this.type = type;
+        return this;
     }
 
     public String getCreationDate() {
         return creationDate;
     }
 
-    public void setCreationDate(String creationDate) {
+    public Cohort setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
     }
 
-    public Status getStatus() {
+    public CohortStatus getStatus() {
         return status;
     }
 
-    public void setStatus(Status status) {
+    public Cohort setStatus(CohortStatus status) {
         this.status = status;
+        return this;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public Cohort setDescription(String description) {
         this.description = description;
+        return this;
     }
 
-    public List<Integer> getSamples() {
+    public List<Long> getSamples() {
         return samples;
     }
 
-    public void setSamples(List<Integer> samples) {
+    public Cohort setSamples(List<Long> samples) {
         this.samples = samples;
+        return this;
     }
+
+    public Family getFamily() {
+        return family;
+    }
+
+    public Cohort setFamily(Family family) {
+        this.family = family;
+        return this;
+    }
+
+    public Cohort setAcl(List<CohortAclEntry> acl) {
+        this.acl = acl;
+        return this;
+    }
+
+//    @Override
+//    public List<AnnotationSet> getAnnotationSets() {
+//        return annotationSets;
+//    }
+//
+//    @Override
+//    public Cohort setAnnotationSets(List<AnnotationSet> annotationSets) {
+//        this.annotationSets = annotationSets;
+//        return this;
+//    }
 
     public Map<String, Object> getStats() {
         return stats;
     }
 
-    public void setStats(Map<String, Object> stats) {
+    public Cohort setStats(Map<String, Object> stats) {
         this.stats = stats;
+        return this;
     }
 
     public Map<String, Object> getAttributes() {
         return attributes;
     }
 
-    public void setAttributes(Map<String, Object> attributes) {
+    public Cohort setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+        return this;
     }
+
 }

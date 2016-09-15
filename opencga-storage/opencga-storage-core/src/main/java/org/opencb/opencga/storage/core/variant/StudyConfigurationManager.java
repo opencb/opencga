@@ -16,23 +16,23 @@
 
 package org.opencb.opencga.storage.core.variant;
 
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public abstract class StudyConfigurationManager {
+public abstract class StudyConfigurationManager implements AutoCloseable {
     public static final String CACHED = "cached";
     public static final String READ_ONLY = "ro";
     protected static Logger logger = LoggerFactory.getLogger(StudyConfigurationManager.class);
@@ -40,15 +40,41 @@ public abstract class StudyConfigurationManager {
     private final Map<String, StudyConfiguration> stringStudyConfigurationMap = new HashMap<>();
     private final Map<Integer, StudyConfiguration> intStudyConfigurationMap = new HashMap<>();
 
-    public StudyConfigurationManager(ObjectMap objectMap) {}
+    public interface LockCloseable extends AutoCloseable {
+        @Override
+        void close();
+    }
 
-    protected abstract QueryResult<StudyConfiguration> _getStudyConfiguration(String studyName, Long timeStamp, QueryOptions options);
-    protected abstract QueryResult<StudyConfiguration> _getStudyConfiguration(int studyId, Long timeStamp, QueryOptions options);
+    public StudyConfigurationManager(ObjectMap objectMap) {
+    }
 
-    //FIXME This is a temporary method
-    public void setDefaultQueryOptions(QueryOptions options) {}
+    protected abstract QueryResult<StudyConfiguration> internalGetStudyConfiguration(String studyName, Long time, QueryOptions options);
 
-    protected abstract QueryResult _updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);
+    protected abstract QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options);
+
+    public LockCloseable closableLockStudy(int studyId) throws StorageManagerException {
+        long lock = lockStudy(studyId);
+        return () -> unLockStudy(studyId, lock);
+    }
+
+    public long lockStudy(int studyId) throws StorageManagerException {
+        try {
+            return lockStudy(studyId, 10000, 20000);
+        } catch (InterruptedException | TimeoutException e) {
+            throw new StorageManagerException("Unable to lock the Study " + studyId, e);
+        }
+    }
+
+    public long lockStudy(int studyId, long lockDuration, long timeout) throws InterruptedException, TimeoutException {
+        logger.warn("Ignoring lock");
+        return 0;
+    }
+
+    public void unLockStudy(int studyId, long lockId) {
+        logger.warn("Ignoring unLock");
+    }
+
+    protected abstract QueryResult internalUpdateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);
 
     public final QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, QueryOptions options) {
         QueryResult<StudyConfiguration> result;
@@ -58,31 +84,31 @@ public abstract class StudyConfigurationManager {
             if (cached) {
                 StudyConfiguration studyConfiguration = stringStudyConfigurationMap.get(studyName);
                 if (!readOnly) {
-                    studyConfiguration = studyConfiguration.clone();
+                    studyConfiguration = studyConfiguration.newInstance();
                 }
                 return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
-            result = _getStudyConfiguration(studyName, stringStudyConfigurationMap.get(studyName).getTimeStamp(), options);
+            result = internalGetStudyConfiguration(studyName, stringStudyConfigurationMap.get(studyName).getTimeStamp(), options);
             if (result.getNumTotalResults() == 0) { //No changes. Return old value
                 StudyConfiguration studyConfiguration = stringStudyConfigurationMap.get(studyName);
                 if (!readOnly) {
-                    studyConfiguration = studyConfiguration.clone();
+                    studyConfiguration = studyConfiguration.newInstance();
                 }
                 return new QueryResult<>(studyName, 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
         } else {
-            result = _getStudyConfiguration(studyName, null, options);
+            result = internalGetStudyConfiguration(studyName, null, options);
         }
 
         StudyConfiguration studyConfiguration = result.first();
         if (studyConfiguration != null) {
             intStudyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
             stringStudyConfigurationMap.put(studyConfiguration.getStudyName(), studyConfiguration);
-            if (studyName != null && !studyName.equals(studyConfiguration.getStudyName()) ) {
+            if (studyName != null && !studyName.equals(studyConfiguration.getStudyName())) {
                 stringStudyConfigurationMap.put(studyName, studyConfiguration);
             }
             if (!readOnly) {
-                result.setResult(Collections.singletonList(studyConfiguration.clone()));
+                result.setResult(Collections.singletonList(studyConfiguration.newInstance()));
             }
         }
         return result;
@@ -97,20 +123,20 @@ public abstract class StudyConfigurationManager {
             if (cached) {
                 StudyConfiguration studyConfiguration = intStudyConfigurationMap.get(studyId);
                 if (!readOnly) {
-                    studyConfiguration = studyConfiguration.clone();
+                    studyConfiguration = studyConfiguration.newInstance();
                 }
-                return  new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
+                return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
-            result = _getStudyConfiguration(studyId, intStudyConfigurationMap.get(studyId).getTimeStamp(), options);
+            result = internalGetStudyConfiguration(studyId, intStudyConfigurationMap.get(studyId).getTimeStamp(), options);
             if (result.getNumTotalResults() == 0) { //No changes. Return old value
                 StudyConfiguration studyConfiguration = intStudyConfigurationMap.get(studyId);
                 if (!readOnly) {
-                    studyConfiguration = studyConfiguration.clone();
+                    studyConfiguration = studyConfiguration.newInstance();
                 }
                 return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
         } else {
-            result = _getStudyConfiguration(studyId, null, options);
+            result = internalGetStudyConfiguration(studyId, null, options);
         }
 
         StudyConfiguration studyConfiguration = result.first();
@@ -118,7 +144,7 @@ public abstract class StudyConfigurationManager {
             intStudyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
             stringStudyConfigurationMap.put(studyConfiguration.getStudyName(), studyConfiguration);
             if (!readOnly) {
-                result.setResult(Collections.singletonList(studyConfiguration.clone()));
+                result.setResult(Collections.singletonList(studyConfiguration.newInstance()));
             }
         }
         return result;
@@ -126,17 +152,25 @@ public abstract class StudyConfigurationManager {
     }
 
     public List<String> getStudyNames(QueryOptions options) {
-        return null;
+        return new ArrayList<>(getStudies(options).keySet());
+    }
+
+    public List<Integer> getStudyIds(QueryOptions options) {
+        return new ArrayList<>(getStudies(options).values());
+    }
+
+    public Map<String, Integer> getStudies(QueryOptions options) {
+        return Collections.emptyMap();
     }
 
     public final QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         studyConfiguration.setTimeStamp(System.currentTimeMillis());
         stringStudyConfigurationMap.put(studyConfiguration.getStudyName(), studyConfiguration);
         intStudyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
-        return _updateStudyConfiguration(studyConfiguration, options);
+        return internalUpdateStudyConfiguration(studyConfiguration, options);
     }
 
-    static public StudyConfigurationManager build(String className, ObjectMap params)
+    public static StudyConfigurationManager build(String className, ObjectMap params)
             throws ReflectiveOperationException {
         try {
             Class<?> clazz = Class.forName(className);
@@ -147,9 +181,13 @@ public abstract class StudyConfigurationManager {
                 throw new ReflectiveOperationException("Clazz " + className + " is not a subclass of StudyConfigurationManager");
             }
 
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException
+                | InvocationTargetException e) {
             logger.error("Unable to create StudyConfigurationManager");
             throw e;
         }
     }
+
+    @Override
+    public void close() throws IOException { }
 }

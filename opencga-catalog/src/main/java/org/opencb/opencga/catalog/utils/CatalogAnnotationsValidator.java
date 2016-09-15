@@ -18,13 +18,14 @@ package org.opencb.opencga.catalog.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Annotation;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.catalog.models.VariableSet;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -37,10 +38,10 @@ public class CatalogAnnotationsValidator {
     public static void checkVariableSet(VariableSet variableSet) throws CatalogException {
         Set<String> variableIdSet = new HashSet<>();
         for (Variable variable : variableSet.getVariables()) {
-            if(variableIdSet.contains(variable.getId())) {
+            if (variableIdSet.contains(variable.getName())) {
                 throw new CatalogException("Duplicated variable Id");
             }
-            variableIdSet.add(variable.getId());
+            variableIdSet.add(variable.getName());
         }
         for (Variable variable : variableSet.getVariables()) {
             checkVariable(variable);
@@ -89,7 +90,7 @@ public class CatalogAnnotationsValidator {
                         try {
                             min = split[0].isEmpty() ? Double.MIN_VALUE : Double.valueOf(split[0]);
                             max = split[1].isEmpty() ? Double.MAX_VALUE : Double.valueOf(split[1]);
-                        } catch (NumberFormatException e ) {
+                        } catch (NumberFormatException e) {
                             throw new CatalogException("Invalid numerical range. Expected <min>:<max> where min and max are numerical.", e);
                         }
                         if (min > max) {
@@ -121,13 +122,15 @@ public class CatalogAnnotationsValidator {
 
     /**
      * Check if an annotationSet is valid.
-     * @param variableSet           VariableSet that describes the annotationSet.
-     * @param annotationSet         AnnotationSet to check
-     * @param annotationSets        All the AnnotationSets of the sample
-     * @throws CatalogException
+     *
+     * @param variableSet    VariableSet that describes the annotationSet.
+     * @param annotationSet  AnnotationSet to check
+     * @param annotationSets All the AnnotationSets of the sample
+     * @throws CatalogException CatalogException
      */
-    public static void checkAnnotationSet(VariableSet variableSet, AnnotationSet annotationSet, List<AnnotationSet> annotationSets) throws CatalogException {
-        if(variableSet.getId() != annotationSet.getVariableSetId()) {
+    public static void checkAnnotationSet(VariableSet variableSet, AnnotationSet annotationSet,
+                                          @Nullable List<AnnotationSet> annotationSets) throws CatalogException {
+        if (variableSet.getId() != annotationSet.getVariableSetId()) {
             throw new CatalogException("VariableSet does not match with the AnnotationSet");
         }
 
@@ -140,23 +143,23 @@ public class CatalogAnnotationsValidator {
             }
         }
 
-        //Get annotationSetId set and variableId map
+        //Get annotationSetName set and variableId map
         Set<String> annotatedVariables = new HashSet<>();
         Map<String, Variable> variableMap = new HashMap<>();
         for (Variable variable : variableSet.getVariables()) {
-            variableMap.put(variable.getId(), variable);
+            variableMap.put(variable.getName(), variable);
         }
 
         //Check Duplicated
         for (Annotation annotation : annotationSet.getAnnotations()) {
-            if (annotatedVariables.contains(annotation.getId())) {
+            if (annotatedVariables.contains(annotation.getName())) {
                 throw new CatalogException("Duplicated annotation " + annotation);
             }
-            annotatedVariables.add(annotation.getId());
+            annotatedVariables.add(annotation.getName());
         }
 
         //Remove null values
-        for (Iterator<Annotation> iterator = annotationSet.getAnnotations().iterator(); iterator.hasNext(); ) {
+        for (Iterator<Annotation> iterator = annotationSet.getAnnotations().iterator(); iterator.hasNext();) {
             Annotation annotation = iterator.next();
             if (annotation.getValue() == null) {
                 iterator.remove();
@@ -166,7 +169,7 @@ public class CatalogAnnotationsValidator {
         //Check for missing values
         List<Annotation> defaultAnnotations = new LinkedList<>();
         for (Variable variable : variableSet.getVariables()) {
-            if(!annotatedVariables.contains(variable.getId())) {
+            if (!annotatedVariables.contains(variable.getName())) {
                 Annotation defaultAnnotation = getDefaultAnnotation(variable);
                 if (defaultAnnotation == null) {
                     if (variable.isRequired()) {
@@ -174,7 +177,7 @@ public class CatalogAnnotationsValidator {
                     }
                 } else {
                     defaultAnnotations.add(defaultAnnotation);
-                    annotatedVariables.add(defaultAnnotation.getId());
+                    annotatedVariables.add(defaultAnnotation.getName());
                 }
             }
         }
@@ -189,8 +192,8 @@ public class CatalogAnnotationsValidator {
     }
 
     public static void checkAnnotation(Map<String, Variable> variableMap, Annotation annotation) throws CatalogException {
-        String id = annotation.getId();
-        if(!variableMap.containsKey(id)) {
+        String id = annotation.getName();
+        if (!variableMap.containsKey(id)) {
             throw new CatalogException("Annotation id '" + annotation + "' is not an accepted id");
         } else {
             Variable variable = variableMap.get(id);
@@ -205,19 +208,19 @@ public class CatalogAnnotationsValidator {
         switch (variable.getType()) {
             case BOOLEAN: {
                 Boolean booleanValue = getBooleanValue(defaultValue);
-                return booleanValue == null ? null : new Annotation(variable.getId(), booleanValue);
+                return booleanValue == null ? null : new Annotation(variable.getName(), booleanValue);
             }
             case NUMERIC: {
                 Double numericValue = getNumericValue(defaultValue);
-                return numericValue == null ? null : new Annotation(variable.getId(), numericValue);
+                return numericValue == null ? null : new Annotation(variable.getName(), numericValue);
             }
             case CATEGORICAL:
             case TEXT: {
                 String stringValue = getStringValue(defaultValue);
-                return stringValue == null ? null : new Annotation(variable.getId(), stringValue);
+                return stringValue == null ? null : new Annotation(variable.getName(), stringValue);
             }
             case OBJECT:
-                return variable.getDefaultValue() == null ? null : new Annotation(variable.getId(), variable.getDefaultValue());
+                return variable.getDefaultValue() == null ? null : new Annotation(variable.getName(), variable.getDefaultValue());
             default:
                 throw new CatalogException("Unknown VariableType " + variable.getType().name());
         }
@@ -248,7 +251,7 @@ public class CatalogAnnotationsValidator {
                 break;
             case CATEGORICAL: {
                 for (Object object : listValues) {
-                    String stringValue = (String)object;
+                    String stringValue = (String) object;
                     if (variable.getAllowedValues() != null && !variable.getAllowedValues().contains(stringValue)) {
                         throw new CatalogException(message + " value '" + value + "' is not an allowed value for " + variable);
                     }
@@ -257,7 +260,7 @@ public class CatalogAnnotationsValidator {
             }
             case NUMERIC:
                 for (Object object : listValues) {
-                    Double numericValue = (Double)object;
+                    Double numericValue = (Double) object;
 
                     if (variable.getAllowedValues() != null && !variable.getAllowedValues().isEmpty()) {
                         boolean valid = false;
@@ -271,7 +274,8 @@ public class CatalogAnnotationsValidator {
                             }
                         }
                         if (!valid) {
-                            throw new CatalogException(message + " value '" + value + "' is not an allowed value for " + variable + ". It is in any range.");
+                            throw new CatalogException(message + " value '" + value + "' is not an allowed value for " + variable + ". It"
+                                    + " is in any range.");
                         }
                     }
                     //If there is no "allowedValues", accept any number
@@ -285,7 +289,8 @@ public class CatalogAnnotationsValidator {
                 //Check variableSet
                 for (Object object : listValues) {
                     if (variable.getVariableSet() != null && !variable.getVariableSet().isEmpty()) {
-                        Map<String, Variable> variableMap = variable.getVariableSet().stream().collect(Collectors.toMap(Variable::getId, Function.<Variable>identity()));
+                        Map<String, Variable> variableMap = variable.getVariableSet().stream().collect(Collectors.toMap(Variable::getName,
+                                Function.<Variable>identity()));
                         Map objectMap = (Map) object;
 
                         Set<Annotation> annotationSet = new HashSet<>();
@@ -293,7 +298,8 @@ public class CatalogAnnotationsValidator {
 //                            checkAnnotation(variableMap, new Annotation(entry.getKey().toString(), entry.getValue()));
                             annotationSet.add(new Annotation(entry.getKey().toString(), entry.getValue()));
                         }
-                        checkAnnotationSet(new VariableSet(0, variable.getId(), false, variable.getDescription(), variable.getVariableSet(), null), new AnnotationSet("", 0, annotationSet, null, null), null);
+                        checkAnnotationSet(new VariableSet(0, variable.getName(), false, variable.getDescription(),
+                                variable.getVariableSet(), null), new AnnotationSet("", 0, annotationSet, null, null), null);
                     }
                 }
                 break;
@@ -330,15 +336,16 @@ public class CatalogAnnotationsValidator {
 
     /**
      * Get StringValue. If empty or null, return null;
+     *
      * @param value
      * @return
      */
-    private static String getStringValue (Object value) {
-        if (value == null ) {
+    private static String getStringValue(Object value) {
+        if (value == null) {
             return null;
         } else {
             String stringValue = value.toString();
-            if(stringValue.isEmpty()) {
+            if (stringValue.isEmpty()) {
                 return null;
             } else {
                 return stringValue;
@@ -348,16 +355,17 @@ public class CatalogAnnotationsValidator {
 
     /**
      * Try to cast to Boolean. If not possible, return null;
+     *
      * @param value
      * @return
      */
-    private static Boolean getBooleanValue (Object value) throws CatalogException {
+    private static Boolean getBooleanValue(Object value) throws CatalogException {
         if (value == null) {
             return null;
         } else if (value instanceof Boolean) {
             return (Boolean) value;
         } else if (value instanceof String) {
-            if(((String) value).equalsIgnoreCase("true")) {
+            if (((String) value).equalsIgnoreCase("true")) {
                 return true;
             } else if (((String) value).equalsIgnoreCase("false")) {
                 return false;
@@ -380,12 +388,13 @@ public class CatalogAnnotationsValidator {
 
     /**
      * Try to cast to Double. If not possible, return null;
+     *
      * @param value
      * @return
      */
     private static Double getNumericValue(Object value) throws CatalogException {
         Double numericValue = null;
-        if(value == null) {
+        if (value == null) {
             return null;
         } else if (value instanceof Number) {
             return ((Number) value).doubleValue();
@@ -421,7 +430,7 @@ public class CatalogAnnotationsValidator {
 
     public static void mergeNewAnnotations(AnnotationSet annotationSet, Map<String, Object> newAnnotations) {
         Map<String, Annotation> annotations = annotationSet.getAnnotations().stream()
-                .collect(Collectors.toMap(Annotation::getId, Function.identity()));
+                .collect(Collectors.toMap(Annotation::getName, Function.identity()));
 
         for (Map.Entry<String, Object> entry : newAnnotations.entrySet()) {
             if (entry.getValue() != null) {

@@ -1,22 +1,23 @@
 package org.opencb.opencga.catalog.models;
 
 /**
- * Created on 21/08/15
+ * Created on 21/08/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Deprecated
 public class StudyPermissions {
 
     /**
-     * Define the default permission for read resources
+     * Define the default permission for read resources.
      */
     private boolean read;
     /**
-     * Define the default permission for write or update resources
+     * Define the default permission for write or update resources.
      */
     private boolean write;
     /**
-     * Define the default permission for delete resources
+     * Define the default permission for delete resources.
      */
     private boolean delete;
     /**
@@ -29,30 +30,30 @@ public class StudyPermissions {
      */
     private boolean deleteJobs;
     /**
-     * Set the group as Sample Manager
+     * Set the group as Sample Manager.
      * Define a set of permissions:
-     *      Create, read, update and delete operations over all Samples
-     *      Create, read, update and delete operations over all Individuals
-     *      Create, read, update and delete operations over all Cohorts
-     *      Create, read, update and delete operations over all VariableSets
-     *
+     * Create, read, update and delete operations over all Samples
+     * Create, read, update and delete operations over all Individuals
+     * Create, read, update and delete operations over all Cohorts
+     * Create, read, update and delete operations over all VariableSets
      */
     private boolean managerSamples;
     /**
-     * Set the group as Study Manager
+     * Set the group as Study Manager.
      * Define a set of permissions:
-     *      Edit Study metadata information
-     *      Create new Groups
-     *      Add or remove users to a group
-     *      Change group permissions
-     *      Change resource ACLs
+     * Edit Study metadata information
+     * Create new Groups
+     * Add or remove users to a group
+     * Change group permissions
+     * Change resource ACLs
      */
     private boolean studyManager;
 
     public StudyPermissions() {
     }
 
-    public StudyPermissions(boolean read, boolean write, boolean delete, boolean launchJobs, boolean deleteJobs, boolean managerSamples, boolean studyManager) {
+    public StudyPermissions(boolean read, boolean write, boolean delete, boolean launchJobs, boolean deleteJobs, boolean managerSamples,
+                            boolean studyManager) {
         this.read = read;
         this.write = write;
         this.delete = delete;
@@ -64,15 +65,16 @@ public class StudyPermissions {
 
     @Override
     public String toString() {
-        return "StudyPermissions{" +
-                "read=" + read +
-                ", write=" + write +
-                ", delete=" + delete +
-                ", launchJobs=" + launchJobs +
-                ", deleteJobs=" + deleteJobs +
-                ", managerSamples=" + managerSamples +
-                ", studyManager=" + studyManager +
-                '}';
+        final StringBuilder sb = new StringBuilder("StudyPermissions{");
+        sb.append("read=").append(read);
+        sb.append(", write=").append(write);
+        sb.append(", delete=").append(delete);
+        sb.append(", launchJobs=").append(launchJobs);
+        sb.append(", deleteJobs=").append(deleteJobs);
+        sb.append(", managerSamples=").append(managerSamples);
+        sb.append(", studyManager=").append(studyManager);
+        sb.append('}');
+        return sb.toString();
     }
 
     public boolean isRead() {

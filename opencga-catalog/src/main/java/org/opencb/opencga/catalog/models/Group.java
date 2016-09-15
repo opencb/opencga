@@ -3,51 +3,46 @@ package org.opencb.opencga.catalog.models;
 import java.util.List;
 
 /**
- * Created on 21/08/15
+ * Created on 21/08/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class Group {
 
     /**
-     * Group name, unique in the belonging study
+     * Group name, unique in the belonging study.
      */
-    private String id;
+    private String name;
 
     /**
-     * Set of users belonging to this group
+     * Set of users belonging to this group.
      */
     private List<String> userIds;
-
-    /**
-     * Group permissions over one study
-     */
-    private StudyPermissions permissions;
 
     public Group() {
     }
 
-    public Group(String id, List<String> userIds, StudyPermissions permissions) {
-        this.id = id;
+    public Group(String name, List<String> userIds) {
+        this.name = name;
         this.userIds = userIds;
-        this.permissions = permissions;
     }
+
 
     @Override
     public String toString() {
-        return "Group{" +
-                "name='" + id + '\'' +
-                ", userIds='" + userIds + '\'' +
-                ", permissions=" + permissions +
-                '}';
+        final StringBuilder sb = new StringBuilder("Group{");
+        sb.append("name='").append(name).append('\'');
+        sb.append(", userIds=").append(userIds);
+        sb.append('}');
+        return sb.toString();
     }
 
-    public String getId() {
-        return id;
+    public String getName() {
+        return name;
     }
 
-    public Group setId(String id) {
-        this.id = id;
+    public Group setName(String name) {
+        this.name = name;
         return this;
     }
 
@@ -60,13 +55,5 @@ public class Group {
         return this;
     }
 
-    public StudyPermissions getPermissions() {
-        return permissions;
-    }
-
-    public Group setPermissions(StudyPermissions permissions) {
-        this.permissions = permissions;
-        return this;
-    }
 }
 

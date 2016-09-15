@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.models.acls.AbstractAcl;
+import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.net.URI;
@@ -24,17 +26,13 @@ import java.util.*;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class File {
+public class File extends AbstractAcl<FileAclEntry> {
 
-    private int id;
-
-    /**
-     * File name.
-     */
+    private long id;
     private String name;
 
     /**
-     * Formats: file, folder, index
+     * Formats: file, folder, index.
      */
     private Type type;
 
@@ -48,55 +46,126 @@ public class File {
      */
     private Bioformat bioformat;
 
-    /**
-     * Optional external file location. If null, file is inside its study.
-     */
     private URI uri;
-
     private String path;
-    private String ownerId;
+
     private String creationDate;
+    @Deprecated
     private String modificationDate;
+
     private String description;
+    private FileStatus status;
+    private boolean external;
 
-    private Status status;
     private long diskUsage;
+    private long experimentId;
+    private List<Long> sampleIds;
 
-    //private int studyId;
-    private int experimentId;
-    private List<Integer> sampleIds;
 
     /**
      * This field values -1 when file has been uploaded.
      */
-    private int jobId;
-    private List<AclEntry> acl;
+    private long jobId;
+    private List<RelatedFile> relatedFiles;
 
-    private Index index;
+//    private List<FileAclEntry> acl;
+    private FileIndex index;
 
-    private List<AnnotationSet> annotationSets;
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
-    /* Status */
-    public enum Status {
-        STAGE,
-        READY,
-        MISSING,
-        TRASHED,
-        DELETED
+
+    public File() {
+    }
+
+    public File(String name, Type type, Format format, Bioformat bioformat, String path, String description, FileStatus status,
+                long diskUsage) {
+        this(-1, name, type, format, bioformat, null, path, TimeUtils.getTime(), TimeUtils.getTime(), description, status, false,
+                diskUsage, -1, Collections.emptyList(), -1, Collections.emptyList(), Collections.emptyList(), null, Collections.emptyMap(),
+                Collections.emptyMap());
+    }
+
+    public File(long id, String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String creationDate,
+                String modificationDate, String description, FileStatus status, boolean external, long diskUsage, long experimentId,
+                List<Long> sampleIds, long jobId, List<RelatedFile> relatedFiles, List<FileAclEntry> acl, FileIndex index,
+                Map<String, Object> stats, Map<String, Object> attributes) {
+        this.id = id;
+        this.name = name;
+        this.type = type;
+        this.format = format;
+        this.bioformat = bioformat;
+        this.uri = uri;
+        this.path = path;
+        this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
+        this.description = description;
+        this.status = status;
+        this.external = external;
+        this.diskUsage = diskUsage;
+        this.experimentId = experimentId;
+        this.sampleIds = sampleIds;
+        this.jobId = jobId;
+        this.relatedFiles = relatedFiles;
+        this.acl = acl;
+        this.index = index != null ? index : new FileIndex();
+        this.stats = stats;
+        this.attributes = attributes;
+    }
+
+    public static class FileStatus extends Status {
+
+        public static final String STAGE = "STAGE";
+        public static final String MISSING = "MISSING";
+        public static final String PENDING_DELETE = "PENDING_DELETE";
+        public static final String DELETING = "DELETING"; // This status is set exactly before deleting the file from disk.
+        public static final String REMOVED = "REMOVED";
+
+        public FileStatus(String status, String message) {
+            if (isValid(status)) {
+                init(status, message);
+            } else {
+                throw new IllegalArgumentException("Unknown status " + status);
+            }
+        }
+
+        public FileStatus(String status) {
+            this(status, "");
+        }
+
+        public FileStatus() {
+            this(READY, "");
+        }
+
+        public static boolean isValid(String status) {
+            if (Status.isValid(status)) {
+                return true;
+            }
+            if (status != null && (status.equals(STAGE) || status.equals(MISSING))) {
+                return true;
+            }
+            return false;
+        }
     }
 
     public enum Type {
-        FOLDER,
-        FILE
+        FILE,
+        DIRECTORY,
+        @Deprecated
+        FOLDER
+    }
+
+    public enum Compression {
+        GZIP,
+        BGZIP,
+        ZIP,
+        SNAPPY,
+        NONE,
     }
 
     /**
      * General format of the file, such as text, or binary, etc.
      */
     public enum Format {
-
         VCF,
         BCF,
         GVCF,
@@ -119,14 +188,6 @@ public class File {
         UNKNOWN,
     }
 
-    public enum Compression {
-        GZIP,
-        BGZIP,
-        ZIP,
-        SNAPPY,
-        NONE,
-    }
-
     /**
      * Specific format of the biological file, such as variant, alignment, pedigree, etc.
      */
@@ -137,7 +198,7 @@ public class File {
         MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT,
         MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX,
         DATAMATRIX_EXPRESSION,
-//        DATAMATRIX_SNP,
+        //        DATAMATRIX_SNP,
 //        IDLIST_GENE,
 //        IDLIST_TRANSCRIPT,
 //        IDLIST_PROTEIN,
@@ -163,243 +224,266 @@ public class File {
         SEQUENCE,
         PEDIGREE,
         NONE
+    }
+
+    public static class RelatedFile {
+
+        private long fileId;
+        private Relation relation;
+
+        public enum Relation {
+            PRODUCED_FROM,
+            PART_OF_PAIR,
+            PEDIGREE;
         }
 
-    /* Attributes known values */
-    public static final String DELETE_DATE = "deleteDate";      //Long
+        public RelatedFile() {
+        }
 
-    /**
-     * To think:
-     * ACL, url,  responsible,  extended source ??
-     */
+        public RelatedFile(long fileId, Relation relation) {
+            this.fileId = fileId;
+            this.relation = relation;
+        }
 
-    public File() {
-    }
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("RelatedFile{");
+            sb.append("fileId=").append(fileId);
+            sb.append(", relation=").append(relation);
+            sb.append('}');
+            return sb.toString();
+        }
 
-    public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
-                String description, Status status, long diskUsage) {
-        this(-1, name, type, format, bioformat, path, ownerId, TimeUtils.getTime(), description, status, diskUsage,
-                -1, new LinkedList<Integer>(), -1, new LinkedList<AclEntry>(), new HashMap<String, Object>(),
-                new HashMap<String, Object>());
-    }
+        public long getFileId() {
+            return fileId;
+        }
 
-    public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
-                String creationDate, String description, Status status, long diskUsage) {
-        this(-1, name, type, format, bioformat, path, ownerId, creationDate, description, status, diskUsage,
-                -1, new LinkedList<Integer>(), -1, new LinkedList<AclEntry>(), new HashMap<String, Object>(),
-                new HashMap<String, Object>());
-    }
+        public RelatedFile setFileId(long fileId) {
+            this.fileId = fileId;
+            return this;
+        }
 
-    public File(int id, String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
-                String creationDate, String description, Status status, long diskUsage, int experimentId,
-                List<Integer> sampleIds, int jobId, List<AclEntry> acl, Map<String, Object> stats,
-                Map<String, Object> attributes) {
-        this.id = id;
-        this.name = name;
-        this.type = type;
-        this.format = format;
-        this.bioformat = bioformat;
-        this.uri = null;
-        this.path = path;
-        this.ownerId = ownerId;
-        this.creationDate = creationDate;
-        this.modificationDate = creationDate;
-        this.description = description;
-        this.status = status;
-        this.diskUsage = diskUsage;
-        this.experimentId = experimentId;
-        this.sampleIds = sampleIds;
-        this.jobId = jobId;
-        this.acl = acl;
-        this.index = null;
-        this.annotationSets = new LinkedList<>();
-        this.stats = stats;
-        this.attributes = attributes;
+        public Relation getRelation() {
+            return relation;
+        }
+
+        public RelatedFile setRelation(Relation relation) {
+            this.relation = relation;
+            return this;
+        }
     }
 
     @Override
     public String toString() {
-        return "File {" + "\n\t" +
-                "id:" + id + "\n\t" +
-                ", name:'" + name + '\'' + "\n\t" +
-                ", type:'" + type + '\'' + "\n\t" +
-                ", format:'" + format + '\'' + "\n\t" +
-                ", bioformat:'" + bioformat + '\'' + "\n\t" +
-//                ", uriScheme:'" + uriScheme + '\'' + "\n\t" +
-                ", path:'" + path + '\'' + "\n\t" +
-                ", ownerId:'" + ownerId + '\'' + "\n\t" +
-                ", creationDate:'" + creationDate + '\'' + "\n\t" +
-                ", modificationDate:'" + modificationDate + '\'' + "\n\t" +
-                ", description:'" + description + '\'' + "\n\t" +
-                ", status:'" + status + '\'' + "\n\t" +
-                ", diskUsage:" + diskUsage + "\n\t" +
-                ", experimentId:" + experimentId + "\n\t" +
-                ", sampleIds:" + sampleIds + "\n\t" +
-                ", jobId:" + jobId + "\n\t" +
-                ", acl:" + acl + "\n\t" +
-                ", stats:" + stats + "\n\t" +
-                ", attributes:" + attributes + "\n\t" +
-//                ", indices:" + indices + "\n" +
-                '}';
+        final StringBuilder sb = new StringBuilder("File{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", type=").append(type);
+        sb.append(", format=").append(format);
+        sb.append(", bioformat=").append(bioformat);
+        sb.append(", uri=").append(uri);
+        sb.append(", path='").append(path).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", status=").append(status);
+        sb.append(", external=").append(external);
+        sb.append(", diskUsage=").append(diskUsage);
+        sb.append(", experimentId=").append(experimentId);
+        sb.append(", sampleIds=").append(sampleIds);
+        sb.append(", jobId=").append(jobId);
+        sb.append(", relatedFiles=").append(relatedFiles);
+        sb.append(", acl=").append(acl);
+        sb.append(", index=").append(index);
+        sb.append(", stats=").append(stats);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public File setId(long id) {
         this.id = id;
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public File setName(String name) {
         this.name = name;
+        return this;
     }
 
     public Type getType() {
         return type;
     }
 
-    public void setType(Type type) {
+    public File setType(Type type) {
         this.type = type;
+        return this;
     }
 
     public Format getFormat() {
         return format;
     }
 
-    public void setFormat(Format format) {
+    public File setFormat(Format format) {
         this.format = format;
+        return this;
     }
 
     public Bioformat getBioformat() {
         return bioformat;
     }
 
-    public void setBioformat(Bioformat bioformat) {
+    public File setBioformat(Bioformat bioformat) {
         this.bioformat = bioformat;
+        return this;
     }
 
     public URI getUri() {
         return uri;
     }
 
-    public void setUri(URI uri) {
+    public File setUri(URI uri) {
         this.uri = uri;
+        return this;
     }
 
     public String getPath() {
         return path;
     }
 
-    public void setPath(String path) {
+    public File setPath(String path) {
         this.path = path;
-    }
-
-    public String getOwnerId() {
-        return ownerId;
-    }
-
-    public void setOwnerId(String ownerId) {
-        this.ownerId = ownerId;
+        return this;
     }
 
     public String getCreationDate() {
         return creationDate;
     }
 
-    public void setCreationDate(String creationDate) {
+    public File setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
     }
 
     public String getModificationDate() {
         return modificationDate;
     }
 
-    public void setModificationDate(String modificationDate) {
+    public File setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
+        return this;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public File setDescription(String description) {
         this.description = description;
+        return this;
     }
 
-    public Status getStatus() {
+    public FileStatus getStatus() {
         return status;
     }
 
-    public void setStatus(Status status) {
+    public File setStatus(FileStatus status) {
         this.status = status;
+        return this;
+    }
+
+    public boolean isExternal() {
+        return external;
+    }
+
+    public File setExternal(boolean external) {
+        this.external = external;
+        return this;
     }
 
     public long getDiskUsage() {
         return diskUsage;
     }
 
-    public void setDiskUsage(long diskUsage) {
+    public File setDiskUsage(long diskUsage) {
         this.diskUsage = diskUsage;
+        return this;
     }
 
-    public int getExperimentId() {
+    public long getExperimentId() {
         return experimentId;
     }
 
-    public void setExperimentId(int experimentId) {
+    public File setExperimentId(long experimentId) {
         this.experimentId = experimentId;
+        return this;
     }
 
-    public List<Integer> getSampleIds() {
+    public List<Long> getSampleIds() {
         return sampleIds;
     }
 
-    public void setSampleIds(List<Integer> sampleIds) {
+    public File setSampleIds(List<Long> sampleIds) {
         this.sampleIds = sampleIds;
+        return this;
     }
 
-    public int getJobId() {
+    public long getJobId() {
         return jobId;
     }
 
-    public void setJobId(int jobId) {
+    public File setJobId(long jobId) {
         this.jobId = jobId;
+        return this;
     }
 
-    public List<AclEntry> getAcl() {
-        return acl;
+    public List<RelatedFile> getRelatedFiles() {
+        return relatedFiles;
     }
 
-    public void setAcl(List<AclEntry> acl) {
+    public File setRelatedFiles(List<RelatedFile> relatedFiles) {
+        this.relatedFiles = relatedFiles;
+        return this;
+    }
+
+    public File setAcl(List<FileAclEntry> acl) {
         this.acl = acl;
+        return this;
     }
 
-    public Index getIndex() {
+    public FileIndex getIndex() {
         return index;
     }
 
-    public void setIndex(Index index) {
+    public File setIndex(FileIndex index) {
         this.index = index;
+        return this;
     }
 
     public Map<String, Object> getStats() {
         return stats;
     }
 
-    public void setStats(Map<String, Object> stats) {
+    public File setStats(Map<String, Object> stats) {
         this.stats = stats;
+        return this;
     }
 
     public Map<String, Object> getAttributes() {
         return attributes;
     }
 
-    public void setAttributes(Map<String, Object> attributes) {
+    public File setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+        return this;
     }
+
 }

@@ -38,8 +38,8 @@ public class VariantJsonTransformTask extends VariantTransformTask<String> {
     }
 
     public VariantJsonTransformTask(VCFHeader header, VCFHeaderVersion version, VariantSource source, Path outputFileJsonFile,
-                                    VariantGlobalStatsCalculator variantStatsTask, boolean includeSrc) {
-        super(header, version, source, outputFileJsonFile, variantStatsTask, includeSrc);
+                                    VariantGlobalStatsCalculator variantStatsTask, boolean includeSrc, boolean generateReferenceBlocks) {
+        super(header, version, source, outputFileJsonFile, variantStatsTask, includeSrc, generateReferenceBlocks);
     }
 
     @Override
@@ -50,7 +50,6 @@ public class VariantJsonTransformTask extends VariantTransformTask<String> {
             try {
                 String e = variant.toJson();
                 outputBatch.add(e);
-                outputBatch.add("\n");
             }  catch (Exception e) {
                 logger.error("Error parsing variant: {}", variant);
                 throw e;
@@ -58,4 +57,5 @@ public class VariantJsonTransformTask extends VariantTransformTask<String> {
         }
         return outputBatch;
     }
+
 }

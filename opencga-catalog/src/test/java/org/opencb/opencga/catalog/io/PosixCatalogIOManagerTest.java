@@ -46,7 +46,7 @@ public class PosixCatalogIOManagerTest {
             Properties properties = new Properties();
             properties.setProperty("CATALOG.FILE.ROOTDIR", path.toUri().toString());
             posixCatalogIOManager = new PosixCatalogIOManager(properties);
-        }catch(Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -73,13 +73,13 @@ public class PosixCatalogIOManagerTest {
 
         Path projectPath = Paths.get(posixCatalogIOManager.createProject(userId, projectId));
         assertTrue(Files.exists(projectPath));
-        assertEquals(userPath.toString()+"/projects/"+projectId , projectPath.toString());
+        assertEquals(userPath.toString() + "/projects/" + projectId, projectPath.toString());
 
         Path studyPath = Paths.get(posixCatalogIOManager.createStudy(userId, projectId, "phase1"));
         assertTrue(Files.exists(studyPath));
 //        assertTrue(Files.exists(studyPath.resolve("data")));
 //        assertTrue(Files.exists(studyPath.resolve("analysis")));
-        assertEquals(projectPath.toString()+"/phase1", studyPath.toString());
+        assertEquals(projectPath.toString() + "/phase1", studyPath.toString());
 
 //        posixIOManager.deleteStudy(userId, projectId, "phase1");
 //        assertFalse(Files.exists(studyPath));

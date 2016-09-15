@@ -16,20 +16,21 @@
 
 package org.opencb.opencga.storage.core;
 
-import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.MemoryUsageMonitor;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageETLException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.slf4j.Logger;
 
-import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * @author imedina
- * @param <DBWRITER>
  * @param <DBADAPTOR>
+ * @author imedina
  */
-public abstract class StorageManager<DBWRITER, DBADAPTOR> {
+public abstract class StorageManager<DBADAPTOR> {
 
     protected String storageEngineId;
     protected StorageConfiguration configuration;
@@ -44,11 +45,10 @@ public abstract class StorageManager<DBWRITER, DBADAPTOR> {
     }
 
     public StorageManager(String storageEngineId, StorageConfiguration configuration) {
-        this.storageEngineId = storageEngineId;
-        this.configuration = configuration;
+        setConfiguration(configuration, storageEngineId);
     }
 
-    public void setConfiguration(StorageConfiguration configuration, String storageEngineId){
+    public void setConfiguration(StorageConfiguration configuration, String storageEngineId) {
         this.configuration = configuration;
         this.storageEngineId = storageEngineId;
     }
@@ -61,59 +61,118 @@ public abstract class StorageManager<DBWRITER, DBADAPTOR> {
         return storageEngineId;
     }
 
-    /**
-     * ETL cycle consists of the following execution steps:
-     *  - extract: fetch data from different sources to be processed, eg. remote servers (S3), move to HDFS, ...
-     *  - pre-transform: data is prepared to be transformed, this may include data validation and uncompression
-     *  - transform: business rules are applied and some integrity checks can be applied
-     *  - post-transform: some cleaning, validation or other actions can be taken into account
-     *  - pre-load: transformed data can be validated or converted to physical schema in this step
-     *  - load: in this step a DBWriter from getDBWriter (see below) is used to load data in the storage engine
-     *  - post-load: data can be cleaned and some database validations can be performed
-     */
+    public List<StorageETLResult> index(List<URI> inputFiles, URI outdirUri, boolean doExtract, boolean doTransform, boolean doLoad)
+            throws StorageManagerException {
 
+        List<StorageETLResult> results = new ArrayList<>(inputFiles.size());
+        boolean abortOnFail = true;
 
-    /**
-     * This method extracts the data from the data source. This data source can be a database or a remote
-     * file system. URI objects are used to allow all possibilities.
-     * @param input Data source origin
-     * @param ouput Final location of data
-     */
-    public abstract URI extract(URI input, URI ouput) throws StorageManagerException;
+        // Check the database connection before we start
+        if (doLoad) {
+            testConnection();
+        }
 
+        for (URI inputFile : inputFiles) {
+            //Provide a connected storageETL if load is required.
+            StorageETL storageETL = newStorageETL(doLoad);
 
-    public abstract URI preTransform(URI input) throws IOException, FileFormatException, StorageManagerException;
+            StorageETLResult etlResult = new StorageETLResult(inputFile);
+            results.add(etlResult);
 
-    public abstract URI transform(URI input, URI pedigree, URI output) throws IOException, FileFormatException, StorageManagerException;
+            URI nextFileUri = inputFile;
+            etlResult.setInput(inputFile);
 
-    public abstract URI postTransform(URI input) throws IOException, FileFormatException, StorageManagerException;
+            if (doExtract) {
+                logger.info("Extract '{}'", inputFile);
+                nextFileUri = storageETL.extract(inputFile, outdirUri);
+                etlResult.setExtractResult(nextFileUri);
+            }
 
+            if (doTransform) {
+                nextFileUri = transformFile(storageETL, etlResult, results, nextFileUri, outdirUri);
+            }
 
-    public abstract URI preLoad(URI input, URI output) throws IOException, StorageManagerException;
+            if (doLoad) {
+                loadFile(storageETL, etlResult, results, nextFileUri, outdirUri);
+            }
 
-    /**
-     * This method loads the transformed data file into a database, the database credentials are expected to be read
-     * from configuration file.
-     * @param input
-     * @return
-     * @throws IOException
-     * @throws StorageManagerException
-     */
-    public abstract URI load(URI input) throws IOException, StorageManagerException;
+            storageETL.close();
 
-    public abstract URI postLoad(URI input, URI output) throws IOException, StorageManagerException;
+            MemoryUsageMonitor.logMemory(logger);
+        }
 
+        return results;
+    }
 
-    /**
-     * Storage Engines must implement these 2 methods in order to the ETL to be able to write and read from database:
-     *  - getDBWriter: this method returns a valid implementation of a DBWriter to write in the storage engine
-     *  - getDBAdaptor: a implemented instance of the corresponding DBAdaptor is returned to query the database.
-     */
-    @Deprecated
-    public abstract DBWRITER getDBWriter(String dbName) throws StorageManagerException;
+    protected void loadFile(StorageETL storageETL, StorageETLResult etlResult, List<StorageETLResult> results,
+                            URI inputFileUri, URI outdirUri) throws StorageETLException {
+        etlResult.setLoadExecuted(true);
+        long millis = System.currentTimeMillis();
+        try {
+            logger.info("PreLoad '{}'", inputFileUri);
+            inputFileUri = storageETL.preLoad(inputFileUri, outdirUri);
+            etlResult.setPreLoadResult(inputFileUri);
+
+            logger.info("Load '{}'", inputFileUri);
+            inputFileUri = storageETL.load(inputFileUri);
+            etlResult.setLoadResult(inputFileUri);
+
+            logger.info("PostLoad '{}'", inputFileUri);
+            inputFileUri = storageETL.postLoad(inputFileUri, outdirUri);
+            etlResult.setPostLoadResult(inputFileUri);
+        } catch (Exception e) {
+            etlResult.setLoadError(e);
+            throw new StorageETLException("Exception executing load: " + e.getMessage(), e, results);
+        } finally {
+            etlResult.setLoadTimeMillis(System.currentTimeMillis() - millis);
+            etlResult.setLoadStats(storageETL.getLoadStats());
+        }
+    }
+
+    protected URI transformFile(StorageETL storageETL, StorageETLResult etlResult, List<StorageETLResult> results,
+                                URI inputFileUri, URI outdirUri) throws StorageETLException {
+        etlResult.setTransformExecuted(true);
+        long millis = System.currentTimeMillis();
+        try {
+            logger.info("PreTransform '{}'", inputFileUri);
+            inputFileUri = storageETL.preTransform(inputFileUri);
+            etlResult.setPreTransformResult(inputFileUri);
+
+            logger.info("Transform '{}'", inputFileUri);
+            inputFileUri = storageETL.transform(inputFileUri, null, outdirUri);
+            etlResult.setTransformResult(inputFileUri);
+
+            logger.info("PostTransform '{}'", inputFileUri);
+            inputFileUri = storageETL.postTransform(inputFileUri);
+            etlResult.setPostTransformResult(inputFileUri);
+        } catch (Exception e) {
+            etlResult.setTransformError(e);
+            throw new StorageETLException("Exception executing transform.", e, results);
+        } finally {
+            etlResult.setTransformTimeMillis(System.currentTimeMillis() - millis);
+            etlResult.setTransformStats(storageETL.getTransformStats());
+        }
+        return inputFileUri;
+    }
+
+    public DBADAPTOR getDBAdaptor() throws StorageManagerException {
+        return getDBAdaptor("");
+    }
 
     public abstract DBADAPTOR getDBAdaptor(String dbName) throws StorageManagerException;
 
-    public abstract boolean testConnection(String dbName);
+    // TODO: Pending implementation
+    public abstract void testConnection() throws StorageManagerException;
+
+    /**
+     * Creates a new {@link StorageETL} object.
+     *
+     * Each {@link StorageETL} should be used to index one single file.
+     *
+     * @param connected Specify if the provided object must be connected to the underlying database.
+     * @return Created {@link StorageETL}
+     * @throws StorageManagerException If there is any problem while creation
+     */
+    public abstract StorageETL newStorageETL(boolean connected) throws StorageManagerException;
 
 }

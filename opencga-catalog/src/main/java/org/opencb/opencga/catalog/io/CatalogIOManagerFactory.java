@@ -16,7 +16,8 @@
 
 package org.opencb.opencga.catalog.io;
 
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.UriUtils;
 import org.slf4j.Logger;
@@ -33,16 +34,34 @@ import java.util.Properties;
  */
 public class CatalogIOManagerFactory {
 
+    protected static Logger logger = LoggerFactory.getLogger(CatalogIOManagerFactory.class);
+    private final Properties properties;
+    private final CatalogConfiguration catalogConfiguration;
+    private final URI mainRootdir;
     private String defaultCatalogScheme = "file";
     private Map<String, CatalogIOManager> catalogIOManagers = new HashMap<>();
-    private final Properties properties;
-    private final URI mainRootdir;
-    protected static Logger logger = LoggerFactory.getLogger(CatalogIOManagerFactory.class);
 
+    @Deprecated
     public CatalogIOManagerFactory(Properties properties) throws CatalogIOException {
         this.properties = properties;
+        this.catalogConfiguration = null;
         try {
             mainRootdir = UriUtils.createDirectoryUri(properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR));
+        } catch (URISyntaxException e) {
+            throw new CatalogIOException("Malformed URI '" + CatalogManager.CATALOG_MAIN_ROOTDIR + "'", e);
+        }
+
+        String scheme = mainRootdir.getScheme();
+        if (scheme != null) {
+            defaultCatalogScheme = scheme;
+        }
+    }
+
+    public CatalogIOManagerFactory(CatalogConfiguration catalogConfiguration) throws CatalogIOException {
+        this.properties = null;
+        this.catalogConfiguration = catalogConfiguration;
+        try {
+            mainRootdir = UriUtils.createDirectoryUri(catalogConfiguration.getDataDir());
         } catch (URISyntaxException e) {
             throw new CatalogIOException("Malformed URI '" + CatalogManager.CATALOG_MAIN_ROOTDIR + "'", e);
         }
@@ -62,17 +81,17 @@ public class CatalogIOManagerFactory {
     }
 
     public CatalogIOManager get(String io) throws CatalogIOException {
-        if(io == null) {
+        if (io == null) {
             io = defaultCatalogScheme;
         }
 
-        if(!catalogIOManagers.containsKey(io)) {
-            switch(io) {
+        if (!catalogIOManagers.containsKey(io)) {
+            switch (io) {
                 case "file":
-                    catalogIOManagers.put("file", new PosixCatalogIOManager(properties));
+                    catalogIOManagers.put("file", new PosixCatalogIOManager(catalogConfiguration));
                     break;
                 case "hdfs":
-                    catalogIOManagers.put("hdfs", new HdfsCatalogIOManager(properties));
+                    catalogIOManagers.put("hdfs", new HdfsCatalogIOManager(catalogConfiguration));
                     break;
                 default:
                     throw new UnsupportedOperationException("Unsupported file system : " + io);
@@ -81,12 +100,12 @@ public class CatalogIOManagerFactory {
         return catalogIOManagers.get(io);
     }
 
-    public void setDefaultCatalogScheme(String defaultCatalogScheme) {
-        this.defaultCatalogScheme = defaultCatalogScheme;
-    }
-
     public String getDefaultCatalogScheme() {
         return defaultCatalogScheme;
+    }
+
+    public void setDefaultCatalogScheme(String defaultCatalogScheme) {
+        this.defaultCatalogScheme = defaultCatalogScheme;
     }
 
 }

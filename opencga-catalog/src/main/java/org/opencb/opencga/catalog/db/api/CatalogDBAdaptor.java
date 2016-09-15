@@ -16,106 +16,123 @@
 
 package org.opencb.opencga.catalog.db.api;
 
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.slf4j.Logger;
 
-import java.util.Collections;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
 
-public abstract class CatalogDBAdaptor {
+/**
+ * Created by imedina on 07/01/16.
+ */
+public interface CatalogDBAdaptor<T> extends Iterable<T> {
 
-    protected CatalogDBAdaptor(Logger logger) {
-        this.logger = logger;
+
+    default QueryResult<Long> count() throws CatalogDBException {
+        return count(new Query());
     }
 
-    public interface FilterOption {
-        enum Type {
-            /**
-             * Accepts a list of comma separated numerical conditions, where the value must match in, at least, one of this.
-             * The accepted operators are: [<, <=, >, >=, =, , !=]
-             *
-             * Example:
-             *      getAllFiles( {diskUsage : "<200000" } )
-             *      getAllFiles( {jobId : "32,33,34" } )
-             */
-            NUMERICAL,
-            /**
-             * Accepts a list of comma separated text conditions, where the value must match in, at least, one of this.
-             * The accepted operators are: [<, <=, >, >=, =, , !=, ~, =~, !=~],
-             * where [~,=~] implements a "LIKE" with regular expression and [!=~, !~] implements a "NOT LIKE"
-             * and [<, <=, >, >=] are lexicographical operations
-             *
-             * Example:
-             *      getAllFiles ( { bioformat : "VARIANT," } )
-             *      getAllSamples ( { name : "~SAMP_00[0-9]*"} )
-             */
-            TEXT,
-            /**
-             * Accepts a boolean condition
-             *
-             * Example:
-             *      getAllFiles ( { acl.userId : "user1", acl.write : "false" } )
-             */
-            BOOLEAN
+    QueryResult<Long> count(Query query) throws CatalogDBException;
+
+
+    default QueryResult distinct(String field) throws CatalogDBException {
+        return distinct(new Query(), field);
+    }
+
+    QueryResult distinct(Query query, String field) throws CatalogDBException;
+
+
+    default QueryResult stats() {
+        return stats(new Query());
+    }
+
+    QueryResult stats(Query query);
+
+
+    QueryResult<T> get(Query query, QueryOptions options) throws CatalogDBException;
+
+    default List<QueryResult<T>> get(List<Query> queries, QueryOptions options) throws CatalogDBException {
+        Objects.requireNonNull(queries);
+        List<QueryResult<T>> queryResults = new ArrayList<>(queries.size());
+        for (Query query : queries) {
+            queryResults.add(get(query, options));
         }
-        String getKey();
-        Type getType();
-        String getDescription();
+        return queryResults;
     }
 
-    protected final Logger logger;
+    QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException;
 
-    protected long startQuery(){
-        return System.currentTimeMillis();
-    }
-
-    protected <T> QueryResult<T> endQuery(String queryId, long startTime, List<T> result) throws CatalogDBException {
-        return endQuery(queryId, startTime, result, null, null);
-    }
-
-    protected <T> QueryResult<T> endQuery(String queryId, long startTime) throws CatalogDBException {
-        return endQuery(queryId, startTime, Collections.<T>emptyList(), null, null);
-    }
-
-    protected <T> QueryResult<T> endQuery(String queryId, long startTime, QueryResult<T> result)
-            throws CatalogDBException {
-        long end = System.currentTimeMillis();
-        result.setId(queryId);
-        result.setDbTime((int) (end - startTime));
-        logger.trace("CatalogQuery: {}, dbTime: {}, numResults: {}, numTotalResults: {}", result.getId(), result.getDbTime(), result.getNumResults(), result.getNumTotalResults());
-        if(result.getErrorMsg() != null && !result.getErrorMsg().isEmpty()){
-            throw new CatalogDBException(result.getErrorMsg());
+    default List<QueryResult> nativeGet(List<Query> queries, QueryOptions options) throws CatalogDBException {
+        Objects.requireNonNull(queries);
+        List<QueryResult> queryResults = new ArrayList<>(queries.size());
+        for (Query query : queries) {
+            queryResults.add(nativeGet(query, options));
         }
-        return result;
+        return queryResults;
     }
 
-    protected <T> QueryResult<T> endQuery(String queryId, long startTime, List<T> result,
-                                          String errorMessage, String warnMessage) throws CatalogDBException {
-        long end = System.currentTimeMillis();
-        if(result == null){
-            result = new LinkedList<>();
+
+    QueryResult<T> update(long id, ObjectMap parameters) throws CatalogDBException;
+
+    QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException;
+
+    QueryResult<T> delete(long id, QueryOptions queryOptions) throws CatalogDBException;
+
+    QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException;
+
+    @Deprecated
+    QueryResult<T> remove(long id, QueryOptions queryOptions) throws CatalogDBException;
+
+    QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException;
+
+    QueryResult<T> restore(long id, QueryOptions queryOptions) throws CatalogDBException;
+
+    QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException;
+
+
+//    QueryResult<Long> updateStatus(Query query, Status status) throws CatalogDBException;
+
+
+    @Override
+    default CatalogDBIterator<T> iterator() {
+        try {
+            return iterator(new Query(), new QueryOptions());
+        } catch (CatalogDBException e) {
+            e.printStackTrace();
         }
-        int numResults = result.size();
-        QueryResult<T> queryResult = new QueryResult<>(queryId, (int) (end - startTime), numResults, numResults,
-                warnMessage, errorMessage, result);
-        logger.trace("CatalogQuery: {}, dbTime: {}, numResults: {}, numTotalResults: {}", queryResult.getId(), queryResult.getDbTime(), queryResult.getNumResults(), queryResult.getNumTotalResults());
-        if(errorMessage != null && !errorMessage.isEmpty()){
-            throw new CatalogDBException(queryResult.getErrorMsg());
-        }
-        return queryResult;
+        return null;
     }
 
-    protected void checkParameter(Object param, String name) throws CatalogDBException {
-        if (param == null) {
-            throw new CatalogDBException("Error: parameter '" + name + "' is null");
-        }
-        if(param instanceof String) {
-            if(param.equals("") || param.equals("null")) {
-                throw new CatalogDBException("Error: parameter '" + name + "' is empty or it values 'null");
-            }
+    CatalogDBIterator<T> iterator(Query query, QueryOptions options) throws CatalogDBException;
+
+    default CatalogDBIterator nativeIterator() throws CatalogDBException {
+        return nativeIterator(new Query(), new QueryOptions());
+    }
+
+    CatalogDBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException;
+
+
+    QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException;
+
+    QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException;
+
+    QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException;
+
+
+    @Override
+    default void forEach(Consumer action) {
+        try {
+            forEach(new Query(), action, new QueryOptions());
+        } catch (CatalogDBException e) {
+            e.printStackTrace();
         }
     }
+
+    void forEach(Query query, Consumer<? super Object> action, QueryOptions options) throws CatalogDBException;
 
 }

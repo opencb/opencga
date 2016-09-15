@@ -13,11 +13,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.util.List;
 
 /**
- * Created on 01/10/15
+ * Created on 01/10/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -35,11 +34,16 @@ public class VariantAvroWriter implements DataWriter<Variant> {
     public VariantAvroWriter(Schema schema, String codecName, OutputStream outputStream) {
         this.schema = schema;
         this.outputStream = outputStream;
+        if (codecName == null || codecName.isEmpty()) {
+            codecName = "null";
+        } else {
+            codecName = codecName.replace("gzip", "deflate");
+        }
         this.codecName = codecName;
 
         datumWriter = new SpecificDatumWriter<>();
         writer = new DataFileWriter<>(datumWriter);
-        writer.setCodec(CodecFactory.fromString(codecName.replace("gzip", "deflate")));
+        writer.setCodec(CodecFactory.fromString(this.codecName));
 //        writer.setCodec(CodecFactory.deflateCodec(CodecFactory.DEFAULT_DEFLATE_LEVEL));
     }
 
@@ -82,4 +86,5 @@ public class VariantAvroWriter implements DataWriter<Variant> {
         }
         return true;
     }
+
 }

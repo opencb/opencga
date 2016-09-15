@@ -1,0 +1,48 @@
+---
+logLevel: "INFO"
+logFile: null
+
+openRegister: true
+userDefaultDiskQuota: 0
+
+dataDir: ${OPENCGA.CATALOG.ROOTDIR}
+tempJobsDir: ${OPENCGA.CATALOG.JOBS.ROOTDIR}
+toolsDir: "tools"
+
+admin:
+  password: ""
+  email: ""
+
+audit:
+  maxDocuments: 20000000 # Maximum number of documents that will be created in the audit collection.
+  maxSize: 100000000000  # Maximum size that the audit collection will have in bytes.
+  javaClass: ""          # Java class of the audit implementation to be used to audit.
+  exclude: []            # Array of resource:action to select pairwise resource-actions to be excluded for audit purposes.
+
+monitor:
+  daysToRemove: 30
+  executionSleepTime: 4000
+  fileSleepTime: 4000
+
+execution:
+  mode: "local"
+  defaultQueue: ""
+  availableQueues: ""
+  toolsPerQueue: {}
+
+emailServer:
+  host: ${OPENCGA.CATALOG.MAIL.HOST}
+  port: ${OPENCGA.CATALOG.MAIL.PORT}
+  user: ${OPENCGA.CATALOG.MAIL.USER}
+  password: ${OPENCGA.CATALOG.MAIL.PASSWORD}
+  from: ""
+  ssl: false
+
+database:
+  hosts:
+  - ${OPENCGA.CATALOG.DB.HOSTS}
+  database: ${OPENCGA.CATALOG.DB.DATABASE}
+  user: ${OPENCGA.CATALOG.DB.USER}
+  password: ${OPENCGA.CATALOG.DB.PASSWORD}
+  options:
+    authenticationDatabase: ${OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE}

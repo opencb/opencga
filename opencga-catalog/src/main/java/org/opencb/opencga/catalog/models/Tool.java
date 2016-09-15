@@ -16,31 +16,36 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.models.acls.AbstractAcl;
+import org.opencb.opencga.catalog.models.acls.permissions.ToolAclEntry;
+
 import java.util.LinkedList;
 import java.util.List;
 
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Tool {
+public class Tool extends AbstractAcl<ToolAclEntry> {
 
-    private int id;
+    private long id;
     private String alias;
     private String name;
     private String description;
     private Object manifest;
     private Object result;
     private String path;
-    private List<AclEntry> acl;
+//    private List<ToolAclEntry> acl;
 
     public Tool() {
         this("", "", "", null, null, "");
     }
 
     public Tool(String alias, String name, String description, Object manifest, Object result, String path) {
-        this(-1 , alias, name, description, manifest, result, path, new LinkedList());
+        this(-1, alias, name, description, manifest, result, path, new LinkedList());
     }
-    public Tool(int id, String alias, String name, String description, Object manifest, Object result, String path, List<AclEntry> acl) {
+
+    public Tool(long id, String alias, String name, String description, Object manifest, Object result, String path,
+                List<ToolAclEntry> acl) {
         this.id = id;
         this.alias = alias;
         this.name = name;
@@ -53,81 +58,85 @@ public class Tool {
 
     @Override
     public String toString() {
-        return "Tool{" +
-                "id=" + id +
-                "alias='" + alias + '\'' +
-                ", name='" + name + '\'' +
-                ", description='" + description + '\'' +
-                ", manifest=" + manifest +
-                ", result=" + result +
-                ", path='" + path + '\'' +
-                ", acl=" + acl +
-                '}';
+        final StringBuilder sb = new StringBuilder("Tool{");
+        sb.append("id=").append(id);
+        sb.append(", alias='").append(alias).append('\'');
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", manifest=").append(manifest);
+        sb.append(", result=").append(result);
+        sb.append(", path='").append(path).append('\'');
+        sb.append(", acl=").append(acl);
+        sb.append('}');
+        return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public Tool setId(long id) {
         this.id = id;
+        return this;
     }
 
     public String getAlias() {
         return alias;
     }
 
-    public void setAlias(String alias) {
+    public Tool setAlias(String alias) {
         this.alias = alias;
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public Tool setName(String name) {
         this.name = name;
+        return this;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public Tool setDescription(String description) {
         this.description = description;
+        return this;
     }
 
     public Object getManifest() {
         return manifest;
     }
 
-    public void setManifest(Object manifest) {
+    public Tool setManifest(Object manifest) {
         this.manifest = manifest;
+        return this;
     }
 
     public Object getResult() {
         return result;
     }
 
-    public void setResult(Object result) {
+    public Tool setResult(Object result) {
         this.result = result;
+        return this;
     }
 
     public String getPath() {
         return path;
     }
 
-    public void setPath(String path) {
+    public Tool setPath(String path) {
         this.path = path;
+        return this;
     }
 
-
-    public List<AclEntry> getAcl() {
-        return acl;
-    }
-
-    public void setAcl(List<AclEntry> acl) {
+    public Tool setAcl(List<ToolAclEntry> acl) {
         this.acl = acl;
+        return this;
     }
 
 }
