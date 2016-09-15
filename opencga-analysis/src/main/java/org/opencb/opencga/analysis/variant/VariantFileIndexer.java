@@ -40,6 +40,7 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -113,6 +114,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         objectMapper.writer()
                 .writeValue(outdir.resolve("job.status").toFile(), new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
 
+        // TODO: This hook should #updateFileInfo
         Thread hook = new Thread(() -> {
             try {
                 // If the status has not been changed by the method and is still running, we assume that the execution failed.
@@ -254,7 +256,20 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         }
 
         logger.info("Starting to {}", step);
-        List<StorageETLResult> storageETLResults = variantStorageManager.index(fileUris, outdir.toUri(), false, transform, load);
+        List<StorageETLResult> storageETLResults;
+        // Save exception to throw at the end
+        StorageManagerException exception = null;
+        try {
+            storageETLResults = variantStorageManager.index(fileUris, outdir.toUri(), false, transform, load);
+        } catch (StorageETLException e) {
+            logger.error("Error executing " + step, e);
+            storageETLResults = e.getResults();
+            exception = e;
+        } catch (StorageManagerException e) {
+            logger.error("Error executing " + step, e);
+            storageETLResults = Collections.emptyList();
+            exception = e;
+        }
 
 //        logger.debug("Writing storageETLResults to file {}", outdir.resolve("storageETLresults"));
 //        objectMapper.writer().writeValue(outdir.resolve("storageETLresults").toFile(), storageETLResults);
@@ -271,6 +286,11 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         objectMapper.writer()
                 .writeValue(outdir.resolve("job.status").toFile(), new Job.JobStatus(Job.JobStatus.DONE, "Job completed"));
         Runtime.getRuntime().removeShutdownHook(hook);
+
+        // Throw the exception!
+        if (exception != null) {
+            throw exception;
+        }
     }
 
     private void copyResult(Path tmpOutdirPath, long catalogPathOutDir, String sessionId) throws CatalogException, IOException {
@@ -350,17 +370,17 @@ public class VariantFileIndexer extends AbstractFileIndexer {
     private void updateFileInfo(Study study, List<File> filesToIndex, List<StorageETLResult> storageETLResults, Path outdir,
                                 QueryOptions options, String sessionId) throws CatalogException, IOException {
 
-        if (storageETLResults.size() != filesToIndex.size()) {
-            logger.error("The size of the storageETLResults is different from the number of files to be indexed.");
-            return;
-        }
+        Map<String, StorageETLResult> map = storageETLResults
+                .stream()
+                .collect(Collectors.toMap(s -> Paths.get(s.getInput().getPath()).getFileName().toString(), i -> i));
 
-        for (int i = 0; i < storageETLResults.size(); i++) {
-            StorageETLResult storageETLResult = storageETLResults.get(i);
+
+        for (File indexedFile : filesToIndex) {
+            // Suppose that the missing results are due to errors, and those files were not indexed.
+            StorageETLResult storageETLResult = map.get(indexedFile.getName());
+
             boolean jobFailed = storageETLResult == null || storageETLResult.getLoadError() != null
                     || storageETLResult.getTransformError() != null;
-
-            final File indexedFile = filesToIndex.get(i);
 
             boolean transformedSuccess = storageETLResult != null && storageETLResult.isTransformExecuted()
                     && storageETLResult.getTransformError() == null;
