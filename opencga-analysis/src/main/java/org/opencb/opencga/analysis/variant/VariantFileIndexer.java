@@ -31,12 +31,9 @@ import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.api.IFileManager;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.common.UriUtils;
@@ -49,14 +46,14 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_STATS;
 
@@ -245,6 +242,17 @@ public class VariantFileIndexer extends AbstractFileIndexer {
             }
         }
 
+        // Update study configuration BEFORE executing the index
+        try {
+            StudyConfigurationManager studyConfigurationManager = StorageManagerFactory.get()
+                    .getVariantStorageManager(dataStore.getStorageEngine())
+                    .getDBAdaptor(dataStore.getDbName()).getStudyConfigurationManager();
+            new CatalogStudyConfigurationFactory(catalogManager)
+                    .updateStudyConfigurationFromCatalog(studyIdByInputFileId, studyConfigurationManager, sessionId);
+        } catch (StorageManagerException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+            logger.error("An error occurred when trying to update the study configuration. Error " + e.getMessage(), e);
+        }
+
         logger.info("Starting to {}", step);
         List<StorageETLResult> storageETLResults = variantStorageManager.index(fileUris, outdir.toUri(), false, transform, load);
 
@@ -257,20 +265,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
                 // Copy results to catalog
                 copyResult(outdir, catalogPathId, sessionId);
             }
-
             updateFileInfo(study, filesToIndex, storageETLResults, outdir, options, sessionId);
-
-            // Update study configuration
-            try {
-                StudyConfigurationManager studyConfigurationManager = StorageManagerFactory.get()
-                        .getVariantStorageManager(dataStore.getStorageEngine())
-                        .getDBAdaptor(dataStore.getDbName()).getStudyConfigurationManager();
-                new CatalogStudyConfigurationFactory(catalogManager)
-                        .updateStudyConfigurationFromCatalog(studyIdByInputFileId, studyConfigurationManager, sessionId);
-            } catch (StorageManagerException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-                logger.error("An error occurred when trying to update the study configuration. Error {}", e.getMessage());
-                e.printStackTrace();
-            }
         }
 
         objectMapper.writer()
