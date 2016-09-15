@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
@@ -36,7 +37,18 @@ public class CatalogMongoAuditDBAdaptorTest {
                 .add("authenticationDatabase", catalogConfiguration.getDatabase().getOptions().get("authenticationDatabase"))
                 .build();
 
-        String database = catalogConfiguration.getDatabase().getDatabase();
+//        String database = catalogConfiguration.getDatabase().getDatabase();
+        String database;
+        if(StringUtils.isNotEmpty(catalogConfiguration.getDatabasePrefix())) {
+            if (!catalogConfiguration.getDatabasePrefix().endsWith("_")) {
+                database = catalogConfiguration.getDatabasePrefix() + "_catalog";
+            } else {
+                database = catalogConfiguration.getDatabasePrefix() + "catalog";
+            }
+        } else {
+            database = "opencga_test_catalog";
+        }
+
         /**
          * Database is cleared before each execution
          */

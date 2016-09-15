@@ -53,13 +53,13 @@ public class PanelCommandOptions {
         public String id;
     }
 
-    @Parameters(commandNames = {"create"}, commandDescription = "Create a cohort")
+    @Parameters(commandNames = {"create"}, commandDescription = "Create a panel")
     public class CreateCommandOptions {
 
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
+        @Parameter(names = {"-s","--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
         @Parameter(names = {"--name"}, description = "Panel name", required = true, arity = 1)

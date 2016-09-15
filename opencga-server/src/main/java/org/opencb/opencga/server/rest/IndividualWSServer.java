@@ -48,7 +48,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                  @ApiParam(value = "family", required = false) @QueryParam("family") String family,
                                  @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") long fatherId,
                                  @ApiParam(value = "motherId", required = false) @QueryParam("motherId") long motherId,
-                                 @ApiParam(value = "sex", required = false) @QueryParam("sex") @DefaultValue("UNKNOWN") Individual.Sex sex) {
+                                 @ApiParam(value = "sex", required = false) @QueryParam("sex") @DefaultValue("UNKNOWN") Individual.Sex sex){
+                                 //@ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity){
+        //TODO add ethnicity param
         try {
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
             QueryResult<Individual> queryResult = catalogManager.createIndividual(studyId, name, family, fatherId, motherId, sex, queryOptions, sessionId);
@@ -386,7 +388,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Group individuals by several fields", position = 10)
     public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("fields") String fields,
                             @ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
-                            @ApiParam(value = "id", required = false) @QueryParam("id") String ids,
+                            //@ApiParam(value = "id", required = false) @QueryParam("id") String ids,
                             @ApiParam(value = "name", required = false) @QueryParam("name") String names,
                             @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") String fatherId,
                             @ApiParam(value = "motherId", required = false) @QueryParam("motherId") String motherId,

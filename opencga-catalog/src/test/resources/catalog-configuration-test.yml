@@ -5,6 +5,7 @@ logFile: null
 openRegister: true
 userDefaultDiskQuota: 200000
 
+databasePrefix: "opencga_test"
 dataDir: "file:///tmp/opencga/sessions"
 tempJobsDir: "file:///tmp/opencga/sessions/jobs"
 toolsDir: "tools"

@@ -38,6 +38,7 @@ public class CatalogConfiguration {
     private boolean openRegister;
     private int userDefaultDiskQuota;
 
+    private String databasePrefix;
     private String dataDir;
     private String tempJobsDir;
     private String toolsDir;
@@ -151,6 +152,15 @@ public class CatalogConfiguration {
 
     public CatalogConfiguration setUserDefaultDiskQuota(int userDefaultDiskQuota) {
         this.userDefaultDiskQuota = userDefaultDiskQuota;
+        return this;
+    }
+
+    public String getDatabasePrefix() {
+        return databasePrefix;
+    }
+
+    public CatalogConfiguration setDatabasePrefix(String databasePrefix) {
+        this.databasePrefix = databasePrefix;
         return this;
     }
 

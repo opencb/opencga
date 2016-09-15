@@ -255,7 +255,7 @@ public class FileCommandOptions {
     @Parameters(commandNames = {"list"}, commandDescription = "List files in folder")
     public class ListCommandOptions {
 
-        @Parameter(names = {"--folder-id"}, description = "Folder Id", arity = 1)
+        @Parameter(names = {"--folder-id"}, description = "Folder Id", arity = 1, required = true)
         public String folderId;
 
         @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)

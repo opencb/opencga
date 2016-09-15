@@ -148,6 +148,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         checkUserExists(id);
 
         User user = new User(id, name, email, "", organization, User.UserStatus.READY);
+        user.getAccount().setAuthOrigin(INTERNAL_AUTHORIZATION);
 
         if (diskQuota != null && diskQuota > 0L) {
             user.setDiskQuota(diskQuota);
@@ -509,6 +510,9 @@ public class UserManager extends AbstractManager implements IUserManager {
         // Check that the authentication id is valid
         String authId = getAuthenticationOrigin(userId);
         QueryResult<AuthenticationOrigin> authOrigin = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().getAuthenticationOrigin(authId);
+        if (authOrigin.getNumResults() == 0) {
+            throw new CatalogException("Could not find authentication origin " + authId + " for user " + userId);
+        }
         if (AuthenticationOrigin.AuthenticationMode.LDAP == authOrigin.first().getMode()) {
             authenticationManagerMap.get(authId).authenticate(((String) user.first().getAttributes().get("LDAP_RDN")), password, true);
         } else {

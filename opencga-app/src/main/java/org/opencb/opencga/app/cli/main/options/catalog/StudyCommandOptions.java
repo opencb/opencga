@@ -108,7 +108,7 @@ public class StudyCommandOptions {
         public String alias;
 
         @Parameter(names = {"-t", "--type"}, description = "Type of study, ej.CASE_CONTROL,CASE_SET,...", arity = 1)
-        public String type;
+        public String type = "CASE_CONTROL";
 
         @Parameter(names = {"-d", "--description"}, description = "Description", arity = 1)
         public String description;
@@ -599,7 +599,7 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"groups-create"}, commandDescription = "Create a group")
     public class GroupsCreateCommandOptions extends BaseStudyCommand {
 
-        @Parameter(names = {"--group-id"}, description = "Group id", required = true, arity = 1)
+        @Parameter(names = {"--group-id"}, description = "Group id, group id corresponds to the name of the group", required = true, arity = 1)
         public String groupId;
 
         @Parameter(names = {"--users"}, description = "Comma separated list of members that will form the group",
@@ -610,7 +610,7 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"groups-delete"}, commandDescription = "Delete group")
     public class GroupsDeleteCommandOptions extends BaseStudyCommand {
 
-        @Parameter(names = {"--group-id"}, description = "Group id", required = true, arity = 1)
+        @Parameter(names = {"--group-id"}, description = "Group id, group id corresponds to the name of the group ", required = true, arity = 1)
         public String groupId;
 
     }
@@ -618,26 +618,23 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"groups-info"}, commandDescription = "Return the group")
     public class GroupsInfoCommandOptions extends BaseStudyCommand {
 
-        @Parameter(names = {"--group-id"}, description = "Group id", required = true, arity = 1)
+        @Parameter(names = {"--group-id"}, description = "Group id, group id corresponds to the name of the group", required = true, arity = 1)
         public String groupId;
     }
 
     @Parameters(commandNames = {"groups-update"}, commandDescription = "Updates the members of the group")
     public class GroupsUpdateCommandOptions extends BaseStudyCommand {
 
-        @Parameter(names = {"--group-id"}, description = "Group id", required = true, arity = 1)
+        @Parameter(names = {"--group-id"}, description = "Group id, group id corresponds to the name of the group", required = true, arity = 1)
         public String groupId;
 
-        @Parameter(names = {"--add-users"}, description = "Comma separated list of users that will be added to the group",
-                arity = 1)
+        @Parameter(names = {"--add-users"}, description = "Comma separated list of users that will be added to the group", arity = 1)
         public String addUsers;
 
-        @Parameter(names = {"--set-users"}, description = "Comma separated list of users that will be added to the group",
-                arity = 1)
+        @Parameter(names = {"--set-users"}, description = "Comma separated list of users that will be added to the group", arity = 1)
         public String setUsers;
 
-        @Parameter(names = {"--remove-users"}, description = "Comma separated list of users that will be added to the group",
-                arity = 1)
+        @Parameter(names = {"--remove-users"}, description = "Comma separated list of users that will be added to the group", arity = 1)
         public String removeUsers;
     }
 }

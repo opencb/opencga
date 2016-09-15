@@ -146,7 +146,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         o.append(CatalogCohortDBAdaptor.QueryParams.TYPE.key(),cohortsCommandOptions.createCommandOptions.type);
         o.append(CatalogCohortDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),variableSetId);
         o.append(CatalogCohortDBAdaptor.QueryParams.DESCRIPTION.key(),description);
-        o.append(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(),sampleIds);
+        o.append("sampleIds",sampleIds);
         o.append(CatalogCohortDBAdaptor.QueryParams.VARIABLE_NAME.key(),variable);
         return openCGAClient.getCohortClient().create(studyId, cohortName, o);
     }

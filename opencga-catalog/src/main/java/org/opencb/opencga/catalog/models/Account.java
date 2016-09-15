@@ -28,7 +28,7 @@ public class Account {
         this.type = FULL;
         this.creationDate = creationDate;
         this.expirationDate = expirationDate;
-        this.authOrigin = "catalog";
+        this.authOrigin = "internal";
     }
 
     public Account(String type, String creationDate, String expirationDate, String authOrigin) {

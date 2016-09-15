@@ -234,7 +234,7 @@ public class OpencgaCliOptionsParser {
         cohortSubCommands.addCommand("update", cohortCommandOptions.updateCommandOptions);
         cohortSubCommands.addCommand("delete", cohortCommandOptions.deleteCommandOptions);
         cohortSubCommands.addCommand("stats", cohortCommandOptions.statsCommandOptions);
-        cohortSubCommands.addCommand("groupBy", cohortCommandOptions.groupByCommandOptions);
+        cohortSubCommands.addCommand("group-by", cohortCommandOptions.groupByCommandOptions);
         cohortSubCommands.addCommand("acl", cohortCommandOptions.aclsCommandOptions);
         cohortSubCommands.addCommand("acl-create", cohortCommandOptions.aclsCreateCommandOptions);
         cohortSubCommands.addCommand("acl-member-delete", cohortCommandOptions.aclsMemberDeleteCommandOptions);

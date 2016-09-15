@@ -194,8 +194,17 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         // Authentication origins
         List<Document> authenticationOriginList = new ArrayList<>(catalogConfiguration.getAuthenticationOrigins().size());
+        boolean flag = false; // This boolean will indicate whether it exists a catalog authentication origin or not
         for (AuthenticationOrigin authenticationOrigin : catalogConfiguration.getAuthenticationOrigins()) {
             authenticationOriginList.add(getMongoDBDocument(authenticationOrigin, "AuthenticationOrigin"));
+            if (authenticationOrigin.getMode() == AuthenticationOrigin.AuthenticationMode.OPENCGA) {
+                flag = true;
+            }
+        }
+        if (!flag) {
+            AuthenticationOrigin auth = new AuthenticationOrigin("internal", AuthenticationOrigin.AuthenticationMode.OPENCGA.name(), null,
+                    Collections.emptyMap());
+            authenticationOriginList.add(getMongoDBDocument(auth, "AuthenticationOrigin"));
         }
         metadataObject.put("authenticationOrigins", authenticationOriginList);
 
