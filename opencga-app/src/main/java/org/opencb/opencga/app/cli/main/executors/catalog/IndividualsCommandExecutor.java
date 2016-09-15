@@ -133,7 +133,15 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.createCommandOptions.family);
         objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.createCommandOptions.fatherId);
         objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.MOTHER_ID.key(), individualsCommandOptions.createCommandOptions.motherId);
-        objectMap.put(CatalogIndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.createCommandOptions.sex);
+        String sex = individualsCommandOptions.createCommandOptions.sex;
+        if (individualsCommandOptions.createCommandOptions.sex != null) {
+            try {
+                objectMap.put(CatalogIndividualDBAdaptor.QueryParams.SEX.key(), Individual.Sex.valueOf(sex));
+            } catch (IllegalArgumentException e) {
+                logger.error("{} not recognized as a proper individual sex", sex);
+                return null;
+            }
+        }
 
         return openCGAClient.getIndividualClient().create(individualsCommandOptions.createCommandOptions.studyId,
                 individualsCommandOptions.createCommandOptions.name, objectMap);
@@ -160,6 +168,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
 
         query.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.ID.key(), individualsCommandOptions.searchCommandOptions.id);
+        query.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key(), individualsCommandOptions.searchCommandOptions.studyId);
         query.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.NAME.key(), individualsCommandOptions.searchCommandOptions.name);
         query.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.searchCommandOptions.fatherId);
         query.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.MOTHER_ID.key(), individualsCommandOptions.searchCommandOptions.motherId);
@@ -189,13 +198,21 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Updating individual information");
 
         ObjectMap objectMap = new ObjectMap();
-
-        objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.ID.key(), individualsCommandOptions.updateCommandOptions.id);
         objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.NAME.key(), individualsCommandOptions.updateCommandOptions.name);
         objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.updateCommandOptions.family);
         objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.updateCommandOptions.fatherId);
         objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.MOTHER_ID.key(), individualsCommandOptions.updateCommandOptions.motherId);
-        objectMap.put(CatalogIndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.updateCommandOptions.sex);
+
+        String sex = individualsCommandOptions.updateCommandOptions.sex;
+        if (individualsCommandOptions.updateCommandOptions.sex != null) {
+            try {
+                objectMap.put(CatalogIndividualDBAdaptor.QueryParams.SEX.key(), Individual.Sex.valueOf(sex));
+            } catch (IllegalArgumentException e) {
+                logger.error("{} not recognized as a proper individual sex", sex);
+                return null;
+            }
+        }
+
         objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.updateCommandOptions.ethnicity);
 
         return openCGAClient.getIndividualClient().update(individualsCommandOptions.updateCommandOptions.id, objectMap);

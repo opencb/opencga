@@ -121,7 +121,7 @@ public class StudyClient extends AbstractParentClient<Study, StudyAclEntry> {
         return execute(STUDY_URL, studyId, "status", options, GET, ObjectMap.class);
     }
 
-        public QueryResponse<Variant> getVariants(String studyId, QueryOptions options) throws CatalogException, IOException {
+    public QueryResponse<Variant> getVariants(String studyId, QueryOptions options) throws CatalogException, IOException {
         return execute(STUDY_URL, studyId, "variants", options, GET, Variant.class);
     }
 

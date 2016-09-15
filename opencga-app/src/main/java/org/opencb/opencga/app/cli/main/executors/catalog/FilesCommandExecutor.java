@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.analysis.storage.variant.CatalogVariantDBAdaptor;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.catalog.FileCommandOptions;
@@ -121,6 +122,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
             case "group-by":
                 queryResponse = groupBy();
                 break;
+            case "variants":
+                queryResponse = variants();
+                break;
             case "acl":
                 queryResponse = aclCommandExecutor.acls(filesCommandOptions.aclsCommandOptions, openCGAClient.getFileClient());
                 break;
@@ -222,6 +226,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
 
         query.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.ID.key(), filesCommandOptions.searchCommandOptions.id);
+        query.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), filesCommandOptions.searchCommandOptions.studyId);
         query.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.NAME.key(), filesCommandOptions.searchCommandOptions.name);
         query.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.PATH.key(), filesCommandOptions.searchCommandOptions.path);
         query.putIfNotNull(CatalogFileDBAdaptor.QueryParams.TYPE.key(), filesCommandOptions.searchCommandOptions.type);
@@ -259,7 +264,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putIfNotEmpty(QueryOptions.SKIP, filesCommandOptions.listCommandOptions.skip);
         queryOptions.put("count", filesCommandOptions.listCommandOptions.count);
 
-        return openCGAClient.getFileClient().getFiles(filesCommandOptions.listCommandOptions.folderId, queryOptions);
+        return openCGAClient.getFileClient().list(filesCommandOptions.listCommandOptions.folderId, queryOptions);
     }
 
     private QueryResponse<Job> index() throws CatalogException, IOException {
@@ -447,6 +452,89 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         return openCGAClient.getFileClient().groupBy(filesCommandOptions.groupByCommandOptions.studyId,
                 filesCommandOptions.groupByCommandOptions.fields, queryOptions);
+    }
+    private QueryResponse variants() throws CatalogException, IOException {
+        logger.debug("Fetch variants from a VCF/gVCF file");
+        QueryOptions queryOptions = new QueryOptions();
+
+        queryOptions.putIfNotEmpty("ids", filesCommandOptions.variantsCommandOptions.ids);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.REGION.key(), filesCommandOptions.variantsCommandOptions.region);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(),
+                filesCommandOptions.variantsCommandOptions.chromosome);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.GENE.key(), filesCommandOptions.variantsCommandOptions.gene);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.TYPE.key(), filesCommandOptions.variantsCommandOptions.type);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.REFERENCE.key(),
+                filesCommandOptions.variantsCommandOptions.reference);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ALTERNATE.key(),
+                filesCommandOptions.variantsCommandOptions.alternate);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(),
+                filesCommandOptions.variantsCommandOptions.returnedStudies);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(),
+                filesCommandOptions.variantsCommandOptions.returnedSamples);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(),
+                filesCommandOptions.variantsCommandOptions.returnedFiles);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.FILES.key(), filesCommandOptions.variantsCommandOptions.files);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), filesCommandOptions.variantsCommandOptions.maf);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.STATS_MGF.key(), filesCommandOptions.variantsCommandOptions.mgf);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.MISSING_ALLELES.key(),
+                filesCommandOptions.variantsCommandOptions.missingAlleles);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.MISSING_GENOTYPES.key(),
+                filesCommandOptions.variantsCommandOptions.missingGenotypes);
+        queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(),
+                filesCommandOptions.variantsCommandOptions.annotationExists);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.GENOTYPE.key(),
+                filesCommandOptions.variantsCommandOptions.genotype);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(),
+                filesCommandOptions.variantsCommandOptions.annot_ct);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_XREF.key(),
+                filesCommandOptions.variantsCommandOptions.annot_xref);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_BIOTYPE.key(),
+                filesCommandOptions.variantsCommandOptions.annot_biotype);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POLYPHEN.key(),
+                filesCommandOptions.variantsCommandOptions.polyphen);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_SIFT.key(), filesCommandOptions.variantsCommandOptions.sift);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION.key(),
+                filesCommandOptions.variantsCommandOptions.conservation);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),
+                filesCommandOptions.variantsCommandOptions.annotPopulationMaf);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
+                filesCommandOptions.variantsCommandOptions.alternate_frequency);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_REFERENCE_FREQUENCY.key(),
+                filesCommandOptions.variantsCommandOptions.reference_frequency);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_TRANSCRIPTION_FLAGS.key(),
+                filesCommandOptions.variantsCommandOptions.transcriptionFlags);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_GENE_TRAITS_ID.key(),
+                filesCommandOptions.variantsCommandOptions.geneTraitId);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_GENE_TRAITS_NAME.key(),
+                filesCommandOptions.variantsCommandOptions.geneTraitName);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_HPO.key(),
+                filesCommandOptions.variantsCommandOptions.hpo);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_GO.key(),
+                filesCommandOptions.variantsCommandOptions.go);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_EXPRESSION.key(),
+                filesCommandOptions.variantsCommandOptions.expression);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_KEYWORDS.key(),
+                filesCommandOptions.variantsCommandOptions.proteinKeyword);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_DRUG.key(),
+                filesCommandOptions.variantsCommandOptions.drug);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key(),
+                filesCommandOptions.variantsCommandOptions.functionalScore);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.UNKNOWN_GENOTYPE.key(),
+                filesCommandOptions.variantsCommandOptions.unknownGenotype);
+        queryOptions.put("samplesMetadata", filesCommandOptions.variantsCommandOptions.samplesMetadata);
+        queryOptions.put(QueryOptions.SORT, filesCommandOptions.variantsCommandOptions.sort);
+        queryOptions.putIfNotEmpty("groupBy", filesCommandOptions.variantsCommandOptions.groupBy);
+        queryOptions.put("histogram", filesCommandOptions.variantsCommandOptions.histogram);
+        queryOptions.putIfNotEmpty("interval", filesCommandOptions.variantsCommandOptions.interval);
+        queryOptions.putIfNotEmpty("merge", filesCommandOptions.variantsCommandOptions.merge);
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, filesCommandOptions.variantsCommandOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, filesCommandOptions.variantsCommandOptions.exclude);
+        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, filesCommandOptions.variantsCommandOptions.limit);
+        queryOptions.putIfNotEmpty(QueryOptions.SKIP, filesCommandOptions.variantsCommandOptions.skip);
+
+        queryOptions.put("count", filesCommandOptions.variantsCommandOptions.count);
+
+        return openCGAClient.getFileClient().getVariants(filesCommandOptions.variantsCommandOptions.id, queryOptions);
     }
 
 
