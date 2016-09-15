@@ -27,7 +27,7 @@ import java.util.Properties;
  */
 public class CatalogManagerExternalResource extends ExternalResource {
 
-    private CatalogManager catalogManager;
+    private static CatalogManager catalogManager;
     private CatalogConfiguration catalogConfiguration;
     private Path opencgaHome;
 
@@ -94,9 +94,11 @@ public class CatalogManagerExternalResource extends ExternalResource {
             }
         }
         MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
-        MongoDataStore db = mongoManager.get(catalogConfiguration.getDatabase().getDatabase());
+//        MongoDataStore db = mongoManager.get(catalogConfiguration.getDatabase().getDatabase());
+        MongoDataStore db = mongoManager.get(catalogManager.getCatalogDatabase());
         db.getDb().drop();
-        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
+//        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
+        mongoManager.close(catalogManager.getCatalogDatabase());
 
         Path rootdir = Paths.get(URI.create(catalogConfiguration.getDataDir()));
         deleteFolderTree(rootdir.toFile());

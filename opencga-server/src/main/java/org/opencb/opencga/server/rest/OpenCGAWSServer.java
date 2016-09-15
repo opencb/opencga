@@ -232,7 +232,8 @@ public class OpenCGAWSServer {
             catalogManager = new CatalogManager(catalogConfiguration);
             // TODO think about this
             if (!catalogManager.existsCatalogDB()) {
-                logger.info("|  * Catalog database created: '{}'", catalogConfiguration.getDatabase().getDatabase());
+//                logger.info("|  * Catalog database created: '{}'", catalogConfiguration.getDatabase().getDatabase());
+                logger.info("|  * Catalog database created: '{}'", catalogManager.getCatalogDatabase());
                 catalogManager.installCatalogDB();
             }
 
