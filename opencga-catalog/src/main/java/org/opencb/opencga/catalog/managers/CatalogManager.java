@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
@@ -120,6 +121,20 @@ public class CatalogManager implements AutoCloseable {
 ////            admin.setPassword(CatalogAuthenticationManager.cipherPassword(admin.getPassword()));
 ////            catalogDBAdaptorFactory.initializeCatalogDB(admin);
 //        }
+    }
+
+    public String getCatalogDatabase() {
+        String database;
+        if (StringUtils.isNotEmpty(catalogConfiguration.getDatabasePrefix())) {
+            if (!catalogConfiguration.getDatabasePrefix().endsWith("_")) {
+                database = catalogConfiguration.getDatabasePrefix() + "_catalog";
+            } else {
+                database = catalogConfiguration.getDatabasePrefix() + "catalog";
+            }
+        } else {
+            database = "opencga_catalog";
+        }
+        return database;
     }
 
     public void validateAdminPassword() throws CatalogException {
@@ -243,9 +258,11 @@ public class CatalogManager implements AutoCloseable {
             }
         }
         MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
-        MongoDataStore db = mongoManager.get(catalogConfiguration.getDatabase().getDatabase());
+//        MongoDataStore db = mongoManager.get(catalogConfiguration.getDatabase().getDatabase());
+        MongoDataStore db = mongoManager.get(getCatalogDatabase());
         db.getDb().drop();
-        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
+//        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
+        mongoManager.close(getCatalogDatabase());
 
         Path rootdir = Paths.get(URI.create(catalogConfiguration.getDataDir()));
         deleteFolderTree(rootdir.toFile());
@@ -345,9 +362,10 @@ public class CatalogManager implements AutoCloseable {
         }
 //        catalogDBAdaptorFactory = new CatalogMongoDBAdaptor(dataStoreServerAddresses, mongoDBConfiguration,
 //                properties.getProperty(CATALOG_DB_DATABASE, ""));
+//        catalogDBAdaptorFactory = new CatalogMongoDBAdaptorFactory(dataStoreServerAddresses, mongoDBConfiguration,
+//                catalogConfiguration.getDatabase().getDatabase()) {};
         catalogDBAdaptorFactory = new CatalogMongoDBAdaptorFactory(dataStoreServerAddresses, mongoDBConfiguration,
-                catalogConfiguration.getDatabase().getDatabase()) {
-        };
+                getCatalogDatabase()) {};
     }
 
     @Override
@@ -620,8 +638,8 @@ public class CatalogManager implements AutoCloseable {
                 cipher, uriScheme,
                 uri, datastores, stats, attributes, options, sessionId);
         //if (uri != null) {
-            createFolder(result.getResult().get(0).getId(), Paths.get("data"), true, null, sessionId);
-            createFolder(result.getResult().get(0).getId(), Paths.get("analysis"), true, null, sessionId);
+        createFolder(result.getResult().get(0).getId(), Paths.get("data"), true, null, sessionId);
+        createFolder(result.getResult().get(0).getId(), Paths.get("analysis"), true, null, sessionId);
         //}
         return result;
     }
@@ -668,7 +686,7 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<Group> updateGroup(String studyStr, String groupId, @Nullable String addUsers, @Nullable String removeUsers,
-                                   @Nullable String setUsers, String sessionId) throws CatalogException {
+                                          @Nullable String setUsers, String sessionId) throws CatalogException {
         return studyManager.updateGroup(studyStr, groupId, addUsers, removeUsers, setUsers, sessionId);
     }
 
@@ -1329,8 +1347,8 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<AnnotationSet> createIndividualAnnotationSet(String individualIdStr, long variableSetId, String annotationSetName,
-                                                          Map<String, Object> annotations, Map<String, Object> attributes, String sessionId)
-            throws CatalogException {
+                                                                    Map<String, Object> annotations, Map<String, Object> attributes,
+                                                                    String sessionId) throws CatalogException {
         return individualManager.createAnnotationSet(individualIdStr, variableSetId, annotationSetName, annotations, attributes, sessionId);
     }
 

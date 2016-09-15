@@ -76,10 +76,12 @@ public class DatabaseCredentials {
         this.hosts = hosts;
     }
 
+    @Deprecated
     public String getDatabase() {
         return database;
     }
 
+    @Deprecated
     public void setDatabase(String database) {
         this.database = database;
     }
