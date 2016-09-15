@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis.variant;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -35,9 +36,19 @@ public abstract class AbstractFileIndexer {
                 //Must use the UserByStudyId instead of the file owner.
                 String userId = catalogManager.getStudyManager().getUserId(studyId);
                 String alias = project.getAlias();
+
                 // TODO: We should be reading storageConfiguration, where the database prefix should be stored.
 //                String prefix = Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX, "opencga_");
-                String prefix = "opencga_";
+                String prefix;
+                if (StringUtils.isNotEmpty(catalogManager.getCatalogConfiguration().getDatabasePrefix())) {
+                    prefix = catalogManager.getCatalogConfiguration().getDatabasePrefix();
+                    if (!prefix.endsWith("_")) {
+                        prefix += "_";
+                    }
+                } else {
+                    prefix = "opencga_";
+                }
+
                 String dbName = prefix + userId + "_" + alias;
                 dataStore = new DataStore(StorageManagerFactory.get().getDefaultStorageManagerName(), dbName);
             }
