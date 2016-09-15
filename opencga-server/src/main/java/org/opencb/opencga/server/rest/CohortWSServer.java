@@ -160,9 +160,13 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     private QueryResult<Cohort> createCohort(long studyId, String cohortName, Study.Type type, String cohortDescription, Query query,
                                              QueryOptions queryOptions) throws CatalogException {
+        //TODO CHANGE THIS for can insert the name also id(number)
         QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
         List<Long> sampleIds = new ArrayList<>(queryResult.getNumResults());
         sampleIds.addAll(queryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList()));
+        //TODO FOR THIS. Its possible change the param query to a String
+        //List<QueryResult<Sample>> queryResults = new LinkedList<>();
+        //List<Long> sampleIds = catalogManager.getSampleIds(query.get("id").toString(), sessionId);
         return catalogManager.createCohort(studyId, cohortName, type, cohortDescription, sampleIds, null, sessionId);
     }
 
