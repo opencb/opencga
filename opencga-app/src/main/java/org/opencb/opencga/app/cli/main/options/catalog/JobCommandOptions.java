@@ -61,7 +61,7 @@ public class JobCommandOptions {
         public String id;
     }
 
-    @Parameters(commandNames = {"create"}, commandDescription = "Create a cohort")
+    @Parameters(commandNames = {"create"}, commandDescription = "Create a job")
     public class CreateCommandOptions {
 
         @ParametersDelegate

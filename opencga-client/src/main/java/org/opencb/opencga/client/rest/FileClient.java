@@ -17,6 +17,7 @@
 package org.opencb.opencga.client.rest;
 
 import org.biojava.nbio.alignment.Alignments;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
@@ -83,8 +84,9 @@ public class FileClient extends AbstractParentClient<File, FileAclEntry> {
         return execute(FILES_URL, fileId, "grep", params, GET, File.class);
     }
 
-    public QueryResponse<File> list(String fileId, QueryOptions options) throws CatalogException, IOException {
-        return execute(FILES_URL, fileId, "list", options, GET, File.class);
+    public QueryResponse<File> list(String folderId, QueryOptions options) throws CatalogException, IOException {
+        folderId = folderId.replace('/', ':');
+        return execute(FILES_URL, folderId, "list", options, GET, File.class);
     }
 
     public QueryResponse<File> getFiles(String fileId, QueryOptions options) throws CatalogException, IOException {
@@ -139,5 +141,8 @@ public class FileClient extends AbstractParentClient<File, FileAclEntry> {
         return uri;
     }
 
+    public QueryResponse<Variant> getVariants(String fileId, QueryOptions options) throws CatalogException, IOException {
+        return execute(FILES_URL, fileId, "variants", options, GET, Variant.class);
+    }
 
 }
