@@ -77,7 +77,7 @@ public class CohortCommandOptions {
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-i", "--id"}, description = "Cohort id", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "Cohort id", required = true, arity = 1)
         public String id;
     }
 
@@ -87,14 +87,14 @@ public class CohortCommandOptions {
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
+        @Parameter(names = {"-s","--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
         @Parameter(names = {"--name"}, description = "cohort name", required = true, arity = 1)
         public String name;
 
         @Parameter(names = {"--type"}, description = "Cohort type", required = false, arity = 1)
-        public Study.Type type;
+        public Study.Type type = Study.Type.COLLECTION;
 
         @Parameter(names = {"--variable-set-id"}, description = "VariableSetId", required = false, arity = 1)
         public String variableSetId;
@@ -160,8 +160,7 @@ public class CohortCommandOptions {
     @Parameters(commandNames = {"update"}, commandDescription = "Update cohort")
     public class UpdateCommandOptions extends BaseCohortsCommand {
 
-        @Parameter(names = {"--name"}, description = "New cohort name.",
-                required = false, arity = 1)
+        @Parameter(names = {"--name"}, description = "New cohort name.", required = false, arity = 1)
         public String name;
 
         @Parameter(names = {"--creation-date"}, description = "Creation date", required = false, arity = 1)
@@ -170,8 +169,7 @@ public class CohortCommandOptions {
         @Parameter(names = {"--description"}, description = "Description", required = false, arity = 1)
         public String description;
 
-        @Parameter(names = {"--samples"},
-                description = "Comma separated values of sampleIds. Will replace all existing sampleIds",
+        @Parameter(names = {"--samples"}, description = "Comma separated values of sampleIds. Will replace all existing sampleIds",
                 required = true, arity = 0)
         public String samples;
     }
@@ -190,11 +188,10 @@ public class CohortCommandOptions {
         @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
         public String fields;
 
-        @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
+        @Parameter(names = {"-s", "--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
-        @Parameter(names = {"--id"}, description = "Comma separated list of ids.",
-                required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list of ids.", required = false, arity = 1)
         public String id;
 
         @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)

@@ -58,12 +58,12 @@ public class User {
     public User() {
     }
 
-    public User(String id, String name, String email, String password, String organization, UserStatus status) {
+    public User(String id, String name, String email, String password, String organization, String status) {
         this(id, name, email, password, organization, null, status, "", -1, -1, new ArrayList<>(), new ArrayList<>(0), new ArrayList<>(0),
                 new HashMap<>(), new HashMap<>());
     }
 
-    public User(String id, String name, String email, String password, String organization, Account account, UserStatus status,
+    public User(String id, String name, String email, String password, String organization, Account account, String status,
                 String lastModified, long diskUsage, long diskQuota, List<Project> projects, List<Tool> tools, List<Session> sessions,
                 Map<String, Object> configs, Map<String, Object> attributes) {
         this.id = id;
@@ -73,7 +73,7 @@ public class User {
         this.organization = organization;
         // FIXME: Account should always be passed and not null
         this.account = account != null ? account : new Account();
-        this.status = status;
+        this.status = new UserStatus(status);
         this.lastModified = lastModified;
         this.diskUsage = diskUsage;
         this.diskQuota = diskQuota;

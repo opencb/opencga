@@ -79,7 +79,7 @@ public class IndividualCommandOptions {
         public String id;
     }
 
-    @Parameters(commandNames = {"create"}, commandDescription = "Create sample.")
+    @Parameters(commandNames = {"create"}, commandDescription = "Create individual.")
     public class CreateCommandOptions {
 
         @ParametersDelegate
@@ -101,7 +101,7 @@ public class IndividualCommandOptions {
         public String motherId;
 
         @Parameter(names = {"--sex"}, description = "Sex. (MALE, FEMALE, UNKNOWN, UNDETERMINED). Default: UNKNOWN", required = false)
-        public Individual.Sex sex = Individual.Sex.UNKNOWN;
+        public String sex = "UNKNOWN";
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get individual information")
@@ -129,7 +129,7 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
         public String limit;
 
-        @Parameter(names = {"--ids"}, description = "Comma separated list of individual ids", arity = 1)
+        @Parameter(names = {"--ids"}, description = "Comma separated list of individual ids", required = false, arity = 1)
         public String id;
 
         @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = true, arity = 1)
@@ -162,7 +162,7 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--variable-set-id"}, description = "variableSetId", required = false, arity = 1)
         public String variableSetId;
 
-        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = true, arity = 1)
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 1)
         public String annotationSetName;
 
         @Parameter(names = {"--annotation"}, description = "annotation", required = false, arity = 1)
@@ -188,7 +188,7 @@ public class IndividualCommandOptions {
         public String family;
 
         @Parameter(names = {"--sex"}, description = "Sex", required = false)
-        public Individual.Sex sex = Individual.Sex.UNKNOWN;
+        public String sex;
 
         @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
         public String ethnicity;
@@ -200,7 +200,7 @@ public class IndividualCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy cohort")
+    @Parameters(commandNames = {"group-by"}, commandDescription = "Group individuals by several fields")
     public class GroupByCommandOptions {
 
         @ParametersDelegate
@@ -209,7 +209,7 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
         public String fields;
 
-        @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
+        @Parameter(names = {"-s", "--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
         @Parameter(names = {"--ids"}, description = "Comma separated list of ids.", required = false, arity = 1)

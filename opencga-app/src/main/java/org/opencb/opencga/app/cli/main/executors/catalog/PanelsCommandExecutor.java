@@ -110,6 +110,6 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
         o.putIfNotEmpty(QueryOptions.INCLUDE, panelsCommandOptions.infoCommandOptions.include);
         o.putIfNotEmpty(QueryOptions.EXCLUDE, panelsCommandOptions.infoCommandOptions.exclude);
 
-        return openCGAClient.getPanelClient().get(panelsCommandOptions.createCommandOptions.studyId, o);
+        return openCGAClient.getPanelClient().get(panelsCommandOptions.infoCommandOptions.id, o);
     }
 }

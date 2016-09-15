@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -80,7 +81,18 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
                 .add("authenticationDatabase", catalogConfiguration.getDatabase().getOptions().get("authenticationDatabase"))
                 .build();
 
-        String database = catalogConfiguration.getDatabase().getDatabase();
+//        String database = catalogConfiguration.getDatabase().getDatabase();
+        String database;
+        if(StringUtils.isNotEmpty(catalogConfiguration.getDatabasePrefix())) {
+            if (!catalogConfiguration.getDatabasePrefix().endsWith("_")) {
+                database = catalogConfiguration.getDatabasePrefix() + "_catalog";
+            } else {
+                database = catalogConfiguration.getDatabasePrefix() + "catalog";
+            }
+        } else {
+            database = "opencga_test_catalog";
+        }
+
         /**
          * Database is cleared before each execution
          */
@@ -110,7 +122,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         /**
          * Let's init the database with some basic data to perform each of the tests
          */
-        user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "1234", "", null, new User.UserStatus(), "", 100, 1000,
+        user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "1234", "", null, User.UserStatus.READY, "", 100, 1000,
                 Arrays.<Project>asList(new Project("project", "P1", "", new Status(), ""), new Project("project", "P2", "", new Status(),
                         ""), new Project("project", "P3", "", new Status(), "")),
                 Collections.<Tool>emptyList(), Collections.<Session>emptyList(), Collections.<String, Object>emptyMap(), Collections
@@ -118,11 +130,11 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         QueryResult createUser = catalogUserDBAdaptor.insertUser(user1, null);
         assertNotNull(createUser.getResult());
 
-        user2 = new User("jmmut", "Jose Miguel", "jmmut@ebi", "1111", "ACME", new User.UserStatus());
+        user2 = new User("jmmut", "Jose Miguel", "jmmut@ebi", "1111", "ACME", User.UserStatus.READY);
         createUser = catalogUserDBAdaptor.insertUser(user2, null);
         assertNotNull(createUser.getResult());
 
-        user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", null, new User.UserStatus(), "", 1222, 122222,
+        user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", null, User.UserStatus.READY, "", 1222, 122222,
                 Arrays.asList(new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", new Status(), "", 0,
                         Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "", "", new Status(), "", 0, "", null,
                                         null, Collections.<Experiment>emptyList(),
@@ -141,7 +153,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         createUser = catalogUserDBAdaptor.insertUser(user3, null);
         assertNotNull(createUser.getResult());
 
-        user4 = new User("pfurio", "Pedro", "pfurio@blabla", "pfuriopass", "Organization", null, new User.UserStatus(), "", 0, 50000,
+        user4 = new User("pfurio", "Pedro", "pfurio@blabla", "pfuriopass", "Organization", null, User.UserStatus.READY, "", 0, 50000,
                 Arrays.asList(new Project(-1, "lncRNAs", "lncRNAs", "today", "My description", "My org", new Status(), "", 0, Arrays.asList(
                                 new Study(-1, "spongeScan", "sponges", Study.Type.COLLECTION, "", "", new Status(), "", 0, "", null, null,
                                         null, Arrays.asList(

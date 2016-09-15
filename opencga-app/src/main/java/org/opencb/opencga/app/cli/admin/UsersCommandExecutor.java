@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
 
+import javax.naming.NamingException;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -53,6 +54,9 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             case "create":
                 create();
                 break;
+            case "import":
+                importUsers();
+                break;
             case "delete":
                 delete();
                 break;
@@ -64,6 +68,48 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                 break;
         }
 
+    }
+
+    private void importUsers() throws CatalogException, NamingException {
+        AdminCliOptionsParser.ImportUserCommandOptions executor = usersCommandOptions.importUserCommandOptions;
+        if (executor.databaseUser != null) {
+            catalogConfiguration.getDatabase().setUser(executor.databaseUser);
+        }
+        if (executor.databasePassword != null) {
+            catalogConfiguration.getDatabase().setPassword(executor.databasePassword);
+        }
+        if (executor.database != null) {
+            catalogConfiguration.getDatabase().setDatabase(executor.database);
+        }
+        if (executor.databaseHost != null) {
+            catalogConfiguration.getDatabase().setHosts(Collections.singletonList(executor.databaseHost));
+        }
+        if (executor.commonOptions.adminPassword != null) {
+            catalogConfiguration.getAdmin().setPassword(executor.commonOptions.adminPassword);
+        }
+
+        if (catalogConfiguration.getAdmin().getPassword() == null || catalogConfiguration.getAdmin().getPassword().isEmpty()) {
+            throw new CatalogException("No admin password found. Please, insert the OpenCGA admin password.");
+        }
+
+        if (executor.groups != null) {
+            throw new CatalogException("Groups option is pending. Use users instead.");
+        }
+
+        if (executor.users == null) {
+            throw new CatalogException("At least, users or groups should be provided to start importing.");
+        }
+
+        CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull("users", executor.users);
+        params.putIfNotNull("groups", executor.groups);
+        params.putIfNotNull("expirationDate", executor.expDate);
+        params.putIfNotNull("studies", executor.studies);
+        List<QueryResult<User>> resultList = catalogManager.getUserManager().importFromExternalAuthOrigin(executor.authOrigin,
+                executor.type, params, catalogConfiguration.getAdmin().getPassword());
+
+        System.out.println(resultList);
     }
 
     private void create() throws CatalogException, IOException {
@@ -95,7 +141,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         }
 
         CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
-        catalogManager.validateAdminPassword();
+        catalogManager.getUserManager().validatePassword("admin", catalogConfiguration.getAdmin().getPassword(), true);
 
         User user = catalogManager.createUser(usersCommandOptions.createUserCommandOptions.userId,
                 usersCommandOptions.createUserCommandOptions.userName, usersCommandOptions.createUserCommandOptions.userEmail,
@@ -160,7 +206,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         }
 
         CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
-        catalogManager.validateAdminPassword();
+        catalogManager.getUserManager().validatePassword("admin", catalogConfiguration.getAdmin().getPassword(), true);
 
         List<QueryResult<User>> deletedUsers = catalogManager.getUserManager()
                 .delete(usersCommandOptions.deleteUserCommandOptions.userId, new QueryOptions("force", true), null);
@@ -196,7 +242,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         }
 
         CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
-        catalogManager.validateAdminPassword();
+        catalogManager.getUserManager().validatePassword("admin", catalogConfiguration.getAdmin().getPassword(), true);
         
         User user = catalogManager.modifyUser(usersCommandOptions.diskQuotaUserCommandOptions.userId,
                 new ObjectMap(CatalogUserDBAdaptor.QueryParams.DISK_QUOTA.key(),

@@ -17,13 +17,12 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.audit.CatalogAuditManager;
-import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
-import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.config.Admin;
@@ -89,7 +88,7 @@ public class CatalogManager implements AutoCloseable {
     private ISampleManager sampleManager;
     private ICohortManager cohortManager;
     private Properties properties;
-    private AuthenticationManager authenticationManager;
+//    private AuthenticationManager authenticationManager;
     private CatalogAuditManager auditManager;
     private SessionManager sessionManager;
     private AuthorizationManager authorizationManager;
@@ -122,12 +121,18 @@ public class CatalogManager implements AutoCloseable {
 //        }
     }
 
-    public void validateAdminPassword() throws CatalogException {
-        try {
-            authenticationManager.authenticate("admin", catalogConfiguration.getAdmin().getPassword(), true);
-        } catch (CatalogException e) {
-            throw new CatalogException("The admin password is incorrect");
+    public String getCatalogDatabase() {
+        String database;
+        if (StringUtils.isNotEmpty(catalogConfiguration.getDatabasePrefix())) {
+            if (!catalogConfiguration.getDatabasePrefix().endsWith("_")) {
+                database = catalogConfiguration.getDatabasePrefix() + "_catalog";
+            } else {
+                database = catalogConfiguration.getDatabasePrefix() + "catalog";
+            }
+        } else {
+            database = "opencga_catalog";
         }
+        return database;
     }
 
     @Deprecated
@@ -142,9 +147,9 @@ public class CatalogManager implements AutoCloseable {
 
         if (!catalogDBAdaptorFactory.isCatalogDBReady()) {
             catalogDBAdaptorFactory.initializeCatalogDB(new Admin());
-            User admin = new User("admin", "admin", "admin@email.com", "", "openCB", new User.UserStatus());
+            User admin = new User("admin", "admin", "admin@email.com", "", "openCB", User.UserStatus.READY);
             catalogDBAdaptorFactory.getCatalogUserDBAdaptor().insertUser(admin, null);
-            authenticationManager.newPassword("admin", "admin");
+//            authenticationManager.newPassword("admin", "admin");
         }
     }
 
@@ -184,24 +189,23 @@ public class CatalogManager implements AutoCloseable {
 
         auditManager = new CatalogAuditManager(catalogDBAdaptorFactory.getCatalogAuditDbAdaptor(), catalogDBAdaptorFactory
                 .getCatalogUserDBAdaptor(), authorizationManager, catalogConfiguration);
-        authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptorFactory, catalogConfiguration);
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager);
         sessionManager = new DefaultSessionManager(catalogDBAdaptorFactory);
-        userManager = new UserManager(authorizationManager, authenticationManager, auditManager, this, catalogDBAdaptorFactory,
+        userManager = new UserManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
-        fileManager = new FileManager(authorizationManager, authenticationManager, auditManager, this, catalogDBAdaptorFactory,
+        fileManager = new FileManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
-        studyManager = new StudyManager(authorizationManager, authenticationManager, auditManager, this, catalogDBAdaptorFactory,
+        studyManager = new StudyManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
-        projectManager = new ProjectManager(authorizationManager, authenticationManager, auditManager, this, catalogDBAdaptorFactory,
+        projectManager = new ProjectManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
-        jobManager = new JobManager(authorizationManager, authenticationManager, auditManager, this, catalogDBAdaptorFactory,
+        jobManager = new JobManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, this.catalogConfiguration);
-        sampleManager = new SampleManager(authorizationManager, authenticationManager, auditManager, this, catalogDBAdaptorFactory,
+        sampleManager = new SampleManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
-        individualManager = new IndividualManager(authorizationManager, authenticationManager, auditManager, this, catalogDBAdaptorFactory,
+        individualManager = new IndividualManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
-        cohortManager = new CohortManager(authorizationManager, authenticationManager, auditManager, this, catalogDBAdaptorFactory,
+        cohortManager = new CohortManager(authorizationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
     }
 
@@ -219,13 +223,13 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public void installIndexes() throws CatalogException {
-        authenticationManager.authenticate("admin", catalogConfiguration.getAdmin().getPassword(), true);
+        userManager.validatePassword("admin", catalogConfiguration.getAdmin().getPassword(), true);
         catalogDBAdaptorFactory.createIndexes();
     }
 
     public void deleteCatalogDB(boolean force) throws CatalogException {
         if (!force) {
-            authenticationManager.authenticate("admin", catalogConfiguration.getAdmin().getPassword(), true);
+            userManager.validatePassword("admin", catalogConfiguration.getAdmin().getPassword(), true);
         }
         catalogDBAdaptorFactory.deleteCatalogDB();
         clearCatalog();
@@ -243,9 +247,11 @@ public class CatalogManager implements AutoCloseable {
             }
         }
         MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
-        MongoDataStore db = mongoManager.get(catalogConfiguration.getDatabase().getDatabase());
+//        MongoDataStore db = mongoManager.get(catalogConfiguration.getDatabase().getDatabase());
+        MongoDataStore db = mongoManager.get(getCatalogDatabase());
         db.getDb().drop();
-        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
+//        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
+        mongoManager.close(getCatalogDatabase());
 
         Path rootdir = Paths.get(URI.create(catalogConfiguration.getDataDir()));
         deleteFolderTree(rootdir.toFile());
@@ -345,9 +351,10 @@ public class CatalogManager implements AutoCloseable {
         }
 //        catalogDBAdaptorFactory = new CatalogMongoDBAdaptor(dataStoreServerAddresses, mongoDBConfiguration,
 //                properties.getProperty(CATALOG_DB_DATABASE, ""));
+//        catalogDBAdaptorFactory = new CatalogMongoDBAdaptorFactory(dataStoreServerAddresses, mongoDBConfiguration,
+//                catalogConfiguration.getDatabase().getDatabase()) {};
         catalogDBAdaptorFactory = new CatalogMongoDBAdaptorFactory(dataStoreServerAddresses, mongoDBConfiguration,
-                catalogConfiguration.getDatabase().getDatabase()) {
-        };
+                getCatalogDatabase()) {};
     }
 
     @Override
@@ -470,12 +477,7 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<ObjectMap> login(String userId, String password, String sessionIp) throws CatalogException, IOException {
-        ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(password, "password");
-        ParamUtils.checkParameter(sessionIp, "sessionIp");
-
-        authenticationManager.authenticate(userId, password, true);
-        return sessionManager.createToken(userId, sessionIp);
+        return userManager.login(userId, password, sessionIp);
     }
 
     public QueryResult logout(String userId, String sessionId) throws CatalogException {
@@ -620,8 +622,8 @@ public class CatalogManager implements AutoCloseable {
                 cipher, uriScheme,
                 uri, datastores, stats, attributes, options, sessionId);
         //if (uri != null) {
-            createFolder(result.getResult().get(0).getId(), Paths.get("data"), true, null, sessionId);
-            createFolder(result.getResult().get(0).getId(), Paths.get("analysis"), true, null, sessionId);
+        createFolder(result.getResult().get(0).getId(), Paths.get("data"), true, null, sessionId);
+        createFolder(result.getResult().get(0).getId(), Paths.get("analysis"), true, null, sessionId);
         //}
         return result;
     }
@@ -668,7 +670,7 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<Group> updateGroup(String studyStr, String groupId, @Nullable String addUsers, @Nullable String removeUsers,
-                                   @Nullable String setUsers, String sessionId) throws CatalogException {
+                                          @Nullable String setUsers, String sessionId) throws CatalogException {
         return studyManager.updateGroup(studyStr, groupId, addUsers, removeUsers, setUsers, sessionId);
     }
 
@@ -1329,8 +1331,8 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<AnnotationSet> createIndividualAnnotationSet(String individualIdStr, long variableSetId, String annotationSetName,
-                                                          Map<String, Object> annotations, Map<String, Object> attributes, String sessionId)
-            throws CatalogException {
+                                                                    Map<String, Object> annotations, Map<String, Object> attributes,
+                                                                    String sessionId) throws CatalogException {
         return individualManager.createAnnotationSet(individualIdStr, variableSetId, annotationSetName, annotations, attributes, sessionId);
     }
 

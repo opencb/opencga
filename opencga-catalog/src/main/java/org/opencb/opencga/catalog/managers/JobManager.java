@@ -8,7 +8,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
-import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
@@ -50,25 +49,23 @@ public class JobManager extends AbstractManager implements IJobManager {
 
     public static final String DELETE_FILES = "deleteFiles";
 
-    public JobManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager, AuditManager auditManager,
-                      CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                      CatalogConfiguration catalogConfiguration) {
-        super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogConfiguration);
+    public JobManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory,
+                      CatalogIOManagerFactory ioManagerFactory, CatalogConfiguration catalogConfiguration) {
+        super(authorizationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogConfiguration);
     }
 
-    public JobManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager, AuditManager auditManager,
-                      CatalogManager catalogManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory,
-                      CatalogIOManagerFactory ioManagerFactory, CatalogConfiguration catalogConfiguration) {
-        super(authorizationManager, authenticationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
+    public JobManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
+                      CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                      CatalogConfiguration catalogConfiguration) {
+        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
                 catalogConfiguration);
         this.userManager = catalogManager.getUserManager();
     }
 
     @Deprecated
-    public JobManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager, AuditManager auditManager,
-                      CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                      Properties catalogProperties) {
-        super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
+    public JobManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory,
+                      CatalogIOManagerFactory ioManagerFactory, Properties catalogProperties) {
+        super(authorizationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
 

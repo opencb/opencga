@@ -191,7 +191,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
             throw new CatalogDBException("Error, sessionID already exists");
         }
         String userId = "anonymous_" + session.getId();
-        User user = new User(userId, "Anonymous", "", "", "", new User.UserStatus());
+        User user = new User(userId, "Anonymous", "", "", "", User.UserStatus.READY);
         user.getSessions().add(session);
 //        DBObject anonymous = getDbObject(user, "User");
         Document anonymous = getMongoDBDocument(user, "User");
@@ -236,7 +236,9 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 //        }
         checkUserExists(userId);
         Query query = new Query(QueryParams.ID.key(), userId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
-        query.append(QueryParams.LAST_MODIFIED.key(), "!=" + lastModified);
+        if (lastModified != null && !lastModified.isEmpty()) {
+            query.append(QueryParams.LAST_MODIFIED.key(), "!=" + lastModified);
+        }
         return get(query, options);
     }
 
