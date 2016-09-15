@@ -94,7 +94,7 @@ public class CohortCommandOptions {
         public String name;
 
         @Parameter(names = {"--type"}, description = "Cohort type", required = false, arity = 1)
-        public Study.Type type;
+        public Study.Type type = Study.Type.COLLECTION;
 
         @Parameter(names = {"--variable-set-id"}, description = "VariableSetId", required = false, arity = 1)
         public String variableSetId;
