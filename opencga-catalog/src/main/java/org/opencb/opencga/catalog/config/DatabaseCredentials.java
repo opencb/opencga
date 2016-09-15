@@ -30,6 +30,7 @@ public class DatabaseCredentials {
      */
     private List<String> hosts;
 
+    @Deprecated
     private String database;
     private String user;
     private String password;
