@@ -15,6 +15,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.converter.VariantFileMetadataToVCFHeaderConverter;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -337,7 +338,7 @@ public class VariantVcfExporter implements DataWriter<Variant> {
         String oprk = studyId + "_OPR";
 
         //Attributes for INFO column
-        HashMap<String, Object> attributes = new HashMap<>();
+        ObjectMap attributes = new ObjectMap();
 
         List<String> allelesArray = Arrays.asList(reference, alternate);  // TODO jmmut: multiallelic
         ArrayList<Genotype> genotypes = new ArrayList<>();
@@ -366,13 +367,13 @@ public class VariantVcfExporter implements DataWriter<Variant> {
                 filter = ".";   // write PASS iff all sources agree that the filter is "PASS" or assumed if not present, otherwise write "."
             }
 
-            attributes.put(prk, studyEntry.getAttributes().get("PR"));
-            attributes.put(crk, studyEntry.getAttributes().get("CR"));
-            attributes.put(oprk, studyEntry.getAttributes().get("OPR"));
+            attributes.putIfNotNull(prk, studyEntry.getAttributes().get("PR"));
+            attributes.putIfNotNull(crk, studyEntry.getAttributes().get("CR"));
+            attributes.putIfNotNull(oprk, studyEntry.getAttributes().get("OPR"));
 
             for (String sampleName : studyEntry.getOrderedSamplesName()) {
-                Map<String, String> sampleData = studyEntry.getSampleData(sampleName);
-                String gt = sampleData.get("GT");
+//                Map<String, String> sampleData = studyEntry.getSampleData(sampleName);
+                String gt = studyEntry.getSampleData(sampleName, "GT");
                 if (gt != null) {
                     org.opencb.biodata.models.feature.Genotype genotype =
                             new org.opencb.biodata.models.feature.Genotype(gt, reference, alternate);
@@ -384,18 +385,24 @@ public class VariantVcfExporter implements DataWriter<Variant> {
                             alleles.add(Allele.create(".", false)); // genotype of a secondary alternate, or an actual missing
                         }
                     }
-                    String genotypeFilter = sampleData.get("FT");
+
+                    String genotypeFilter = studyEntry.getSampleData(sampleName, "FT");
                     if (StringUtils.isBlank(genotypeFilter)) {
-                        genotypeFilter = ".";
+                        genotypeFilter = null;
                     } else if (StringUtils.equals("PASS", genotypeFilter)) {
                         genotypeFilter = "1";
                     } else {
                         genotypeFilter = "0";
                     }
-                    genotypes.add(new GenotypeBuilder().name(sampleName).alleles(alleles)
-                            .phased(genotype.isPhased())
-                            .attribute("PF", genotypeFilter)
-                            .make());
+
+                    GenotypeBuilder builder = new GenotypeBuilder()
+                            .name(sampleName)
+                            .alleles(alleles)
+                            .phased(genotype.isPhased());
+                    if (genotypeFilter != null) {
+                        builder.attribute("PF", genotypeFilter);
+                    }
+                    genotypes.add(builder.make());
                 }
             }
 
@@ -589,7 +596,7 @@ public class VariantVcfExporter implements DataWriter<Variant> {
         return attributes;
     }
 
-    private void addStats(StudyEntry studyEntry, HashMap<String, Object> attributes) {
+    private void addStats(StudyEntry studyEntry, Map<String, Object> attributes) {
         if (studyEntry.getStats() == null) {
             return;
         }

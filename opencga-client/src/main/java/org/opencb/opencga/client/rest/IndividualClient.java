@@ -59,6 +59,5 @@ public class IndividualClient extends AnnotationClient<Individual, IndividualAcl
         params = addParamsToObjectMap(params, "studyId", studyId, "fields", fields);
         return execute(INDIVIDUALS_URL, "groupBy", params, GET, Individual.class);
     }
-    //TODO param: method for GET o POST for POST /{version}/individuals/{individualId}/annotationSets/{annotationSetName}/update
 
 }

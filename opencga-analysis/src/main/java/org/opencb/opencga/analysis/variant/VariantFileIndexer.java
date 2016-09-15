@@ -31,32 +31,30 @@ import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.api.IFileManager;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_STATS;
 
@@ -116,6 +114,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         objectMapper.writer()
                 .writeValue(outdir.resolve("job.status").toFile(), new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
 
+        // TODO: This hook should #updateFileInfo
         Thread hook = new Thread(() -> {
             try {
                 // If the status has not been changed by the method and is still running, we assume that the execution failed.
@@ -247,19 +246,45 @@ public class VariantFileIndexer extends AbstractFileIndexer {
             }
         }
 
+        // Update study configuration BEFORE executing the index
+        try {
+            StudyConfigurationManager studyConfigurationManager = StorageManagerFactory.get()
+                    .getVariantStorageManager(dataStore.getStorageEngine())
+                    .getDBAdaptor(dataStore.getDbName()).getStudyConfigurationManager();
+            new CatalogStudyConfigurationFactory(catalogManager)
+                    .updateStudyConfigurationFromCatalog(studyIdByInputFileId, studyConfigurationManager, sessionId);
+        } catch (StorageManagerException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+            logger.error("An error occurred when trying to update the study configuration. Error " + e.getMessage(), e);
+        }
+
         logger.info("Starting to {}", step);
         List<StorageETLResult> storageETLResults;
+
+//        try {
+//            storageETLResults = variantStorageManager.index(fileUris, outdir.toUri(), false, transform, load);
+//        } catch(StorageManagerException e) {
+//            // Restore previous status
+//            if (!step.equals(Type.TRANSFORM) || options.get(CATALOG_PATH) != null) {
+//                for (int i = 0; i < filesToIndex.size(); i++) {
+//                    File file = filesToIndex.get(i);
+//                    fileManager.updateFileIndexStatus(file, previousFileStatus.get(i), sessionId);
+//                }
+//            }
+//            throw e;
+//        }
+
+        // Save exception to throw at the end
+        StorageManagerException exception = null;
         try {
             storageETLResults = variantStorageManager.index(fileUris, outdir.toUri(), false, transform, load);
-        } catch(StorageManagerException e) {
-            // Restore previous status
-            if (!step.equals(Type.TRANSFORM) || options.get(CATALOG_PATH) != null) {
-                for (int i = 0; i < filesToIndex.size(); i++) {
-                    File file = filesToIndex.get(i);
-                    fileManager.updateFileIndexStatus(file, previousFileStatus.get(i), sessionId);
-                }
-            }
-            throw e;
+        } catch (StorageETLException e) {
+            logger.error("Error executing " + step, e);
+            storageETLResults = e.getResults();
+            exception = e;
+        } catch (StorageManagerException e) {
+            logger.error("Error executing " + step, e);
+            storageETLResults = Collections.emptyList();
+            exception = e;
         }
 
 //        logger.debug("Writing storageETLResults to file {}", outdir.resolve("storageETLresults"));
@@ -271,25 +296,17 @@ public class VariantFileIndexer extends AbstractFileIndexer {
                 // Copy results to catalog
                 copyResult(outdir, catalogPathId, sessionId);
             }
-
             updateFileInfo(study, filesToIndex, storageETLResults, outdir, options, sessionId);
-
-            // Update study configuration
-            try {
-                StudyConfigurationManager studyConfigurationManager = StorageManagerFactory.get()
-                        .getVariantStorageManager(dataStore.getStorageEngine())
-                        .getDBAdaptor(dataStore.getDbName()).getStudyConfigurationManager();
-                new CatalogStudyConfigurationFactory(catalogManager)
-                        .updateStudyConfigurationFromCatalog(studyIdByInputFileId, studyConfigurationManager, sessionId);
-            } catch (StorageManagerException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-                logger.error("An error occurred when trying to update the study configuration. Error {}", e.getMessage());
-                e.printStackTrace();
-            }
         }
 
         objectMapper.writer()
                 .writeValue(outdir.resolve("job.status").toFile(), new Job.JobStatus(Job.JobStatus.DONE, "Job completed"));
         Runtime.getRuntime().removeShutdownHook(hook);
+
+        // Throw the exception!
+        if (exception != null) {
+            throw exception;
+        }
     }
 
     private void copyResult(Path tmpOutdirPath, long catalogPathOutDir, String sessionId) throws CatalogException, IOException {
@@ -369,17 +386,17 @@ public class VariantFileIndexer extends AbstractFileIndexer {
     private void updateFileInfo(Study study, List<File> filesToIndex, List<StorageETLResult> storageETLResults, Path outdir,
                                 QueryOptions options, String sessionId) throws CatalogException, IOException {
 
-        if (storageETLResults.size() != filesToIndex.size()) {
-            logger.error("The size of the storageETLResults is different from the number of files to be indexed.");
-            return;
-        }
+        Map<String, StorageETLResult> map = storageETLResults
+                .stream()
+                .collect(Collectors.toMap(s -> Paths.get(s.getInput().getPath()).getFileName().toString(), i -> i));
 
-        for (int i = 0; i < storageETLResults.size(); i++) {
-            StorageETLResult storageETLResult = storageETLResults.get(i);
+
+        for (File indexedFile : filesToIndex) {
+            // Suppose that the missing results are due to errors, and those files were not indexed.
+            StorageETLResult storageETLResult = map.get(indexedFile.getName());
+
             boolean jobFailed = storageETLResult == null || storageETLResult.getLoadError() != null
                     || storageETLResult.getTransformError() != null;
-
-            final File indexedFile = filesToIndex.get(i);
 
             boolean transformedSuccess = storageETLResult != null && storageETLResult.isTransformExecuted()
                     && storageETLResult.getTransformError() == null;
