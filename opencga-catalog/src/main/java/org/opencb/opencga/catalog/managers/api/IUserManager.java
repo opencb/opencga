@@ -4,10 +4,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
 import org.opencb.opencga.catalog.models.QueryFilter;
 import org.opencb.opencga.catalog.models.User;
 
+import javax.naming.NamingException;
 import java.io.IOException;
 import java.util.List;
 
@@ -51,8 +51,11 @@ public interface IUserManager extends ResourceManager<String, User> {
      * @param params Object map containing other parameters that are useful to import users.
      * @param adminPassword Admin password.
      * @return A list of users that have been imported.
+     * @throws CatalogException catalogException
+     * @throws NamingException NamingException
      */
-    List<QueryResult<User>> importFromExternalAuthOrigin(String authOrigin, String accountType, ObjectMap params, String adminPassword) throws CatalogException;
+    List<QueryResult<User>> importFromExternalAuthOrigin(String authOrigin, String accountType, ObjectMap params, String adminPassword)
+            throws CatalogException, NamingException;
 
     /**
      * Gets the user information.
@@ -81,6 +84,8 @@ public interface IUserManager extends ResourceManager<String, User> {
     QueryResult<ObjectMap> getNewUserSession(String sessionId, String userId) throws CatalogException;
 
     QueryResult resetPassword(String userId) throws CatalogException;
+
+    void validatePassword(String userId, String password, boolean throwException) throws CatalogException;
 
     @Deprecated
     QueryResult<ObjectMap> loginAsAnonymous(String sessionIp) throws CatalogException, IOException;

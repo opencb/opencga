@@ -207,7 +207,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                 + catalogConfiguration.getDatabase().getHosts() + "\n");
 
         CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
-        catalogManager.validateAdminPassword();
+        catalogManager.getUserManager().validatePassword("admin", catalogConfiguration.getAdmin().getPassword(), true);
         catalogManager.installIndexes();
     }
 

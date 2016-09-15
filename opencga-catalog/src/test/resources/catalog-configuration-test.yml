@@ -57,3 +57,11 @@ database:
   password: ""
   options:
     authenticationDatabase: ""
+
+authenticationOrigins:
+- id: internal
+  mode: OPENCGA
+  host: localhost
+  options:
+    usersSearch:
+    groupsSearch:

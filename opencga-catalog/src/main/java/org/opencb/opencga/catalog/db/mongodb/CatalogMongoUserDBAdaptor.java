@@ -236,7 +236,9 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 //        }
         checkUserExists(userId);
         Query query = new Query(QueryParams.ID.key(), userId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
-        query.append(QueryParams.LAST_MODIFIED.key(), "!=" + lastModified);
+        if (lastModified != null && !lastModified.isEmpty()) {
+            query.append(QueryParams.LAST_MODIFIED.key(), "!=" + lastModified);
+        }
         return get(query, options);
     }
 

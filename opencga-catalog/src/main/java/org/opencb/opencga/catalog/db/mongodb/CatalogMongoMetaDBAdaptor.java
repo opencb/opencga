@@ -193,8 +193,8 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor implements 
         metadataObject.put("admin", adminDocument);
 
         // Authentication origins
-        List<Document> authenticationOriginList = new ArrayList<>(catalogConfiguration.getAuthenticationOrigin().size());
-        for (AuthenticationOrigin authenticationOrigin : catalogConfiguration.getAuthenticationOrigin()) {
+        List<Document> authenticationOriginList = new ArrayList<>(catalogConfiguration.getAuthenticationOrigins().size());
+        for (AuthenticationOrigin authenticationOrigin : catalogConfiguration.getAuthenticationOrigins()) {
             authenticationOriginList.add(getMongoDBDocument(authenticationOrigin, "AuthenticationOrigin"));
         }
         metadataObject.put("authenticationOrigins", authenticationOriginList);

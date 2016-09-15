@@ -43,7 +43,7 @@ public class CatalogConfiguration {
     private String toolsDir;
 
     private Admin admin;
-    private List<AuthenticationOrigin> authenticationOrigin;
+    private List<AuthenticationOrigin> authenticationOrigins;
     private Monitor monitor;
     private Execution execution;
     private Audit audit;
@@ -107,7 +107,7 @@ public class CatalogConfiguration {
         sb.append(", tempJobsDir='").append(tempJobsDir).append('\'');
         sb.append(", toolsDir='").append(toolsDir).append('\'');
         sb.append(", admin=").append(admin);
-        sb.append(", authenticationOrigin=").append(authenticationOrigin);
+        sb.append(", authenticationOrigins=").append(authenticationOrigins);
         sb.append(", monitor=").append(monitor);
         sb.append(", execution=").append(execution);
         sb.append(", audit=").append(audit);
@@ -190,12 +190,12 @@ public class CatalogConfiguration {
         return this;
     }
 
-    public List<AuthenticationOrigin> getAuthenticationOrigin() {
-        return authenticationOrigin;
+    public List<AuthenticationOrigin> getAuthenticationOrigins() {
+        return authenticationOrigins;
     }
 
-    public CatalogConfiguration setAuthenticationOrigin(List<AuthenticationOrigin> authenticationOrigin) {
-        this.authenticationOrigin = authenticationOrigin;
+    public CatalogConfiguration setAuthenticationOrigins(List<AuthenticationOrigin> authenticationOrigins) {
+        this.authenticationOrigins = authenticationOrigins;
         return this;
     }
 
