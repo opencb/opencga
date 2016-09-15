@@ -138,7 +138,7 @@ public class IndexDaemon extends MonitorParentDaemon {
                 queryOptions.put(QueryOptions.LIMIT, 1);
                 QueryResult<Job> preparedJobs = jobManager.readAll(preparedJobsQuery, queryOptions, sessionId);
                 if (preparedJobs != null && preparedJobs.getNumResults() > 0) {
-                    if (numRunningJobs <= 1) {
+                    if (numRunningJobs < 1) {
                         queuePreparedIndex(preparedJobs.first());
                     } else {
                         logger.debug("Too many jobs indexing now, waiting for indexing new jobs");
