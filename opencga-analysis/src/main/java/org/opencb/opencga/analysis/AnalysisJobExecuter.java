@@ -16,9 +16,12 @@ import org.opencb.opencga.analysis.beans.Option;
 import org.opencb.opencga.lib.common.StringUtils;
 import org.opencb.opencga.lib.common.TimeUtils;
 import org.opencb.opencga.lib.exec.Command;
+import org.opencb.opencga.lib.exec.RunnableProcess;
 import org.opencb.opencga.lib.exec.SingleProcess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -206,10 +209,10 @@ public class AnalysisJobExecuter {
                 randomString, temporalOutDirUri, commandLine, false, false, false, new HashMap<String, Object>());
     }
 
-    public static QueryResult<Job> createJob(CatalogManager catalogManager, int studyId, String jobName, String toolName, String description,
-                                             File outDir, List<Integer> inputFiles, String sessionId,
+    public static QueryResult<Job> createJob(final CatalogManager catalogManager, int studyId, String jobName, String toolName, String description,
+                                             File outDir, List<Integer> inputFiles, final String sessionId,
                                              String randomString, URI temporalOutDirUri, String commandLine,
-                                             boolean execute, boolean simulate, boolean recordOutput, Map<String, Object> resourceManagerAttributes)
+                                             boolean execute, boolean simulate, final boolean recordOutput, Map<String, Object> resourceManagerAttributes)
             throws AnalysisExecutionException, CatalogException {
         logger.debug("Creating job {}: simulate {}, execute {}, recordOutput {}", jobName, simulate, execute, recordOutput);
         long start = System.currentTimeMillis();
@@ -234,11 +237,37 @@ public class AnalysisJobExecuter {
 
                 logger.info("Executing job {}({})", jobQueryResult.first().getName(), jobQueryResult.first().getId());
                 logger.debug("Executing commandLine {}", jobQueryResult.first().getCommandLine());
-                Command com = new Command(commandLine);
+                final Command com = new Command(commandLine);
+                final int jobId = jobQueryResult.first().getId();
+                Thread hook = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");
+                            com.setStatus(RunnableProcess.Status.KILLED);
+                            com.setExitValue(-2);
+                            catalogManager.modifyJob(jobId, new ObjectMap("resourceManagerAttributes", new ObjectMap("executionInfo", com)), sessionId);
+                            if (recordOutput) {
+                                // Record Output.
+                                //   Internally, change status to PROCESSING_OUTPUT and then to READY
+                                AnalysisOutputRecorder outputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
+                                outputRecorder.recordJobOutput(catalogManager.getJob(jobId, null, sessionId).first());
+                                catalogManager.modifyJob(jobId, new ObjectMap("status", Job.Status.ERROR), sessionId);
+                            } else {
+                                // Change status to DONE
+                                catalogManager.modifyJob(jobId, new ObjectMap("status", Job.Status.DONE), sessionId);
+                            }
+                        } catch (CatalogException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                });
+                Runtime.getRuntime().addShutdownHook(hook);
 //                SingleProcess sp = new SingleProcess(com);
 //                sp.getRunnableProcess().run();
 //                sp.runSync();
                 com.run();
+                Runtime.getRuntime().removeShutdownHook(hook);
 
                 catalogManager.modifyJob(jobQueryResult.first().getId(), new ObjectMap("resourceManagerAttributes", new ObjectMap("executionInfo", com)), sessionId);
 
@@ -247,6 +276,9 @@ public class AnalysisJobExecuter {
                     //   Internally, change status to PROCESSING_OUTPUT and then to READY
                     AnalysisOutputRecorder outputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
                     outputRecorder.recordJobOutput(jobQueryResult.first());
+                    if (com.getExitValue() != 0) {
+                        catalogManager.modifyJob(jobId, new ObjectMap("status", Job.Status.ERROR), sessionId);
+                    }
                 } else {
                     // Change status to DONE
                     catalogManager.modifyJob(jobQueryResult.first().getId(), new ObjectMap("status", Job.Status.DONE), sessionId);
