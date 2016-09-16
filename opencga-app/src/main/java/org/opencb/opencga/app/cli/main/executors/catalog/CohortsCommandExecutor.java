@@ -152,8 +152,11 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             if( sampleIds != null) {
                 System.out.println("Error: The name parameter is required when you create the cohort from samples");
                 return null;
-            }else{
+            }else if (variableSetId != null && variable != null){
                 cohortName = "Cohort";
+            }else{
+                System.out.println("Error: Please, Insert the corrects params for create the cohort.");
+                return null;
             }
         }
         return openCGAClient.getCohortClient().create(studyId, cohortName, o);
