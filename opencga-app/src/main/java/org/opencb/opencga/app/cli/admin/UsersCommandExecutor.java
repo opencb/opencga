@@ -109,7 +109,17 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         List<QueryResult<User>> resultList = catalogManager.getUserManager().importFromExternalAuthOrigin(executor.authOrigin,
                 executor.type, params, catalogConfiguration.getAdmin().getPassword());
 
-        System.out.println(resultList);
+        System.out.println("\n" + resultList.size() + " users have been imported");
+        // Print the user names if less than 10 users have been imported.
+        if (resultList.size() <= 10) {
+            for (QueryResult<User> userQueryResult : resultList) {
+                if (userQueryResult.getNumResults() == 0) {
+                    System.out.println(userQueryResult.getErrorMsg());
+                } else {
+                    System.out.println(userQueryResult.first().getName() + " user account created.");
+                }
+            }
+        }
     }
 
     private void create() throws CatalogException, IOException {

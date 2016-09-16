@@ -24,6 +24,8 @@ import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.config.ClientConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -56,6 +58,8 @@ public abstract class AbstractParentClient<T, A> {
     protected static final String GET = "GET";
     protected static final String POST = "POST";
 
+    protected Logger logger;
+
     protected AbstractParentClient(String userId, String sessionId, ClientConfiguration configuration) {
         this.userId = userId;
         this.sessionId = sessionId;
@@ -81,6 +85,7 @@ public abstract class AbstractParentClient<T, A> {
     }
 
     private void init() {
+        this.logger = LoggerFactory.getLogger(this.getClass().toString());
         this.client = ClientBuilder.newClient();
         jsonObjectMapper = new ObjectMapper();
     }
@@ -165,7 +170,6 @@ public abstract class AbstractParentClient<T, A> {
 //            }
 //        }
 
-        System.out.println("configuration = " + configuration);
         // Build the basic URL
         WebTarget path = client
                 .target(configuration.getRest().getHost())
@@ -262,7 +266,7 @@ public abstract class AbstractParentClient<T, A> {
                 }
             }
 
-            System.out.println("GET URL: " + path.getUri().toURL());
+            logger.debug("GET URL: " + path.getUri().toURL());
             jsonString = path.request().get().readEntity(String.class);
         } else if (method.equalsIgnoreCase(POST)) {
             // TODO we still have to check the limit of the query, and keep querying while there are more results
@@ -288,7 +292,7 @@ public abstract class AbstractParentClient<T, A> {
 
 //            ObjectMap json = new ObjectMap("body", params.get("body"));
 
-            System.out.println("POST URL: " + path.getUri().toURL());
+            logger.debug("POST URL: " + path.getUri().toURL());
 //            jsonString = path.request().accept(MediaType.APPLICATION_JSON).post(Entity.entity(json, MediaType.APPLICATION_JSON),
 //                    String.class);est().accept(MediaType.APPLICATION_JSON).post(Entity.entity(json, MediaType.APPLICATION_JSON),
             jsonString = path.request().post(Entity.json(params.get("body")), String.class);

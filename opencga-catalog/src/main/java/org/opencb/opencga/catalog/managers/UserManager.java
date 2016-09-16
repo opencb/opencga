@@ -14,7 +14,6 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.AuthenticationOrigin;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.CatalogMetaDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -59,25 +58,46 @@ public class UserManager extends AbstractManager implements IUserManager {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, catalogConfiguration);
 
         authenticationManagerMap = new HashMap<>();
-        for (AuthenticationOrigin authenticationOrigin : catalogConfiguration.getAuthenticationOrigins()) {
-            if (authenticationOrigin.getId() != null) {
-                switch (authenticationOrigin.getMode()) {
-                    case LDAP:
-                        authenticationManagerMap.put(authenticationOrigin.getId(),
-                                new LDAPAuthenticationManager(authenticationOrigin.getHost()));
-                        break;
-                    case OPENCGA:
-                    default:
-                        authenticationManagerMap.put(authenticationOrigin.getId(),
-                                new CatalogAuthenticationManager(catalogDBAdaptorFactory, catalogConfiguration));
-                        INTERNAL_AUTHORIZATION = authenticationOrigin.getId();
-                        break;
+        if (catalogConfiguration.getAuthenticationOrigins() != null) {
+            for (AuthenticationOrigin authenticationOrigin : catalogConfiguration.getAuthenticationOrigins()) {
+                if (authenticationOrigin.getId() != null) {
+                    switch (authenticationOrigin.getType()) {
+                        case LDAP:
+                            authenticationManagerMap.put(authenticationOrigin.getId(),
+                                    new LDAPAuthenticationManager(authenticationOrigin.getHost()));
+                            break;
+//                    case OPENCGA:
+                        default:
+//                        authenticationManagerMap.put(authenticationOrigin.getId(),
+//                                new CatalogAuthenticationManager(catalogDBAdaptorFactory, catalogConfiguration));
+//                        INTERNAL_AUTHORIZATION = authenticationOrigin.getId();
+                            break;
+                    }
                 }
             }
         }
         // Even if internal authentication is not present in the configuration file, create it
         authenticationManagerMap.putIfAbsent(INTERNAL_AUTHORIZATION,
                 new CatalogAuthenticationManager(catalogDBAdaptorFactory, catalogConfiguration));
+        AuthenticationOrigin authenticationOrigin = new AuthenticationOrigin();
+        if (catalogConfiguration.getAuthenticationOrigins() == null) {
+            catalogConfiguration.setAuthenticationOrigins(Arrays.asList(authenticationOrigin));
+        } else {
+            // Check if OPENCGA authentication is already present in catalog configuration
+            boolean catalogPresent = false;
+            for (AuthenticationOrigin origin : catalogConfiguration.getAuthenticationOrigins()) {
+                if (AuthenticationOrigin.AuthenticationType.OPENCGA == origin.getType()) {
+                    catalogPresent = true;
+                    break;
+                }
+            }
+            if (!catalogPresent) {
+                List<AuthenticationOrigin> linkedList = new LinkedList<>();
+                linkedList.addAll(catalogConfiguration.getAuthenticationOrigins());
+                linkedList.add(authenticationOrigin);
+                catalogConfiguration.setAuthenticationOrigins(linkedList);
+            }
+        }
     }
 
     static void checkEmail(String email) throws CatalogException {
@@ -102,17 +122,28 @@ public class UserManager extends AbstractManager implements IUserManager {
         ParamUtils.checkParameter(oldPassword, "oldPassword");
         ParamUtils.checkParameter(newPassword, "newPassword");
         userDBAdaptor.checkUserExists(userId);
-        String authOrigin = getAuthenticationOrigin(userId);
+        String authOrigin = getAuthenticationOriginId(userId);
         authenticationManagerMap.get(authOrigin).changePassword(userId, oldPassword, newPassword);
         userDBAdaptor.updateUserLastModified(userId);
     }
 
-    private String getAuthenticationOrigin(String userId) throws CatalogException {
+    private String getAuthenticationOriginId(String userId) throws CatalogException {
         QueryResult<User> user = userDBAdaptor.getUser(userId, new QueryOptions(), "");
         if (user == null || user.getNumResults() == 0) {
             throw new CatalogException(userId + " user not found");
         }
         return user.first().getAccount().getAuthOrigin();
+    }
+
+    private AuthenticationOrigin getAuthenticationOrigin(String authOrigin) {
+        if (catalogConfiguration.getAuthenticationOrigins() != null) {
+            for (AuthenticationOrigin authenticationOrigin : catalogConfiguration.getAuthenticationOrigins()) {
+                if (authOrigin.equals(authenticationOrigin.getId())) {
+                    return authenticationOrigin;
+                }
+            }
+        }
+        return null;
     }
 
     @Deprecated
@@ -207,10 +238,13 @@ public class UserManager extends AbstractManager implements IUserManager {
         ParamUtils.checkParameter(adminPassword, "Admin password or session id");
         authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", adminPassword, true);
 
+        if (INTERNAL_AUTHORIZATION.equals(authOrigin)) {
+            throw new CatalogException("Cannot import users from catalog. Authentication origin should be external.");
+        }
+
         // Obtain the authentication origin parameters
-        CatalogMetaDBAdaptor metaDBAdaptor = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor();
-        QueryResult<AuthenticationOrigin> authenticationOrigin = metaDBAdaptor.getAuthenticationOrigin(authOrigin);
-        if (authenticationOrigin.getNumResults() == 0) {
+        AuthenticationOrigin authenticationOrigin = getAuthenticationOrigin(authOrigin);
+        if (authenticationOrigin == null) {
             throw new CatalogException("The authentication origin id " + authOrigin + " does not correspond with any id in our database.");
         }
 
@@ -243,13 +277,12 @@ public class UserManager extends AbstractManager implements IUserManager {
         }
 
         // Obtain users from external origin
-        AuthenticationOrigin auth = authenticationOrigin.first();
         Hashtable env = new Hashtable();
         env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
-        env.put(Context.PROVIDER_URL, auth.getHost());
+        env.put(Context.PROVIDER_URL, authenticationOrigin.getHost());
 
         DirContext dctx = new InitialDirContext(env);
-        String base = ((String) auth.getOptions().get(AuthenticationOrigin.USERS_SEARCH));
+        String base = ((String) authenticationOrigin.getOptions().get(AuthenticationOrigin.USERS_SEARCH));
         String[] attributeFilter = { "displayname", "mail", "uid", "gecos"};
         SearchControls sc = new SearchControls();
         sc.setSearchScope(SearchControls.SUBTREE_SCOPE);
@@ -460,7 +493,7 @@ public class UserManager extends AbstractManager implements IUserManager {
 
     @Override
     public QueryResult resetPassword(String userId) throws CatalogException {
-        String authOrigin = getAuthenticationOrigin(userId);
+        String authOrigin = getAuthenticationOriginId(userId);
         return authenticationManagerMap.get(authOrigin).resetPassword(userId);
     }
 
@@ -469,7 +502,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         if (userId.equalsIgnoreCase("admin")) {
             authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", password, throwException);
         } else {
-            String authOrigin = getAuthenticationOrigin(userId);
+            String authOrigin = getAuthenticationOriginId(userId);
             authenticationManagerMap.get(authOrigin).authenticate(userId, password, throwException);
         }
     }
@@ -508,12 +541,12 @@ public class UserManager extends AbstractManager implements IUserManager {
         }
 
         // Check that the authentication id is valid
-        String authId = getAuthenticationOrigin(userId);
-        QueryResult<AuthenticationOrigin> authOrigin = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().getAuthenticationOrigin(authId);
-        if (authOrigin.getNumResults() == 0) {
+        String authId = getAuthenticationOriginId(userId);
+        AuthenticationOrigin authenticationOrigin = getAuthenticationOrigin(authId);
+        if (authenticationOrigin == null) {
             throw new CatalogException("Could not find authentication origin " + authId + " for user " + userId);
         }
-        if (AuthenticationOrigin.AuthenticationMode.LDAP == authOrigin.first().getMode()) {
+        if (AuthenticationOrigin.AuthenticationType.LDAP == authenticationOrigin.getType()) {
             authenticationManagerMap.get(authId).authenticate(((String) user.first().getAttributes().get("LDAP_RDN")), password, true);
         } else {
             authenticationManagerMap.get(authId).authenticate(userId, password, true);
