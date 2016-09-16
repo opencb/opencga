@@ -57,6 +57,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
         SAMPLE_IDS("sampleIds", ""),
         GVCF("gvcf", false),
         ISOLATE_FILE_FROM_STUDY_CONFIGURATION("isolateStudyConfiguration", false),
+        TRANSFORM_FAIL_ON_MALFORMED_VARIANT("transform.fail.on.malformed", false),
 
         COMPRESS_METHOD("compressMethod", "gzip"),
         AGGREGATION_MAPPING_PROPERTIES("aggregationMappingFile", null),

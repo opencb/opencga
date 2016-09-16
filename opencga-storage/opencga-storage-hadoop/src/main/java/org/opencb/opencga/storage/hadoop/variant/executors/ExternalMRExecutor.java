@@ -24,6 +24,11 @@ public class ExternalMRExecutor implements MRExecutor {
     }
 
     public int run(String commandLine) {
+//        if (env != null) {
+//            for (String s : env) {
+//                System.out.println("env = " + s);
+//            }
+//        }
         Command command = new Command(commandLine, env);
         command.run();
         return command.getExitValue();

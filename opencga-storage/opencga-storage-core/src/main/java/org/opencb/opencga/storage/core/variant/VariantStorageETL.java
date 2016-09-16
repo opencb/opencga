@@ -17,6 +17,7 @@ import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
+import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -30,6 +31,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageETL;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.runner.StringDataReader;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
@@ -41,8 +43,10 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
+import org.opencb.opencga.storage.core.variant.transform.MalformedVariantHandler;
 import org.opencb.opencga.storage.core.variant.transform.VariantAvroTransformTask;
 import org.opencb.opencga.storage.core.variant.transform.VariantJsonTransformTask;
+import org.opencb.opencga.storage.core.variant.transform.VariantTransformTask;
 import org.slf4j.Logger;
 
 import java.io.*;
@@ -52,6 +56,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.zip.GZIPInputStream;
 
@@ -69,6 +74,8 @@ public abstract class VariantStorageETL implements StorageETL {
     protected final VariantDBAdaptor dbAdaptor;
     protected final VariantReaderUtils variantReaderUtils;
     protected final Logger logger;
+    protected final ObjectMap transformStats = new ObjectMap();
+
 
     public VariantStorageETL(StorageConfiguration configuration, String storageEngineId, Logger logger, VariantDBAdaptor dbAdaptor,
                              VariantReaderUtils variantReaderUtils) {
@@ -100,6 +107,11 @@ public abstract class VariantStorageETL implements StorageETL {
     @Override
     public URI extract(URI input, URI ouput) {
         return input;
+    }
+
+    @Override
+    public ObjectMap getTransformStats() {
+        return transformStats;
     }
 
     @Override
@@ -198,6 +210,8 @@ public abstract class VariantStorageETL implements StorageETL {
         boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key(), false);
 //        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key(), Options.INCLUDE_SRC.defaultValue());
         boolean includeSrc = false;
+        boolean failOnError = options.getBoolean(Options.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(),
+                Options.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.defaultValue());
         String format = options.getString(Options.TRANSFORM_FORMAT.key(), Options.TRANSFORM_FORMAT.defaultValue());
         String parser = options.getString("transform.parser", HTSJDK_PARSER);
 
@@ -220,12 +234,25 @@ public abstract class VariantStorageETL implements StorageETL {
             throw new IllegalArgumentException("Unknown compression method " + compression);
         }
 
-        // TODO Create a utility to determine which extensions are variants files
-        final VariantVcfFactory factory = createVariantVcfFactory(source, fileName);
 
+        Path outputMalformedVariants = output.resolve(fileName + "." + VariantReaderUtils.MALFORMED_FILE + ".txt");
+        Path outputVariantsFile = output.resolve(fileName + "." + VariantReaderUtils.VARIANTS_FILE + "." + format + extension);
+        Path outputMetaFile = VariantReaderUtils.getMetaFromTransformedFile(outputVariantsFile);
 
-        Path outputVariantsFile = output.resolve(fileName + ".variants." + format + extension);
-        Path outputMetaFile = output.resolve(fileName + ".file." + format + extension);
+        // Close at the end!
+        final MalformedVariantHandler malformedHandler;
+        try {
+            malformedHandler = new MalformedVariantHandler(outputMalformedVariants);
+        } catch (IOException e) {
+            throw new StorageManagerException(e.getMessage(), e);
+        }
+
+        ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
+                .setNumTasks(numTasks)
+                .setBatchSize(batchSize)
+                .setCapacity(capacity)
+                .setSorted(true)
+                .build();
 
         logger.info("Transforming variants using {} into {} ...", parser, format);
         long start, end;
@@ -234,7 +261,6 @@ public abstract class VariantStorageETL implements StorageETL {
                 logger.warn("Force using gzip compression");
                 extension = ".gz";
                 outputVariantsFile = output.resolve(fileName + ".variants.json" + extension);
-                outputMetaFile = output.resolve(fileName + ".file.json" + extension);
             }
 
             //Ped Reader
@@ -280,23 +306,25 @@ public abstract class VariantStorageETL implements StorageETL {
             } catch (FileNotFoundException e) {
                 throw new StorageManagerException("Fail init writer", e);
             }
-            Supplier<ParallelTaskRunner.Task<String, ByteBuffer>> taskSupplier;
+            Supplier<VariantTransformTask<ByteBuffer>> taskSupplier;
 
             if (parser.equalsIgnoreCase(HTSJDK_PARSER)) {
                 logger.info("Using HTSJDK to read variants.");
                 FullVcfCodec codec = new FullVcfCodec();
                 final VariantSource finalSource = source;
-                final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in avro too
                 Pair<VCFHeader, VCFHeaderVersion> header = readHtsHeader(input);
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
-                taskSupplier = () -> new VariantAvroTransformTask(header.getKey(), header.getValue(), finalSource, finalOutputMetaFile,
-                        statsCalculator, includeSrc, generateReferenceBlocks);
+                taskSupplier = () -> new VariantAvroTransformTask(header.getKey(), header.getValue(), finalSource, outputMetaFile,
+                        statsCalculator, includeSrc, generateReferenceBlocks)
+                        .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
             } else {
+                // TODO Create a utility to determine which extensions are variants files
+                final VariantVcfFactory factory = createVariantVcfFactory(source, fileName);
                 logger.info("Using Biodata to read variants.");
                 final VariantSource finalSource = source;
-                final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in avro too
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
-                taskSupplier = () -> new VariantAvroTransformTask(factory, finalSource, finalOutputMetaFile, statsCalculator, includeSrc);
+                taskSupplier = () -> new VariantAvroTransformTask(factory, finalSource, outputMetaFile, statsCalculator, includeSrc)
+                        .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
             }
 
             logger.info("Generating output file {}", outputVariantsFile);
@@ -307,7 +335,7 @@ public abstract class VariantStorageETL implements StorageETL {
                         dataReader,
                         taskSupplier,
                         dataWriter,
-                        new ParallelTaskRunner.Config(numTasks, batchSize, capacity, false)
+                        config
                 );
             } catch (Exception e) {
                 throw new StorageManagerException("Error while creating ParallelTaskRunner", e);
@@ -331,21 +359,23 @@ public abstract class VariantStorageETL implements StorageETL {
             StringDataWriter dataWriter = new StringDataWriter(outputVariantsFile, true);
 
             final VariantSource finalSource = source;
-            final Path finalOutputFileJsonFile = outputMetaFile;
             ParallelTaskRunner<String, String> ptr;
 
-            Supplier<ParallelTaskRunner.Task<String, String>> taskSupplier;
+            Supplier<VariantTransformTask<String>> taskSupplier;
             if (parser.equalsIgnoreCase(HTSJDK_PARSER)) {
                 logger.info("Using HTSJDK to read variants.");
                 Pair<VCFHeader, VCFHeaderVersion> header = readHtsHeader(input);
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(finalSource);
                 taskSupplier = () -> new VariantJsonTransformTask(header.getKey(), header.getValue(), finalSource,
-                        finalOutputFileJsonFile, statsCalculator, includeSrc, generateReferenceBlocks);
+                        outputMetaFile, statsCalculator, includeSrc, generateReferenceBlocks)
+                        .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
             } else {
+                // TODO Create a utility to determine which extensions are variants files
+                final VariantVcfFactory factory = createVariantVcfFactory(source, fileName);
                 logger.info("Using Biodata to read variants.");
-                final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in avro too
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
-                taskSupplier = () -> new VariantJsonTransformTask(factory, finalSource, finalOutputMetaFile, statsCalculator, includeSrc);
+                taskSupplier = () -> new VariantJsonTransformTask(factory, finalSource, outputMetaFile, statsCalculator, includeSrc)
+                        .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
             }
 
             logger.info("Generating output file {}", outputVariantsFile);
@@ -355,7 +385,7 @@ public abstract class VariantStorageETL implements StorageETL {
                         dataReader,
                         taskSupplier,
                         dataWriter,
-                        new ParallelTaskRunner.Config(numTasks, batchSize, capacity, false)
+                        config
                 );
             } catch (Exception e) {
                 throw new StorageManagerException("Error while creating ParallelTaskRunner", e);
@@ -372,8 +402,8 @@ public abstract class VariantStorageETL implements StorageETL {
         } else if ("proto".equals(format)) {
             //Read VariantSource
             source = VariantStorageManager.readVariantSource(input, source);
-            Pair<Long, Long> times =  processProto(input, fileName, output, source, outputVariantsFile, outputMetaFile,
-                    includeSrc, parser, generateReferenceBlocks, batchSize, extension, compression);
+            Pair<Long, Long> times = processProto(input, fileName, output, source, outputVariantsFile, outputMetaFile,
+                    includeSrc, parser, generateReferenceBlocks, batchSize, extension, compression, malformedHandler);
             start = times.getKey();
             end = times.getValue();
         } else {
@@ -381,6 +411,12 @@ public abstract class VariantStorageETL implements StorageETL {
         }
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
         logger.info("Variants transformed!");
+
+        // Close the malformed variant handler
+        malformedHandler.close();
+        if (malformedHandler.getMalformedLines() > 0) {
+            getTransformStats().put("malformed lines", malformedHandler.getMalformedLines());
+        }
 
         return outputUri.resolve(outputVariantsFile.getFileName().toString());
     }
@@ -402,7 +438,8 @@ public abstract class VariantStorageETL implements StorageETL {
     protected Pair<Long, Long> processProto(
             Path input, String fileName, Path output, VariantSource source, Path outputVariantsFile,
             Path outputMetaFile, boolean includeSrc, String parser, boolean generateReferenceBlocks,
-            int batchSize, String extension, String compression) throws StorageManagerException {
+            int batchSize, String extension, String compression, BiConsumer<String, RuntimeException> malformatedHandler)
+            throws StorageManagerException {
         throw new NotImplementedException("Please request feature");
     }
 
@@ -503,7 +540,7 @@ public abstract class VariantStorageETL implements StorageETL {
         fileId = checkNewFile(studyConfiguration, fileId, fileName);
         options.put(Options.FILE_ID.key(), fileId);
         studyConfiguration.getFileIds().put(source.getFileName(), fileId);
-        studyConfiguration.getHeaders().put(fileId, source.getMetadata().get("variantFileHeader").toString());
+        studyConfiguration.getHeaders().put(fileId, source.getMetadata().get(VariantFileUtils.VARIANT_FILE_HEADER).toString());
 
         checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
 
@@ -558,7 +595,11 @@ public abstract class VariantStorageETL implements StorageETL {
     }
 
     protected StudyConfiguration checkOrCreateStudyConfiguration() throws StorageManagerException {
-        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
+        return checkOrCreateStudyConfiguration(false);
+    }
+
+    protected StudyConfiguration checkOrCreateStudyConfiguration(boolean forceFetch) throws StorageManagerException {
+        StudyConfiguration studyConfiguration = getStudyConfiguration(forceFetch);
         if (studyConfiguration == null) {
             logger.info("Creating a new StudyConfiguration");
             int studyId = options.getInt(Options.STUDY_ID.key(), Options.STUDY_ID.defaultValue());
@@ -695,10 +736,6 @@ public abstract class VariantStorageETL implements StorageETL {
         }
     }
 
-    protected int getStudyId() {
-        return options.getInt(Options.STUDY_ID.key());
-    }
-
     @Override
     public URI postLoad(URI input, URI output) throws StorageManagerException {
 //        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
@@ -804,7 +841,7 @@ public abstract class VariantStorageETL implements StorageETL {
         return input;
     }
 
-    public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) {
+    public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageManagerException {
         studyConfiguration.getIndexedFiles().addAll(fileIds);
     }
 
@@ -838,7 +875,7 @@ public abstract class VariantStorageETL implements StorageETL {
         return studyName + "_" + fileId;
     }
 
-    protected VariantSource readVariantSource(URI input, ObjectMap options) throws StorageManagerException {
+    public VariantSource readVariantSource(URI input, ObjectMap options) throws StorageManagerException {
         return variantReaderUtils.readVariantSource(input);
     }
 
@@ -963,6 +1000,58 @@ public abstract class VariantStorageETL implements StorageETL {
         if (studyId < 0) {
             throw new StorageManagerException("Invalid studyId : " + studyId);
         }
+    }
+
+    public Thread newShutdownHook(String jobOperationName, List<Integer> files) {
+        return new Thread(() -> {
+            try {
+                logger.error("Shutdown hook!");
+                setStatus(BatchFileOperation.Status.ERROR, jobOperationName, files);
+            } catch (StorageManagerException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public void setStatus(BatchFileOperation.Status status, String operationName, List<Integer> files) throws StorageManagerException {
+        int studyId = getStudyId();
+        long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
+        try {
+            StudyConfiguration studyConfiguration = getStudyConfiguration(true);
+            secureSetStatus(studyConfiguration, status, operationName, files);
+            dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
+        } finally {
+            dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
+        }
+    }
+
+    public BatchFileOperation.Status secureSetStatus(StudyConfiguration studyConfiguration, BatchFileOperation.Status status,
+                                                        String operationName, List<Integer> files)
+            throws StorageManagerException {
+        List<BatchFileOperation> batches = studyConfiguration.getBatches();
+        BatchFileOperation operation = null;
+        for (int i = batches.size() - 1; i >= 0; i--) {
+            operation = batches.get(i);
+            if (operation.getOperationName().equals(operationName) && operation.getFileIds().equals(files)) {
+                break;
+            }
+            operation = null;
+        }
+        if (operation == null) {
+            throw new IllegalStateException("Batch operation " + operationName + " for files " + files + " not found!");
+        }
+        BatchFileOperation.Status previousStatus = operation.currentStatus();
+        operation.addStatus(Calendar.getInstance().getTime(), status);
+        return previousStatus;
+    }
+
+    public VariantDBAdaptor getDBAdaptor() {
+        return dbAdaptor;
+    }
+
+    protected int getStudyId() {
+        return options.getInt(Options.STUDY_ID.key());
     }
 
     public ObjectMap getOptions() {

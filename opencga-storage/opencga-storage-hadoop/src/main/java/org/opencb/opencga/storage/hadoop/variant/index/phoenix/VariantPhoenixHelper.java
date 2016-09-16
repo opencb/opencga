@@ -6,15 +6,14 @@ import org.apache.phoenix.schema.types.*;
 import org.apache.phoenix.util.QueryUtil;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION;
@@ -86,6 +85,7 @@ public class VariantPhoenixHelper {
         POSITION("POSITION", PUnsignedInt.INSTANCE),
         REFERENCE("REFERENCE", PVarchar.INSTANCE),
         ALTERNATE("ALTERNATE", PVarchar.INSTANCE),
+        TYPE("TYPE", PVarchar.INSTANCE),
 
         SO(ANNOTATION_PREFIX + "SO", PIntegerArray.INSTANCE),
         GENES(ANNOTATION_PREFIX + "GENES", PVarcharArray.INSTANCE),
@@ -94,6 +94,7 @@ public class VariantPhoenixHelper {
         TRANSCRIPTION_FLAGS(ANNOTATION_PREFIX + "FLAGS", PVarcharArray.INSTANCE),
         GENE_TRAITS_NAME(ANNOTATION_PREFIX + "GT_NAME", PVarcharArray.INSTANCE),
         GENE_TRAITS_ID(ANNOTATION_PREFIX + "GT_ID", PVarcharArray.INSTANCE),
+        HPO(ANNOTATION_PREFIX + "HPO", PVarcharArray.INSTANCE),
         PROTEIN_KEYWORDS(ANNOTATION_PREFIX + "PROT_KW", PVarcharArray.INSTANCE),
         DRUG(ANNOTATION_PREFIX + "DRUG", PVarcharArray.INSTANCE),
         XREFS(ANNOTATION_PREFIX + "XREFS", PVarcharArray.INSTANCE),
@@ -169,15 +170,8 @@ public class VariantPhoenixHelper {
         this.genomeHelper = genomeHelper;
     }
 
-    public Connection newJdbcConnection(HBaseCredentials credentials) throws SQLException {
-      return DriverManager.getConnection("jdbc:phoenix:" + credentials.getHost()); // this one was working before hbase version
-//        return DriverManager.getConnection("jdbc:phoenix:" + credentials.getHost(), credentials.getUser(), credentials.getPass());
-    }
-
     public Connection newJdbcConnection(Configuration conf) throws SQLException, ClassNotFoundException {
-        String connectionUrl = QueryUtil.getConnectionUrl(new Properties(), conf);
-        logger.debug("connectionUrl = " + connectionUrl);
-        return DriverManager.getConnection(connectionUrl);
+        return QueryUtil.getConnection(conf);
     }
 
     public void updateAnnotationFields(Connection con, String tableName) throws SQLException {
@@ -216,7 +210,9 @@ public class VariantPhoenixHelper {
 
     private void execute(Connection con, String sql) throws SQLException {
         logger.debug(sql);
-        con.createStatement().execute(sql);
+        try (Statement statement = con.createStatement()) {
+            statement.execute(sql);
+        }
     }
 
     public String buildCreateView(String tableName) {
@@ -297,6 +293,10 @@ public class VariantPhoenixHelper {
 
     public static Column getStatsColumn(int studyId, int cohortId) {
         return Column.build(STATS_PREFIX + studyId + "_" + cohortId + STATS_PROTOBUF_SUFIX, PVarbinary.INSTANCE);
+    }
+
+    public static Column getStudyColumn(int studyId) {
+        return Column.build(VariantTableStudyRow.buildColumnKey(studyId, VariantTableStudyRow.HOM_REF), PUnsignedInt.INSTANCE);
     }
 
     public static Column getMafColumn(int studyId, int cohortId) {

@@ -19,6 +19,7 @@ package org.opencb.opencga.analysis.variant;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -165,8 +166,8 @@ public class CatalogStudyConfigurationFactory {
                     object = variantSource.get("metadata");
                     if (object instanceof Map) {
                         Map metadata = (Map) object;
-                        if (metadata.containsKey("variantFileHeader")) {
-                            String variantFileHeader = metadata.get("variantFileHeader").toString();
+                        if (metadata.containsKey(VariantFileUtils.VARIANT_FILE_HEADER)) {
+                            String variantFileHeader = metadata.get(VariantFileUtils.VARIANT_FILE_HEADER).toString();
                             studyConfiguration.getHeaders().put(fileId, variantFileHeader);
                         }
                     }
