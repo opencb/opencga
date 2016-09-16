@@ -68,14 +68,9 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
 //         */
 //
 //    }
-    @Deprecated
-    @Override
-    protected void setProperties(Properties properties) throws CatalogIOException {
-
-    }
 
     @Override
-    protected void setProperties(CatalogConfiguration catalogConfiguration) throws CatalogIOException {
+    protected void setConfiguration(CatalogConfiguration catalogConfiguration) throws CatalogIOException {
 
     }
 

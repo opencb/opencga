@@ -17,11 +17,11 @@
 package org.opencb.opencga.analysis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.opencga.catalog.models.tool.Manifest;
-import org.opencb.opencga.catalog.models.tool.Execution;
-import org.opencb.opencga.catalog.models.tool.Option;
 import org.opencb.opencga.analysis.execution.plugins.OpenCGAAnalysis;
 import org.opencb.opencga.analysis.execution.plugins.PluginFactory;
+import org.opencb.opencga.catalog.models.tool.Execution;
+import org.opencb.opencga.catalog.models.tool.Manifest;
+import org.opencb.opencga.catalog.models.tool.Option;
 import org.opencb.opencga.core.common.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

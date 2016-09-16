@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Created by jacobo on 23/10/14.
  */
+@Deprecated
 public class OpenCGADaemon {
 
 
@@ -51,6 +52,7 @@ public class OpenCGADaemon {
     private static Logger logger = LoggerFactory.getLogger(OpenCGADaemon.class);
     private static DaemonLoop daemon;
 
+    @Deprecated
     public static void main(String args[]) throws IOException {
         OptionParser optionParser = new OptionParser();
 
