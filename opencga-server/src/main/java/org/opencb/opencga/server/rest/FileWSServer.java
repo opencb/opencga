@@ -1002,21 +1002,30 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Update fields of a file", position = 16, response = File.class)
     public Response update(@ApiParam(value = "File id") @PathParam(value = "fileId") String fileIdStr,
                            @ApiParam(value = "File name", required = false) @QueryParam("name") String name,
-                           @ApiParam(value = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)", required = false) @DefaultValue("") @QueryParam("format") String fileFormat,
+                           @ApiParam(value = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)", required = false) @DefaultValue("") @QueryParam("format") String format,
                            @ApiParam(value = "Bioformat of the file (VARIANT, ALIGNMENT, SEQUENCE, PEDIGREE...NONE)", required = false) @DefaultValue("") @QueryParam("bioformat") String bioformat,
-                           @ApiParam(value = "Description of the file", required = false) @FormDataParam("description") String description,
+                           @ApiParam(value = "Description of the file", required = false) @QueryParam("description") String description,
                            @ApiParam(value = "Attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
                            @ApiParam(value = "Stats", required = false) @DefaultValue("") @QueryParam("stats") String stats,
                            @ApiParam(value = "Sample ids", required = false) @DefaultValue("") @QueryParam("sampleIds") String sampleIds,
                            @ApiParam(value = "Job id", required = false) @DefaultValue("") @QueryParam("jobId") String jobId,
                            @ApiParam(value = "Path", required = false) @DefaultValue("") @QueryParam("path") String path) {
         try {
-            ObjectMap parameters = new ObjectMap();
+            /*ObjectMap parameters = new ObjectMap();
             QueryOptions qOptions = new QueryOptions();
-            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, parameters, qOptions);
-            
+            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, parameters, qOptions);*/
+            ObjectMap params = new ObjectMap();
+            params.putIfNotEmpty("name", name);
+            params.putIfNotEmpty("format", format);
+            params.putIfNotEmpty("bioformat", bioformat);
+            params.putIfNotEmpty("description", description);
+            params.putIfNotEmpty("attributes", attributes);
+            params.putIfNotEmpty("stats", stats);
+            params.putIfNotEmpty("sampleIds", sampleIds);
+            params.putIfNotEmpty("jobId", jobId);
+            params.putIfNotEmpty("path", path);
             long fileId = catalogManager.getFileId(convertPath(fileIdStr), sessionId);
-            QueryResult queryResult = catalogManager.getFileManager().update(fileId, parameters, qOptions, sessionId);
+            QueryResult queryResult = catalogManager.getFileManager().update(fileId, params, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
