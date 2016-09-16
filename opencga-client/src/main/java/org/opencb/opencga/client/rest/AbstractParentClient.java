@@ -113,7 +113,7 @@ public abstract class AbstractParentClient<T, A> {
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(params);
         ObjectMap p = new ObjectMap("body", json);
-        System.out.print("Json que se forma en el update: " + json);
+        logger.debug("Json in update client: " + json);
         return execute(category, id, "update", p, POST, clazz);
     }
 
