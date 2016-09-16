@@ -5,22 +5,29 @@ import java.util.Map;
 /**
  * Created by pfurio on 02/09/16.
  */
-public class Auth {
+public class AuthenticationOrigin {
 
     private String id;
-    private String mode;
+    private AuthenticationMode mode;
     private String host;
-    private String port;
     private Map<String, Object> options;
 
-    public Auth() {
+    public enum AuthenticationMode {
+        OPENCGA,
+        LDAP
     }
 
-    public Auth(String id, String mode, String host, String port, Map<String, Object> options) {
+    // Possible keys of the options map
+    public static final String USERS_SEARCH = "usersSearch";
+    public static final String GROUPS_SEARCH = "groupsSearch";
+
+    public AuthenticationOrigin() {
+    }
+
+    public AuthenticationOrigin(String id, String mode, String host, Map<String, Object> options) {
         this.id = id;
-        this.mode = mode;
+        this.mode = AuthenticationMode.valueOf(mode);
         this.host = host;
-        this.port = port;
         this.options = options;
     }
 
@@ -30,7 +37,6 @@ public class Auth {
         sb.append("id='").append(id).append('\'');
         sb.append(", mode='").append(mode).append('\'');
         sb.append(", host='").append(host).append('\'');
-        sb.append(", port='").append(port).append('\'');
         sb.append(", options=").append(options);
         sb.append('}');
         return sb.toString();
@@ -40,16 +46,16 @@ public class Auth {
         return id;
     }
 
-    public Auth setId(String id) {
+    public AuthenticationOrigin setId(String id) {
         this.id = id;
         return this;
     }
 
-    public String getMode() {
+    public AuthenticationMode getMode() {
         return mode;
     }
 
-    public Auth setMode(String mode) {
+    public AuthenticationOrigin setMode(AuthenticationMode mode) {
         this.mode = mode;
         return this;
     }
@@ -58,17 +64,8 @@ public class Auth {
         return host;
     }
 
-    public Auth setHost(String host) {
+    public AuthenticationOrigin setHost(String host) {
         this.host = host;
-        return this;
-    }
-
-    public String getPort() {
-        return port;
-    }
-
-    public Auth setPort(String port) {
-        this.port = port;
         return this;
     }
 
@@ -76,7 +73,7 @@ public class Auth {
         return options;
     }
 
-    public Auth setOptions(Map<String, Object> options) {
+    public AuthenticationOrigin setOptions(Map<String, Object> options) {
         this.options = options;
         return this;
     }

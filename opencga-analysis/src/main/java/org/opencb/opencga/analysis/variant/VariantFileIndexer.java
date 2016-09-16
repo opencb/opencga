@@ -237,8 +237,10 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         }
 
         // Only if we are not transforming or if a path has been passed, we will update catalog information
+        List<String> previousFileStatus = new ArrayList<>(filesToIndex.size());
         if (!step.equals(Type.TRANSFORM) || options.get(CATALOG_PATH) != null) {
             for (File file : filesToIndex) {
+                previousFileStatus.add(file.getIndex().getStatus().getName());
                 QueryResult<FileIndex> fileIndexQueryResult = fileManager.updateFileIndexStatus(file, fileStatus, sessionId);
                 file.setIndex(fileIndexQueryResult.first());
             }
@@ -257,6 +259,20 @@ public class VariantFileIndexer extends AbstractFileIndexer {
 
         logger.info("Starting to {}", step);
         List<StorageETLResult> storageETLResults;
+
+//        try {
+//            storageETLResults = variantStorageManager.index(fileUris, outdir.toUri(), false, transform, load);
+//        } catch(StorageManagerException e) {
+//            // Restore previous status
+//            if (!step.equals(Type.TRANSFORM) || options.get(CATALOG_PATH) != null) {
+//                for (int i = 0; i < filesToIndex.size(); i++) {
+//                    File file = filesToIndex.get(i);
+//                    fileManager.updateFileIndexStatus(file, previousFileStatus.get(i), sessionId);
+//                }
+//            }
+//            throw e;
+//        }
+
         // Save exception to throw at the end
         StorageManagerException exception = null;
         try {

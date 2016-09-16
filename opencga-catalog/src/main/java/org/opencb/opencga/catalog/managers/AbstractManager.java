@@ -6,7 +6,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
-import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
@@ -30,7 +29,6 @@ import java.util.stream.Collectors;
 public abstract class AbstractManager {
 
     protected static Logger logger = LoggerFactory.getLogger(AbstractManager.class);
-    protected final AuthenticationManager authenticationManager;
     protected final AuthorizationManager authorizationManager;
     protected final AuditManager auditManager;
     protected final CatalogIOManagerFactory catalogIOManagerFactory;
@@ -53,11 +51,10 @@ public abstract class AbstractManager {
     protected final CatalogPanelDBAdaptor panelDBAdaptor;
 
     @Deprecated
-    public AbstractManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                           AuditManager auditManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory
-                                   ioManagerFactory, CatalogConfiguration catalogConfiguration) {
+    public AbstractManager(AuthorizationManager authorizationManager, AuditManager auditManager,
+                           CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                           CatalogConfiguration catalogConfiguration) {
         this.authorizationManager = authorizationManager;
-        this.authenticationManager = authenticationManager;
         this.auditManager = auditManager;
         this.catalogConfiguration = catalogConfiguration;
         this.userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
@@ -76,11 +73,10 @@ public abstract class AbstractManager {
         projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
     }
 
-    public AbstractManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                           AuditManager auditManager, CatalogManager catalogManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory,
-                           CatalogIOManagerFactory ioManagerFactory, CatalogConfiguration catalogConfiguration) {
+    public AbstractManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
+                           CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                           CatalogConfiguration catalogConfiguration) {
         this.authorizationManager = authorizationManager;
-        this.authenticationManager = authenticationManager;
         this.auditManager = auditManager;
         this.catalogConfiguration = catalogConfiguration;
         this.userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
@@ -100,11 +96,10 @@ public abstract class AbstractManager {
     }
 
     @Deprecated
-    public AbstractManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                           AuditManager auditManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory
-                                   ioManagerFactory, Properties catalogProperties) {
+    public AbstractManager(AuthorizationManager authorizationManager, AuditManager auditManager,
+                           CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                           Properties catalogProperties) {
         this.authorizationManager = authorizationManager;
-        this.authenticationManager = authenticationManager;
         this.auditManager = auditManager;
         this.catalogProperties = catalogProperties;
         this.userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();

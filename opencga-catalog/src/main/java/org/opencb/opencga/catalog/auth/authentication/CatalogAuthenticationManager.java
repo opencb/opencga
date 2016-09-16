@@ -15,7 +15,6 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
 
 import java.security.NoSuchAlgorithmException;
-import java.util.Properties;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -24,13 +23,11 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
 
     protected final CatalogUserDBAdaptor userDBAdaptor;
     protected final CatalogMetaDBAdaptor metaDBAdaptor;
-    protected final Properties catalogProperties;
     protected final CatalogConfiguration catalogConfiguration;
 
     public CatalogAuthenticationManager(CatalogDBAdaptorFactory dbAdaptorFactory, CatalogConfiguration catalogConfiguration) {
         this.userDBAdaptor = dbAdaptorFactory.getCatalogUserDBAdaptor();
         this.metaDBAdaptor = dbAdaptorFactory.getCatalogMetaDBAdaptor();
-        catalogProperties = null;
         this.catalogConfiguration = catalogConfiguration;
     }
 
