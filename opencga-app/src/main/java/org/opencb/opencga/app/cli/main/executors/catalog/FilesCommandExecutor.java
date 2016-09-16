@@ -326,7 +326,18 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
     private QueryResponse update() throws CatalogException, IOException {
         logger.debug("updating file");
-        return openCGAClient.getFileClient().update(filesCommandOptions.updateCommandOptions.id, new ObjectMap());
+        ObjectMap objectMap = new ObjectMap();
+        objectMap.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.FORMAT.key(), filesCommandOptions.updateCommandOptions.format);
+        objectMap.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), filesCommandOptions.updateCommandOptions.bioformat);
+        objectMap.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.DESCRIPTION.key(), filesCommandOptions.updateCommandOptions.description);
+        objectMap.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.ATTRIBUTES.key(), filesCommandOptions.updateCommandOptions.attributes);
+        objectMap.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.STATS.key(), filesCommandOptions.updateCommandOptions.stats);
+        objectMap.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), filesCommandOptions.updateCommandOptions.sampleIds);
+        objectMap.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.JOB_ID.key(), filesCommandOptions.updateCommandOptions.jobId);
+        objectMap.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.PATH.key(), filesCommandOptions.updateCommandOptions.path);
+        objectMap.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.NAME.key(), filesCommandOptions.updateCommandOptions.name);
+
+        return openCGAClient.getFileClient().update(filesCommandOptions.updateCommandOptions.id, objectMap);
 
     }
 
@@ -335,7 +346,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap objectMap = new ObjectMap()
                 .append("fileFormat", filesCommandOptions.uploadCommandOptions.fileFormat)
-                .append("bioFormat", filesCommandOptions.uploadCommandOptions.bioFormat)
+                .append("bioformat", filesCommandOptions.uploadCommandOptions.bioformat)
                 .append("parents", filesCommandOptions.uploadCommandOptions.parents);
 
         if (filesCommandOptions.uploadCommandOptions.catalogPath != null) {

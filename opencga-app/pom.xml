@@ -256,13 +256,14 @@
                                     <arg value="${build.dir}"/>
                                 </exec>
                                 <exec executable="mkdir">
-                                    <arg value="${build.dir}"/>
+                                    <arg value="-p"/>
+                                    <arg value="${build.dir}/conf"/>
                                 </exec>
 
                                 <echo>Copying to ${build.dir}</echo>
                                 <exec executable="cp">
                                     <arg value="-r"/>
-                                    <arg value="${app.dir}/bin"/>
+                                    <!--<arg value="${app.dir}/bin"/>-->
                                     <arg value="${project.basedir}/target/appassembler/bin"/>
                                     <arg value="${project.basedir}/target/appassembler/libs"/>
                                     <arg value="${project.basedir}/target/conf"/>
@@ -272,6 +273,13 @@
                                     <arg value="${project.basedir}/../LICENSE"/>
                                     <arg value="${project.basedir}/../README.md"/>
                                     <arg value="${build.dir}"/>
+                                </exec>
+
+                                <echo>Copying to ${build.dir}/obsolete</echo>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${app.dir}/bin"/>
+                                    <arg value="${build.dir}/bin/obsolete"/>
                                 </exec>
 
                                 <echo>Coping configuration files</echo>

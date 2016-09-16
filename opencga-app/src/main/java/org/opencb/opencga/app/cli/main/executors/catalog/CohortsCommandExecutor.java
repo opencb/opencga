@@ -143,11 +143,22 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         String variable = cohortsCommandOptions.createCommandOptions.variable;
 
         ObjectMap o = new ObjectMap();
-        o.append(CatalogCohortDBAdaptor.QueryParams.TYPE.key(),cohortsCommandOptions.createCommandOptions.type);
+        o.append(CatalogCohortDBAdaptor.QueryParams.TYPE.key(), cohortsCommandOptions.createCommandOptions.type);
         o.append(CatalogCohortDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),variableSetId);
         o.append(CatalogCohortDBAdaptor.QueryParams.DESCRIPTION.key(),description);
-        o.append("sampleIds",sampleIds);
-        o.append(CatalogCohortDBAdaptor.QueryParams.VARIABLE_NAME.key(),variable);
+        o.append("sampleIds", sampleIds);
+        o.append("variable", variable);
+        if (cohortName == null){
+            if( sampleIds != null) {
+                System.out.println("Error: The name parameter is required when you create the cohort from samples");
+                return null;
+            }else if (variableSetId != null && variable != null){
+                cohortName = "Cohort";
+            }else{
+                System.out.println("Error: Please, Insert the corrects params for create the cohort.");
+                return null;
+            }
+        }
         return openCGAClient.getCohortClient().create(studyId, cohortName, o);
     }
 

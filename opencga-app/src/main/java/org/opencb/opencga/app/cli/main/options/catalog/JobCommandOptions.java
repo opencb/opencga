@@ -67,7 +67,7 @@ public class JobCommandOptions {
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
+        @Parameter(names = {"-s","--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
         @Parameter(names = {"--name"}, description = "Job name", required = true, arity = 1)
@@ -103,7 +103,7 @@ public class JobCommandOptions {
         @Parameter(names = {"--ids"}, description = "Comma separated list of job ids", arity = 1)
         public String id;
 
-        @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
+        @Parameter(names = {"-s","--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
         @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
@@ -165,7 +165,7 @@ public class JobCommandOptions {
         @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
         public String fields;
 
-        @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
+        @Parameter(names = {"-s", "--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
         @Parameter(names = {"--ids"}, description = "Comma separated list of ids.", required = false, arity = 1)
