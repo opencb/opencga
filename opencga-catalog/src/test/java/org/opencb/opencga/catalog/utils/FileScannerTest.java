@@ -5,6 +5,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
@@ -88,7 +89,8 @@ public class FileScannerTest {
                 CatalogManagerTest.createDebugFile().toURI(), "", false, sessionIdUser).first();
 
         CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString());
-        List<File> files = new FileScanner(catalogManager).scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, false, true, sessionIdUser);
+        List<File> files = new FileScanner(catalogManager).scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, false,
+                true, sessionIdUser);
 
         files.forEach((File f) -> assertFalse(f.getAttributes().containsKey("checksum")));
         assertEquals(File.FileStatus.DELETED, getFile(file.getId()).getStatus().getName());
@@ -108,7 +110,12 @@ public class FileScannerTest {
 
         catalogManager.getFileManager().delete(Long.toString(file.getId()), new QueryOptions(), sessionIdUser);
 
-        file = catalogManager.getFile(file.getId(), sessionIdUser).first();
+        QueryResult<File> fileQueryResult = catalogManager.getFileManager().readAll(new Query()
+                        .append(CatalogFileDBAdaptor.QueryParams.ID.key(), file.getId())
+                        .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), study.getId())
+                        .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY"),
+                new QueryOptions(), sessionIdUser);
+        file = fileQueryResult.first();
         assertEquals(File.FileStatus.TRASHED, file.getStatus().getName());
 
 //        Files.delete(Paths.get(catalogManager.getFileUri(file)));
