@@ -118,7 +118,7 @@ public class VariableCommandOptions {
         @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
         public String attributes;
 
-        @Parameter(names = {"--count"}, description = "Total number of results.", required = false, arity = 0)
+        @Parameter(names = {"--count"}, description = "Total number of results. PENDING", required = false, arity = 0)
         public boolean count;
 
     }

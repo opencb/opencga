@@ -92,7 +92,7 @@ public class FileClient extends AbstractParentClient<File, FileAclEntry> {
     public QueryResponse<File> getFiles(String fileId, QueryOptions options) throws CatalogException, IOException {
         return execute(FILES_URL, fileId, "files", options, GET, File.class);
     }
-    
+
     public QueryResponse<File> delete(String fileId, ObjectMap params) throws CatalogException, IOException {
         return execute(FILES_URL, fileId, "delete", params, GET, File.class);
     }

@@ -120,7 +120,8 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putIfNotNull(QueryOptions.EXCLUDE, variableCommandOptions.searchCommandOptions.exclude);
         queryOptions.putIfNotNull(QueryOptions.LIMIT, variableCommandOptions.searchCommandOptions.limit);
         queryOptions.putIfNotNull(QueryOptions.SKIP, variableCommandOptions.searchCommandOptions.skip);
-        queryOptions.putIfNotNull("count", variableCommandOptions.searchCommandOptions.count);
+        //TODO add when fixed the ws
+        //queryOptions.putIfNotNull("count", variableCommandOptions.searchCommandOptions.count);
 
         return openCGAClient.getVariableClient().search(query, queryOptions);
     }
