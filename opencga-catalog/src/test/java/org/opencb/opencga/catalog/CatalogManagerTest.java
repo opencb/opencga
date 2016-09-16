@@ -244,7 +244,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testAdminUserExists() throws Exception {
-        QueryResult<ObjectMap> login = catalogManager.login("admin", "admin", "localhost");
+        QueryResult<ObjectMap> login = catalogManager.getUserManager().login("admin", "admin", "localhost");
         assertTrue(login.first().getString("sessionId").length() == 40);
     }
 

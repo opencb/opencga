@@ -187,13 +187,13 @@
                     <extraJvmArguments>-Xms256m -Xmx2048m</extraJvmArguments>
                     <environmentSetupFileName>${opencga.env.file}</environmentSetupFileName>
                     <programs>
-                        <program>
-                            <name>opencga-old.sh</name>
-                            <mainClass>org.opencb.opencga.app.cli.main.OpenCGAMainOld</mainClass>
-                            <platforms>
-                                <platform>unix</platform>
-                            </platforms>
-                        </program>
+                        <!--<program>-->
+                            <!--<name>opencga-old.sh</name>-->
+                            <!--<mainClass>org.opencb.opencga.app.cli.main.OpenCGAMainOld</mainClass>-->
+                            <!--<platforms>-->
+                                <!--<platform>unix</platform>-->
+                            <!--</platforms>-->
+                        <!--</program>-->
                         <program>
                             <name>opencga.sh</name>
                             <mainClass>org.opencb.opencga.app.cli.main.OpencgaMain</mainClass>

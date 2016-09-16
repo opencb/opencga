@@ -535,22 +535,34 @@ public class UserManager extends AbstractManager implements IUserManager {
         ParamUtils.checkParameter(password, "password");
         ParamUtils.checkParameter(sessionIp, "sessionIp");
 
-        QueryResult<User> user = userDBAdaptor.getUser(userId, new QueryOptions(), null);
-        if (user.getNumResults() == 0) {
-            throw new CatalogException("The user id " + userId + " does not exist.");
-        }
+        String authId;
+        QueryResult<User> user = null;
+        if (!userId.equals("admin")) {
+            user = userDBAdaptor.getUser(userId, new QueryOptions(), null);
+            if (user.getNumResults() == 0) {
+                throw new CatalogException("The user id " + userId + " does not exist.");
+            }
 
-        // Check that the authentication id is valid
-        String authId = getAuthenticationOriginId(userId);
+            // Check that the authentication id is valid
+            authId = getAuthenticationOriginId(userId);
+        } else {
+            authId = INTERNAL_AUTHORIZATION;
+        }
         AuthenticationOrigin authenticationOrigin = getAuthenticationOrigin(authId);
+
         if (authenticationOrigin == null) {
             throw new CatalogException("Could not find authentication origin " + authId + " for user " + userId);
         }
+
         if (AuthenticationOrigin.AuthenticationType.LDAP == authenticationOrigin.getType()) {
+            if (user == null) {
+                throw new CatalogException("Internal error: This error should never happen.");
+            }
             authenticationManagerMap.get(authId).authenticate(((String) user.first().getAttributes().get("LDAP_RDN")), password, true);
         } else {
             authenticationManagerMap.get(authId).authenticate(userId, password, true);
         }
+
         return catalogManager.getSessionManager().createToken(userId, sessionIp);
     }
 
