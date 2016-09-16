@@ -48,6 +48,7 @@ public class DocumentToVariantAnnotationConverter
     public static final String CT_CODON_FIELD = "codon";
     public static final String CT_STRAND_FIELD = "strand";
     public static final String CT_BIOTYPE_FIELD = "bt";
+    public static final String CT_EXON_NUMBER_FIELD = "exn";
     public static final String CT_TRANSCRIPT_ANNOT_FLAGS = "flags";
     public static final String CT_C_DNA_POSITION_FIELD = "cDnaPos";
     public static final String CT_CDS_POSITION_FIELD = "cdsPos";
@@ -204,6 +205,7 @@ public class DocumentToVariantAnnotationConverter
                             getDefault(ct, CT_ENSEMBL_TRANSCRIPT_ID_FIELD, ""),
                             getDefault(ct, CT_STRAND_FIELD, "+"),
                             getDefault(ct, CT_BIOTYPE_FIELD, ""),
+                            getDefault(ct, CT_EXON_NUMBER_FIELD, 0),
                             getDefault(ct, CT_TRANSCRIPT_ANNOT_FLAGS, Collections.emptyList()),
                             getDefault(ct, CT_C_DNA_POSITION_FIELD, 0),
                             getDefault(ct, CT_CDS_POSITION_FIELD, 0),
@@ -333,15 +335,15 @@ public class DocumentToVariantAnnotationConverter
     }
 
     private ConsequenceType buildConsequenceType(String geneName, String ensemblGeneId, String ensemblTranscriptId, String strand,
-                                                 String biotype, List<String> transcriptAnnotationFlags, Integer cDnaPosition,
-                                                 Integer cdsPosition, String codon,
+                                                 String biotype, Integer exonNumber, List<String> transcriptAnnotationFlags,
+                                                 Integer cDnaPosition, Integer cdsPosition, String codon,
                                                  List<String> soNameList, ProteinVariantAnnotation proteinVariantAnnotation) {
         List<SequenceOntologyTerm> soTerms = new ArrayList<>(soNameList.size());
         for (String soName : soNameList) {
             soTerms.add(new SequenceOntologyTerm(ConsequenceTypeMappings.getSoAccessionString(soName), soName));
         }
-        return new ConsequenceType(geneName, ensemblGeneId, ensemblTranscriptId, strand, biotype, transcriptAnnotationFlags, cDnaPosition,
-                cdsPosition, codon, proteinVariantAnnotation, soTerms);
+        return new ConsequenceType(geneName, ensemblGeneId, ensemblTranscriptId, strand, biotype, exonNumber, transcriptAnnotationFlags,
+                cDnaPosition, cdsPosition, codon, proteinVariantAnnotation, soTerms);
     }
 
     private ProteinVariantAnnotation buildProteinVariantAnnotation(Integer aaPosition, String aaReference, String aaAlternate,
@@ -432,6 +434,7 @@ public class DocumentToVariantAnnotationConverter
                 putNotNull(ct, CT_CODON_FIELD, consequenceType.getCodon());
                 putNotDefault(ct, CT_STRAND_FIELD, consequenceType.getStrand(), DEFAULT_STRAND_VALUE);
                 putNotNull(ct, CT_BIOTYPE_FIELD, consequenceType.getBiotype());
+                putNotNull(ct, CT_EXON_NUMBER_FIELD, consequenceType.getExonNumber());
                 putNotNull(ct, CT_TRANSCRIPT_ANNOT_FLAGS, consequenceType.getTranscriptAnnotationFlags());
                 putNotNull(ct, CT_C_DNA_POSITION_FIELD, consequenceType.getCdnaPosition());
                 putNotNull(ct, CT_CDS_POSITION_FIELD, consequenceType.getCdsPosition());
