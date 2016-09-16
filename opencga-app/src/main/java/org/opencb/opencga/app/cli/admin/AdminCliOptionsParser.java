@@ -465,27 +465,26 @@ public class AdminCliOptionsParser {
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
-        @Parameter(names = {"-u", "--users"}, description = "Comma separated list of user ids", arity = 1)
+        @Parameter(names = {"-u", "--users"}, description = "Comma separated list of user ids", required = true, arity = 1)
         public String users;
 
         @Parameter(names = {"-g", "--groups"}, description = "Comma separated list of group ids [PENDING]", arity = 1)
         public String groups;
 
-        @Parameter(names = {"--authOrigin"}, description = "Authentication id (as defined in the catalog configuration file) of the origin "
-                + "to be used to import users from.", arity = 1, required = true)
+        @Parameter(names = {"--auth-origin"}, description = "Authentication id (as defined in the catalog configuration file) of the origin"
+                + " to be used to import users from.", arity = 1, required = true)
         public String authOrigin;
 
         @Parameter(names = {"--type"}, description = "User account type of the users to be imported (guest or full).", arity = 1)
         public String type = Account.FULL;
 
-        @Parameter(names = {"--expirationDate"}, description = "Expiration date (DD/MM/YYYY). By default, 1 year starting from the "
+        @Parameter(names = {"--expiration-date"}, description = "Expiration date (DD/MM/YYYY). By default, 1 year starting from the "
                 + "import day", arity = 1)
         public String expDate;
 
         @Parameter(names = {"--studies"}, description = "Comma separated list of studies where the imported users will be synchronized "
                 + "with their belonging groups. If empty, users will not have any special permission.", arity = 1)
         public String studies;
-
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete the user Catalog database entry and the workspace")

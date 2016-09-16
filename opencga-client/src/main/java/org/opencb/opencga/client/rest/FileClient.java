@@ -93,16 +93,6 @@ public class FileClient extends AbstractParentClient<File, FileAclEntry> {
         return execute(FILES_URL, fileId, "files", options, GET, File.class);
     }
 
-    public QueryResponse<File> update(String fileId, ObjectMap params) throws CatalogException, IOException {
-
-        if (params.containsKey("method")) {
-            if (params.get("method").equals("POST")) {
-                execute(FILES_URL, fileId, "update", params, POST, File.class);
-            }
-        }
-        return execute(FILES_URL, fileId, "update", params, GET, File.class);
-    }
-
     public QueryResponse<File> delete(String fileId, ObjectMap params) throws CatalogException, IOException {
         return execute(FILES_URL, fileId, "delete", params, GET, File.class);
     }

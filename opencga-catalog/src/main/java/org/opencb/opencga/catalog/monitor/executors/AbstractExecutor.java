@@ -19,6 +19,7 @@ public abstract class AbstractExecutor {
     public static final String OUTDIR = "outdir";
     public static final String NUM_THREADS = "num_threads";
     public static final String MAX_MEM = "max_mem";
+    public static final String JOB_STATUS_FILE = "job.status";
 
     protected Logger logger;
     protected ObjectMapper objectMapper;
@@ -32,7 +33,7 @@ public abstract class AbstractExecutor {
     public abstract void execute(Job job) throws Exception;
 
     public String status(Path jobOutput, Job job) {
-        Path jobStatusFilePath = jobOutput.resolve("job.status");
+        Path jobStatusFilePath = jobOutput.resolve(JOB_STATUS_FILE);
         if (!jobStatusFilePath.toFile().exists()) {
             return getStatus(job);
         }

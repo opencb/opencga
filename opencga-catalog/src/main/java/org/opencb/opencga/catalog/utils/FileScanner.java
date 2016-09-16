@@ -16,9 +16,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -166,7 +166,7 @@ public class FileScanner {
     public List<File> scan(File directory, URI directoryToScan, FileScannerPolicy policy,
                            boolean calculateChecksum, boolean deleteSource, String sessionId)
             throws IOException, CatalogException {
-        return scan(directory, directoryToScan, policy, calculateChecksum, deleteSource, -1, sessionId);
+        return scan(directory, directoryToScan, policy, calculateChecksum, deleteSource, uri -> true, -1, sessionId);
     }
 
     /**
@@ -177,6 +177,7 @@ public class FileScanner {
      * @param policy                What to do when there is a file in the target path. See {@link FileScannerPolicy}
      * @param calculateChecksum     Calculates checksum of all the files in the directory to scan
      * @param deleteSource          After moving, deletes the source file. If false, force copy.
+     * @param filter                File filter. Excludes the file when this predicate returns false.
      * @param jobId                 If any, the job that has generated this files
      * @param sessionId             User sessionId
      * @return found and new files.
@@ -184,8 +185,11 @@ public class FileScanner {
      * @throws CatalogException     if a Catalog error occurs
      */
     public List<File> scan(File directory, URI directoryToScan, FileScannerPolicy policy,
-                           boolean calculateChecksum, boolean deleteSource, long jobId, String sessionId)
+                           boolean calculateChecksum, boolean deleteSource, Predicate<URI> filter, long jobId, String sessionId)
             throws IOException, CatalogException {
+        if (filter == null) {
+            filter = uri -> true;
+        }
         if (directoryToScan == null) {
             directoryToScan = catalogManager.getFileUri(directory);
         }
@@ -205,6 +209,9 @@ public class FileScanner {
         while (iterator.hasNext()) {
             long fileScanStart = System.currentTimeMillis();
             URI uri = iterator.next();
+            if (!filter.test(uri)) {
+                continue;
+            }
             URI generatedFile = directoryToScan.relativize(uri);
             String filePath = URI.create(directory.getPath()).resolve(generatedFile).toString();
 //            String filePath = Paths.get(directory.getPath(), generatedFile.toString()).toString();
@@ -223,7 +230,7 @@ public class FileScanner {
                     case DELETE:
                         logger.info("Deleting file { id:" + existingFile.getId() + ", path:\"" + existingFile.getPath() + "\" }");
                         // Delete completely the file/folder !
-                        catalogManager.getUserManager().delete(Long.toString(existingFile.getId()),
+                        catalogManager.getFileManager().delete(Long.toString(existingFile.getId()),
                                 new QueryOptions(FileManager.SKIP_TRASH, true), sessionId);
                         break;
                     case REPLACE:
@@ -296,107 +303,6 @@ public class FileScanner {
         logger.debug("Create catalog file entries: " + createFilesTime / 1000.0 + "s");
         logger.debug("Upload files: " + uploadFilesTime / 1000.0 + "s");
         logger.debug("Read metadata information: " + metadataReadTime / 1000.0 + "s");
-        return files;
-    }
-
-    public List<File> registerFiles(File directory, List<Path> filePaths, FileScannerPolicy policy,
-                                    boolean calculateChecksum, boolean deleteSource, String sessionId)
-            throws CatalogException, IOException {
-        if (!directory.getType().equals(File.Type.DIRECTORY)) {
-            throw new CatalogException("Expected folder where place the found files.");
-        }
-        long studyId = catalogManager.getStudyIdByFileId(directory.getId());
-
-        long createFilesTime = 0, uploadFilesTime = 0, metadataReadTime = 0;
-        List<File> files = new LinkedList<>();
-        FileMetadataReader fileMetadataReader = FileMetadataReader.get(catalogManager);
-
-        for (Path filePathSource : filePaths) {
-            long fileScanStart = System.currentTimeMillis();
-            URI uri = filePathSource.toUri();
-            String filePath = URI.create(directory.getPath()).resolve(filePathSource.getFileName().toString()).toString();
-
-            Query query = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), filePath);
-            QueryResult<File> searchFile = catalogManager.searchFile(studyId, query, sessionId);
-            File file = null;
-            boolean returnFile = false;
-            if (searchFile.getNumResults() != 0) {
-                File existingFile = searchFile.first();
-                logger.info("File already existing in target \"" + filePath + "\". FileScannerPolicy = " + policy);
-                switch (policy) {
-                    case DELETE:
-                        logger.info("Deleting file { id:" + existingFile.getId() + ", path:\"" + existingFile.getPath() + "\" }");
-                        // Delete completely the file/folder !
-                        catalogManager.getUserManager().delete(Long.toString(existingFile.getId()),
-                                new QueryOptions(FileManager.SKIP_TRASH, true), sessionId);
-                        break;
-                    case REPLACE:
-                        file = existingFile;
-                        break;
-                    default:
-                        throw new UnsupportedOperationException("Unimplemented policy '" + policy + "'");
-                }
-            }
-
-            long createFileTime = 0, uploadFileTime = 0, metadataFileTime = 0;
-            if (file == null) {
-                long start, end;
-                if (uri.getPath().endsWith("/")) {
-                    file = catalogManager.createFolder(studyId, Paths.get(filePath), true, null, sessionId).first();
-                } else {
-                    start = System.currentTimeMillis();
-                    File.Format format = FormatDetector.detect(uri);
-                    File.Bioformat bioformat = BioformatDetector.detect(uri);
-                    file = catalogManager.createFile(studyId, format, bioformat, filePath, "", true, -1, sessionId).first();
-                    end = System.currentTimeMillis();
-                    createFileTime = end - start;
-                    createFilesTime += createFileTime;
-
-                    /** Moves the file to the read output **/
-                    start = System.currentTimeMillis();
-                    catalogFileUtils.upload(uri, file, null, sessionId, false, false, deleteSource, calculateChecksum);
-                    end = System.currentTimeMillis();
-                    uploadFileTime = end - start;
-                    uploadFilesTime += uploadFileTime;
-                    returnFile = true;      //Return file because is new
-                }
-                logger.debug("Created new file entry for " + uri + " { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } ");
-            } else {
-                if (file.getType() == File.Type.FILE) {
-                    if (file.getStatus().getName().equals(File.FileStatus.MISSING)) {
-                        logger.info("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } recover tracking from file " + uri);
-                        logger.debug("Set status to " + File.FileStatus.READY);
-                        returnFile = true;      //Return file because was missing
-                    }
-                    long start = System.currentTimeMillis();
-                    catalogFileUtils.upload(uri, file, null, sessionId, true, true, deleteSource, calculateChecksum);
-                    long end = System.currentTimeMillis();
-                    uploadFilesTime += end - start;
-                }
-            }
-
-            try {
-                long start = System.currentTimeMillis();
-                fileMetadataReader.setMetadataInformation(file, null, null, sessionId, false);
-                long end = System.currentTimeMillis();
-                metadataFileTime = end - start;
-                metadataReadTime += metadataFileTime;
-            } catch (Exception e) {
-                logger.error("Unable to read metadata information from file "
-                        + "{ id:" + file.getId() + ", name: \"" + file.getName() + "\" }", e);
-            }
-
-            if (returnFile) { //Return only new and found files.
-                files.add(catalogManager.getFile(file.getId(), sessionId).first());
-            }
-            logger.info("Added file {}", filePath);
-            logger.debug("{}s (create {}s, upload {}s, metadata {}s)", (System.currentTimeMillis() - fileScanStart) / 1000.0,
-                    createFileTime / 1000.0, uploadFileTime / 1000.0, metadataFileTime / 1000.0);
-        }
-        logger.debug("Create catalog file entries: " + createFilesTime / 1000.0 + "s");
-        logger.debug("Upload files: " + uploadFilesTime / 1000.0 + "s");
-        logger.debug("Read metadata information: " + metadataReadTime / 1000.0 + "s");
-
         return files;
     }
 

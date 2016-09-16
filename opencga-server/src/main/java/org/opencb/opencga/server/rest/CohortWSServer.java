@@ -148,10 +148,13 @@ public class CohortWSServer extends OpenCGAWSServer {
         try {
             long cohortId = catalogManager.getCohortId(cohortStr, sessionId);
             Cohort cohort = catalogManager.getCohort(cohortId, queryOptions, sessionId).first();
-            query.put("id", cohort.getSamples());
+            if (cohort.getSamples() == null || cohort.getSamples().size() == 0) {
+                return createOkResponse(new QueryResult<>("Samples from cohort " + cohortStr, -1, 0, 0, "The cohort has no samples", "", Collections.emptyList()));
+            }
             long studyId = catalogManager.getStudyIdByCohortId(cohortId);
+            query = new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), cohort.getSamples());
             QueryResult<Sample> allSamples = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
-            allSamples.setId("getCohortSamples");
+            allSamples.setId("Samples from cohort " + cohortStr);
             return createOkResponse(allSamples);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -160,9 +163,13 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     private QueryResult<Cohort> createCohort(long studyId, String cohortName, Study.Type type, String cohortDescription, Query query,
                                              QueryOptions queryOptions) throws CatalogException {
+        //TODO CHANGE THIS for can insert the name also id(number)
         QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
         List<Long> sampleIds = new ArrayList<>(queryResult.getNumResults());
         sampleIds.addAll(queryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList()));
+        //TODO FOR THIS. Its possible change the param query to a String
+        //List<QueryResult<Sample>> queryResults = new LinkedList<>();
+        //List<Long> sampleIds = catalogManager.getSampleIds(query.get("id").toString(), sessionId);
         return catalogManager.createCohort(studyId, cohortName, type, cohortDescription, sampleIds, null, sessionId);
     }
 

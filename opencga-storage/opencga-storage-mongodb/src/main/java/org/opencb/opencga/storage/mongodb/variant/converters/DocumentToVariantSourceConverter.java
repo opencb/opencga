@@ -23,6 +23,7 @@ import com.mongodb.util.JSON;
 import org.bson.Document;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
+import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 
 import java.util.Calendar;
@@ -152,7 +153,7 @@ public class DocumentToVariantSourceConverter implements ComplexTypeConverter<Va
         Map<String, Object> meta = object.getMetadata();
         Document metadataMongo = new Document();
         for (Map.Entry<String, Object> metaEntry : meta.entrySet()) {
-            if (metaEntry.getKey().equals("variantFileHeader")) {
+            if (metaEntry.getKey().equals(VariantFileUtils.VARIANT_FILE_HEADER)) {
                 metadataMongo.append(HEADER_FIELD, metaEntry.getValue());
             } else {
                 ObjectMapper mapper = new ObjectMapper();

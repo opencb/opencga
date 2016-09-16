@@ -54,8 +54,10 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.JOB_STATUS_FILE;
 import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_STATS;
 
 /**
@@ -111,17 +113,21 @@ public class VariantFileIndexer extends AbstractFileIndexer {
                     + "boundaries.");
         }
 
-        objectMapper.writer()
-                .writeValue(outdir.resolve("job.status").toFile(), new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
+        // Outdir must be empty
+        List<URI> uris = catalogManager.getCatalogIOManagerFactory().get(outdir.toUri()).listFiles(outdir.toUri());
+        if (!uris.isEmpty()) {
+            throw new AnalysisExecutionException("Unable to execute index. Outdir '" + outdir + "' must be empty!");
+        }
+
+        writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
 
         // TODO: This hook should #updateFileInfo
         Thread hook = new Thread(() -> {
             try {
                 // If the status has not been changed by the method and is still running, we assume that the execution failed.
-                Job.JobStatus status = objectMapper.reader(Job.JobStatus.class).readValue(outdir.resolve("job.status").toFile());
+                Job.JobStatus status = objectMapper.reader(Job.JobStatus.class).readValue(outdir.resolve(JOB_STATUS_FILE).toFile());
                 if (status.getName().equalsIgnoreCase(Job.JobStatus.RUNNING)) {
-                    objectMapper.writer().writeValue(outdir.resolve("job.status").toFile(), new Job.JobStatus(Job.JobStatus.ERROR,
-                            "Job finished with an error."));
+                    writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.ERROR, "Job finished with an error."));
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -183,7 +189,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
                     QueryResult<File> fileQueryResult = fileManager.readAll(studyIdByInputFileId, query, options, sessionId);
                     inputFiles.addAll(fileQueryResult.getResult());
                 } else {
-                    throw new CatalogException(String.format("Expected file type {} or {} instead of {}",
+                    throw new CatalogException(String.format("Expected file type %s or %s instead of %s",
                             File.Type.FILE, File.Type.DIRECTORY, inputFile.getType()));
                 }
             }
@@ -299,14 +305,17 @@ public class VariantFileIndexer extends AbstractFileIndexer {
             updateFileInfo(study, filesToIndex, storageETLResults, outdir, options, sessionId);
         }
 
-        objectMapper.writer()
-                .writeValue(outdir.resolve("job.status").toFile(), new Job.JobStatus(Job.JobStatus.DONE, "Job completed"));
+        writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.DONE, "Job completed"));
         Runtime.getRuntime().removeShutdownHook(hook);
 
         // Throw the exception!
         if (exception != null) {
             throw exception;
         }
+    }
+
+    public void writeJobStatus(Path outdir, Job.JobStatus jobStatus) throws IOException {
+        objectMapper.writer().writeValue(outdir.resolve(JOB_STATUS_FILE).toFile(), jobStatus);
     }
 
     private void copyResult(Path tmpOutdirPath, long catalogPathOutDir, String sessionId) throws CatalogException, IOException {
@@ -318,15 +327,9 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         List<File> files;
         try {
             logger.info("Scanning files from {} to move to {}", tmpOutdirPath, outDir.getUri());
-            List<URI> uris = catalogManager.getCatalogIOManagerFactory().get(tmpOutdirPath.toUri()).listFiles(tmpOutdirPath.toUri());
-
-            List<Path> filePaths = new ArrayList<>(uris.size());
-            for (URI uri : uris) {
-                if (uri.toString().contains("variants.avro.gz") || uri.toString().contains("file.json.gz")) {
-                    filePaths.add(Paths.get(uri.getRawPath()));
-                }
-            }
-            files = fileScanner.registerFiles(outDir, filePaths, FileScanner.FileScannerPolicy.DELETE, true, false, sessionId);
+            // Avoid copy the job.status file!
+            Predicate<URI> fileStatusFilter = uri -> !uri.getPath().endsWith(JOB_STATUS_FILE);
+            files = fileScanner.scan(outDir, tmpOutdirPath.toUri(), FileScanner.FileScannerPolicy.DELETE, true, false, fileStatusFilter, -1, sessionId);
         } catch (IOException e) {
             logger.warn("IOException when scanning temporal directory. Error: {}", e.getMessage());
             throw e;

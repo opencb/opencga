@@ -5,16 +5,16 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
-import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.common.IOUtils;
 
 import java.io.IOException;
@@ -25,6 +25,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -88,7 +89,8 @@ public class FileScannerTest {
                 CatalogManagerTest.createDebugFile().toURI(), "", false, sessionIdUser).first();
 
         CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString());
-        List<File> files = new FileScanner(catalogManager).scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, false, true, sessionIdUser);
+        List<File> files = new FileScanner(catalogManager).scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, false,
+                true, sessionIdUser);
 
         files.forEach((File f) -> assertFalse(f.getAttributes().containsKey("checksum")));
         assertEquals(File.FileStatus.DELETED, getFile(file.getId()).getStatus().getName());
@@ -108,7 +110,12 @@ public class FileScannerTest {
 
         catalogManager.getFileManager().delete(Long.toString(file.getId()), new QueryOptions(), sessionIdUser);
 
-        file = catalogManager.getFile(file.getId(), sessionIdUser).first();
+        QueryResult<File> fileQueryResult = catalogManager.getFileManager().readAll(new Query()
+                        .append(CatalogFileDBAdaptor.QueryParams.ID.key(), file.getId())
+                        .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), study.getId())
+                        .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY"),
+                new QueryOptions(), sessionIdUser);
+        file = fileQueryResult.first();
         assertEquals(File.FileStatus.TRASHED, file.getStatus().getName());
 
 //        Files.delete(Paths.get(catalogManager.getFileUri(file)));
@@ -143,15 +150,23 @@ public class FileScannerTest {
 
     @Test
     public void testRegisterFiles() throws IOException, CatalogException {
-        CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString());
-        Files.createDirectory(directory.resolve("s/"));
-        CatalogManagerTest.createDebugFile(directory.resolve("s/file2.txt").toString());
+        Path file1 = directory.resolve("file1.txt");
+        Path file2 = directory.resolve("s/file2.txt");
+        Path folder = directory.resolve("s/");
+        Path file3 = directory.resolve("file3.txt");
+
+        CatalogManagerTest.createDebugFile(file1.toString());
+        Files.createDirectory(folder);
+        CatalogManagerTest.createDebugFile(file2.toString());
+        CatalogManagerTest.createDebugFile(file3.toString());
 
         List<Path> filePaths = new ArrayList<>(2);
-        filePaths.add(directory.resolve("file1.txt"));
-        filePaths.add(directory.resolve("s/file2.txt"));
+        filePaths.add(file1);
+        filePaths.add(file2);
         FileScanner fileScanner = new FileScanner(catalogManager);
-        List<File> files = fileScanner.registerFiles(folder, filePaths, FileScanner.FileScannerPolicy.DELETE, true, false, sessionIdUser);
+//        List<File> files = fileScanner.registerFiles(this.folder, filePaths, FileScanner.FileScannerPolicy.DELETE, true, false, sessionIdUser);
+        Predicate<URI> uriPredicate = uri -> uri.getPath().endsWith("file1.txt") || uri.getPath().endsWith("file2.txt");
+        List<File> files = fileScanner.scan(this.folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, true, false, uriPredicate, -1, sessionIdUser);
 
         assertEquals(2, files.size());
         for (File file : files) {
@@ -160,6 +175,7 @@ public class FileScannerTest {
         for (Path filePath : filePaths) {
             assertTrue(filePath.toFile().exists());
         }
+        assertTrue(file3.toFile().exists());
     }
 
 

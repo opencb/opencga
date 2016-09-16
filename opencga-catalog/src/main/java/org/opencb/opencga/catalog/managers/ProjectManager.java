@@ -16,8 +16,10 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IProjectManager;
+import org.opencb.opencga.catalog.models.Account;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Status;
+import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 
@@ -97,6 +99,17 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         if (userId.isEmpty()) {
             throw new CatalogException("The session id introduced does not correspond to any registered user.");
+        }
+
+        // Check that the account type is not guest
+        QueryResult<User> user = userDBAdaptor.getUser(userId, new QueryOptions(), null);
+        if (user.getNumResults() == 0) {
+            throw new CatalogException("Internal error happened. Could not find user " + userId);
+        }
+
+        if (Account.GUEST.equalsIgnoreCase(user.first().getAccount().getType())) {
+            throw new CatalogException("User " + userId + " has a guest account and is not authorized to create new projects. If you "
+                    + " think this might be an error, please contact with your administrator.");
         }
 
         description = description != null ? description : "";

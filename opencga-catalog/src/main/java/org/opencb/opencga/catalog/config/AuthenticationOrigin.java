@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.config;
 
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -8,11 +9,11 @@ import java.util.Map;
 public class AuthenticationOrigin {
 
     private String id;
-    private AuthenticationMode mode;
+    private AuthenticationType type;
     private String host;
     private Map<String, Object> options;
 
-    public enum AuthenticationMode {
+    public enum AuthenticationType {
         OPENCGA,
         LDAP
     }
@@ -22,11 +23,12 @@ public class AuthenticationOrigin {
     public static final String GROUPS_SEARCH = "groupsSearch";
 
     public AuthenticationOrigin() {
+        this("internal", AuthenticationType.OPENCGA.name(), "localhost", Collections.emptyMap());
     }
 
-    public AuthenticationOrigin(String id, String mode, String host, Map<String, Object> options) {
+    public AuthenticationOrigin(String id, String type, String host, Map<String, Object> options) {
         this.id = id;
-        this.mode = AuthenticationMode.valueOf(mode);
+        this.type = AuthenticationType.valueOf(type);
         this.host = host;
         this.options = options;
     }
@@ -35,7 +37,7 @@ public class AuthenticationOrigin {
     public String toString() {
         final StringBuilder sb = new StringBuilder("Auth{");
         sb.append("id='").append(id).append('\'');
-        sb.append(", mode='").append(mode).append('\'');
+        sb.append(", type='").append(type).append('\'');
         sb.append(", host='").append(host).append('\'');
         sb.append(", options=").append(options);
         sb.append('}');
@@ -51,12 +53,12 @@ public class AuthenticationOrigin {
         return this;
     }
 
-    public AuthenticationMode getMode() {
-        return mode;
+    public AuthenticationType getType() {
+        return type;
     }
 
-    public AuthenticationOrigin setMode(AuthenticationMode mode) {
-        this.mode = mode;
+    public AuthenticationOrigin setType(AuthenticationType type) {
+        this.type = type;
         return this;
     }
 

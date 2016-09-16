@@ -3,7 +3,11 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.TableConfiguration;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.mapreduce.MultiTableOutputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
@@ -15,22 +19,23 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager.OPENCGA_STORAGE_HADOOP_MAPREDUCE_SCANNER_TIMEOUT;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -42,8 +47,10 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
     public static final String CONFIG_VARIANT_FILE_IDS          = "opencga.variant.input.file_ids";
     public static final String CONFIG_VARIANT_TABLE_NAME        = "opencga.variant.table.name";
     public static final String CONFIG_VARIANT_TABLE_COMPRESSION = "opencga.variant.table.compression";
-
     public static final String TIMESTAMP                        = "opencga.variant.table.timestamp";
+
+    public static final String HBASE_KEYVALUE_SIZE_MAX = "hadoop.load.variant.hbase.client.keyvalue.maxsize";
+    public static final String HBASE_SCAN_CACHING = "hadoop.load.variant.scan.caching";
 
     private VariantTableHelper variantTablehelper;
 
@@ -65,6 +72,10 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
     @Override
     public int run(String[] args) throws Exception {
         Configuration conf = getConf();
+        int maxKeyValueSize = conf.getInt(HBASE_KEYVALUE_SIZE_MAX, 10485760); // 10MB
+        getLog().info("HBASE: set " + TableConfiguration.MAX_KEYVALUE_SIZE_KEY + " to " + maxKeyValueSize);
+        conf.setInt(TableConfiguration.MAX_KEYVALUE_SIZE_KEY, maxKeyValueSize); // always overwrite server default (usually 1MB)
+
         String inTable = conf.get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, StringUtils.EMPTY);
         String outTable = conf.get(CONFIG_VARIANT_TABLE_NAME, StringUtils.EMPTY);
         String[] fileArr = argFileArray();
@@ -111,10 +122,8 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         }
 
         /* -------------------------------*/
-        check(fileIds);
-
-        /* -------------------------------*/
         // JOB setup
+        setConf(conf);
         Job job = createJob(outTable, fileArr);
 
         // QUERY design
@@ -128,95 +137,16 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         if (!succeed) {
             getLog().error("error with job!");
         }
-        if (succeed) {
-            onSuccess();
-        } else {
-            onError();
-        }
 
         getStudyConfigurationManager().close();
 
         return succeed ? 0 : 1;
     }
 
-    protected void check(List<Integer> fileIds) throws StorageManagerException, IOException {
-        Configuration conf = getConf();
-        HBaseStudyConfigurationManager scm = getStudyConfigurationManager();
-
-        long lock = scm.lockStudy(getHelper().getStudyId());
-        studyConfiguration = loadStudyConfiguration();
-
-        List<BatchFileOperation> batches = studyConfiguration.getBatches();
-        BatchFileOperation batchFileOperation;
-        if (!batches.isEmpty()) {
-            batchFileOperation = batches.get(batches.size() - 1);
-            BatchFileOperation.Status currentStatus = batchFileOperation.currentStatus();
-            if (currentStatus != null) {
-                switch (currentStatus) {
-                    case READY:
-                        batchFileOperation = new BatchFileOperation(getJobOperationName(), fileIds, batchFileOperation.getTimestamp() + 1);
-                        break;
-                    case RUNNING:
-                        if (!conf.getBoolean(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT_RESUME, false)) {
-                            throw new StorageHadoopException("Unable to process a new batch. Ongoing batch operation: "
-                                    + batchFileOperation);
-                        }
-                        // Do not break. Resuming last loading, go to error case.
-                    case ERROR:
-                        if (batchFileOperation.getFileIds().equals(fileIds)) {
-                            LOG.info("Resuming Last batch loading due to error.");
-                        } else {
-                            throw new StorageHadoopException("Unable to resume last batch operation. "
-                                    + "Must have the same files from the previous batch: " + batchFileOperation);
-                        }
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Unknown Status " + currentStatus);
-                }
-            }
-        } else {
-            batchFileOperation = new BatchFileOperation(getJobOperationName(), fileIds, 1);
-        }
-        batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
-        batches.add(batchFileOperation);
-
-        scm.updateStudyConfiguration(studyConfiguration, new QueryOptions());
-        scm.unLockStudy(studyConfiguration.getStudyId(), lock);
-        conf.setLong(TIMESTAMP, batchFileOperation.getTimestamp());
-    }
-
-    protected void onError() {
-        try {
-            HBaseStudyConfigurationManager scm = getStudyConfigurationManager();
-            long lock = scm.lockStudy(getHelper().getStudyId());
-            studyConfiguration = scm.getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
-            BatchFileOperation batchFileOperation = studyConfiguration.getBatches().get(studyConfiguration.getBatches().size() - 1);
-            batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.ERROR);
-            scm.updateStudyConfiguration(studyConfiguration, new QueryOptions());
-            scm.unLockStudy(studyConfiguration.getStudyId(), lock);
-        } catch (IOException | StorageManagerException e) {
-            e.printStackTrace();
-        }
-    }
-
-    protected void onSuccess() {
-        try {
-            HBaseStudyConfigurationManager scm = getStudyConfigurationManager();
-            long lock = scm.lockStudy(getHelper().getStudyId());
-            studyConfiguration = scm.getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
-            BatchFileOperation batchFileOperation = studyConfiguration.getBatches().get(studyConfiguration.getBatches().size() - 1);
-            batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.READY);
-            scm.updateStudyConfiguration(studyConfiguration, new QueryOptions());
-            scm.unLockStudy(studyConfiguration.getStudyId(), lock);
-        } catch (IOException | StorageManagerException e) {
-            e.printStackTrace();
-        }
-    }
-
     /**
      * Give the name of the action that the job is doing.
      *
-     * Used to create the jobName and as {@link BatchFileOperation#operationName}
+     * Used to create the jobName and as {@link org.opencb.opencga.storage.core.metadata.BatchFileOperation#operationName}
      *
      * e.g. : "Delete", "Load", "Annotate", ...
      *
@@ -260,7 +190,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
                 if (!job.isComplete()) {
                     job.killJob();
                 }
-                onError();
+//                onError();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -280,16 +210,32 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
                 + " on VariantTable '" + outTable + "'");
         job.getConfiguration().set("mapreduce.job.user.classpath.first", "true");
         job.setJarByClass(getMapperClass());    // class that contains mapper
+
+        // Increase the ScannerTimeoutPeriod to avoid ScannerTimeoutExceptions
+        // See opencb/opencga#352 for more info.
+        int scannerTimeout = getConf().getInt(OPENCGA_STORAGE_HADOOP_MAPREDUCE_SCANNER_TIMEOUT,
+                getConf().getInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, HConstants.DEFAULT_HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD));
+        job.getConfiguration().setInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, scannerTimeout);
+
         return job;
     }
 
     protected Scan createScan(VariantTableHelper gh, String[] fileArr) {
         Scan scan = new Scan();
-        scan.setCaching(100);        // 1 is the default in Scan, which will be bad for MapReduce jobs
+        int caching = getConf().getInt(HBASE_SCAN_CACHING, 50);
+        getLog().info("Scan set Caching to " + caching);
+        scan.setCaching(caching);        // 1 is the default in Scan, 200 caused timeout issues.
         scan.setCacheBlocks(false);  // don't set to true for MR jobs
+        // https://hbase.apache.org/book.html#perf.hbase.client.seek
+        int lookAhead = getConf().getInt("hadoop.load.variant.scan.lookahead", -1);
+        if (lookAhead > 0) {
+            getLog().info("Scan set LOOKAHEAD to " + lookAhead);
+            scan.setAttribute(Scan.HINT_LOOKAHEAD, Bytes.toBytes(lookAhead));
+        }
         // specify return columns (file IDs)
         for (String fileIdStr : fileArr) {
             int id = Integer.parseInt(fileIdStr);
+            getLog().info("Add file to scan filter: " + fileIdStr);
             scan.addColumn(gh.getColumnFamily(), Bytes.toBytes(ArchiveHelper.getColumnName(id)));
         }
         scan.addColumn(gh.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
@@ -336,8 +282,9 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
                         genomeHelper.getConf().get(CONFIG_VARIANT_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName())));
     }
 
-    public static String[] configure(String[] args, Configuration conf) throws Exception {
+    public static String[] configure(String[] args, Configured configured) throws Exception {
         // info https://code.google.com/p/temapred/wiki/HbaseWithJava
+        Configuration conf = configured.getConf();
         if (conf == null) {
             throw new NullPointerException("Provided Configuration is null!!!");
         }
@@ -356,7 +303,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
             return null;
         }
 
-        HBaseManager.addHBaseSettings(conf, toolArgs[0]);
+        conf = HBaseManager.addHBaseSettings(conf, toolArgs[0]);
         conf.set(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, toolArgs[1]);
         conf.set(CONFIG_VARIANT_TABLE_NAME, toolArgs[2]);
         conf.set(GenomeHelper.CONFIG_STUDY_ID, toolArgs[3]);
@@ -364,6 +311,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         for (int i = fixedSizeArgs; i < toolArgs.length; i = i + 2) {
             conf.set(toolArgs[i], toolArgs[i + 1]);
         }
+        configured.setConf(conf);
         return toolArgs;
     }
 }

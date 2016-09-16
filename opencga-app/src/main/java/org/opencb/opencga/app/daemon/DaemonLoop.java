@@ -50,6 +50,7 @@ import java.util.Properties;
 /**
  * Created by jacobo on 23/10/14.
  */
+@Deprecated
 public class DaemonLoop implements Runnable {
 
     public static final String PORT = "OPENCGA.APP.DAEMON.PORT";
@@ -69,6 +70,7 @@ public class DaemonLoop implements Runnable {
     private ExecutionOutputRecorder analysisOutputRecorder;
     private String sessionId;
 
+    @Deprecated
     public DaemonLoop(Properties properties) {
         this.properties = properties;
         try {

@@ -45,6 +45,10 @@ public class StudyConfiguration {
     private Map<Integer, Set<Integer>> cohorts;
 
     private LinkedHashSet<Integer> indexedFiles;    //Use LinkedHashSet instead of Set to ensure indexing order
+    @Deprecated
+    /**
+     * @deprecated Read from variant source. Use VariantSourceDBAdaptor or similar.
+     */
     private Map<Integer, String> headers;
     private Map<Integer, LinkedHashSet<Integer>> samplesInFiles; //Use LinkedHashSet instead of Set to ensure sample order
     private Set<Integer> calculatedStats;

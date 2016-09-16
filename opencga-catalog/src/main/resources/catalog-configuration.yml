@@ -59,10 +59,11 @@ database:
   options:
     authenticationDatabase: ${OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE}
 
-authenticationOrigins:
-- id: ${OPENCGA.CATALOG.AUTHENTICATION.ID}
-  mode: ${OPENCGA.CATALOG.AUTHENTICATION.MODE}
-  host: ${OPENCGA.CATALOG.AUTHENTICATION.HOST}
-  options:
-    usersSearch: ${OPENCGA.CATALOG.AUTHENTICATION.OPTIONS.USERS}
-    groupsSearch: ${OPENCGA.CATALOG.AUTHENTICATION.OPTIONS.GROUPS}
+# LDAP configuration example
+#authenticationOrigins:
+#- id: ldap            # Any id
+#  type: LDAP          # At the moment, we only support LDAP
+#  host: ldap://localhost:9000
+#  options:
+#    usersSearch: dc=ge,dc=co,dc=uk # Base search to look for the users
+#    groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Base search to look for the groups

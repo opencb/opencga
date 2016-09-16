@@ -53,6 +53,7 @@ public class  SgeManager {
     public static final String EXECUTION_ERROR = "execution error";
 
     protected static Logger logger = LoggerFactory.getLogger(SgeManager.class);
+    @Deprecated
     private static Properties analysisProperties = Config.getAnalysisProperties();
 
     static {

@@ -186,7 +186,7 @@ public class IndexDaemon extends MonitorParentDaemon {
                 }
             }
 
-//            Path jobStatusFile = tmpOutdirPath.resolve("job.status");
+//            Path jobStatusFile = tmpOutdirPath.resolve(JOB_STATUS_FILE);
 //            if (jobStatusFile.toFile().exists()) {
 //                try {
 //                    jobStatus = objectReader.readValue(jobStatusFile.toFile());
@@ -236,7 +236,7 @@ public class IndexDaemon extends MonitorParentDaemon {
                 }
             }
 //
-//            Path jobStatusFile = tmpOutdirPath.resolve("job.status");
+//            Path jobStatusFile = tmpOutdirPath.resolve(JOB_STATUS_FILE);
 //            if (jobStatusFile.toFile().exists()) {
 //                Job.JobStatus jobStatus = null;
 //                try {

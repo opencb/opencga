@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
@@ -25,7 +24,6 @@ import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.audit.CatalogAuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
-import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
@@ -56,23 +54,6 @@ import java.util.*;
 
 public class CatalogManager implements AutoCloseable {
 
-    /* DBAdaptor properties */
-    public static final String CATALOG_DB_USER = "OPENCGA.CATALOG.DB.USER";
-    public static final String CATALOG_DB_DATABASE = "OPENCGA.CATALOG.DB.DATABASE";
-    public static final String CATALOG_DB_PASSWORD = "OPENCGA.CATALOG.DB.PASSWORD";
-    public static final String CATALOG_DB_HOSTS = "OPENCGA.CATALOG.DB.HOSTS";
-    public static final String CATALOG_DB_AUTHENTICATION_DB = "OPENCGA.CATALOG.DB.AUTHENTICATION.DB";
-    /* IOManager properties */
-    public static final String CATALOG_MAIN_ROOTDIR = "OPENCGA.CATALOG.MAIN.ROOTDIR";
-    public static final String CATALOG_JOBS_ROOTDIR = "OPENCGA.CATALOG.JOBS.ROOTDIR";
-    /* Manager policies properties */
-    public static final String CATALOG_MANAGER_POLICY_CREATION_USER = "OPENCGA.CATALOG.MANAGER.POLICY.CREATION_USER";
-    /* Other properties */
-    public static final String CATALOG_MAIL_USER = "CATALOG.MAIL.USER";
-    public static final String CATALOG_MAIL_PASSWORD = "CATALOG.MAIL.PASSWORD";
-    public static final String CATALOG_MAIL_HOST = "CATALOG.MAIL.HOST";
-    public static final String CATALOG_MAIL_PORT = "CATALOG.MAIL.PORT";
-
     protected static Logger logger = LoggerFactory.getLogger(CatalogManager.class);
 
     private CatalogDBAdaptorFactory catalogDBAdaptorFactory;
@@ -87,23 +68,12 @@ public class CatalogManager implements AutoCloseable {
     private IIndividualManager individualManager;
     private ISampleManager sampleManager;
     private ICohortManager cohortManager;
-    private Properties properties;
 //    private AuthenticationManager authenticationManager;
     private CatalogAuditManager auditManager;
     private SessionManager sessionManager;
     private AuthorizationManager authorizationManager;
 
     private CatalogConfiguration catalogConfiguration;
-
-    @Deprecated
-    public CatalogManager(CatalogDBAdaptorFactory catalogDBAdaptorFactory, Properties catalogProperties)
-            throws IOException, CatalogIOException {
-        this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
-        this.properties = catalogProperties;
-
-        configureIOManager(properties);
-        configureManagers(properties);
-    }
 
     public CatalogManager(CatalogConfiguration catalogConfiguration) throws CatalogException {
         this.catalogConfiguration = catalogConfiguration;
@@ -115,9 +85,9 @@ public class CatalogManager implements AutoCloseable {
         configureManagers(catalogConfiguration);
 //        if (!catalogDBAdaptorFactory.isCatalogDBReady()) {
 //            catalogDBAdaptorFactory.installCatalogDB(catalogConfiguration);
-////            Admin admin = catalogConfiguration.getAdmin();
-////            admin.setPassword(CatalogAuthenticationManager.cipherPassword(admin.getPassword()));
-////            catalogDBAdaptorFactory.initializeCatalogDB(admin);
+//            Admin admin = catalogConfiguration.getAdmin();
+//            admin.setPassword(CatalogAuthenticationManager.cipherPassword(admin.getPassword()));
+//            catalogDBAdaptorFactory.initializeCatalogDB(admin);
 //        }
     }
 
@@ -133,53 +103,6 @@ public class CatalogManager implements AutoCloseable {
             database = "opencga_catalog";
         }
         return database;
-    }
-
-    @Deprecated
-    public CatalogManager(Properties catalogProperties) throws CatalogException {
-        this.properties = catalogProperties;
-        logger.debug("CatalogManager configureDBAdaptor");
-        configureDBAdaptor(properties);
-        logger.debug("CatalogManager configureIOManager");
-        configureIOManager(properties);
-        logger.debug("CatalogManager configureManager");
-        configureManagers(properties);
-
-        if (!catalogDBAdaptorFactory.isCatalogDBReady()) {
-            catalogDBAdaptorFactory.initializeCatalogDB(new Admin());
-            User admin = new User("admin", "admin", "admin@email.com", "", "openCB", User.UserStatus.READY);
-            catalogDBAdaptorFactory.getCatalogUserDBAdaptor().insertUser(admin, null);
-//            authenticationManager.newPassword("admin", "admin");
-        }
-    }
-
-
-    @Deprecated
-    private void configureManagers(Properties properties) {
-//        catalogClient = new CatalogDBClient(this);
-        //TODO: Check if catalog is empty
-        //TODO: Setup catalog if it's empty.
-//
-//        auditManager = new CatalogAuditManager(catalogDBAdaptorFactory.getCatalogAuditDbAdaptor(), catalogDBAdaptorFactory
-//                .getCatalogUserDBAdaptor(), authorizationManager, properties);
-//        authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptorFactory.getCatalogUserDBAdaptor(), properties);
-//        authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager);
-//        userManager = new UserManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
-//                catalogIOManagerFactory, properties);
-//        fileManager = new FileManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
-//                catalogIOManagerFactory, properties);
-//        studyManager = new StudyManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
-//                catalogIOManagerFactory, properties);
-//        projectManager = new ProjectManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
-//                catalogIOManagerFactory, properties);
-//        jobManager = new JobManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
-//                catalogIOManagerFactory, catalogConfiguration);
-//        sampleManager = new SampleManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
-//                catalogIOManagerFactory, properties);
-//        individualManager = new IndividualManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
-//                catalogIOManagerFactory, properties);
-        throw new NotImplementedException("Configure managers does not take a Properties object any more. "
-                + "Use CatalogConfiguration instead");
     }
 
     private void configureManagers(CatalogConfiguration catalogConfiguration) {
@@ -295,40 +218,8 @@ public class CatalogManager implements AutoCloseable {
         return catalogIOManagerFactory;
     }
 
-    @Deprecated
-    private void configureIOManager(Properties properties) throws CatalogIOException {
-        catalogIOManagerFactory = new CatalogIOManagerFactory(properties);
-    }
-
     private void configureIOManager(CatalogConfiguration properties) throws CatalogIOException {
         catalogIOManagerFactory = new CatalogIOManagerFactory(properties);
-    }
-
-    @Deprecated
-    private void configureDBAdaptor(Properties properties)
-            throws CatalogDBException {
-
-        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", properties.getProperty(CATALOG_DB_USER, null))
-                .add("password", properties.getProperty(CATALOG_DB_PASSWORD, null))
-                .add("authenticationDatabase", properties.getProperty(CATALOG_DB_AUTHENTICATION_DB, null))
-                .build();
-
-        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : properties.getProperty(CATALOG_DB_HOSTS, "localhost").split(",")) {
-            if (hostPort.contains(":")) {
-                String[] split = hostPort.split(":");
-                Integer port = Integer.valueOf(split[1]);
-                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
-            } else {
-                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
-            }
-        }
-//        catalogDBAdaptorFactory = new CatalogMongoDBAdaptor(dataStoreServerAddresses, mongoDBConfiguration,
-//                properties.getProperty(CATALOG_DB_DATABASE, ""));
-        catalogDBAdaptorFactory = new CatalogMongoDBAdaptorFactory(dataStoreServerAddresses, mongoDBConfiguration,
-                properties.getProperty(CATALOG_DB_DATABASE, "")) {
-        };
     }
 
     private void configureDBAdaptor(CatalogConfiguration catalogConfiguration) throws CatalogDBException {
@@ -349,10 +240,6 @@ public class CatalogManager implements AutoCloseable {
                 dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
             }
         }
-//        catalogDBAdaptorFactory = new CatalogMongoDBAdaptor(dataStoreServerAddresses, mongoDBConfiguration,
-//                properties.getProperty(CATALOG_DB_DATABASE, ""));
-//        catalogDBAdaptorFactory = new CatalogMongoDBAdaptorFactory(dataStoreServerAddresses, mongoDBConfiguration,
-//                catalogConfiguration.getDatabase().getDatabase()) {};
         catalogDBAdaptorFactory = new CatalogMongoDBAdaptorFactory(dataStoreServerAddresses, mongoDBConfiguration,
                 getCatalogDatabase()) {};
     }

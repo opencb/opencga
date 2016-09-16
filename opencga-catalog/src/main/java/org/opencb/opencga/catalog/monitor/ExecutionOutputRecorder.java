@@ -39,6 +39,8 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.JOB_STATUS_FILE;
+
 /*
  * Created by jacobo on 4/11/14.
  *
@@ -93,13 +95,13 @@ public class ExecutionOutputRecorder {
         logger.debug("Moving data from temporary folder to catalog folder...");
 
         // Delete job.status file
-        Path path = Paths.get(tmpOutdirPath.toString(), "job.status");
+        Path path = Paths.get(tmpOutdirPath.toString(), JOB_STATUS_FILE);
         if (path.toFile().exists()) {
-            logger.info("Deleting job.status file: {}", path.toUri());
+            logger.info("Deleting " + JOB_STATUS_FILE + " file: {}", path.toUri());
             try {
                 ioManager.deleteFile(path.toUri());
             } catch (CatalogIOException e) {
-                logger.error("Could not delete job.status file");
+                logger.error("Could not delete " + JOB_STATUS_FILE + " file");
                 throw e;
             }
         }
@@ -119,7 +121,7 @@ public class ExecutionOutputRecorder {
         List<File> files;
         try {
             logger.info("Scanning files from {} to move to {}", outDir.getPath(), tmpOutdirPath);
-            files = fileScanner.scan(outDir, tmpOutDirUri, fileScannerPolicy, calculateChecksum, true, job.getId(), sessionId);
+            files = fileScanner.scan(outDir, tmpOutDirUri, fileScannerPolicy, calculateChecksum, true, uri -> true, job.getId(), sessionId);
         } catch (IOException e) {
             logger.warn("IOException when scanning temporal directory. Error: {}", e.getMessage());
             throw e;
@@ -176,7 +178,7 @@ public class ExecutionOutputRecorder {
                 jobStatus.setName(Job.JobStatus.ERROR);
                 jobStatus.setMessage("The job finished with an error");
             } else {
-                logger.error("This block should never be executed. Accepted status in job.status file are DONE and ERROR");
+                logger.error("This block should never be executed. Accepted status in " + JOB_STATUS_FILE + " file are DONE and ERROR");
                 jobStatus.setName(Job.JobStatus.ERROR);
                 jobStatus.setMessage("The finished with an unexpected error");
             }
@@ -191,7 +193,7 @@ public class ExecutionOutputRecorder {
 
 //    @Deprecated
 //    public void postProcessJob(Job job) throws CatalogException, IOException {
-//        Path path = Paths.get(this.tmpOutDirPath.toString(), "job.status");
+//        Path path = Paths.get(this.tmpOutDirPath.toString(), JOB_STATUS_FILE);
 //        logger.info("POST PROCESS: {}", path.toUri());
 //        Job.JobStatus jobStatus = objectMapper.reader(Job.JobStatus.class).readValue(path.toFile());
 //        if (jobStatus != null) {

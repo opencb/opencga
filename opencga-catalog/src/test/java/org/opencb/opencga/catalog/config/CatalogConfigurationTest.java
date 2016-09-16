@@ -43,11 +43,11 @@ public class CatalogConfigurationTest {
         catalogConfiguration.setExecution(new Execution());
 
         List<AuthenticationOrigin> authenticationOriginList = new ArrayList<>();
-        authenticationOriginList.add(new AuthenticationOrigin("opencga", AuthenticationOrigin.AuthenticationMode.OPENCGA.toString(),
+        authenticationOriginList.add(new AuthenticationOrigin("opencga", AuthenticationOrigin.AuthenticationType.OPENCGA.toString(),
                 "localhost", Collections.emptyMap()));
         Map<String, Object> myMap = new HashMap<>();
         myMap.put("ou", "People");
-        authenticationOriginList.add(new AuthenticationOrigin("opencga", AuthenticationOrigin.AuthenticationMode.LDAP.toString(),
+        authenticationOriginList.add(new AuthenticationOrigin("opencga", AuthenticationOrigin.AuthenticationType.LDAP.toString(),
                 "ldap://10.10.0.20:389", myMap));
         catalogConfiguration.setAuthenticationOrigins(authenticationOriginList);
 

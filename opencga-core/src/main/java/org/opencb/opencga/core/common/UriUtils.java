@@ -25,10 +25,13 @@ public class UriUtils {
     }
 
     public static URI createDirectoryUri(String input) throws URISyntaxException {
-        if(!input.endsWith("/")) {
-            input += "/";
+        URI uri = createUri(input);
+        // If path does not ends with / , create a new URI with path + "/"
+        if(!uri.getPath().endsWith("/")) {
+            uri = new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(),
+                    uri.getPath() + "/", uri.getQuery(), uri.getFragment());
         }
-        return createUri(input);
+        return uri;
     }
 
 }

@@ -16,11 +16,11 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.QueryResult;
 
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.*;
 
 /**
  * Created on 05/07/16
@@ -102,6 +102,18 @@ public class VariantMatchers {
                 return actual.getConsequenceTypes().stream().map(ConsequenceType::getGeneName).collect(Collectors.toList());
             }
         };
+    }
+
+    public static Matcher<VariantAnnotation> hasGenes(Collection<String> genes) {
+        return hasGenes(hasItems(genes.toArray(new String[genes.size()])));
+    }
+
+    public static Matcher<VariantAnnotation> hasAnyGeneOf(Collection<String> genes) {
+        LinkedList<Matcher<? super Collection<String>>> any = new LinkedList<>();
+        for (String gene : genes) {
+            any.add(hasItem(gene));
+        }
+        return hasGenes(anyOf(any));
     }
 
     public static Matcher<VariantAnnotation> hasSO(Matcher<? super Collection<String>> subMatcher) {

@@ -22,6 +22,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
 
+import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.JOB_STATUS_FILE;
+
 /*
  * Created on 26/11/15.
  *
@@ -227,10 +229,10 @@ public class LocalExecutorManager implements ExecutorManager {
 
         ObjectMapper objectMapper = new ObjectMapper();
         Path outdir = Paths.get((String) job.getAttributes().get(TMP_OUT_DIR));
-        Job.JobStatus status = objectMapper.reader(Job.JobStatus.class).readValue(outdir.resolve("job.status").toFile());
+        Job.JobStatus status = objectMapper.reader(Job.JobStatus.class).readValue(outdir.resolve(JOB_STATUS_FILE).toFile());
         /** Change status to READY or ERROR **/
         if (exitValue == 0 && StringUtils.isEmpty(error)) {
-            objectMapper.writer().writeValue(outdir.resolve("job.status").toFile(), new Job.JobStatus(Job.JobStatus.DONE,
+            objectMapper.writer().writeValue(outdir.resolve(JOB_STATUS_FILE).toFile(), new Job.JobStatus(Job.JobStatus.DONE,
                     "Job finished."));
 //            catalogManager.modifyJob(job.getId(), new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.READY),
 //                    sessionId);
@@ -243,7 +245,7 @@ public class LocalExecutorManager implements ExecutorManager {
             parameters.put(CatalogJobDBAdaptor.QueryParams.ERROR.key(), error);
             parameters.put(CatalogJobDBAdaptor.QueryParams.ERROR_DESCRIPTION.key(), Job.ERROR_DESCRIPTIONS.get(error));
             catalogManager.modifyJob(job.getId(), parameters, sessionId);
-            objectMapper.writer().writeValue(outdir.resolve("job.status").toFile(), new Job.JobStatus(Job.JobStatus.ERROR,
+            objectMapper.writer().writeValue(outdir.resolve(JOB_STATUS_FILE).toFile(), new Job.JobStatus(Job.JobStatus.ERROR,
                     "Job finished with error."));
         }
 
