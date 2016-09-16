@@ -337,7 +337,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         objectMap.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.PATH.key(), filesCommandOptions.updateCommandOptions.path);
         objectMap.putIfNotEmpty(CatalogFileDBAdaptor.QueryParams.NAME.key(), filesCommandOptions.updateCommandOptions.name);
 
-        return openCGAClient.getFileClient().update(filesCommandOptions.updateCommandOptions.id, new ObjectMap());
+        return openCGAClient.getFileClient().update(filesCommandOptions.updateCommandOptions.id, objectMap);
 
     }
 
