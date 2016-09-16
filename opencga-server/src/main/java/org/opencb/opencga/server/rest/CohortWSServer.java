@@ -148,10 +148,13 @@ public class CohortWSServer extends OpenCGAWSServer {
         try {
             long cohortId = catalogManager.getCohortId(cohortStr, sessionId);
             Cohort cohort = catalogManager.getCohort(cohortId, queryOptions, sessionId).first();
-            query.put("id", cohort.getSamples());
+            if (cohort.getSamples() == null || cohort.getSamples().size() == 0) {
+                return createOkResponse(new QueryResult<>("Samples from cohort " + cohortStr, -1, 0, 0, "The cohort has no samples", "", Collections.emptyList()));
+            }
             long studyId = catalogManager.getStudyIdByCohortId(cohortId);
+            query = new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), cohort.getSamples());
             QueryResult<Sample> allSamples = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
-            allSamples.setId("getCohortSamples");
+            allSamples.setId("Samples from cohort " + cohortStr);
             return createOkResponse(allSamples);
         } catch (Exception e) {
             return createErrorResponse(e);
