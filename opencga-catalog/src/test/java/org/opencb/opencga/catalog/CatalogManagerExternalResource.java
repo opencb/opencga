@@ -82,7 +82,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
         return opencgaHome;
     }
 
-    public static void clearCatalog(CatalogConfiguration catalogConfiguration) throws IOException {
+    public static void clearCatalog(CatalogConfiguration catalogConfiguration) throws IOException, CatalogException {
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
         for (String hostPort : catalogConfiguration.getDatabase().getHosts()) {
             if (hostPort.contains(":")) {
@@ -94,6 +94,11 @@ public class CatalogManagerExternalResource extends ExternalResource {
             }
         }
         MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
+
+        if (catalogManager == null) {
+            catalogManager = new CatalogManager(catalogConfiguration);
+        }
+
 //        MongoDataStore db = mongoManager.get(catalogConfiguration.getDatabase().getDatabase());
         MongoDataStore db = mongoManager.get(catalogManager.getCatalogDatabase());
         db.getDb().drop();
