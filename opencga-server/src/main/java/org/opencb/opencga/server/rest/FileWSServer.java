@@ -17,7 +17,6 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
-import org.apache.commons.collections.map.LinkedMap;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
@@ -1347,6 +1346,9 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     private String convertPath(String path) {
+        if (path == null) {
+            return null;
+        }
         if (path.contains("/") || !path.contains(":")) {
             return path;
         }
@@ -1356,20 +1358,22 @@ public class FileWSServer extends OpenCGAWSServer {
         } else {
             // The path will probably contain the study as well and those : should remain
             int position = path.indexOf(":");
-            return path.substring(0, position+1) + path.substring(position+1).replace(":", "/");
+            return path.substring(0, position + 1) + path.substring(position + 1).replace(":", "/");
         }
     }
 
     private List<String> convertPathList(String path) {
-        if (path != null && path.contains(",")) {
+        if (path == null) {
+            return Collections.emptyList();
+        } else if (path.contains(",")) {
             String[] split = path.split(",");
-            List pathList = new ArrayList(split.length);
+            List<String> pathList = new ArrayList<>(split.length);
             for (String s : split) {
                 pathList.add(convertPath(s));
             }
             return pathList;
         } else {
-            return Arrays.asList(convertPath(path));
+            return Collections.singletonList(convertPath(path));
         }
     }
 
