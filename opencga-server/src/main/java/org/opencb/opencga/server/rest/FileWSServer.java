@@ -139,9 +139,9 @@ public class FileWSServer extends OpenCGAWSServer {
                                  @QueryParam("parents") @DefaultValue("false") boolean parents) {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
-            String[] folderList = (String[]) convertPathList(folders).toArray();
+            List<String> folderList = convertPathList(folders);
 
-            List<QueryResult> queryResultList = new ArrayList<>(folderList.length);
+            List<QueryResult> queryResultList = new ArrayList<>(folderList.size());
             for (String folder : folderList) {
                 try {
                     java.nio.file.Path folderPath = Paths.get(convertPath(folder));
@@ -630,7 +630,7 @@ public class FileWSServer extends OpenCGAWSServer {
         logger.info("ObjectMap: {}", params);
 
         try {
-            Object[] fileIds = convertPathList(fileIdStr).toArray();
+            List<String> fileIds = convertPathList(fileIdStr);
             QueryResult queryResult = catalogManager.getFileManager().index(StringUtils.join(fileIds, ","), "VCF", params, sessionId);
             return createOkResponse(queryResult);
         } catch(Exception e) {
