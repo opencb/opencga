@@ -1444,24 +1444,30 @@ public class FileManager extends AbstractManager implements IFileManager {
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_FILES);
 
         pathDestiny = ParamUtils.defaultString(pathDestiny, "");
-        if (pathDestiny.startsWith("/")) {
-            pathDestiny.substring(1);
+        if (pathDestiny.length() == 1 && (pathDestiny.equals(".") || pathDestiny.equals("/"))) {
+            pathDestiny = "";
+        } else {
+            if (pathDestiny.startsWith("/")) {
+                pathDestiny.substring(1);
+            }
+            if (!pathDestiny.isEmpty() && !pathDestiny.endsWith("/")) {
+                pathDestiny = pathDestiny + "/";
+            }
         }
-        if (!pathDestiny.isEmpty() && !pathDestiny.endsWith("/")) {
+        pathDestiny = Paths.get(pathDestiny).resolve(Paths.get(uriOrigin).getFileName()).toString();
+        if (Paths.get(uriOrigin).toFile().isDirectory()) {
             pathDestiny = pathDestiny + "/";
         }
 
         // Check if the uri was already linked to that same path
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.URI.key(), "~^" + uriOrigin + "[^/]*/?$")
+                .append(FileDBAdaptor.QueryParams.URI.key(), uriOrigin)
 //                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), pathDestiny)
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!="
                         + File.FileStatus.REMOVED)
+                .append(FileDBAdaptor.QueryParams.PATH.key(), pathDestiny)
                 .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), true);
-        if (!pathDestiny.isEmpty()) {
-            query.append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + pathDestiny + "[^/]*/?$");
-        }
 
         if (fileDBAdaptor.count(query).first() > 0) {
             // Create a regular expression on URI to return everything linked from that URI
@@ -1486,7 +1492,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         // Check if the uri was linked to other path
         query = new Query()
-                .append(FileDBAdaptor.QueryParams.URI.key(), "~^" + uriOrigin + "[^/]*/?$")
+                .append(FileDBAdaptor.QueryParams.URI.key(), uriOrigin)
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!="
                         + File.FileStatus.REMOVED)
@@ -1550,6 +1556,16 @@ public class FileManager extends AbstractManager implements IFileManager {
                 // Check if the user has permissions to link files in the directory
                 long fileId = fileDBAdaptor.getId(studyId, pathDestiny);
                 authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.CREATE);
+
+                if (Paths.get(uriOrigin).toFile().isDirectory()) {
+                    // Create the folder with external
+                    String name = Paths.get(uriOrigin).getFileName().toString();
+                    File folder = new File(-1, name, File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, uriOrigin,
+                            pathDestiny, TimeUtils.getTime(), TimeUtils.getTime(), description,
+                            new File.FileStatus(File.FileStatus.READY), true, 0, -1, Collections.emptyList(), -1, Collections.emptyList(),
+                            Collections.emptyList(), null, Collections.emptyMap(), Collections.emptyMap());
+                    fileDBAdaptor.insert(folder, studyId, new QueryOptions());
+                }
             }
         }
 

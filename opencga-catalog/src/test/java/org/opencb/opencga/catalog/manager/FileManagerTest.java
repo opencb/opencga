@@ -252,15 +252,15 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void testLinkFolder() throws CatalogException, IOException {
-        // We will link the same folders that are already created in this study into another folder
+//        // We will link the same folders that are already created in this study into another folder
         URI uri = Paths.get(catalogManager.getStudyUri(studyId)).resolve("data").toUri();
-        long folderId = catalogManager.searchFile(studyId, new Query(FileDBAdaptor.QueryParams.PATH.key(), "data/"), null,
-                sessionIdUser).first().getId();
-        int numFiles = catalogManager.getAllFilesInFolder(folderId, null, sessionIdUser).getNumResults();
-
-        catalogManager.link(uri, "data", Long.toString(studyId), new ObjectMap(), sessionIdUser);
-        int numFilesAfterLink = catalogManager.getAllFilesInFolder(folderId, null, sessionIdUser).getNumResults();
-        assertEquals("Linking the same folders should not change the number of files in catalog", numFiles, numFilesAfterLink);
+//        long folderId = catalogManager.searchFile(studyId, new Query(FileDBAdaptor.QueryParams.PATH.key(), "data/"), null,
+//                sessionIdUser).first().getId();
+//        int numFiles = catalogManager.getAllFilesInFolder(folderId, null, sessionIdUser).getNumResults();
+//
+//        catalogManager.link(uri, "data/", Long.toString(studyId), new ObjectMap(), sessionIdUser);
+//        int numFilesAfterLink = catalogManager.getAllFilesInFolder(folderId, null, sessionIdUser).getNumResults();
+//        assertEquals("Linking the same folders should not change the number of files in catalog", numFiles, numFilesAfterLink);
 
         // Now we try to create it into a folder that does not exist with parents = true
         catalogManager.link(uri, "myDirectory", Long.toString(studyId), new ObjectMap("parents", true), sessionIdUser);
@@ -269,15 +269,23 @@ public class FileManagerTest extends GenericTest {
                         .append(FileDBAdaptor.QueryParams.PATH.key(), "myDirectory/"),
                 null, sessionIdUser);
         assertEquals(1, folderQueryResult.getNumResults());
+        assertTrue(!folderQueryResult.first().isExternal());
+
+        folderQueryResult = catalogManager.searchFile(studyId, new Query()
+                        .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(FileDBAdaptor.QueryParams.PATH.key(), "myDirectory/data/"),
+                null, sessionIdUser);
+        assertEquals(1, folderQueryResult.getNumResults());
         assertTrue(folderQueryResult.first().isExternal());
+
         folderQueryResult = catalogManager.searchFile(studyId, new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                .append(FileDBAdaptor.QueryParams.PATH.key(), "myDirectory/test/"), null, sessionIdUser);
+                .append(FileDBAdaptor.QueryParams.PATH.key(), "myDirectory/data/test/"), null, sessionIdUser);
         assertEquals(1, folderQueryResult.getNumResults());
         assertTrue(folderQueryResult.first().isExternal());
         folderQueryResult = catalogManager.searchFile(studyId, new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                .append(FileDBAdaptor.QueryParams.PATH.key(), "myDirectory/test/folder/"), null, sessionIdUser);
+                .append(FileDBAdaptor.QueryParams.PATH.key(), "myDirectory/data/test/folder/"), null, sessionIdUser);
         assertEquals(1, folderQueryResult.getNumResults());
         assertTrue(folderQueryResult.first().isExternal());
 
@@ -298,21 +306,23 @@ public class FileManagerTest extends GenericTest {
         catalogManager.link(uri, "myDirectory2", Long.toString(studyId), new ObjectMap(), sessionIdUser);
     }
 
-    // This test is just to make sure that the paths once we have linked do not start with /
+
     @Test
     public void testLinkFolder3() throws CatalogException, IOException {
         URI uri = Paths.get(catalogManager.getStudyUri(studyId)).resolve("data").toUri();
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("already exists.");
         catalogManager.link(uri, null, Long.toString(studyId), new ObjectMap(), sessionIdUser);
 
-        // Make sure that the path of the files linked do not start with /
-        Query query = new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), true);
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.PATH.key());
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(query, queryOptions, sessionIdUser);
-        assertEquals(5, fileQueryResult.getNumResults());
-        for (File file : fileQueryResult.getResult()) {
-            assertTrue(!file.getPath().startsWith("/"));
-        }
+//        // Make sure that the path of the files linked do not start with /
+//        Query query = new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+//                .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), true);
+//        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.PATH.key());
+//        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(query, queryOptions, sessionIdUser);
+//        assertEquals(5, fileQueryResult.getNumResults());
+//        for (File file : fileQueryResult.getResult()) {
+//            assertTrue(!file.getPath().startsWith("/"));
+//        }
     }
 
     // This test will make sure that we can link several times the same uri into the same path with same results and without crashing
@@ -320,10 +330,11 @@ public class FileManagerTest extends GenericTest {
     @Test
     public void testLinkFolder4() throws CatalogException, IOException {
         URI uri = Paths.get(catalogManager.getStudyUri(studyId)).resolve("data").toUri();
-        QueryResult<File> allFiles = catalogManager.link(uri, null, Long.toString(studyId), new ObjectMap(), sessionIdUser);
-        assertEquals(5, allFiles.getNumResults());
+        ObjectMap params = new ObjectMap("parents", true);
+        QueryResult<File> allFiles = catalogManager.link(uri, "test/myLinkedFolder/", Long.toString(studyId), params, sessionIdUser);
+        assertEquals(6, allFiles.getNumResults());
 
-        QueryResult<File> sameAllFiles = catalogManager.link(uri, null, Long.toString(studyId), new ObjectMap(), sessionIdUser);
+        QueryResult<File> sameAllFiles = catalogManager.link(uri, "test/myLinkedFolder/", Long.toString(studyId), params, sessionIdUser);
         assertEquals(allFiles.getNumResults(), sameAllFiles.getNumResults());
 
         List<File> result = allFiles.getResult();
@@ -352,9 +363,9 @@ public class FileManagerTest extends GenericTest {
         System.out.println("Number of files/folders linked = " + fileQueryResultLinked.getNumResults());
 
         // Now we try to unlink them
-        catalogManager.unlink("myDirectory/", null, sessionIdUser);
+        catalogManager.unlink("myDirectory/data/", null, sessionIdUser);
         fileQueryResultLinked = catalogManager.searchFile(studyId, query, sessionIdUser);
-        assertEquals(0, fileQueryResultLinked.getNumResults());
+        assertEquals(1, fileQueryResultLinked.getNumResults());
 
         query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
