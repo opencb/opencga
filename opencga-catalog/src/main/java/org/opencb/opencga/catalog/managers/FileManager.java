@@ -303,7 +303,8 @@ public class FileManager extends AbstractManager implements IFileManager {
                 index.setTransformedFile(new FileIndex.TransformedFile(avroFile.getId(), json.getId()));
             }
             String status = vcf.getIndex().getStatus().getName();
-            if (FileIndex.IndexStatus.NONE.equals(status) || FileIndex.IndexStatus.TRANSFORMING.equals(status)) {
+            if (FileIndex.IndexStatus.NONE.equals(status)) {
+                // If TRANSFORMED, TRANSFORMING, etc, do not modify the index status
                 index.setStatus(new FileIndex.IndexStatus(FileIndex.IndexStatus.TRANSFORMED));
             }
             params = new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), index);
