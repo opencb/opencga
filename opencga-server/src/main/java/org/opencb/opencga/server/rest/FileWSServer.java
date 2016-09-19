@@ -139,9 +139,9 @@ public class FileWSServer extends OpenCGAWSServer {
                                  @QueryParam("parents") @DefaultValue("false") boolean parents) {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
-            String[] folderList = (String[]) convertPathList(folders).toArray();
+            List<String> folderList = convertPathList(folders);
 
-            List<QueryResult> queryResultList = new ArrayList<>(folderList.length);
+            List<QueryResult> queryResultList = new ArrayList<>(folderList.size());
             for (String folder : folderList) {
                 try {
                     java.nio.file.Path folderPath = Paths.get(convertPath(folder));
@@ -630,7 +630,7 @@ public class FileWSServer extends OpenCGAWSServer {
         logger.info("ObjectMap: {}", params);
 
         try {
-            Object[] fileIds = convertPathList(fileIdStr).toArray();
+            List<String> fileIds = convertPathList(fileIdStr);
             QueryResult queryResult = catalogManager.getFileManager().index(StringUtils.join(fileIds, ","), "VCF", params, sessionId);
             return createOkResponse(queryResult);
         } catch(Exception e) {
@@ -1346,6 +1346,9 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     private String convertPath(String path) {
+        if (path == null) {
+            return null;
+        }
         if (path.contains("/") || !path.contains(":")) {
             return path;
         }
@@ -1355,20 +1358,22 @@ public class FileWSServer extends OpenCGAWSServer {
         } else {
             // The path will probably contain the study as well and those : should remain
             int position = path.indexOf(":");
-            return path.substring(0, position+1) + path.substring(position+1).replace(":", "/");
+            return path.substring(0, position + 1) + path.substring(position + 1).replace(":", "/");
         }
     }
 
     private List<String> convertPathList(String path) {
-        if (path != null && path.contains(",")) {
+        if (path == null) {
+            return Collections.emptyList();
+        } else if (path.contains(",")) {
             String[] split = path.split(",");
-            List pathList = new ArrayList(split.length);
+            List<String> pathList = new ArrayList<>(split.length);
             for (String s : split) {
                 pathList.add(convertPath(s));
             }
             return pathList;
         } else {
-            return Arrays.asList(convertPath(path));
+            return Collections.singletonList(convertPath(path));
         }
     }
 
