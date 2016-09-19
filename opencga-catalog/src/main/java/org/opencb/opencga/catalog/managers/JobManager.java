@@ -270,7 +270,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         }
 
         // FIXME: Pass the toolId
-        Job job = new Job(name, userId, toolName, description, commandLine, outDir.getId(), tmpOutDirUri, inputFiles);
+        Job job = new Job(name, userId, toolName, description, commandLine, outDir.getId(), inputFiles);
         job.setOutput(outputFiles);
         job.setStatus(status);
         job.setStartTime(startTime);

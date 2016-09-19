@@ -143,7 +143,7 @@ public class JobFactory {
             jobQueryResult = new QueryResult<>("simulatedJob", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(
                     new Job(-10, jobName, catalogManager.getUserIdBySessionId(sessionId), toolName,
                             TimeUtils.getTime(), description, start, System.currentTimeMillis(), "", commandLine, -1,
-                            new Job.JobStatus(Job.JobStatus.PREPARED), -1, outDir.getId(), temporalOutDirUri, inputFiles, Collections.emptyList(),
+                            new Job.JobStatus(Job.JobStatus.PREPARED), -1, outDir.getId(), inputFiles, Collections.emptyList(),
                             null, attributes, resourceManagerAttributes)));
         } else {
             if (execute) {

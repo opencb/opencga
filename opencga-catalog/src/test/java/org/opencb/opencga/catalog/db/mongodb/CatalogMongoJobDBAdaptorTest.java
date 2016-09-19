@@ -45,7 +45,7 @@ public class CatalogMongoJobDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     public void deleteJobTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
 
-        Job job = catalogJobDBAdaptor.createJob(studyId, new Job("name", user3.getId(), "", "", "", 4, null, Collections.<Long>emptyList
+        Job job = catalogJobDBAdaptor.createJob(studyId, new Job("name", user3.getId(), "", "", "", 4, Collections.<Long>emptyList
                 ()), null).first();
         long jobId = job.getId();
         assertEquals(Job.JobStatus.PREPARED, job.getStatus().getName());
@@ -58,7 +58,7 @@ public class CatalogMongoJobDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     public void deleteJobTest2() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
 
-        Job job = catalogJobDBAdaptor.createJob(studyId, new Job("name", user3.getId(), "", "", "", 4, null, Collections.<Long>emptyList
+        Job job = catalogJobDBAdaptor.createJob(studyId, new Job("name", user3.getId(), "", "", "", 4, Collections.<Long>emptyList
                 ()), null).first();
         long jobId = job.getId();
         assertEquals(Job.JobStatus.PREPARED, job.getStatus().getName());
@@ -88,7 +88,7 @@ public class CatalogMongoJobDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     public void getJobTest() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
 
-        Job job = catalogJobDBAdaptor.createJob(studyId, new Job("name", user3.getId(), "", "", "", 4, null, Collections.<Long>emptyList
+        Job job = catalogJobDBAdaptor.createJob(studyId, new Job("name", user3.getId(), "", "", "", 4, Collections.<Long>emptyList
                 ()), null).first();
         long jobId = job.getId();
 
@@ -107,7 +107,7 @@ public class CatalogMongoJobDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     @Test
     public void incJobVisits() throws CatalogException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        Job jobBefore = catalogJobDBAdaptor.createJob(studyId, new Job("name", user3.getId(), "", "", "", 4, null, Collections
+        Job jobBefore = catalogJobDBAdaptor.createJob(studyId, new Job("name", user3.getId(), "", "", "", 4, Collections
                 .<Long>emptyList()), null).first();
         long jobId = jobBefore.getId();
 

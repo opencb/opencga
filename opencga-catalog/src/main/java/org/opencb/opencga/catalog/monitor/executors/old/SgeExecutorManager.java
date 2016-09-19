@@ -28,11 +28,12 @@ public class SgeExecutorManager implements ExecutorManager {
         this.sessionId = sessionId;
     }
 
+    @Deprecated
     @Override
     public QueryResult<Job> run(Job job) throws Exception {
         // TODO: Lock job before submit. Avoid double submission
-        SgeManager.queueJob(job.getToolName(), job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME).toString(),
-                -1, job.getTmpOutDirUri().getPath(), job.getCommandLine(), null, "job." + job.getId());
+//        SgeManager.queueJob(job.getToolName(), job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME).toString(),
+//                -1, job.getTmpOutDirUri().getPath(), job.getCommandLine(), null, "job." + job.getId());
         return catalogManager.modifyJob(job.getId(), new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED),
                 sessionId);
     }

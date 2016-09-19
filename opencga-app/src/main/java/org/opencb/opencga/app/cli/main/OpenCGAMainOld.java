@@ -903,20 +903,20 @@ public class OpenCGAMainOld {
                             throw new Exception("Job status != DONE. Need --force to continue");
                         }
 
-                        /** Record output **/
-                        ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, sessionId);
-                        if (c.discardOutput) {
-                            CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(job.getTmpOutDirUri());
-                            if (ioManager.exists(job.getTmpOutDirUri())) {
-                                logger.info("Deleting temporal job output folder: {}", job.getTmpOutDirUri());
-                                ioManager.deleteDirectory(job.getTmpOutDirUri());
-                            } else {
-                                logger.info("Temporal job output folder already removed: {}", job.getTmpOutDirUri());
-                            }
-                        } else {
-                            outputRecorder.recordJobOutput(job);
-                        }
-                        outputRecorder.postProcessJob(job, c.error);
+//                        /** Record output **/
+//                        ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, sessionId);
+//                        if (c.discardOutput) {
+//                            CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(job.getTmpOutDirUri());
+//                            if (ioManager.exists(job.getTmpOutDirUri())) {
+//                                logger.info("Deleting temporal job output folder: {}", job.getTmpOutDirUri());
+//                                ioManager.deleteDirectory(job.getTmpOutDirUri());
+//                            } else {
+//                                logger.info("Temporal job output folder already removed: {}", job.getTmpOutDirUri());
+//                            }
+//                        } else {
+//                            outputRecorder.recordJobOutput(job);
+//                        }
+//                        outputRecorder.postProcessJob(job, c.error);
 
                         /** Change status to ERROR or READY **/
                         ObjectMap parameters = new ObjectMap();
@@ -955,7 +955,8 @@ public class OpenCGAMainOld {
                             for (Iterator<Job> iterator = allJobs.getResult().iterator(); iterator.hasNext(); ) {
                                 Job job = iterator.next();
                                 System.out.format("Job - %s [%d] - %s\n", job.getName(), job.getId(), job.getDescription());
-                                URI tmpOutDirUri = job.getTmpOutDirUri();
+//                                URI tmpOutDirUri = job.getTmpOutDirUri();
+                                URI tmpOutDirUri = null;
                                 CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutDirUri);
                                 try {
                                     ioManager.listFilesStream(tmpOutDirUri)
