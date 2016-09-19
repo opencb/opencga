@@ -215,7 +215,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getCohortClient().getStats(cohortsCommandOptions.statsCommandOptions.id, query, queryOptions);
     }
 
-    private QueryResponse<Cohort> groupBy() throws CatalogException, IOException {
+    private QueryResponse<ObjectMap> groupBy() throws CatalogException, IOException {
         logger.debug("Group by cohorts");
 
         ObjectMap objectMap = new ObjectMap();

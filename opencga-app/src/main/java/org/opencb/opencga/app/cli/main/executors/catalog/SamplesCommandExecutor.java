@@ -211,7 +211,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getSampleClient().delete(samplesCommandOptions.deleteCommandOptions.id, objectMap);
     }
 
-    private QueryResponse<Sample> groupBy() throws CatalogException, IOException {
+    private QueryResponse<ObjectMap> groupBy() throws CatalogException, IOException {
         logger.debug("Group By samples");
 
         ObjectMap objectMap = new ObjectMap();

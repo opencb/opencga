@@ -112,11 +112,9 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<VariableSet> search() throws CatalogException, IOException {
         logger.debug("Searching variable");
         Query query = new Query();
-<<<<<<< HEAD
-        query.put(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(), variableCommandOptions.searchCommandOptions.studyId);
-=======
+
         query.put(SampleDBAdaptor.QueryParams.STUDY_ID.key(),variableCommandOptions.searchCommandOptions.studyId);
->>>>>>> c56dd34e46b4430ab012a2a7236b0ecc8e43b996
+
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotNull("id", variableCommandOptions.searchCommandOptions.id);
