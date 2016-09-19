@@ -44,6 +44,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -391,10 +392,16 @@ public class VariantFileIndexer extends AbstractFileIndexer {
 
         Map<String, StorageETLResult> map = storageETLResults
                 .stream()
-                .collect(Collectors.toMap(s -> Paths.get(s.getInput().getPath()).getFileName().toString(), i -> i));
-
+                .collect(Collectors.toMap(s -> {
+                    String input = s.getInput().getPath();
+                    String inputFileName = Paths.get(input).getFileName().toString();
+                    // Input file may be the transformed one. Convert into original file.
+                    return VariantReaderUtils.getOriginalFromTransformedFile(inputFileName);
+                }, i -> i));
 
         for (File indexedFile : filesToIndex) {
+            // Fetch from catalog. {@link #copyResult} may modify the content
+            indexedFile = catalogManager.getFile(indexedFile.getId(), sessionId).first();
             // Suppose that the missing results are due to errors, and those files were not indexed.
             StorageETLResult storageETLResult = map.get(indexedFile.getName());
 
