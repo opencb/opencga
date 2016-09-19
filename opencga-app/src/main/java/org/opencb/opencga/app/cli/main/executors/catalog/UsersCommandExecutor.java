@@ -21,10 +21,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.catalog.UserCommandOptions;
-import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
+import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
@@ -99,12 +98,12 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Creating user...");
 
         ObjectMap params = new ObjectMap()
-                .append(CatalogUserDBAdaptor.QueryParams.NAME.key(), usersCommandOptions.createCommandOptions.userName)
-                .append(CatalogUserDBAdaptor.QueryParams.EMAIL.key(), usersCommandOptions.createCommandOptions.userEmail)
-                .append(CatalogUserDBAdaptor.QueryParams.PASSWORD.key(), usersCommandOptions.createCommandOptions.userPassword);
+                .append(UserDBAdaptor.QueryParams.NAME.key(), usersCommandOptions.createCommandOptions.userName)
+                .append(UserDBAdaptor.QueryParams.EMAIL.key(), usersCommandOptions.createCommandOptions.userEmail)
+                .append(UserDBAdaptor.QueryParams.PASSWORD.key(), usersCommandOptions.createCommandOptions.userPassword);
 
         if (usersCommandOptions.createCommandOptions.userOrganization != null) {
-            params.append(CatalogUserDBAdaptor.QueryParams.ORGANIZATION.key(), usersCommandOptions.createCommandOptions.userOrganization);
+            params.append(UserDBAdaptor.QueryParams.ORGANIZATION.key(), usersCommandOptions.createCommandOptions.userOrganization);
         }
 
         QueryResponse<User> userQueryResponse = openCGAClient.getUserClient().create(usersCommandOptions.createCommandOptions.user,
@@ -154,7 +153,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, usersCommandOptions.infoCommandOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, usersCommandOptions.infoCommandOptions.exclude);
-        queryOptions.putIfNotEmpty(CatalogUserDBAdaptor.QueryParams.LAST_MODIFIED.key(), usersCommandOptions.infoCommandOptions.lastModified);
+        queryOptions.putIfNotEmpty(UserDBAdaptor.QueryParams.LAST_MODIFIED.key(), usersCommandOptions.infoCommandOptions.lastModified);
 
         return openCGAClient.getUserClient().get(queryOptions);
     }
@@ -225,10 +224,10 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap objectMap = new ObjectMap();
 
-        objectMap.putIfNotEmpty(CatalogUserDBAdaptor.QueryParams.NAME.key(), usersCommandOptions.updateCommandOptions.name);
-        objectMap.putIfNotEmpty(CatalogUserDBAdaptor.QueryParams.EMAIL.key(), usersCommandOptions.updateCommandOptions.email);
-        objectMap.putIfNotEmpty(CatalogUserDBAdaptor.QueryParams.ORGANIZATION.key(), usersCommandOptions.updateCommandOptions.organization);
-        objectMap.putIfNotEmpty(CatalogUserDBAdaptor.QueryParams.ATTRIBUTES.key(), usersCommandOptions.updateCommandOptions.attributes);
+        objectMap.putIfNotEmpty(UserDBAdaptor.QueryParams.NAME.key(), usersCommandOptions.updateCommandOptions.name);
+        objectMap.putIfNotEmpty(UserDBAdaptor.QueryParams.EMAIL.key(), usersCommandOptions.updateCommandOptions.email);
+        objectMap.putIfNotEmpty(UserDBAdaptor.QueryParams.ORGANIZATION.key(), usersCommandOptions.updateCommandOptions.organization);
+        objectMap.putIfNotEmpty(UserDBAdaptor.QueryParams.ATTRIBUTES.key(), usersCommandOptions.updateCommandOptions.attributes);
         objectMap.putIfNotEmpty("configs", usersCommandOptions.updateCommandOptions.configs);
 
         return openCGAClient.getUserClient().update(usersCommandOptions.updateCommandOptions.user, objectMap);

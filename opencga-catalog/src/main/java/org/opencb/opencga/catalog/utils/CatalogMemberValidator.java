@@ -1,7 +1,7 @@
 package org.opencb.opencga.catalog.utils;
 
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Group;
 
@@ -26,7 +26,7 @@ public class CatalogMemberValidator {
      * @param members List of members
      * @throws CatalogDBException CatalogDBException
      */
-    public static void checkMembers(CatalogDBAdaptorFactory dbAdaptorFactory, long studyId, List<String> members)
+    public static void checkMembers(DBAdaptorFactory dbAdaptorFactory, long studyId, List<String> members)
             throws CatalogDBException {
         for (String member : members) {
             checkMember(dbAdaptorFactory, studyId, member);
@@ -46,7 +46,7 @@ public class CatalogMemberValidator {
      * @param member member
      * @throws CatalogDBException CatalogDBException
      */
-    public static void checkMember(CatalogDBAdaptorFactory dbAdaptorFactory, long studyId, String member)
+    public static void checkMember(DBAdaptorFactory dbAdaptorFactory, long studyId, String member)
             throws CatalogDBException {
         if (member.equals("*") || member.equals("anonymous")) {
             return;
@@ -57,7 +57,7 @@ public class CatalogMemberValidator {
                 throw CatalogDBException.idNotFound("Group", member);
             }
         } else {
-            dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(member);
+            dbAdaptorFactory.getCatalogUserDBAdaptor().checkId(member);
         }
     }
 

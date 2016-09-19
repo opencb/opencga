@@ -25,8 +25,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
@@ -48,12 +48,12 @@ public class CatalogStudyConfigurationFactory {
             .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name", "projects.studies.files.path",
                     "projects.studies.files.sampleIds", "projects.studies.files.attributes.variantSource.metadata.variantFileHeader"));
     public static final Query ALL_FILES_QUERY = new Query()
-            .append(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), Arrays.asList(File.Bioformat.VARIANT, File.Bioformat.ALIGNMENT));
+            .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), Arrays.asList(File.Bioformat.VARIANT, File.Bioformat.ALIGNMENT));
 
     public static final QueryOptions INDEXED_FILES_QUERY_OPTIONS = new QueryOptions()
             .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name", "projects.studies.files.path"));
     public static final Query INDEXED_FILES_QUERY = new Query()
-            .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
+            .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
 
     public static final QueryOptions SAMPLES_QUERY_OPTIONS = new QueryOptions("include", Arrays.asList("projects.studies.samples.id", "projects.studies.samples.name"));
 
@@ -61,7 +61,7 @@ public class CatalogStudyConfigurationFactory {
     public static final QueryOptions COHORTS_QUERY_OPTIONS = new QueryOptions();
 
     public static final QueryOptions INVALID_COHORTS_QUERY_OPTIONS = new QueryOptions()
-            .append(CatalogCohortDBAdaptor.QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.INVALID)
+            .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.INVALID)
             .append("include", Arrays.asList("projects.studies.cohorts.name", "projects.studies.cohorts.id", "projects.studies.cohorts.status"));
     protected static Logger logger = LoggerFactory.getLogger(CatalogStudyConfigurationFactory.class);
 
@@ -246,7 +246,7 @@ public class CatalogStudyConfigurationFactory {
         //Check if any cohort stat has been updated
         if (!studyConfiguration.getCalculatedStats().isEmpty()) {
             for (Cohort cohort : catalogManager.getAllCohorts(studyConfiguration.getStudyId(),
-                    new Query(CatalogCohortDBAdaptor.QueryParams.ID.key(), new ArrayList<>(studyConfiguration.getCalculatedStats())),
+                    new Query(CohortDBAdaptor.QueryParams.ID.key(), new ArrayList<>(studyConfiguration.getCalculatedStats())),
                     new QueryOptions(), sessionId).getResult()) {
                 if (cohort.getStatus() == null || !cohort.getStatus().getName().equals(Cohort.CohortStatus.READY)) {
                     logger.debug("Cohort \"{}\":{} change status from {} to {}", cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.CohortStatus.READY);
@@ -258,7 +258,7 @@ public class CatalogStudyConfigurationFactory {
         //Check if any cohort stat has been invalidated
         if (!studyConfiguration.getInvalidStats().isEmpty()) {
             for (Cohort cohort : catalogManager.getAllCohorts(studyConfiguration.getStudyId(),
-                    new Query(CatalogCohortDBAdaptor.QueryParams.ID.key(), new ArrayList<>(studyConfiguration.getInvalidStats())),
+                    new Query(CohortDBAdaptor.QueryParams.ID.key(), new ArrayList<>(studyConfiguration.getInvalidStats())),
                     new QueryOptions(), sessionId).getResult()) {
                 if (cohort.getStatus() == null || !cohort.getStatus().getName().equals(Cohort.CohortStatus.INVALID)) {
                     logger.debug("Cohort \"{}\":{} change status from {} to {}", cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.CohortStatus.INVALID);

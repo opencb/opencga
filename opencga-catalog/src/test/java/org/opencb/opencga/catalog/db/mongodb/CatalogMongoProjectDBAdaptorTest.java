@@ -24,15 +24,15 @@ public class CatalogMongoProjectDBAdaptorTest extends CatalogMongoDBAdaptorTest 
     public void createProjectTest() throws CatalogException, JsonProcessingException {
         Project p = new Project("Project about some genomes", "1000G", "Today", "Cool", new Status(), "", 1000, "");
         LinkedList<AclEntry> acl = new LinkedList<>();
-        System.out.println(catalogProjectDBAdaptor.createProject(user1.getId(), p, null));
+        System.out.println(catalogProjectDBAdaptor.insert(p, user1.getId(), null));
         p = new Project("Project about some more genomes", "2000G", "Tomorrow", "Cool", new Status(), "", 3000, "");
-        System.out.println(catalogProjectDBAdaptor.createProject(user1.getId(), p, null));
+        System.out.println(catalogProjectDBAdaptor.insert(p, user1.getId(), null));
         p = new Project("Project management project", "pmp", "yesterday", "it is a system", new Status(), "", 2000, "");
-        System.out.println(catalogProjectDBAdaptor.createProject(user2.getId(), p, null));
-        System.out.println(catalogProjectDBAdaptor.createProject(user1.getId(), p, null));
+        System.out.println(catalogProjectDBAdaptor.insert(p, user2.getId(), null));
+        System.out.println(catalogProjectDBAdaptor.insert(p, user1.getId(), null));
 
         try {
-            System.out.println(catalogProjectDBAdaptor.createProject(user1.getId(), p, null));
+            System.out.println(catalogProjectDBAdaptor.insert(p, user1.getId(), null));
             fail("Expected \"projectAlias already exists\" exception");
         } catch (CatalogDBException e) {
             System.out.println(e);
@@ -41,27 +41,27 @@ public class CatalogMongoProjectDBAdaptorTest extends CatalogMongoDBAdaptorTest 
 
     @Test
     public void getProjectIdTest() throws CatalogDBException {
-        assertTrue(catalogProjectDBAdaptor.getProjectId(user3.getId(), user3.getProjects().get(0).getAlias()) != -1);
-        assertTrue(catalogProjectDBAdaptor.getProjectId(user3.getId(), "nonExistingProject") == -1);
+        assertTrue(catalogProjectDBAdaptor.getId(user3.getId(), user3.getProjects().get(0).getAlias()) != -1);
+        assertTrue(catalogProjectDBAdaptor.getId(user3.getId(), "nonExistingProject") == -1);
     }
 
 
     @Test
     public void getProjectTest() throws CatalogDBException {
-        long projectId = catalogProjectDBAdaptor.getProjectId(user3.getId(), user3.getProjects().get(0).getAlias());
+        long projectId = catalogProjectDBAdaptor.getId(user3.getId(), user3.getProjects().get(0).getAlias());
         System.out.println("projectId = " + projectId);
-        QueryResult<Project> project = catalogProjectDBAdaptor.getProject(projectId, null);
+        QueryResult<Project> project = catalogProjectDBAdaptor.get(projectId, null);
         System.out.println(project);
         assertNotNull(project.first());
 
         thrown.expect(CatalogDBException.class);    //"Expected \"bad id\" exception"
-        catalogProjectDBAdaptor.getProject(-100, null);
+        catalogProjectDBAdaptor.get(-100, null);
     }
 
     @Test
     public void deleteProjectTest() throws CatalogException {
         Project p = new Project("Project about some more genomes", "2000G", "Tomorrow", "Cool", new Status(), "", 3000, "");
-        QueryResult<Project> result = catalogProjectDBAdaptor.createProject(user1.getId(), p, null);
+        QueryResult<Project> result = catalogProjectDBAdaptor.insert(p, user1.getId(), null);
         System.out.println(result.first().getStatus());
         p = result.first();
         QueryResult<Project> queryResult = catalogProjectDBAdaptor.delete(p.getId(), new QueryOptions());
@@ -77,7 +77,7 @@ public class CatalogMongoProjectDBAdaptorTest extends CatalogMongoDBAdaptorTest 
 
     @Test
     public void getAllProjects() throws CatalogDBException {
-        QueryResult<Project> allProjects = catalogProjectDBAdaptor.getAllProjects(user3.getId(), null);
+        QueryResult<Project> allProjects = catalogProjectDBAdaptor.get(user3.getId(), null);
         System.out.println(allProjects);
         assertTrue(!allProjects.getResult().isEmpty());
     }
@@ -93,20 +93,20 @@ public class CatalogMongoProjectDBAdaptorTest extends CatalogMongoDBAdaptorTest 
      */
     @Test
     public void renameProjectTest() throws CatalogException {
-        Project p1 = catalogProjectDBAdaptor.createProject(user1.getId(), new Project("project1", "p1", "Tomorrow", "Cool", new Status(),
-                "", 3000, ""), null).first();
-        Project p2 = catalogProjectDBAdaptor.createProject(user1.getId(), new Project("project2", "p2", "Tomorrow", "Cool", new Status(),
-                "", 3000, ""), null).first();
-        System.out.println(catalogProjectDBAdaptor.renameProjectAlias(p1.getId(), "newpmp"));
+        Project p1 = catalogProjectDBAdaptor.insert(new Project("project1", "p1", "Tomorrow", "Cool", new Status(),
+                "", 3000, ""), user1.getId(), null).first();
+        Project p2 = catalogProjectDBAdaptor.insert(new Project("project2", "p2", "Tomorrow", "Cool", new Status(),
+                "", 3000, ""), user1.getId(), null).first();
+        System.out.println(catalogProjectDBAdaptor.renameAlias(p1.getId(), "newpmp"));
 
         try {
-            System.out.println(catalogProjectDBAdaptor.renameProjectAlias(-1, "falseProject"));
+            System.out.println(catalogProjectDBAdaptor.renameAlias(-1, "falseProject"));
             fail("renamed project with projectId=-1");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
         }
         try {
-            System.out.println(catalogProjectDBAdaptor.renameProjectAlias(p1.getId(), p2.getAlias()));
+            System.out.println(catalogProjectDBAdaptor.renameAlias(p1.getId(), p2.getAlias()));
             fail("renamed project with name collision");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
@@ -119,37 +119,5 @@ public class CatalogMongoProjectDBAdaptorTest extends CatalogMongoDBAdaptorTest 
 //            System.out.println("correct exception: " + e);
 //        }
     }
-
-    @Test
-    public void projectAclTest() throws CatalogDBException {
-        long projectId = user3.getProjects().get(0).getId();
-        List<AclEntry> acls = catalogProjectDBAdaptor.getProjectAcl(projectId, user3.getId()).getResult();
-        assertTrue(acls.isEmpty());
-        acls = catalogProjectDBAdaptor.getProjectAcl(projectId, user2.getId()).getResult();
-        assertTrue(acls.isEmpty());
-        acls = catalogProjectDBAdaptor.getProjectAcl(projectId, "noUser").getResult();
-        assertTrue(acls.isEmpty());
-
-
-        AclEntry granted = new AclEntry("jmmut", true, true, true, false);
-        System.out.println(catalogProjectDBAdaptor.setProjectAcl(projectId, granted));  // overwrites
-        AclEntry jmmut = catalogProjectDBAdaptor.getProjectAcl(projectId, "jmmut").first();
-        System.out.println(jmmut);
-        assertTrue(jmmut.equals(granted));
-
-        granted.setUserId("imedina");
-        System.out.println(catalogProjectDBAdaptor.setProjectAcl(projectId, granted));  // just pushes
-        AclEntry imedina = catalogProjectDBAdaptor.getProjectAcl(projectId, "imedina").first();
-        System.out.println(imedina);
-        assertTrue(imedina.equals(granted));
-        try {
-            granted.setUserId("noUser");
-            catalogProjectDBAdaptor.setProjectAcl(projectId, granted);
-            fail("error: expected exception");
-        } catch (CatalogDBException e) {
-            System.out.println("correct exception: " + e);
-        }
-    }
-
 
 }

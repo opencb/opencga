@@ -17,7 +17,6 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -25,8 +24,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
-import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.exception.VersionException;
@@ -95,7 +94,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 }
                 for (String s : variable.getAllowedValues()) {
                     QueryOptions samplesQOptions = new QueryOptions("include", "projects.studies.samples.id");
-                    Query samplesQuery = new Query(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + "." + variableName, s)
+                    Query samplesQuery = new Query(SampleDBAdaptor.QueryParams.ANNOTATION.key() + "." + variableName, s)
                             .append("variableSetId", variableSetId);
                     cohorts.add(createCohort(studyId, s, type, cohortDescription, samplesQuery, samplesQOptions));
                 }
@@ -152,7 +151,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 return createOkResponse(new QueryResult<>("Samples from cohort " + cohortStr, -1, 0, 0, "The cohort has no samples", "", Collections.emptyList()));
             }
             long studyId = catalogManager.getStudyIdByCohortId(cohortId);
-            query = new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), cohort.getSamples());
+            query = new Query(SampleDBAdaptor.QueryParams.ID.key(), cohort.getSamples());
             QueryResult<Sample> allSamples = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
             allSamples.setId("Samples from cohort " + cohortStr);
             return createOkResponse(allSamples);
@@ -258,7 +257,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             } else {
                 long studyId = catalogManager.getStudyIdByCohortId(cohortIds.get(0));
                 return createOkResponse(catalogManager.getAllCohorts(studyId,
-                        new Query(CatalogCohortDBAdaptor.QueryParams.ID.key(), cohortIdsCsv), new QueryOptions(), sessionId).first());
+                        new Query(CohortDBAdaptor.QueryParams.ID.key(), cohortIdsCsv), new QueryOptions(), sessionId).first());
             }
 
         } catch (Exception e) {
@@ -502,7 +501,7 @@ public class CohortWSServer extends OpenCGAWSServer {
         try {
             Query query = new Query();
             QueryOptions qOptions = new QueryOptions();
-            parseQueryParams(params, CatalogCohortDBAdaptor.QueryParams::getParam, query, qOptions);
+            parseQueryParams(params, CohortDBAdaptor.QueryParams::getParam, query, qOptions);
 
             logger.debug("query = " + query.toJson());
             logger.debug("queryOptions = " + qOptions.toJson());

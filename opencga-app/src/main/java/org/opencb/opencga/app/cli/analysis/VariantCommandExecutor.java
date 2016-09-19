@@ -37,16 +37,14 @@ import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
 import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
 import org.opencb.opencga.analysis.variant.VariantFileIndexer;
-import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.core.common.ProgressLogger;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
@@ -525,7 +523,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             long studyId = catalogManager.getStudyId(cliOptions.studyId);
             long outDirId;
             if (isEmpty(cliOptions.outdirId)) {
-                outDirId = catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), ""), null, sessionId).first().getId();
+                outDirId = catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.PATH.key(), ""), null, sessionId).first().getId();
             } else {
                 outDirId = catalogManager.getFileId(cliOptions.outdirId);
             }
@@ -554,7 +552,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                 if (StringUtils.isNumeric(cohort)) {
                     cohortIds.add(Long.parseLong(cohort));
                 } else {
-                    QueryResult<Cohort> result = catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), cohort),
+                    QueryResult<Cohort> result = catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), cohort),
                             new QueryOptions("include", "projects.studies.cohorts.id"), sessionId);
                     if (result.getResult().isEmpty()) {
                         throw new CatalogException("Cohort \"" + cohort + "\" not found!");
@@ -720,7 +718,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             long studyId = catalogManager.getStudyId(cliOptions.studyId);
             long outDirId;
             if (isEmpty(cliOptions.outdirId)) {
-                outDirId = catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), ""), null, sessionId).first().getId();
+                outDirId = catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.PATH.key(), ""), null, sessionId).first().getId();
             } else {
                 outDirId = catalogManager.getFileId(cliOptions.outdirId);
             }

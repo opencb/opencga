@@ -31,8 +31,8 @@ import org.opencb.opencga.analysis.variant.CatalogStudyConfigurationFactory;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.Config;
@@ -161,8 +161,8 @@ public class AnalysisFileIndexer {
                     long jobId = inputFile.getIndex().getJobId();
                     Query query;
                     if (inputFile.getBioformat().equals(File.Bioformat.VARIANT)) {
-                        query = new Query(CatalogFileDBAdaptor.QueryParams.JOB_ID.key(), jobId)
-                                .append(CatalogFileDBAdaptor.QueryParams.NAME.key(), "~" + inputFile.getName() + ".variants");
+                        query = new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), jobId)
+                                .append(FileDBAdaptor.QueryParams.NAME.key(), "~" + inputFile.getName() + ".variants");
                     } else {
                         throw new CatalogException("Error: can't load this file. Only transformed files can be loaded.");
                     }
@@ -179,7 +179,7 @@ public class AnalysisFileIndexer {
                         try {
                             // Read the VariantSource to get the source file
                             VariantSource variantSource = utils.readVariantSource(catalogManager.getFileUri(inputFile));
-                            Query query = new Query(CatalogFileDBAdaptor.QueryParams.NAME.key(), variantSource.getFileName());
+                            Query query = new Query(FileDBAdaptor.QueryParams.NAME.key(), variantSource.getFileName());
                             QueryResult<File> result = catalogManager.searchFile(studyIdByOutDirId, query, sessionId);
                             if (result.getResult().size() == 0) {
                                 // TODO: Continue with the transformed file as indexed file?
@@ -289,7 +289,7 @@ public class AnalysisFileIndexer {
         if (!simulate) {
             Cohort defaultCohort = null;
             QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyIdByOutDirId,
-                    new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), new QueryOptions(), sessionId);
+                    new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), new QueryOptions(), sessionId);
             if (cohorts.getResult().isEmpty()) {
                 defaultCohort = catalogManager.createCohort(studyIdByOutDirId, StudyEntry.DEFAULT_COHORT, Study.Type.COLLECTION,
                         "Default cohort with almost all indexed samples", Collections.emptyList(), null, sessionId).first();

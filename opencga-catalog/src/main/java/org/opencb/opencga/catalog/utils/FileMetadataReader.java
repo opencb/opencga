@@ -11,7 +11,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
@@ -430,8 +430,8 @@ public class FileMetadataReader {
     public void updateVariantFileStats(Job job, String sessionId) throws CatalogException {
         long studyId = catalogManager.getStudyIdByJobId(job.getId());
         Query query = new Query()
-                .append(CatalogFileDBAdaptor.QueryParams.ID.key(), job.getInput())
-                .append(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
+                .append(FileDBAdaptor.QueryParams.ID.key(), job.getInput())
+                .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
         QueryResult<File> fileQueryResult = catalogManager.getAllFiles(studyId, query, new QueryOptions(), sessionId);
         if (fileQueryResult.getResult().isEmpty()) {
             return;
@@ -439,8 +439,8 @@ public class FileMetadataReader {
         File inputFile = fileQueryResult.first();
         if (inputFile.getBioformat().equals(File.Bioformat.VARIANT)) {
             query = new Query()
-                    .append(CatalogFileDBAdaptor.QueryParams.ID.key(), job.getOutput())
-                    .append(CatalogFileDBAdaptor.QueryParams.NAME.key(), "~" + inputFile.getName() + ".file");
+                    .append(FileDBAdaptor.QueryParams.ID.key(), job.getOutput())
+                    .append(FileDBAdaptor.QueryParams.NAME.key(), "~" + inputFile.getName() + ".file");
             fileQueryResult = catalogManager.getAllFiles(studyId, query, new QueryOptions(), sessionId);
             if (fileQueryResult.getResult().isEmpty()) {
                 return;

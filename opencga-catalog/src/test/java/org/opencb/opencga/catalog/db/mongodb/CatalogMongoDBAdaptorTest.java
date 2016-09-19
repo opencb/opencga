@@ -43,7 +43,7 @@ import static org.junit.Assert.assertTrue;
 
 public class CatalogMongoDBAdaptorTest extends GenericTest {
 
-    static CatalogMongoDBAdaptorFactory catalogDBAdaptor;
+    static MongoDBAdaptorFactory catalogDBAdaptor;
 
     static User user1;
     static User user2;
@@ -52,13 +52,13 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
-    CatalogUserDBAdaptor catalogUserDBAdaptor;
-    CatalogProjectDBAdaptor catalogProjectDBAdaptor;
-    CatalogFileDBAdaptor catalogFileDBAdaptor;
-    CatalogJobDBAdaptor catalogJobDBAdaptor;
-    CatalogStudyDBAdaptor catalogStudyDBAdaptor;
-    CatalogIndividualDBAdaptor catalogIndividualDBAdaptor;
-    CatalogPanelDBAdaptor catalogPanelDBAdaptor;
+    UserDBAdaptor catalogUserDBAdaptor;
+    ProjectDBAdaptor catalogProjectDBAdaptor;
+    FileDBAdaptor catalogFileDBAdaptor;
+    JobDBAdaptor catalogJobDBAdaptor;
+    StudyDBAdaptor catalogStudyDBAdaptor;
+    IndividualDBAdaptor catalogIndividualDBAdaptor;
+    PanelDBAdaptor catalogPanelDBAdaptor;
 
     private CatalogConfiguration catalogConfiguration;
 
@@ -101,7 +101,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         MongoDataStore db = mongoManager.get(database);
         db.getDb().drop();
 
-        catalogDBAdaptor = new CatalogMongoDBAdaptorFactory(Collections.singletonList(dataStoreServerAddress), mongoDBConfiguration,
+        catalogDBAdaptor = new MongoDBAdaptorFactory(Collections.singletonList(dataStoreServerAddress), mongoDBConfiguration,
                 database);
         catalogUserDBAdaptor = catalogDBAdaptor.getCatalogUserDBAdaptor();
         catalogStudyDBAdaptor = catalogDBAdaptor.getCatalogStudyDBAdaptor();
@@ -127,11 +127,11 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
                         ""), new Project("project", "P3", "", new Status(), "")),
                 Collections.<Tool>emptyList(), Collections.<Session>emptyList(), Collections.<String, Object>emptyMap(), Collections
                 .<String, Object>emptyMap());
-        QueryResult createUser = catalogUserDBAdaptor.insertUser(user1, null);
+        QueryResult createUser = catalogUserDBAdaptor.insert(user1, null);
         assertNotNull(createUser.getResult());
 
         user2 = new User("jmmut", "Jose Miguel", "jmmut@ebi", "1111", "ACME", User.UserStatus.READY);
-        createUser = catalogUserDBAdaptor.insertUser(user2, null);
+        createUser = catalogUserDBAdaptor.insert(user2, null);
         assertNotNull(createUser.getResult());
 
         user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", null, User.UserStatus.READY, "", 1222, 122222,
@@ -150,7 +150,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
                 ),
                 Collections.<Tool>emptyList(), Collections.<Session>emptyList(),
                 Collections.<String, Object>emptyMap(), Collections.<String, Object>emptyMap());
-        createUser = catalogUserDBAdaptor.insertUser(user3, null);
+        createUser = catalogUserDBAdaptor.insert(user3, null);
         assertNotNull(createUser.getResult());
 
         user4 = new User("pfurio", "Pedro", "pfurio@blabla", "pfuriopass", "Organization", null, User.UserStatus.READY, "", 0, 50000,
@@ -185,17 +185,17 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
                 Collections.<Tool>emptyList(), Collections.<Session>emptyList(),
                 Collections.<String, Object>emptyMap(), Collections.<String, Object>emptyMap());
 
-        createUser = catalogUserDBAdaptor.insertUser(user4, null);
+        createUser = catalogUserDBAdaptor.insert(user4, null);
         assertNotNull(createUser.getResult());
 
         QueryOptions options = new QueryOptions("includeStudies", true);
         options.put("includeFiles", true);
         options.put("includeJobs", true);
         options.put("includeSamples", true);
-        user1 = catalogUserDBAdaptor.getUser(CatalogMongoDBAdaptorTest.user1.getId(), options, null).first();
-        user2 = catalogUserDBAdaptor.getUser(CatalogMongoDBAdaptorTest.user2.getId(), options, null).first();
-        user3 = catalogUserDBAdaptor.getUser(CatalogMongoDBAdaptorTest.user3.getId(), options, null).first();
-        user4 = catalogUserDBAdaptor.getUser(CatalogMongoDBAdaptorTest.user4.getId(), options, null).first();
+        user1 = catalogUserDBAdaptor.get(CatalogMongoDBAdaptorTest.user1.getId(), options, null).first();
+        user2 = catalogUserDBAdaptor.get(CatalogMongoDBAdaptorTest.user2.getId(), options, null).first();
+        user3 = catalogUserDBAdaptor.get(CatalogMongoDBAdaptorTest.user3.getId(), options, null).first();
+        user4 = catalogUserDBAdaptor.get(CatalogMongoDBAdaptorTest.user4.getId(), options, null).first();
 
     }
 
