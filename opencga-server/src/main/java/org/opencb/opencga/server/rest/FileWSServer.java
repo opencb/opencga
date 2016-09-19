@@ -28,7 +28,7 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -139,9 +139,9 @@ public class FileWSServer extends OpenCGAWSServer {
                                  @QueryParam("parents") @DefaultValue("false") boolean parents) {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
-            String[] folderList = (String[]) convertPathList(folders).toArray();
+            List<String> folderList = convertPathList(folders);
 
-            List<QueryResult> queryResultList = new ArrayList<>(folderList.length);
+            List<QueryResult> queryResultList = new ArrayList<>(folderList.size());
             for (String folder : folderList) {
                 try {
                     java.nio.file.Path folderPath = Paths.get(convertPath(folder));
@@ -561,12 +561,12 @@ public class FileWSServer extends OpenCGAWSServer {
             // TODO this must be changed: only one queryOptions need to be passed
             Query query = new Query();
             QueryOptions qOptions = new QueryOptions(this.queryOptions);
-            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, query, qOptions);
+            parseQueryParams(params, FileDBAdaptor.QueryParams::getParam, query, qOptions);
 
-            if (query.containsKey(CatalogFileDBAdaptor.QueryParams.NAME.key())
-                    && (query.get(CatalogFileDBAdaptor.QueryParams.NAME.key()) == null
-                    || query.getString(CatalogFileDBAdaptor.QueryParams.NAME.key()).isEmpty())) {
-                query.remove(CatalogFileDBAdaptor.QueryParams.NAME.key());
+            if (query.containsKey(FileDBAdaptor.QueryParams.NAME.key())
+                    && (query.get(FileDBAdaptor.QueryParams.NAME.key()) == null
+                    || query.getString(FileDBAdaptor.QueryParams.NAME.key()).isEmpty())) {
+                query.remove(FileDBAdaptor.QueryParams.NAME.key());
                 logger.debug("Name attribute empty, it's been removed");
             }
 
@@ -630,7 +630,7 @@ public class FileWSServer extends OpenCGAWSServer {
         logger.info("ObjectMap: {}", params);
 
         try {
-            Object[] fileIds = convertPathList(fileIdStr).toArray();
+            List<String> fileIds = convertPathList(fileIdStr);
             QueryResult queryResult = catalogManager.getFileManager().index(StringUtils.join(fileIds, ","), "VCF", params, sessionId);
             return createOkResponse(queryResult);
         } catch(Exception e) {
@@ -692,8 +692,8 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             Query query = new Query();
             QueryOptions qOptions = new QueryOptions(this.queryOptions);
-            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, query, qOptions);
-            QueryResult result = catalogManager.getFileManager().getFileTree(convertPath(folderId), query, qOptions, maxDepth, sessionId);
+            parseQueryParams(params, FileDBAdaptor.QueryParams::getParam, query, qOptions);
+            QueryResult result = catalogManager.getFileManager().getTree(convertPath(folderId), query, qOptions, maxDepth, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1246,7 +1246,7 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             Query query = new Query();
             QueryOptions qOptions = new QueryOptions();
-            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, query, qOptions);
+            parseQueryParams(params, FileDBAdaptor.QueryParams::getParam, query, qOptions);
 
             logger.debug("query = " + query.toJson());
             logger.debug("queryOptions = " + qOptions.toJson());

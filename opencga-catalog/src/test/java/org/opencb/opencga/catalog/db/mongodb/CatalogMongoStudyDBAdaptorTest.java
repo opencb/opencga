@@ -42,9 +42,9 @@ public class CatalogMongoStudyDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     @Test
     public void updateDiskUsage() throws Exception {
         catalogDBAdaptor.getCatalogStudyDBAdaptor().updateDiskUsage(5, 100);
-        assertEquals(2100, catalogStudyDBAdaptor.getStudy(5, null).getResult().get(0).getDiskUsage());
+        assertEquals(2100, catalogStudyDBAdaptor.get(5, null).getResult().get(0).getDiskUsage());
         catalogDBAdaptor.getCatalogStudyDBAdaptor().updateDiskUsage(5, -200);
-        assertEquals(1900, catalogStudyDBAdaptor.getStudy(5, null).getResult().get(0).getDiskUsage());
+        assertEquals(1900, catalogStudyDBAdaptor.get(5, null).getResult().get(0).getDiskUsage());
     }
 
     /***
@@ -53,7 +53,7 @@ public class CatalogMongoStudyDBAdaptorTest extends CatalogMongoDBAdaptorTest {
      */
     @Test
     public void createStudySameAliasDifferentProject() throws CatalogException {
-        QueryResult<Study> ph1 = catalogStudyDBAdaptor.createStudy(1, new Study("Phase 1", "ph1", Study.Type.CASE_CONTROL, "",
+        QueryResult<Study> ph1 = catalogStudyDBAdaptor.insert(1, new Study("Phase 1", "ph1", Study.Type.CASE_CONTROL, "",
                 new Status(), null), null);
         assertTrue("It is impossible creating an study with an existing alias on a different project.", ph1.getNumResults() == 1);
     }

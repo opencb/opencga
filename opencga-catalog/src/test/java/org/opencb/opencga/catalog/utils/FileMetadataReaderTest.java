@@ -8,7 +8,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -160,7 +160,7 @@ public class FileMetadataReaderTest {
         assertNotNull(file.getAttributes().get("variantSource"));
         assertEquals(4, file.getSampleIds().size());
         assertEquals(expectedSampleNames, ((Map<String, Object>) file.getAttributes().get("variantSource")).get("samples"));
-        List<Sample> samples = catalogManager.getAllSamples(study.getId(), new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), file.getSampleIds()),
+        List<Sample> samples = catalogManager.getAllSamples(study.getId(), new Query(SampleDBAdaptor.QueryParams.ID.key(), file.getSampleIds()),
                 new QueryOptions(), sessionIdUser).getResult();
         Map<Long, Sample> sampleMap = samples.stream().collect(Collectors.toMap(Sample::getId, Function.identity()));
         assertEquals(expectedSampleNames.get(0), sampleMap.get(file.getSampleIds().get(0)).getName());

@@ -9,8 +9,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
-import org.opencb.opencga.catalog.db.api.CatalogAuditDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
+import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
+import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,14 +27,14 @@ import static org.opencb.opencga.catalog.audit.AuditRecord.Resource;
 public class CatalogAuditManager implements AuditManager {
 
     protected static Logger logger = LoggerFactory.getLogger(CatalogAuditManager.class);
-    private final CatalogAuditDBAdaptor auditDBAdaptor;
-    private final CatalogUserDBAdaptor userDBAdaptor;
+    private final AuditDBAdaptor auditDBAdaptor;
+    private final UserDBAdaptor userDBAdaptor;
     private final AuthorizationManager authorizationManager;
     private final Properties catalogProperties;
     private final CatalogConfiguration catalogConfiguration;
 
     @Deprecated
-    public CatalogAuditManager(CatalogAuditDBAdaptor auditDBAdaptor, CatalogUserDBAdaptor userDBAdaptor,
+    public CatalogAuditManager(AuditDBAdaptor auditDBAdaptor, UserDBAdaptor userDBAdaptor,
                                AuthorizationManager authorizationManager, Properties catalogProperties) {
         this.auditDBAdaptor = auditDBAdaptor;
         this.userDBAdaptor = userDBAdaptor;
@@ -43,7 +43,7 @@ public class CatalogAuditManager implements AuditManager {
         this.catalogConfiguration = null;
     }
 
-    public CatalogAuditManager(CatalogAuditDBAdaptor auditDBAdaptor, CatalogUserDBAdaptor userDBAdaptor,
+    public CatalogAuditManager(AuditDBAdaptor auditDBAdaptor, UserDBAdaptor userDBAdaptor,
                                AuthorizationManager authorizationManager, CatalogConfiguration catalogConfiguration) {
         this.auditDBAdaptor = auditDBAdaptor;
         this.userDBAdaptor = userDBAdaptor;

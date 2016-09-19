@@ -10,8 +10,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
@@ -253,7 +253,7 @@ public class VariantFetcher {
             for (Map.Entry<Integer, List<Integer>> entry : samplesToReturn.entrySet()) {
                 if (!entry.getValue().isEmpty()) {
                     QueryResult<Sample> samplesQueryResult = catalogManager.getAllSamples(entry.getKey(),
-                            new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), entry.getValue()),
+                            new Query(SampleDBAdaptor.QueryParams.ID.key(), entry.getValue()),
                             new QueryOptions("exclude", Arrays.asList("projects.studies.samples.annotationSets",
                                     "projects.studies.samples.attributes"))
                             , sessionId);
@@ -267,7 +267,7 @@ public class VariantFetcher {
         } else {
             logger.debug("Missing returned samples! Obtaining returned samples from catalog.");
             List<Integer> returnedStudies = dbAdaptor.getReturnedStudies(query, queryOptions);
-            List<Study> studies = catalogManager.getAllStudies(new Query(CatalogStudyDBAdaptor.StudyFilterOptions.id.toString(), returnedStudies),
+            List<Study> studies = catalogManager.getAllStudies(new Query(StudyDBAdaptor.StudyFilterOptions.id.toString(), returnedStudies),
                     new QueryOptions("include", "projects.studies.id"), sessionId).getResult();
             samplesMap = new HashMap<>();
             List<Long> returnedSamples = new LinkedList<>();

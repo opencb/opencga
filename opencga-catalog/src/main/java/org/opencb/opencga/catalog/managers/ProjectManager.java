@@ -9,7 +9,7 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
-import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -34,13 +34,13 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
 
     @Deprecated
     public ProjectManager(AuthorizationManager authorizationManager, AuditManager auditManager,
-                          CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                          DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                           Properties catalogProperties) {
         super(authorizationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
     public ProjectManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                          CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                          DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                           CatalogConfiguration catalogConfiguration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
                 catalogConfiguration);
@@ -48,11 +48,11 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
 
     @Override
     public String getUserId(long projectId) throws CatalogException {
-        return projectDBAdaptor.getProjectOwnerId(projectId);
+        return projectDBAdaptor.getOwnerId(projectId);
     }
 
     @Override
-    public long getProjectId(String userId, String projectStr) throws CatalogDBException {
+    public long getId(String userId, String projectStr) throws CatalogDBException {
         if (StringUtils.isNumeric(projectStr)) {
             return Long.parseLong(projectStr);
         }
@@ -70,12 +70,12 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             userOwner = userId;
             projectAlias = projectStr;
         }
-        return projectDBAdaptor.getProjectId(userOwner, projectAlias);
+        return projectDBAdaptor.getId(userOwner, projectAlias);
     }
 
     @Deprecated
     @Override
-    public long getProjectId(String projectId) throws CatalogException {
+    public long getId(String projectId) throws CatalogException {
         if (StringUtils.isNumeric(projectId)) {
             return Long.parseLong(projectId);
         }
@@ -84,7 +84,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         if (split.length != 2) {
             return -1;
         }
-        return projectDBAdaptor.getProjectId(split[0], split[1]);
+        return projectDBAdaptor.getId(split[0], split[1]);
     }
 
     @Override
@@ -102,7 +102,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         }
 
         // Check that the account type is not guest
-        QueryResult<User> user = userDBAdaptor.getUser(userId, new QueryOptions(), null);
+        QueryResult<User> user = userDBAdaptor.get(userId, new QueryOptions(), null);
         if (user.getNumResults() == 0) {
             throw new CatalogException("Internal error happened. Could not find user " + userId);
         }
@@ -117,7 +117,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
 
         Project project = new Project(name, alias, description, new Status(), organization);
 
-        QueryResult<Project> queryResult = projectDBAdaptor.createProject(userId, project, options);
+        QueryResult<Project> queryResult = projectDBAdaptor.insert(project, userId, options);
         project = queryResult.getResult().get(0);
 
         try {
@@ -147,13 +147,13 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     }
 
     @Override
-    public QueryResult<Project> read(Long projectId, QueryOptions options, String sessionId)
+    public QueryResult<Project> get(Long projectId, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
         authorizationManager.checkProjectPermission(projectId, userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
-        QueryResult<Project> projectResult = projectDBAdaptor.getProject(projectId, options);
+        QueryResult<Project> projectResult = projectDBAdaptor.get(projectId, options);
         if (!projectResult.getResult().isEmpty()) {
             authorizationManager.filterStudies(userId, projectResult.getResult().get(0).getStudies());
         }
@@ -161,7 +161,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     }
 
     @Override
-    public QueryResult<Project> readAll(Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Project> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
@@ -174,7 +174,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         ParamUtils.checkParameter(ownerId, "ownerId");
         ParamUtils.checkParameter(sessionId, "sessionId");
 
-        QueryResult<Project> allProjects = projectDBAdaptor.getAllProjects(ownerId, options);
+        QueryResult<Project> allProjects = projectDBAdaptor.get(ownerId, options);
 
         List<Project> projects = allProjects.getResult();
         authorizationManager.filterProjects(userId, projects);
@@ -190,7 +190,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         ParamUtils.checkObj(parameters, "Parameters");
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        String ownerId = projectDBAdaptor.getProjectOwnerId(projectId);
+        String ownerId = projectDBAdaptor.getOwnerId(projectId);
 
         if (!userId.equals(ownerId)) {
             throw new CatalogException("Permission denied: Only the owner of the project can update it.");
@@ -222,14 +222,14 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         ParamUtils.checkAlias(newProjectAlias, "newProjectAlias");
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        String ownerId = projectDBAdaptor.getProjectOwnerId(projectId);
+        String ownerId = projectDBAdaptor.getOwnerId(projectId);
 
         if (!userId.equals(ownerId)) {
             throw new CatalogException("Permission denied: Only the owner of the project can update it.");
         }
 
         userDBAdaptor.updateUserLastModified(ownerId);
-        QueryResult queryResult = projectDBAdaptor.renameProjectAlias(projectId, newProjectAlias);
+        QueryResult queryResult = projectDBAdaptor.renameAlias(projectId, newProjectAlias);
         auditManager.recordUpdate(AuditRecord.Resource.project, projectId, userId, new ObjectMap("alias", newProjectAlias), null, null);
         return queryResult;
     }

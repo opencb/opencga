@@ -2,9 +2,9 @@ package org.opencb.opencga.catalog.session;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.CatalogMetaDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
+import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
+import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Session;
 
@@ -13,13 +13,13 @@ import org.opencb.opencga.catalog.models.Session;
  */
 public class DefaultSessionManager implements SessionManager {
 
-    private final CatalogUserDBAdaptor userDBAdaptor;
-    private final CatalogMetaDBAdaptor metaDBAdaptor;
+    private final UserDBAdaptor userDBAdaptor;
+    private final MetaDBAdaptor metaDBAdaptor;
 
     private final int USER_SESSION_LENGTH = 20;
     private final int ADMIN_SESSION_LENGTH = 40;
 
-    public DefaultSessionManager(CatalogDBAdaptorFactory dbAdaptorFactory) {
+    public DefaultSessionManager(DBAdaptorFactory dbAdaptorFactory) {
         this.userDBAdaptor = dbAdaptorFactory.getCatalogUserDBAdaptor();
         this.metaDBAdaptor = dbAdaptorFactory.getCatalogMetaDBAdaptor();
     }

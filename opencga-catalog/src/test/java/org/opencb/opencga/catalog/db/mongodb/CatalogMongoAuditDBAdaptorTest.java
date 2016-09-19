@@ -10,7 +10,7 @@ import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
-import org.opencb.opencga.catalog.db.api.CatalogAuditDBAdaptor;
+import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
 
 import java.util.Collections;
 
@@ -21,7 +21,7 @@ import java.util.Collections;
  */
 public class CatalogMongoAuditDBAdaptorTest {
 
-    private CatalogAuditDBAdaptor auditDbAdaptor;
+    private AuditDBAdaptor auditDbAdaptor;
 
     @Before
     public void beforeClass() throws Exception {
@@ -58,7 +58,7 @@ public class CatalogMongoAuditDBAdaptorTest {
         db.getDb().drop();
 
 
-        auditDbAdaptor = new CatalogMongoDBAdaptorFactory(Collections.singletonList(dataStoreServerAddress), mongoDBConfiguration, database)
+        auditDbAdaptor = new MongoDBAdaptorFactory(Collections.singletonList(dataStoreServerAddress), mongoDBConfiguration, database)
                 .getCatalogAuditDbAdaptor();
     }
 

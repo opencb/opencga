@@ -21,7 +21,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -72,18 +72,18 @@ public class IndexDaemon extends MonitorParentDaemon {
         IJobManager jobManager = catalogManager.getJobManager();
 
         Query runningJobsQuery = new Query()
-                .append(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING)
-                .append(CatalogJobDBAdaptor.QueryParams.TYPE.key(), Job.Type.INDEX);
+                .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING)
+                .append(JobDBAdaptor.QueryParams.TYPE.key(), Job.Type.INDEX);
 
-        Query queuedJobsQuery = new Query(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED);
-        queuedJobsQuery.put(CatalogJobDBAdaptor.QueryParams.TYPE.key(), Job.Type.INDEX);
+        Query queuedJobsQuery = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED);
+        queuedJobsQuery.put(JobDBAdaptor.QueryParams.TYPE.key(), Job.Type.INDEX);
 
-        Query preparedJobsQuery = new Query(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.PREPARED);
-        preparedJobsQuery.put(CatalogJobDBAdaptor.QueryParams.TYPE.key(), Job.Type.INDEX);
+        Query preparedJobsQuery = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.PREPARED);
+        preparedJobsQuery.put(JobDBAdaptor.QueryParams.TYPE.key(), Job.Type.INDEX);
 
         // Sort jobs by creation date
         QueryOptions queryOptions = new QueryOptions()
-                .append(QueryOptions.SORT, CatalogJobDBAdaptor.QueryParams.CREATION_DATE.key())
+                .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key())
                 .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
 
         objectMapper = new ObjectMapper();
@@ -104,7 +104,7 @@ public class IndexDaemon extends MonitorParentDaemon {
             RUNNING JOBS
              */
             try {
-                QueryResult<Job> runningJobs = jobManager.readAll(runningJobsQuery, queryOptions, sessionId);
+                QueryResult<Job> runningJobs = jobManager.get(runningJobsQuery, queryOptions, sessionId);
                 numRunningJobs = runningJobs.getNumResults();
                 logger.debug("Checking running jobs. {} running jobs found", runningJobs.getNumResults());
                 for (Job job : runningJobs.getResult()) {
@@ -120,7 +120,7 @@ public class IndexDaemon extends MonitorParentDaemon {
             QUEUED JOBS
              */
             try {
-                QueryResult<Job> queuedJobs = jobManager.readAll(queuedJobsQuery, queryOptions, sessionId);
+                QueryResult<Job> queuedJobs = jobManager.get(queuedJobsQuery, queryOptions, sessionId);
                 logger.debug("Checking queued jobs. {} running jobs found", queuedJobs.getNumResults());
                 for (Job job : queuedJobs.getResult()) {
                     checkQueuedJob(job);
@@ -136,7 +136,7 @@ public class IndexDaemon extends MonitorParentDaemon {
              */
             try {
                 queryOptions.put(QueryOptions.LIMIT, 1);
-                QueryResult<Job> preparedJobs = jobManager.readAll(preparedJobsQuery, queryOptions, sessionId);
+                QueryResult<Job> preparedJobs = jobManager.get(preparedJobsQuery, queryOptions, sessionId);
                 if (preparedJobs != null && preparedJobs.getNumResults() > 0) {
                     if (numRunningJobs < 1) {
                         queuePreparedIndex(preparedJobs.first());
@@ -228,7 +228,7 @@ public class IndexDaemon extends MonitorParentDaemon {
             String status = executorManager.status(tmpOutdirPath, job);
             if (!status.equalsIgnoreCase(Job.JobStatus.UNKNOWN) && !status.equalsIgnoreCase(Job.JobStatus.QUEUED)) {
                 Job.JobStatus jobStatus = new Job.JobStatus(Job.JobStatus.RUNNING, "The job is running");
-                ObjectMap objectMap = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
+                ObjectMap objectMap = new ObjectMap(JobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
                 try {
                     catalogManager.getJobManager().update(job.getId(), objectMap, new QueryOptions(), sessionId);
                 } catch (CatalogException e) {
@@ -318,16 +318,16 @@ public class IndexDaemon extends MonitorParentDaemon {
         try {
             ObjectMap updateObjectMap = new ObjectMap();
             Job.JobStatus jobStatus = new Job.JobStatus(Job.JobStatus.QUEUED, "The job is in the queue waiting to be executed");
-            updateObjectMap.put(CatalogJobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
-            updateObjectMap.put(CatalogJobDBAdaptor.QueryParams.COMMAND_LINE.key(), commandLine.toString());
+            updateObjectMap.put(JobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
+            updateObjectMap.put(JobDBAdaptor.QueryParams.COMMAND_LINE.key(), commandLine.toString());
             job.getAttributes().put("sessionId", userSessionId);
 
-            updateObjectMap.put(CatalogJobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
+            updateObjectMap.put(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
 
             job.getResourceManagerAttributes().put(AbstractExecutor.STDOUT, stdout);
             job.getResourceManagerAttributes().put(AbstractExecutor.STDERR, stderr);
             job.getResourceManagerAttributes().put(AbstractExecutor.OUTDIR, path.toString());
-            updateObjectMap.put(CatalogJobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key(), job.getResourceManagerAttributes());
+            updateObjectMap.put(JobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key(), job.getResourceManagerAttributes());
 
 //            updateObjectMap.put(CatalogJobDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
 
@@ -362,14 +362,14 @@ public class IndexDaemon extends MonitorParentDaemon {
 
         String userId;
         try {
-            userId = catalogManager.getUserManager().getUserId(sessionId);
+            userId = catalogManager.getUserManager().getId(sessionId);
             catalogManager.getUserManager().logout(userId, sessionId);
         } catch (CatalogException e) {
             logger.error("An error occurred when trying to close the session id: {}", e.getMessage());
         } finally {
             // Remove the session id from the job attributes
             job.getAttributes().remove("sessionId");
-            ObjectMap params = new ObjectMap(CatalogJobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
+            ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
             try {
                 catalogManager.getJobManager().update(job.getId(), params, new QueryOptions(), this.sessionId);
             } catch (CatalogException e) {

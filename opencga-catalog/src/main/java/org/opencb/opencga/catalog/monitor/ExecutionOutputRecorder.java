@@ -19,7 +19,7 @@ package org.opencb.opencga.catalog.monitor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -111,7 +111,7 @@ public class ExecutionOutputRecorder {
         logger.debug("Scan the temporal output directory ({}) from a job to find all generated files.", tmpOutDirUri);
         File outDir;
         try {
-            outDir = catalogManager.getFileManager().read(job.getOutDirId(), new QueryOptions(), sessionId).getResult().get(0);
+            outDir = catalogManager.getFileManager().get(job.getOutDirId(), new QueryOptions(), sessionId).getResult().get(0);
         } catch (CatalogException e) {
             logger.error("Cannot find file {}. Error: {}", job.getOutDirId(), e.getMessage());
             throw e;
@@ -156,8 +156,8 @@ public class ExecutionOutputRecorder {
         }
 
         ObjectMap parameters = new ObjectMap();
-        parameters.put(CatalogJobDBAdaptor.QueryParams.OUTPUT.key(), fileIds);
-        parameters.put(CatalogJobDBAdaptor.QueryParams.END_TIME.key(), System.currentTimeMillis());
+        parameters.put(JobDBAdaptor.QueryParams.OUTPUT.key(), fileIds);
+        parameters.put(JobDBAdaptor.QueryParams.END_TIME.key(), System.currentTimeMillis());
         try {
             catalogManager.modifyJob(job.getId(), parameters, this.sessionId);
         } catch (CatalogException e) {
@@ -182,7 +182,7 @@ public class ExecutionOutputRecorder {
                 jobStatus.setName(Job.JobStatus.ERROR);
                 jobStatus.setMessage("The finished with an unexpected error");
             }
-            ObjectMap params = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
+            ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
             catalogManager.getJobManager().update(job.getId(), params, new QueryOptions(), sessionId);
         } else {
             logger.error("This code should never be executed.");

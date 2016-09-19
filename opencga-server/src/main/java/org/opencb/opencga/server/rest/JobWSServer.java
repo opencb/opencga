@@ -17,11 +17,10 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.JobManager;
 import org.opencb.opencga.catalog.models.File;
@@ -35,7 +34,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -277,12 +275,12 @@ public class JobWSServer extends OpenCGAWSServer {
             // TODO this must be changed: only one queryOptions need to be passed
             Query query = new Query();
             QueryOptions qOptions = new QueryOptions(this.queryOptions);
-            parseQueryParams(params, CatalogJobDBAdaptor.QueryParams::getParam, query, qOptions);
+            parseQueryParams(params, JobDBAdaptor.QueryParams::getParam, query, qOptions);
 
-            if (query.containsKey(CatalogJobDBAdaptor.QueryParams.NAME.key())
-                    && (query.get(CatalogJobDBAdaptor.QueryParams.NAME.key()) == null
-                    || query.getString(CatalogJobDBAdaptor.QueryParams.NAME.key()).isEmpty())) {
-                query.remove(CatalogJobDBAdaptor.QueryParams.NAME.key());
+            if (query.containsKey(JobDBAdaptor.QueryParams.NAME.key())
+                    && (query.get(JobDBAdaptor.QueryParams.NAME.key()) == null
+                    || query.getString(JobDBAdaptor.QueryParams.NAME.key()).isEmpty())) {
+                query.remove(JobDBAdaptor.QueryParams.NAME.key());
                 logger.debug("Name attribute empty, it's been removed");
             }
 
@@ -380,7 +378,7 @@ public class JobWSServer extends OpenCGAWSServer {
         try {
             Query query = new Query();
             QueryOptions qOptions = new QueryOptions();
-            parseQueryParams(params, CatalogJobDBAdaptor.QueryParams::getParam, query, qOptions);
+            parseQueryParams(params, JobDBAdaptor.QueryParams::getParam, query, qOptions);
 
             logger.debug("query = " + query.toJson());
             logger.debug("queryOptions = " + qOptions.toJson());
