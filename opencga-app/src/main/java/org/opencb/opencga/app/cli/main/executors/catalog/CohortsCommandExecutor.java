@@ -194,8 +194,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.DESCRIPTION.key(), cohortsCommandOptions.updateCommandOptions.description);
         objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.updateCommandOptions.samples);
 
-        //TODO objectMap.put("method", "POST");
-
         return openCGAClient.getCohortClient().update(cohortsCommandOptions.updateCommandOptions.id, objectMap);
     }
 
