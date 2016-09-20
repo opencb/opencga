@@ -310,8 +310,8 @@ public class FileManagerTest extends GenericTest {
     @Test
     public void testLinkFolder3() throws CatalogException, IOException {
         URI uri = Paths.get(catalogManager.getStudyUri(studyId)).resolve("data").toUri();
-        thrown.expect(CatalogDBException.class);
-        thrown.expectMessage("already exists.");
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("already existed and is not external");
         catalogManager.link(uri, null, Long.toString(studyId), new ObjectMap(), sessionIdUser);
 
 //        // Make sure that the path of the files linked do not start with /
@@ -382,17 +382,17 @@ public class FileManagerTest extends GenericTest {
 
         Set<String> paths = catalogManager.getAllFiles(studyId, new Query("type", File.Type.DIRECTORY), new QueryOptions(), sessionIdUser2)
                 .getResult().stream().map(File::getPath).collect(Collectors.toSet());
-        assertEquals(3, paths.size());
+        assertEquals(1, paths.size());
         assertTrue(paths.contains(""));             //root
-        assertTrue(paths.contains("data/"));        //data
-        assertTrue(paths.contains("analysis/"));    //analysis
+//        assertTrue(paths.contains("data/"));        //data
+//        assertTrue(paths.contains("analysis/"));    //analysis
 
         Path folderPath = Paths.get("data", "new", "folder");
         File folder = catalogManager.createFolder(studyId, folderPath, true, null, sessionIdUser2).first();
 
         paths = catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), File.Type.DIRECTORY),
                 new QueryOptions(), sessionIdUser2).getResult().stream().map(File::getPath).collect(Collectors.toSet());
-        assertEquals(5, paths.size());
+        assertEquals(4, paths.size());
         assertTrue(paths.contains("data/new/"));
         assertTrue(paths.contains("data/new/folder/"));
 
@@ -418,10 +418,10 @@ public class FileManagerTest extends GenericTest {
 
         Set<String> paths = catalogManager.getAllFiles(studyId, new Query("type", File.Type.DIRECTORY), new QueryOptions(), sessionIdUser2)
                 .getResult().stream().map(File::getPath).collect(Collectors.toSet());
-        assertEquals(3, paths.size());
+        assertEquals(1, paths.size());
         assertTrue(paths.contains(""));             //root
-        assertTrue(paths.contains("data/"));        //data
-        assertTrue(paths.contains("analysis/"));    //analysis
+//        assertTrue(paths.contains("data/"));        //data
+//        assertTrue(paths.contains("analysis/"));    //analysis
 
         Path folderPath = Paths.get("data", "new", "folder");
         File folder = catalogManager.getFileManager().createFolder(studyId, folderPath.toString(), null, true, null, null, sessionIdUser2)
@@ -578,7 +578,7 @@ public class FileManagerTest extends GenericTest {
     public void testGetTreeView() throws CatalogException {
         QueryResult<FileTree> fileTree = catalogManager.getFileManager().getTree("user@1000G:phase1:", new Query(), new QueryOptions(),
                 5, sessionIdUser);
-        assertEquals(8, fileTree.getNumResults());
+        assertEquals(7, fileTree.getNumResults());
     }
 
     @Test
@@ -638,8 +638,10 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void renameFileAlreadyExists() throws CatalogException {
+        long studyId = catalogManager.getStudyId("user@1000G:phase1", sessionIdUser);
+        catalogManager.getFileManager().createFolder(studyId, "analysis/", new File.FileStatus(), false, "", new QueryOptions(), sessionIdUser);
         thrown.expect(CatalogIOException.class);
-        catalogManager.renameFile(catalogManager.getFileId("user@1000G:phase1:data/"), "analysis", sessionIdUser);
+        catalogManager.renameFile(catalogManager.getFileId("user@1000G:phase1:data/", sessionIdUser), "analysis", sessionIdUser);
     }
 
     @Test
@@ -685,7 +687,7 @@ public class FileManagerTest extends GenericTest {
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
         result.getResult().forEach(f -> assertEquals(File.Type.DIRECTORY, f.getType()));
         int numFolders = result.getNumResults();
-        assertEquals(5, numFolders);
+        assertEquals(4, numFolders);
 
         query = new Query(FileDBAdaptor.QueryParams.PATH.key(), "");
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
@@ -695,7 +697,7 @@ public class FileManagerTest extends GenericTest {
 
         query = new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE,DIRECTORY");
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
-        assertEquals(8, result.getNumResults());
+        assertEquals(7, result.getNumResults());
         assertEquals(numFiles + numFolders, result.getNumResults());
 
         query = new Query("type", "FILE");
@@ -822,7 +824,7 @@ public class FileManagerTest extends GenericTest {
         // This has to return not only the ones with the attribute boolean = false, but also all the files that does not contain
         // that attribute at all.
         result = catalogManager.searchFile(studyId, new Query(battributes + ".boolean", "!=true"), sessionIdUser);
-        assertEquals(7, result.getNumResults());
+        assertEquals(6, result.getNumResults());
 
         result = catalogManager.searchFile(studyId, new Query(battributes + ".boolean", "=false"), sessionIdUser);
         assertEquals(1, result.getNumResults());

@@ -1455,20 +1455,33 @@ public class FileManager extends AbstractManager implements IFileManager {
                 pathDestiny = pathDestiny + "/";
             }
         }
-        pathDestiny = Paths.get(pathDestiny).resolve(Paths.get(uriOrigin).getFileName()).toString();
+        String externalPathDestinyStr;
         if (Paths.get(uriOrigin).toFile().isDirectory()) {
-            pathDestiny = pathDestiny + "/";
+            externalPathDestinyStr = Paths.get(pathDestiny).resolve(Paths.get(uriOrigin).getFileName()).toString() + "/";
+        } else {
+            externalPathDestinyStr = Paths.get(pathDestiny).resolve(Paths.get(uriOrigin).getFileName()).toString();
         }
 
-        // Check if the uri was already linked to that same path
+        // Check if the path already exists and is not external
         Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.URI.key(), uriOrigin)
-//                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), pathDestiny)
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!="
                         + File.FileStatus.REMOVED)
-                .append(FileDBAdaptor.QueryParams.PATH.key(), pathDestiny)
+                .append(FileDBAdaptor.QueryParams.PATH.key(), externalPathDestinyStr)
+                .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), false);
+        if (fileDBAdaptor.count(query).first() > 0) {
+            throw new CatalogException("Cannot link to " + externalPathDestinyStr + ". The path already existed and is not external.");
+        }
+
+        // Check if the uri was already linked to that same path
+        query = new Query()
+                .append(FileDBAdaptor.QueryParams.URI.key(), uriOrigin)
+                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!="
+                        + File.FileStatus.REMOVED)
+                .append(FileDBAdaptor.QueryParams.PATH.key(), externalPathDestinyStr)
                 .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), true);
+
 
         if (fileDBAdaptor.count(query).first() > 0) {
             // Create a regular expression on URI to return everything linked from that URI
@@ -1501,7 +1514,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (fileDBAdaptor.count(query).first() > 0) {
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.PATH.key());
             String path = fileDBAdaptor.get(query, queryOptions).first().getPath();
-            throw new CatalogException(uriOrigin + " was already linked to catalog on a different path " + path);
+            throw new CatalogException(uriOrigin + " was already linked to catalog on a this other path " + path);
         }
 
         boolean parents = params.getBoolean("parents", false);
@@ -1524,32 +1537,10 @@ public class FileManager extends AbstractManager implements IFileManager {
                 if (parents) {
                     // Get the base URI where the files are located in the study
                     URI studyURI = getStudyUri(studyId);
-
-                    if (Paths.get(uriOrigin).toFile().isDirectory()) {
-                        // Create the directories that are necessary in catalog except for the main folder that will be linked
-                        createParents(studyId, userId, studyURI, catalogPath.getParent(), true);
-
-                        // Create them in the disk
-                        if (catalogPath.getParent() != null) {
-                            URI directory = Paths.get(studyURI).resolve(catalogPath.getParent()).toUri();
-                            catalogIOManagerFactory.get(directory).createDirectory(directory, true);
-                        }
-
-                        // Create the folder with external
-                        File folder = new File(-1, catalogPath.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
-                                File.Bioformat.NONE, uriOrigin, catalogPath.toString() + "/", TimeUtils.getTime(),
-                                TimeUtils.getTime(), description, new File.FileStatus(File.FileStatus.READY), true, 0, -1,
-                                Collections.emptyList(), -1, Collections.emptyList(), Collections.emptyList(), null, Collections.emptyMap(),
-                                Collections.emptyMap());
-                        fileDBAdaptor.insert(folder, studyId, new QueryOptions());
-                    } else {
-                        // Create the directories that are necessary in catalog except for the main folder that will be linked
-                        createParents(studyId, userId, studyURI, catalogPath, true);
-
-                        // Create them in the disk
-                        URI directory = Paths.get(studyURI).resolve(catalogPath).toUri();
-                        catalogIOManagerFactory.get(directory).createDirectory(directory, true);
-                    }
+                    createParents(studyId, userId, studyURI, catalogPath, true);
+                    // Create them in the disk
+                    URI directory = Paths.get(studyURI).resolve(catalogPath).toUri();
+                    catalogIOManagerFactory.get(directory).createDirectory(directory, true);
                 } else {
                     throw new CatalogException("The path " + catalogPath + " does not exist in catalog.");
                 }
@@ -1557,36 +1548,24 @@ public class FileManager extends AbstractManager implements IFileManager {
                 // Check if the user has permissions to link files in the directory
                 long fileId = fileDBAdaptor.getId(studyId, pathDestiny);
                 authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.CREATE);
-
-                if (Paths.get(uriOrigin).toFile().isDirectory()) {
-                    // Create the folder with external
-                    String name = Paths.get(uriOrigin).getFileName().toString();
-                    File folder = new File(-1, name, File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, uriOrigin,
-                            pathDestiny, TimeUtils.getTime(), TimeUtils.getTime(), description,
-                            new File.FileStatus(File.FileStatus.READY), true, 0, -1, Collections.emptyList(), -1, Collections.emptyList(),
-                            Collections.emptyList(), null, Collections.emptyMap(), Collections.emptyMap());
-                    fileDBAdaptor.insert(folder, studyId, new QueryOptions());
-                }
             }
         }
 
         Path pathOrigin = Paths.get(uriOrigin);
+        Path externalPathDestiny = Paths.get(externalPathDestinyStr);
         if (Paths.get(uriOrigin).toFile().isFile()) {
-            Path filePath = catalogPath.resolve(pathOrigin.getFileName());
 
             // Check if there is already a file in the same path
             query = new Query()
                     .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                    .append(FileDBAdaptor.QueryParams.PATH.key(), filePath.toString());
+                    .append(FileDBAdaptor.QueryParams.PATH.key(), externalPathDestinyStr);
 
             // Create the file
             if (fileDBAdaptor.count(query).first() == 0) {
                 long diskUsage = Files.size(Paths.get(uriOrigin));
-//                File.Bioformat bioformat = BioformatDetector.detect(uriOrigin);
-//                File.Format format = FormatDetector.detect(uriOrigin);
 
-                File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.NONE,
-                        uriOrigin, filePath.toString(), TimeUtils.getTime(), TimeUtils.getTime(), description,
+                File subfile = new File(-1, externalPathDestiny.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
+                        File.Bioformat.NONE, uriOrigin, externalPathDestinyStr, TimeUtils.getTime(), TimeUtils.getTime(), description,
                         new File.FileStatus(File.FileStatus.READY), true, diskUsage, -1, Collections.emptyList(), -1,
                         Collections.emptyList(), Collections.emptyList(), null, Collections.emptyMap(), Collections.emptyMap());
                 QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, studyId, new QueryOptions());
@@ -1605,12 +1584,15 @@ public class FileManager extends AbstractManager implements IFileManager {
 
                 return queryResult;
             } else {
-                throw new CatalogException("Cannot link " + filePath.getFileName().toString() + ". A file with the same name was found"
-                        + " in the same path.");
+                throw new CatalogException("Cannot link " + externalPathDestiny.getFileName().toString() + ". A file with the same name "
+                        + "was found in the same path.");
             }
         } else {
             // This list will contain the list of avro files detected during the link
             List<File> avroFiles = new ArrayList<>();
+
+            // We remove the / at the end for replacement purposes in the walkFileTree
+            String finalExternalPathDestinyStr = externalPathDestinyStr.substring(0, externalPathDestinyStr.length() - 1);
 
             // Link all the files and folders present in the uri
             Files.walkFileTree(pathOrigin, new SimpleFileVisitor<Path>() {
@@ -1618,9 +1600,9 @@ public class FileManager extends AbstractManager implements IFileManager {
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
 
                     try {
-                        String destinyPath = dir.toString().replace(Paths.get(uriOrigin).toString(), catalogPath.toString());
+                        String destinyPath = dir.toString().replace(Paths.get(uriOrigin).toString(), finalExternalPathDestinyStr);
 
-                        if (!destinyPath.isEmpty()) {
+                        if (!destinyPath.isEmpty() && !destinyPath.endsWith("/")) {
                             destinyPath += "/";
                         }
 
@@ -1653,7 +1635,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                 @Override
                 public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs) throws IOException {
                     try {
-                        String destinyPath = filePath.toString().replace(Paths.get(uriOrigin).toString(), catalogPath.toString());
+                        String destinyPath = filePath.toString().replace(Paths.get(uriOrigin).toString(), finalExternalPathDestinyStr);
 
                         if (destinyPath.startsWith("/")) {
                             destinyPath = destinyPath.substring(1);
@@ -1665,8 +1647,6 @@ public class FileManager extends AbstractManager implements IFileManager {
 
                         if (fileDBAdaptor.count(query).first() == 0) {
                             long diskUsage = Files.size(filePath);
-//                            File.Bioformat bioformat = BioformatDetector.detect(filePath.toUri());
-//                            File.Format format = FormatDetector.detect(filePath.toUri());
                             // If the file does not exist, we create it
                             File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                                     File.Bioformat.NONE, filePath.toUri(), destinyPath, TimeUtils.getTime(), TimeUtils.getTime(),
@@ -1687,7 +1667,6 @@ public class FileManager extends AbstractManager implements IFileManager {
 
                     } catch (CatalogException e) {
                         logger.error(e.getMessage());
-//                        e.printStackTrace();
                     }
 
                     return FileVisitResult.CONTINUE;

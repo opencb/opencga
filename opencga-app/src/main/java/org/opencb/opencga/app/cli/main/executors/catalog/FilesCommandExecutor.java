@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
+import org.apache.commons.collections.iterators.ArrayListIterator;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.storage.variant.CatalogVariantDBAdaptor;
@@ -38,7 +39,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by imedina on 03/06/16.
@@ -378,9 +381,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<File> link() throws CatalogException, IOException, URISyntaxException {
         logger.debug("Linking the file or folder into catalog.");
 
-        URI uri = UriUtils.createUri(filesCommandOptions.linkCommandOptions.input);
-        logger.debug("uri: {}", uri.toString());
-
         ObjectMap objectMap = new ObjectMap()
                 .append(FileDBAdaptor.QueryParams.DESCRIPTION.key(), filesCommandOptions.linkCommandOptions.description)
                 .append("parents", filesCommandOptions.linkCommandOptions.parents);
@@ -395,10 +395,18 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
             logger.error("The database could not be found. Are you running this from the server?");
             return null;
         }
-        QueryResult<File> linkQueryResult = catalogManager.link(uri, filesCommandOptions.linkCommandOptions.path,
-                filesCommandOptions.linkCommandOptions.studyId, objectMap, sessionId);
 
-        return new QueryResponse<>(new QueryOptions(), Arrays.asList(linkQueryResult));
+        List<QueryResult<File>> linkQueryResultList = new ArrayList<>(filesCommandOptions.linkCommandOptions.inputs.size());
+
+        for (String input : filesCommandOptions.linkCommandOptions.inputs) {
+            URI uri = UriUtils.createUri(input);
+            logger.debug("uri: {}", uri.toString());
+
+            linkQueryResultList.add(catalogManager.link(uri, filesCommandOptions.linkCommandOptions.path,
+                    filesCommandOptions.linkCommandOptions.studyId, objectMap, sessionId));
+        }
+
+        return new QueryResponse<>(new QueryOptions(), linkQueryResultList);
     }
 
     private QueryResponse relink() throws CatalogException, IOException {

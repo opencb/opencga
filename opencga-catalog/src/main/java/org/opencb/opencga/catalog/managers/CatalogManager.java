@@ -509,8 +509,8 @@ public class CatalogManager implements AutoCloseable {
                 cipher, uriScheme,
                 uri, datastores, stats, attributes, options, sessionId);
         //if (uri != null) {
-        createFolder(result.getResult().get(0).getId(), Paths.get("data"), true, null, sessionId);
-        createFolder(result.getResult().get(0).getId(), Paths.get("analysis"), true, null, sessionId);
+//        createFolder(result.getResult().get(0).getId(), Paths.get("data"), true, null, sessionId);
+//        createFolder(result.getResult().get(0).getId(), Paths.get("analysis"), true, null, sessionId);
         //}
         return result;
     }

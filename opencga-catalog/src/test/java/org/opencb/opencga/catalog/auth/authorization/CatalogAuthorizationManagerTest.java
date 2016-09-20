@@ -113,14 +113,13 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
         p1 = catalogManager.createProject("p1", "p1", null, null, null, ownerSessionId).first().getId();
         s1 = catalogManager.createStudy(p1, "s1", "s1", Study.Type.CASE_CONTROL, null, ownerSessionId).first().getId();
-        data = catalogManager.searchFile(s1, new Query(FileDBAdaptor.QueryParams.PATH.key(), "data/"),
-                ownerSessionId).first().getId();
-        data_d1 = catalogManager.createFolder(s1, Paths.get("data/d1/"), false, null, ownerSessionId).first().getId();
+        data_d1 = catalogManager.createFolder(s1, Paths.get("data/d1/"), true, null, ownerSessionId).first().getId();
         data_d1_d2 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/"), false, null, ownerSessionId).first().getId();
         data_d1_d2_d3 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/d3/"), false, null, ownerSessionId).first().getId();
         data_d1_d2_d3_d4 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/d3/d4/"), false, null, ownerSessionId).first().getId();
         data_d1_d2_d3_d4_txt = catalogManager.createFile(s1, File.Format.PLAIN, File.Bioformat.NONE, "data/d1/d2/d3/d4/my.txt", ("file " +
                 "content").getBytes(), "", false, ownerSessionId).first().getId();
+        data = catalogManager.searchFile(s1, new Query(FileDBAdaptor.QueryParams.PATH.key(), "data/"), ownerSessionId).first().getId();
 
         // Add studyAdminUser1 and studyAdminUser2 to admin group and admin role.
         catalogManager.createGroup(Long.toString(s1), groupAdmin, studyAdminUser1 + "," + studyAdminUser2, ownerSessionId);

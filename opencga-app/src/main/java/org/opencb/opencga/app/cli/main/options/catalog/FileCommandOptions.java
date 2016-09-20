@@ -10,6 +10,7 @@ import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonComm
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.models.File;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -500,8 +501,8 @@ public class FileCommandOptions {
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-         @Parameter(names = {"-i", "--input"}, description = "File or folder location", required = true, arity = 1)
-         public String input;
+         @Parameter(names = {"-i", "--input"}, description = "File or folder location", required = true, variableArity = true)
+         public List<String> inputs;
 //        @Parameter(names = {"-uri"}, description = "File location", required = true, arity = 1)
 //        public String uri;
 
