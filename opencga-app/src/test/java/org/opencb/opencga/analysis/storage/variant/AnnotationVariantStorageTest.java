@@ -9,7 +9,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.OpenCGATestExternalResource;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.DataStore;
@@ -103,8 +103,8 @@ public class AnnotationVariantStorageTest {
 
         System.out.println("job = " + job);
         File annotFile = catalogManager.searchFile(studyId,
-                new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), job.getOutput())
-                        .append(CatalogFileDBAdaptor.QueryParams.FORMAT.key(), File.Format.JSON), null, sessionId).first();
+                new Query(FileDBAdaptor.QueryParams.ID.key(), job.getOutput())
+                        .append(FileDBAdaptor.QueryParams.FORMAT.key(), File.Format.JSON), null, sessionId).first();
 
         checkAnnotation(v -> false);
 

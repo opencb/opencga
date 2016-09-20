@@ -18,18 +18,20 @@ package org.opencb.opencga.storage.core.variant.io;
 
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.*;
 
 /**
  * Created by jmmut on 3/03/15.
@@ -63,19 +65,43 @@ public class VariantDBReader implements VariantReader {
 
     @Override
     public String getHeader() {
+        return getSource().getMetadata().get(VariantFileUtils.VARIANT_FILE_HEADER).toString();
+    }
+
+    public VariantSource getSource() {
+        return getSource(-1);
+    }
+
+    public VariantSource getSource(int fileId) {
+        Iterator<VariantSource> sourceIterator;
+        try {
+            Query sourceQuery = new Query();
+            if (fileId >= 0) {
+                sourceQuery.put(VariantSourceDBAdaptor.VariantSourceQueryParam.FILE_ID.key(), fileId);
+            }
+            sourceIterator = variantDBAdaptor.getVariantSourceDBAdaptor()
+                    .iterator(sourceQuery, new QueryOptions());
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        if (sourceIterator.hasNext()) {
+            return sourceIterator.next();
+        }
         return null;
     }
 
     @Override
     public boolean open() {
-        QueryOptions iteratorQueryOptions = new QueryOptions();
+        QueryOptions iteratorQueryOptions;
         if (options != null) { //Parse query options
-            iteratorQueryOptions = options;
+            iteratorQueryOptions = new QueryOptions(options);
+        } else {
+            iteratorQueryOptions = new QueryOptions();
         }
 
         // TODO rethink this way to refer to the Variant fields (through DBObjectToVariantConverter)
         List<String> include = Arrays.asList("chromosome", "start", "end", "alternate", "reference", "sourceEntries");
-        iteratorQueryOptions.putIfAbsent("include", include);   // add() does not overwrite in case a "include" was already specified
+        iteratorQueryOptions.putIfAbsent(QueryOptions.INCLUDE, include);   // do not overwrite in case a "include" was already specified
 
         iterator = variantDBAdaptor.iterator(query, iteratorQueryOptions);
         return iterator != null;

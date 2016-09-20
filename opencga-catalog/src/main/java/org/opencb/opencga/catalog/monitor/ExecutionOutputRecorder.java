@@ -19,7 +19,7 @@ package org.opencb.opencga.catalog.monitor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -38,6 +38,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.JOB_STATUS_FILE;
 
 /*
  * Created by jacobo on 4/11/14.
@@ -93,13 +95,13 @@ public class ExecutionOutputRecorder {
         logger.debug("Moving data from temporary folder to catalog folder...");
 
         // Delete job.status file
-        Path path = Paths.get(tmpOutdirPath.toString(), "job.status");
+        Path path = Paths.get(tmpOutdirPath.toString(), JOB_STATUS_FILE);
         if (path.toFile().exists()) {
-            logger.info("Deleting job.status file: {}", path.toUri());
+            logger.info("Deleting " + JOB_STATUS_FILE + " file: {}", path.toUri());
             try {
                 ioManager.deleteFile(path.toUri());
             } catch (CatalogIOException e) {
-                logger.error("Could not delete job.status file");
+                logger.error("Could not delete " + JOB_STATUS_FILE + " file");
                 throw e;
             }
         }
@@ -109,7 +111,7 @@ public class ExecutionOutputRecorder {
         logger.debug("Scan the temporal output directory ({}) from a job to find all generated files.", tmpOutDirUri);
         File outDir;
         try {
-            outDir = catalogManager.getFileManager().read(job.getOutDirId(), new QueryOptions(), sessionId).getResult().get(0);
+            outDir = catalogManager.getFileManager().get(job.getOutDirId(), new QueryOptions(), sessionId).getResult().get(0);
         } catch (CatalogException e) {
             logger.error("Cannot find file {}. Error: {}", job.getOutDirId(), e.getMessage());
             throw e;
@@ -119,7 +121,7 @@ public class ExecutionOutputRecorder {
         List<File> files;
         try {
             logger.info("Scanning files from {} to move to {}", outDir.getPath(), tmpOutdirPath);
-            files = fileScanner.scan(outDir, tmpOutDirUri, fileScannerPolicy, calculateChecksum, true, job.getId(), sessionId);
+            files = fileScanner.scan(outDir, tmpOutDirUri, fileScannerPolicy, calculateChecksum, true, uri -> true, job.getId(), sessionId);
         } catch (IOException e) {
             logger.warn("IOException when scanning temporal directory. Error: {}", e.getMessage());
             throw e;
@@ -154,8 +156,8 @@ public class ExecutionOutputRecorder {
         }
 
         ObjectMap parameters = new ObjectMap();
-        parameters.put(CatalogJobDBAdaptor.QueryParams.OUTPUT.key(), fileIds);
-        parameters.put(CatalogJobDBAdaptor.QueryParams.END_TIME.key(), System.currentTimeMillis());
+        parameters.put(JobDBAdaptor.QueryParams.OUTPUT.key(), fileIds);
+        parameters.put(JobDBAdaptor.QueryParams.END_TIME.key(), System.currentTimeMillis());
         try {
             catalogManager.modifyJob(job.getId(), parameters, this.sessionId);
         } catch (CatalogException e) {
@@ -176,11 +178,11 @@ public class ExecutionOutputRecorder {
                 jobStatus.setName(Job.JobStatus.ERROR);
                 jobStatus.setMessage("The job finished with an error");
             } else {
-                logger.error("This block should never be executed. Accepted status in job.status file are DONE and ERROR");
+                logger.error("This block should never be executed. Accepted status in " + JOB_STATUS_FILE + " file are DONE and ERROR");
                 jobStatus.setName(Job.JobStatus.ERROR);
                 jobStatus.setMessage("The finished with an unexpected error");
             }
-            ObjectMap params = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
+            ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
             catalogManager.getJobManager().update(job.getId(), params, new QueryOptions(), sessionId);
         } else {
             logger.error("This code should never be executed.");
@@ -191,7 +193,7 @@ public class ExecutionOutputRecorder {
 
 //    @Deprecated
 //    public void postProcessJob(Job job) throws CatalogException, IOException {
-//        Path path = Paths.get(this.tmpOutDirPath.toString(), "job.status");
+//        Path path = Paths.get(this.tmpOutDirPath.toString(), JOB_STATUS_FILE);
 //        logger.info("POST PROCESS: {}", path.toUri());
 //        Job.JobStatus jobStatus = objectMapper.reader(Job.JobStatus.class).readValue(path.toFile());
 //        if (jobStatus != null) {

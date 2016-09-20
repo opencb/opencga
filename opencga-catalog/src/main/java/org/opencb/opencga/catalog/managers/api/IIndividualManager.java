@@ -3,7 +3,7 @@ package org.opencb.opencga.catalog.managers.api;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
@@ -16,6 +16,7 @@ import java.util.Map;
 /**
  * Created by hpccoll1 on 19/06/15.
  */
+@Deprecated
 public interface IIndividualManager extends ResourceManager<Long, Individual>, IAnnotationSetManager {
 
     Long getStudyId(long individualId) throws CatalogException;
@@ -29,7 +30,7 @@ public interface IIndividualManager extends ResourceManager<Long, Individual>, I
      * @return the numeric individual id.
      * @throws CatalogException when more than one individual id is found or the study or project ids cannot be resolved.
      */
-    Long getIndividualId(String userId, String individualStr) throws CatalogException;
+    Long getId(String userId, String individualStr) throws CatalogException;
 
     /**
      * Obtains the list of individualIds corresponding to the comma separated list of individual strings given in individualStr.
@@ -39,21 +40,21 @@ public interface IIndividualManager extends ResourceManager<Long, Individual>, I
      * @return A list of individual ids.
      * @throws CatalogException CatalogException.
      */
-    default List<Long> getIndividualIds(String userId, String individualStr) throws CatalogException {
+    default List<Long> getIds(String userId, String individualStr) throws CatalogException {
         List<Long> individualIds = new ArrayList<>();
         for (String individualId : individualStr.split(",")) {
-            individualIds.add(getIndividualId(userId, individualId));
+            individualIds.add(getId(userId, individualId));
         }
         return individualIds;
     }
 
     @Deprecated
-    Long getIndividualId(String individualId) throws CatalogException;
+    Long getId(String individualId) throws CatalogException;
 
     QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId, Individual.Sex sex,
                                    QueryOptions options, String sessionId) throws CatalogException;
 
-    QueryResult<Individual> readAll(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult<Individual> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
     /**
      * Retrieve the individual Acls for the given members in the individual.
@@ -66,13 +67,13 @@ public interface IIndividualManager extends ResourceManager<Long, Individual>, I
      * the individual id is not valid or the members given do not exist.
      */
     @Deprecated
-    QueryResult<IndividualAclEntry> getIndividualAcls(String individualStr, List<String> members, String sessionId) throws CatalogException;
+    QueryResult<IndividualAclEntry> getAcls(String individualStr, List<String> members, String sessionId) throws CatalogException;
     @Deprecated
-    default List<QueryResult<IndividualAclEntry>> getIndividualAcls(List<String> individualIds, List<String> members, String sessionId)
+    default List<QueryResult<IndividualAclEntry>> getAcls(List<String> individualIds, List<String> members, String sessionId)
             throws CatalogException {
         List<QueryResult<IndividualAclEntry>> result = new ArrayList<>(individualIds.size());
         for (String individualStr : individualIds) {
-            result.add(getIndividualAcls(individualStr, members, sessionId));
+            result.add(getAcls(individualStr, members, sessionId));
         }
         return result;
     }
@@ -103,7 +104,7 @@ public interface IIndividualManager extends ResourceManager<Long, Individual>, I
     QueryResult rank(long studyId, Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException;
 
     default QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
-        long studyId = query.getLong(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key());
+        long studyId = query.getLong(IndividualDBAdaptor.QueryParams.STUDY_ID.key());
         if (studyId == 0L) {
             throw new CatalogException("Individual[rank]: Study id not found in the query");
         }
@@ -124,7 +125,7 @@ public interface IIndividualManager extends ResourceManager<Long, Individual>, I
     QueryResult groupBy(long studyId, Query query, String field, QueryOptions options, String sessionId) throws CatalogException;
 
     default QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        long studyId = query.getLong(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key());
+        long studyId = query.getLong(IndividualDBAdaptor.QueryParams.STUDY_ID.key());
         if (studyId == 0L) {
             throw new CatalogException("Individual[groupBy]: Study id not found in the query");
         }
@@ -145,7 +146,7 @@ public interface IIndividualManager extends ResourceManager<Long, Individual>, I
     QueryResult groupBy(long studyId, Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException;
 
     default QueryResult groupBy(Query query, List<String> field, QueryOptions options, String sessionId) throws CatalogException {
-        long studyId = query.getLong(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key());
+        long studyId = query.getLong(IndividualDBAdaptor.QueryParams.STUDY_ID.key());
         if (studyId == 0L) {
             throw new CatalogException("Individual[groupBy]: Study id not found in the query");
         }

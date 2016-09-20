@@ -14,6 +14,7 @@ import java.util.List;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Deprecated
 public interface IUserManager extends ResourceManager<String, User> {
 
     /**
@@ -23,7 +24,7 @@ public interface IUserManager extends ResourceManager<String, User> {
      * @return UserId owner of the sessionId. Empty string if SessionId does not match.
      * @throws CatalogException when the session id does not correspond to any user or the token has expired.
      */
-    String getUserId(String sessionId) throws CatalogException;
+    String getId(String sessionId) throws CatalogException;
 
     /**
      * Create a new user.
@@ -67,7 +68,7 @@ public interface IUserManager extends ResourceManager<String, User> {
      * @return The requested user
      * @throws CatalogException CatalogException
      */
-    QueryResult<User> read(String userId, String lastModified, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult<User> get(String userId, String lastModified, QueryOptions options, String sessionId) throws CatalogException;
 
     void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException;
 

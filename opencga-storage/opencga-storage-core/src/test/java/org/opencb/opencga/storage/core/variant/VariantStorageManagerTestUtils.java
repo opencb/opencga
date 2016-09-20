@@ -62,7 +62,11 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
             "22:16555584:C:T",
             "22:16556120:AGTGTTCTGGAATCCTATGTGAGGGACAAACACTCACACCCTCAGAGG:-",
             "22:16556162:C:T",
-            "22:16614404:G:A"
+            "22:16592392:G:C",
+            "22:16614404:G:A",
+            "22:16616085:-:T",
+            "22:16637481:A:T",
+            "22:16616084:G:A"
     )));
 
     protected static URI inputUri;
@@ -131,6 +135,25 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
 
     public static void setRootDir(Path rootDir) {
         VariantStorageManagerTestUtils.rootDir = rootDir;
+    }
+
+    public URI newOutputUri() throws IOException {
+        return newOutputUri(1);
+    }
+
+    public URI newOutputUri(int extraCalls) throws IOException {
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        // stackTrace[0] = "Thread.currentThread"
+        // stackTrace[1] = "newOutputUri"
+        // stackTrace[2] =  caller method
+        String testName = stackTrace[2 + extraCalls].getMethodName();
+        int c = 0;
+        URI outputUri = VariantStorageManagerTestUtils.outputUri.resolve("test_" + testName + "/");
+        while (Paths.get(outputUri).toFile().exists()) {
+            outputUri = VariantStorageManagerTestUtils.outputUri.resolve("test_" + testName + " (" + c++ + ")/");
+        }
+        Files.createDirectory(Paths.get(outputUri));
+        return outputUri;
     }
 
 //    private static File tempFile = null;

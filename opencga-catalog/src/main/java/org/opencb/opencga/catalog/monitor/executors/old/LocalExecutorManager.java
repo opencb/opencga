@@ -7,7 +7,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.exec.RunnableProcess;
-import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -21,6 +21,8 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
+
+import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.JOB_STATUS_FILE;
 
 /*
  * Created on 26/11/15.
@@ -128,7 +130,7 @@ public class LocalExecutorManager implements ExecutorManager {
         logger.info("==========================================");
 
         closeOutputStreams(com);
-        return catalogManager.getJobManager().read(job.getId(), new QueryOptions(), sessionId);
+        return catalogManager.getJobManager().get(job.getId(), new QueryOptions(), sessionId);
 //        return postExecuteCommand(job, com, null);
     }
 
@@ -227,10 +229,10 @@ public class LocalExecutorManager implements ExecutorManager {
 
         ObjectMapper objectMapper = new ObjectMapper();
         Path outdir = Paths.get((String) job.getAttributes().get(TMP_OUT_DIR));
-        Job.JobStatus status = objectMapper.reader(Job.JobStatus.class).readValue(outdir.resolve("job.status").toFile());
+        Job.JobStatus status = objectMapper.reader(Job.JobStatus.class).readValue(outdir.resolve(JOB_STATUS_FILE).toFile());
         /** Change status to READY or ERROR **/
         if (exitValue == 0 && StringUtils.isEmpty(error)) {
-            objectMapper.writer().writeValue(outdir.resolve("job.status").toFile(), new Job.JobStatus(Job.JobStatus.DONE,
+            objectMapper.writer().writeValue(outdir.resolve(JOB_STATUS_FILE).toFile(), new Job.JobStatus(Job.JobStatus.DONE,
                     "Job finished."));
 //            catalogManager.modifyJob(job.getId(), new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.READY),
 //                    sessionId);
@@ -240,10 +242,10 @@ public class LocalExecutorManager implements ExecutorManager {
             }
             parameters = new ObjectMap();
 //            parameters.put(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.ERROR);
-            parameters.put(CatalogJobDBAdaptor.QueryParams.ERROR.key(), error);
-            parameters.put(CatalogJobDBAdaptor.QueryParams.ERROR_DESCRIPTION.key(), Job.ERROR_DESCRIPTIONS.get(error));
+            parameters.put(JobDBAdaptor.QueryParams.ERROR.key(), error);
+            parameters.put(JobDBAdaptor.QueryParams.ERROR_DESCRIPTION.key(), Job.ERROR_DESCRIPTIONS.get(error));
             catalogManager.modifyJob(job.getId(), parameters, sessionId);
-            objectMapper.writer().writeValue(outdir.resolve("job.status").toFile(), new Job.JobStatus(Job.JobStatus.ERROR,
+            objectMapper.writer().writeValue(outdir.resolve(JOB_STATUS_FILE).toFile(), new Job.JobStatus(Job.JobStatus.ERROR,
                     "Job finished with error."));
         }
 

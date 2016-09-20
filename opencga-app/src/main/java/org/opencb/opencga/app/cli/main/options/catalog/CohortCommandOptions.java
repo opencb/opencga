@@ -90,7 +90,7 @@ public class CohortCommandOptions {
         @Parameter(names = {"-s","--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
-        @Parameter(names = {"--name"}, description = "cohort name", required = true, arity = 1)
+        @Parameter(names = {"--name"}, description = "cohort name. This parameter is required when you create the cohort from samples", required = false, arity = 1)
         public String name;
 
         @Parameter(names = {"--type"}, description = "Cohort type", required = false, arity = 1)

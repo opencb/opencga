@@ -9,8 +9,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
-import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -69,7 +69,7 @@ public class AnalysisFileIndexerTest extends AbstractAnalysisFileIndexerTest {
         assertEquals(1500, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
         checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getAllCohorts(studyId,
-                new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()),
+                new Query(CohortDBAdaptor.QueryParams.NAME.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()),
                 catalogManager, dbName, sessionId);
         assertNotNull(catalogManager.getFile(files.get(2).getId(), sessionId).first().getStats().get(FileMetadataReader.VARIANT_STATS));
 
@@ -86,7 +86,7 @@ public class AnalysisFileIndexerTest extends AbstractAnalysisFileIndexerTest {
         assertNotNull(catalogManager.getFile(files.get(4).getId(), sessionId).first().getStats().get(FileMetadataReader.VARIANT_STATS));
 
         checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getAllCohorts(studyId,
-                new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()),
+                new Query(CohortDBAdaptor.QueryParams.NAME.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()),
                 catalogManager, dbName, sessionId);
     }
 
@@ -115,8 +115,8 @@ public class AnalysisFileIndexerTest extends AbstractAnalysisFileIndexerTest {
                 .append(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
 
         File transformFile = transformFile(files.get(0), queryOptions);
-        Query searchQuery = new Query(CatalogFileDBAdaptor.QueryParams.JOB_ID.key(), transformFile.getJobId())
-                .append(CatalogFileDBAdaptor.QueryParams.NAME.key(), "~file.(json|avro)");
+        Query searchQuery = new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), transformFile.getJobId())
+                .append(FileDBAdaptor.QueryParams.NAME.key(), "~file.(json|avro)");
         File transformSourceFile = catalogManager.getAllFiles(studyId, searchQuery, new QueryOptions(), sessionId).first();
 
         create(studyId2, catalogManager.getFileUri(files.get(0)));
@@ -148,8 +148,8 @@ public class AnalysisFileIndexerTest extends AbstractAnalysisFileIndexerTest {
         assertEquals(job.getAttributes().get(Job.TYPE), Job.Type.INDEX.toString());
 
         //Get transformed file
-        Query searchQuery = new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), job.getOutput())
-                .append(CatalogFileDBAdaptor.QueryParams.NAME.key(), "~variants.(json|avro)");
+        Query searchQuery = new Query(FileDBAdaptor.QueryParams.ID.key(), job.getOutput())
+                .append(FileDBAdaptor.QueryParams.NAME.key(), "~variants.(json|avro)");
         File transformedFile = catalogManager.getAllFiles(studyId, searchQuery, new QueryOptions(), sessionId).first();
         assertEquals(job.getId(), transformedFile.getJobId());
         inputFile = catalogManager.getFile(inputFile.getId(), sessionId).first();

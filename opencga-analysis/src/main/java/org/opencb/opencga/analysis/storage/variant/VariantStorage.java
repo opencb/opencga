@@ -29,7 +29,7 @@ import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.variant.CatalogStudyConfigurationFactory;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
@@ -169,7 +169,7 @@ public class VariantStorage {
         File outDir;
         if (outDirId == null || outDirId <= 0) {
 //            outDir = catalogManager.getFileParent(indexedFileId, null, sessionId).first();
-            outDir = catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), ""), new QueryOptions(),
+            outDir = catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.PATH.key(), ""), new QueryOptions(),
                     sessionId).first();
         } else {
             outDir = catalogManager.getFile(outDirId, null, sessionId).first();

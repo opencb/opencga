@@ -35,7 +35,7 @@ public interface ResourceManager<I, R> {
      * @return The specified object
      * @throws CatalogException CatalogException
      */
-    QueryResult<R> read(I id, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult<R> get(I id, QueryOptions options, String sessionId) throws CatalogException;
 
     /**
      * Read all the R objects matching with the query on the QueryOptions.
@@ -46,7 +46,7 @@ public interface ResourceManager<I, R> {
      * @return All matching elements.
      * @throws CatalogException CatalogException
      */
-    QueryResult<R> readAll(Query query, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult<R> get(Query query, QueryOptions options, String sessionId) throws CatalogException;
 
     /**
      * Update an existing catalog entry.

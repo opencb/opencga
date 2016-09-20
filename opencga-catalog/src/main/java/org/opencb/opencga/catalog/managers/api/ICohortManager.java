@@ -7,7 +7,7 @@ package org.opencb.opencga.catalog.managers.api;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.Study;
@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@Deprecated
 public interface ICohortManager extends ResourceManager<Long, Cohort>, IAnnotationSetManager {
 
     QueryResult<Cohort> create(long studyId, String name, Study.Type type, String description, List<Long> sampleIds,
@@ -32,9 +33,9 @@ public interface ICohortManager extends ResourceManager<Long, Cohort>, IAnnotati
      * @return the numeric cohort id.
      * @throws CatalogException when more than one cohort id is found or .
      */
-    Long getCohortId(String userId, String cohortStr) throws CatalogException;
+    Long getId(String userId, String cohortStr) throws CatalogException;
 
-    QueryResult<Cohort> readAll(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult<Cohort> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
     /**     * Obtains the list of cohort ids corresponding to the comma separated list of cohort strings given in cohortStr.
      *
@@ -43,10 +44,10 @@ public interface ICohortManager extends ResourceManager<Long, Cohort>, IAnnotati
      * @return A list of cohort ids.
      * @throws CatalogException CatalogException.
      */
-    default List<Long> getCohortIds(String userId, String cohortStr) throws CatalogException {
+    default List<Long> getIds(String userId, String cohortStr) throws CatalogException {
         List<Long> cohortIds = new ArrayList<>();
         for (String cohortId : cohortStr.split(",")) {
-            cohortIds.add(getCohortId(userId, cohortId));
+            cohortIds.add(getId(userId, cohortId));
         }
         return cohortIds;
     }
@@ -65,7 +66,7 @@ public interface ICohortManager extends ResourceManager<Long, Cohort>, IAnnotati
     QueryResult groupBy(long studyId, Query query, String field, QueryOptions options, String sessionId) throws CatalogException;
 
     default QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        long studyId = query.getLong(CatalogCohortDBAdaptor.QueryParams.STUDY_ID.key());
+        long studyId = query.getLong(CohortDBAdaptor.QueryParams.STUDY_ID.key());
         if (studyId == 0L) {
             throw new CatalogException("Cohort[groupBy]: Study id not found in the query");
         }
@@ -86,7 +87,7 @@ public interface ICohortManager extends ResourceManager<Long, Cohort>, IAnnotati
     QueryResult groupBy(long studyId, Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException;
 
     default QueryResult groupBy(Query query, List<String> field, QueryOptions options, String sessionId) throws CatalogException {
-        long studyId = query.getLong(CatalogCohortDBAdaptor.QueryParams.STUDY_ID.key());
+        long studyId = query.getLong(CohortDBAdaptor.QueryParams.STUDY_ID.key());
         if (studyId == 0L) {
             throw new CatalogException("Cohort[groupBy]: Study id not found in the query");
         }
@@ -108,7 +109,7 @@ public interface ICohortManager extends ResourceManager<Long, Cohort>, IAnnotati
     QueryResult rank(long studyId, Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException;
 
     default QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
-        long studyId = query.getLong(CatalogCohortDBAdaptor.QueryParams.STUDY_ID.key());
+        long studyId = query.getLong(CohortDBAdaptor.QueryParams.STUDY_ID.key());
         if (studyId == 0L) {
             throw new CatalogException("Cohort[rank]: Study id not found in the query");
         }

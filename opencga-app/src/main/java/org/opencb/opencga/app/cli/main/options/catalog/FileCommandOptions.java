@@ -10,6 +10,7 @@ import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonComm
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.models.File;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -404,6 +405,37 @@ public class FileCommandOptions {
     @Parameters(commandNames = {"update"}, commandDescription = "Modify file")
     public class UpdateCommandOptions extends BaseFileCommand {
 
+        @Parameter(names = {"--name"}, description = "Name", required = false, arity = 1)
+        public String name;
+
+        @Parameter(names = {"--format"}, description = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)",
+                required = false, arity = 1)
+        public String format;
+
+        @Parameter(names = {"--bioformat"}, description = "Bioformat of the file (VARIANT, ALIGNMENT, SEQUENCE, PEDIGREE...NONE)",
+                required = false, arity = 1)
+        public String bioformat;
+
+        @Parameter(names = {"--description"}, description = "Description of the file", required = false, arity = 1)
+        public String description;
+
+        @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
+        public String attributes;
+
+        @Parameter(names = {"--stats"}, description = "Stats", required = false, arity = 1)
+        public String stats;
+
+        @Parameter(names = {"--sample-ids"}, description = "sampleIds", required = false, arity = 1)
+        public String sampleIds;
+
+        @Parameter(names = {"--job-id"}, description = "Job id", required = false, arity = 1)
+        public String jobId;
+
+        @Parameter(names = {"--path"}, description = "Path", required = false, arity = 1)
+        public String path;
+
+
+
     }
 
     @Parameters(commandNames = {"relink"}, commandDescription = "Change location of linked or STAGED file.")
@@ -469,8 +501,8 @@ public class FileCommandOptions {
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-         @Parameter(names = {"-i", "--input"}, description = "File or folder location", required = true, arity = 1)
-         public String input;
+         @Parameter(names = {"-i", "--input"}, description = "File or folder location", required = true, variableArity = true)
+         public List<String> inputs;
 //        @Parameter(names = {"-uri"}, description = "File location", required = true, arity = 1)
 //        public String uri;
 
@@ -502,8 +534,8 @@ public class FileCommandOptions {
         @Parameter(names = {"--file-format"}, description = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)", required = true, arity = 1)
         public String fileFormat;
 
-        @Parameter(names = {"--bio-format"}, description = "Bioformat of the file (VARIANT, ALIGNMENT, SEQUENCE, PEDIGREE...NONE)", required = true, arity = 1)
-        public String bioFormat;
+        @Parameter(names = {"--bioformat"}, description = "Bioformat of the file (VARIANT, ALIGNMENT, SEQUENCE, PEDIGREE...NONE)", required = true, arity = 1)
+        public String bioformat;
 
         @Parameter(names = {"--catalog-path"}, description = "Path within catalog where the file will be located (Default: root folder)", required = false, arity = 1)
         public String catalogPath;

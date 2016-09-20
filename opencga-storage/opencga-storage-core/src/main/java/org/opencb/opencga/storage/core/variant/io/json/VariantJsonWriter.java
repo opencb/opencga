@@ -29,6 +29,7 @@ import org.opencb.biodata.models.variant.VariantVcfFactory;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -74,10 +75,10 @@ public class VariantJsonWriter implements VariantWriter {
     @Override
     public boolean open() {
         try {
-            variantsStream = new GZIPOutputStream(new FileOutputStream(
-                    Paths.get(outdir.toString(), source.getFileName()).toAbsolutePath().toString() + ".variants.json.gz"));
-            fileStream = new GZIPOutputStream(new FileOutputStream(
-                    Paths.get(outdir.toString(), source.getFileName()).toAbsolutePath().toString() + ".file.json.gz"));
+            String output = Paths.get(outdir.toString(), source.getFileName()).toAbsolutePath().toString()
+                    + "." + VariantReaderUtils.VARIANTS_FILE + ".json.gz";
+            variantsStream = new GZIPOutputStream(new FileOutputStream(output));
+            fileStream = new GZIPOutputStream(new FileOutputStream(VariantReaderUtils.getMetaFromTransformedFile(output)));
         } catch (IOException ex) {
             Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;

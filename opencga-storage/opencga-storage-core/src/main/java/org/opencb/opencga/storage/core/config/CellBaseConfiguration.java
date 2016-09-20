@@ -16,6 +16,10 @@
 
 package org.opencb.opencga.storage.core.config;
 
+import org.opencb.cellbase.client.config.ClientConfiguration;
+import org.opencb.cellbase.client.config.RestConfig;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -99,4 +103,17 @@ public class CellBaseConfiguration {
         this.preferred = preferred;
     }
 
+    public ClientConfiguration toClientConfiguration() {
+        ClientConfiguration clientConfiguration = new ClientConfiguration();
+        clientConfiguration.setVersion(this.getVersion());
+        clientConfiguration.setDefaultSpecies("hsapiens");
+        RestConfig rest = new RestConfig();
+        List<String> hosts = new ArrayList<>(this.getHosts().size());
+        for (String host : this.getHosts()) {
+            hosts.add(host.replace("/webservices/rest", ""));
+        }
+        rest.setHosts(hosts);
+        clientConfiguration.setRest(rest);
+        return clientConfiguration;
+    }
 }

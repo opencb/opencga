@@ -7,7 +7,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.FileIndex;
@@ -83,8 +83,8 @@ public class PlatinumFileIndexerTest extends AbstractAnalysisFileIndexerTest {
         assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFile(inputFile.getId(), sessionId).first().getIndex().getStatus().getName());
 
         //Get transformed file
-        Query searchQuery = new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), job.getOutput())
-                .append(CatalogFileDBAdaptor.QueryParams.NAME.key(), "~variants.(json|avro)");
+        Query searchQuery = new Query(FileDBAdaptor.QueryParams.ID.key(), job.getOutput())
+                .append(FileDBAdaptor.QueryParams.NAME.key(), "~variants.(json|avro)");
         File transformedFile = catalogManager.getAllFiles(studyId, searchQuery, new QueryOptions(), sessionId).first();
         assertEquals(job.getId(), transformedFile.getJobId());
         inputFile = catalogManager.getFile(inputFile.getId(), sessionId).first();

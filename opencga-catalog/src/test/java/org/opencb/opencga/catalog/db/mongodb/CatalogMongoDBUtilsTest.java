@@ -20,10 +20,10 @@ public class CatalogMongoDBUtilsTest extends CatalogMongoDBAdaptorTest {
                 ("key", new Document("key....k", "value...2.2.2"));
         System.out.println(o);
 
-        CatalogMongoDBUtils.replaceDotsInKeys(o);
+        MongoDBUtils.replaceDotsInKeys(o);
         System.out.println(o);
 
-        CatalogMongoDBUtils.restoreDotsInKeys(o);
+        MongoDBUtils.restoreDotsInKeys(o);
         System.out.println(o);
 
         Assert.assertEquals(original, o);

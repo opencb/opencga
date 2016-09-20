@@ -17,7 +17,6 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -26,8 +25,8 @@ import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.commons.AnnotationCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.catalog.CohortCommandOptions;
-import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.Sample;
@@ -143,11 +142,22 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         String variable = cohortsCommandOptions.createCommandOptions.variable;
 
         ObjectMap o = new ObjectMap();
-        o.append(CatalogCohortDBAdaptor.QueryParams.TYPE.key(),cohortsCommandOptions.createCommandOptions.type);
-        o.append(CatalogCohortDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),variableSetId);
-        o.append(CatalogCohortDBAdaptor.QueryParams.DESCRIPTION.key(),description);
-        o.append("sampleIds",sampleIds);
-        o.append(CatalogCohortDBAdaptor.QueryParams.VARIABLE_NAME.key(),variable);
+        o.append(CohortDBAdaptor.QueryParams.TYPE.key(), cohortsCommandOptions.createCommandOptions.type);
+        o.append(CohortDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),variableSetId);
+        o.append(CohortDBAdaptor.QueryParams.DESCRIPTION.key(),description);
+        o.append("sampleIds", sampleIds);
+        o.append("variable", variable);
+        if (cohortName == null){
+            if( sampleIds != null) {
+                System.out.println("Error: The name parameter is required when you create the cohort from samples");
+                return null;
+            }else if (variableSetId != null && variable != null){
+                cohortName = "Cohort";
+            }else{
+                System.out.println("Error: Please, Insert the corrects params for create the cohort.");
+                return null;
+            }
+        }
         return openCGAClient.getCohortClient().create(studyId, cohortName, o);
     }
 
@@ -178,10 +188,10 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap objectMap = new ObjectMap();
 
-        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.NAME.key(), cohortsCommandOptions.updateCommandOptions.name);
-        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.CREATION_DATE.key(), cohortsCommandOptions.updateCommandOptions.creationDate);
-        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.DESCRIPTION.key(), cohortsCommandOptions.updateCommandOptions.description);
-        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.updateCommandOptions.samples);
+        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.NAME.key(), cohortsCommandOptions.updateCommandOptions.name);
+        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.CREATION_DATE.key(), cohortsCommandOptions.updateCommandOptions.creationDate);
+        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.DESCRIPTION.key(), cohortsCommandOptions.updateCommandOptions.description);
+        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.updateCommandOptions.samples);
 
         //TODO objectMap.put("method", "POST");
 
@@ -201,7 +211,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.put("calculate", cohortsCommandOptions.statsCommandOptions.calculate);
         queryOptions.put("delete", cohortsCommandOptions.statsCommandOptions.delete);
         queryOptions.putIfNotEmpty("log", cohortsCommandOptions.statsCommandOptions.log);
-        queryOptions.putIfNotEmpty(CatalogJobDBAdaptor.QueryParams.OUT_DIR_ID.key(), cohortsCommandOptions.statsCommandOptions.outdirId);
+        queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.OUT_DIR_ID.key(), cohortsCommandOptions.statsCommandOptions.outdirId);
 
 
         return openCGAClient.getCohortClient().getStats(cohortsCommandOptions.statsCommandOptions.id, query, queryOptions);
@@ -212,14 +222,14 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap objectMap = new ObjectMap();
 
-        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.ID.key(), cohortsCommandOptions.groupByCommandOptions.id);
-        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.NAME.key(), cohortsCommandOptions.groupByCommandOptions.name);
-        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.TYPE.key(), cohortsCommandOptions.groupByCommandOptions.type);
-        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.STATUS_NAME.key(), cohortsCommandOptions.groupByCommandOptions.status);
-        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.CREATION_DATE.key(), cohortsCommandOptions.groupByCommandOptions.creationDate);
-        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.groupByCommandOptions.sampleIds);
-        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.ATTRIBUTES.key(), cohortsCommandOptions.groupByCommandOptions.attributes);
-        objectMap.putIfNotEmpty(CatalogCohortDBAdaptor.QueryParams.NATTRIBUTES.key(), cohortsCommandOptions.groupByCommandOptions.nattributes);
+        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.ID.key(), cohortsCommandOptions.groupByCommandOptions.id);
+        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.NAME.key(), cohortsCommandOptions.groupByCommandOptions.name);
+        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.TYPE.key(), cohortsCommandOptions.groupByCommandOptions.type);
+        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), cohortsCommandOptions.groupByCommandOptions.status);
+        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.CREATION_DATE.key(), cohortsCommandOptions.groupByCommandOptions.creationDate);
+        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.groupByCommandOptions.sampleIds);
+        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.ATTRIBUTES.key(), cohortsCommandOptions.groupByCommandOptions.attributes);
+        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.NATTRIBUTES.key(), cohortsCommandOptions.groupByCommandOptions.nattributes);
 
         return openCGAClient.getCohortClient().groupBy(cohortsCommandOptions.groupByCommandOptions.studyId,
                 cohortsCommandOptions.groupByCommandOptions.fields,objectMap);

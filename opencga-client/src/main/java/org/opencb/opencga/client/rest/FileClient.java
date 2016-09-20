@@ -27,7 +27,6 @@ import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
-import javax.swing.*;
 import java.io.IOException;
 import java.net.URI;
 
@@ -46,8 +45,8 @@ public class FileClient extends AbstractParentClient<File, FileAclEntry> {
         this.aclClass = FileAclEntry.class;
     }
 
-    public QueryResponse<File> createFolder(String studyId, String path, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "studyId", studyId, "folder", path);
+    public QueryResponse<File> createFolder(String studyId, String paths, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "studyId", studyId, "folders", paths);
         return execute(FILES_URL, "create-folder", params, GET, File.class);
     }
 
@@ -91,16 +90,6 @@ public class FileClient extends AbstractParentClient<File, FileAclEntry> {
 
     public QueryResponse<File> getFiles(String fileId, QueryOptions options) throws CatalogException, IOException {
         return execute(FILES_URL, fileId, "files", options, GET, File.class);
-    }
-
-    public QueryResponse<File> update(String fileId, ObjectMap params) throws CatalogException, IOException {
-
-        if (params.containsKey("method")) {
-            if (params.get("method").equals("POST")) {
-                execute(FILES_URL, fileId, "update", params, POST, File.class);
-            }
-        }
-        return execute(FILES_URL, fileId, "update", params, GET, File.class);
     }
 
     public QueryResponse<File> delete(String fileId, ObjectMap params) throws CatalogException, IOException {

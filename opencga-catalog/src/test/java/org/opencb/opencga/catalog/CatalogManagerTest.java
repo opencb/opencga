@@ -31,21 +31,15 @@ import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.*;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.summaries.FeatureCount;
 import org.opencb.opencga.catalog.models.summaries.VariableSetSummary;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
-import org.opencb.opencga.catalog.managers.CatalogFileUtils;
-import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.*;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
@@ -54,8 +48,8 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
-import static org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME;
-import static org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID;
+import static org.opencb.opencga.catalog.db.api.SampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME;
+import static org.opencb.opencga.catalog.db.api.SampleDBAdaptor.QueryParams.VARIABLE_SET_ID;
 
 public class CatalogManagerTest extends GenericTest {
 
@@ -244,7 +238,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testAdminUserExists() throws Exception {
-        QueryResult<ObjectMap> login = catalogManager.login("admin", "admin", "localhost");
+        QueryResult<ObjectMap> login = catalogManager.getUserManager().login("admin", "admin", "localhost");
         assertTrue(login.first().getString("sessionId").length() == 40);
     }
 
@@ -314,8 +308,8 @@ public class CatalogManagerTest extends GenericTest {
 
         List<User> userList = catalogManager.getUser("user", userPre.getLastModified(),
                 new QueryOptions(QueryOptions.INCLUDE,
-                        Arrays.asList(CatalogUserDBAdaptor.QueryParams.PASSWORD.key(), CatalogUserDBAdaptor.QueryParams.NAME.key(),
-                                CatalogUserDBAdaptor.QueryParams.EMAIL.key(), CatalogUserDBAdaptor.QueryParams.ATTRIBUTES.key())),
+                        Arrays.asList(UserDBAdaptor.QueryParams.PASSWORD.key(), UserDBAdaptor.QueryParams.NAME.key(),
+                                UserDBAdaptor.QueryParams.EMAIL.key(), UserDBAdaptor.QueryParams.ATTRIBUTES.key())),
                 sessionIdUser).getResult();
         if (userList.isEmpty()) {
             fail("Error. LastModified should have changed");
@@ -462,22 +456,22 @@ public class CatalogManagerTest extends GenericTest {
         long study_4 = catalogManager.createStudy(projectId, "study_4", "study_4", Study.Type.CASE_CONTROL, "creationDate",
                 "description", new Status(), null, null, null, null, null, null, null, sessionIdUser).first().getId();
 
-        assertEquals(new HashSet<>(Collections.emptyList()), catalogManager.getAllStudies(new Query(CatalogStudyDBAdaptor.QueryParams
+        assertEquals(new HashSet<>(Collections.emptyList()), catalogManager.getAllStudies(new Query(StudyDBAdaptor.QueryParams
                 .GROUP_USER_IDS.key(), "user2"), null, sessionIdUser).getResult().stream().map(Study::getAlias)
                 .collect(Collectors.toSet()));
 
         catalogManager.createGroup(Long.toString(study_4), "admins", "user3", sessionIdUser);
-        assertEquals(new HashSet<>(Arrays.asList("study_4")), catalogManager.getAllStudies(new Query(CatalogStudyDBAdaptor.QueryParams
+        assertEquals(new HashSet<>(Arrays.asList("study_4")), catalogManager.getAllStudies(new Query(StudyDBAdaptor.QueryParams
                 .GROUP_USER_IDS.key(), "user3"), null, sessionIdUser).getResult().stream().map(Study::getAlias)
                 .collect(Collectors.toSet()));
 
         assertEquals(new HashSet<>(Arrays.asList("phase1", "phase3", "study_1", "study_2", "study_3", "study_4")), catalogManager
-                .getAllStudies(new Query(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId), null, sessionIdUser)
+                .getAllStudies(new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId), null, sessionIdUser)
                 .getResult().stream().map(Study::getAlias).collect(Collectors.toSet()));
         assertEquals(new HashSet<>(Arrays.asList("phase1", "phase3", "study_1", "study_2", "study_3", "study_4")), catalogManager
                 .getAllStudies(new Query(), null, sessionIdUser).getResult().stream().map(Study::getAlias).collect(Collectors.toSet()));
         assertEquals(new HashSet<>(Arrays.asList("study_1", "study_2", "study_3", "study_4")), catalogManager.getAllStudies(new
-                Query(CatalogStudyDBAdaptor.QueryParams.ALIAS.key(), "~^study"), null, sessionIdUser).getResult().stream()
+                Query(StudyDBAdaptor.QueryParams.ALIAS.key(), "~^study"), null, sessionIdUser).getResult().stream()
                 .map(Study::getAlias).collect(Collectors.toSet()));
         assertEquals(Collections.singleton("s1"), catalogManager.getAllStudies(new Query(), null, sessionIdUser2).getResult().stream()
                 .map(Study::getAlias).collect(Collectors.toSet()));
@@ -646,19 +640,19 @@ public class CatalogManagerTest extends GenericTest {
         VariableSet vs4 = catalogManager.createVariableSet(studyId, "vs4", true, "Aries", null, variables, sessionIdUser).first();
 
         long numResults;
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogStudyDBAdaptor.VariableSetParams.NAME.key()
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(StudyDBAdaptor.VariableSetParams.NAME.key()
                 , "vs1"), sessionIdUser).getNumResults();
         assertEquals(1, numResults);
 
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogStudyDBAdaptor.VariableSetParams.NAME.key()
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(StudyDBAdaptor.VariableSetParams.NAME.key()
                 , "vs1,vs2"), sessionIdUser).getNumResults();
         assertEquals(2, numResults);
 
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogStudyDBAdaptor.VariableSetParams.NAME.key()
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(StudyDBAdaptor.VariableSetParams.NAME.key()
                 , "VS1"), sessionIdUser).getNumResults();
         assertEquals(0, numResults);
 
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(CatalogStudyDBAdaptor.VariableSetParams.ID.key()
+        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(StudyDBAdaptor.VariableSetParams.ID.key()
                 , vs1.getId() + "," + vs3.getId()), sessionIdUser).getNumResults();
         assertEquals(2, numResults);
 
@@ -944,62 +938,62 @@ public class CatalogManagerTest extends GenericTest {
 //        assertEquals(1, annotationSetQueryResult.getNumResults());
 
         List<Sample> samples;
-        Query query = new Query(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), vs1.getId());
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "li");
+        Query query = new Query(SampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), vs1.getId());
+        query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "li");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(1, samples.size());
 
         //query = new Query(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), vs1.getId());
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "lo");
+        query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "lo");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(1, samples.size());
 
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "LL");
+        query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "LL");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(0, samples.size());
 
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "lo,li,LL");
+        query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "lo,li,LL");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(2, samples.size());
 
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.string", "my value");
+        query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.string", "my value");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(1, samples.size());
 
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "lo,lu,LL");
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.string", "my value");
+        query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "lo,lu,LL");
+        query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.string", "my value");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(1, samples.size());
 
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList" , "lo,lu,LL");
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.numberList", "7");
+        query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList" , "lo,lu,LL");
+        query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.numberList", "7");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(0, samples.size());
 
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "lo,lu,LL");
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.numberList", "3");
+        query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "lo,lu,LL");
+        query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.numberList", "3");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(1, samples.size());
 
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "lo,lu,LL");
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.numberList" , "5");
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.string", "stringValue");
+        query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "lo,lu,LL");
+        query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.numberList" , "5");
+        query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.string", "stringValue");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(1, samples.size());
 
-        query.remove(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.string");
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "lo,lu,LL");
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.numberList", "2,5");
+        query.remove(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.string");
+        query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "lo,lu,LL");
+        query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.numberList", "2,5");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(2, samples.size());
 
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "lo,lu,LL");
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.numberList", "0");
+        query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.stringList", "lo,lu,LL");
+        query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ".nestedObject.object.numberList", "0");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(0, samples.size());
 
 
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".unexisting", "lo,lu,LL");
+        query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ".unexisting", "lo,lu,LL");
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("not found in variableSet");
         catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
@@ -1008,7 +1002,7 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testQuerySampleAnnotationFail1() throws CatalogException {
         Query query = new Query();
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ":nestedObject.stringList", "lo,lu,LL");
+        query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ":nestedObject.stringList", "lo,lu,LL");
 
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("annotation:nestedObject does not exist");
@@ -1229,10 +1223,10 @@ public class CatalogManagerTest extends GenericTest {
         assertEquals(sampleId, queryResult.get(0).first().getId());
 
         Query query = new Query()
-                .append(CatalogSampleDBAdaptor.QueryParams.ID.key(), sampleId)
-                .append(CatalogSampleDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
+                .append(SampleDBAdaptor.QueryParams.ID.key(), sampleId)
+                .append(SampleDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
 
-        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().readAll(studyId, query, new QueryOptions(), sessionIdUser);
+        QueryResult<Sample> sampleQueryResult = catalogManager.getSampleManager().get(studyId, query, new QueryOptions(), sessionIdUser);
 //        QueryResult<Sample> sample = catalogManager.getSample(sampleId, new QueryOptions(), sessionIdUser);
         assertEquals(1, sampleQueryResult.getNumResults());
         assertTrue(sampleQueryResult.first().getName().contains(".DELETED"));
@@ -1280,11 +1274,11 @@ public class CatalogManagerTest extends GenericTest {
                 null, sessionIdUser).first();
 
         long numResults;
-        numResults = catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(), sampleId1),
+        numResults = catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleId1),
                 new QueryOptions(), sessionIdUser).getNumResults();
         assertEquals(2, numResults);
 
-        numResults = catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(),
+        numResults = catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.SAMPLES.key(),
                 sampleId1 + "," + sampleId5), new QueryOptions(), sessionIdUser).getNumResults();
         assertEquals(3, numResults);
 
@@ -1292,23 +1286,23 @@ public class CatalogManagerTest extends GenericTest {
 // (), sampleId3 + "," + sampleId4), sessionIdUser).getNumResults();
 //        assertEquals(2, numResults);
 
-        numResults = catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(),
+        numResults = catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(),
                 "MyCohort2"), new QueryOptions(), sessionIdUser).getNumResults();
         assertEquals(1, numResults);
 
-        numResults = catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(),
+        numResults = catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(),
                 "~MyCohort."), new QueryOptions(), sessionIdUser).getNumResults();
         assertEquals(4, numResults);
 
-        numResults = catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.TYPE.key(),
+        numResults = catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.TYPE.key(),
                 Study.Type.FAMILY), new QueryOptions(), sessionIdUser).getNumResults();
         assertEquals(2, numResults);
 
-        numResults = catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.TYPE.key(),
+        numResults = catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.TYPE.key(),
                 "CASE_CONTROL"), new QueryOptions(), sessionIdUser).getNumResults();
         assertEquals(1, numResults);
 
-        numResults = catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.ID.key(),
+        numResults = catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.ID.key(),
                 myCohort1.getId() + "," + myCohort2.getId() + "," + myCohort3.getId()), new QueryOptions(), sessionIdUser).getNumResults();
         assertEquals(3, numResults);
     }
@@ -1420,22 +1414,22 @@ public class CatalogManagerTest extends GenericTest {
                 ("AGE", 25).append("PHEN", "CASE").append("ALIVE", true), null, sessionIdUser);
 
         List<String> individuals;
-        individuals = catalogManager.getAllIndividuals(studyId, new Query(CatalogIndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
+        individuals = catalogManager.getAllIndividuals(studyId, new Query(IndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
                         variableSet.getId())
-                        .append(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".NAME", "~^INDIVIDUAL_"),
+                        .append(IndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".NAME", "~^INDIVIDUAL_"),
                 null, sessionIdUser).getResult().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_1", "INDIVIDUAL_2", "INDIVIDUAL_3")));
 
-        individuals = catalogManager.getAllIndividuals(studyId, new Query(CatalogIndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
+        individuals = catalogManager.getAllIndividuals(studyId, new Query(IndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
                         variableSet.getId())
-                        .append(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".AGE", ">10"),
+                        .append(IndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".AGE", ">10"),
                 null, sessionIdUser).getResult().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_2", "INDIVIDUAL_3")));
 
-        individuals = catalogManager.getAllIndividuals(studyId, new Query(CatalogIndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
+        individuals = catalogManager.getAllIndividuals(studyId, new Query(IndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
                         variableSet.getId())
-                        .append(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".AGE", ">10")
-                        .append(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".PHEN", "CASE"),
+                        .append(IndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".AGE", ">10")
+                        .append(IndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".PHEN", "CASE"),
                 null, sessionIdUser).getResult().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_3")));
 

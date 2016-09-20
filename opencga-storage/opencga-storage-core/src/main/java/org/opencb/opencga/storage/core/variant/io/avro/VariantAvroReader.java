@@ -5,6 +5,7 @@ import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
+import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.xerial.snappy.SnappyInputStream;
 
 import java.io.File;
@@ -109,6 +110,6 @@ public class VariantAvroReader implements VariantReader {
 
     @Override
     public String getHeader() {
-        return source.getMetadata().get("variantFileHeader").toString();
+        return source.getMetadata().get(VariantFileUtils.VARIANT_FILE_HEADER).toString();
     }
 }

@@ -20,7 +20,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
@@ -73,7 +73,7 @@ public class FileDaemon extends MonitorParentDaemon {
     private void checkDeletedFiles() throws CatalogException {
         QueryResult<File> files = catalogManager.searchFile(
                 -1,
-                new Query(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(), File.FileStatus.TRASHED),
+                new Query(FileDBAdaptor.QueryParams.FILE_STATUS.key(), File.FileStatus.TRASHED),
                 new QueryOptions(),
                 sessionId);
 
@@ -103,7 +103,7 @@ public class FileDaemon extends MonitorParentDaemon {
     private void checkPendingRemoveFiles() throws CatalogException {
         QueryResult<File> files = catalogManager.searchFile(
                 -1,
-                new Query(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(), File.FileStatus.DELETED),
+                new Query(FileDBAdaptor.QueryParams.FILE_STATUS.key(), File.FileStatus.DELETED),
                 new QueryOptions(),
                 sessionId);
 

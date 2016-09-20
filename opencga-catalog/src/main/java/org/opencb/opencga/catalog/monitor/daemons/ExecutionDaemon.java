@@ -20,7 +20,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.api.IJobManager;
@@ -47,17 +47,17 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         IJobManager jobManager = catalogManager.getJobManager();
         Query runningJobsQuery = new Query()
-                .append(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING)
-                .append(CatalogJobDBAdaptor.QueryParams.TYPE.key(), "!=" + Job.Type.INDEX);
+                .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING)
+                .append(JobDBAdaptor.QueryParams.TYPE.key(), "!=" + Job.Type.INDEX);
         Query queuedJobsQuery = new Query()
-                .append(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED)
-                .append(CatalogJobDBAdaptor.QueryParams.TYPE.key(), "!=" + Job.Type.INDEX);
+                .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED)
+                .append(JobDBAdaptor.QueryParams.TYPE.key(), "!=" + Job.Type.INDEX);
         Query preparedJobsQuery = new Query()
-                .append(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.PREPARED)
-                .append(CatalogJobDBAdaptor.QueryParams.TYPE.key(), "!=" + Job.Type.INDEX);
+                .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.PREPARED)
+                .append(JobDBAdaptor.QueryParams.TYPE.key(), "!=" + Job.Type.INDEX);
         // Sort jobs by creation date
         QueryOptions queryOptions = new QueryOptions()
-                .append(QueryOptions.SORT, CatalogJobDBAdaptor.QueryParams.CREATION_DATE.key())
+                .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key())
                 .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
 
         while (!exit) {
@@ -74,7 +74,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             RUNNING JOBS
              */
             try {
-                QueryResult<Job> runningJobs = jobManager.readAll(runningJobsQuery, queryOptions, sessionId);
+                QueryResult<Job> runningJobs = jobManager.get(runningJobsQuery, queryOptions, sessionId);
                 logger.debug("Checking running jobs. {} running jobs found", runningJobs.getNumResults());
                 for (Job job : runningJobs.getResult()) {
                     checkRunningJob(job);
@@ -87,7 +87,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             QUEUED JOBS
              */
             try {
-                QueryResult<Job> queuedJobs = jobManager.readAll(queuedJobsQuery, queryOptions, sessionId);
+                QueryResult<Job> queuedJobs = jobManager.get(queuedJobsQuery, queryOptions, sessionId);
                 logger.debug("Checking queued jobs. {} running jobs found", queuedJobs.getNumResults());
                 for (Job job : queuedJobs.getResult()) {
                     checkQueuedJob(job);
@@ -100,7 +100,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             PREPARED JOBS
              */
             try {
-                QueryResult<Job> preparedJobs = jobManager.readAll(preparedJobsQuery, queryOptions, sessionId);
+                QueryResult<Job> preparedJobs = jobManager.get(preparedJobsQuery, queryOptions, sessionId);
                 logger.debug("Checking prepared jobs. {} running jobs found", preparedJobs.getNumResults());
                 for (Job job : preparedJobs.getResult()) {
                     checkPreparedJob(job);
@@ -118,7 +118,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         try {
             catalogManager.getJobManager().update(
-                    job.getId(), new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.READY),
+                    job.getId(), new ObjectMap(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.READY),
                     new QueryOptions(), sessionId);
         } catch (CatalogException e) {
             logger.error("Could not update job {}. {}", job.getId(), e.getMessage());
@@ -133,7 +133,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
             logger.info("Running job {}" + job.getName());
 
             catalogManager.getJobManager().update(
-                    job.getId(), new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING),
+                    job.getId(), new ObjectMap(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING),
                     new QueryOptions(), sessionId);
         } catch (CatalogException e) {
             logger.error("Could not update job {}. {}", job.getId(), e.getMessage());
@@ -156,7 +156,7 @@ public class ExecutionDaemon extends MonitorParentDaemon {
 
         try {
             catalogManager.getJobManager().update(
-                    job.getId(), new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED),
+                    job.getId(), new ObjectMap(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED),
                     new QueryOptions(), sessionId);
         } catch (CatalogException e) {
             logger.error("Could not update job {}. {}", job.getId(), e.getMessage());

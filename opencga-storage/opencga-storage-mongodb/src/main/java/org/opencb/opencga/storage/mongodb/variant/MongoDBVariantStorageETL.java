@@ -374,30 +374,6 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         setStatus(BatchFileOperation.Status.READY, STAGE.key(), Collections.singletonList(options.getInt(Options.FILE_ID.key())));
     }
 
-    private void setStatus(BatchFileOperation.Status status, String operationName, List<Integer> files) throws StorageManagerException {
-        int studyId = getStudyId();
-        long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
-        try {
-            StudyConfiguration studyConfiguration = getStudyConfiguration(true);
-            List<BatchFileOperation> batches = studyConfiguration.getBatches();
-            BatchFileOperation operation = null;
-            for (int i = batches.size() - 1; i >= 0; i--) {
-                operation = batches.get(i);
-                if (operation.getOperationName().equals(operationName) && operation.getFileIds().equals(files)) {
-                    operation.addStatus(Calendar.getInstance().getTime(), status);
-                    break;
-                }
-                operation = null;
-            }
-            if (operation == null) {
-                throw new IllegalStateException("Batch operation " + operationName + " for files " + files + " not found!");
-            }
-            dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
-        } finally {
-            dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
-        }
-    }
-
     /**
      * Merge staged files into Variant collection.
      *
@@ -652,20 +628,12 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
     }
 
     @Override
-    public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) {
-
-        List<BatchFileOperation> batches = studyConfiguration.getBatches();
-        for (int i = batches.size() - 1; i >= 0; i--) {
-            BatchFileOperation operation = batches.get(i);
-            if (operation.getOperationName().equals(MERGE.key()) && operation.getFileIds().equals(fileIds)) {
-                if (operation.currentStatus() != BatchFileOperation.Status.DONE) {
-                    logger.warn("Unexpected status " + operation.currentStatus());
-                }
-                operation.addStatus(BatchFileOperation.Status.READY);
-            }
-        }
-
+    public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageManagerException {
         super.securePostLoad(fileIds, studyConfiguration);
+        BatchFileOperation.Status status = secureSetStatus(studyConfiguration, BatchFileOperation.Status.READY, MERGE.key(), fileIds);
+        if (status != BatchFileOperation.Status.DONE) {
+            logger.warn("Unexpected status " + status);
+        }
     }
 
     @Override

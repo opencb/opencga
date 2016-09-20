@@ -72,6 +72,7 @@ public interface ExecutorManager {
         return result;
     }
 
+    @Deprecated
     QueryResult<Job> run(Job job) throws Exception;
 
     default String status(Job job) throws Exception {

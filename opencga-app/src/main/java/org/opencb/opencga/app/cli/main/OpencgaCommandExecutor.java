@@ -66,9 +66,8 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
             loadCatalogConfiguration();
 
             SessionFile sessionFile = loadSessionFile();
-            System.out.println("sessionFile = " + sessionFile);
+            logger.debug("sessionFile = " + sessionFile);
             if (sessionFile != null) {
-                System.out.println(sessionFile.getLogout());
                 if (sessionFile.getLogout() == null) {
                     if (skipDuration) {
                         openCGAClient = new OpenCGAClient(sessionFile.getSessionId(), clientConfiguration);

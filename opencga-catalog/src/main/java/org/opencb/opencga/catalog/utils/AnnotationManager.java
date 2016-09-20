@@ -1,8 +1,8 @@
 package org.opencb.opencga.catalog.utils;
 
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CatalogAnnotationSetDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.AnnotationSetDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Annotation;
 import org.opencb.opencga.catalog.models.AnnotationSet;
@@ -33,7 +33,7 @@ public class AnnotationManager {
      */
     public static QueryResult<AnnotationSet> createAnnotationSet(long id, VariableSet variableSet, String annotationSetName,
                                                            Map<String, Object> annotations, Map<String, Object> attributes,
-                                                           CatalogAnnotationSetDBAdaptor dbAdaptor)
+                                                           AnnotationSetDBAdaptor dbAdaptor)
             throws CatalogException {
 
         ParamUtils.checkAlias(annotationSetName, "annotationSetName");
@@ -75,8 +75,8 @@ public class AnnotationManager {
      * @throws CatalogException when the annotation set name could not be found or the new annotation is not valid.
      */
     public static QueryResult<AnnotationSet> updateAnnotationSet(long id, String annotationSetName, Map<String, Object> newAnnotations,
-                                                                 CatalogAnnotationSetDBAdaptor dbAdaptor,
-                                                                 CatalogStudyDBAdaptor studyDBAdaptor) throws CatalogException {
+                                                                 AnnotationSetDBAdaptor dbAdaptor,
+                                                                 StudyDBAdaptor studyDBAdaptor) throws CatalogException {
         // Obtain the annotation set to be updated
         QueryResult<AnnotationSet> queryResult = dbAdaptor.getAnnotationSet(id, annotationSetName);
         if (queryResult == null || queryResult.getNumResults() == 0) {
