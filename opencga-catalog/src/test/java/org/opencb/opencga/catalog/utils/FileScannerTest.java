@@ -8,7 +8,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.CatalogManagerTest;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.File;
@@ -98,8 +98,8 @@ public class FileScannerTest {
 
     public File getFile(long id) throws CatalogException {
         return catalogManager.searchFile(study.getId(),
-                new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), id)
-                        .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED + "," + Status.TRASHED + "," + Status.READY), sessionIdUser)
+                new Query(FileDBAdaptor.QueryParams.ID.key(), id)
+                        .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED + "," + Status.TRASHED + "," + Status.READY), sessionIdUser)
                 .first();
     }
 
@@ -110,10 +110,10 @@ public class FileScannerTest {
 
         catalogManager.getFileManager().delete(Long.toString(file.getId()), new QueryOptions(), sessionIdUser);
 
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().readAll(new Query()
-                        .append(CatalogFileDBAdaptor.QueryParams.ID.key(), file.getId())
-                        .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), study.getId())
-                        .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY"),
+        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(new Query()
+                        .append(FileDBAdaptor.QueryParams.ID.key(), file.getId())
+                        .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), study.getId())
+                        .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY"),
                 new QueryOptions(), sessionIdUser);
         file = fileQueryResult.first();
         assertEquals(File.FileStatus.TRASHED, file.getStatus().getName());

@@ -26,7 +26,7 @@ import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.commons.AnnotationCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.catalog.SampleCommandOptions;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
@@ -134,8 +134,8 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Creating sample");
         ObjectMap objectMap = new ObjectMap();
 
-        objectMap.putIfNotEmpty(CatalogSampleDBAdaptor.QueryParams.DESCRIPTION.key(), samplesCommandOptions.createCommandOptions.description);
-        objectMap.putIfNotEmpty(CatalogSampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.createCommandOptions.source);
+        objectMap.putIfNotEmpty(SampleDBAdaptor.QueryParams.DESCRIPTION.key(), samplesCommandOptions.createCommandOptions.description);
+        objectMap.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.createCommandOptions.source);
 
         return openCGAClient.getSampleClient().create(samplesCommandOptions.createCommandOptions.studyId,
                 samplesCommandOptions.createCommandOptions.name, objectMap);
@@ -146,7 +146,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap objectMap = new ObjectMap();
         objectMap.putIfNotEmpty("fileId", samplesCommandOptions.loadCommandOptions.fileId);
-        objectMap.putIfNotEmpty(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), samplesCommandOptions.loadCommandOptions.variableSetId);
+        objectMap.putIfNotEmpty(SampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), samplesCommandOptions.loadCommandOptions.variableSetId);
 
         return openCGAClient.getSampleClient().loadFromPed(samplesCommandOptions.loadCommandOptions.studyId, objectMap);
     }
@@ -170,17 +170,17 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         Query query = new Query();
         QueryOptions queryOptions = new QueryOptions();
 
-        query.putIfNotEmpty(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(),samplesCommandOptions.searchCommandOptions.studyId);
-        query.putIfNotEmpty(CatalogSampleDBAdaptor.QueryParams.ID.key(), samplesCommandOptions.searchCommandOptions.id);
-        query.putIfNotEmpty(CatalogSampleDBAdaptor.QueryParams.NAME.key(), samplesCommandOptions.searchCommandOptions.name);
-        query.putIfNotEmpty(CatalogSampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.searchCommandOptions.source);
-        query.putIfNotEmpty(CatalogSampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(),
+        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY_ID.key(),samplesCommandOptions.searchCommandOptions.studyId);
+        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.ID.key(), samplesCommandOptions.searchCommandOptions.id);
+        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.NAME.key(), samplesCommandOptions.searchCommandOptions.name);
+        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.searchCommandOptions.source);
+        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(),
                 samplesCommandOptions.searchCommandOptions.individualId);
-        query.putIfNotEmpty(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
+        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
                 samplesCommandOptions.searchCommandOptions.annotationSetName);
-        query.putIfNotEmpty(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
+        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
                 samplesCommandOptions.searchCommandOptions.variableSetId);
-        query.putIfNotEmpty(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), samplesCommandOptions.searchCommandOptions.annotation);
+        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.ANNOTATION.key(), samplesCommandOptions.searchCommandOptions.annotation);
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, samplesCommandOptions.searchCommandOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, samplesCommandOptions.searchCommandOptions.exclude);
         queryOptions.putIfNotEmpty(QueryOptions.LIMIT, samplesCommandOptions.searchCommandOptions.limit);
@@ -195,10 +195,10 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Updating samples");
 
         ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotEmpty(CatalogSampleDBAdaptor.QueryParams.NAME.key(), samplesCommandOptions.updateCommandOptions.name);
-        objectMap.putIfNotEmpty(CatalogSampleDBAdaptor.QueryParams.DESCRIPTION.key(), samplesCommandOptions.updateCommandOptions.description);
-        objectMap.putIfNotEmpty(CatalogSampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.updateCommandOptions.source);
-        objectMap.putIfNotEmpty(CatalogSampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), samplesCommandOptions.updateCommandOptions.individualId);
+        objectMap.putIfNotEmpty(SampleDBAdaptor.QueryParams.NAME.key(), samplesCommandOptions.updateCommandOptions.name);
+        objectMap.putIfNotEmpty(SampleDBAdaptor.QueryParams.DESCRIPTION.key(), samplesCommandOptions.updateCommandOptions.description);
+        objectMap.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.updateCommandOptions.source);
+        objectMap.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), samplesCommandOptions.updateCommandOptions.individualId);
 
 
         return openCGAClient.getSampleClient().update(samplesCommandOptions.updateCommandOptions.id, objectMap);
@@ -216,27 +216,27 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap objectMap = new ObjectMap();
         if (StringUtils.isNotEmpty(samplesCommandOptions.groupByCommandOptions.id)) {
-            objectMap.put(CatalogSampleDBAdaptor.QueryParams.ID.key(), samplesCommandOptions.groupByCommandOptions.id);
+            objectMap.put(SampleDBAdaptor.QueryParams.ID.key(), samplesCommandOptions.groupByCommandOptions.id);
         }
         if (StringUtils.isNotEmpty(samplesCommandOptions.groupByCommandOptions.name)) {
-            objectMap.put(CatalogSampleDBAdaptor.QueryParams.NAME.key(), samplesCommandOptions.groupByCommandOptions.name);
+            objectMap.put(SampleDBAdaptor.QueryParams.NAME.key(), samplesCommandOptions.groupByCommandOptions.name);
         }
         if (StringUtils.isNotEmpty(samplesCommandOptions.groupByCommandOptions.source)) {
-            objectMap.put(CatalogSampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.groupByCommandOptions.source);
+            objectMap.put(SampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.groupByCommandOptions.source);
         }
         if (StringUtils.isNotEmpty(samplesCommandOptions.groupByCommandOptions.individualId)) {
-            objectMap.put(CatalogSampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), samplesCommandOptions.groupByCommandOptions.individualId);
+            objectMap.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), samplesCommandOptions.groupByCommandOptions.individualId);
         }
         if (StringUtils.isNotEmpty(samplesCommandOptions.groupByCommandOptions.annotationSetName)) {
-            objectMap.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
+            objectMap.put(SampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
                     samplesCommandOptions.groupByCommandOptions.annotationSetName);
         }
         if (StringUtils.isNotEmpty(samplesCommandOptions.groupByCommandOptions.variableSetId)) {
-            objectMap.put(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
+            objectMap.put(SampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
                     samplesCommandOptions.groupByCommandOptions.variableSetId);
         }
         if (StringUtils.isNotEmpty(samplesCommandOptions.groupByCommandOptions.annotation)) {
-            objectMap.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(),
+            objectMap.put(SampleDBAdaptor.QueryParams.ANNOTATION.key(),
                     samplesCommandOptions.groupByCommandOptions.annotation);
         }
         return openCGAClient.getSampleClient().groupBy(samplesCommandOptions.groupByCommandOptions.studyId,

@@ -19,7 +19,7 @@ package org.opencb.opencga.catalog.managers;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -194,7 +194,7 @@ public class CatalogFileUtils {
                 logger.info("Checksum not computed.");
             }
 
-            updateFileAttributes(file, sourceChecksum, targetUri, new ObjectMap(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(),
+            updateFileAttributes(file, sourceChecksum, targetUri, new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(),
                     File.FileStatus.READY), sessionId);
 
             if (deleteSource && !fileMoved) {
@@ -248,7 +248,7 @@ public class CatalogFileUtils {
             }
         }
 
-        updateFileAttributes(file, checksum, targetUri, new ObjectMap(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(),
+        updateFileAttributes(file, checksum, targetUri, new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(),
                 File.FileStatus.READY), sessionId);
 
     }
@@ -347,7 +347,7 @@ public class CatalogFileUtils {
         }
 
         ObjectMap objectMap = new ObjectMap("uri", externalUri);
-        objectMap.put(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
+        objectMap.put(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
         updateFileAttributes(file, checksum, externalUri, objectMap, sessionId);
         return catalogManager.getFile(file.getId(), sessionId).first();
     }
@@ -378,7 +378,7 @@ public class CatalogFileUtils {
                             .toString()));
 
             //Search if there is any existing file in the folder with the path to use.
-            Query pathsQuery = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), new LinkedList<>(uriPathMap.values()));
+            Query pathsQuery = new Query(FileDBAdaptor.QueryParams.PATH.key(), new LinkedList<>(uriPathMap.values()));
             List<File> existingFiles = catalogManager.getAllFiles(studyId, pathsQuery, new QueryOptions(), sessionId).getResult();
             if (!relink) {
                 if (existingFiles.size() != 0) {
@@ -416,7 +416,7 @@ public class CatalogFileUtils {
         }
 
         ObjectMap objectMap = new ObjectMap();
-        objectMap.put(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
+        objectMap.put(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
         updateFileAttributes(folder, null, externalUri, objectMap, sessionId);
         return catalogManager.getFile(folder.getId(), sessionId).first();
     }
@@ -435,8 +435,8 @@ public class CatalogFileUtils {
         }
         long studyId = catalogManager.getStudyIdByFileId(file.getId());
         if (file.getType().equals(File.Type.DIRECTORY)) {
-            Query query = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~" + file.getPath() + "..*")
-                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.DELETED);
+            Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), "~" + file.getPath() + "..*")
+                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.DELETED);
             List<File> files = catalogManager.getAllFiles(studyId, query, new QueryOptions(), sessionId).getResult();
             for (File f : files) {
                 if (!f.getStatus().getName().equals(File.FileStatus.TRASHED)) {

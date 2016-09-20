@@ -101,6 +101,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         return alignmentStorageManager;
     }
 
+    @Deprecated
     private void index()
             throws CatalogException, AnalysisExecutionException, JsonProcessingException, IllegalAccessException, InstantiationException,
             ClassNotFoundException, StorageManagerException {
@@ -144,6 +145,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         }
     }
 
+    @Deprecated
     private void index(Job job) throws CatalogException, IllegalAccessException, ClassNotFoundException, InstantiationException, StorageManagerException {
 
         AnalysisCliOptionsParser.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
@@ -196,7 +198,8 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         URI inputUri = catalogManager.getFileUri(file);
 //        FileUtils.checkFile(Paths.get(inputUri.getPath()));
 
-        URI outdirUri = job.getTmpOutDirUri();
+//        URI outdirUri = job.getTmpOutDirUri();
+        URI outdirUri = null;
 //        FileUtils.checkDirectory(Paths.get(outdirUri.getPath()));
 
 

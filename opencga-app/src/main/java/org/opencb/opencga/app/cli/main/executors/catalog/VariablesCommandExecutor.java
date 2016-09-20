@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.catalog.VariableCommandOptions;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.VariableSet;
 
@@ -109,7 +109,7 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<VariableSet> search() throws CatalogException, IOException {
         logger.debug("Searching variable");
         Query query = new Query();
-        query.put(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(),variableCommandOptions.searchCommandOptions.studyId);
+        query.put(SampleDBAdaptor.QueryParams.STUDY_ID.key(),variableCommandOptions.searchCommandOptions.studyId);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotNull("id", variableCommandOptions.searchCommandOptions.id);
@@ -120,7 +120,8 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putIfNotNull(QueryOptions.EXCLUDE, variableCommandOptions.searchCommandOptions.exclude);
         queryOptions.putIfNotNull(QueryOptions.LIMIT, variableCommandOptions.searchCommandOptions.limit);
         queryOptions.putIfNotNull(QueryOptions.SKIP, variableCommandOptions.searchCommandOptions.skip);
-        queryOptions.putIfNotNull("count", variableCommandOptions.searchCommandOptions.count);
+        //TODO add when fixed the ws
+        //queryOptions.putIfNotNull("count", variableCommandOptions.searchCommandOptions.count);
 
         return openCGAClient.getVariableClient().search(query, queryOptions);
     }

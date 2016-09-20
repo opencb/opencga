@@ -5,7 +5,7 @@ import org.codehaus.jackson.map.ObjectReader;
 import org.codehaus.jackson.type.TypeReference;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -49,7 +49,7 @@ public class VariantIndexOutputRecorder {
             try {
                 storageETLresults = objectReader.readValue(tmpOutdirPath.resolve("storageETLresults").toFile());
                 params .putIfNotNull("storageETLResult", storageETLresults);
-                ObjectMap attributes = new ObjectMap(CatalogJobDBAdaptor.QueryParams.ATTRIBUTES.key(), params);
+                ObjectMap attributes = new ObjectMap(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), params);
                 catalogManager.getJobManager().update(job.getId(), attributes, new QueryOptions(), sessionId);
                 job.setAttributes(params);
             } catch (IOException e) {

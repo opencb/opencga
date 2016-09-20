@@ -91,6 +91,18 @@ public class VariantReaderUtils {
         return new StringBuilder().append(variantsFile, 0, idx).append(METADATA_FILE_FORMAT_GZ).toString();
     }
 
+    public static String getOriginalFromTransformedFile(String variantsFile) {
+        if (isTransformedVariants(variantsFile)) {
+            int idx = variantsFile.lastIndexOf(VARIANTS_FILE);
+            return variantsFile.substring(0, idx - 1);
+        } else if (isMetaFile(variantsFile)) {
+            int idx = variantsFile.lastIndexOf(METADATA_FILE);
+            return variantsFile.substring(0, idx - 1);
+        } else {
+            return variantsFile;
+        }
+    }
+
     /**
      * Read the VariantSource from an InputStream.
      *

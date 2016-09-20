@@ -7,7 +7,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.StringUtils;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
@@ -39,27 +39,27 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 //        acl.push(new AclEntry("jcoll", true, true, true, true));
 //        acl.push(new AclEntry("jmmut", false, false, true, true));
         file.setAcl(acl);
-        System.out.println(catalogFileDBAdaptor.createFile(studyId, file, null));
+        System.out.println(catalogFileDBAdaptor.insert(file, studyId, null));
         file = new File("file.sam", File.Type.FILE, File.Format.PLAIN, File.Bioformat.ALIGNMENT, "data/file.sam", "",
                 new File.FileStatus(File.FileStatus.STAGE), 1000);
-        System.out.println(catalogFileDBAdaptor.createFile(studyId, file, null));
+        System.out.println(catalogFileDBAdaptor.insert(file, studyId, null));
         file = new File("file.bam", File.Type.FILE, File.Format.BINARY, File.Bioformat.ALIGNMENT, "data/file.bam", "",
                 new File.FileStatus(File.FileStatus.STAGE), 1000);
-        System.out.println(catalogFileDBAdaptor.createFile(studyId, file, null));
+        System.out.println(catalogFileDBAdaptor.insert(file, studyId, null));
         file = new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.VARIANT, "data/file2.vcf", "",
                 new File.FileStatus(File.FileStatus.STAGE), 1000);
 
         try {
-            System.out.println(catalogFileDBAdaptor.createFile(-20, file, null));
+            System.out.println(catalogFileDBAdaptor.insert(file, -20, null));
             fail("Expected \"StudyId not found\" exception");
         } catch (CatalogDBException e) {
             System.out.println(e);
         }
 
-        System.out.println(catalogFileDBAdaptor.createFile(studyId, file, null));
+        System.out.println(catalogFileDBAdaptor.insert(file, studyId, null));
 
         try {
-            System.out.println(catalogFileDBAdaptor.createFile(studyId, file, null));
+            System.out.println(catalogFileDBAdaptor.insert(file, studyId, null));
             fail("Expected \"File already exist\" exception");
         } catch (CatalogDBException e) {
             System.out.println(e);
@@ -69,10 +69,10 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     @Test
     public void getFileTest() throws CatalogDBException {
         File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
-        QueryResult<File> fileQueryResult = catalogFileDBAdaptor.getFile(file.getId(), null);
+        QueryResult<File> fileQueryResult = catalogFileDBAdaptor.get(file.getId(), null);
         System.out.println(fileQueryResult);
         try {
-            System.out.println(catalogFileDBAdaptor.getFile(-1, null));
+            System.out.println(catalogFileDBAdaptor.get(-1, null));
             fail("Expected \"FileId not found\" exception");
         } catch (CatalogDBException e) {
             System.out.println(e);
@@ -83,20 +83,20 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     public void getAllFilesStudyNotValidTest() throws CatalogDBException {
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("not valid");
-        catalogFileDBAdaptor.getAllFilesInStudy(-1, null);
+        catalogFileDBAdaptor.getAllInStudy(-1, null);
     }
 
     @Test
     public void getAllFilesStudyNotExistsTest() throws CatalogDBException {
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("not exist");
-        catalogFileDBAdaptor.getAllFilesInStudy(216544, null);
+        catalogFileDBAdaptor.getAllInStudy(216544, null);
     }
 
     @Test
     public void getAllFilesTest() throws CatalogDBException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        QueryResult<File> allFiles = catalogFileDBAdaptor.getAllFilesInStudy(studyId, null);
+        QueryResult<File> allFiles = catalogFileDBAdaptor.getAllInStudy(studyId, null);
         List<File> files = allFiles.getResult();
         List<File> expectedFiles = user3.getProjects().get(0).getStudies().get(0).getFiles();
         assertEquals(expectedFiles.size(), files.size());
@@ -124,7 +124,7 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         parameters.put("stats", stats);
         System.out.println(catalogFileDBAdaptor.update(fileId, parameters));
 
-        file = catalogFileDBAdaptor.getFile(fileId, null).first();
+        file = catalogFileDBAdaptor.get(fileId, null).first();
         assertEquals(file.getStatus().getName(), File.FileStatus.READY);
         assertEquals(file.getStats(), stats);
 
@@ -132,7 +132,7 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         parameters.put("stats", "{}");
         System.out.println(catalogFileDBAdaptor.update(fileId, parameters));
 
-        file = catalogFileDBAdaptor.getFile(fileId, null).first();
+        file = catalogFileDBAdaptor.get(fileId, null).first();
         assertEquals(file.getStats(), new LinkedHashMap<String, Object>());
     }
 
@@ -140,35 +140,35 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     public void renameFileTest() throws CatalogDBException {
         String newName = "newFile.bam";
         String parentPath = "data/";
-        long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
-        System.out.println(catalogFileDBAdaptor.renameFile(fileId, parentPath + newName, "", null));
+        long fileId = catalogFileDBAdaptor.getId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
+        System.out.println(catalogFileDBAdaptor.rename(fileId, parentPath + newName, "", null));
 
-        File file = catalogFileDBAdaptor.getFile(fileId, null).first();
+        File file = catalogFileDBAdaptor.get(fileId, null).first();
         assertEquals(file.getName(), newName);
         assertEquals(file.getPath(), parentPath + newName);
 
         try {
-            catalogFileDBAdaptor.renameFile(-1, "noFile", "", null);
+            catalogFileDBAdaptor.rename(-1, "noFile", "", null);
             fail("error: expected \"file not found\"exception");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
         }
 
-        long folderId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/");
+        long folderId = catalogFileDBAdaptor.getId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/");
         String folderName = "folderName";
-        catalogFileDBAdaptor.renameFile(folderId, folderName, "", null);
-        assertTrue(catalogFileDBAdaptor.getFile(fileId, null).first().getPath().equals(folderName + "/" + newName));
+        catalogFileDBAdaptor.rename(folderId, folderName, "", null);
+        assertTrue(catalogFileDBAdaptor.get(fileId, null).first().getPath().equals(folderName + "/" + newName));
     }
 
     @Test
     public void deleteFileTest() throws CatalogDBException, IOException {
-        long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
+        long fileId = catalogFileDBAdaptor.getId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
         QueryResult<File> delete = catalogFileDBAdaptor.delete(fileId, new QueryOptions());
         assertTrue(delete.getNumResults() == 1);
         assertEquals(File.FileStatus.TRASHED, delete.first().getStatus().getName());
         try {
-            System.out.println(catalogFileDBAdaptor.delete(catalogFileDBAdaptor.getFileId(catalogStudyDBAdaptor.getStudyId
-                    (catalogProjectDBAdaptor.getProjectId("jcoll", "1000G"), "ph1"), "data/noExists"), new QueryOptions()));
+            System.out.println(catalogFileDBAdaptor.delete(catalogFileDBAdaptor.getId(catalogStudyDBAdaptor.getId
+                    (catalogProjectDBAdaptor.getId("jcoll", "1000G"), "ph1"), "data/noExists"), new QueryOptions()));
             fail("error: Expected \"FileId not found\" exception");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
@@ -177,17 +177,17 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
     @Test
     public void deleteFileTest2() throws CatalogDBException, IOException {
-        long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
+        long fileId = catalogFileDBAdaptor.getId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
 
         // New status after delete
-        ObjectMap objectMap = new ObjectMap(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED);
+        ObjectMap objectMap = new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED);
 
         QueryResult<File> delete = catalogFileDBAdaptor.delete(fileId, objectMap, new QueryOptions());
         assertTrue(delete.getNumResults() == 1);
         assertEquals(File.FileStatus.REMOVED, delete.first().getStatus().getName());
         try {
-            System.out.println(catalogFileDBAdaptor.delete(catalogFileDBAdaptor.getFileId(catalogStudyDBAdaptor.getStudyId
-                    (catalogProjectDBAdaptor.getProjectId("jcoll", "1000G"), "ph1"), "data/noExists"), new QueryOptions()));
+            System.out.println(catalogFileDBAdaptor.delete(catalogFileDBAdaptor.getId(catalogStudyDBAdaptor.getId
+                    (catalogProjectDBAdaptor.getId("jcoll", "1000G"), "ph1"), "data/noExists"), new QueryOptions()));
             fail("error: Expected \"FileId not found\" exception");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
@@ -215,7 +215,7 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
     @Test
     public void fileAclsTest() throws CatalogDBException {
-        long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
+        long fileId = catalogFileDBAdaptor.getId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
         System.out.println(fileId);
 
         FileAclEntry granted = new FileAclEntry("jmmut", Arrays.asList(FileAclEntry.FilePermissions.VIEW.name(),
@@ -224,9 +224,9 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         ));
 
 //        AclEntry granted = new AclEntry("jmmut", true, true, true, false);
-        catalogFileDBAdaptor.setFileAcl(fileId, granted, true);
+        catalogFileDBAdaptor.createAcl(fileId, granted);
         granted.setMember("imedina");
-        catalogFileDBAdaptor.setFileAcl(fileId, granted, true);
+        catalogFileDBAdaptor.createAcl(fileId, granted);
 //        try {
 //            granted.setMember("noUser");
 //            catalogFileDBAdaptor.setFileAcl(fileId, granted, true);
@@ -235,17 +235,17 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 //            System.out.println("correct exception: " + e);
 //        }
 
-        List<FileAclEntry> jmmut = catalogFileDBAdaptor.getFileAcl(fileId, "jmmut").getResult();
+        List<FileAclEntry> jmmut = catalogFileDBAdaptor.getAcl(fileId, "jmmut").getResult();
         assertTrue(!jmmut.isEmpty());
         System.out.println(jmmut.get(0).getPermissions());
-        List<FileAclEntry> jcoll = catalogFileDBAdaptor.getFileAcl(fileId, "jcoll").getResult();
+        List<FileAclEntry> jcoll = catalogFileDBAdaptor.getAcl(fileId, "jcoll").getResult();
         assertTrue(jcoll.isEmpty());
     }
 
     @Test
     public void includeFields() throws CatalogDBException {
 
-        QueryResult<File> fileQueryResult = catalogFileDBAdaptor.getFile(7,
+        QueryResult<File> fileQueryResult = catalogFileDBAdaptor.get(7,
                 new QueryOptions("include", "projects.studies.files.id,projects.studies.files.path"));
         List<File> files = fileQueryResult.getResult();
         assertEquals("Include path does not work.", "data/file.vcf", files.get(0).getPath());
@@ -256,18 +256,18 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     public void testDistinct() throws Exception {
 
 //        List<String> distinctOwners = catalogFileDBAdaptor.distinct(new Query(), CatalogFileDBAdaptor.QueryParams.OWNER_ID.key()).getResult();
-        List<String> distinctTypes = catalogFileDBAdaptor.distinct(new Query(), CatalogFileDBAdaptor.QueryParams.TYPE.key()).getResult();
+        List<String> distinctTypes = catalogFileDBAdaptor.distinct(new Query(), FileDBAdaptor.QueryParams.TYPE.key()).getResult();
 //        assertEquals(Arrays.asList("imedina", "pfurio"), distinctOwners);
         assertEquals(Arrays.asList("DIRECTORY","FILE"), distinctTypes);
 
         List<Long> pfurioStudies = Arrays.asList(9L, 14L);
         List<String> distinctFormats = catalogFileDBAdaptor.distinct(
-                new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), pfurioStudies),
-                CatalogFileDBAdaptor.QueryParams.FORMAT.key()).getResult();
+                new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), pfurioStudies),
+                FileDBAdaptor.QueryParams.FORMAT.key()).getResult();
         assertEquals(Arrays.asList("UNKNOWN", "COMMA_SEPARATED_VALUES", "BAM"), distinctFormats);
 
         distinctFormats = catalogFileDBAdaptor.distinct(new Query(),
-                CatalogFileDBAdaptor.QueryParams.FORMAT.key()).getResult();
+                FileDBAdaptor.QueryParams.FORMAT.key()).getResult();
         Collections.sort(distinctFormats);
         List<String> expected = Arrays.asList("PLAIN", "UNKNOWN", "COMMA_SEPARATED_VALUES", "BAM");
         Collections.sort(expected);
@@ -278,8 +278,8 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     public void testRank() throws Exception {
         List<Long> pfurioStudies = Arrays.asList(9L, 14L);
         List<Document> rankedFilesPerDiskUsage = catalogFileDBAdaptor.rank(
-                new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), pfurioStudies),
-                CatalogFileDBAdaptor.QueryParams.DISK_USAGE.key(), 100, false).getResult();
+                new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), pfurioStudies),
+                FileDBAdaptor.QueryParams.DISK_USAGE.key(), 100, false).getResult();
 
         assertEquals(3, rankedFilesPerDiskUsage.size());
 
@@ -297,22 +297,22 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     public void testGroupBy() throws Exception {
         List<Long> pfurioStudies = Arrays.asList(9L, 14L);
 
-        List<Document> groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), pfurioStudies),
-                CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), new QueryOptions()).getResult();
+        List<Document> groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), pfurioStudies),
+                FileDBAdaptor.QueryParams.BIOFORMAT.key(), new QueryOptions()).getResult();
 
-        assertEquals("ALIGNMENT", ((Document) groupByBioformat.get(0).get("_id")).get(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key()));
+        assertEquals("ALIGNMENT", ((Document) groupByBioformat.get(0).get("_id")).get(FileDBAdaptor.QueryParams.BIOFORMAT.key()));
         assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(0).get("features"));
 
-        assertEquals("NONE", ((Document) groupByBioformat.get(1).get("_id")).get(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key()));
+        assertEquals("NONE", ((Document) groupByBioformat.get(1).get("_id")).get(FileDBAdaptor.QueryParams.BIOFORMAT.key()));
         assertEquals(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt", "data/"), groupByBioformat.get(1).get("features"));
 
-        groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), 14), // MINECO study
-                CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), new QueryOptions()).getResult();
+        groupByBioformat = catalogFileDBAdaptor.groupBy(new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), 14), // MINECO study
+                FileDBAdaptor.QueryParams.BIOFORMAT.key(), new QueryOptions()).getResult();
 
-        assertEquals("ALIGNMENT", ((Document) groupByBioformat.get(0).get("_id")).get(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key()));
+        assertEquals("ALIGNMENT", ((Document) groupByBioformat.get(0).get("_id")).get(FileDBAdaptor.QueryParams.BIOFORMAT.key()));
         assertEquals(Arrays.asList("m_alignment.bam"), groupByBioformat.get(0).get("features"));
 
-        assertEquals("NONE", ((Document) groupByBioformat.get(1).get("_id")).get(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key()));
+        assertEquals("NONE", ((Document) groupByBioformat.get(1).get("_id")).get(FileDBAdaptor.QueryParams.BIOFORMAT.key()));
         assertEquals(Arrays.asList("m_file1.txt", "data/"), groupByBioformat.get(1).get("features"));
 
     }
@@ -322,8 +322,8 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
         List<Long> pfurioStudies = Arrays.asList(9L, 14L);
         List<Document> groupByBioformat = catalogFileDBAdaptor.groupBy(
-                new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), pfurioStudies),
-                Arrays.asList(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), CatalogFileDBAdaptor.QueryParams.TYPE.key()),
+                new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), pfurioStudies),
+                Arrays.asList(FileDBAdaptor.QueryParams.BIOFORMAT.key(), FileDBAdaptor.QueryParams.TYPE.key()),
                 new QueryOptions()).getResult();
 
         assertEquals(3, groupByBioformat.size());
@@ -344,8 +344,8 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         List<Long> pfurioStudies = Arrays.asList(9L, 14L);
 
         List<Document> groupByBioformat = catalogFileDBAdaptor.groupBy(
-                new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), pfurioStudies),
-                Arrays.asList(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), CatalogFileDBAdaptor.QueryParams.TYPE.key(), "day"),
+                new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), pfurioStudies),
+                Arrays.asList(FileDBAdaptor.QueryParams.BIOFORMAT.key(), FileDBAdaptor.QueryParams.TYPE.key(), "day"),
                 new QueryOptions()).getResult();
 
         assertEquals(3, groupByBioformat.size());

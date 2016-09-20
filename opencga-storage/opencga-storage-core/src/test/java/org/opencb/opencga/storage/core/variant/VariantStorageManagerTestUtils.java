@@ -62,7 +62,11 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
             "22:16555584:C:T",
             "22:16556120:AGTGTTCTGGAATCCTATGTGAGGGACAAACACTCACACCCTCAGAGG:-",
             "22:16556162:C:T",
-            "22:16614404:G:A"
+            "22:16592392:G:C",
+            "22:16614404:G:A",
+            "22:16616085:-:T",
+            "22:16637481:A:T",
+            "22:16616084:G:A"
     )));
 
     protected static URI inputUri;

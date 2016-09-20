@@ -17,7 +17,7 @@
 package org.opencb.opencga.server.rest.analysis;
 
 import io.swagger.annotations.*;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.exception.VersionException;
 
@@ -57,7 +57,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     })
     public Response index(@ApiParam(value = "File id or path") @PathParam("fileId") String fileId) {
         try {
-            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, query, queryOptions);
+            parseQueryParams(params, FileDBAdaptor.QueryParams::getParam, query, queryOptions);
             return createOkResponse("[PENDING]");
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -90,7 +90,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     })
     public Response ibs() {
         try {
-            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, query, queryOptions);
+            parseQueryParams(params, FileDBAdaptor.QueryParams::getParam, query, queryOptions);
             return createOkResponse("[PENDING]");
         } catch (Exception e) {
             return createErrorResponse(e);

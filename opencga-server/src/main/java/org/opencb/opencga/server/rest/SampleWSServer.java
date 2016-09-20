@@ -20,8 +20,8 @@ import io.swagger.annotations.*;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.File;
@@ -135,7 +135,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
             QueryOptions qOptions = new QueryOptions();
-            parseQueryParams(params, CatalogSampleDBAdaptor.QueryParams::getParam, query, qOptions);
+            parseQueryParams(params, SampleDBAdaptor.QueryParams::getParam, query, qOptions);
             QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, query, qOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -322,7 +322,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         try {
             Query query = new Query();
             QueryOptions qOptions = new QueryOptions();
-            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, query, qOptions);
+            parseQueryParams(params, FileDBAdaptor.QueryParams::getParam, query, qOptions);
 
             logger.debug("query = " + query.toJson());
             logger.debug("queryOptions = " + qOptions.toJson());

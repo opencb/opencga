@@ -26,7 +26,7 @@ import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.commons.AnnotationCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.catalog.IndividualCommandOptions;
-import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
@@ -130,13 +130,13 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Creating individual");
         ObjectMap objectMap = new ObjectMap();
 
-        objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.createCommandOptions.family);
-        objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.createCommandOptions.fatherId);
-        objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.MOTHER_ID.key(), individualsCommandOptions.createCommandOptions.motherId);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.createCommandOptions.family);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.createCommandOptions.fatherId);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), individualsCommandOptions.createCommandOptions.motherId);
         String sex = individualsCommandOptions.createCommandOptions.sex;
         if (individualsCommandOptions.createCommandOptions.sex != null) {
             try {
-                objectMap.put(CatalogIndividualDBAdaptor.QueryParams.SEX.key(), Individual.Sex.valueOf(sex));
+                objectMap.put(IndividualDBAdaptor.QueryParams.SEX.key(), Individual.Sex.valueOf(sex));
             } catch (IllegalArgumentException e) {
                 logger.error("{} not recognized as a proper individual sex", sex);
                 return null;
@@ -167,22 +167,22 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         Query query = new Query();
         QueryOptions queryOptions = new QueryOptions();
 
-        query.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.ID.key(), individualsCommandOptions.searchCommandOptions.id);
-        query.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key(), individualsCommandOptions.searchCommandOptions.studyId);
-        query.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.NAME.key(), individualsCommandOptions.searchCommandOptions.name);
-        query.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.searchCommandOptions.fatherId);
-        query.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.MOTHER_ID.key(), individualsCommandOptions.searchCommandOptions.motherId);
-        query.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.searchCommandOptions.family);
-        query.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.searchCommandOptions.sex);
-        query.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.searchCommandOptions.ethnicity);
-        query.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.SPECIES.key(), individualsCommandOptions.searchCommandOptions.species);
-        query.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ID.key(), individualsCommandOptions.searchCommandOptions.id);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), individualsCommandOptions.searchCommandOptions.studyId);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.NAME.key(), individualsCommandOptions.searchCommandOptions.name);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.searchCommandOptions.fatherId);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), individualsCommandOptions.searchCommandOptions.motherId);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.searchCommandOptions.family);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.searchCommandOptions.sex);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.searchCommandOptions.ethnicity);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES.key(), individualsCommandOptions.searchCommandOptions.species);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                 individualsCommandOptions.searchCommandOptions.population);
-        query.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
                 individualsCommandOptions.searchCommandOptions.variableSetId);
-        query.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key(),
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ANNOTATION.key(),
                 individualsCommandOptions.searchCommandOptions.annotation);
-        query.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
                 individualsCommandOptions.searchCommandOptions.annotationSetName);
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, individualsCommandOptions.searchCommandOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, individualsCommandOptions.searchCommandOptions.exclude);
@@ -198,22 +198,22 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Updating individual information");
 
         ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.NAME.key(), individualsCommandOptions.updateCommandOptions.name);
-        objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.updateCommandOptions.family);
-        objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.updateCommandOptions.fatherId);
-        objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.MOTHER_ID.key(), individualsCommandOptions.updateCommandOptions.motherId);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.NAME.key(), individualsCommandOptions.updateCommandOptions.name);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.updateCommandOptions.family);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.updateCommandOptions.fatherId);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), individualsCommandOptions.updateCommandOptions.motherId);
 
         String sex = individualsCommandOptions.updateCommandOptions.sex;
         if (individualsCommandOptions.updateCommandOptions.sex != null) {
             try {
-                objectMap.put(CatalogIndividualDBAdaptor.QueryParams.SEX.key(), Individual.Sex.valueOf(sex));
+                objectMap.put(IndividualDBAdaptor.QueryParams.SEX.key(), Individual.Sex.valueOf(sex));
             } catch (IllegalArgumentException e) {
                 logger.error("{} not recognized as a proper individual sex", sex);
                 return null;
             }
         }
 
-        objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.updateCommandOptions.ethnicity);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.updateCommandOptions.ethnicity);
 
         return openCGAClient.getIndividualClient().update(individualsCommandOptions.updateCommandOptions.id, objectMap);
     }
@@ -229,21 +229,21 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap objectMap = new ObjectMap();
 
-        objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.ID.key(), individualsCommandOptions.groupByCommandOptions.id);
-        objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.NAME.key(), individualsCommandOptions.groupByCommandOptions.name);
-        objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.groupByCommandOptions.fatherId);
-        objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.MOTHER_ID.key(), individualsCommandOptions.groupByCommandOptions.motherId);
-        objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.groupByCommandOptions.family);
-        objectMap.put(CatalogIndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.groupByCommandOptions.sex);
-        objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.groupByCommandOptions.ethnicity);
-        objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.SPECIES.key(), individualsCommandOptions.groupByCommandOptions.species);
-        objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ID.key(), individualsCommandOptions.groupByCommandOptions.id);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.NAME.key(), individualsCommandOptions.groupByCommandOptions.name);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.groupByCommandOptions.fatherId);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), individualsCommandOptions.groupByCommandOptions.motherId);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.groupByCommandOptions.family);
+        objectMap.put(IndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.groupByCommandOptions.sex);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.groupByCommandOptions.ethnicity);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES.key(), individualsCommandOptions.groupByCommandOptions.species);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                 individualsCommandOptions.groupByCommandOptions.population);
-        objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
                 individualsCommandOptions.groupByCommandOptions.variableSetId);
-        objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key(),
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ANNOTATION.key(),
                 individualsCommandOptions.groupByCommandOptions.annotation);
-        objectMap.putIfNotEmpty(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
                     individualsCommandOptions.groupByCommandOptions.annotationSetName);
 
         return openCGAClient.getIndividualClient().groupBy(

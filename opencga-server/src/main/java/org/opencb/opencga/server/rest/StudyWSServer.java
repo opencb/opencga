@@ -27,9 +27,9 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
@@ -102,9 +102,9 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             // FIXME this is not needed right?
             QueryOptions qOptions = new QueryOptions(queryOptions);
-            parseQueryParams(params, CatalogStudyDBAdaptor.QueryParams::getParam, query, qOptions);
+            parseQueryParams(params, StudyDBAdaptor.QueryParams::getParam, query, qOptions);
             if (projectId != null) {
-                query.put(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), catalogManager.getProjectId(projectId, sessionId));
+                query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), catalogManager.getProjectId(projectId, sessionId));
             }
             QueryResult<Study> queryResult = catalogManager.getAllStudies(query, qOptions, sessionId);
             return createOkResponse(queryResult);
@@ -217,7 +217,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
             QueryOptions qOptions = new QueryOptions(queryOptions);
-            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, query, qOptions);
+            parseQueryParams(params, FileDBAdaptor.QueryParams::getParam, query, qOptions);
             QueryResult queryResult = catalogManager.getAllFiles(studyId, query, qOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -245,7 +245,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
             QueryOptions qOptions = new QueryOptions(queryOptions);
-            parseQueryParams(params, CatalogSampleDBAdaptor.QueryParams::getParam, query, qOptions);
+            parseQueryParams(params, SampleDBAdaptor.QueryParams::getParam, query, qOptions);
             QueryResult queryResult = catalogManager.getAllSamples(studyId, query, qOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -385,9 +385,9 @@ public class StudyWSServer extends OpenCGAWSServer {
         QueryOptions qOptions = new QueryOptions(queryOptions);
         try {
             File file = catalogManager.getAllFiles(studyId, query
-                            .append(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.ALIGNMENT)
-                            .append(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleId)
-                            .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY),
+                            .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.ALIGNMENT)
+                            .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleId)
+                            .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY),
                     qOptions, sessionId).first();
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -486,7 +486,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             Map<String, URI> untrackedFiles = fileScanner.untrackedFiles(study, sessionId);
 
             /** Get missing files **/
-            List<File> missingFiles = catalogManager.getAllFiles(studyId, query.append(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(),
+            List<File> missingFiles = catalogManager.getAllFiles(studyId, query.append(FileDBAdaptor.QueryParams.FILE_STATUS.key(),
                     File.FileStatus.MISSING), queryOptions, sessionId).getResult();
 
             ObjectMap fileStatus = new ObjectMap("untracked", untrackedFiles).append("found", found).append("missing", missingFiles);
@@ -676,8 +676,8 @@ public class StudyWSServer extends OpenCGAWSServer {
         List<QueryResult<Study>> queryResults = new LinkedList<>();
         long projectId;
         try {
-            String userId = catalogManager.getUserManager().getUserId(sessionId);
-            projectId = catalogManager.getProjectManager().getProjectId(userId, projectIdStr);
+            String userId = catalogManager.getUserManager().getId(sessionId);
+            projectId = catalogManager.getProjectManager().getId(userId, projectIdStr);
         } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e);

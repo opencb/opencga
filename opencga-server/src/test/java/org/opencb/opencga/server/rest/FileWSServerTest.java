@@ -12,7 +12,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.catalog.CatalogManagerTest;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.File;
@@ -152,7 +152,7 @@ public class FileWSServerTest {
 
     @Test
     public void updateFilePOST() throws Exception {
-        File file = OpenCGAWSServer.catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"),
+        File file = OpenCGAWSServer.catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), "FILE"),
                 new QueryOptions(), sessionId).first();
 
         FileWSServer.UpdateFile updateFile = new FileWSServer.UpdateFile();

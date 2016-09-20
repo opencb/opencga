@@ -18,7 +18,7 @@ import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.OpenCGATestExternalResource;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
@@ -93,7 +93,7 @@ public class StatsVariantStorageTest {
         runStorageJob(analysisFileIndexer.index((int) file4.getId(), (int) outputId, sessionId, queryOptions).first(), sessionId);
         runStorageJob(analysisFileIndexer.index((int) file5.getId(), (int) outputId, sessionId, queryOptions).first(), sessionId);
 
-        all = catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), DEFAULT_COHORT),
+        all = catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), DEFAULT_COHORT),
                 new QueryOptions(), sessionId).first().getId();
 
     }

@@ -7,7 +7,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.exec.RunnableProcess;
-import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -130,7 +130,7 @@ public class LocalExecutorManager implements ExecutorManager {
         logger.info("==========================================");
 
         closeOutputStreams(com);
-        return catalogManager.getJobManager().read(job.getId(), new QueryOptions(), sessionId);
+        return catalogManager.getJobManager().get(job.getId(), new QueryOptions(), sessionId);
 //        return postExecuteCommand(job, com, null);
     }
 
@@ -242,8 +242,8 @@ public class LocalExecutorManager implements ExecutorManager {
             }
             parameters = new ObjectMap();
 //            parameters.put(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.ERROR);
-            parameters.put(CatalogJobDBAdaptor.QueryParams.ERROR.key(), error);
-            parameters.put(CatalogJobDBAdaptor.QueryParams.ERROR_DESCRIPTION.key(), Job.ERROR_DESCRIPTIONS.get(error));
+            parameters.put(JobDBAdaptor.QueryParams.ERROR.key(), error);
+            parameters.put(JobDBAdaptor.QueryParams.ERROR_DESCRIPTION.key(), Job.ERROR_DESCRIPTIONS.get(error));
             catalogManager.modifyJob(job.getId(), parameters, sessionId);
             objectMapper.writer().writeValue(outdir.resolve(JOB_STATUS_FILE).toFile(), new Job.JobStatus(Job.JobStatus.ERROR,
                     "Job finished with error."));

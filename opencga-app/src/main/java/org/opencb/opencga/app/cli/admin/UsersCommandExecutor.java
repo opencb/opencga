@@ -21,7 +21,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
+import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
@@ -255,7 +255,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         catalogManager.getUserManager().validatePassword("admin", catalogConfiguration.getAdmin().getPassword(), true);
         
         User user = catalogManager.modifyUser(usersCommandOptions.diskQuotaUserCommandOptions.userId,
-                new ObjectMap(CatalogUserDBAdaptor.QueryParams.DISK_QUOTA.key(),
+                new ObjectMap(UserDBAdaptor.QueryParams.DISK_QUOTA.key(),
                         usersCommandOptions.diskQuotaUserCommandOptions.diskQuota *  1073741824), null).first();
         System.out.println("The disk quota has been properly updated: " + user.toString());
     }

@@ -18,7 +18,6 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import org.apache.commons.lang3.StringUtils;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -28,10 +27,10 @@ import org.opencb.opencga.analysis.storage.variant.CatalogVariantDBAdaptor;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.catalog.StudyCommandOptions;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
@@ -40,7 +39,6 @@ import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.client.rest.StudyClient;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.io.IOException;
 
@@ -165,11 +163,11 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap o = new ObjectMap();
 
         if (description != null) {
-            o.append(CatalogStudyDBAdaptor.QueryParams.DESCRIPTION.key(), description);
+            o.append(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), description);
         }
         if (type != null) {
             try {
-                o.append(CatalogStudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(type));
+                o.append(StudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(type));
             } catch (IllegalArgumentException e) {
                 logger.error("{} not recognized as a proper study type", type);
                 return null;
@@ -190,11 +188,11 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Updating the study");
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull(CatalogStudyDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.updateCommandOptions.name);
-        params.putIfNotNull(CatalogStudyDBAdaptor.QueryParams.TYPE.key(), studiesCommandOptions.updateCommandOptions.type);
-        params.putIfNotNull(CatalogStudyDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.updateCommandOptions.description);
-        params.putIfNotNull(CatalogStudyDBAdaptor.QueryParams.STATS.key(), studiesCommandOptions.updateCommandOptions.stats);
-        params.putIfNotNull(CatalogStudyDBAdaptor.QueryParams.ATTRIBUTES.key(), studiesCommandOptions.updateCommandOptions.attributes);
+        params.putIfNotNull(StudyDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.updateCommandOptions.name);
+        params.putIfNotNull(StudyDBAdaptor.QueryParams.TYPE.key(), studiesCommandOptions.updateCommandOptions.type);
+        params.putIfNotNull(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.updateCommandOptions.description);
+        params.putIfNotNull(StudyDBAdaptor.QueryParams.STATS.key(), studiesCommandOptions.updateCommandOptions.stats);
+        params.putIfNotNull(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), studiesCommandOptions.updateCommandOptions.attributes);
 
         return openCGAClient.getStudyClient().update(studiesCommandOptions.updateCommandOptions.id, params);
     }
@@ -248,25 +246,25 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         String battributes = studiesCommandOptions.searchCommandOptions.battributes;
 //        String groups = studiesCommandOptions.searchCommandOptions.groups;
 //        String groupsUsers = studiesCommandOptions.searchCommandOptions.groupsUsers;
-        query.putIfNotEmpty(CatalogStudyDBAdaptor.QueryParams.ID.key(), id );
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), id );
 
-        query.putIfNotEmpty(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId);
-        query.putIfNotEmpty(CatalogStudyDBAdaptor.QueryParams.NAME.key(), name);
-        query.putIfNotEmpty(CatalogStudyDBAdaptor.QueryParams.ALIAS.key(), alias);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.NAME.key(), name);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), alias);
 
         if (StringUtils.isNotEmpty(type)) {
             try {
-                query.append(CatalogStudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(type));
+                query.append(StudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(type));
             } catch (IllegalArgumentException e) {
                 logger.error("{} not recognized as a proper study type", type);
                 return null;
             }
         }
-        query.putIfNotEmpty(CatalogStudyDBAdaptor.QueryParams.CREATION_DATE.key(), creationDate);
-        query.putIfNotEmpty(CatalogStudyDBAdaptor.QueryParams.STATUS_NAME.key(), status);
-        query.putIfNotEmpty(CatalogStudyDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
-        query.putIfNotEmpty(CatalogStudyDBAdaptor.QueryParams.NATTRIBUTES.key(), nattributes);
-        query.putIfNotEmpty(CatalogStudyDBAdaptor.QueryParams.BATTRIBUTES.key(), battributes);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.CREATION_DATE.key(), creationDate);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.STATUS_NAME.key(), status);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.NATTRIBUTES.key(), nattributes);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.BATTRIBUTES.key(), battributes);
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.searchCommandOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.searchCommandOptions.exclude);
         queryOptions.putIfNotEmpty(QueryOptions.LIMIT, studiesCommandOptions.searchCommandOptions.limit);
@@ -290,56 +288,56 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
 
         if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.fileId)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.ID.key(), studiesCommandOptions.filesCommandOptions.fileId);
+            queryOptions.put(FileDBAdaptor.QueryParams.ID.key(), studiesCommandOptions.filesCommandOptions.fileId);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.name)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.filesCommandOptions.name);
+            queryOptions.put(FileDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.filesCommandOptions.name);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.path)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.PATH.key(), studiesCommandOptions.filesCommandOptions.path);
+            queryOptions.put(FileDBAdaptor.QueryParams.PATH.key(), studiesCommandOptions.filesCommandOptions.path);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.type)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.TYPE.key(), studiesCommandOptions.filesCommandOptions.type);
+            queryOptions.put(FileDBAdaptor.QueryParams.TYPE.key(), studiesCommandOptions.filesCommandOptions.type);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.bioformat)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), studiesCommandOptions.filesCommandOptions.bioformat);
+            queryOptions.put(FileDBAdaptor.QueryParams.BIOFORMAT.key(), studiesCommandOptions.filesCommandOptions.bioformat);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.format)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.FORMAT.key(), studiesCommandOptions.filesCommandOptions.format);
+            queryOptions.put(FileDBAdaptor.QueryParams.FORMAT.key(), studiesCommandOptions.filesCommandOptions.format);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.status)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.STATUS.key(), studiesCommandOptions.filesCommandOptions.status);
+            queryOptions.put(FileDBAdaptor.QueryParams.STATUS.key(), studiesCommandOptions.filesCommandOptions.status);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.directory)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), studiesCommandOptions.filesCommandOptions.directory);
+            queryOptions.put(FileDBAdaptor.QueryParams.DIRECTORY.key(), studiesCommandOptions.filesCommandOptions.directory);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.ownerId)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.OWNER_ID.key(), studiesCommandOptions.filesCommandOptions.ownerId);
+            queryOptions.put(FileDBAdaptor.QueryParams.OWNER_ID.key(), studiesCommandOptions.filesCommandOptions.ownerId);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.creationDate)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.CREATION_DATE.key(), studiesCommandOptions.filesCommandOptions.creationDate);
+            queryOptions.put(FileDBAdaptor.QueryParams.CREATION_DATE.key(), studiesCommandOptions.filesCommandOptions.creationDate);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.modificationDate)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.MODIFICATION_DATE.key(),
+            queryOptions.put(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key(),
                     studiesCommandOptions.filesCommandOptions.modificationDate);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.description)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.filesCommandOptions.description);
+            queryOptions.put(FileDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.filesCommandOptions.description);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.diskUsage)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.DISK_USAGE.key(), studiesCommandOptions.filesCommandOptions.diskUsage);
+            queryOptions.put(FileDBAdaptor.QueryParams.DISK_USAGE.key(), studiesCommandOptions.filesCommandOptions.diskUsage);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.sampleIds)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), studiesCommandOptions.filesCommandOptions.sampleIds);
+            queryOptions.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), studiesCommandOptions.filesCommandOptions.sampleIds);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.jobId)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.JOB_ID.key(), studiesCommandOptions.filesCommandOptions.jobId);
+            queryOptions.put(FileDBAdaptor.QueryParams.JOB_ID.key(), studiesCommandOptions.filesCommandOptions.jobId);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.attributes)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.ATTRIBUTES.key(), studiesCommandOptions.filesCommandOptions.attributes);
+            queryOptions.put(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), studiesCommandOptions.filesCommandOptions.attributes);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.nattributes)) {
-            queryOptions.put(CatalogFileDBAdaptor.QueryParams.NATTRIBUTES.key(), studiesCommandOptions.filesCommandOptions.nattributes);
+            queryOptions.put(FileDBAdaptor.QueryParams.NATTRIBUTES.key(), studiesCommandOptions.filesCommandOptions.nattributes);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.include)) {
             queryOptions.put(QueryOptions.INCLUDE, studiesCommandOptions.jobsCommandOptions.include);
@@ -364,28 +362,28 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         QueryOptions queryOptions = new QueryOptions();
         if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.name)) {
-            queryOptions.put(CatalogJobDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.jobsCommandOptions.name);
+            queryOptions.put(JobDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.jobsCommandOptions.name);
         }
 
         if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.toolName)) {
-            queryOptions.put(CatalogJobDBAdaptor.QueryParams.TOOL_NAME.key(), studiesCommandOptions.jobsCommandOptions.toolName);
+            queryOptions.put(JobDBAdaptor.QueryParams.TOOL_NAME.key(), studiesCommandOptions.jobsCommandOptions.toolName);
         }
 
         if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.status)) {
-            queryOptions.put(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), studiesCommandOptions.jobsCommandOptions.status);
+            queryOptions.put(JobDBAdaptor.QueryParams.STATUS_NAME.key(), studiesCommandOptions.jobsCommandOptions.status);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.ownerId)) {
-            queryOptions.put(CatalogJobDBAdaptor.QueryParams.USER_ID.key(), studiesCommandOptions.jobsCommandOptions.ownerId);
+            queryOptions.put(JobDBAdaptor.QueryParams.USER_ID.key(), studiesCommandOptions.jobsCommandOptions.ownerId);
         }
         /*if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.date)) {
             queryOptions.put(CatalogJobDBAdaptor.QueryParams.CREATION_DATE.key(), studiesCommandOptions.jobsCommandOptions.date);
         }*/
 
         if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.inputFiles)) {
-            queryOptions.put(CatalogJobDBAdaptor.QueryParams.INPUT.key(), studiesCommandOptions.jobsCommandOptions.inputFiles);
+            queryOptions.put(JobDBAdaptor.QueryParams.INPUT.key(), studiesCommandOptions.jobsCommandOptions.inputFiles);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.outputFiles)) {
-            queryOptions.put(CatalogJobDBAdaptor.QueryParams.OUTPUT.key(), studiesCommandOptions.jobsCommandOptions.outputFiles);
+            queryOptions.put(JobDBAdaptor.QueryParams.OUTPUT.key(), studiesCommandOptions.jobsCommandOptions.outputFiles);
         }
 
         if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.include)) {
@@ -452,25 +450,25 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         QueryOptions queryOptions = new QueryOptions();
         if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.name)) {
-            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.samplesCommandOptions.name);
+            queryOptions.put(SampleDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.samplesCommandOptions.name);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.source)) {
-            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.SOURCE.key(), studiesCommandOptions.samplesCommandOptions.source);
+            queryOptions.put(SampleDBAdaptor.QueryParams.SOURCE.key(), studiesCommandOptions.samplesCommandOptions.source);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.individualId)) {
-            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(),
+            queryOptions.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(),
                     studiesCommandOptions.samplesCommandOptions.individualId);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.annotationSetName)) {
-            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
+            queryOptions.put(SampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
                     studiesCommandOptions.samplesCommandOptions.annotationSetName);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.variableSetId)) {
-            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
+            queryOptions.put(SampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
                     studiesCommandOptions.samplesCommandOptions.variableSetId);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.annotation)) {
-            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), studiesCommandOptions.samplesCommandOptions.annotation);
+            queryOptions.put(SampleDBAdaptor.QueryParams.ANNOTATION.key(), studiesCommandOptions.samplesCommandOptions.annotation);
         }
         /*if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.description)) {
             queryOptions.put(CatalogSampleDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.samplesCommandOptions.description);

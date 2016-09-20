@@ -4,7 +4,7 @@ import io.swagger.annotations.*;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
@@ -107,7 +107,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
             QueryOptions qOptions = new QueryOptions(queryOptions);
-            parseQueryParams(params, CatalogIndividualDBAdaptor.QueryParams::getParam, query, qOptions);
+            parseQueryParams(params, IndividualDBAdaptor.QueryParams::getParam, query, qOptions);
             QueryResult<Individual> queryResult = catalogManager.getAllIndividuals(studyId, query, qOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -403,7 +403,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         try {
             Query query = new Query();
             QueryOptions qOptions = new QueryOptions();
-            parseQueryParams(params, CatalogIndividualDBAdaptor.QueryParams::getParam, query, qOptions);
+            parseQueryParams(params, IndividualDBAdaptor.QueryParams::getParam, query, qOptions);
 
             logger.debug("query = " + query.toJson());
             logger.debug("queryOptions = " + qOptions.toJson());

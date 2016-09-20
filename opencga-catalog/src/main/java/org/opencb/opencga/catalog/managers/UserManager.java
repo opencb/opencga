@@ -13,8 +13,8 @@ import org.opencb.opencga.catalog.auth.authentication.LDAPAuthenticationManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.AuthenticationOrigin;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
-import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
+import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -53,7 +53,7 @@ public class UserManager extends AbstractManager implements IUserManager {
 //    protected final Policies.UserCreation creationUserPolicy;
 
     public UserManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
-                       CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                       DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                        CatalogConfiguration catalogConfiguration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, catalogConfiguration);
 
@@ -107,7 +107,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public String getUserId(String sessionId) throws CatalogException {
+    public String getId(String sessionId) throws CatalogException {
         return authenticationManagerMap.get(INTERNAL_AUTHORIZATION).getUserId(sessionId);
 //        if (sessionId == null || sessionId.isEmpty() || sessionId.equalsIgnoreCase("anonymous")) {
 //            return "anonymous";
@@ -121,14 +121,14 @@ public class UserManager extends AbstractManager implements IUserManager {
 //        checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(oldPassword, "oldPassword");
         ParamUtils.checkParameter(newPassword, "newPassword");
-        userDBAdaptor.checkUserExists(userId);
+        userDBAdaptor.checkId(userId);
         String authOrigin = getAuthenticationOriginId(userId);
         authenticationManagerMap.get(authOrigin).changePassword(userId, oldPassword, newPassword);
         userDBAdaptor.updateUserLastModified(userId);
     }
 
     private String getAuthenticationOriginId(String userId) throws CatalogException {
-        QueryResult<User> user = userDBAdaptor.getUser(userId, new QueryOptions(), "");
+        QueryResult<User> user = userDBAdaptor.get(userId, new QueryOptions(), "");
         if (user == null || user.getNumResults() == 0) {
             throw new CatalogException(userId + " user not found");
         }
@@ -216,14 +216,14 @@ public class UserManager extends AbstractManager implements IUserManager {
 
         try {
             catalogIOManagerFactory.getDefault().createUser(user.getId());
-            QueryResult<User> queryResult = userDBAdaptor.insertUser(user, options);
+            QueryResult<User> queryResult = userDBAdaptor.insert(user, options);
 //            auditManager.recordCreation(AuditRecord.Resource.user, user.getId(), userId, queryResult.first(), null, null);
             auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.create, AuditRecord.Magnitude.low, user.getId(), userId,
                     null, queryResult.first(), null, null);
             authenticationManagerMap.get(INTERNAL_AUTHORIZATION).newPassword(user.getId(), password);
             return queryResult;
         } catch (CatalogIOException | CatalogDBException e) {
-            if (!userDBAdaptor.userExists(user.getId())) {
+            if (!userDBAdaptor.exists(user.getId())) {
                 logger.error("ERROR! DELETING USER! " + user.getId());
                 catalogIOManagerFactory.getDefault().deleteUser(user.getId());
             }
@@ -301,7 +301,7 @@ public class UserManager extends AbstractManager implements IUserManager {
             String rdn = (String) attrs.get("gecos").get(0);
 
             // Check if the user already exists in catalog
-            if (userDBAdaptor.userExists(uid)) {
+            if (userDBAdaptor.exists(uid)) {
                 resultList.add(new QueryResult<>(uid, -1, 0, 0, "", "User " + uid + " already exists", Collections.emptyList()));
                 // TODO: If the account of the user is the same, check the groups
                 continue;
@@ -320,7 +320,7 @@ public class UserManager extends AbstractManager implements IUserManager {
             User user = new User(uid, displayname, mail, "", base, account, User.UserStatus.READY, "", -1, -1, new ArrayList<>(),
                     new ArrayList<>(), new ArrayList<>(), new HashMap<>(), attributes);
 
-            QueryResult<User> userQueryResult = userDBAdaptor.insertUser(user, queryOptions);
+            QueryResult<User> userQueryResult = userDBAdaptor.insert(user, queryOptions);
             userQueryResult.setId(uid);
 
             resultList.add(userQueryResult);
@@ -331,7 +331,7 @@ public class UserManager extends AbstractManager implements IUserManager {
 
     private void checkGroupsFromExternalUser(String userId, List<String> groupIds, List<String> studyIds) throws CatalogException {
         for (String studyStr : studyIds) {
-            long studyId = catalogManager.getStudyManager().getStudyId(userId, studyStr);
+            long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
             if (studyId < 1) {
                 throw new CatalogException("Study " + studyStr + " not found.");
             }
@@ -352,12 +352,12 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult<User> read(String userId, QueryOptions options, String sessionId) throws CatalogException {
-        return read(userId, null, options, sessionId);
+    public QueryResult<User> get(String userId, QueryOptions options, String sessionId) throws CatalogException {
+        return get(userId, null, options, sessionId);
     }
 
     @Override
-    public QueryResult<User> read(String userId, String lastModified, QueryOptions options, String sessionId)
+    public QueryResult<User> get(String userId, String lastModified, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
@@ -373,20 +373,20 @@ public class UserManager extends AbstractManager implements IUserManager {
             } else {
                 excludeList = new ArrayList<>(3);
             }
-            excludeList.add(CatalogUserDBAdaptor.QueryParams.SESSIONS.key());
-            excludeList.add(CatalogUserDBAdaptor.QueryParams.PASSWORD.key());
-            if (!excludeList.contains(CatalogUserDBAdaptor.QueryParams.PROJECTS.key())) {
+            excludeList.add(UserDBAdaptor.QueryParams.SESSIONS.key());
+            excludeList.add(UserDBAdaptor.QueryParams.PASSWORD.key());
+            if (!excludeList.contains(UserDBAdaptor.QueryParams.PROJECTS.key())) {
                 excludeList.add("projects.studies.variableSets");
             }
             options.put(QueryOptions.EXCLUDE, excludeList);
         }
 
-        QueryResult<User> user = userDBAdaptor.getUser(userId, options, lastModified);
+        QueryResult<User> user = userDBAdaptor.get(userId, options, lastModified);
         return user;
     }
 
     @Override
-    public QueryResult<User> readAll(Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<User> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
         throw new UnsupportedOperationException();
     }
 
@@ -459,7 +459,7 @@ public class UserManager extends AbstractManager implements IUserManager {
 
     @Override
     public List<QueryResult<User>> delete(Query query, QueryOptions options, String sessionId) throws CatalogException, IOException {
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CatalogUserDBAdaptor.QueryParams.ID.key());
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.ID.key());
         QueryResult<User> userQueryResult = userDBAdaptor.get(query, queryOptions);
         List<String> userIds = userQueryResult.getResult().stream().map(User::getId).collect(Collectors.toList());
         String userIdStr = StringUtils.join(userIds, ",");
@@ -538,7 +538,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         String authId;
         QueryResult<User> user = null;
         if (!userId.equals("admin")) {
-            user = userDBAdaptor.getUser(userId, new QueryOptions(), null);
+            user = userDBAdaptor.get(userId, new QueryOptions(), null);
             if (user.getNumResults() == 0) {
                 throw new CatalogException("The user id " + userId + " does not exist.");
             }
@@ -592,7 +592,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     @Override
     public QueryResult logoutAnonymous(String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        String userId = getUserId(sessionId);
+        String userId = getId(sessionId);
         ParamUtils.checkParameter(userId, "userId");
         checkSessionId(userId, sessionId);
 
@@ -605,21 +605,21 @@ public class UserManager extends AbstractManager implements IUserManager {
     @Override
     public void addQueryFilter(String sessionId, QueryFilter queryFilter) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        String userId = getUserId(sessionId);
+        String userId = getId(sessionId);
         userDBAdaptor.addQueryFilter(userId, queryFilter);
     }
 
     @Override
     public QueryResult<Long> deleteQueryFilter(String sessionId, String filterId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        String userId = getUserId(sessionId);
+        String userId = getId(sessionId);
         return userDBAdaptor.deleteQueryFilter(userId, filterId);
     }
 
     @Override
     public QueryResult<QueryFilter> getQueryFilter(String sessionId, String filterId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        String userId = getUserId(sessionId);
+        String userId = getId(sessionId);
         return userDBAdaptor.getQueryFilter(userId, filterId);
     }
 
@@ -637,7 +637,7 @@ public class UserManager extends AbstractManager implements IUserManager {
             throw new CatalogException("Permission denied: Cannot create users with special treatments in catalog.");
         }
 
-        if (userDBAdaptor.userExists(userId)) {
+        if (userDBAdaptor.exists(userId)) {
             throw new CatalogException("The user already exists in our database. Please, choose a different one.");
         }
     }

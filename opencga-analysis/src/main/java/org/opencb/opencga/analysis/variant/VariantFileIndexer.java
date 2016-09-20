@@ -27,9 +27,9 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
-import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.api.IFileManager;
@@ -44,6 +44,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,7 +107,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         FileUtils.checkDirectory(outdir, true);
 
         // Check the output directory does not correspond with a catalog directory
-        Query query = new Query(CatalogFileDBAdaptor.QueryParams.URI.key(), outdir.toUri().toString());
+        Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), outdir.toUri().toString());
         QueryResult<Long> count = fileManager.count(query, sessionId);
         if (count.first() > 0) {
             throw new CatalogException("The output directory is pointing to one in catalog. Please, choose other out of catalog "
@@ -151,9 +152,9 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         Type step = getType(load, transform);
 
         // Query catalog for user data
-        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        String userId = catalogManager.getUserManager().getId(sessionId);
 
-        List<Long> fileIdsLong = fileManager.getFileIds(userId, fileIds);
+        List<Long> fileIdsLong = fileManager.getIds(userId, fileIds);
         // We read all input files from fileId. This can either be a single file and then we just use it,
         // or this can be a directory, in that case we use all VCF files in that directory or subdirectory
         List<File> inputFiles = new ArrayList<>();
@@ -176,17 +177,17 @@ public class VariantFileIndexer extends AbstractFileIndexer {
                 throw new CatalogException("Cannot index files coming from different studies.");
             }
 
-            File inputFile = fileManager.read(fileIdLong, new QueryOptions(), sessionId).first();
+            File inputFile = fileManager.get(fileIdLong, new QueryOptions(), sessionId).first();
 
             if (inputFile.getType() == File.Type.FILE) {
                 inputFiles.add(inputFile);
             } else {
                 if (inputFile.getType() == File.Type.DIRECTORY) {
-                    query = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^" + inputFile.getPath() + "*");
-                    query.append(CatalogFileDBAdaptor.QueryParams.FORMAT.key(),
+                    query = new Query(FileDBAdaptor.QueryParams.PATH.key(), "~^" + inputFile.getPath() + "*");
+                    query.append(FileDBAdaptor.QueryParams.FORMAT.key(),
 //                            Arrays.asList(File.Format.VCF, File.Format.GVCF, File.Format.AVRO));
                             Arrays.asList(File.Format.VCF, File.Format.GVCF));
-                    QueryResult<File> fileQueryResult = fileManager.readAll(studyIdByInputFileId, query, options, sessionId);
+                    QueryResult<File> fileQueryResult = fileManager.get(studyIdByInputFileId, query, options, sessionId);
                     inputFiles.addAll(fileQueryResult.getResult());
                 } else {
                     throw new CatalogException(String.format("Expected file type %s or %s instead of %s",
@@ -198,7 +199,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         // Check catalog path
         long catalogPathId = -1;
         if (options.get(CATALOG_PATH) != null) {
-            catalogPathId = fileManager.getFileId(options.getString(CATALOG_PATH), studyIdByInputFileId, sessionId);
+            catalogPathId = fileManager.getId(options.getString(CATALOG_PATH), studyIdByInputFileId, sessionId);
             if (catalogPathId <= 0) {
                 throw new CatalogException("Output directory could not be found within catalog.");
             }
@@ -206,7 +207,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
 
         logger.debug("Index - Number of files to be indexed: {}, list of files: {}", inputFiles.size(), inputFiles.toString());
 
-        Study study = catalogManager.getStudyManager().read(studyIdByInputFileId, new QueryOptions(), sessionId).getResult().get(0);
+        Study study = catalogManager.getStudyManager().get(studyIdByInputFileId, new QueryOptions(), sessionId).getResult().get(0);
 
         // We get the credentials of the Datastore to insert the variants
         DataStore dataStore = getDataStore(catalogManager, studyIdByInputFileId, File.Bioformat.VARIANT, sessionId);
@@ -319,7 +320,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
     }
 
     private void copyResult(Path tmpOutdirPath, long catalogPathOutDir, String sessionId) throws CatalogException, IOException {
-        File outDir = fileManager.read(catalogPathOutDir, new QueryOptions(), sessionId).first();
+        File outDir = fileManager.get(catalogPathOutDir, new QueryOptions(), sessionId).first();
 
         FileScanner fileScanner = new FileScanner(catalogManager);
 //        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutdirPath.toUri());
@@ -391,10 +392,16 @@ public class VariantFileIndexer extends AbstractFileIndexer {
 
         Map<String, StorageETLResult> map = storageETLResults
                 .stream()
-                .collect(Collectors.toMap(s -> Paths.get(s.getInput().getPath()).getFileName().toString(), i -> i));
-
+                .collect(Collectors.toMap(s -> {
+                    String input = s.getInput().getPath();
+                    String inputFileName = Paths.get(input).getFileName().toString();
+                    // Input file may be the transformed one. Convert into original file.
+                    return VariantReaderUtils.getOriginalFromTransformedFile(inputFileName);
+                }, i -> i));
 
         for (File indexedFile : filesToIndex) {
+            // Fetch from catalog. {@link #copyResult} may modify the content
+            indexedFile = catalogManager.getFile(indexedFile.getId(), sessionId).first();
             // Suppose that the missing results are due to errors, and those files were not indexed.
             StorageETLResult storageETLResult = map.get(indexedFile.getName());
 
@@ -468,7 +475,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
             // Update storageETLResult
             Map<String, Object> attributes = indexedFile.getAttributes();
             attributes.put("storageETLResult", storageETLResult);
-            ObjectMap params = new ObjectMap(CatalogFileDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
+            ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
             fileManager.update(indexedFile.getId(), params, new QueryOptions(), sessionId);
 
             // Update index status
@@ -476,13 +483,13 @@ public class VariantFileIndexer extends AbstractFileIndexer {
 
             boolean calculateStats = options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key());
             if (index.getStatus().getName().equals(FileIndex.IndexStatus.READY) && calculateStats) {
-                Query query = new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT);
-                QueryResult<Cohort> queryResult = catalogManager.getCohortManager().readAll(study.getId(), query, new QueryOptions(),
+                Query query = new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT);
+                QueryResult<Cohort> queryResult = catalogManager.getCohortManager().get(study.getId(), query, new QueryOptions(),
                         sessionId);
                 if (queryResult.getNumResults() != 0) {
                     logger.debug("Default cohort status set to READY");
                     Cohort defaultCohort = queryResult.first();
-                    params = new ObjectMap(CatalogCohortDBAdaptor.QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.READY);
+                    params = new ObjectMap(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.READY);
                     catalogManager.getCohortManager().update(defaultCohort.getId(), params, new QueryOptions(), sessionId);
                 }
             }
@@ -515,7 +522,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
             try (InputStream is = FileUtils.newInputStream(statsFile)) {
                 VariantSource variantSource = new ObjectMapper().readValue(is, VariantSource.class);
                 VariantGlobalStats stats = variantSource.getStats();
-                ObjectMap params = new ObjectMap(CatalogFileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(VARIANT_STATS, stats));
+                ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(VARIANT_STATS, stats));
                 fileManager.update(inputFile.getId(), params, new QueryOptions(), sessionId);
             } catch (IOException e) {
                 throw new CatalogException("Error reading file \"" + statsFile + "\"", e);
@@ -556,17 +563,17 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         /* Get file samples */
         List<Sample> sampleList;
         if (file.getSampleIds() == null || file.getSampleIds().isEmpty()) {
-            final ObjectMap fileModifyParams = new ObjectMap(CatalogFileDBAdaptor.QueryParams.ATTRIBUTES.key(), new ObjectMap());
+            final ObjectMap fileModifyParams = new ObjectMap(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), new ObjectMap());
             sampleList = FileMetadataReader.get(catalogManager).getFileSamples(study, file,
-                    catalogManager.getFileManager().getFileUri(file), fileModifyParams,
+                    catalogManager.getFileManager().getUri(file), fileModifyParams,
                     options.getBoolean(FileMetadataReader.CREATE_MISSING_SAMPLES, true), false, options, sessionId);
         } else {
-            Query query = new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), file.getSampleIds());
-            sampleList = catalogManager.getSampleManager().readAll(study.getId(), query, new QueryOptions(), sessionId).getResult();
+            Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), file.getSampleIds());
+            sampleList = catalogManager.getSampleManager().get(study.getId(), query, new QueryOptions(), sessionId).getResult();
         }
 
         Cohort defaultCohort;
-        Query query = new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT);
+        Query query = new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT);
         QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(study.getId(), query, new QueryOptions(), sessionId);
 
         if (cohorts.getResult().isEmpty()) {
@@ -579,7 +586,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         ObjectMap updateParams = new ObjectMap();
 
         if (options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key())) {
-            updateParams.append(CatalogCohortDBAdaptor.QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.CALCULATING);
+            updateParams.append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.CALCULATING);
         }
 
         //Samples are the already indexed plus those that are going to be indexed
@@ -587,7 +594,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         samples.addAll(sampleList.stream().map(Sample::getId).collect(Collectors.toList()));
         if (samples.size() != defaultCohort.getSamples().size()) {
             logger.debug("Updating \"{}\" cohort", StudyEntry.DEFAULT_COHORT);
-            updateParams.append(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(), new ArrayList<>(samples));
+            updateParams.append(CohortDBAdaptor.QueryParams.SAMPLES.key(), new ArrayList<>(samples));
         }
         if (!updateParams.isEmpty()) {
             catalogManager.getCohortManager().update(defaultCohort.getId(), updateParams, new QueryOptions(), sessionId);
@@ -664,7 +671,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
                                 + "registered avro file");
                         throw new CatalogException("Internal error. No avro file could be found for file " + file.getId());
                     }
-                    QueryResult<File> avroQueryResult = fileManager.read(avroId, new QueryOptions(), sessionId);
+                    QueryResult<File> avroQueryResult = fileManager.get(avroId, new QueryOptions(), sessionId);
                     if (avroQueryResult.getNumResults() != 1) {
                         logger.error("This code should never be executed. No avro file could be found under ");
                         throw new CatalogException("Internal error. No avro file could be found under id " + avroId);
@@ -707,7 +714,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
                     logger.error("This code should never be executed. Every transformed avro file should come from a registered vcf file");
                     throw new CatalogException("Internal error. No vcf file could be found for file " + file.getId());
                 }
-                QueryResult<File> vcfQueryResult = fileManager.read(vcfId, new QueryOptions(), sessionId);
+                QueryResult<File> vcfQueryResult = fileManager.get(vcfId, new QueryOptions(), sessionId);
                 if (vcfQueryResult.getNumResults() != 1) {
                     logger.error("This code should never be executed. No vcf file could be found for vcf id " + vcfId);
                     throw new CatalogException("Internal error. No vcf file could be found under id " + vcfId);
@@ -788,10 +795,10 @@ public class VariantFileIndexer extends AbstractFileIndexer {
 
         // TODO: Use relatedFiles to look for the files
         Query query = new Query()
-                .append(CatalogFileDBAdaptor.QueryParams.NAME.key(), destinyFileName)
-                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                .append(FileDBAdaptor.QueryParams.NAME.key(), destinyFileName)
+                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
-        QueryResult<File> fileQueryResult = fileManager.readAll(parent.toString(), true, query, new QueryOptions(), sessionId);
+        QueryResult<File> fileQueryResult = fileManager.get(parent.toString(), true, query, new QueryOptions(), sessionId);
         if (fileQueryResult.getNumResults() == 1) {
             return fileQueryResult.first();
         }

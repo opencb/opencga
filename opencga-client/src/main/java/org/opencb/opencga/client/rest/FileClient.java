@@ -27,7 +27,6 @@ import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
-import javax.swing.*;
 import java.io.IOException;
 import java.net.URI;
 
@@ -46,8 +45,8 @@ public class FileClient extends AbstractParentClient<File, FileAclEntry> {
         this.aclClass = FileAclEntry.class;
     }
 
-    public QueryResponse<File> createFolder(String studyId, String path, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "studyId", studyId, "folder", path);
+    public QueryResponse<File> createFolder(String studyId, String paths, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "studyId", studyId, "folders", paths);
         return execute(FILES_URL, "create-folder", params, GET, File.class);
     }
 

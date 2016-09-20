@@ -32,18 +32,15 @@ import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
@@ -349,10 +346,10 @@ public class CatalogFileUtilsTest {
         }
 
         catalogManager.getFileManager().delete(Long.toString(folder.getId()), null, userSessionId);
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().readAll(new Query()
-                        .append(CatalogFileDBAdaptor.QueryParams.ID.key(), folder.getId())
-                        .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                        .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED),
+        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(new Query()
+                        .append(FileDBAdaptor.QueryParams.ID.key(), folder.getId())
+                        .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED),
                 new QueryOptions(), userSessionId);
         assertTrue(ioManager.exists(fileQueryResult.first().getUri()));
         for (File file : folderFiles) {
@@ -387,10 +384,10 @@ public class CatalogFileUtilsTest {
         catalogManager.getFileManager().delete(Long.toString(toTrash.getId()), null, userSessionId);
 
         catalogManager.getFileManager().delete(Long.toString(folder.getId()), null, userSessionId);
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().readAll(new Query()
-                .append(CatalogFileDBAdaptor.QueryParams.ID.key(), folder.getId())
-                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED),
+        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(new Query()
+                .append(FileDBAdaptor.QueryParams.ID.key(), folder.getId())
+                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED),
                 new QueryOptions(), userSessionId);
         assertTrue(ioManager.exists(fileQueryResult.first().getUri()));
         for (File file : folderFiles) {
@@ -460,10 +457,10 @@ public class CatalogFileUtilsTest {
 
         /** Check TRASHED file with found file **/
         catalogManager.getFileManager().delete(Long.toString(file.getId()), null, userSessionId);
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().readAll(new Query()
-                        .append(CatalogFileDBAdaptor.QueryParams.ID.key(), file.getId())
-                        .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                        .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY"),
+        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(new Query()
+                        .append(FileDBAdaptor.QueryParams.ID.key(), file.getId())
+                        .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=EMPTY"),
                 new QueryOptions(), userSessionId);
         file = fileQueryResult.first();
         returnedFile = catalogFileUtils.checkFile(file, true, userSessionId);

@@ -3,7 +3,7 @@ package org.opencb.opencga.catalog.managers.api;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
@@ -14,6 +14,7 @@ import java.util.List;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Deprecated
 public interface IProjectManager extends ResourceManager<Long, Project> {
 
     String getUserId(long projectId) throws CatalogException;
@@ -26,7 +27,7 @@ public interface IProjectManager extends ResourceManager<Long, Project> {
      * @return the numeric project id.
      * @throws CatalogDBException CatalogDBException.
      */
-    long getProjectId(String userId, String projectStr) throws CatalogDBException;
+    long getId(String userId, String projectStr) throws CatalogDBException;
 
     /**
      * Obtains the list of projectIds corresponding to the comma separated list of project strings given in projectStr.
@@ -36,16 +37,16 @@ public interface IProjectManager extends ResourceManager<Long, Project> {
      * @return A list of project ids.
      * @throws CatalogException CatalogException.
      */
-    default List<Long> getProjectIds(String userId, String projectStr) throws CatalogException {
+    default List<Long> getIds(String userId, String projectStr) throws CatalogException {
         List<Long> projectIds = new ArrayList<>();
         for (String projectId : projectStr.split(",")) {
-            projectIds.add(getProjectId(userId, projectId));
+            projectIds.add(getId(userId, projectId));
         }
         return projectIds;
     }
 
     @Deprecated
-    long getProjectId(String projectId) throws CatalogException;
+    long getId(String projectId) throws CatalogException;
 
     QueryResult<Project> create(String name, String alias, String description, String organization, QueryOptions options,
                                 String sessionId) throws CatalogException;
@@ -65,7 +66,7 @@ public interface IProjectManager extends ResourceManager<Long, Project> {
     QueryResult rank(String userId, Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException;
 
     default QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
-        String userId = query.getString(CatalogProjectDBAdaptor.QueryParams.USER_ID.key());
+        String userId = query.getString(ProjectDBAdaptor.QueryParams.USER_ID.key());
         if (!userId.equals("")) {
             throw new CatalogException("Project[rank]: User id not found in the query");
         }
@@ -86,7 +87,7 @@ public interface IProjectManager extends ResourceManager<Long, Project> {
     QueryResult groupBy(String userId, Query query, String field, QueryOptions options, String sessionId) throws CatalogException;
 
     default QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = query.getString(CatalogProjectDBAdaptor.QueryParams.USER_ID.key());
+        String userId = query.getString(ProjectDBAdaptor.QueryParams.USER_ID.key());
         if (!userId.equals("")) {
             throw new CatalogException("Project[groupBy]: User id not found in the query");
         }
@@ -107,7 +108,7 @@ public interface IProjectManager extends ResourceManager<Long, Project> {
     QueryResult groupBy(String userId, Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException;
 
     default QueryResult groupBy(Query query, List<String> field, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = query.getString(CatalogProjectDBAdaptor.QueryParams.USER_ID.key());
+        String userId = query.getString(ProjectDBAdaptor.QueryParams.USER_ID.key());
         if (!userId.equals("")) {
             throw new CatalogException("Project[groupBy]: User id not found in the query");
         }
