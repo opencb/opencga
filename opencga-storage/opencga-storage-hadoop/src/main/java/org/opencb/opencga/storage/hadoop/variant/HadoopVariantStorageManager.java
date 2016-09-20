@@ -426,7 +426,13 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
                 URI uri = new URI(target);
                 server = uri.getHost();
                 port = uri.getPort() > 0 ? uri.getPort() : 60000;
-                zookeeperPath = uri.getPath();
+                // If just an IP or host name is provided, the URI parser will return empty host, and the content as "path". Avoid that
+                if (server == null) {
+                    server = uri.getPath();
+                    zookeeperPath = null;
+                } else {
+                    zookeeperPath = uri.getPath();
+                }
             }
             HBaseCredentials credentials = new HBaseCredentials(server, table, user, pass, port);
             if (!StringUtils.isBlank(zookeeperPath)) {

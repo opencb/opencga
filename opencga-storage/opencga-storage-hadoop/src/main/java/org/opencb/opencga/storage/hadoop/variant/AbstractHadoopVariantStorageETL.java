@@ -115,10 +115,11 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
     }
 
     @Override
-    protected Pair<Long, Long> processProto(Path input, String fileName, Path output, VariantSource source, Path
-            outputVariantsFile, Path outputMetaFile, boolean includeSrc, String parser, boolean
-            generateReferenceBlocks, int batchSize, String extension, String compression, BiConsumer<String,
-            RuntimeException> malformatedHandler) throws StorageManagerException {
+    protected Pair<Long, Long> processProto(Path input, String fileName, Path output, VariantSource source, Path outputVariantsFile,
+                                            Path outputMetaFile, boolean includeSrc, String parser, boolean generateReferenceBlocks,
+                                            int batchSize, String extension, String compression,
+                                            BiConsumer<String, RuntimeException> malformatedHandler, boolean failOnError)
+            throws StorageManagerException {
 
         //Writer
         DataWriter<VcfSliceProtos.VcfSlice> dataWriter = new ProtoFileWriter<>(outputVariantsFile, compression);
@@ -138,6 +139,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
                 VariantVcfHtsjdkReader reader = new VariantVcfHtsjdkReader(inputStream, source, normalizer);
                 if (null != malformatedHandler) {
                     reader.registerMalformatedVcfHandler(malformatedHandler);
+                    reader.setFailOnError(failOnError);
                 }
                 dataReader = reader;
             } else {

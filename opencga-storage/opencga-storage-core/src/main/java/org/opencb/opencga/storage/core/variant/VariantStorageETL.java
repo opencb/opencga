@@ -403,7 +403,7 @@ public abstract class VariantStorageETL implements StorageETL {
             //Read VariantSource
             source = VariantStorageManager.readVariantSource(input, source);
             Pair<Long, Long> times = processProto(input, fileName, output, source, outputVariantsFile, outputMetaFile,
-                    includeSrc, parser, generateReferenceBlocks, batchSize, extension, compression, malformedHandler);
+                    includeSrc, parser, generateReferenceBlocks, batchSize, extension, compression, malformedHandler, failOnError);
             start = times.getKey();
             end = times.getValue();
         } else {
@@ -438,7 +438,8 @@ public abstract class VariantStorageETL implements StorageETL {
     protected Pair<Long, Long> processProto(
             Path input, String fileName, Path output, VariantSource source, Path outputVariantsFile,
             Path outputMetaFile, boolean includeSrc, String parser, boolean generateReferenceBlocks,
-            int batchSize, String extension, String compression, BiConsumer<String, RuntimeException> malformatedHandler)
+            int batchSize, String extension, String compression, BiConsumer<String, RuntimeException> malformatedHandler,
+            boolean failOnError)
             throws StorageManagerException {
         throw new NotImplementedException("Please request feature");
     }
