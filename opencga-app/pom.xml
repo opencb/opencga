@@ -208,13 +208,13 @@
                                 <platform>unix</platform>
                             </platforms>
                         </program>
-                        <program>
-                            <name>opencga-daemon.sh</name>
-                            <mainClass>org.opencb.opencga.app.daemon.OpenCGADaemon</mainClass>
-                            <platforms>
-                                <platform>unix</platform>
-                            </platforms>
-                        </program>
+                        <!--<program>-->
+                            <!--<name>opencga-daemon.sh</name>-->
+                            <!--<mainClass>org.opencb.opencga.app.daemon.OpenCGADaemon</mainClass>-->
+                            <!--<platforms>-->
+                                <!--<platform>unix</platform>-->
+                            <!--</platforms>-->
+                        <!--</program>-->
                         <program>
                             <mainClass>org.opencb.opencga.app.cli.analysis.AnalysisMain</mainClass>
                             <name>opencga-analysis.sh</name>
