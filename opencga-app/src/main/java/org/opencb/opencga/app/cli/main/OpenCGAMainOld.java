@@ -37,6 +37,8 @@ import org.opencb.opencga.analysis.ToolManager;
 import org.opencb.opencga.catalog.models.tool.Execution;
 import org.opencb.opencga.catalog.models.tool.InputParam;
 import org.opencb.opencga.analysis.JobFactory;
+import org.opencb.opencga.catalog.monitor.ExecutionOutputRecorder;
+import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.FileScanner;
@@ -902,20 +904,22 @@ public class OpenCGAMainOld {
                             throw new Exception("Job status != DONE. Need --force to continue");
                         }
 
-//                        /** Record output **/
-//                        ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, sessionId);
-//                        if (c.discardOutput) {
-//                            CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(job.getTmpOutDirUri());
-//                            if (ioManager.exists(job.getTmpOutDirUri())) {
-//                                logger.info("Deleting temporal job output folder: {}", job.getTmpOutDirUri());
-//                                ioManager.deleteDirectory(job.getTmpOutDirUri());
-//                            } else {
-//                                logger.info("Temporal job output folder already removed: {}", job.getTmpOutDirUri());
-//                            }
-//                        } else {
-//                            outputRecorder.recordJobOutput(job);
-//                        }
-//                        outputRecorder.postProcessJob(job, c.error);
+                        /** Record output **/
+                        ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, sessionId);
+                        if (c.discardOutput) {
+                            String tempJobsDir = catalogManager.getCatalogConfiguration().getTempJobsDir();
+                            URI tmpOutDirUri = IndexDaemon.getJobTemporaryFolder(job.getId(), tempJobsDir).toUri();
+                            CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutDirUri);
+                            if (ioManager.exists(tmpOutDirUri)) {
+                                logger.info("Deleting temporal job output folder: {}", tmpOutDirUri);
+                                ioManager.deleteDirectory(tmpOutDirUri);
+                            } else {
+                                logger.info("Temporal job output folder already removed: {}", tmpOutDirUri);
+                            }
+                        } else {
+                            outputRecorder.recordJobOutput(job);
+                        }
+                        outputRecorder.postProcessJob(job, c.error);
 
                         /** Change status to ERROR or READY **/
                         ObjectMap parameters = new ObjectMap();
@@ -955,7 +959,8 @@ public class OpenCGAMainOld {
                                 Job job = iterator.next();
                                 System.out.format("Job - %s [%d] - %s\n", job.getName(), job.getId(), job.getDescription());
 //                                URI tmpOutDirUri = job.getTmpOutDirUri();
-                                URI tmpOutDirUri = null;
+                                String tempJobsDir = catalogManager.getCatalogConfiguration().getTempJobsDir();
+                                URI tmpOutDirUri = IndexDaemon.getJobTemporaryFolder(job.getId(), tempJobsDir).toUri();
                                 CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutDirUri);
                                 try {
                                     ioManager.listFilesStream(tmpOutDirUri)

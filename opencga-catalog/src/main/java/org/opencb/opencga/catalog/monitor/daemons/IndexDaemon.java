@@ -153,7 +153,7 @@ public class IndexDaemon extends MonitorParentDaemon {
     }
 
     private void checkRunningJob(Job job) {
-        Path tmpOutdirPath = this.tempJobFolder.resolve("J_" + job.getId());
+        Path tmpOutdirPath = getJobTemporaryFolder(job.getId());
         Job.JobStatus jobStatus;
 
         if (!tmpOutdirPath.toFile().exists()) {
@@ -216,7 +216,7 @@ public class IndexDaemon extends MonitorParentDaemon {
     private void checkQueuedJob(Job job) {
         logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.QUEUED, Job.JobStatus.RUNNING);
 
-        Path tmpOutdirPath = this.tempJobFolder.resolve("J_" + job.getId());
+        Path tmpOutdirPath = getJobTemporaryFolder(job.getId());
         if (!tmpOutdirPath.toFile().exists()) {
             logger.warn("Attempting to create the temporal output directory again");
             try {
@@ -269,7 +269,7 @@ public class IndexDaemon extends MonitorParentDaemon {
 
     private void queuePreparedIndex(Job job) {
         // Create the temporal output directory.
-        Path path = this.tempJobFolder.resolve("J_" + job.getId());
+        Path path = getJobTemporaryFolder(job.getId());
         try {
             catalogIOManager.createDirectory(path.toUri());
         } catch (CatalogIOException e) {
@@ -355,6 +355,23 @@ public class IndexDaemon extends MonitorParentDaemon {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private Path getJobTemporaryFolder(long jobId) {
+        return getJobTemporaryFolder(jobId, tempJobFolder);
+    }
+
+    public static Path getJobTemporaryFolder(long jobId, Path tempJobFolder) {
+        return tempJobFolder.resolve(getJobTemporaryFolderName(jobId));
+    }
+
+    public static Path getJobTemporaryFolder(long jobId, String tempJobFolder) {
+        URI uri = URI.create(tempJobFolder);
+        return Paths.get(uri.getPath()).resolve(getJobTemporaryFolderName(jobId));
+    }
+
+    public static String getJobTemporaryFolderName(long jobId) {
+        return "J_" + jobId;
     }
 
     private void closeSessionId(Job job) {

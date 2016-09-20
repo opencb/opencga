@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
+import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -199,7 +200,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
 //        FileUtils.checkFile(Paths.get(inputUri.getPath()));
 
 //        URI outdirUri = job.getTmpOutDirUri();
-        URI outdirUri = null;
+        URI outdirUri = IndexDaemon.getJobTemporaryFolder(job.getId(), catalogConfiguration.getTempJobsDir()).toUri();
 //        FileUtils.checkDirectory(Paths.get(outdirUri.getPath()));
 
 
