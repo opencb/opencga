@@ -421,7 +421,7 @@
                 <opencga.war.name>opencga-${opencga.version}</opencga.war.name>
 
                 <OPENCGA.CATALOG.DB.HOSTS>localhost:27017</OPENCGA.CATALOG.DB.HOSTS>
-                <!-- Deprecated: PREFIX is used instead -->
+                <!-- Deprecated: use PREFIX instead -->
                 <OPENCGA.CATALOG.DB.DATABASE>opencga_catalog</OPENCGA.CATALOG.DB.DATABASE>
                 <OPENCGA.CATALOG.DB.USER></OPENCGA.CATALOG.DB.USER>
                 <OPENCGA.CATALOG.DB.PASSWORD></OPENCGA.CATALOG.DB.PASSWORD>
