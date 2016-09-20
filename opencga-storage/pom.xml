@@ -22,13 +22,13 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>0.8-dev</version>
+        <version>1.0.0-rc1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <!-- Version must be set to a literal, variables cannot be used in nested modules -->
     <artifactId>opencga-storage</artifactId>
-    <version>0.8-dev</version>
+    <version>1.0.0-rc1</version>
     <packaging>pom</packaging>
 
     <properties>
