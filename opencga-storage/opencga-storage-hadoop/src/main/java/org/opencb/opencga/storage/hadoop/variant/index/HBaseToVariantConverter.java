@@ -202,8 +202,11 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                 if (samplePosition == null) {
                     continue;   //Sample may not be required. Ignore this sample.
                 }
-                String returnedGenotype = entry.getValue();
-                // TODO: Check if contains ',' ?
+                String genotype = entry.getValue();
+                // FIXME: Decide what to do with lists of genotypes
+                int idx = genotype.indexOf(",");
+                String returnedGenotype = idx > 0 ? genotype.substring(0, idx) : genotype;
+
                 samplesDataArray[samplePosition] = Arrays.asList(returnedGenotype, VariantMerger.PASS_VALUE);
             }
 
