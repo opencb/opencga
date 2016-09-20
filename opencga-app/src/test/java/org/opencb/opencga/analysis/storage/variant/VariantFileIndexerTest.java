@@ -24,8 +24,8 @@ public class VariantFileIndexerTest extends AbstractAnalysisFileIndexerTest {
     @Test
     public void testIndex() throws Exception {
 
-        VariantFileIndexer variantFileIndexer = new VariantFileIndexer(opencga.getCatalogManager().getCatalogConfiguration(), opencga.getStorageConfiguration());
-
+        VariantFileIndexer variantFileIndexer = new VariantFileIndexer(opencga.getCatalogManager().getCatalogConfiguration(),
+                opencga.getStorageConfiguration());
 
         File file = create("variant-test-file.vcf.gz");
         Path outdir1 = opencga.getOpencgaHome().resolve("job1");

@@ -77,13 +77,13 @@ public abstract class AbstractAnalysisFileIndexerTest {
                 null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(getStorageEngine(), dbName)), null,
                 Collections.singletonMap(VariantStorageManager.Options.AGGREGATED_TYPE.key(), getAggregation()),
                 null, sessionId).first().getId();
-        outputId = catalogManager.createFolder(studyId, Paths.get("data", "index"), false, null, sessionId).first().getId();
+        outputId = catalogManager.createFolder(studyId, Paths.get("data", "index"), true, null, sessionId).first().getId();
 
         studyId2 = catalogManager.createStudy(projectId, "s2", "s2", Study.Type.CASE_CONTROL, null, "Study 2", null,
                 null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(getStorageEngine(), dbName)), null,
                 Collections.singletonMap(VariantStorageManager.Options.AGGREGATED_TYPE.key(), getAggregation()),
                 null, sessionId).first().getId();
-        outputId2 = catalogManager.createFolder(studyId2, Paths.get("data", "index"), false, null, sessionId).first().getId();
+        outputId2 = catalogManager.createFolder(studyId2, Paths.get("data", "index"), true, null, sessionId).first().getId();
 
     }
 
