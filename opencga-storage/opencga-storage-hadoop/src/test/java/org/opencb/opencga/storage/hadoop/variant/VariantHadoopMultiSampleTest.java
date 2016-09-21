@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
@@ -31,6 +32,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBA
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
+import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -524,7 +526,8 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
             for (Result result : resultScanner) {
                 Cell cell = result.getColumnLatestCell(helper.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
                 assertNotNull(cell);
-                assertEquals(ts, cell.getTimestamp());
+                VariantTableStudyRowsProto proto = VariantTableStudyRowsProto.parseFrom(CellUtil.cloneValue(cell));
+                assertEquals(ts, proto.getTimestamp());
             }
             resultScanner.close();
             return null;
