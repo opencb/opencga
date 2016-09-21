@@ -91,7 +91,8 @@ public class VariantFileIndexer extends AbstractFileIndexer {
             throws CatalogException, AnalysisExecutionException, IOException, IllegalAccessException, InstantiationException,
             ClassNotFoundException, StorageManagerException, URISyntaxException {
 
-        Path outdir = Paths.get(outdirString);
+        URI outdirUri = UriUtils.createDirectoryUri(outdirString);
+        Path outdir = Paths.get(outdirUri);
         FileUtils.checkDirectory(outdir, true);
 
         // Check the output directory does not correspond with a catalog directory

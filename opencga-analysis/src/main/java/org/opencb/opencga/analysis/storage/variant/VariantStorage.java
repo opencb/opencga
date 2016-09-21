@@ -76,7 +76,7 @@ public class VariantStorage extends AbstractFileIndexer {
 
         // Outdir must be empty
         URI outdirUri = UriUtils.createDirectoryUri(outdirStr);
-        final Path outdir = Paths.get(outdirStr);
+        final Path outdir = Paths.get(outdirUri);
         outdirMustBeEmpty(outdir);
 
         cohortIds = checkAggregated(cohortIds, options);
@@ -104,7 +104,6 @@ public class VariantStorage extends AbstractFileIndexer {
                 .append(VariantStorageManager.Options.UPDATE_STATS.key(), updateStats);
         calculateStatsOptions.putIfNotNull(VariantStorageManager.Options.FILE_ID.key(), fileId);
         calculateStatsOptions.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
-        System.out.println("fileId = " + fileId);
 
         // if the study is aggregated and a mapping file is provided, pass it to storage
         // and create in catalog the cohorts described in the mapping file
@@ -145,16 +144,22 @@ public class VariantStorage extends AbstractFileIndexer {
                         .collect(Collectors.toSet()));
             }
             URI stats = variantStatisticsManager.createStats(dbAdaptor, outdirUri.resolve(outputFileName), cohortSamplesMap, cohortNameIdMap, studyConfiguration, calculateStatsOptions);
+
+            writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job still running. Statistics created."));
             variantStatisticsManager.loadStats(dbAdaptor, stats, studyConfiguration, options);
 
             if (catalogOutDirId != null) {
                 copyResults(Paths.get(outdirUri), catalogOutDirId, sessionId);
             }
 
+            writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.DONE, "Job completed"));
             // Modify cohort status to "READY"
             updateCohorts(cohortIds, sessionId, Cohort.CohortStatus.READY);
         } catch (Exception e) {
-            // Error! Modify to "INVALID"
+            // Error!
+            logger.error("Error executing stats. Set cohorts status to " + Cohort.CohortStatus.INVALID, e);
+            writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.ERROR, "Job with error : " + e.getMessage()));
+            // Modify to "INVALID"
             updateCohorts(cohortIds, sessionId, Cohort.CohortStatus.INVALID);
             throw new AnalysisExecutionException("Error calculating statistics.", e);
         } finally {
