@@ -27,11 +27,14 @@ import static org.opencb.biodata.models.variant.avro.VariantType.NO_VARIATION;
 public class VariantLocalConflictResolver {
 
 
+    private VariantPositionRefAltComparator POS_REF_ALT_COMP = new VariantPositionRefAltComparator();
     public List<Variant> resolveConflicts(List<Variant> variants) {
         // sorted by position assumed
+        List<Variant> varSorted = new ArrayList<>(variants);
+        Collections.sort(varSorted, POS_REF_ALT_COMP);
         List<Variant> resolved = new ArrayList<>(variants.size());
         List<Variant> currVariants = new ArrayList<>();
-        for (Variant var : variants) {
+        for (Variant var : varSorted) {
             if (currVariants.isEmpty()) { // init
                 currVariants.add(var);
             } else if (!VariantLocalConflictResolver.hasAnyConflictOverlapInclSecAlt(currVariants, var)) { // no overlap
@@ -427,6 +430,30 @@ public class VariantLocalConflictResolver {
                 return c;
             }
             c = o1.getEnd().compareTo(o2.getEnd());
+            if (c != 0) {
+                return c;
+            }
+            return Integer.compare(o1.hashCode(), o2.hashCode());
+        }
+    }
+
+    private static class VariantPositionRefAltComparator implements Comparator<Variant> {
+
+        @Override
+        public int compare(Variant o1, Variant o2) {
+            int c = o1.getStart().compareTo(o2.getStart());
+            if (c != 0) {
+                return c;
+            }
+            c = o1.getEnd().compareTo(o2.getEnd());
+            if (c != 0) {
+                return c;
+            }
+            c = o1.getReference().compareTo(o2.getReference());
+            if (c != 0) {
+                return c;
+            }
+            c = o1.getAlternate().compareTo(o2.getAlternate());
             if (c != 0) {
                 return c;
             }
