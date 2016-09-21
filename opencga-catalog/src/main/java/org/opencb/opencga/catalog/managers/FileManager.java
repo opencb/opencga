@@ -557,7 +557,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             path = path.substring(0, path.length() - 1);
         }
 
-        URI uri = Paths.get(getStudyUri(studyId)).resolve(path).toUri();
+        URI uri = getFileUri(studyId, path);
 
         // Check if it already exists
         Query query = new Query()
@@ -637,6 +637,26 @@ public class FileManager extends AbstractManager implements IFileManager {
         auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.Action.create, AuditRecord.Magnitude.low,
                 queryResult.first().getId(), userId, null, queryResult.first(), null, null);
         return queryResult;
+    }
+
+    /**
+     * Get the URI where a file should be in Catalog, given a study and a path.
+     * @param studyId       Study identifier
+     * @param path          Path to locate
+     * @return              URI where the file should be placed
+     * @throws CatalogException CatalogException
+     */
+    private URI getFileUri(long studyId, String path) throws CatalogException {
+        // Get the closest existing parent. If parents == true, may happen that the parent is not registered in catalog yet.
+        File existingParent = getParents(false, null, path, studyId).first();
+
+        //Relative path to the existing parent
+        String relativePath = Paths.get(existingParent.getPath()).relativize(Paths.get(path)).toString();
+        if (path.endsWith("/") && !relativePath.endsWith("/")) {
+            relativePath += "/";
+        }
+
+        return existingParent.getUri().resolve(relativePath);
     }
 
     @Override
