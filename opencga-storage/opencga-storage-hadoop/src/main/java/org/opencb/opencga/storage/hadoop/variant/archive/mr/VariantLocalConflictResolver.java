@@ -14,6 +14,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static htsjdk.variant.vcf.VCFConstants.GENOTYPE_FILTER_KEY;
 import static htsjdk.variant.vcf.VCFConstants.GENOTYPE_KEY;
@@ -60,9 +61,16 @@ public class VariantLocalConflictResolver {
         if (conflicts.size() < 2) {
             return conflicts;
         }
+        // <start,end> pair stream
+        List<Pair<Integer, Integer>> secAltPairs = buildRegions(conflicts);
+
+        int min = secAltPairs.stream().mapToInt(p -> p.getLeft()).min().getAsInt();
+        int max = secAltPairs.stream().mapToInt(p -> p.getRight()).max().getAsInt();
+
         List<Variant> sorted = new ArrayList<>(conflicts);
         sorted.sort(VARIANT_COMP);
         List<Variant> resolved = new ArrayList<>();
+        List<Variant> misfit = new ArrayList<>();
         for (Variant q : sorted) {
             if (resolved.isEmpty()) {
                 resolved.add(q);
@@ -80,10 +88,14 @@ public class VariantLocalConflictResolver {
                     variant.setEnd(Math.max(variant.getEnd(), q.getEnd()));
                     variant.setLength((variant.getEnd() - variant.getStart()) + 1);
                 } else {
-                    // fit into place (before and after)
-                    fillNoCall(resolved, q);
+                    // does not fit
+                    misfit.add(q);
                 }
             }
+        }
+        if (!misfit.isEmpty()) {
+            // fit into place (before and after)
+            fillNoCall(resolved, misfit.get(0), min, max);
         }
         return resolved;
     }
@@ -104,10 +116,10 @@ public class VariantLocalConflictResolver {
     private static VariantPositionComparator varPositionOrder = new VariantPositionComparator();
     private static PositionComparator positionOrder = new PositionComparator();
 
-    private void fillNoCall(List<Variant> resolved, Variant q) {
+    private void fillNoCall(List<Variant> resolved, Variant q, int start, int end) {
 
         // find missing pieces
-        List<Pair<Integer, Integer>> holes = getMissingRegions(resolved, q);
+        List<Pair<Integer, Integer>> holes = getMissingRegions(resolved, start, end);
 
         // create NO_VARIANT fillers for holes
         if (holes.size() == 1) { // only one hole - use query variant
@@ -122,14 +134,17 @@ public class VariantLocalConflictResolver {
             }
         }
     }
-
     public static List<Pair<Integer, Integer>> getMissingRegions(List<Variant> target, Variant query) {
+        return getMissingRegions(target, query.getStart(), query.getEnd());
+    }
+
+    public static List<Pair<Integer, Integer>> getMissingRegions(List<Variant> target, int start, int end) {
         List<Pair<Integer, Integer>> targetReg = new ArrayList<>(new HashSet<>(buildRegions(target)));
         targetReg.sort(positionOrder);
 //        target.sort(varPositionOrder);
 
-        int min = query.getStart();
-        int max = query.getEnd();
+        int min = start;
+        int max = end;
         if (max < min) {
             // Insertion -> no need for holes
             return Collections.emptyList();
@@ -142,26 +157,26 @@ public class VariantLocalConflictResolver {
         }
         // find missing pieces
         List<Pair<Integer, Integer>> holes = new ArrayList<>();
-        for (Variant v : target) {
+        for (Pair<Integer, Integer> pair : targetReg) {
             if (min > max) {
                 break; // All holes closed
             }
-            if (max < v.getStart()) { // Region ends before or at start of this target
+            if (max < pair.getLeft()) { // Region ends before or at start of this target
                 holes.add(new ImmutablePair<>(min, max));
                 break; // finish
-            } else if (min > v.getEnd()) {
+            } else if (min > pair.getRight()) {
                 // No overlap
-                min = Math.max(min, v.getEnd() + 1);
-            } else if (min >= v.getStart() && max <= v.getEnd()) {
+                min = Math.max(min, pair.getRight() + 1);
+            } else if (min >= pair.getLeft() && max <= pair.getRight()) {
                 // Full overlap
-                min = Math.max(min, v.getEnd() + 1); // Reset min to current target end +1
-            } else if (min < v.getStart() && max >= v.getStart()) {
+                min = Math.max(min, pair.getRight() + 1); // Reset min to current target end +1
+            } else if (min < pair.getLeft() && max >= pair.getLeft()) {
                 // Query overlaps with target start
-                holes.add(new ImmutablePair<>(min, v.getStart() - 1));
-                min = Math.max(min, v.getEnd() + 1);
-            } else if (min <= v.getEnd() && max >= v.getEnd()) {
+                holes.add(new ImmutablePair<>(min, pair.getLeft() - 1));
+                min = Math.max(min, pair.getRight() + 1);
+            } else if (min <= pair.getRight() && max >= pair.getRight()) {
                 // Query overlaps with target end
-                min = Math.max(min, v.getEnd() + 1); // Reset min to current target end +1
+                min = Math.max(min, pair.getRight() + 1); // Reset min to current target end +1
             }
         }
         // Fill in holes at the end
