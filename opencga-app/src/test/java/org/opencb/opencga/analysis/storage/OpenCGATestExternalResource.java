@@ -28,6 +28,8 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Map;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.getResourceUri;
@@ -204,6 +206,11 @@ public class OpenCGATestExternalResource extends ExternalResource {
         } else {
             throw new UnsupportedOperationException();
         }
+    }
+
+    public String createTmpOutdir(long studyId, String sufix, String sessionId) throws CatalogException {
+        String date = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss.SSS").format(new Date());
+        return getCatalogManager().createJobOutDir(studyId, "I_tmp_" + date + sufix, sessionId).toString();
     }
 
 //    private class StorageLocalExecutorManager extends LocalExecutorManager {

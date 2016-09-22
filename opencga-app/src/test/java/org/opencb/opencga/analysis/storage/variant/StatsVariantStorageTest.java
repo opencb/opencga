@@ -17,9 +17,9 @@ import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.storage.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.variant.VariantFileIndexer;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -30,8 +30,8 @@ import org.slf4j.LoggerFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -108,9 +108,15 @@ public class StatsVariantStorageTest {
         User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null, null).first();
         sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");
         projectId = catalogManager.createProject("p1", "p1", "Project 1", "ACME", null, sessionId).first().getId();
+        Map<String, Object> attributes;
+        if (aggregation != null) {
+            attributes = Collections.singletonMap(VariantStorageManager.Options.AGGREGATED_TYPE.key(), aggregation);
+        } else {
+            attributes = Collections.emptyMap();
+        }
         studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, "Study 1", null,
                 null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", dbName)), null,
-                Collections.singletonMap(VariantStorageManager.Options.AGGREGATED_TYPE.key(), aggregation),
+                attributes,
                 null, sessionId).first().getId();
         outputId = catalogManager.createFolder(studyId, Paths.get("data", "index"), true, null, sessionId).first().getId();
         File file1 = opencga.createFile(studyId, fileName, sessionId);
@@ -128,22 +134,23 @@ public class StatsVariantStorageTest {
     }
 
     public String createTmpOutdir(String sufix) throws CatalogException {
-        String date = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new Date());
-        return catalogManager.createJobOutDir(studyId, "I_tmp_" + date + sufix, sessionId).toString();
+        return opencga.createTmpOutdir(studyId, sufix, sessionId);
     }
 
 
-    public static List<QueryResult<Cohort>> createCohorts(String sessionId, long studyId, String tagmapPath, CatalogManager catalogManager, Logger logger) throws IOException, CatalogException {
-        List<QueryResult<Cohort>> queryResults = new ArrayList<>();
+    public static List<Cohort> createCohorts(String sessionId, long studyId, String tagmapPath, CatalogManager catalogManager, Logger logger) throws IOException, CatalogException {
+        List<Cohort> queryResults = new ArrayList<>();
         Properties tagmap = new Properties();
         tagmap.load(new FileInputStream(tagmapPath));
-        Set<String> catalogCohorts = catalogManager.getAllCohorts(studyId, null, null, sessionId).getResult().stream().map(Cohort::getName).collect(Collectors.toSet());
+        Map<String, Cohort> cohorts = catalogManager.getAllCohorts(studyId, null, null, sessionId).getResult().stream().collect(Collectors.toMap(Cohort::getName, c->c));
+        Set<String> catalogCohorts = cohorts.keySet();
         for (String cohortName : VariantAggregatedStatsCalculator.getCohorts(tagmap)) {
             if (!catalogCohorts.contains(cohortName)) {
                 QueryResult<Cohort> cohort = catalogManager.createCohort(studyId, cohortName, Study.Type.COLLECTION, "", Collections.emptyList(), null, sessionId);
-                queryResults.add(cohort);
+                queryResults.add(cohort.first());
             } else {
                 logger.warn("cohort {} was already created", cohortName);
+                queryResults.add(cohorts.get(cohortName));
             }
         }
         return queryResults;
@@ -199,12 +206,12 @@ public class StatsVariantStorageTest {
     public void calculateStats(VariantStorage variantStorage, long cohortId, QueryOptions options) throws Exception {
         String tmpOutdir = createTmpOutdir("_STATS_" + cohortId);
         List<Long> cohortIds = Collections.singletonList(cohortId);
-        variantStorage.calculateStats(cohortIds, String.valueOf(outputId), tmpOutdir, sessionId, options);
+        variantStorage.calculateStats(catalogManager.getStudyIdByCohortId(cohortId), cohortIds, String.valueOf(outputId), tmpOutdir, sessionId, options);
     }
 
     public void calculateStats(VariantStorage variantStorage, List<Long> cohortIds, QueryOptions options) throws Exception {
         String tmpOutdir = createTmpOutdir("_STATS_" + cohortIds.stream().map(Object::toString).collect(Collectors.joining("_")));
-        variantStorage.calculateStats(cohortIds, String.valueOf(outputId), tmpOutdir, sessionId, options);
+        variantStorage.calculateStats(studyId, cohortIds, String.valueOf(outputId), tmpOutdir, sessionId, options);
     }
 
     @Test
@@ -271,8 +278,25 @@ public class StatsVariantStorageTest {
 
     @Test
     public void testCalculateAggregatedStats() throws Exception {
-        File file = beforeAggregated("variant-test-aggregated-file.vcf.gz", VariantSource.Aggregation.BASIC);
+        beforeAggregated("variant-test-aggregated-file.vcf.gz", VariantSource.Aggregation.BASIC);
 
+        calculateAggregatedStats(new QueryOptions());
+    }
+
+    @Test
+    public void testCalculateAggregatedStatsNonAggregatedStudy() throws Exception {
+        beforeAggregated("variant-test-aggregated-file.vcf.gz", null);
+
+        calculateAggregatedStats(new QueryOptions(VariantStorageManager.Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.BASIC));
+
+        Study study = catalogManager.getStudy(studyId, sessionId).first();
+
+        String agg = study.getAttributes().get(VariantStorageManager.Options.AGGREGATED_TYPE.key()).toString();
+        assertNotNull(agg);
+        assertEquals(VariantSource.Aggregation.BASIC.toString(), agg);
+    }
+
+    public void calculateAggregatedStats(QueryOptions options) throws Exception {
 //        coh1 = catalogManager.createCohort(studyId, "ALL", Cohort.Type.COLLECTION, "", file.getSampleIds(), null, sessionId).first().getId();
 
         VariantStorage variantStorage = new VariantStorage(catalogManager);
@@ -280,7 +304,7 @@ public class StatsVariantStorageTest {
 
         long cohId = catalogManager.getAllCohorts(studyId, null, null, sessionId).first().getId();
 
-        calculateStats(variantStorage, cohId);
+        calculateStats(variantStorage, cohId, options);
 
         cohorts.put(StudyEntry.DEFAULT_COHORT, new Cohort());
 //        cohorts.put("all", null);
@@ -292,24 +316,49 @@ public class StatsVariantStorageTest {
         beforeAggregated("exachead.vcf.gz", VariantSource.Aggregation.EXAC);
 
         String tagMap = getResourceUri("exac-tag-mapping.properties").getPath();
-        createCohorts(sessionId, studyId, tagMap, catalogManager, logger);
+        List<Long> cohorIds = createCohorts(sessionId, studyId, tagMap, catalogManager, logger)
+                .stream().map(Cohort::getId).collect(Collectors.toList());
+
 
         VariantStorage variantStorage = new VariantStorage(catalogManager);
-        Map<String, Cohort> cohorts = new HashMap<>();
 
-
-        long cohId = catalogManager.getAllCohorts(studyId, null, null, sessionId).first().getId();
         QueryOptions options = new QueryOptions(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
-        calculateStats(variantStorage, cohId, options);
+        calculateStats(variantStorage, cohorIds, options);
 
-        Properties tagMapProperties = new Properties();
-        tagMapProperties.load(new FileInputStream(tagMap));
-        for (String cohortName : VariantAggregatedStatsCalculator.getCohorts(tagMapProperties)) {
-            cohorts.put(cohortName, new Cohort());
-        }
+        Map<String, Cohort> cohorts = catalogManager.getAllCohorts(studyId, null, null, sessionId).getResult()
+                .stream()
+                .collect(Collectors.toMap(Cohort::getName, Function.identity()));
+        assertEquals(8, cohorts.size());
         checkCalculatedAggregatedStats(cohorts, dbName);
     }
-//    @Test
+
+    @Test
+    public void testCalculateAggregatedExacStatsWithoutCohorts() throws Exception {
+        beforeAggregated("exachead.vcf.gz", VariantSource.Aggregation.EXAC);
+
+        String tagMap = getResourceUri("exac-tag-mapping.properties").getPath();
+
+        try {
+            VariantStorage variantStorage = new VariantStorage(catalogManager);
+
+            QueryOptions options = new QueryOptions(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
+            calculateStats(variantStorage, Collections.emptyList(), options);
+
+            Map<String, Cohort> cohorts = catalogManager.getAllCohorts(studyId, null, null, sessionId).getResult()
+                    .stream()
+                    .collect(Collectors.toMap(Cohort::getName, Function.identity()));
+            assertEquals(8, cohorts.size());
+            checkCalculatedAggregatedStats(cohorts, dbName);
+        } catch (AssertionError e) {
+            List<Cohort> result = catalogManager.getAllCohorts(studyId, null, null, sessionId).getResult();
+            for (Cohort cohort : result) {
+                System.out.println("cohort.getName() = " + cohort.getName());
+            }
+            throw e;
+        }
+    }
+
+    //    @Test
 //    public void testAnnotateVariants() throws Exception {
 //
 //    }
