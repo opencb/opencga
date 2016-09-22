@@ -99,9 +99,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         String subCommandString = variantCommandOptions.getParsedSubCommand();
         configure();
 
-        if (StringUtils.isNotEmpty(variantCommandOptions.commonOptions.sessionId)) {
-            sessionId = variantCommandOptions.commonOptions.sessionId;
-        }
+        sessionId = getSessionId(variantCommandOptions.commonOptions);
 
         switch (subCommandString) {
             case "ibs":
@@ -513,9 +511,6 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
     private void stats() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException,
             StorageManagerException, InstantiationException, IllegalAccessException, URISyntaxException {
         AnalysisCliOptionsParser.StatsVariantCommandOptions cliOptions = variantCommandOptions.statsVariantCommandOptions;
-
-
-        String sessionId = variantCommandOptions.commonOptions.sessionId;
 
         long studyId = catalogManager.getStudyId(cliOptions.studyId, sessionId);
         VariantStorage variantStorage = new VariantStorage(catalogManager);
