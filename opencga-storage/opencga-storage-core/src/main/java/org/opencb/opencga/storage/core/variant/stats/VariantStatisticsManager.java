@@ -337,7 +337,7 @@ public class VariantStatisticsManager {
                     size -> {
                         ArrayList<VariantStatsWrapper> statsBatch = new ArrayList<>(size);
                         try {
-                            while (parser.nextToken() != null || statsBatch.size() == size) {
+                            while (parser.nextToken() != null && statsBatch.size() < size) {
                                 variantsNumber[0]++;
                                 statsBatch.add(parser.readValueAs(VariantStatsWrapper.class));
                             }
