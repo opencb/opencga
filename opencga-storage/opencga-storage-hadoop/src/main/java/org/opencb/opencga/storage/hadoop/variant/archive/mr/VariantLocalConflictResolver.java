@@ -400,6 +400,14 @@ public class VariantLocalConflictResolver {
          */
         @Override
         public int compare(Variant o1, Variant o2) {
+            // Variant before reference block
+            if (o1.getType().equals(NO_VARIATION)) {
+                if (!o2.getType().equals(NO_VARIATION)) {
+                    return 1;
+                }
+            } else if (o2.getType().equals(NO_VARIATION)) {
+                return -1;
+            }
             // Check for PASS
             int c = checkPassConflict(o1, o2);
             if (c != 0) {
@@ -414,14 +422,6 @@ public class VariantLocalConflictResolver {
             c = checkQualityScore(o1, o2) * -1; // invert result - higher score better
             if (c != 0) {
                 return c;
-            }
-            // Variant before reference block
-            if (o1.getType().equals(NO_VARIATION)) {
-                if (!o2.getType().equals(NO_VARIATION)) {
-                    return 1;
-                }
-            } else if (o2.getType().equals(NO_VARIATION)) {
-                return -1;
             }
             c = o1.getStart().compareTo(o2.getStart());
             if (c != 0) {
