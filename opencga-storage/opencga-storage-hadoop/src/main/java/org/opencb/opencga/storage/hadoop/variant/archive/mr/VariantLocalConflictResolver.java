@@ -14,7 +14,6 @@ import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static htsjdk.variant.vcf.VCFConstants.GENOTYPE_FILTER_KEY;
 import static htsjdk.variant.vcf.VCFConstants.GENOTYPE_KEY;
