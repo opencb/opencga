@@ -33,6 +33,7 @@ import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.common.UriUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +41,7 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
@@ -65,7 +67,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     public static final String FORCE_DELETE = "FORCE_DELETE";
 
     static {
-        INCLUDE_STUDY_URI = new QueryOptions("include", Collections.singletonList("projects.studies.uri"));
+        INCLUDE_STUDY_URI = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.URI.key());
         INCLUDE_FILE_URI_PATH = new QueryOptions("include", Arrays.asList("projects.studies.files.uri", "projects.studies.files.path"));
         ROOT_FIRST_COMPARATOR = (f1, f2) -> (f1.getPath() == null ? 0 : f1.getPath().length())
                 - (f2.getPath() == null ? 0 : f2.getPath().length());
@@ -516,7 +518,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         type = ParamUtils.defaultObject(type, File.Type.FILE);
         format = ParamUtils.defaultObject(format, File.Format.PLAIN);  //TODO: Inference from the file name
         bioformat = ParamUtils.defaultObject(bioformat, File.Bioformat.NONE);
-        creationDate = ParamUtils.defaultString(creationDate, TimeUtils.getTime());
+//        creationDate = ParamUtils.defaultString(creationDate, TimeUtils.getTime());
         description = ParamUtils.defaultString(description, "");
         if (type == File.Type.FILE) {
             status = (status == null) ? new File.FileStatus(File.FileStatus.STAGE) : status;
@@ -557,7 +559,16 @@ public class FileManager extends AbstractManager implements IFileManager {
             path = path.substring(0, path.length() - 1);
         }
 
-        URI uri = getFileUri(studyId, path);
+        URI uri;
+        try {
+            if (type == File.Type.DIRECTORY) {
+                uri = getFileUri(studyId, path, true);
+            } else {
+                uri = getFileUri(studyId, path, false);
+            }
+        } catch (URISyntaxException e) {
+            throw new CatalogException(e);
+        }
 
         // Check if it already exists
         Query query = new Query()
@@ -582,8 +593,9 @@ public class FileManager extends AbstractManager implements IFileManager {
 //                path, ownerId, creationDate, description, status, diskUsage, experimentId, sampleIds, jobId,
 //                new LinkedList<>(), stats, attributes);
 
+        boolean external = isExternal(studyId, path, uri);
         File file = new File(-1, Paths.get(path).getFileName().toString(), type, format, bioformat, uri, path, TimeUtils.getTime(),
-                TimeUtils.getTime(), description, status, false, diskUsage, experimentId, sampleIds, jobId, Collections.emptyList(),
+                TimeUtils.getTime(), description, status, external, diskUsage, experimentId, sampleIds, jobId, Collections.emptyList(),
                 Collections.emptyList(), null, stats, attributes);
 
         //Find parent. If parents == true, create folders.
@@ -643,10 +655,11 @@ public class FileManager extends AbstractManager implements IFileManager {
      * Get the URI where a file should be in Catalog, given a study and a path.
      * @param studyId       Study identifier
      * @param path          Path to locate
+     * @param directory     Boolean indicating if the file is a directory
      * @return              URI where the file should be placed
      * @throws CatalogException CatalogException
      */
-    private URI getFileUri(long studyId, String path) throws CatalogException {
+    private URI getFileUri(long studyId, String path, boolean directory) throws CatalogException, URISyntaxException {
         // Get the closest existing parent. If parents == true, may happen that the parent is not registered in catalog yet.
         File existingParent = getParents(false, null, path, studyId).first();
 
@@ -656,7 +669,24 @@ public class FileManager extends AbstractManager implements IFileManager {
             relativePath += "/";
         }
 
-        return existingParent.getUri().resolve(relativePath);
+        String uriStr = Paths.get(existingParent.getUri().getPath()).resolve(relativePath).toString();
+
+        if (directory) {
+            return UriUtils.createDirectoryUri(uriStr);
+        } else {
+            return UriUtils.createUri(uriStr);
+        }
+    }
+
+    private boolean isExternal(long studyId, String catalogFilePath, URI fileUri) throws CatalogException {
+        URI studyUri = getStudyUri(studyId);
+
+        String studyFilePath = studyUri.resolve(catalogFilePath).getPath();
+        String originalFilePath = fileUri.getPath();
+
+        logger.info("Study file path: {}", studyFilePath);
+        logger.info("File path: {}", originalFilePath);
+        return !studyFilePath.equals(originalFilePath);
     }
 
     @Override
