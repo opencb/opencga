@@ -521,6 +521,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 //                .append(AnalysisFileIndexer.LOAD, cliOptions.load)
 //                .append(AnalysisFileIndexer.LOG_LEVEL, cliOptions.commonOptions.logLevel) // unused
                 .append(VariantStorageManager.Options.UPDATE_STATS.key(), cliOptions.updateStats)
+                .append(VariantStorageManager.Options.AGGREGATED_TYPE.key(), cliOptions.aggregated)
                 .append(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), cliOptions.aggregationMappingFile);
         options.putIfNotEmpty(VariantStorageManager.Options.FILE_ID.key(), cliOptions.fileId);
 
