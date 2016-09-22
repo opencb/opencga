@@ -75,6 +75,26 @@ public class StorageETLResult {
 
     @Override
     public String toString() {
+        String transformStats;
+        if (this.transformStats == null) {
+            transformStats = "null";
+        } else {
+            try {
+                transformStats = this.transformStats.toJson();
+            } catch (RuntimeException e) {
+                transformStats = this.transformStats.toString();
+            }
+        }
+        String loadStats;
+        if (this.loadStats == null) {
+            loadStats = "null";
+        } else {
+            try {
+                loadStats = this.loadStats.toJson();
+            } catch (RuntimeException e) {
+                loadStats = this.loadStats.toString();
+            }
+        }
         return "StorageETLResult{\n "
                 + "\tinput : " + input + ",\n "
                 + "\textractResult : " + extractResult + ",\n "

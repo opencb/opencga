@@ -87,7 +87,17 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         this.fileManager = catalogManager.getFileManager();
     }
 
-    public void index(String fileIds, String outdirString, String sessionId, QueryOptions options)
+    public List<StorageETLResult> index(String fileIds, String outdirString, String sessionId, QueryOptions options)
+            throws CatalogException, AnalysisExecutionException, IOException, IllegalAccessException, InstantiationException,
+            ClassNotFoundException, StorageManagerException, URISyntaxException {
+
+        // Query catalog for user data
+        String userId = catalogManager.getUserManager().getId(sessionId);
+        List<Long> fileIdsLong = fileManager.getIds(userId, fileIds);
+        return index(fileIdsLong, outdirString, sessionId, options);
+    }
+
+    public List<StorageETLResult> index(List<Long> fileIds, String outdirString, String sessionId, QueryOptions options)
             throws CatalogException, AnalysisExecutionException, IOException, IllegalAccessException, InstantiationException,
             ClassNotFoundException, StorageManagerException, URISyntaxException {
 
@@ -137,16 +147,13 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         // Obtain the type of analysis (transform, load or index)
         Type step = getType(load, transform);
 
-        // Query catalog for user data
-        String userId = catalogManager.getUserManager().getId(sessionId);
 
-        List<Long> fileIdsLong = fileManager.getIds(userId, fileIds);
         // We read all input files from fileId. This can either be a single file and then we just use it,
         // or this can be a directory, in that case we use all VCF files in that directory or subdirectory
         List<File> inputFiles = new ArrayList<>();
         long studyIdByInputFileId = -1;
 
-        for (Long fileIdLong : fileIdsLong) {
+        for (Long fileIdLong : fileIds) {
             long studyId = fileManager.getStudyId(fileIdLong);
             if (studyId == -1) {
                 // Skip the file. Something strange occurred.
@@ -226,7 +233,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
 
         if (filesToIndex.size() == 0) {
             logger.warn("Nothing to do.");
-            return;
+            return Collections.emptyList();
         }
 
         // Only if we are not transforming or if a path has been passed, we will update catalog information
@@ -284,13 +291,18 @@ public class VariantFileIndexer extends AbstractFileIndexer {
             updateFileInfo(study, filesToIndex, storageETLResults, outdir, options, sessionId);
         }
 
-        writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.DONE, "Job completed"));
+        if (exception == null) {
+            writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.DONE, "Job completed"));
+        } else {
+            writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.ERROR, "Job with errors: " + exception.getMessage()));
+        }
         Runtime.getRuntime().removeShutdownHook(hook);
 
         // Throw the exception!
         if (exception != null) {
             throw exception;
         }
+        return storageETLResults;
     }
 
     @Override

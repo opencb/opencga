@@ -17,9 +17,9 @@ import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.storage.OpenCGATestExternalResource;
 import org.opencb.opencga.analysis.variant.VariantFileIndexer;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -30,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -128,8 +127,7 @@ public class StatsVariantStorageTest {
     }
 
     public String createTmpOutdir(String sufix) throws CatalogException {
-        String date = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new Date());
-        return catalogManager.createJobOutDir(studyId, "I_tmp_" + date + sufix, sessionId).toString();
+        return opencga.createTmpOutdir(studyId, sufix, sessionId);
     }
 
 
