@@ -49,6 +49,7 @@ public class OpenCGAWSServerTest {
     @BeforeClass
     static public void initServer() throws Exception {
         serverTestUtils = new WSServerTestUtils();
+        serverTestUtils.setUp();
         serverTestUtils.initServer();
     }
 
@@ -65,7 +66,7 @@ public class OpenCGAWSServerTest {
         String databaseName = WSServerTestUtils.DATABASE_PREFIX + TEST_SERVER_USER + "_" + ProjectWSServerTest.PROJECT_ALIAS;
         new MongoDataStoreManager("localhost", 27017).drop(databaseName);
 
-        serverTestUtils.setUp();
+//        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
 
     }

@@ -34,6 +34,7 @@ public class JobWSServerTest {
     @BeforeClass
     static public void initServer() throws Exception {
         serverTestUtils = new WSServerTestUtils();
+        serverTestUtils.setUp();
         serverTestUtils.initServer();
     }
 
@@ -44,7 +45,7 @@ public class JobWSServerTest {
 
     @Before
     public void init() throws Exception {
-        serverTestUtils.setUp();
+//        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
         sessionId = OpenCGAWSServer.catalogManager.login("user", CatalogManagerTest.PASSWORD, "localhost").first().getString("sessionId");
         studyId = OpenCGAWSServer.catalogManager.getStudyId("user@1000G:phase1");
@@ -117,7 +118,7 @@ public class JobWSServerTest {
         long outDirId = folder.getId();
 
         thrown.expect(Exception.class);
-        String json = webTarget.path("jobs").path("create")
+        webTarget.path("jobs").path("create")
                 .queryParam("studyId", studyId)
                 .queryParam("sid", sessionId)
                 .request().post(Entity.json(new JobWSServer.InputJob(null, toolName, description, 10, 20, commandLine,
