@@ -193,8 +193,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.DESCRIPTION.key(), cohortsCommandOptions.updateCommandOptions.description);
         objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.updateCommandOptions.samples);
 
-        //TODO objectMap.put("method", "POST");
-
         return openCGAClient.getCohortClient().update(cohortsCommandOptions.updateCommandOptions.id, objectMap);
     }
 
@@ -217,7 +215,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getCohortClient().getStats(cohortsCommandOptions.statsCommandOptions.id, query, queryOptions);
     }
 
-    private QueryResponse<Cohort> groupBy() throws CatalogException, IOException {
+    private QueryResponse<ObjectMap> groupBy() throws CatalogException, IOException {
         logger.debug("Group by cohorts");
 
         ObjectMap objectMap = new ObjectMap();

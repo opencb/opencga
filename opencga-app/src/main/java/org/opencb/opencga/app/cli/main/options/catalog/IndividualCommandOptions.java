@@ -228,7 +228,7 @@ public class IndividualCommandOptions {
         public String family;
 
         @Parameter(names = {"--sex"}, description = "Sex", required = false)
-        public Individual.Sex sex = Individual.Sex.UNKNOWN;
+        public Individual.Sex sex;
 
         @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
         public String ethnicity;

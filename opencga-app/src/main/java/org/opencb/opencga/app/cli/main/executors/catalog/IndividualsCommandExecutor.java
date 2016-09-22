@@ -224,7 +224,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getIndividualClient().delete(individualsCommandOptions.deleteCommandOptions.id, objectMap);
     }
 
-    private QueryResponse<Individual> groupBy() throws CatalogException, IOException {
+    private QueryResponse<ObjectMap> groupBy() throws CatalogException, IOException {
         logger.debug("Group by individuals");
 
         ObjectMap objectMap = new ObjectMap();

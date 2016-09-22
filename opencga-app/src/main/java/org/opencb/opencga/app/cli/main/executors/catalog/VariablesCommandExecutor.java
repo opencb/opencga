@@ -101,15 +101,20 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
                 variableCommandOptions.createCommandOptions.name, variables.get("variables"), queryOptions);
     }
 
-    private QueryResponse info() throws CatalogException {
+    private QueryResponse info() throws CatalogException, IOException {
         logger.debug("Getting variable information");
-        return null;
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.putIfNotNull(QueryOptions.INCLUDE, variableCommandOptions.infoCommandOptions.include);
+        queryOptions.putIfNotNull(QueryOptions.EXCLUDE, variableCommandOptions.infoCommandOptions.exclude);
+        return openCGAClient.getVariableClient().get(variableCommandOptions.infoCommandOptions.id, queryOptions);
     }
 
     private QueryResponse<VariableSet> search() throws CatalogException, IOException {
         logger.debug("Searching variable");
         Query query = new Query();
+
         query.put(SampleDBAdaptor.QueryParams.STUDY_ID.key(),variableCommandOptions.searchCommandOptions.studyId);
+
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotNull("id", variableCommandOptions.searchCommandOptions.id);

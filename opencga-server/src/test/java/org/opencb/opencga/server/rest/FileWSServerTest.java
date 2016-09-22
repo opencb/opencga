@@ -14,6 +14,7 @@ import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
@@ -34,7 +35,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /**
  * Created by jacobo on 13/06/15.
@@ -61,6 +62,7 @@ public class FileWSServerTest {
     static public void initServer() throws Exception {
 //        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "debug");
         serverTestUtils = new WSServerTestUtils();
+        serverTestUtils.setUp();
         serverTestUtils.initServer();
     }
 
@@ -71,11 +73,9 @@ public class FileWSServerTest {
 
     @Before
     public void init() throws Exception {
-        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
         sessionId = OpenCGAWSServer.catalogManager.login("user", CatalogManagerTest.PASSWORD, "localhost").first().getString("sessionId");
         studyId = OpenCGAWSServer.catalogManager.getStudyId("user@1000G:phase1");
-
 
         if (ROOT_DIR.toFile().exists()) {
             IOUtils.deleteDirectory(ROOT_DIR);
@@ -91,6 +91,32 @@ public class FileWSServerTest {
         Files.copy(this.getClass().getClassLoader().getResourceAsStream(fileName), ROOT_DIR.resolve("data").resolve(fileName));
     }
 
+    @Test
+    public void testPathConverter() throws CatalogException {
+        // It will test how the conversion from : to / are done
+        CatalogManager catalogManager = OpenCGAWSServer.catalogManager;
+
+        String result = FileWSServer.convertPath("user@1000G:phase1:data:", sessionId, catalogManager);
+        assertEquals("user@1000G:phase1:data/", result);
+
+        result = FileWSServer.convertPath("user@phase1:data:", sessionId, catalogManager);
+        assertEquals("user@phase1:data/", result);
+
+        result = FileWSServer.convertPath("user@data:", sessionId, catalogManager);
+        assertEquals("user@data/", result);
+
+        result = FileWSServer.convertPath("1000G:phase1:data:", sessionId, catalogManager);
+        assertEquals("1000G:phase1:data/", result);
+
+        result = FileWSServer.convertPath("phase1:data:", sessionId, catalogManager);
+        assertEquals("phase1:data/", result);
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("not supported.");
+        FileWSServer.convertPath("1000G:data:", sessionId, catalogManager);
+    }
+
+
 
     @Test
     public void linkFolderTest() throws IOException {
@@ -100,11 +126,12 @@ public class FileWSServerTest {
                 .queryParam("sid", sessionId)
                 .queryParam("studyId", studyId)
                 .queryParam("path", path)
+                .queryParam("parents", true)
                 .queryParam("uri", ROOT_DIR.toUri()).request().get(String.class);
 
         QueryResponse<File> response = WSServerTestUtils.parseResult(json, File.class);
         File file = response.getResponse().get(0).first();
-        assertEquals(path + "/", file.getPath());
+        assertEquals(path + "/" + ROOT_DIR.getFileName() + "/", file.getPath());
         assertEquals(ROOT_DIR.toUri(), file.getUri());
 
     }
@@ -168,7 +195,7 @@ public class FileWSServerTest {
     @Test
     public void searchFiles() throws Exception {
         String json = webTarget.path("files").path("search")
-                .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
+                .queryParam("include", "id,path")
                 .queryParam("sid", sessionId)
                 .queryParam("studyId", studyId)
                 .queryParam("path", "data/").request().get(String.class);
@@ -179,7 +206,7 @@ public class FileWSServerTest {
         assertEquals("data/", file.getPath());
 
         response = WSServerTestUtils.parseResult(webTarget.path("files").path("user@1000G:phase1:data:").path("update")
-                .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
+                .queryParam("include", "id,path")
                 .queryParam("sid", sessionId)
                 .request().post(Entity.json(
                                 new ObjectMap("attributes",
@@ -189,8 +216,8 @@ public class FileWSServerTest {
                         String.class), File.class);
         System.out.println(response.getQueryOptions().toJson());
 
-        response = WSServerTestUtils.parseResult(webTarget.path("files").path("user@1000G:phase1:analysis:").path("update")
-                .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
+        WSServerTestUtils.parseResult(webTarget.path("files").path("user@1000G:phase1:analysis:").path("update")
+//                .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
                 .queryParam("sid", sessionId)
                 .request().post(Entity.json(
                                 new ObjectMap("attributes",
@@ -200,7 +227,7 @@ public class FileWSServerTest {
                         String.class), File.class);
 
         response = WSServerTestUtils.parseResult(webTarget.path("files").path("search")
-                .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
+                .queryParam("include", "id,path")
                 .queryParam("limit", "5")
                 .queryParam("sid", sessionId)
                 .queryParam("studyId", studyId)
@@ -392,15 +419,15 @@ public class FileWSServerTest {
 
         WebTarget webTarget = this.webTarget.path("files").path(String.valueOf(fileId)).path("fetch")
                 .queryParam("sid", sessionId);
+
         for (Map.Entry<String, Object> entry : queryOptions.entrySet()) {
             webTarget = webTarget.queryParam(entry.getKey(), entry.getValue());
             System.out.println("\t" + entry.getKey() + ": " + entry.getValue());
-
         }
+
         System.out.println("webTarget = " + webTarget);
         String json = webTarget.request().get(String.class);
         System.out.println("json = " + json);
-
 
         QueryResponse<ObjectMap> queryResponse = WSServerTestUtils.parseResult(json, ObjectMap.class);
         assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
@@ -414,17 +441,4 @@ public class FileWSServerTest {
         return alignments;
     }
 
-    @Test
-    public void shareMultipleFilesWithMultipleUsers () throws IOException {
-
-        String shareWith = "user2,user3";
-        String fileIds = "18,19,20,21,22";
-
-        String json = webTarget.path("files").path(fileIds).path("share")
-                .queryParam("sid", sessionId).queryParam("userIds", shareWith).queryParam("unshare", false).queryParam("read", true)
-                .queryParam("write", true).request().get(String.class);
-        List<AclEntry> response = WSServerTestUtils.parseResult(json, AclEntry.class).allResults();
-        assertEquals(10, response.size());
-
-    }
 }

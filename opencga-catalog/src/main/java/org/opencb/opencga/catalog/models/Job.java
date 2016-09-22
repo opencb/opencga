@@ -105,7 +105,8 @@ public class Job extends AbstractAcl<JobAclEntry> {
     }
 
     public Job(String name, String userId, String toolName, String description, String commandLine, long outDirId, List<Long> input) {
-        this(-1, name, userId, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", null, commandLine,
+        // FIXME: Modify this to take into account both toolName and executable for RC2
+        this(-1, name, userId, toolName, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", null, commandLine,
                 -1, new JobStatus(JobStatus.PREPARED), 0, outDirId, input, Collections.emptyList(),
                 Collections.emptyList(), Collections.emptyList(), new HashMap<>(), new HashMap<>(), new HashMap<>(), null);
     }
@@ -149,13 +150,14 @@ public class Job extends AbstractAcl<JobAclEntry> {
         errorDescription = null;
     }
 
-    public Job(long id, String name, String userId, String executable, String creationDate, String description, long startTime,
-               long endTime, String outputError, String execution, String commandLine, long visits, JobStatus status, long diskUsage,
-               long outDirId, List<Long> input, List<Long> output, List<String> tags, List<JobAclEntry> acl, Map<String, String> params,
-               Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, String error) {
+    public Job(long id, String name, String userId, String toolName, String executable, String creationDate, String description,
+               long startTime, long endTime, String outputError, String execution, String commandLine, long visits, JobStatus status,
+               long diskUsage, long outDirId, List<Long> input, List<Long> output, List<String> tags, List<JobAclEntry> acl,
+               Map<String, String> params, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, String error) {
         this.id = id;
         this.name = name;
         this.userId = userId;
+        this.toolName = toolName;
         this.executable = executable;
         this.creationDate = creationDate;
         this.description = description;

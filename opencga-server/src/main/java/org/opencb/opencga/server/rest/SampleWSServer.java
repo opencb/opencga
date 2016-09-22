@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -227,7 +228,14 @@ public class SampleWSServer extends OpenCGAWSServer {
         try {
             // FIXME: The id resolution should not go here
             long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
-            QueryResult<Sample> queryResult = catalogManager.modifySample(sampleId, queryOptions, sessionId);
+
+            ObjectMap params = new ObjectMap();
+            params.putIfNotNull(SampleDBAdaptor.QueryParams.NAME.key(), name);
+            params.putIfNotNull(SampleDBAdaptor.QueryParams.DESCRIPTION.key(), description);
+            params.putIfNotNull(SampleDBAdaptor.QueryParams.SOURCE.key(), source);
+            params.putIfNotNull(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
+
+            QueryResult<Sample> queryResult = catalogManager.getSampleManager().update(sampleId, params, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -247,12 +255,12 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some sample attributes using POST method", position = 6)
     public Response updateByPost(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
-                                 @ApiParam(value = "params", required = true) UpdateSample params) {
+                                 @ApiParam(value = "params", required = true) UpdateSample parameters) {
         try {
             // FIXME: The id resolution should not go here
             long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
-            QueryResult<Sample> queryResult = catalogManager.modifySample(sampleId,
-                    new QueryOptions(jsonObjectMapper.writeValueAsString(params)), sessionId);
+            ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
+            QueryResult<Sample> queryResult = catalogManager.getSampleManager().update(sampleId, params, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

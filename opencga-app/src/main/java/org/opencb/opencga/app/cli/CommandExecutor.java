@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.*;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.app.cli.analysis.AnalysisCliOptionsParser;
 import org.opencb.opencga.app.cli.main.SessionFile;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.client.config.ClientConfiguration;
@@ -122,6 +123,15 @@ public abstract class CommandExecutor {
 
 //        loadConfigurations();
     }
+
+    protected String getSessionId(AnalysisCliOptionsParser.AnalysisCommonCommandOptions commonOptions) {
+        if (StringUtils.isBlank(commonOptions.sessionId)) {
+            return sessionId;
+        } else {
+            return commonOptions.sessionId;
+        }
+    }
+
 
     public abstract void execute() throws Exception;
 
