@@ -528,20 +528,22 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         options.putAll(cliOptions.commonOptions.params);
 
         List<Long> cohortIds = new LinkedList<>();
-        for (String cohort : cliOptions.cohortIds.split(",")) {
-            if (StringUtils.isNumeric(cohort)) {
-                cohortIds.add(Long.parseLong(cohort));
-            } else {
-                QueryResult<Cohort> result = catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), cohort),
-                        new QueryOptions("include", "projects.studies.cohorts.id"), sessionId);
-                if (result.getResult().isEmpty()) {
-                    throw new CatalogException("Cohort \"" + cohort + "\" not found!");
+        if (StringUtils.isNotBlank(cliOptions.cohortIds)) {
+            for (String cohort : cliOptions.cohortIds.split(",")) {
+                if (StringUtils.isNumeric(cohort)) {
+                    cohortIds.add(Long.parseLong(cohort));
                 } else {
-                    cohortIds.add(result.first().getId());
+                    QueryResult<Cohort> result = catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), cohort),
+                            new QueryOptions("include", "projects.studies.cohorts.id"), sessionId);
+                    if (result.getResult().isEmpty()) {
+                        throw new CatalogException("Cohort \"" + cohort + "\" not found!");
+                    } else {
+                        cohortIds.add(result.first().getId());
+                    }
                 }
             }
         }
-        variantStorage.calculateStats(cohortIds, cliOptions.catalogPath, cliOptions.outdir, sessionId, options);
+        variantStorage.calculateStats(studyId, cohortIds, cliOptions.catalogPath, cliOptions.outdir, sessionId, options);
 //        QueryResult<Job> result = variantStorage.calculateStats(outDirId, cohortIds, sessionId, options);
 //        if (cliOptions.job.queue) {
 //            System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result));
