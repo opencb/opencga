@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
@@ -41,6 +42,8 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
@@ -60,7 +63,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
     public static final List<VariantType> VARIANT_TYPES = Arrays.asList(VariantTableMapper.getTargetVariantType());
 
     // Variants that are wrong in the platinum files that should not be included
-    private static final HashSet<String> PLATINUM_SKIP_VARIANTS = new HashSet<>(Arrays.asList("M:515:G:A", "1:10352:T:A"));
+    private static final HashSet<String> PLATINUM_SKIP_VARIANTS = new HashSet<>();
 
     @Before
     public void setUp() throws Exception {
@@ -414,21 +417,19 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
         List<VariantSource> sources = new LinkedList<>();
         Set<String> expectedVariants = new HashSet<>();
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+        List<Integer> fileIds = IntStream.range(12877, 12894).mapToObj(i -> i).collect(Collectors.toList());
 
-        int fileId;
-        String pending = "";
-        for (fileId = 12877; fileId < 12893; fileId++) {
+        for (Integer fileId : fileIds.subList(0,fileIds.size()-1)) {
             VariantSource source = loadFile("platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz", fileId, studyConfiguration,
                     new ObjectMap(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, false));
             sources.add(source);
             expectedVariants.addAll(checkArchiveTableLoadedVariants(studyConfiguration, dbAdaptor, source));
-            pending += fileId + ",";
             assertFalse(studyConfiguration.getIndexedFiles().contains(fileId));
         }
-        pending += fileId + ",";
+        Integer fileId = fileIds.get(fileIds.size()-1);
         VariantSource source = loadFile("platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz", fileId, studyConfiguration,
                 new ObjectMap(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, true)
-                .append(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT_PENDING_FILES, pending)
+                .append(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT_PENDING_FILES, StringUtils.join(fileIds, ","))
         );
         sources.add(source);
         expectedVariants.addAll(checkArchiveTableLoadedVariants(studyConfiguration, dbAdaptor, source));
@@ -487,9 +488,10 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
                                                        VariantSource source) {
         int fileId = Integer.valueOf(source.getFileId());
         Set<String> variants = getVariants(dbAdaptor, studyConfiguration, fileId);
-        assertEquals(source.getStats().getVariantTypeCounts().entrySet().stream()
+        int expected = source.getStats().getVariantTypeCounts().entrySet().stream()
                 .filter(entry -> VARIANT_TYPES.contains(VariantType.valueOf(entry.getKey())))
-                .map(Map.Entry::getValue).reduce((i1, i2) -> i1 + i2).orElse(0).intValue(), variants.size());
+                .map(Map.Entry::getValue).reduce((i1, i2) -> i1 + i2).orElse(0).intValue();
+        assertEquals(expected, variants.size());
         return variants;
     }
 
@@ -497,6 +499,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
     protected Set<String> getVariants(VariantHadoopDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration, int fileId){
 //        Map<String, Integer> variantCounts = new HashMap<>();
         Set<String> variants = new HashSet<>();
+        Set<String> observed = new HashSet<>(Arrays.asList("M:516:-:CA", "1:10231:C:-", "1:10352:T:A", "M:515:G:A"));
 
         System.out.println("Query from Archive table");
         dbAdaptor.iterator(
@@ -507,7 +510,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
                 .forEachRemaining(variant -> {
                     if (VARIANT_TYPES.contains(variant.getType())) {
                         String string = variant.toString();
-                        if ("M:516:-:CA".equals(string) || "1:10231:C:-".equals(string)) {
+                        if (observed.contains(string)) {
                             System.out.println("Variant " + string + " found in file " + fileId);
                         }
                         variants.add(string);
