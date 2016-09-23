@@ -157,30 +157,33 @@ public class ArchiveDriver extends Configured implements Tool {
 
     private VcfMeta readMetaData(Configuration conf, URI inputMetaFile) throws IOException {
         Path from = new Path(inputMetaFile);
-        FileSystem fs = FileSystem.get(conf);
-        DatumReader<VariantFileMetadata> userDatumReader = new SpecificDatumReader<>(VariantFileMetadata.class);
-        VariantFileMetadata variantFileMetadata;
-        if (inputMetaFile.toString().endsWith("json") || inputMetaFile.toString().endsWith("json.gz")) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+        try(FileSystem fs = FileSystem.get(conf)) {
+            DatumReader<VariantFileMetadata> userDatumReader = new SpecificDatumReader<>(VariantFileMetadata.class);
+            VariantFileMetadata variantFileMetadata;
+            if (inputMetaFile.toString().endsWith("json") || inputMetaFile.toString().endsWith("json.gz")) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
 
-            try (InputStream ids = inputMetaFile.toString().endsWith("json.gz") ? new GZIPInputStream(fs.open(from)) : fs.open(from)) {
-                variantFileMetadata = objectMapper.readValue(ids, VariantSource.class).getImpl();
-            }
-        } else {
-            try (FSDataInputStream ids = fs.open(from);
-                 DataFileStream<VariantFileMetadata> dataFileReader = new DataFileStream<>(ids, userDatumReader)) {
-                Iterator<VariantFileMetadata> iter = dataFileReader.iterator();
-                if (!iter.hasNext()) {
-                    throw new IllegalStateException(String.format("No Meta data object found in %s !!!", inputMetaFile));
+                try ( InputStream ids = inputMetaFile.toString().endsWith("json.gz") ? new GZIPInputStream(fs.open(from)) : fs.open(from) ) {
+
+                    variantFileMetadata = objectMapper.readValue(ids, VariantSource.class).getImpl();
                 }
-                variantFileMetadata = iter.next();
-                if (iter.hasNext()) {
-                    logger.warn(String.format("More than 1 entry found in metadata file %s", inputMetaFile));
+            } else {
+                try ( FSDataInputStream ids = fs.open(from);
+                      DataFileStream<VariantFileMetadata> dataFileReader = new DataFileStream<>(ids, userDatumReader)
+                ) {
+                    Iterator<VariantFileMetadata> iter = dataFileReader.iterator();
+                    if (!iter.hasNext()) {
+                        throw new IllegalStateException(String.format("No Meta data object found in %s !!!", inputMetaFile));
+                    }
+                    variantFileMetadata = iter.next();
+                    if (iter.hasNext()) {
+                        logger.warn(String.format("More than 1 entry found in metadata file %s", inputMetaFile));
+                    }
                 }
             }
+            return new VcfMeta(new VariantSource(variantFileMetadata));
         }
-        return new VcfMeta(new VariantSource(variantFileMetadata));
     }
 
     public static String buildCommandLineArgs(URI input, URI inputMeta, String server, String outputTable,
