@@ -162,10 +162,10 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
             BiMap<String, Integer> loadedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration);
 
-            int homRefCount = loadedSamples.size();
+            Set<Integer> sampleWithVariant = new HashSet<>();
             BiMap<Integer, String> mapSampleIds = studyConfiguration.getSampleIds().inverse();
             for (String genotype : row.getGenotypes()) {
-                homRefCount -= row.getSampleIds(genotype).size();
+                sampleWithVariant.addAll(row.getSampleIds(genotype));
                 if (genotype.equals(VariantTableStudyRow.OTHER)) {
                     continue; // skip OTHER -> see Complex type
                 }
@@ -198,21 +198,20 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             }
             // Load complex genotypes
             for (Entry<Integer, String> entry : row.getComplexVariant().getSampleToGenotype().entrySet()) {
+                sampleWithVariant.add(entry.getKey());
                 Integer samplePosition = getSamplePosition(returnedSamplesPosition, mapSampleIds, entry.getKey());
                 if (samplePosition == null) {
                     continue;   //Sample may not be required. Ignore this sample.
                 }
                 String genotype = entry.getValue();
-                // FIXME: Decide what to do with lists of genotypes
-                int idx = genotype.indexOf(",");
-                String returnedGenotype = idx > 0 ? genotype.substring(0, idx) : genotype;
-
-                samplesDataArray[samplePosition] = Arrays.asList(returnedGenotype, VariantMerger.PASS_VALUE);
+                samplesDataArray[samplePosition] = Arrays.asList(genotype, VariantMerger.PASS_VALUE);
             }
 
             // Fill gaps (with HOM_REF)
+            int gapCounter = 0;
             for (int i = 0; i < samplesDataArray.length; i++) {
                 if (samplesDataArray[i] == null) {
+                    ++gapCounter;
                     samplesDataArray[i] = Arrays.asList(VariantTableStudyRow.HOM_REF, VariantMerger.PASS_VALUE);
                 }
             }
@@ -239,6 +238,8 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             }
 
             // Check homRef count
+            int homRefCount = loadedSamples.size();
+            homRefCount -= sampleWithVariant.size();
             if (homRefCount != row.getHomRefCount()) {
                 String message = "Wrong number of HomRef samples for variant " + variant + ". Got " + homRefCount + ", expect "
                         + row.getHomRefCount() + ". Samples number: " + samplesDataArray.length + " , ";

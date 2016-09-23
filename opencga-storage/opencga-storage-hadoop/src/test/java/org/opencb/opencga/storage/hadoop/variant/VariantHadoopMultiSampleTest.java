@@ -30,6 +30,7 @@ import org.opencb.opencga.storage.core.variant.io.VariantVcfExporter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableMapReduce;
 import org.opencb.opencga.storage.hadoop.variant.index.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
@@ -186,7 +187,15 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
     }
 
     @Test
-    public void testMultipleFilesConcurrent() throws Exception {
+    public void testMultipleFilesConcurrentSpecificPut() throws Exception {
+        testMultipleFilesConcurrent(true);
+    }
+    @Test
+    public void testMultipleFilesConcurrentFullPut() throws Exception {
+        testMultipleFilesConcurrent(false);
+    }
+
+    public void testMultipleFilesConcurrent(boolean specificput) throws Exception {
 
         StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
         HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
@@ -205,6 +214,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
         options.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         options.put(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
         options.put(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
+        options.put(AbstractVariantTableMapReduce.SPECIFIC_PUT, specificput);
         List<StorageETLResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
 
         for (StorageETLResult storageETLResult : index) {
