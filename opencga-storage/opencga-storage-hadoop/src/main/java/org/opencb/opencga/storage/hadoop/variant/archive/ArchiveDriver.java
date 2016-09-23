@@ -157,19 +157,18 @@ public class ArchiveDriver extends Configured implements Tool {
 
     private VcfMeta readMetaData(Configuration conf, URI inputMetaFile) throws IOException {
         Path from = new Path(inputMetaFile);
-        try(FileSystem fs = FileSystem.get(conf)) {
+        try (FileSystem fs = FileSystem.get(conf)) {
             DatumReader<VariantFileMetadata> userDatumReader = new SpecificDatumReader<>(VariantFileMetadata.class);
             VariantFileMetadata variantFileMetadata;
             if (inputMetaFile.toString().endsWith("json") || inputMetaFile.toString().endsWith("json.gz")) {
                 ObjectMapper objectMapper = new ObjectMapper();
                 objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-
-                try ( InputStream ids = inputMetaFile.toString().endsWith("json.gz") ? new GZIPInputStream(fs.open(from)) : fs.open(from) ) {
-
+                try (InputStream ids = inputMetaFile.toString().endsWith("json.gz")
+                        ? new GZIPInputStream(fs.open(from)) : fs.open(from)) {
                     variantFileMetadata = objectMapper.readValue(ids, VariantSource.class).getImpl();
                 }
             } else {
-                try ( FSDataInputStream ids = fs.open(from);
+                try (FSDataInputStream ids = fs.open(from);
                       DataFileStream<VariantFileMetadata> dataFileReader = new DataFileStream<>(ids, userDatumReader)
                 ) {
                     Iterator<VariantFileMetadata> iter = dataFileReader.iterator();
