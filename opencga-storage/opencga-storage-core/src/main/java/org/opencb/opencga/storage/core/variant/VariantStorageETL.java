@@ -464,7 +464,7 @@ public abstract class VariantStorageETL implements StorageETL {
         //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
         StudyConfiguration studyConfiguration;
         try {
-            studyConfiguration = checkOrCreateStudyConfiguration();
+            studyConfiguration = checkOrCreateStudyConfiguration(true);
             VariantSource source = readVariantSource(input, options);
             securePreLoad(studyConfiguration, source);
             dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
@@ -593,10 +593,6 @@ public abstract class VariantStorageETL implements StorageETL {
                 studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), extraFieldsType);
             }
         }
-    }
-
-    protected StudyConfiguration checkOrCreateStudyConfiguration() throws StorageManagerException {
-        return checkOrCreateStudyConfiguration(false);
     }
 
     protected StudyConfiguration checkOrCreateStudyConfiguration(boolean forceFetch) throws StorageManagerException {
