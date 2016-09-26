@@ -17,7 +17,6 @@
 package org.opencb.opencga.storage.hadoop.alignment;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.opencb.biodata.formats.io.FileFormatException;
@@ -92,10 +91,8 @@ public class HadoopAlignmentStorageManager extends AlignmentStorageManager {
 
         Configuration conf = getConf();
 
-        Path path = new Path(inputUri);
-        try (FileSystem fileSystem = FileSystem.get(conf); FSDataInputStream stream = fileSystem.open(path)) {
-            AlignmentFileUtils.checkBamOrCramFile(stream, inputUri.getPath(), false);
-        }
+        FileSystem fileSystem = FileSystem.get(conf);
+        AlignmentFileUtils.checkBamOrCramFile(fileSystem.open(new Path(inputUri)), inputUri.getPath(), false);
         return inputUri;
     }
 
@@ -104,6 +101,8 @@ public class HadoopAlignmentStorageManager extends AlignmentStorageManager {
 
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions();
         String codec = options.getString("transform.avro.codec", "deflate");
+//        String hpg_bigdata_bin = options.getString("hpg-bigdata.bin", System.getProperty("user.home") +
+// "/appl/hpg-bigdata/build/bin/hpg-bigdata.sh");
         Configuration conf = getConf();
 
 
@@ -111,12 +110,26 @@ public class HadoopAlignmentStorageManager extends AlignmentStorageManager {
 
         boolean includeCoverage = options.getBoolean(Options.INCLUDE_COVERAGE.key(), Options.INCLUDE_COVERAGE.<Boolean>defaultValue());
         boolean adjustQuality = options.getBoolean(Options.ADJUST_QUALITY.key(), Options.ADJUST_QUALITY.<Boolean>defaultValue());
+//        int regionSize = options.getInt(Options.TRANSFORM_REGION_SIZE.key(), Options.TRANSFORM_REGION_SIZE.<Integer>defaultValue());
 
         URI alignmentAvroFile = outputUri.resolve(Paths.get(inputUri.getPath()).getFileName().toString() + ".avro");
         URI coverageAvroFile = outputUri.resolve(Paths.get(inputUri.getPath()).getFileName().toString() + ".coverage.avro");
 
         try {
             logger.info("Transforming file {} -> {} ....", inputUri, alignmentAvroFile);
+//            String cli = hpg_bigdata_bin +
+//                    " alignment convert " +
+//                    " --compression " + codec +
+//                    " --input " + inputUri +
+//                    " --output " + alignmentAvroFile;
+//            System.out.println("cli = " + cli);
+
+//            Command command = new Command(cli);
+//            command.run();
+//            int exitValue = command.getExitValue();
+//            if (exitValue != 0) {
+//                throw new Exception("Transform cli error: Exit value = " + exitValue);
+//            }
             Bam2AvroMR.run(inputUri.toString(), alignmentAvroFile.toString(), codec, adjustQuality, conf);
         } catch (Exception e) {
             throw new StorageManagerException("Error while transforming file", e);
@@ -124,6 +137,19 @@ public class HadoopAlignmentStorageManager extends AlignmentStorageManager {
         if (includeCoverage) {
             try {
                 logger.info("Calculating coverage {} -> {} ....", alignmentAvroFile, coverageAvroFile);
+//                String cli = hpg_bigdata_bin +
+//                        " alignment depth " +
+//                        " --input " + alignmentAvroFile + "/part-r-00000.avro" +
+//                        " --output " + coverageAvroFile;
+//                System.out.println("cli = " + cli);
+//
+//                Command command = new Command(cli);
+//                command.run();
+//                int exitValue = command.getExitValue();
+//                if (exitValue != 0) {
+//                    throw new Exception("Calculating coverage cli error: Exit value = " + exitValue);
+//                }
+
                 ReadAlignmentDepthMR.run(alignmentAvroFile.toString() + "/part-r-00000.avro", coverageAvroFile.toString(), null, 0, conf);
             } catch (Exception e) {
                 throw new StorageManagerException("Error while computing coverage", e);

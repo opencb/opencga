@@ -26,15 +26,12 @@ import static org.opencb.biodata.models.variant.avro.VariantType.NO_VARIATION;
  */
 public class VariantLocalConflictResolver {
 
-    public static final String SITE_CONFLICT = "SiteConflict";
-    private static PositionComparator positionOrder = new PositionComparator();
-    private static final VariantComparator VARIANT_COMP = new VariantComparator();
-    private VariantPositionRefAltComparator posRefAltComp = new VariantPositionRefAltComparator();
 
+    private VariantPositionRefAltComparator POS_REF_ALT_COMP = new VariantPositionRefAltComparator();
     public List<Variant> resolveConflicts(List<Variant> variants) {
         // sorted by position assumed
         List<Variant> varSorted = new ArrayList<>(variants);
-        Collections.sort(varSorted, posRefAltComp);
+        Collections.sort(varSorted, POS_REF_ALT_COMP);
         List<Variant> resolved = new ArrayList<>(variants.size());
         List<Variant> currVariants = new ArrayList<>();
         for (Variant var : varSorted) {
@@ -74,21 +71,25 @@ public class VariantLocalConflictResolver {
         List<Variant> resolved = new ArrayList<>();
         List<Variant> misfit = new ArrayList<>();
         for (Variant q : sorted) {
-            if (resolved.isEmpty() || !hasAnyConflictOverlapInclSecAlt(resolved, q)) {
+            if (resolved.isEmpty()) {
                 resolved.add(q);
-            } else if (allSameTypeAndGT(resolved, q, VariantType.NO_VARIATION)) {
-                List<Variant> collect = resolved.stream().filter(r -> r.overlapWith(q, true))
-                        .collect(Collectors.toList());
-                if (collect.size() != 1) {
-                    throw new IllegalStateException("Found " + collect.size() + " overlapping variants for " + q);
-                }
-                Variant variant = collect.get(0);
-                variant.setStart(Math.min(variant.getStart(), q.getStart()));
-                variant.setEnd(Math.max(variant.getEnd(), q.getEnd()));
-                variant.setLength((variant.getEnd() - variant.getStart()) + 1);
             } else {
-                // does not fit
-                misfit.add(q);
+                if (!hasAnyConflictOverlapInclSecAlt(resolved, q)) {
+                    resolved.add(q);
+                } else if (allSameTypeAndGT(resolved, q, VariantType.NO_VARIATION)) {
+                    List<Variant> collect = resolved.stream().filter(r -> r.overlapWith(q, true))
+                            .collect(Collectors.toList());
+                    if (collect.size() != 1) {
+                        throw new IllegalStateException("Found " + collect.size() + " overlapping variants for " + q);
+                    }
+                    Variant variant = collect.get(0);
+                    variant.setStart(Math.min(variant.getStart(), q.getStart()));
+                    variant.setEnd(Math.max(variant.getEnd(), q.getEnd()));
+                    variant.setLength((variant.getEnd() - variant.getStart()) + 1);
+                } else {
+                    // does not fit
+                    misfit.add(q);
+                }
             }
         }
         if (!misfit.isEmpty()) {
@@ -110,6 +111,9 @@ public class VariantLocalConflictResolver {
                 && StringUtils.equals(gt, v.getStudies().get(0).getSampleData(sample, GENOTYPE_KEY))).count();
         return ((int) count) == resolved.size();
     }
+
+    private static VariantPositionComparator varPositionOrder = new VariantPositionComparator();
+    private static PositionComparator positionOrder = new PositionComparator();
 
     private void fillNoCall(List<Variant> resolved, Variant q, int start, int end) {
 
@@ -136,6 +140,7 @@ public class VariantLocalConflictResolver {
     public static List<Pair<Integer, Integer>> getMissingRegions(List<Variant> target, int start, int end) {
         List<Pair<Integer, Integer>> targetReg = new ArrayList<>(new HashSet<>(buildRegions(target)));
         targetReg.sort(positionOrder);
+//        target.sort(varPositionOrder);
 
         int min = start;
         int max = end;
@@ -157,7 +162,7 @@ public class VariantLocalConflictResolver {
             }
             if (max < pair.getLeft()) { // Region ends before or at start of this target
                 holes.add(new ImmutablePair<>(min, max));
-                min = max + 1;
+                break; // finish
             } else if (min > pair.getRight()) {
                 // No overlap
                 min = Math.max(min, pair.getRight() + 1);
@@ -181,11 +186,11 @@ public class VariantLocalConflictResolver {
     }
 
     private static List<Pair<Integer, Integer>> buildRegions(List<Variant> target) {
-        return target.stream().map(VariantLocalConflictResolver::buildRegions).flatMap(l -> l.stream()).collect(Collectors.toList());
+        return target.stream().map(v -> buildRegions(v)).flatMap(l -> l.stream()).collect(Collectors.toList());
     }
 
     private static List<Pair<Integer, Integer>> buildRegions(Variant target) {
-        List<Variant> vlst = new ArrayList<>();
+        List<Variant> vlst = new ArrayList<Variant>();
         vlst.add(target);
         vlst.addAll(expandToVariants(target));
         return vlst.stream().map(v -> new ImmutablePair<>(v.getStart(), v.getEnd())).collect(Collectors.toList());
@@ -208,8 +213,10 @@ public class VariantLocalConflictResolver {
             return false; // No Secondary alternates in the list.
         }
         // Search for any overlap between both lists
-        return aList.stream().filter(av -> bList.stream().filter(bv -> hasConflictOverlap(av, bv)).findAny()
+        boolean overlapExist = aList.stream().filter(av -> bList.stream().filter(bv -> hasConflictOverlap(av, bv)).findAny()
                 .isPresent()).findAny().isPresent();
+
+        return overlapExist;
     }
 
     /**
@@ -235,9 +242,11 @@ public class VariantLocalConflictResolver {
 
     private static boolean hasConflictOverlap(Variant a, Variant b) {
         boolean conflict = a.overlapWith(b, true);
-        // in case of insertions &&  one of them insertion
-        if (conflict && (isInsertion(a) != isInsertion(b))) {
-            return isInsertion(a) ? isInsertionCovered(a, b) : isInsertionCovered(b, a);
+        if (conflict && (isInsertion(a) || isInsertion(b))) {
+            // in case of insertions
+            if (isInsertion(a) != isInsertion(b)) { // one of them insertion
+                conflict = isInsertion(a) ? isInsertionCovered(a, b) : isInsertionCovered(b, a);
+            }
         }
         return conflict;
     }
@@ -299,7 +308,8 @@ public class VariantLocalConflictResolver {
         if (sample.isEmpty()) {
             return null;
         }
-        return sample.get(keyPos);
+        String af = sample.get(keyPos);
+        return af;
     }
 
     public static String extractFileAttribute(Variant a, String key) {
@@ -325,7 +335,7 @@ public class VariantLocalConflictResolver {
     public static int checkSiteConflict(Variant a, Variant b) {
         String af = extractFileAttribute(a, FILTER);
         String bf = extractFileAttribute(b, FILTER);
-        return checkStringConflict(af, bf, SITE_CONFLICT);
+        return checkStringConflict(af, bf, "SiteConflict");
     }
 
     /**
@@ -367,6 +377,8 @@ public class VariantLocalConflictResolver {
         }
         return 0;
     }
+
+    private static final VariantComparator VARIANT_COMP = new VariantComparator();
 
     private static class VariantComparator implements Comparator<Variant> {
 
@@ -412,6 +424,22 @@ public class VariantLocalConflictResolver {
                 return c;
             }
             c = o1.getStart().compareTo(o2.getStart());
+            if (c != 0) {
+                return c;
+            }
+            c = o1.getEnd().compareTo(o2.getEnd());
+            if (c != 0) {
+                return c;
+            }
+            return Integer.compare(o1.hashCode(), o2.hashCode());
+        }
+    }
+
+    private static class VariantPositionComparator implements Comparator<Variant> {
+
+        @Override
+        public int compare(Variant o1, Variant o2) {
+            int c = o1.getStart().compareTo(o2.getStart());
             if (c != 0) {
                 return c;
             }
@@ -523,7 +551,7 @@ public class VariantLocalConflictResolver {
             List<String> o = new ArrayList<>(sd);
             o.set(gtpos, genotype);
             if (filterPos != -1) {
-                o.set(filterPos, SITE_CONFLICT);
+                o.set(filterPos, "SiteConflict");
             }
             oLst.add(o);
         }
@@ -536,7 +564,7 @@ public class VariantLocalConflictResolver {
             } else {
                 feAttr = new HashMap<>(feAttr);
             }
-            feAttr.put(VariantVcfFactory.FILTER, SITE_CONFLICT);
+            feAttr.put(VariantVcfFactory.FILTER, "SiteConflict");
             fe.setAttributes(feAttr);
         }
     }
