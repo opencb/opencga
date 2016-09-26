@@ -34,7 +34,7 @@ public class VariantHbaseTransformTaskTest {
         VariantSource source = new VariantSource("1","1", "1","1");
         VcfMeta vs = new VcfMeta(source);
         ArchiveHelper helper = new ArchiveHelper(conf, vs);
-        ParallelTaskRunner.Task<Variant, VcfSliceProtos.VcfSlice> task = new VariantHbaseTransformTask(helper, null);;
+        ParallelTaskRunner.Task<Variant, VcfSliceProtos.VcfSlice> task = new VariantHbaseTransformTask(helper, null);
         ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(1,10,2,false);
         return new ParallelTaskRunner<>(
                 reader,

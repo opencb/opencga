@@ -13,7 +13,7 @@ import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -113,14 +113,13 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
         p1 = catalogManager.createProject("p1", "p1", null, null, null, ownerSessionId).first().getId();
         s1 = catalogManager.createStudy(p1, "s1", "s1", Study.Type.CASE_CONTROL, null, ownerSessionId).first().getId();
-        data = catalogManager.searchFile(s1, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "data/"),
-                ownerSessionId).first().getId();
-        data_d1 = catalogManager.createFolder(s1, Paths.get("data/d1/"), false, null, ownerSessionId).first().getId();
+        data_d1 = catalogManager.createFolder(s1, Paths.get("data/d1/"), true, null, ownerSessionId).first().getId();
         data_d1_d2 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/"), false, null, ownerSessionId).first().getId();
         data_d1_d2_d3 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/d3/"), false, null, ownerSessionId).first().getId();
         data_d1_d2_d3_d4 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/d3/d4/"), false, null, ownerSessionId).first().getId();
         data_d1_d2_d3_d4_txt = catalogManager.createFile(s1, File.Format.PLAIN, File.Bioformat.NONE, "data/d1/d2/d3/d4/my.txt", ("file " +
                 "content").getBytes(), "", false, ownerSessionId).first().getId();
+        data = catalogManager.searchFile(s1, new Query(FileDBAdaptor.QueryParams.PATH.key(), "data/"), ownerSessionId).first().getId();
 
         // Add studyAdminUser1 and studyAdminUser2 to admin group and admin role.
         catalogManager.createGroup(Long.toString(s1), groupAdmin, studyAdminUser1 + "," + studyAdminUser2, ownerSessionId);
@@ -205,7 +204,9 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         assertTrue(groups.get(groupAdmin).getUserIds().contains(externalUser));
 //        thrown.expect(CatalogException.class);
 //        catalogManager.addUsersToGroup(s1, groupMember, externalUser, ownerSessionId);
-        catalogManager.updateGroup(Long.toString(s1), groupMember, externalUser, null, null, ownerSessionId);
+        catalogManager.updateGroup(Long.toString(s1), groupAdmin, null, externalUser, null, ownerSessionId);
+        catalogManager.createGroup(Long.toString(s1), groupMember, externalUser, ownerSessionId);
+//        catalogManager.updateGroup(Long.toString(s1), groupMember, externalUser, null, null, ownerSessionId);
         groups = getGroupMap();
         assertTrue(groups.get(groupMember).getUserIds().contains(externalUser));
         assertTrue(!groups.get(groupAdmin).getUserIds().contains(externalUser));
@@ -232,10 +233,12 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.updateGroup(Long.toString(s1), groupAdmin, null, studyAdminUser2, null, ownerSessionId);
         assertFalse(getGroupMap().get(groupAdmin).getUserIds().contains(studyAdminUser2));
 
-        // Cannot remove group with defined ACLs
-        thrown.expect(CatalogDBException.class);
-        thrown.expectMessage("ACL defined");
+//        // Cannot remove group with defined ACLs
+//        thrown.expect(CatalogDBException.class);
+//        thrown.expectMessage("ACL defined");
         catalogManager.deleteGroup(Long.toString(s1), groupAdmin, ownerSessionId);
+        assertNull(getGroupMap().get(groupAdmin));
+
     }
 
     @Test
@@ -318,6 +321,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         assertEquals(externalUser, studyAcls.first().getMember());
 
         // Change role
+        catalogManager.removeStudyAcl(Long.toString(s1), externalUser, studyAdmin1SessionId);
         catalogManager.createStudyAcls(Long.toString(s1), externalUser, "", AuthorizationManager.ROLE_ANALYST, studyAdmin1SessionId);
         studyAcls = catalogManager.getStudyAcl(Long.toString(s1), externalUser, studyAdmin1SessionId);
         assertEquals(1, studyAcls.getNumResults());

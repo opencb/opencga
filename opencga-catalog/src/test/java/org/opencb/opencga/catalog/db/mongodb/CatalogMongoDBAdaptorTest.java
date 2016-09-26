@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -42,7 +43,7 @@ import static org.junit.Assert.assertTrue;
 
 public class CatalogMongoDBAdaptorTest extends GenericTest {
 
-    static CatalogMongoDBAdaptorFactory catalogDBAdaptor;
+    static MongoDBAdaptorFactory catalogDBAdaptor;
 
     static User user1;
     static User user2;
@@ -51,13 +52,13 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
-    CatalogUserDBAdaptor catalogUserDBAdaptor;
-    CatalogProjectDBAdaptor catalogProjectDBAdaptor;
-    CatalogFileDBAdaptor catalogFileDBAdaptor;
-    CatalogJobDBAdaptor catalogJobDBAdaptor;
-    CatalogStudyDBAdaptor catalogStudyDBAdaptor;
-    CatalogIndividualDBAdaptor catalogIndividualDBAdaptor;
-    CatalogPanelDBAdaptor catalogPanelDBAdaptor;
+    UserDBAdaptor catalogUserDBAdaptor;
+    ProjectDBAdaptor catalogProjectDBAdaptor;
+    FileDBAdaptor catalogFileDBAdaptor;
+    JobDBAdaptor catalogJobDBAdaptor;
+    StudyDBAdaptor catalogStudyDBAdaptor;
+    IndividualDBAdaptor catalogIndividualDBAdaptor;
+    PanelDBAdaptor catalogPanelDBAdaptor;
 
     private CatalogConfiguration catalogConfiguration;
 
@@ -80,7 +81,18 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
                 .add("authenticationDatabase", catalogConfiguration.getDatabase().getOptions().get("authenticationDatabase"))
                 .build();
 
-        String database = catalogConfiguration.getDatabase().getDatabase();
+//        String database = catalogConfiguration.getDatabase().getDatabase();
+        String database;
+        if(StringUtils.isNotEmpty(catalogConfiguration.getDatabasePrefix())) {
+            if (!catalogConfiguration.getDatabasePrefix().endsWith("_")) {
+                database = catalogConfiguration.getDatabasePrefix() + "_catalog";
+            } else {
+                database = catalogConfiguration.getDatabasePrefix() + "catalog";
+            }
+        } else {
+            database = "opencga_test_catalog";
+        }
+
         /**
          * Database is cleared before each execution
          */
@@ -89,7 +101,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         MongoDataStore db = mongoManager.get(database);
         db.getDb().drop();
 
-        catalogDBAdaptor = new CatalogMongoDBAdaptorFactory(Collections.singletonList(dataStoreServerAddress), mongoDBConfiguration,
+        catalogDBAdaptor = new MongoDBAdaptorFactory(Collections.singletonList(dataStoreServerAddress), mongoDBConfiguration,
                 database);
         catalogUserDBAdaptor = catalogDBAdaptor.getCatalogUserDBAdaptor();
         catalogStudyDBAdaptor = catalogDBAdaptor.getCatalogStudyDBAdaptor();
@@ -110,27 +122,26 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         /**
          * Let's init the database with some basic data to perform each of the tests
          */
-        user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "1234", "", new User.UserStatus(), "", 100, 1000,
+        user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "1234", "", null, User.UserStatus.READY, "", 100, 1000,
                 Arrays.<Project>asList(new Project("project", "P1", "", new Status(), ""), new Project("project", "P2", "", new Status(),
                         ""), new Project("project", "P3", "", new Status(), "")),
                 Collections.<Tool>emptyList(), Collections.<Session>emptyList(), Collections.<String, Object>emptyMap(), Collections
                 .<String, Object>emptyMap());
-        QueryResult createUser = catalogUserDBAdaptor.insertUser(user1, null);
+        QueryResult createUser = catalogUserDBAdaptor.insert(user1, null);
         assertNotNull(createUser.getResult());
 
-        user2 = new User("jmmut", "Jose Miguel", "jmmut@ebi", "1111", "ACME", new User.UserStatus());
-        createUser = catalogUserDBAdaptor.insertUser(user2, null);
+        user2 = new User("jmmut", "Jose Miguel", "jmmut@ebi", "1111", "ACME", User.UserStatus.READY);
+        createUser = catalogUserDBAdaptor.insert(user2, null);
         assertNotNull(createUser.getResult());
 
-        user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", new User.UserStatus(), "", 1222, 122222,
+        user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", null, User.UserStatus.READY, "", 1222, 122222,
                 Arrays.asList(new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", new Status(), "", 0,
                         Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "", "", new Status(), "", 0, "", null,
                                         null, Collections.<Experiment>emptyList(),
                                         Arrays.asList(
-                                                new File("data/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "data/",
-                                                        null, "", new File.FileStatus(File.FileStatus.READY), 1000),
+                                                new File("data/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "data/", "", new File.FileStatus(File.FileStatus.READY), 1000),
                                                 new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file" +
-                                                        ".vcf", null, "", new File.FileStatus(File.FileStatus.READY), 1000)
+                                                        ".vcf", "", new File.FileStatus(File.FileStatus.READY), 1000)
                                         ), Collections.<Job>emptyList(), new LinkedList<Individual>(), new LinkedList<Sample>(), new LinkedList<Dataset>(), new
                                         LinkedList<Cohort>(), Collections.emptyList(), new LinkedList<VariableSet>(), null, null, Collections.<String, Object>emptyMap(), Collections.<String,
                                         Object>emptyMap()
@@ -139,36 +150,34 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
                 ),
                 Collections.<Tool>emptyList(), Collections.<Session>emptyList(),
                 Collections.<String, Object>emptyMap(), Collections.<String, Object>emptyMap());
-        createUser = catalogUserDBAdaptor.insertUser(user3, null);
+        createUser = catalogUserDBAdaptor.insert(user3, null);
         assertNotNull(createUser.getResult());
 
-        user4 = new User("pfurio", "Pedro", "pfurio@blabla", "pfuriopass", "Organization", new User.UserStatus(), "", 0, 50000,
+        user4 = new User("pfurio", "Pedro", "pfurio@blabla", "pfuriopass", "Organization", null, User.UserStatus.READY, "", 0, 50000,
                 Arrays.asList(new Project(-1, "lncRNAs", "lncRNAs", "today", "My description", "My org", new Status(), "", 0, Arrays.asList(
                                 new Study(-1, "spongeScan", "sponges", Study.Type.COLLECTION, "", "", new Status(), "", 0, "", null, null,
                                         null, Arrays.asList(
-                                                new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", null,
-                                                        "Description", new File.FileStatus(File.FileStatus.READY), 10),
+                                                new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", "Description", new File.FileStatus(File.FileStatus.READY), 10),
                                                 new File("file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
-                                                        File.Bioformat.NONE, "data/file1.txt", null, "Description",
+                                                        File.Bioformat.NONE, "data/file1.txt", "Description",
                                                         new File.FileStatus(File.FileStatus.READY), 100),
                                                 new File("file2.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
-                                                        File.Bioformat.NONE, "data/file2.txt", null, "Description2",
+                                                        File.Bioformat.NONE, "data/file2.txt", "Description2",
                                                         new File.FileStatus(File.FileStatus.READY), 100),
                                                 new File("alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
-                                                        "data/alignment.bam", null, "Tophat alignment file",
+                                                        "data/alignment.bam", "Tophat alignment file",
                                                         new File.FileStatus(File.FileStatus.READY), 5000)
                                                 ), Collections.<Job>emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new
                                         LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, Collections.emptyMap(), Collections.emptyMap()
                                 ),
                                 new Study(-1, "MINECO", "mineco", Study.Type.COLLECTION, "", "", new Status(), "", 0, "", null, null, null,
                                         Arrays.asList(
-                                                new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
-                                                        null, "Description", new File.FileStatus(File.FileStatus.READY), 10),
+                                                new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", "Description", new File.FileStatus(File.FileStatus.READY), 10),
                                                 new File("m_file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
-                                                        File.Bioformat.NONE, "data/file1.txt", null, "Description",
+                                                        File.Bioformat.NONE, "data/file1.txt", "Description",
                                                         new File.FileStatus(File.FileStatus.READY), 100),
                                                 new File("m_alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
-                                                        "data/alignment.bam", null, "Tophat alignment file",
+                                                        "data/alignment.bam", "Tophat alignment file",
                                                         new File.FileStatus(File.FileStatus.READY), 5000)
                                         ), Collections.<Job>emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, Collections.emptyMap(), Collections.emptyMap())
                         ), Collections.emptyMap(), Collections.emptyMap())
@@ -176,17 +185,17 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
                 Collections.<Tool>emptyList(), Collections.<Session>emptyList(),
                 Collections.<String, Object>emptyMap(), Collections.<String, Object>emptyMap());
 
-        createUser = catalogUserDBAdaptor.insertUser(user4, null);
+        createUser = catalogUserDBAdaptor.insert(user4, null);
         assertNotNull(createUser.getResult());
 
         QueryOptions options = new QueryOptions("includeStudies", true);
         options.put("includeFiles", true);
         options.put("includeJobs", true);
         options.put("includeSamples", true);
-        user1 = catalogUserDBAdaptor.getUser(CatalogMongoDBAdaptorTest.user1.getId(), options, null).first();
-        user2 = catalogUserDBAdaptor.getUser(CatalogMongoDBAdaptorTest.user2.getId(), options, null).first();
-        user3 = catalogUserDBAdaptor.getUser(CatalogMongoDBAdaptorTest.user3.getId(), options, null).first();
-        user4 = catalogUserDBAdaptor.getUser(CatalogMongoDBAdaptorTest.user4.getId(), options, null).first();
+        user1 = catalogUserDBAdaptor.get(CatalogMongoDBAdaptorTest.user1.getId(), options, null).first();
+        user2 = catalogUserDBAdaptor.get(CatalogMongoDBAdaptorTest.user2.getId(), options, null).first();
+        user3 = catalogUserDBAdaptor.get(CatalogMongoDBAdaptorTest.user3.getId(), options, null).first();
+        user4 = catalogUserDBAdaptor.get(CatalogMongoDBAdaptorTest.user4.getId(), options, null).first();
 
     }
 

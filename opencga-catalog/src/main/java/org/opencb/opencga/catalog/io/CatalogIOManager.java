@@ -89,9 +89,7 @@ public abstract class CatalogIOManager {
         setup();
     }
 
-    @Deprecated
-    protected abstract void setProperties(Properties properties) throws CatalogIOException;
-    protected abstract void setProperties(CatalogConfiguration catalogConfiguration) throws CatalogIOException;
+    protected abstract void setConfiguration(CatalogConfiguration catalogConfiguration) throws CatalogIOException;
 
     /**
      * This method creates the folders and workspace structure for storing the OpenCGA data. I
@@ -99,7 +97,7 @@ public abstract class CatalogIOManager {
      * @throws CatalogIOException CatalogIOException
      */
     public void setup() throws CatalogIOException {
-        setProperties(catalogConfiguration);
+        setConfiguration(catalogConfiguration);
         if (!exists(rootDir)) {
             logger.info("Initializing CatalogIOManager. Creating main folder '" + rootDir + "'");
             createDirectory(rootDir, true);

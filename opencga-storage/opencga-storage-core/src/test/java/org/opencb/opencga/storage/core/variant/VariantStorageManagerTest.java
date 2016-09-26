@@ -31,9 +31,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
@@ -128,7 +127,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(9));
 
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
-        checkLoadedVariants(dbAdaptor, studyConfigurationMultiFile, true, false, expectedNumVariants - 8);
+        checkLoadedVariants(dbAdaptor, studyConfigurationMultiFile, true, false, expectedNumVariants);
 
 
         //Load, in a new study, the same dataset in one single file
@@ -153,10 +152,11 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
             assertTrue(variant.toString(), map.containsKey(studyConfigurationMultiFile.getStudyName()));
             assertTrue(variant.toString(), map.containsKey(studyConfigurationSingleFile.getStudyName()));
-            assertEquals(variant.toString(), map.get(studyConfigurationSingleFile.getStudyName()).getSamplesData().toString(), map.get(studyConfigurationMultiFile
-                    .getStudyName()).getSamplesData().toString());
+            String expected = map.get(studyConfigurationSingleFile.getStudyName()).getSamplesData().toString();
+            String actual = map.get(studyConfigurationMultiFile.getStudyName()).getSamplesData().toString();
+            assertWithConflicts(variant, () -> assertEquals(variant.toString(), expected, actual));
         }
-        assertEquals(expectedNumVariants - 8, numVariants);
+        assertEquals(expectedNumVariants, numVariants);
 
     }
 
@@ -200,8 +200,15 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                 .append(VariantStorageManager.Options.ANNOTATE.key(), false)
                 .append("merge", false);
 
-        variantStorageManager.index(uris, outputUri, true, true, true);
+        List<StorageETLResult> results = variantStorageManager.index(uris, outputUri, true, true, true);
 
+        for (StorageETLResult result : results) {
+            System.out.println(result.toString());
+            assertTrue(result.isTransformExecuted());
+            assertNull(result.getTransformError());
+            assertTrue(result.isLoadExecuted());
+            assertNull(result.getLoadError());
+        }
 
         studyConfigurationBatchFile = studyConfigurationManager.getStudyConfiguration(studyConfigurationBatchFile.getStudyId(), null).first();
         checkLoadedVariants(dbAdaptor, studyConfigurationBatchFile, true, false, -1);
@@ -272,7 +279,17 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                 .append(VariantStorageManager.Options.STUDY_NAME.key(), STUDY_NAME)
                 .append(VariantStorageManager.Options.STUDY_ID.key(), STUDY_ID);
 
-        variantStorageManager.index(Arrays.asList(chr1, chr22), outputUri, true, true, true);
+        List<StorageETLResult> results = variantStorageManager.index(Arrays.asList(chr1, chr22), outputUri, true, true, true);
+
+        for (StorageETLResult result : results) {
+            System.out.println(result.toString());
+            assertTrue(result.isTransformExecuted());
+            assertNull(result.getTransformError());
+            assertTrue(result.isLoadExecuted());
+            assertNull(result.getLoadError());
+        }
+
+
     }
 
     @Test
@@ -400,31 +417,6 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         VariantSource variantSource = checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration);
         checkLoadedVariants(variantStorageManager.getDBAdaptor(DB_NAME), studyConfiguration, false, false, getExpectedNumLoadedVariants
                 (variantSource));
-
-    }
-
-    /**
-     * Corrupted file index. This test must fail
-     */
-    @Test
-    public void corruptedIndexTest() throws Exception {
-
-        thrown.expect(StorageETLException.class);
-        try {
-            runDefaultETL(corruptedInputUri, getVariantStorageManager(), newStudyConfiguration());
-        } catch (StorageETLException e) {
-            assertEquals(1, e.getResults().size());
-
-            System.out.println(e.getResults().get(0));
-            assertTrue(e.getResults().get(0).isTransformExecuted());
-            assertNotNull(e.getResults().get(0).getTransformError());
-            assertTrue(e.getResults().get(0).getTransformTimeMillis() > 0);
-            assertFalse(e.getResults().get(0).isLoadExecuted());
-            throw e;
-        } catch (Exception e) {
-            System.out.println("e.getClass().getName() = " + e.getClass().getName());
-            throw e;
-        }
 
     }
 

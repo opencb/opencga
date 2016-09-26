@@ -4,32 +4,30 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
-import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.CatalogMetaDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
+import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
+import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
 
 import java.security.NoSuchAlgorithmException;
-import java.util.Properties;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class CatalogAuthenticationManager implements AuthenticationManager {
 
-    protected final CatalogUserDBAdaptor userDBAdaptor;
-    protected final CatalogMetaDBAdaptor metaDBAdaptor;
-    protected final Properties catalogProperties;
+    protected final UserDBAdaptor userDBAdaptor;
+    protected final MetaDBAdaptor metaDBAdaptor;
     protected final CatalogConfiguration catalogConfiguration;
 
-    public CatalogAuthenticationManager(CatalogDBAdaptorFactory dbAdaptorFactory, CatalogConfiguration catalogConfiguration) {
+    public CatalogAuthenticationManager(DBAdaptorFactory dbAdaptorFactory, CatalogConfiguration catalogConfiguration) {
         this.userDBAdaptor = dbAdaptorFactory.getCatalogUserDBAdaptor();
         this.metaDBAdaptor = dbAdaptorFactory.getCatalogMetaDBAdaptor();
-        catalogProperties = null;
         this.catalogConfiguration = catalogConfiguration;
     }
 
@@ -45,15 +43,22 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
     public boolean authenticate(String userId, String password, boolean throwException) throws CatalogException {
         String cypherPassword = (password.length() != 40) ? cypherPassword(password) : password;
         String storedPassword;
+        boolean validSessionId = false;
         if (userId.equals("admin")) {
             storedPassword = metaDBAdaptor.getAdminPassword();
+            validSessionId = metaDBAdaptor.checkValidAdminSession(password);
         } else {
-            storedPassword = userDBAdaptor.getUser(userId, new QueryOptions(QueryOptions.INCLUDE, "password"), null).first().getPassword();
+            storedPassword = userDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, "password"), null).first().getPassword();
+            QueryResult<Session> session = userDBAdaptor.getSession(userId, password);
+            if (session.getNumResults() > 0) {
+                validSessionId = true;
+            }
         }
-        if (storedPassword.equals(cypherPassword)) {
+        if (storedPassword.equals(cypherPassword) || validSessionId) {
             return true;
         } else {
             if (throwException) {
+                System.out.println("userId " + userId + " password: " + password + " encrypted: " + cypherPassword);
                 throw new CatalogException("Bad user or password");
             } else {
                 return false;
@@ -112,7 +117,7 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
         String newCryptPass = cypherPassword(newPassword);
 
         QueryResult<User> user =
-                userDBAdaptor.getUser(userId, new QueryOptions(QueryOptions.INCLUDE, CatalogUserDBAdaptor.QueryParams.EMAIL.key()), "");
+                userDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, UserDBAdaptor.QueryParams.EMAIL.key()), "");
 
         if (user == null && user.getNumResults() != 1) {
             throw new CatalogException("Could not retrieve the user e-mail.");

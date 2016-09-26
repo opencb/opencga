@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.avro.generic.GenericRecord;
@@ -17,14 +16,19 @@ import org.opencb.biodata.models.variant.VariantNormalizer;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
+import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
-import org.opencb.biodata.tools.variant.converter.VariantContextToVariantConverter;
+import org.opencb.biodata.tools.variant.converter.VariantToVcfSliceConverter;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.hpg.bigdata.core.io.ProtoFileWriter;
+import org.opencb.opencga.core.common.ProgressLogger;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.VariantStorageETL;
@@ -34,29 +38,29 @@ import org.opencb.opencga.storage.core.variant.io.json.GenericRecordAvroJsonMixi
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbaseTransformTask;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
+import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
 import org.slf4j.Logger;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.zip.GZIPInputStream;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager.*;
 
@@ -89,7 +93,8 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
         logger.info("PreTransform: " + input);
 //        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         if (!options.containsKey(VariantStorageManager.Options.TRANSFORM_FORMAT.key())) {
-            options.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "avro");
+            options.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(),
+                    VariantStorageManager.Options.TRANSFORM_FORMAT.defaultValue());
         }
         String transVal = options.getString(VariantStorageManager.Options.TRANSFORM_FORMAT.key());
         switch (transVal){
@@ -110,46 +115,36 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
     }
 
     @Override
-    protected Pair<Long, Long> processProto(Path input, String fileName, Path output, VariantSource source, Path
-            outputVariantsFile, Path outputMetaFile, boolean includeSrc, String parser, boolean
-            generateReferenceBlocks, int batchSize, String extension, String compression) throws StorageManagerException {
+    protected Pair<Long, Long> processProto(Path input, String fileName, Path output, VariantSource source, Path outputVariantsFile,
+                                            Path outputMetaFile, boolean includeSrc, String parser, boolean generateReferenceBlocks,
+                                            int batchSize, String extension, String compression,
+                                            BiConsumer<String, RuntimeException> malformatedHandler, boolean failOnError)
+            throws StorageManagerException {
 
         //Writer
-        DataWriter<VcfSliceProtos.VcfSlice> dataWriter = new ProtoFileWriter<VcfSliceProtos.VcfSlice>(outputVariantsFile, compression);
+        DataWriter<VcfSliceProtos.VcfSlice> dataWriter = new ProtoFileWriter<>(outputVariantsFile, compression);
 
-//        final Pair<VCFHeader, VCFHeaderVersion> header;
-        final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in
         // Normalizer
         VariantNormalizer normalizer = new VariantNormalizer();
         normalizer.setGenerateReferenceBlocks(generateReferenceBlocks);
 
-        // Converter
-        VariantContextToVariantConverter converter = new VariantContextToVariantConverter(
-                source.getStudyId(), source.getFileId(), source.getSamples());
-
         // Stats calculator
         VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
-        // final VariantVcfFactory factory = createVariantVcfFactory(source, fileName);
 
-
-//        if (parser.equalsIgnoreCase("htsjdk")) {
-//            logger.info("Using HTSJDK to read variants.");
-//            header = readHtsHeader(input);
-//        } else {
-//            throw new NotImplementedException("Please request to read other than vcf file format");
-//        }
-
-//        DataReader<Variant> dataReader = new VcfVariantReader(
-//                new StringDataReader(input), header.getKey(), header.getValue(), converter, statsCalculator,
-//                normalizer);
         VariantReader dataReader = null;
         try {
-            InputStream inputStream = new FileInputStream(input.toFile());
-            if (input.toString().endsWith("gz")) {
-                inputStream = new GZIPInputStream(inputStream);
-            }
+            if (VariantReaderUtils.isVcf(input.toString())) {
+                InputStream inputStream = FileUtils.newInputStream(input);
 
-            dataReader = new VariantVcfHtsjdkReader(inputStream, source, normalizer);
+                VariantVcfHtsjdkReader reader = new VariantVcfHtsjdkReader(inputStream, source, normalizer);
+                if (null != malformatedHandler) {
+                    reader.registerMalformatedVcfHandler(malformatedHandler);
+                    reader.setFailOnError(failOnError);
+                }
+                dataReader = reader;
+            } else {
+                dataReader = VariantReaderUtils.getVariantReader(input, source);
+            }
         } catch (IOException e) {
             throw new StorageManagerException("Unable to read from " + input, e);
         }
@@ -157,60 +152,106 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
         // Transformer
         VcfMeta meta = new VcfMeta(source);
         ArchiveHelper helper = new ArchiveHelper(conf, meta);
-        VariantHbaseTransformTask transformTask = new VariantHbaseTransformTask(helper, null);
+        ProgressLogger progressLogger = new ProgressLogger("Transform proto:").setBatchSize(100000);
 
         logger.info("Generating output file {}", outputVariantsFile);
 
-        long[] t = new long[]{0, 0, 0};
-        long last = System.nanoTime();
-        Long start = System.currentTimeMillis();
-        long end = System.currentTimeMillis();
-        try {
-            dataReader.open();
-            dataReader.pre();
-            dataWriter.open();
-            dataWriter.pre();
-            transformTask.pre();
-            statsCalculator.pre();
+        long start = System.currentTimeMillis();
+        long end;
+        // FIXME
+        if (options.getBoolean("transform.proto.parallel")) {
+            VariantSliceReader sliceReader = new VariantSliceReader(helper.getChunkSize(), dataReader);
 
-            start = System.currentTimeMillis();
-            last = System.nanoTime();
-            // Process data
-            List<Variant> read = dataReader.read(batchSize);
-            t[0] += System.nanoTime() - last;
-            last = System.nanoTime();
-            while (!read.isEmpty()) {
-                statsCalculator.apply(read);
-                List<VcfSliceProtos.VcfSlice> slices = transformTask.apply(read);
-                t[1] += System.nanoTime() - last;
+            // Use a supplier to avoid concurrent modifications of non thread safe objects.
+            Supplier<ParallelTaskRunner.TaskWithException<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice, ?>> supplier =
+                    () -> {
+                        VariantToVcfSliceConverter converter = new VariantToVcfSliceConverter();
+                        return batch -> {
+                            List<VcfSliceProtos.VcfSlice> slices = new ArrayList<>(batch.size());
+                            for (ImmutablePair<Long, List<Variant>> pair : batch) {
+                                slices.add(converter.convert(pair.getRight(), pair.getLeft().intValue()));
+                                progressLogger.increment(pair.getRight().size());
+                            }
+                            return slices;
+                        };
+                    };
+
+            ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
+                    .setNumTasks(options.getInt(Options.TRANSFORM_THREADS.key(), 1))
+                    .setBatchSize(1)
+                    .setAbortOnFail(true)
+                    .setSorted(false)
+                    .setCapacity(1)
+                    .build();
+
+            ParallelTaskRunner<ImmutablePair<Long, List<Variant>>, VcfSliceProtos.VcfSlice> ptr;
+            ptr = new ParallelTaskRunner<>(sliceReader, supplier, dataWriter, config);
+
+            try {
+                ptr.run();
+            } catch (ExecutionException e) {
+                throw new StorageManagerException(String.format("Error while Transforming file %s into %s", input, outputVariantsFile), e);
+            }
+            end = System.currentTimeMillis();
+        } else {
+            VariantHbaseTransformTask transformTask = new VariantHbaseTransformTask(helper, null);
+            long[] t = new long[]{0, 0, 0};
+            long last = System.nanoTime();
+
+            try {
+                dataReader.open();
+                dataReader.pre();
+                dataWriter.open();
+                dataWriter.pre();
+                transformTask.pre();
+                statsCalculator.pre();
+
+                start = System.currentTimeMillis();
                 last = System.nanoTime();
-                dataWriter.write(slices);
-                t[2] += System.nanoTime() - last;
-                last = System.nanoTime();
-                read = dataReader.read(batchSize);
+                // Process data
+                List<Variant> read = dataReader.read(batchSize);
                 t[0] += System.nanoTime() - last;
                 last = System.nanoTime();
+                while (!read.isEmpty()) {
+                    progressLogger.increment(read.size());
+                    statsCalculator.apply(read);
+                    List<VcfSliceProtos.VcfSlice> slices = transformTask.apply(read);
+                    t[1] += System.nanoTime() - last;
+                    last = System.nanoTime();
+                    dataWriter.write(slices);
+                    t[2] += System.nanoTime() - last;
+                    last = System.nanoTime();
+                    read = dataReader.read(batchSize);
+                    t[0] += System.nanoTime() - last;
+                    last = System.nanoTime();
+                }
+                List<VcfSliceProtos.VcfSlice> drain = transformTask.drain();
+                t[1] += System.nanoTime() - last;
+                last = System.nanoTime();
+                dataWriter.write(drain);
+                t[2] += System.nanoTime() - last;
+
+                end = System.currentTimeMillis();
+
+                source.getMetadata().put(VariantFileUtils.VARIANT_FILE_HEADER, dataReader.getHeader());
+                statsCalculator.post();
+                transformTask.post();
+                dataReader.post();
+                dataWriter.post();
+
+                end = System.currentTimeMillis();
+                logger.info("Times for reading: {}, transforming {}, writing {}",
+                        TimeUnit.NANOSECONDS.toSeconds(t[0]),
+                        TimeUnit.NANOSECONDS.toSeconds(t[1]),
+                        TimeUnit.NANOSECONDS.toSeconds(t[2]));
+            } catch (Exception e) {
+                throw new StorageManagerException(String.format("Error while Transforming file %s into %s", input, outputVariantsFile), e);
+            } finally {
+                dataWriter.close();
+                dataReader.close();
             }
-            List<VcfSliceProtos.VcfSlice> drain = transformTask.drain();
-            t[1] += System.nanoTime() - last;
-            last = System.nanoTime();
-            dataWriter.write(drain);
-            t[2] += System.nanoTime() - last;
-
-            end = System.currentTimeMillis();
-
-            source.getMetadata().put("variantFileHeader", dataReader.getHeader());
-            statsCalculator.post();
-            transformTask.post();
-            dataReader.post();
-            dataWriter.post();
-        } catch (Exception e) {
-            throw new StorageManagerException(
-                    String.format("Error while Transforming file %s into %s ", input, outputVariantsFile), e);
-        } finally {
-            dataWriter.close();
-            dataReader.close();
         }
+
         ObjectMapper jsonObjectMapper = new ObjectMapper();
         jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
         jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
@@ -218,14 +259,10 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
         ObjectWriter variantSourceObjectWriter = jsonObjectMapper.writerFor(VariantSource.class);
         try {
             String sourceJsonString = variantSourceObjectWriter.writeValueAsString(source);
-            StringDataWriter.write(finalOutputMetaFile, Collections.singletonList(sourceJsonString));
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            StringDataWriter.write(outputMetaFile, Collections.singletonList(sourceJsonString));
+        } catch (IOException e) {
+            throw new StorageManagerException("Error writing meta file", e);
         }
-        logger.info("Times for reading: {}, transforming {}, writing {}",
-                TimeUnit.NANOSECONDS.toSeconds(t[0]),
-                TimeUnit.NANOSECONDS.toSeconds(t[1]),
-                TimeUnit.NANOSECONDS.toSeconds(t[2]));
         return new ImmutablePair<>(start, end);
     }
 
@@ -263,7 +300,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
                     logger.info("Copied to hdfs in {}s", (System.currentTimeMillis() - startTime) / 1000.0);
 
                     startTime = System.currentTimeMillis();
-                    URI fileInput = URI.create(VariantReaderUtils.getMetaFromInputFile(input.toString()));
+                    URI fileInput = URI.create(VariantReaderUtils.getMetaFromTransformedFile(input.toString()));
                     org.apache.hadoop.fs.Path fileOutputPath = new org.apache.hadoop.fs.Path(
                             output.resolve(Paths.get(fileInput.getPath()).getFileName().toString()));
                     logger.info("Copy from {} to {}", new org.apache.hadoop.fs.Path(fileInput).toUri(), fileOutputPath.toUri());
@@ -291,6 +328,34 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
         }
 
         if (loadVar) {
+            preMerge(input);
+        }
+
+        return input;
+    }
+
+    protected void preMerge(URI input) throws StorageManagerException {
+        int studyId = getStudyId();
+        long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
+
+        //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
+        try {
+            StudyConfiguration studyConfiguration = checkOrCreateStudyConfiguration(true);
+            VariantSource source = readVariantSource(input, options);
+            securePreMerge(studyConfiguration, source);
+            dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
+        } finally {
+            dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
+        }
+
+    }
+
+    protected void securePreMerge(StudyConfiguration studyConfiguration, VariantSource source) throws StorageManagerException {
+
+        boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
+        boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
+
+        if (loadVar) {
             // Load into variant table
             // Update the studyConfiguration with data from the Archive Table.
             // Reads the VcfMeta documents, and populates the StudyConfiguration if needed.
@@ -299,7 +364,6 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
             int studyId = options.getInt(VariantStorageManager.Options.STUDY_ID.key(), -1);
             int fileId = options.getInt(VariantStorageManager.Options.FILE_ID.key(), -1);
             boolean missingFilesDetected = false;
-
 
 
             HadoopVariantSourceDBAdaptor fileMetadataManager = dbAdaptor.getVariantSourceDBAdaptor();
@@ -312,49 +376,45 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
 
             logger.info("Found files in Archive DB: " + files);
 
-            long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
-            options.remove(Options.STUDY_CONFIGURATION.key());
-            StudyConfiguration studyConfiguration = checkOrCreateStudyConfiguration();
-
+            // Pending files, not in analysis but in archive.
             List<Integer> pendingFiles = new LinkedList<>();
             logger.info("Found registered indexed files: {}", studyConfiguration.getIndexedFiles());
             for (Integer loadedFileId : files) {
-                VariantSource source;
+                VariantSource readSource;
                 try {
-                    source = fileMetadataManager.getVariantSource(studyId, loadedFileId, null);
+                    readSource = fileMetadataManager.getVariantSource(studyId, loadedFileId, null);
                 } catch (IOException e) {
                     throw new StorageHadoopException("Unable to read file VcfMeta for file : " + loadedFileId, e);
                 }
 
-                Integer fileId1 = Integer.parseInt(source.getFileId());
-                logger.info("Found source for file id {} with registered id {} ", loadedFileId, fileId1);
-                if (!studyConfiguration.getFileIds().inverse().containsKey(fileId1)) {
-                    checkNewFile(studyConfiguration, fileId1, source.getFileName());
-                    studyConfiguration.getFileIds().put(source.getFileName(), fileId1);
-                    studyConfiguration.getHeaders().put(fileId1, source.getMetadata().get("variantFileHeader").toString());
-                    checkAndUpdateStudyConfiguration(studyConfiguration, fileId1, source, options);
+                Integer readFileId = Integer.parseInt(readSource.getFileId());
+                logger.info("Found source for file id {} with registered id {} ", loadedFileId, readFileId);
+                if (!studyConfiguration.getFileIds().inverse().containsKey(readFileId)) {
+                    checkNewFile(studyConfiguration, readFileId, readSource.getFileName());
+                    studyConfiguration.getFileIds().put(readSource.getFileName(), readFileId);
+                    studyConfiguration.getHeaders().put(readFileId, readSource.getMetadata()
+                            .get(VariantFileUtils.VARIANT_FILE_HEADER).toString());
+                    checkAndUpdateStudyConfiguration(studyConfiguration, readFileId, readSource, options);
                     missingFilesDetected = true;
                 }
-                if (!studyConfiguration.getIndexedFiles().contains(fileId1)) {
-                    pendingFiles.add(fileId1);
+                if (!studyConfiguration.getIndexedFiles().contains(readFileId)) {
+                    pendingFiles.add(readFileId);
                 }
             }
 
-            VariantSource source = readVariantSource(input, options);
+//            //VariantSource source = readVariantSource(input, options);
             fileId = checkNewFile(studyConfiguration, fileId, source.getFileName());
 
 
             logger.info("Found pending in DB: " + pendingFiles);
-            if (missingFilesDetected) {
-                dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
-            }
-            dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
+//            if (missingFilesDetected) {
+//            }
 
             if (!loadArch) {
                 //If skip archive loading, input fileId must be already in archiveTable, so "pending to be loaded"
                 if (!pendingFiles.contains(fileId)) {
                     throw new StorageManagerException("File " + fileId + " is not loaded in archive table "
-                            + getArchiveTableName(studyId, options));
+                            + getArchiveTableName(studyId, options) + "");
                 }
             } else {
                 //If don't skip archive, input fileId must not be pending, because must not be in the archive table.
@@ -369,17 +429,87 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
             //If there are some given pending files, load only those files, not all pending files
             List<Integer> givenPendingFiles = options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES);
             if (!givenPendingFiles.isEmpty()) {
+                logger.info("Given Pending file list: " + givenPendingFiles);
                 for (Integer pendingFile : givenPendingFiles) {
                     if (!pendingFiles.contains(pendingFile)) {
-                        throw new StorageManagerException("File " + fileId + " is not pending to be loaded in variant table");
+                        throw new StorageManagerException("File " + pendingFile + " is not pending to be loaded in variant table");
                     }
                 }
+                pendingFiles = givenPendingFiles;
             } else {
                 options.put(HADOOP_LOAD_VARIANT_PENDING_FILES, pendingFiles);
             }
-        }
 
-        return input;
+            boolean resume = conf.getBoolean(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT_RESUME, false);
+            BatchFileOperation op = addBatchOperation(studyConfiguration, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles, resume);
+
+            options.put(AbstractVariantTableDriver.TIMESTAMP, op.getTimestamp());
+
+        }
+    }
+
+    /**
+     * Adds a new {@BatchOperation} to the StudyConfiguration.
+     *
+     * Only allow one running operation at the same time
+     * If the last operation is ready, continue
+     * If the last operation is in ERROR, continue if is the same operation and files.
+     * If the last operation is running, continue only if resume=true
+     *
+     * If is a new operation, increment the TimeStamp
+     *
+     * @param studyConfiguration StudyConfiguration
+     * @param jobOperationName   Job operation name used to create the jobName and as {@link BatchFileOperation#operationName}
+     * @param fileIds            Files to be processed in this batch.
+     * @param resume             Resume operation. Assume that previous operation went wrong.
+     * @return                   The current batchOperation
+     * @throws StorageManagerException if the operation can't be executed
+     */
+    protected BatchFileOperation addBatchOperation(StudyConfiguration studyConfiguration, String jobOperationName, List<Integer> fileIds,
+                                                   boolean resume)
+            throws StorageManagerException {
+
+        List<BatchFileOperation> batches = studyConfiguration.getBatches();
+        BatchFileOperation batchFileOperation;
+        boolean newOperation = false;
+        if (!batches.isEmpty()) {
+            batchFileOperation = batches.get(batches.size() - 1);
+            BatchFileOperation.Status currentStatus = batchFileOperation.currentStatus();
+
+            switch (currentStatus) {
+                case READY:
+                    batchFileOperation = new BatchFileOperation(jobOperationName, fileIds, batchFileOperation.getTimestamp() + 1);
+                    newOperation = true;
+                    break;
+                case DONE:
+                case RUNNING:
+                    if (!resume) {
+                        throw new StorageHadoopException("Unable to process a new batch. Ongoing batch operation: "
+                                + batchFileOperation);
+                    }
+                    // DO NOT BREAK!. Resuming last loading, go to error case.
+                case ERROR:
+                    Collections.sort(fileIds);
+                    Collections.sort(batchFileOperation.getFileIds());
+                    if (batchFileOperation.getFileIds().equals(fileIds)) {
+                        logger.info("Resuming Last batch loading due to error.");
+                    } else {
+                        throw new StorageHadoopException("Unable to resume last batch operation. "
+                                + "Must have the same files from the previous batch: " + batchFileOperation);
+                    }
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown Status " + currentStatus);
+            }
+        } else {
+            batchFileOperation = new BatchFileOperation(jobOperationName, fileIds, 1);
+            newOperation = true;
+        }
+        batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
+        if (newOperation) {
+            batches.add(batchFileOperation);
+        }
+        return batchFileOperation;
     }
 
     /**
@@ -391,33 +521,79 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
      */
     protected abstract boolean needLoadFromHdfs();
 
+    @Override
+    public URI load(URI input) throws IOException, StorageManagerException {
+        int studyId = getStudyId();
+
+        boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
+        boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
+
+        ArchiveHelper.setChunkSize(conf, conf.getInt(ArchiveDriver.CONFIG_ARCHIVE_CHUNK_SIZE, ArchiveDriver.DEFAULT_CHUNK_SIZE));
+        ArchiveHelper.setStudyId(conf, studyId);
+
+        if (loadArch) {
+            loadArch(input);
+        }
+
+        if (loadVar) {
+            List<Integer> pendingFiles = options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES);
+            merge(studyId, pendingFiles);
+        }
+
+        return input; // TODO  change return value?
+    }
+
+    protected abstract void loadArch(URI input) throws StorageManagerException;
+
     public void merge(int studyId, List<Integer> pendingFiles) throws StorageManagerException {
         String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
-        String jar = options.getString(OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES, null);
-        if (jar == null) {
-            throw new StorageManagerException("Missing option " + OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES);
-        }
+        String jar = getJarWithDependencies();
         options.put(HADOOP_LOAD_VARIANT_PENDING_FILES, pendingFiles);
 
         Class execClass = VariantTableDriver.class;
-        String args = VariantTableDriver.buildCommandLineArgs(variantsTableCredentials.getHostAndPort(),
+        String args = VariantTableDriver.buildCommandLineArgs(variantsTableCredentials.getHostUri().toString(),
                 archiveTableCredentials.getTable(),
                 variantsTableCredentials.getTable(), studyId, pendingFiles, options);
         String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
 
         long startTime = System.currentTimeMillis();
-        logger.info("------------------------------------------------------");
-        logger.info("Loading file {} into analysis table '{}'", pendingFiles, variantsTableCredentials.getTable());
-        logger.info(executable + " " + args);
-        logger.info("------------------------------------------------------");
-        int exitValue = mrExecutor.run(executable, args);
-        logger.info("------------------------------------------------------");
-        logger.info("Exit value: {}", exitValue);
-        logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
-        if (exitValue != 0) {
-            throw new StorageManagerException("Error loading files " + pendingFiles + " into variant table \""
-                    + variantsTableCredentials.getTable() + "\"");
+        Thread hook = newShutdownHook(VariantTableDriver.JOB_OPERATION_NAME, pendingFiles);
+        Runtime.getRuntime().addShutdownHook(hook);
+        try {
+            logger.info("------------------------------------------------------");
+            logger.info("Loading files {} into analysis table '{}'", pendingFiles, variantsTableCredentials.getTable());
+            logger.info(executable + " " + args);
+            logger.info("------------------------------------------------------");
+            int exitValue = mrExecutor.run(executable, args);
+            logger.info("------------------------------------------------------");
+            logger.info("Exit value: {}", exitValue);
+            logger.info("Total time: {}s", (System.currentTimeMillis() - startTime) / 1000.0);
+            if (exitValue != 0) {
+                throw new StorageManagerException("Error loading files " + pendingFiles + " into variant table \""
+                        + variantsTableCredentials.getTable() + "\"");
+            }
+            setStatus(BatchFileOperation.Status.DONE, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles);
+        } catch (Exception e) {
+            setStatus(BatchFileOperation.Status.ERROR, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles);
+            throw e;
+        } finally {
+            Runtime.getRuntime().removeShutdownHook(hook);
         }
+    }
+
+    public String getJarWithDependencies() throws StorageManagerException {
+        return getJarWithDependencies(options);
+    }
+
+    public static String getJarWithDependencies(ObjectMap options) throws StorageManagerException {
+        String jar = options.getString(OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES, null);
+        if (jar == null) {
+            throw new StorageManagerException("Missing option " + OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES);
+        }
+        if (!Paths.get(jar).isAbsolute()) {
+            jar = System.getProperty("app.home", "") + "/" + jar;
+        }
+        return jar;
     }
 
     @Override
@@ -428,7 +604,6 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
 
     @Override
     public URI postLoad(URI input, URI output) throws StorageManagerException {
-//        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         if (options.getBoolean(HADOOP_LOAD_VARIANT)) {
             // Current StudyConfiguration may be outdated. Remove it.
             options.remove(VariantStorageManager.Options.STUDY_CONFIGURATION.key());
@@ -450,6 +625,16 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
         } else {
             System.out.println(Thread.currentThread().getName() + " - DO NOTHING!");
             return input;
+        }
+    }
+
+    @Override
+    public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageManagerException {
+        super.securePostLoad(fileIds, studyConfiguration);
+        BatchFileOperation.Status status = secureSetStatus(studyConfiguration, BatchFileOperation.Status.READY,
+                VariantTableDriver.JOB_OPERATION_NAME, fileIds);
+        if (status != BatchFileOperation.Status.DONE) {
+            logger.warn("Unexpected status " + status);
         }
     }
 

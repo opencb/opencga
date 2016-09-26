@@ -4,7 +4,7 @@ import io.swagger.annotations.*;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
@@ -48,7 +48,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                  @ApiParam(value = "family", required = false) @QueryParam("family") String family,
                                  @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") long fatherId,
                                  @ApiParam(value = "motherId", required = false) @QueryParam("motherId") long motherId,
-                                 @ApiParam(value = "sex", required = false) @QueryParam("sex") @DefaultValue("UNKNOWN") Individual.Sex sex) {
+                                 @ApiParam(value = "sex", required = false) @QueryParam("sex") @DefaultValue("UNKNOWN") Individual.Sex sex){
+                                 //@ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity){
+        //TODO add ethnicity param
         try {
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
             QueryResult<Individual> queryResult = catalogManager.createIndividual(studyId, name, family, fatherId, motherId, sex, queryOptions, sessionId);
@@ -105,7 +107,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
             QueryOptions qOptions = new QueryOptions(queryOptions);
-            parseQueryParams(params, CatalogIndividualDBAdaptor.QueryParams::getParam, query, qOptions);
+            parseQueryParams(params, IndividualDBAdaptor.QueryParams::getParam, query, qOptions);
             QueryResult<Individual> queryResult = catalogManager.getAllIndividuals(studyId, query, qOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -195,7 +197,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     public Response searchAnnotationSetGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
                                            @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
                                            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
-                                           @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                           @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(catalogManager.getIndividualManager().searchAnnotationSetAsMap(individualStr, variableSetId, annotation, sessionId));
@@ -211,7 +213,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @Path("/{individualId}/annotationSets/info")
     @ApiOperation(value = "Return all the annotation sets of the individual [NOT TESTED]", position = 12)
     public Response infoAnnotationSetGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
-                                         @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                         @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(catalogManager.getIndividualManager().getAllAnnotationSetsAsMap(individualStr, sessionId));
@@ -282,7 +284,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Return the annotation set [NOT TESTED]", position = 16)
     public Response infoAnnotationGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
                                       @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
-                                      @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                      @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(catalogManager.getIndividualManager().getAnnotationSetAsMap(individualStr, annotationSetName, sessionId));
@@ -302,7 +304,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                      @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") long fatherId,
                                      @ApiParam(value = "motherId", required = false) @QueryParam("motherId") long motherId,
                                      @ApiParam(value = "family", required = false) @QueryParam("family") String family,
-                                     @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
+                                     @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
                                      @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity
                                       ) {
         try {
@@ -343,11 +345,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{individualId}/delete")
+    @Path("/{individualIds}/delete")
     @ApiOperation(value = "Delete individual information", position = 7)
-    public Response deleteIndividual(@ApiParam(value = "individualId", required = true) @PathParam("individualId") long individualId) {
+    public Response deleteIndividual(@ApiParam(value = "Comma separated list of individual ids", required = true) @PathParam("individualIds") String individualIds) {
         try {
-            QueryResult<Individual> queryResult = catalogManager.deleteIndividual(individualId, queryOptions, sessionId);
+            List<QueryResult<Individual>> queryResult = catalogManager.getIndividualManager().delete(individualIds, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -384,14 +386,14 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @GET
     @Path("/groupBy")
     @ApiOperation(value = "Group individuals by several fields", position = 10)
-    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("by") String by,
+    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("fields") String fields,
                             @ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
-                            @ApiParam(value = "id", required = false) @QueryParam("id") String ids,
+                            //@ApiParam(value = "id", required = false) @QueryParam("id") String ids,
                             @ApiParam(value = "name", required = false) @QueryParam("name") String names,
                             @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") String fatherId,
                             @ApiParam(value = "motherId", required = false) @QueryParam("motherId") String motherId,
                             @ApiParam(value = "family", required = false) @QueryParam("family") String family,
-                            @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
+                            @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
                             @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
                             @ApiParam(value = "species", required = false) @QueryParam("species") String species,
                             @ApiParam(value = "population", required = false) @QueryParam("population") String population,
@@ -401,11 +403,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
         try {
             Query query = new Query();
             QueryOptions qOptions = new QueryOptions();
-            parseQueryParams(params, CatalogIndividualDBAdaptor.QueryParams::getParam, query, qOptions);
+            parseQueryParams(params, IndividualDBAdaptor.QueryParams::getParam, query, qOptions);
 
             logger.debug("query = " + query.toJson());
             logger.debug("queryOptions = " + qOptions.toJson());
-            QueryResult result = catalogManager.individualGroupBy(query, qOptions, by, sessionId);
+            QueryResult result = catalogManager.individualGroupBy(query, qOptions, fields, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.io;
 
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.UriUtils;
@@ -41,29 +40,13 @@ public class CatalogIOManagerFactory {
     private String defaultCatalogScheme = "file";
     private Map<String, CatalogIOManager> catalogIOManagers = new HashMap<>();
 
-    @Deprecated
-    public CatalogIOManagerFactory(Properties properties) throws CatalogIOException {
-        this.properties = properties;
-        this.catalogConfiguration = null;
-        try {
-            mainRootdir = UriUtils.createDirectoryUri(properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR));
-        } catch (URISyntaxException e) {
-            throw new CatalogIOException("Malformed URI '" + CatalogManager.CATALOG_MAIN_ROOTDIR + "'", e);
-        }
-
-        String scheme = mainRootdir.getScheme();
-        if (scheme != null) {
-            defaultCatalogScheme = scheme;
-        }
-    }
-
     public CatalogIOManagerFactory(CatalogConfiguration catalogConfiguration) throws CatalogIOException {
         this.properties = null;
         this.catalogConfiguration = catalogConfiguration;
         try {
             mainRootdir = UriUtils.createDirectoryUri(catalogConfiguration.getDataDir());
         } catch (URISyntaxException e) {
-            throw new CatalogIOException("Malformed URI '" + CatalogManager.CATALOG_MAIN_ROOTDIR + "'", e);
+            throw new CatalogIOException("Malformed URI 'OPENCGA.CATALOG.MAIN.ROOTDIR'", e);
         }
 
         String scheme = mainRootdir.getScheme();

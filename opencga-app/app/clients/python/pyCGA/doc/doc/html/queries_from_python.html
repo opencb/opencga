@@ -8,7 +8,7 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>How To Use API from python &mdash; pyCGA 0.1.0 documentation</title>
+  <title>How To Use API from python &mdash; pyCGA 0.2.0 documentation</title>
   
 
   
@@ -30,7 +30,7 @@
   
 
   
-    <link rel="top" title="pyCGA 0.1.0 documentation" href="index.html"/>
+    <link rel="top" title="pyCGA 0.2.0 documentation" href="index.html"/>
         <link rel="next" title="PyCGA" href="pyCGA.html"/>
         <link rel="prev" title="Web Services API" href="web_services.html"/> 
 
@@ -45,17 +45,27 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-nav-search">
-        
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
 
-        
-          <a href="documentation.html" class="icon icon-home"> pyCGA
-        
+          
+            <a href="documentation.html" class="icon icon-home"> pyCGA
+          
 
-        
-        </a>
+          
+          </a>
 
-        
+          
+            
+            
+              <div class="version">
+                0.2.0
+              </div>
+            
+          
+
+          
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
@@ -64,59 +74,34 @@
   </form>
 </div>
 
-        
-      </div>
+          
+        </div>
 
-      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
-        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
           
-          
-              <ul>
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#requirements">Requirements</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#install">Install</a></li>
-</ul>
-</li>
+            
+            
+                <ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
 <li class="toctree-l1"><a class="reference internal" href="quick_start.html">Quick-start</a></li>
-<li class="toctree-l1"><a class="reference internal" href="ids.html">Id Considerations in OpenCGA</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="ids.html#ids-in-opencga">Ids in OpenCGA</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ids.html#pycgaidconverter">pyCGAIdConverter</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ids.html#commandline-options">CommandLine Options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="ids.html#common-use-examples">Common use examples</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="ids.html">Id Considerations in OpenCGA</a></li>
 </ul>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="web_services.html">Web Services API</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="">How To Use API from python</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">How To Use API from python</a></li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="pyCGA.html">PyCGA</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#pycgalogin">PyCGALogin</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#admin-tools">User Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#file-tools">File Tools</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="pyCGA.html#use-case-example">Use case example</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#sample-tools">Sample Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#individuals-tools">Individuals Tools</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#variable-sets-tools">Variable Sets Tools</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="pyVariantFetcher.html">pyCGAVariantFetcher</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="pyVariantFetcher.html#commandline-options">CommandLine Options</a></li>
-<li class="toctree-l2"><a class="reference internal" href="pyVariantFetcher.html#examples">Examples</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="pyCGA.html">PyCGA</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pyVariantFetcher.html">pyCGAVariantFetcher</a></li>
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="new_web_services.html">How to implement new web services parsers</a></li>
 </ul>
 
+            
           
-        
+        </div>
       </div>
-      &nbsp;
     </nav>
 
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
@@ -131,7 +116,13 @@
       
       <div class="wy-nav-content">
         <div class="rst-content">
-          <div role="navigation" aria-label="breadcrumbs navigation">
+          
+
+ 
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
     <li><a href="documentation.html">Docs</a> &raquo;</li>
       
@@ -144,14 +135,901 @@
   </ul>
   <hr/>
 </div>
-          <div role="main" class="document">
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
             
   <div class="section" id="how-to-use-api-from-python">
 <h1>How To Use API from python<a class="headerlink" href="#how-to-use-api-from-python" title="Permalink to this headline">¶</a></h1>
-<p>inf</p>
+<p>There is two different ways to use this python packages.</p>
+<dl class="class">
+<dt id="RestExecutor.WS">
+<em class="property">class </em><code class="descclassname">RestExecutor.</code><code class="descname">WS</code><span class="sig-paren">(</span><em>token=None</em>, <em>version='v1'</em>, <em>instance='opencga'</em><span class="sig-paren">)</span><a class="headerlink" href="#RestExecutor.WS" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="method">
+<dt id="RestExecutor.WS.__init__">
+<code class="descname">__init__</code><span class="sig-paren">(</span><em>token=None</em>, <em>version='v1'</em>, <em>instance='opencga'</em><span class="sig-paren">)</span><a class="headerlink" href="#RestExecutor.WS.__init__" title="Permalink to this definition">¶</a></dt>
+<dd><p>WS class is initialize using the information in the file .opencga/openCGA.json created after the login,
+but also a token object could be pass and it will be used.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>token</strong> (<em>dict</em>) &#8211; contains the information to initialize a WS object</li>
+<li><strong>version</strong> (<em>str</em>) &#8211; ws version</li>
+<li><strong>instance</strong> (<em>str</em>) &#8211; instance to use</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>Example:</li>
+</ul>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="c1"># This will use the information in the login file</span>
+<span class="n">ws</span> <span class="o">=</span> <span class="n">WS</span><span class="p">()</span>
+
+<span class="c1"># This will use the token passed</span>
+<span class="n">token</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;host&quot;</span><span class="p">:</span> <span class="s2">&quot;opencga_host&quot;</span><span class="p">,</span> <span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="s2">&quot;username&quot;</span><span class="p">,</span> <span class="s2">&quot;sid&quot;</span><span class="p">:</span> <span class="s2">&quot;XXXXXXXXXXXXXX&quot;</span><span class="p">}</span>
+<span class="n">ws</span> <span class="o">=</span> <span class="n">WS</span><span class="p">(</span><span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;v2&quot;</span><span class="p">,</span> <span class="n">instance</span><span class="o">=</span><span class="s2">&quot;other_instance&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="RestExecutor.WS.general_method">
+<code class="descname">general_method</code><span class="sig-paren">(</span><em>ws_category</em>, <em>method_name</em>, <em>item_id=None</em>, <em>data=None</em>, <em>use_buffer=False</em>, <em>pag=1000</em>, <em>limit=-1</em>, <em>skip=0</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#RestExecutor.WS.general_method" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is a wildcard method, if some of the ws in catalog are not implemented in this python wrapper you can
+always use the general method of the corresponding class.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>ws_category</strong> (<em>str</em>) &#8211; category of ws, i.e: Users, projects, studies...</li>
+<li><strong>method_name</strong> (<em>str</em>) &#8211; name of the method to be called, i.e: create, search. info...</li>
+<li><strong>item_id</strong> (<em>str</em>) &#8211; Some of the webservice methods required a item id, if it is the case you need to provide it using this parameter</li>
+<li><strong>data</strong> (<em>dict</em>) &#8211; If this parameter is provided post method is assumed</li>
+<li><strong>skip</strong> (<em>int</em>) &#8211; This parameter is used to skip result from the query</li>
+<li><strong>limit</strong> (<em>int</em>) &#8211; This parameter is used to limit the number of results</li>
+<li><strong>pag</strong> (<em>int</em>) &#8211; Size of each page</li>
+<li><strong>use_buffer</strong> (<em>bool</em>) &#8211; If false all result will be stored in the same array and retrieved at once. If true an iterator will be returned the size of the result each iteration is the size of the page</li>
+<li><strong>options</strong> (<em>dict</em>) &#8211; this argument is a dictionary with parameters to be used in the ws (see examples)</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">This method can return a list of results or a iterator of list of results (see use_buffer)</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">list of dict</p>
+</td>
+</tr>
+</tbody>
+</table>
+<ul class="simple">
+<li>Examples:</li>
+</ul>
+<div class="highlight-python"><div class="highlight"><pre><span></span><span class="c1"># This is an example of a query to search files in a specific path</span>
+<span class="n">ws</span> <span class="o">=</span> <span class="n">WS</span><span class="p">()</span>
+<span class="n">found_files</span> <span class="o">=</span> <span class="n">ws</span><span class="o">.</span><span class="n">general_method</span><span class="p">(</span><span class="s2">&quot;files&quot;</span><span class="p">,</span> <span class="s2">&quot;search&quot;</span><span class="p">,</span> <span class="n">studyId</span><span class="o">=</span><span class="s2">&quot;2&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="s2">&quot;~path/to/files/&quot;</span><span class="p">)</span>
+
+<span class="c1"># This is an example of a query using the item_id</span>
+<span class="n">file_info</span> <span class="o">=</span> <span class="n">ws</span><span class="o">.</span><span class="n">general_method</span><span class="p">(</span><span class="s2">&quot;files&quot;</span><span class="p">,</span> <span class="s2">&quot;info&quot;</span><span class="p">,</span> <span class="n">item_id</span><span class="o">=</span><span class="s2">&quot;6&quot;</span><span class="p">)</span>
+
+<span class="c1"># This is an example using a post method</span>
+<span class="n">updated_files</span> <span class="o">=</span> <span class="n">ws</span><span class="o">.</span><span class="n">general_method</span><span class="p">(</span><span class="s2">&quot;files&quot;</span><span class="p">,</span> <span class="s2">&quot;update&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;attributes&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;new_field&quot;</span><span class="p">:</span> <span class="s2">&quot;new_value&quot;</span><span class="p">}})</span>
+
+<span class="c1"># This is an example using a custom pagination and the buffer, this example will show all the file names in the DB in batches of ten</span>
+<span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">ws</span><span class="o">.</span><span class="n">general_method</span><span class="p">(</span><span class="s2">&quot;files&quot;</span><span class="p">,</span> <span class="s2">&quot;search&quot;</span><span class="p">,</span> <span class="n">studyId</span><span class="o">=</span><span class="s2">&quot;2&quot;</span><span class="p">,</span> <span class="n">pag</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">use_buffer</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;FILE&quot;</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">file_result</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">:</span>
+        <span class="k">print</span> <span class="n">file_result</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<span class="target" id="module-CatalogWS"></span><dl class="class">
+<dt id="CatalogWS.Files">
+<em class="property">class </em><code class="descclassname">CatalogWS.</code><code class="descname">Files</code><span class="sig-paren">(</span><em>token=None</em>, <em>version='v1'</em>, <em>instance='opencga'</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Files" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class contains method for files ws (i.e, link, create)</p>
+<dl class="method">
+<dt id="CatalogWS.Files.alignments">
+<code class="descname">alignments</code><span class="sig-paren">(</span><em>fileId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Files.alignments" title="Permalink to this definition">¶</a></dt>
+<dd><p>get alignments from a bam file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>options</strong> &#8211; Options to select the variants</li>
+<li><strong>fileId</strong> &#8211; file Id</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Files.content_grep">
+<code class="descname">content_grep</code><span class="sig-paren">(</span><em>fileId</em>, <em>pattern</em>, <em>ignorecase=False</em>, <em>multi=True</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Files.content_grep" title="Permalink to this definition">¶</a></dt>
+<dd><p>grep the contents of a file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>pattern</strong> &#8211; Pattern to search</li>
+<li><strong>ignorecase</strong> &#8211; Boolean. Ignore case in grep acction</li>
+<li><strong>multi</strong> &#8211; Boolean. If it is false will return only the first one</li>
+<li><strong>fileId</strong> &#8211; File id</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Files.create_folder">
+<code class="descname">create_folder</code><span class="sig-paren">(</span><em>studyId</em>, <em>folder</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Files.create_folder" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the method create a folder in the DB</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>studyId</strong> &#8211; study to associate file to</li>
+<li><strong>folder</strong> &#8211; &#8220;path in the DB&#8221;</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Files.index">
+<code class="descname">index</code><span class="sig-paren">(</span><em>fileId</em>, <em>outdirId</em>, <em>annotate</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Files.index" title="Permalink to this definition">¶</a></dt>
+<dd><p>index a file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>annotate</strong> &#8211; True/False</li>
+<li><strong>fileId</strong> &#8211; file Id</li>
+<li><strong>outdirId</strong> &#8211; Output directory of the indexed</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Files.info">
+<code class="descname">info</code><span class="sig-paren">(</span><em>fileId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Files.info" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to get information of a particular file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fileId</strong> &#8211; file Id</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Files.link">
+<code class="descname">link</code><span class="sig-paren">(</span><em>studyId</em>, <em>uri</em>, <em>path</em>, <em>description=''</em>, <em>parents=False</em>, <em>calculateChecksum=False</em>, <em>createFolder=True</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Files.link" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the method for linking files and folders</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>studyId</strong> &#8211; study to associate file to</li>
+<li><strong>uri</strong> &#8211; full path to file on file system</li>
+<li><strong>path</strong> &#8211; path in the DB</li>
+<li><strong>description</strong> &#8211; Folder description</li>
+<li><strong>parents</strong> &#8211; True/False</li>
+<li><strong>calculateChecksum</strong> &#8211; True/Flase</li>
+<li><strong>createFolder</strong> &#8211; True/False If true will create the folder before to link the file</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Files.list">
+<code class="descname">list</code><span class="sig-paren">(</span><em>fileId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Files.list" title="Permalink to this definition">¶</a></dt>
+<dd><p>list a file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fileId</strong> &#8211; file Id</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Files.refresh">
+<code class="descname">refresh</code><span class="sig-paren">(</span><em>fileId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Files.refresh" title="Permalink to this definition">¶</a></dt>
+<dd><p>refresh metatadata from a file or folder - returns updated files</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>fileId</strong> &#8211; File If</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Files.relink">
+<code class="descname">relink</code><span class="sig-paren">(</span><em>fileId</em>, <em>uri</em>, <em>calculateChecksum=False</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Files.relink" title="Permalink to this definition">¶</a></dt>
+<dd><p>method to relink (move a file)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>fileId</strong> &#8211; Id of file</li>
+<li><strong>uri</strong> &#8211; new path to file on filesystem</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Files.search">
+<code class="descname">search</code><span class="sig-paren">(</span><em>studyId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Files.search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to search files based in a dictionary &#8220;options&#8221;</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>studyId</strong> &#8211; study id</li>
+<li><strong>options</strong> &#8211; Kargs where the keys are the name of the file properties used to search.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Files.set_header">
+<code class="descname">set_header</code><span class="sig-paren">(</span><em>fileId</em>, <em>header</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Files.set_header" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the header of a file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>fileId</strong> &#8211; file Id</li>
+<li><strong>header</strong> &#8211; new header</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Files.share">
+<code class="descname">share</code><span class="sig-paren">(</span><em>userId</em>, <em>fileId</em>, <em>read=True</em>, <em>write=False</em>, <em>delete=False</em>, <em>unshare=False</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Files.share" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to share files</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>userId</strong> &#8211; id of the user this file will be shared</li>
+<li><strong>fileId</strong> &#8211; File id - Notice this is the internal id in Catalog</li>
+<li><strong>read</strong> &#8211; True/False - If True the user could read the file</li>
+<li><strong>write</strong> &#8211; True/False - If True the user could write the file</li>
+<li><strong>delete</strong> &#8211; True/False - If True the user could delete the file</li>
+<li><strong>unshare</strong> &#8211; True/False - If True the file will be unshared for this user</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Files.update">
+<code class="descname">update</code><span class="sig-paren">(</span><em>fileId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Files.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to update the a file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>fileId</strong> &#8211; id of file</li>
+<li><strong>options</strong> &#8211; Kargs where the keys are the name of the file properties and the values the new values for those</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>properties.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Files.update_file_post">
+<code class="descname">update_file_post</code><span class="sig-paren">(</span><em>fileId</em>, <em>json_file=None</em>, <em>data=None</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Files.update_file_post" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to update the sampleId of a file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>json_file</strong> &#8211; </li>
+<li><strong>fileId</strong> &#8211; id of file</li>
+<li><strong>sampleId</strong> &#8211; id os sample</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Files.variants">
+<code class="descname">variants</code><span class="sig-paren">(</span><em>fileId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Files.variants" title="Permalink to this definition">¶</a></dt>
+<dd><p>get variants from a vcf or gvcf file</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>options</strong> &#8211; Options to select the variants</li>
+<li><strong>fileId</strong> &#8211; file Id</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="CatalogWS.Jobs">
+<em class="property">class </em><code class="descclassname">CatalogWS.</code><code class="descname">Jobs</code><span class="sig-paren">(</span><em>token=None</em>, <em>version='v1'</em>, <em>instance='opencga'</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Jobs" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class contains method for jobs ws (i.e, create, info)</p>
+<dl class="method">
+<dt id="CatalogWS.Jobs.create">
+<code class="descname">create</code><span class="sig-paren">(</span><em>studyId</em>, <em>name</em>, <em>toolId</em>, <em>jobId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Jobs.create" title="Permalink to this definition">¶</a></dt>
+<dd><p>create a job</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>studyId</strong> &#8211; </li>
+<li><strong>name</strong> &#8211; </li>
+<li><strong>toolId</strong> &#8211; </li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Jobs.create_post">
+<code class="descname">create_post</code><span class="sig-paren">(</span><em>studyId</em>, <em>json_file=None</em>, <em>data=None</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Jobs.create_post" title="Permalink to this definition">¶</a></dt>
+<dd><p>post method - so needs a json input file or data</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Jobs.delete">
+<code class="descname">delete</code><span class="sig-paren">(</span><em>jobId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Jobs.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>delete a job</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>jobId</strong> &#8211; </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Jobs.info">
+<code class="descname">info</code><span class="sig-paren">(</span><em>jobId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Jobs.info" title="Permalink to this definition">¶</a></dt>
+<dd><p>delete a job</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>jobId</strong> &#8211; </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Jobs.visit">
+<code class="descname">visit</code><span class="sig-paren">(</span><em>jobId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Jobs.visit" title="Permalink to this definition">¶</a></dt>
+<dd><p>visit a job</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>jobId</strong> &#8211; </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="CatalogWS.Projects">
+<em class="property">class </em><code class="descclassname">CatalogWS.</code><code class="descname">Projects</code><span class="sig-paren">(</span><em>token=None</em>, <em>version='v1'</em>, <em>instance='opencga'</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Projects" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class contains method for projects ws (i.e, create, files, info)</p>
+<dl class="method">
+<dt id="CatalogWS.Projects.create">
+<code class="descname">create</code><span class="sig-paren">(</span><em>userId</em>, <em>name</em>, <em>alias</em>, <em>description</em>, <em>organization</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Projects.create" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>userId</strong> &#8211; </li>
+<li><strong>name</strong> &#8211; </li>
+<li><strong>alias</strong> &#8211; </li>
+<li><strong>description</strong> &#8211; </li>
+<li><strong>organization</strong> &#8211; </li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Projects.delete">
+<code class="descname">delete</code><span class="sig-paren">(</span><em>projectId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Projects.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>deletes a project</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>projectId</strong> &#8211; </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Projects.info">
+<code class="descname">info</code><span class="sig-paren">(</span><em>projectId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Projects.info" title="Permalink to this definition">¶</a></dt>
+<dd><p>method to get project information</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>projectId</strong> &#8211; </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Projects.studies">
+<code class="descname">studies</code><span class="sig-paren">(</span><em>projectId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Projects.studies" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns information on studies contained in the project</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>projectId</strong> &#8211; </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Projects.update">
+<code class="descname">update</code><span class="sig-paren">(</span><em>projectId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Projects.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>updates a project</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> &#8211; </li>
+<li><strong>description</strong> &#8211; </li>
+<li><strong>organization</strong> &#8211; </li>
+<li><strong>status</strong> &#8211; </li>
+<li><strong>attributes</strong> &#8211; </li>
+<li><strong>projectId</strong> &#8211; </li>
+<li><strong>sid</strong> &#8211; </li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="CatalogWS.Studies">
+<em class="property">class </em><code class="descclassname">CatalogWS.</code><code class="descname">Studies</code><span class="sig-paren">(</span><em>token=None</em>, <em>version='v1'</em>, <em>instance='opencga'</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Studies" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class contains method for studies ws (i.e, status, files, info)</p>
+<dl class="method">
+<dt id="CatalogWS.Studies.alignments">
+<code class="descname">alignments</code><span class="sig-paren">(</span><em>studyId</em>, <em>**filters</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Studies.alignments" title="Permalink to this definition">¶</a></dt>
+<dd><p>method to get study alignments</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>filters</strong> &#8211; All the filters will be applied to the variant fetch</li>
+<li><strong>studyId</strong> &#8211; StudyID</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Studies.create">
+<code class="descname">create</code><span class="sig-paren">(</span><em>projectId</em>, <em>name</em>, <em>alias</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Studies.create" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>projectId</strong> &#8211; </li>
+<li><strong>name</strong> &#8211; </li>
+<li><strong>alias</strong> &#8211; </li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Studies.delete">
+<code class="descname">delete</code><span class="sig-paren">(</span><em>studyId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Studies.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>method to get delete study</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>studyId</strong> &#8211; </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Studies.files">
+<code class="descname">files</code><span class="sig-paren">(</span><em>studyId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Studies.files" title="Permalink to this definition">¶</a></dt>
+<dd><p>method to get study files</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>studyId</strong> &#8211; </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Studies.info">
+<code class="descname">info</code><span class="sig-paren">(</span><em>studyId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Studies.info" title="Permalink to this definition">¶</a></dt>
+<dd><p>method to get study info</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>studyId</strong> &#8211; </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Studies.jobs">
+<code class="descname">jobs</code><span class="sig-paren">(</span><em>studyId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Studies.jobs" title="Permalink to this definition">¶</a></dt>
+<dd><p>method to get study jobs</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>studyId</strong> &#8211; </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Studies.samples">
+<code class="descname">samples</code><span class="sig-paren">(</span><em>studyId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Studies.samples" title="Permalink to this definition">¶</a></dt>
+<dd><p>method to get study samples</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>studyId</strong> &#8211; </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Studies.search">
+<code class="descname">search</code><span class="sig-paren">(</span><em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Studies.search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to search studies based in a dictionary &#8220;options&#8221;</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>options</strong> &#8211; Kargs where the keys are the name of the file properties used to search.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Studies.status">
+<code class="descname">status</code><span class="sig-paren">(</span><em>studyId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Studies.status" title="Permalink to this definition">¶</a></dt>
+<dd><p>method to get study status</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>studyId</strong> &#8211; </td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Studies.update">
+<code class="descname">update</code><span class="sig-paren">(</span><em>projectId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Studies.update" title="Permalink to this definition">¶</a></dt>
+<dd><p>updates a study</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>projectId</strong> &#8211; </li>
+<li><strong>options</strong> &#8211; </li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Studies.variants">
+<code class="descname">variants</code><span class="sig-paren">(</span><em>studyId</em>, <em>**filters</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Studies.variants" title="Permalink to this definition">¶</a></dt>
+<dd><p>method to get study variants</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>filters</strong> &#8211; All the filters will be applied to the variant fetch</li>
+<li><strong>studyId</strong> &#8211; StudyID</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="CatalogWS.Users">
+<em class="property">class </em><code class="descclassname">CatalogWS.</code><code class="descname">Users</code><span class="sig-paren">(</span><em>token=None</em>, <em>version='v1'</em>, <em>instance='opencga'</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Users" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class contains method for users ws (i.e, login, logout, create new user...)</p>
+<dl class="method">
+<dt id="CatalogWS.Users.change_email">
+<code class="descname">change_email</code><span class="sig-paren">(</span><em>userId</em>, <em>nemail</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Users.change_email" title="Permalink to this definition">¶</a></dt>
+<dd><p>method to change email</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>sid</strong> &#8211; session id</li>
+<li><strong>nemail</strong> &#8211; new email</li>
+<li><strong>userId</strong> &#8211; user id</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Users.change_password">
+<code class="descname">change_password</code><span class="sig-paren">(</span><em>userId</em>, <em>password</em>, <em>new_password</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Users.change_password" title="Permalink to this definition">¶</a></dt>
+<dd><p>method to change password</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>userId</strong> &#8211; user ID</li>
+<li><strong>password</strong> &#8211; Old password</li>
+<li><strong>new_password</strong> &#8211; New password</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Users.create_user">
+<code class="descname">create_user</code><span class="sig-paren">(</span><em>userId</em>, <em>name</em>, <em>email</em>, <em>organization</em>, <em>password</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Users.create_user" title="Permalink to this definition">¶</a></dt>
+<dd><p>method to create a user</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>userId</strong> &#8211; user id</li>
+<li><strong>name</strong> &#8211; name</li>
+<li><strong>email</strong> &#8211; email</li>
+<li><strong>organization</strong> &#8211; organization name</li>
+<li><strong>password</strong> &#8211; user password</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Users.delete">
+<code class="descname">delete</code><span class="sig-paren">(</span><em>userId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Users.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>method to delete user</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>userId</strong> &#8211; user id</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Users.login_method">
+<code class="descname">login_method</code><span class="sig-paren">(</span><em>userId</em>, <em>pwd</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Users.login_method" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the method for login</p>
+<p>:rtype : list of dict
+:param userId: user id
+:param pwd: password for the user</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Users.logout_method">
+<code class="descname">logout_method</code><span class="sig-paren">(</span><em>userId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Users.logout_method" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method logout the user</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>userId</strong> &#8211; user id</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Users.reset_password">
+<code class="descname">reset_password</code><span class="sig-paren">(</span><em>userId</em>, <em>email</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Users.reset_password" title="Permalink to this definition">¶</a></dt>
+<dd><p>method to reset password - CURRENTLY MAIL SERVER IS NOT WORKING</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>userId</strong> &#8211; user ID</li>
+<li><strong>email</strong> &#8211; User email to receive the new password</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="CatalogWS.Variables">
+<em class="property">class </em><code class="descclassname">CatalogWS.</code><code class="descname">Variables</code><span class="sig-paren">(</span><em>token=None</em>, <em>version='v1'</em>, <em>instance='opencga'</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Variables" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class to query variables</p>
+<dl class="method">
+<dt id="CatalogWS.Variables.create">
+<code class="descname">create</code><span class="sig-paren">(</span><em>studyId</em>, <em>name</em>, <em>json_file=None</em>, <em>data=None</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Variables.create" title="Permalink to this definition">¶</a></dt>
+<dd><p>This create a VariableSet using a json file, with the format is defined by opencga (this is a post method)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>studyId</strong> &#8211; </li>
+<li><strong>json_file</strong> &#8211; </li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Variables.delete">
+<code class="descname">delete</code><span class="sig-paren">(</span><em>variable_set_id</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Variables.delete" title="Permalink to this definition">¶</a></dt>
+<dd><p>This delete one VariableSet given a variableSetId</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>variable_set_id</strong> &#8211; Variable Set Id</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="CatalogWS.Variables.search">
+<code class="descname">search</code><span class="sig-paren">(</span><em>studyId</em>, <em>**options</em><span class="sig-paren">)</span><a class="headerlink" href="#CatalogWS.Variables.search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Method to search Variable Sets based in a dictionary &#8220;options&#8221;</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>variable_set_id</strong> &#8211; Variable Set Id</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
 </div>
 
 
+           </div>
           </div>
           <footer>
   
@@ -170,9 +1048,10 @@
   <div role="contentinfo">
     <p>
         &copy; Copyright 2015, Antonio Rueda, Mathew Parker, Razvan Sultana.
+
     </p>
   </div>
-  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
 
 </footer>
 
@@ -190,7 +1069,7 @@
     <script type="text/javascript">
         var DOCUMENTATION_OPTIONS = {
             URL_ROOT:'./',
-            VERSION:'0.1.0',
+            VERSION:'0.2.0',
             COLLAPSE_INDEX:false,
             FILE_SUFFIX:'.html',
             HAS_SOURCE:  true

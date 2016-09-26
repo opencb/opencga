@@ -45,6 +45,10 @@ public class StudyConfiguration {
     private Map<Integer, Set<Integer>> cohorts;
 
     private LinkedHashSet<Integer> indexedFiles;    //Use LinkedHashSet instead of Set to ensure indexing order
+    @Deprecated
+    /**
+     * @deprecated Read from variant source. Use VariantSourceDBAdaptor or similar.
+     */
     private Map<Integer, String> headers;
     private Map<Integer, LinkedHashSet<Integer>> samplesInFiles; //Use LinkedHashSet instead of Set to ensure sample order
     private Set<Integer> calculatedStats;
@@ -140,7 +144,15 @@ public class StudyConfiguration {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
+        return toString(ToStringStyle.SIMPLE_STYLE);
+    }
+
+    public String toJson() {
+        return toString(ToStringStyle.JSON_STYLE);
+    }
+
+    public String toString(ToStringStyle style) {
+        return new ToStringBuilder(this, style)
                 .append("studyId", studyId)
                 .append("studyName", studyName)
                 .append("fileIds", fileIds)

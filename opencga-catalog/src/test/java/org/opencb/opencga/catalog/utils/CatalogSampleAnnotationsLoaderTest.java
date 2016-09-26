@@ -70,7 +70,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         Project project = catalogManager.createProject("default", "def", "", "ACME", null, sessionId).getResult().get(0);
         Study study = catalogManager.createStudy(project.getId(), "default", "def", Study.Type.FAMILY, "", sessionId).getResult().get(0);
         studyId = study.getId();
-        pedFile = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.OTHER_PED, "data/" + pedFileName, "", false, -1,
+        pedFile = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.OTHER_PED, "data/" + pedFileName, "", true, -1,
                 sessionId).getResult().get(0);
         new CatalogFileUtils(catalogManager).upload(pedFileURL.toURI(), pedFile, null, sessionId, false, false, false, true, 10000000);
         pedFile = catalogManager.getFile(pedFile.getId(), sessionId).getResult().get(0);

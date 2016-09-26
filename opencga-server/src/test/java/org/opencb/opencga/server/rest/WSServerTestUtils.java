@@ -25,7 +25,7 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
+import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.CatalogManagerTest;
@@ -50,6 +50,7 @@ public class WSServerTestUtils {
 
     private Server server;
     private String restURL;
+    private Path configDir;
     public static final int PORT = 8889;
     public static final String DATABASE_PREFIX = "opencga_server_test_";
     private CatalogManagerExternalResource catalogManagerResource;
@@ -68,17 +69,22 @@ public class WSServerTestUtils {
     public void initServer() throws Exception {
 
         ResourceConfig resourceConfig = new ResourceConfig();
-        resourceConfig.packages(false, "org.opencb.opencga.server.ws");
+        resourceConfig.packages(false, "org.opencb.opencga.server.rest");
         resourceConfig.property("jersey.config.server.provider.packages", "org.opencb.opencga.server.ws;io.swagger.jersey.listing;com.jersey.jaxb;com.fasterxml.jackson.jaxrs.json");
         resourceConfig.property("jersey.config.server.provider.classnames", "org.glassfish.jersey.media.multipart.MultiPartFeature");
 
+        // Registering MultiPart class for POST forms
+        resourceConfig.register(MultiPartFeature.class);
+
         ServletContainer sc = new ServletContainer(resourceConfig);
-        ServletHolder sh = new ServletHolder(sc);
+        ServletHolder sh = new ServletHolder("opencga", sc);
 
         server = new Server(PORT);
 
         ServletContextHandler context = new ServletContextHandler(server, null, ServletContextHandler.SESSIONS);
         context.addServlet(sh, "/opencga/webservices/rest/*");
+
+        context.setInitParameter("config-dir", configDir.toFile().toString());
 
         System.err.println("Starting server");
         server.start();
@@ -106,6 +112,7 @@ public class WSServerTestUtils {
     public void setUp() throws Exception {
         //Create test environment. Override OpenCGA_Home
         Path opencgaHome = Paths.get("/tmp/opencga-server-test");
+        configDir = opencgaHome.resolve("conf");
         System.setProperty("app.home", opencgaHome.toString());
         Config.setOpenCGAHome(opencgaHome.toString());
 
@@ -117,7 +124,7 @@ public class WSServerTestUtils {
         catalogManagerResource = catalogManagerTest.catalogManagerResource;
         catalogManagerResource.before();
 
-        catalogManagerResource.getCatalogConfiguration().serialize(new FileOutputStream(opencgaHome.resolve("conf").resolve("catalog-configuration.yml").toFile()));
+        catalogManagerResource.getCatalogConfiguration().serialize(new FileOutputStream(configDir.resolve("catalog-configuration.yml").toFile()));
         InputStream inputStream = new ByteArrayInputStream((ExecutorManager.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
                 AnalysisFileIndexer.OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX + "=" + DATABASE_PREFIX).getBytes());
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);

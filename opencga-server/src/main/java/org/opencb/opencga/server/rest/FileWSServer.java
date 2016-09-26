@@ -17,29 +17,31 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
-import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import javax.servlet.http.HttpServletRequest;
@@ -52,6 +54,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.*;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
@@ -114,7 +117,7 @@ public class FileWSServer extends OpenCGAWSServer {
         for (File file : files) {
             try {
                 QueryResult<File> fileQueryResult = catalogManager.createFile(studyId, file.getType(), file.getFormat(),
-                        file.getBioformat(), file.getPath(), file.getOwnerId(), file.getCreationDate(),
+                        file.getBioformat(), file.getPath(), file.getCreationDate(),
                         file.getDescription(), new File.FileStatus(file.getStatus().getName()), file.getDiskUsage(), file.getExperimentId(),
                         file.getSampleIds(), file.getJobId(), file.getStats(), file.getAttributes(), true, queryOptions, sessionId);
 //                file = fileQueryResult.getResult().get(0);
@@ -132,14 +135,23 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/create-folder")
     @ApiOperation(value = "Create a folder in the catalog environment", position = 2, response = File.class)
     public Response createFolder(@ApiParam(value = "Study id", required = true) @QueryParam("studyId") String studyIdStr,
-                                 @ApiParam(value = "Path where the folder is to be created", required = true) @QueryParam("folder") String folder,
+                                 @ApiParam(value = "CSV list of paths where the folders will be created", required = true) @QueryParam("folders") String folders,
                                  @ApiParam(value = "Create the parent directories if they do not exist", required = false)
                                  @QueryParam("parents") @DefaultValue("false") boolean parents) {
         try {
-            java.nio.file.Path folderPath = Paths.get(folder);
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
-            QueryResult queryResult = catalogManager.createFolder(studyId, folderPath, parents, queryOptions, sessionId);
-            return createOkResponse(queryResult);
+            List<String> folderList = convertPathList(folders, sessionId);
+
+            List<QueryResult> queryResultList = new ArrayList<>(folderList.size());
+            for (String folder : folderList) {
+                try {
+                    java.nio.file.Path folderPath = Paths.get(convertPath(folder, sessionId));
+                    queryResultList.add(catalogManager.createFolder(studyId, folderPath, parents, queryOptions, sessionId));
+                } catch (CatalogException e) {
+                    queryResultList.add(new QueryResult<>("Create folder", -1, 0, 0, "", e.getMessage(), Collections.emptyList()));
+                }
+            }
+            return createOkResponse(queryResultList);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -155,7 +167,8 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response info(@ApiParam(value="Comma separated list of file ids") @PathParam(value = "fileIds") String fileStr) {
         try {
             List<QueryResult<File>> queryResults = new LinkedList<>();
-            List<Long> fileIds = catalogManager.getFileIds(fileStr, sessionId);
+            List<String> strings = convertPathList(fileStr, sessionId);
+            List<Long> fileIds = catalogManager.getFileIds(StringUtils.join(strings.toArray(), ","), sessionId);
             for (Long fileId : fileIds) {
                 queryResults.add(catalogManager.getFile(fileId, queryOptions, sessionId));
             }
@@ -202,7 +215,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
                                 @ApiParam(value = "filename", required = false) @FormDataParam("filename") String filename,
                                 @ApiParam(value = "fileFormat", required = true) @DefaultValue("") @FormDataParam("fileFormat") String fileFormat,
-                                @ApiParam(value = "bioFormat", required = true) @DefaultValue("") @FormDataParam("bioFormat") String bioFormat,
+                                @ApiParam(value = "bioformat", required = true) @DefaultValue("") @FormDataParam("bioformat") String bioformat,
 //                                @ApiParam(value = "userId", required = true) @DefaultValue("") @FormDataParam("userId") String userId,
 //                                @ApiParam(defaultValue = "projectId", required = true) @DefaultValue("") @FormDataParam("projectId") String projectId,
                                 @ApiParam(value = "studyId", required = true) @FormDataParam("studyId") String studyIdStr,
@@ -293,7 +306,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     }
                     IOUtils.deleteDirectory(folderPath);
                     try {
-                        QueryResult<File> queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()), File.Bioformat.valueOf(bioFormat.toUpperCase()), relativeFilePath, completedFilePath.toUri(), description, parents, sessionId);
+                        QueryResult<File> queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()), File.Bioformat.valueOf(bioformat.toUpperCase()), relativeFilePath, completedFilePath.toUri(), description, parents, sessionId);
                         File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null, new QueryOptions(queryOptions), sessionId, false);
                         queryResult.setResult(Collections.singletonList(file));
                         return createOkResponse(queryResult);
@@ -376,7 +389,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
                 // Register the file and move it to the proper directory
                 QueryResult<File> queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()),
-                        File.Bioformat.valueOf(bioFormat.toUpperCase()), destinationPath, tempFilePath.toUri(), description, parents,
+                        File.Bioformat.valueOf(bioformat.toUpperCase()), destinationPath, tempFilePath.toUri(), description, parents,
                         sessionId);
                 File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null,
                         new QueryOptions(queryOptions), sessionId, false);
@@ -405,7 +418,7 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response download(@ApiParam(value = "File id") @PathParam("fileId") String fileIdStr) {
         try {
             DataInputStream stream;
-            long fileId = catalogManager.getFileId(fileIdStr, sessionId);
+            long fileId = catalogManager.getFileId(convertPath(fileIdStr, sessionId), sessionId);
             QueryResult<File> queryResult = catalogManager.getFile(fileId, this.queryOptions, sessionId);
             File file = queryResult.getResult().get(0);
             stream = catalogManager.downloadFile(fileId, sessionId);
@@ -423,7 +436,7 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "start", required = false) @QueryParam("start") @DefaultValue("-1") int start,
                             @ApiParam(value = "limit", required = false) @QueryParam("limit") @DefaultValue("-1") int limit) {
         try {
-            long fileId = catalogManager.getFileId(fileIdStr, sessionId);
+            long fileId = catalogManager.getFileId(convertPath(fileIdStr, sessionId), sessionId);
             DataInputStream stream = catalogManager.downloadFile(fileId, start, limit, sessionId);
 //             String content = org.apache.commons.io.IOUtils.toString(stream);
             return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
@@ -441,7 +454,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Do a case insensitive search", required = false) @QueryParam("ignoreCase") @DefaultValue("false") Boolean ignoreCase,
             @ApiParam(value = "Return multiple matches", required = false) @QueryParam("multi") @DefaultValue("true") Boolean multi) {
         try {
-            long fileId = catalogManager.getFileId(fileIdStr, sessionId);
+            long fileId = catalogManager.getFileId(convertPath(fileIdStr, sessionId), sessionId);
             DataInputStream stream = catalogManager.grepFile(fileId, pattern, ignoreCase, multi, sessionId);
 //             String content = org.apache.commons.io.IOUtils.toString(stream);
             return createOkResponse(stream, MediaType.TEXT_PLAIN_TYPE);
@@ -462,7 +475,7 @@ public class FileWSServer extends OpenCGAWSServer {
         InputStream streamBody = null;
 //        System.out.println("header: "+header);
         try {
-            long fileId = catalogManager.getFileId(fileStr, sessionId);
+            long fileId = catalogManager.getFileId(convertPath(fileStr, sessionId), sessionId);
             /** Obtain file uri **/
             File file = catalogManager.getFile(fileId, sessionId).getResult().get(0);
             URI fileUri = catalogManager.getFileUri(file);
@@ -507,7 +520,7 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response getAllFilesInFolder(@PathParam(value = "folderId") @FormDataParam("folderId") String folderIdStr) {
         QueryResult<File> results;
         try {
-            long folderId = catalogManager.getFileId(folderIdStr, sessionId);
+            long folderId = catalogManager.getFileId(convertPath(folderIdStr, sessionId), sessionId);
             results = catalogManager.getAllFilesInFolder(folderId, queryOptions, sessionId);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -536,7 +549,6 @@ public class FileWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Comma separated Format values. For existing Formats see files/help", required = false) @DefaultValue("") @QueryParam("format") String formats,
                            @ApiParam(value = "Status", required = false) @DefaultValue("") @QueryParam("status") String status,
                            @ApiParam(value = "Directory under which we want to look for files or folders", required = false) @DefaultValue("") @QueryParam("directory") String directory,
-                           @Deprecated @ApiParam(value = "ownerId", required = false) @DefaultValue("") @QueryParam("ownerId") String ownerId,
                            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)", required = false) @DefaultValue("") @QueryParam("creationDate") String creationDate,
                            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss)", required = false) @DefaultValue("") @QueryParam("modificationDate") String modificationDate,
                            @ApiParam(value = "Description", required = false) @DefaultValue("") @QueryParam("description") String description,
@@ -550,12 +562,12 @@ public class FileWSServer extends OpenCGAWSServer {
             // TODO this must be changed: only one queryOptions need to be passed
             Query query = new Query();
             QueryOptions qOptions = new QueryOptions(this.queryOptions);
-            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, query, qOptions);
+            parseQueryParams(params, FileDBAdaptor.QueryParams::getParam, query, qOptions);
 
-            if (query.containsKey(CatalogFileDBAdaptor.QueryParams.NAME.key())
-                    && (query.get(CatalogFileDBAdaptor.QueryParams.NAME.key()) == null
-                    || query.getString(CatalogFileDBAdaptor.QueryParams.NAME.key()).isEmpty())) {
-                query.remove(CatalogFileDBAdaptor.QueryParams.NAME.key());
+            if (query.containsKey(FileDBAdaptor.QueryParams.NAME.key())
+                    && (query.get(FileDBAdaptor.QueryParams.NAME.key()) == null
+                    || query.getString(FileDBAdaptor.QueryParams.NAME.key()).isEmpty())) {
+                query.remove(FileDBAdaptor.QueryParams.NAME.key());
                 logger.debug("Name attribute empty, it's been removed");
             }
 
@@ -583,7 +595,7 @@ public class FileWSServer extends OpenCGAWSServer {
     })
     public Response list(@ApiParam(value = "Folder id") @PathParam("folderId") String folderId) {
         try {
-            long fileIdNum = catalogManager.getFileId(folderId, sessionId);
+            long fileIdNum = catalogManager.getFileId(convertPath(folderId, sessionId), sessionId);
             QueryResult result = catalogManager.getAllFilesInFolder(fileIdNum, this.queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -593,26 +605,67 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{fileId}/index")
-    @ApiOperation(value = "Index a file", position = 14, response = QueryResponse.class)
-    public Response index(@ApiParam("File id") @PathParam(value = "fileId") @DefaultValue("") String fileIdStr,
-                          @ApiParam("Output directory id") @DefaultValue("-1") @QueryParam("outdir") String outDirStr,
-                          @ApiParam("Annotate variants") @DefaultValue("true") @QueryParam("annotate") boolean annotate,
-                          @ApiParam("Calculate stats") @DefaultValue("true") @QueryParam("calculateStats") boolean calculateStats) {
-        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
+    @ApiOperation(value = "Index variant files", position = 14, response = QueryResponse.class)
+    public Response index(@ApiParam("Comma separated list of file ids (files or directories)") @PathParam(value = "fileId") String fileIdStr,
+                          @ApiParam("Study id") @QueryParam("studyId") String studyId,
+                          @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr,
+                          @ApiParam("Boolean indicating that only the transform step will be run") @DefaultValue("false") @QueryParam("transform") boolean transform,
+                          @ApiParam("Boolean indicating that only the load step will be run") @DefaultValue("false") @QueryParam("load") boolean load,
+                          @ApiParam("Comma separated list of fields to be include in the index") @QueryParam("includeExtraFields") String includeExtraFields,
+                          @ApiParam("Type of aggregated VCF file: none, basic, EVS or ExAC") @DefaultValue("none") @QueryParam("aggregated") String aggregated,
+                          @ApiParam("Calculate indexed variants statistics after the load step") @DefaultValue("false") @QueryParam("calculateStats") boolean calculateStats,
+                          @ApiParam("Annotate indexed variants after the load step") @DefaultValue("false") @QueryParam("annotate") boolean annotate,
+                          @ApiParam("Overwrite annotations already present in variants") @DefaultValue("false") @QueryParam("overwrite") boolean overwriteAnnotations) {
+
+        Map<String, String> params = new LinkedHashMap<>();
+        addParamIfNotNull(params, "studyId", studyId);
+        addParamIfNotNull(params, "outdir", outDirStr);
+        addParamIfTrue(params, "transform", transform);
+        addParamIfTrue(params, "load", load);
+        addParamIfNotNull(params, "include-extra-fields", includeExtraFields);
+        addParamIfNotNull(params, "aggregated", aggregated);
+        addParamIfTrue(params, "calculate-stats", calculateStats);
+        addParamIfTrue(params, "annotate", annotate);
+        addParamIfTrue(params, "overwrite-annotations", overwriteAnnotations);
+
+        logger.info("ObjectMap: {}", params);
 
         try {
-            long outDirId = catalogManager.getFileId(outDirStr, sessionId);
-            long fileId = catalogManager.getFileId(fileIdStr, sessionId);
-            if(outDirId < 0) {
-                outDirId = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
-            }
-            // TODO: Change it to query
-            queryOptions.add(VariantStorageManager.Options.CALCULATE_STATS.key(), calculateStats);
-            queryOptions.add(VariantStorageManager.Options.ANNOTATE.key(), annotate);
-            QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outDirId, sessionId, new QueryOptions(queryOptions));
+            List<String> fileIds = convertPathList(fileIdStr, sessionId);
+            QueryResult queryResult = catalogManager.getFileManager().index(StringUtils.join(fileIds, ","), "VCF", params, sessionId);
             return createOkResponse(queryResult);
-        } catch (Exception e) {
+        } catch(Exception e) {
             return createErrorResponse(e);
+        }
+
+
+//        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
+//
+//        try {
+//            long outDirId = catalogManager.getFileId(outDirStr, sessionId);
+//            long fileId = catalogManager.getFileId(fileIdStr, sessionId);
+//            if(outDirId < 0) {
+//                outDirId = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
+//            }
+//            // TODO: Change it to query
+//            queryOptions.add(VariantStorageManager.Options.CALCULATE_STATS.key(), calculateStats);
+//            queryOptions.add(VariantStorageManager.Options.ANNOTATE.key(), annotate);
+//            QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outDirId, sessionId, new QueryOptions(queryOptions));
+//            return createOkResponse(queryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+    }
+
+    private void addParamIfNotNull(Map<String, String> params, String key, String value) {
+        if (key != null && value != null) {
+            params.put(key, value);
+        }
+    }
+
+    private void addParamIfTrue(Map<String, String> params, String key, boolean value) {
+        if (key != null && value) {
+            params.put(key, Boolean.toString(value));
         }
     }
 
@@ -640,8 +693,8 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             Query query = new Query();
             QueryOptions qOptions = new QueryOptions(this.queryOptions);
-            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, query, qOptions);
-            QueryResult result = catalogManager.getFileManager().getFileTree(folderId, query, qOptions, maxDepth, sessionId);
+            parseQueryParams(params, FileDBAdaptor.QueryParams::getParam, query, qOptions);
+            QueryResult result = catalogManager.getFileManager().getTree(convertPath(folderId, sessionId), query, qOptions, maxDepth, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -698,7 +751,7 @@ public class FileWSServer extends OpenCGAWSServer {
             ObjectMap indexAttributes = new ObjectMap(file.getIndex().getAttributes());
             DataStore dataStore = null;
             try {
-                dataStore = AnalysisFileIndexer.getDataStore(catalogManager, catalogManager.getStudyIdByFileId(file.getId()), file.getBioformat(), sessionId);
+                dataStore = AbstractFileIndexer.getDataStore(catalogManager, catalogManager.getStudyIdByFileId(file.getId()), file.getBioformat(), sessionId);
             } catch (CatalogException e) {
                 e.printStackTrace();
                 return createErrorResponse(e);
@@ -884,8 +937,9 @@ public class FileWSServer extends OpenCGAWSServer {
         List<QueryResult> results = new LinkedList<>();
         try {
             VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
-            String[] splitFileId = fileIdCsv.split(",");
-            for (String fileId : splitFileId) {
+            List<String> fileIds = convertPathList(fileIdCsv, sessionId);
+//            String[] splitFileId = fileIdCsv.split(",");
+            for (String fileId : fileIds) {
                 QueryResult result;
                 result = variantFetcher.getVariantsPerFile(region, histogram, groupBy, interval, fileId, sessionId, queryOptions);
                 results.add(result);
@@ -946,17 +1000,32 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{fileId}/update")
     @ApiOperation(value = "Update fields of a file", position = 16, response = File.class)
-    public Response update(@ApiParam(value = "File id") @PathParam(value = "fileId") String fileIdStr) {
+    public Response update(@ApiParam(value = "File id") @PathParam(value = "fileId") String fileIdStr,
+                           @ApiParam(value = "File name", required = false) @QueryParam("name") String name,
+                           @ApiParam(value = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)", required = false) @DefaultValue("") @QueryParam("format") String format,
+                           @ApiParam(value = "Bioformat of the file (VARIANT, ALIGNMENT, SEQUENCE, PEDIGREE...NONE)", required = false) @DefaultValue("") @QueryParam("bioformat") String bioformat,
+                           @ApiParam(value = "Description of the file", required = false) @QueryParam("description") String description,
+                           @ApiParam(value = "Attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
+                           @ApiParam(value = "Stats", required = false) @DefaultValue("") @QueryParam("stats") String stats,
+                           @ApiParam(value = "Sample ids", required = false) @DefaultValue("") @QueryParam("sampleIds") String sampleIds,
+                           @ApiParam(value = "Job id", required = false) @DefaultValue("") @QueryParam("jobId") String jobId,
+                           @ApiParam(value = "Path", required = false) @DefaultValue("") @QueryParam("path") String path) {
         try {
-            ObjectMap parameters = new ObjectMap();
-            for (String param : params.keySet()) {
-                if (param.equalsIgnoreCase("sid"))
-                    continue;
-                String value = params.get(param).get(0);
-                parameters.put(param, value);
-            }
-            long fileId = catalogManager.getFileId(fileIdStr, sessionId);
-            QueryResult queryResult = catalogManager.modifyFile(fileId, parameters, sessionId);
+            /*ObjectMap parameters = new ObjectMap();
+            QueryOptions qOptions = new QueryOptions();
+            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, parameters, qOptions);*/
+            ObjectMap params = new ObjectMap();
+            params.putIfNotEmpty("name", name);
+            params.putIfNotEmpty("format", format);
+            params.putIfNotEmpty("bioformat", bioformat);
+            params.putIfNotEmpty("description", description);
+            params.putIfNotEmpty("attributes", attributes);
+            params.putIfNotEmpty("stats", stats);
+            params.putIfNotEmpty("sampleIds", sampleIds);
+            params.putIfNotEmpty("jobId", jobId);
+            params.putIfNotEmpty("path", path);
+            long fileId = catalogManager.getFileId(convertPath(fileIdStr, sessionId), sessionId);
+            QueryResult queryResult = catalogManager.getFileManager().update(fileId, params, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -986,8 +1055,9 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response updatePOST(@ApiParam(value = "File id") @PathParam(value = "fileId") String fileIdStr,
                                @ApiParam(name = "params", value = "Parameters to modify", required = true) UpdateFile params) {
         try {
-            long fileId = catalogManager.getFileId(fileIdStr, sessionId);
-            QueryResult queryResult = catalogManager.modifyFile(fileId, new ObjectMap(jsonObjectMapper.writeValueAsString(params)), sessionId);
+            long fileId = catalogManager.getFileId(convertPath(fileIdStr, sessionId), sessionId);
+            QueryResult<File> queryResult = catalogManager.getFileManager().update(fileId,
+                    new ObjectMap(jsonObjectMapper.writeValueAsString(params)), queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1021,33 +1091,50 @@ public class FileWSServer extends OpenCGAWSServer {
 //        }
 //    }
 
-//    @GET
-//    @Path("/link")
-//    @ApiOperation(value = "Link an external file into catalog.", position = 19, response = QueryResponse.class)
-//    public Response link(@ApiParam(value = "Uri of the file", required = true) @QueryParam("uri") String uriStr,
-//                         @ApiParam(value = "Study id", required = true) @QueryParam("studyId") String studyIdStr,
-//                         @ApiParam(value = "Path where the external file will be allocated in catalog", required = true) @QueryParam("path") String path,
-//                         @ApiParam(value = "Description", required = false) @QueryParam("description") String description,
-//                         @ApiParam(value = "Create the parent directories if they do not exist", required = false) @DefaultValue("false") @QueryParam("parents") boolean parents,
-//                         @ApiParam(value = "[TO HIDE] Size of the folder/file", required = false) @QueryParam("size") long size,
-//                         @ApiParam(value = "[TO HIDE] Checksum of something", required = false) @QueryParam("checksum") String checksum) {
-//        try {
-//            URI uri = UriUtils.createUri(uriStr);
-//            ObjectMap objectMap = new ObjectMap()
-//                    .append("parents", parents)
-//                    .append("description", description);
-//            return createOkResponse(catalogManager.link(uri, path, studyIdStr, objectMap, sessionId));
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
+    @GET
+    @Path("/link")
+    @ApiOperation(value = "Link an external file into catalog.", hidden = true, position = 19, response = QueryResponse.class)
+    public Response link(@ApiParam(value = "Uri of the file", required = true) @QueryParam("uri") String uriStr,
+                         @ApiParam(value = "Study id", required = true) @QueryParam("studyId") String studyIdStr,
+                         @ApiParam(value = "Path where the external file will be allocated in catalog", required = true) @QueryParam("path") String path,
+                         @ApiParam(value = "Description") @QueryParam("description") String description,
+                         @ApiParam(value = "Create the parent directories if they do not exist") @DefaultValue("false") @QueryParam("parents") boolean parents,
+                         @ApiParam(value = "[TO HIDE] Size of the folder/file") @QueryParam("size") long size,
+                         @ApiParam(value = "[TO HIDE] Checksum of something") @QueryParam("checksum") String checksum) {
+        try {
+            logger.debug("uri: {}", convertPathList(uriStr, sessionId));
+            logger.debug("studyId: {}", studyIdStr);
+            logger.debug("path: {}", convertPath(path, sessionId));
+
+            path = convertPath(path, sessionId);
+            ObjectMap objectMap = new ObjectMap()
+                    .append("parents", parents)
+                    .append("description", description);
+            List<String> uriList = convertPathList(uriStr, sessionId);
+
+            List<QueryResult<File>> queryResultList = new ArrayList<>();
+            logger.info("path: {}", path);
+            for (String uri : uriList) {
+                logger.info("uri: {}", uri);
+                try {
+                    URI myUri = UriUtils.createUri(uri);
+                    queryResultList.add(catalogManager.link(myUri, path, studyIdStr, objectMap, sessionId));
+                } catch (URISyntaxException | CatalogException | IOException e) {
+                    queryResultList.add(new QueryResult<>("Link file", -1, 0, 0, "", e.getMessage(), Collections.emptyList()));
+                }
+            }
+            return createOkResponse(queryResultList);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 
     @GET
     @Path("/unlink")
     @ApiOperation(value = "Unlink an external file from catalog.", position = 20, response = QueryResponse.class)
     public Response link(@ApiParam(value = "File id", required = true) @QueryParam("fileId") String fileIdStr) throws CatalogException {
         try {
-            QueryResult<File> queryResult = catalogManager.unlink(fileIdStr, queryOptions, sessionId);
+            QueryResult<File> queryResult = catalogManager.unlink(convertPath(fileIdStr, sessionId), queryOptions, sessionId);
             return createOkResponse(new QueryResult<>("unlink", 0, 1, 1, null, null, queryResult.getResult()));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1057,7 +1144,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @Deprecated
     @GET
     @Path("/{fileId}/relink")
-    @ApiOperation(value = "Change file location. Provided file must be either STAGE or be an external file.", position = 21)
+    @ApiOperation(value = "Change file location. Provided file must be either STAGE or be an external file.", hidden = true, position = 21)
     public Response relink(@ApiParam(value = "File ID") @PathParam("fileId") @DefaultValue("") String fileIdStr,
                            @ApiParam(value = "New URI" ,required = true) @QueryParam("uri") String uriStr,
                            @ApiParam(value = "Do calculate checksum for new files", required = false) @DefaultValue("false") @QueryParam("calculateChecksum") boolean calculateChecksum ) {
@@ -1069,7 +1156,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 throw new CatalogIOException("File " + uri + " does not exist");
             }
 
-            long fileId = catalogManager.getFileId(fileIdStr, sessionId);
+            long fileId = catalogManager.getFileId(convertPath(fileIdStr, sessionId), sessionId);
             File file = catalogManager.getFile(fileId, sessionId).first();
 
             new CatalogFileUtils(catalogManager).link(file, calculateChecksum, uri, false, true, sessionId);
@@ -1088,7 +1175,7 @@ public class FileWSServer extends OpenCGAWSServer {
             response = QueryResponse.class)
     public Response refresh(@ApiParam(value = "File id") @PathParam(value = "fileId") String fileIdStr) {
         try {
-            long fileId = catalogManager.getFileId(fileIdStr, sessionId);
+            long fileId = catalogManager.getFileId(convertPath(fileIdStr, sessionId), sessionId);
             File file = catalogManager.getFile(fileId, sessionId).first();
 
             List<File> files;
@@ -1130,7 +1217,7 @@ public class FileWSServer extends OpenCGAWSServer {
             QueryOptions qOptions = new QueryOptions(queryOptions)
                     .append(FileManager.DELETE_EXTERNAL_FILES, deleteExternal)
                     .append(FileManager.SKIP_TRASH, skipTrash);
-            QueryResult result = catalogManager.delete(fileIdStr, qOptions, sessionId);
+            List<QueryResult<File>> result = catalogManager.getFileManager().delete(convertPath(fileIdStr, sessionId), qOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1140,7 +1227,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/groupBy")
     @ApiOperation(value = "Group files by several fields", position = 24, response = QueryResponse.class)
-    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("by") String by,
+    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("fields") String fields,
                             @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyStr,
                             @ApiParam(value = "Comma separated list of ids.", required = false) @DefaultValue("") @QueryParam("id") String ids,
                             @ApiParam(value = "Comma separated list of names.", required = false) @DefaultValue("") @QueryParam("name") String names,
@@ -1150,7 +1237,6 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "Comma separated Format values.", required = false) @DefaultValue("") @QueryParam("format") String formats,
                             @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status,
                             @ApiParam(value = "directory", required = false) @DefaultValue("") @QueryParam("directory") String directory,
-                            @ApiParam(value = "ownerId", required = false) @DefaultValue("") @QueryParam("ownerId") String ownerId,
                             @ApiParam(value = "creationDate", required = false) @DefaultValue("") @QueryParam("creationDate") String creationDate,
                             @ApiParam(value = "modificationDate", required = false) @DefaultValue("") @QueryParam("modificationDate") String modificationDate,
                             @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description,
@@ -1162,11 +1248,11 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             Query query = new Query();
             QueryOptions qOptions = new QueryOptions();
-            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, query, qOptions);
+            parseQueryParams(params, FileDBAdaptor.QueryParams::getParam, query, qOptions);
 
             logger.debug("query = " + query.toJson());
             logger.debug("queryOptions = " + qOptions.toJson());
-            QueryResult result = catalogManager.fileGroupBy(query, qOptions, by, sessionId);
+            QueryResult result = catalogManager.fileGroupBy(query, qOptions, fields, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1178,7 +1264,8 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Return the acl defined for the file or folder", position = 18, response = QueryResponse.class)
     public Response getAcls(@ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("fileIds") String fileIdStr) {
         try {
-            return createOkResponse(catalogManager.getAllFileAcls(fileIdStr, sessionId));
+            Object[] fileIds = convertPathList(fileIdStr, sessionId).toArray();
+            return createOkResponse(catalogManager.getAllFileAcls(StringUtils.join(fileIds, ","), sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1193,7 +1280,8 @@ public class FileWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
-            return createOkResponse(catalogManager.createFileAcls(fileIdStr, members, permissions, sessionId));
+            Object[] fileIds = convertPathList(fileIdStr, sessionId).toArray();
+            return createOkResponse(catalogManager.createFileAcls(StringUtils.join(fileIds, ","), members, permissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1205,7 +1293,7 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response getAcl(@ApiParam(value = "File id", required = true) @PathParam("fileId") String fileIdStr,
                            @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
         try {
-            return createOkResponse(catalogManager.getFileAcl(fileIdStr, memberId, sessionId));
+            return createOkResponse(catalogManager.getFileAcl(convertPath(fileIdStr, sessionId), memberId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1223,7 +1311,7 @@ public class FileWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "Comma separated list of permissions to set", required = false)
                               @QueryParam("setPermissions") String setPermissions) {
         try {
-            return createOkResponse(catalogManager.updateFileAcl(fileIdStr, memberId, addPermissions, removePermissions, setPermissions, sessionId));
+            return createOkResponse(catalogManager.updateFileAcl(convertPath(fileIdStr, sessionId), memberId, addPermissions, removePermissions, setPermissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1236,9 +1324,98 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response deleteAcl(@ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("fileIds") String fileIdsStr,
                               @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
         try {
-            return createOkResponse(catalogManager.removeFileAcl(fileIdsStr, memberId, sessionId));
+            Object[] fileIds = convertPathList(fileIdsStr, sessionId).toArray();
+            return createOkResponse(catalogManager.removeFileAcl(StringUtils.join(fileIds, ","), memberId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{folderId}/scan")
+    @ApiOperation(value = "Scans a folder", position = 6)
+    public Response scan(@PathParam(value = "folderId") @FormDataParam("folderId") String folderIdStr,
+                         @ApiParam(value = "calculateChecksum") @QueryParam("calculateChecksum") @DefaultValue("false") boolean calculateChecksum) {
+        try {
+            long folderId = catalogManager.getFileId(convertPath(folderIdStr, sessionId), sessionId);
+            File directory = catalogManager.getFile(folderId, sessionId).first();
+            List<File> scan = new FileScanner(catalogManager)
+                    .scan(directory, null, FileScanner.FileScannerPolicy.REPLACE, calculateChecksum, false, sessionId);
+            return createOkResponse(new QueryResult<>("Scan", 0, scan.size(), scan.size(), "", "", scan));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    private String convertPath(String path, String sessionId) throws CatalogException {
+        return convertPath(path, sessionId, catalogManager);
+    }
+
+    // Visible only for testing purposes
+    static String convertPath(String path, String sessionId, CatalogManager catalogManager) throws CatalogException {
+        if (path == null) {
+            return null;
+        }
+        if (path.contains("/") || !path.contains(":")) {
+            return path;
+        }
+        // Path contains :
+        if (path.startsWith(":")) {
+            return path.replace(":", "/");
+        } else {
+            // Get the user id
+            String userId = catalogManager.getUserManager().getId(sessionId);
+
+            // Get only the first part to check if it corresponds with user@project
+            int position = path.indexOf(":");
+            String project = path.substring(0, position);
+            // Check if it corresponds with a project
+            long id = catalogManager.getProjectManager().getId(userId, project);
+            if (id <= 0) {
+                // Was it a study user@study:filePath/...?
+                id = catalogManager.getStudyManager().getId(userId, project);
+                if (id <= 0) {
+                    // Then it must be user@filePath/...
+                    return path.replace(":", "/");
+                } else {
+                    // It must be user@study:filePath/...
+                    return project + ":" + path.substring(position + 1).replace(":", "/");
+                }
+            } else {
+                // Does it have the study as well? user@project:study:filePath/...
+                int position2 = path.substring(position + 1).indexOf(":");
+                if (position2 == -1) {
+                    throw new CatalogException("No file was found in " + path);
+                } else {
+                    // We should have something like user@project:study
+                    String study = project + path.substring(position).substring(0, position2 + 1);
+                    // Check if the study exists
+                    id = catalogManager.getStudyManager().getId(userId, study);
+                    if (id <= 0) {
+                        // Then it must be user@project:filePath/...
+                        throw new CatalogException("Passing files with this structure user@project:filePath/... is not supported.");
+                    } else {
+                        // The structure seems to be user@project:study:filePath/...
+                        return study + ":" + path.substring(position).substring(position2 + 2).replace(":", "/");
+                    }
+                }
+            }
+//            return path.substring(0, position + 1) + path.substring(position + 1).replace(":", "/");
+        }
+    }
+
+    private List<String> convertPathList(String path, String sessionId) throws CatalogException {
+        if (path == null) {
+            return Collections.emptyList();
+        } else if (path.contains(",")) {
+            String[] split = path.split(",");
+            List<String> pathList = new ArrayList<>(split.length);
+            for (String s : split) {
+                pathList.add(convertPath(s, sessionId));
+            }
+            return pathList;
+        } else {
+            return Collections.singletonList(convertPath(path, sessionId));
         }
     }
 

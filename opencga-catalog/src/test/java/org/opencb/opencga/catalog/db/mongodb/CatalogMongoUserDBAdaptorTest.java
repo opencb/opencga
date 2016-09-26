@@ -47,18 +47,18 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     @Test
     public void createUserTest() throws CatalogException {
 
-        User user = new User("NewUser", "", "", "", "", new User.UserStatus());
-        QueryResult createUser = catalogUserDBAdaptor.insertUser(user, null);
+        User user = new User("NewUser", "", "", "", "", User.UserStatus.READY);
+        QueryResult createUser = catalogUserDBAdaptor.insert(user, null);
         assertNotSame(0, createUser.getResult().size());
 
         thrown.expect(CatalogDBException.class);
-        catalogUserDBAdaptor.insertUser(user, null);
+        catalogUserDBAdaptor.insert(user, null);
     }
 
     @Test
     public void deleteUserTest() throws CatalogException {
-        User deletable1 = new User("deletable1", "deletable 1", "d1@ebi", "1234", "", new User.UserStatus());
-        QueryResult<User> createUser = catalogUserDBAdaptor.insertUser(deletable1, null);
+        User deletable1 = new User("deletable1", "deletable 1", "d1@ebi", "1234", "", User.UserStatus.READY);
+        QueryResult<User> createUser = catalogUserDBAdaptor.insert(deletable1, null);
         assertFalse(createUser.getResult().isEmpty());
         assertNotNull(createUser.first());
 
@@ -78,21 +78,21 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
     @Test
     public void getUserTest() throws CatalogDBException {
-        QueryResult<User> user = catalogUserDBAdaptor.getUser(user1.getId(), null, null);
+        QueryResult<User> user = catalogUserDBAdaptor.get(user1.getId(), null, null);
         assertNotSame(0, user.getResult().size());
 
-        user = catalogUserDBAdaptor.getUser(user3.getId(), null, null);
+        user = catalogUserDBAdaptor.get(user3.getId(), null, null);
         assertFalse(user.getResult().isEmpty());
         assertFalse(user.first().getProjects().isEmpty());
 
-        user = catalogUserDBAdaptor.getUser(user3.getId(), new QueryOptions("exclude", Arrays.asList("projects")), null);
+        user = catalogUserDBAdaptor.get(user3.getId(), new QueryOptions("exclude", Arrays.asList("projects")), null);
         assertNull(user.first().getProjects());
 
-        user = catalogUserDBAdaptor.getUser(user3.getId(), null, user.first().getLastModified());
+        user = catalogUserDBAdaptor.get(user3.getId(), null, user.first().getLastModified());
         assertTrue(user.getResult().isEmpty());
 
         thrown.expect(CatalogDBException.class);
-        catalogUserDBAdaptor.getUser("NonExistingUser", null, null);
+        catalogUserDBAdaptor.get("NonExistingUser", null, null);
     }
 
     @Test
@@ -177,7 +177,7 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         ObjectMap objectMap = new ObjectMap("configs", configs.toJson());
         catalogUserDBAdaptor.update(user1.getId(), objectMap);
 
-        User user = catalogUserDBAdaptor.getUser(user1.getId(), null, null).first();
+        User user = catalogUserDBAdaptor.get(user1.getId(), null, null).first();
         System.out.println(user);
     }
 

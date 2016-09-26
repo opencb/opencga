@@ -4,11 +4,12 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
+import org.opencb.opencga.catalog.models.summaries.VariableSetSummary;
 
 import javax.annotation.Nullable;
 import java.net.URI;
@@ -20,6 +21,7 @@ import java.util.Set;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Deprecated
 public interface IStudyManager extends ResourceManager<Long, Study> {
 
     String getUserId(long studyId) throws CatalogException;
@@ -35,7 +37,7 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      * @return the numeric study id.
      * @throws CatalogException CatalogDBException when more than one study id are found.
      */
-    Long getStudyId(String userId, String studyStr) throws CatalogException;
+    Long getId(String userId, String studyStr) throws CatalogException;
 
     /**
      * Obtains the list of studyIds corresponding to the comma separated list of study strings given in studyStr.
@@ -45,16 +47,16 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      * @return A list of study ids.
      * @throws CatalogException CatalogException.
      */
-    default List<Long> getStudyIds(String userId, String studyStr) throws CatalogException {
+    default List<Long> getIds(String userId, String studyStr) throws CatalogException {
         List<Long> studyIds = new ArrayList<>();
         for (String studyId : studyStr.split(",")) {
-            studyIds.add(getStudyId(userId, studyId));
+            studyIds.add(getId(userId, studyId));
         }
         return studyIds;
     }
 
     @Deprecated
-    Long getStudyId(String studyId) throws CatalogException;
+    Long getId(String studyId) throws CatalogException;
 
     /**
      * Creates a new Study in catalog.
@@ -126,7 +128,7 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
     QueryResult rank(long projectId, Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException;
 
     default QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
-        long projectId = query.getLong(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key());
+        long projectId = query.getLong(StudyDBAdaptor.QueryParams.PROJECT_ID.key());
         if (projectId == 0L) {
             throw new CatalogException("Study[rank]: Study id not found in the query");
         }
@@ -147,7 +149,7 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
     QueryResult groupBy(long projectId, Query query, String field, QueryOptions options, String sessionId) throws CatalogException;
 
     default QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        long projectId = query.getLong(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key());
+        long projectId = query.getLong(StudyDBAdaptor.QueryParams.PROJECT_ID.key());
         if (projectId == 0L) {
             throw new CatalogException("Study[groupBy]: Study id not found in the query");
         }
@@ -168,7 +170,7 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
     QueryResult groupBy(long projectId, Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException;
 
     default QueryResult groupBy(Query query, List<String> field, QueryOptions options, String sessionId) throws CatalogException {
-        long projectId = query.getLong(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key());
+        long projectId = query.getLong(StudyDBAdaptor.QueryParams.PROJECT_ID.key());
         if (projectId == 0L) {
             throw new CatalogException("Study[groupBy]: Study id not found in the query");
         }
@@ -197,7 +199,7 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      * the study id is not valid or the members given do not exist.
      */
     @Deprecated
-    QueryResult<StudyAclEntry> getStudyAcls(String studyStr, List<String> members, String sessionId) throws CatalogException;
+    QueryResult<StudyAclEntry> getAcls(String studyStr, List<String> members, String sessionId) throws CatalogException;
 
     //-----------------     GROUPS         ------------------
 
@@ -296,4 +298,5 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
 
     QueryResult<DiseasePanel> updateDiseasePanel(String panelStr, ObjectMap parameters, String sessionId) throws CatalogException;
 
+    QueryResult<VariableSetSummary> getVariableSetSummary(long variableSetId, String sessionId) throws CatalogException;
 }

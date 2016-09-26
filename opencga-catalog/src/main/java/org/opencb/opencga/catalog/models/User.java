@@ -35,6 +35,8 @@ public class User {
     private String password;
     private String organization;
 
+    private Account account;
+
     private UserStatus status;
     private String lastModified;
     private long diskUsage;
@@ -56,20 +58,22 @@ public class User {
     public User() {
     }
 
-    public User(String id, String name, String email, String password, String organization, UserStatus status) {
-        this(id, name, email, password, organization, status, "", -1, -1, new ArrayList<>(), new ArrayList<>(0), new ArrayList<>(0),
+    public User(String id, String name, String email, String password, String organization, String status) {
+        this(id, name, email, password, organization, null, status, "", -1, -1, new ArrayList<>(), new ArrayList<>(0), new ArrayList<>(0),
                 new HashMap<>(), new HashMap<>());
     }
 
-    public User(String id, String name, String email, String password, String organization, UserStatus status, String lastModified,
-                long diskUsage, long diskQuota, List<Project> projects, List<Tool> tools, List<Session> sessions,
+    public User(String id, String name, String email, String password, String organization, Account account, String status,
+                String lastModified, long diskUsage, long diskQuota, List<Project> projects, List<Tool> tools, List<Session> sessions,
                 Map<String, Object> configs, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.password = password;
         this.organization = organization;
-        this.status = status;
+        // FIXME: Account should always be passed and not null
+        this.account = account != null ? account : new Account();
+        this.status = new UserStatus(status);
         this.lastModified = lastModified;
         this.diskUsage = diskUsage;
         this.diskQuota = diskQuota;
@@ -78,6 +82,28 @@ public class User {
         this.sessions = sessions;
         this.configs = configs;
         this.attributes = attributes;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("User{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", email='").append(email).append('\'');
+        sb.append(", password='").append(password).append('\'');
+        sb.append(", organization='").append(organization).append('\'');
+        sb.append(", account=").append(account);
+        sb.append(", status=").append(status);
+        sb.append(", lastModified='").append(lastModified).append('\'');
+        sb.append(", diskUsage=").append(diskUsage);
+        sb.append(", diskQuota=").append(diskQuota);
+        sb.append(", projects=").append(projects);
+        sb.append(", tools=").append(tools);
+        sb.append(", sessions=").append(sessions);
+        sb.append(", configs=").append(configs);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
     public static class UserStatus extends Status {
@@ -111,27 +137,6 @@ public class User {
         }
     }
 
-
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("User{");
-        sb.append("id='").append(id).append('\'');
-        sb.append(", name='").append(name).append('\'');
-        sb.append(", email='").append(email).append('\'');
-        sb.append(", password='").append(password).append('\'');
-        sb.append(", organization='").append(organization).append('\'');
-        sb.append(", status=").append(status);
-        sb.append(", lastModified='").append(lastModified).append('\'');
-        sb.append(", diskUsage=").append(diskUsage);
-        sb.append(", diskQuota=").append(diskQuota);
-        sb.append(", projects=").append(projects);
-        sb.append(", tools=").append(tools);
-        sb.append(", sessions=").append(sessions);
-        sb.append(", configs=").append(configs);
-        sb.append(", attributes=").append(attributes);
-        sb.append('}');
-        return sb.toString();
-    }
 
     public String getId() {
         return id;
@@ -175,6 +180,15 @@ public class User {
 
     public User setOrganization(String organization) {
         this.organization = organization;
+        return this;
+    }
+
+    public Account getAccount() {
+        return account;
+    }
+
+    public User setAccount(Account account) {
+        this.account = account;
         return this;
     }
 

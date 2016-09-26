@@ -18,9 +18,10 @@ package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.catalog.models.VariableSet;
+import org.opencb.opencga.catalog.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -54,8 +55,9 @@ public class VariableSetWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "name", required = true) @QueryParam("name") String name,
                               @ApiParam(value = "unique", required = false) @QueryParam("unique") Boolean unique,
                               @ApiParam(value = "description", required = false) @QueryParam("description") String description,
-                              @ApiParam(value = "variables", required = true) List<Variable> variables) {
+                              @ApiParam(name = "variables", value = "Variables of the variable set", required = true) List<Variable> variables) {
         try {
+            logger.info("variables: {}", variables);
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
             QueryResult<VariableSet> queryResult = catalogManager.createVariableSet(studyId, name, unique, description, null, variables,
                     sessionId);
@@ -83,6 +85,19 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/{variableSetId}/summary")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Get VariableSet summary", position = 2, response = VariableSetSummary.class)
+    public Response variableSetSummary(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") long variableSetId) {
+        try {
+            QueryResult<VariableSetSummary> queryResult = catalogManager.getStudyManager().getVariableSetSummary(variableSetId, sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/search")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Get VariableSet info", position = 2, response = VariableSet[].class)
@@ -91,7 +106,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = "count", value = "Total number of results. [PENDING]", dataType = "boolean", paramType = "query")
     })
     public Response search(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                            @ApiParam(value = "CSV list of variableSetIds", required = false) @QueryParam("id") String id,
@@ -100,7 +115,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes) {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
-            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+            queryOptions.put(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
             QueryResult<VariableSet> queryResult = catalogManager.getAllVariableSet(studyId, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -108,21 +123,23 @@ public class VariableSetWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/{variableSetId}/update")
-    @ApiOperation(value = "Update some variableSet attributes using GET method [PENDING]", position = 3)
-    public Response update(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") String variableSetId,
-                           @ApiParam(value = "name", required = true) @QueryParam("name") String name,
-                           @ApiParam(value = "description", required = false) @QueryParam("description") String description) throws IOException {
-        return createErrorResponse("update - GET", "PENDING");
-    }
+//    @GET
+//    @Path("/{variableSetId}/update")
+//    @ApiOperation(value = "Update some variableSet attributes using GET method [PENDING]", position = 3)
+//    public Response update(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") String variableSetId,
+//                           @ApiParam(value = "name", required = true) @QueryParam("name") String name,
+//                           @ApiParam(value = "description", required = false) @QueryParam("description") String description) throws IOException {
+//        return createErrorResponse("update - GET", "PENDING");
+//    }
 
     @POST
     @Path("/{variableSetId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some variableSet attributes using POST method [PENDING]", position = 3, response = VariableSet.class)
     public Response updateByPost(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") String variableSetId,
-                                 @ApiParam(value = "params", required = true) Map<String, Object> params) {
+                                 @ApiParam(value = "name") @QueryParam("name") String name,
+                                 @ApiParam(value = "description") @QueryParam("description") String description,
+                                 @ApiParam(value = "params") Map<String, Object> params) {
         return createErrorResponse("update - POST", "PENDING");
     }
 

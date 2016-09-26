@@ -42,6 +42,7 @@ public class VariableSetWSServerTest {
     @BeforeClass
     static public void initServer() throws Exception {
         serverTestUtils = new WSServerTestUtils();
+        serverTestUtils.setUp();
         serverTestUtils.initServer();
     }
 
@@ -52,7 +53,7 @@ public class VariableSetWSServerTest {
 
     @Before
     public void init() throws Exception {
-        serverTestUtils.setUp();
+//        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
         sessionId = OpenCGAWSServer.catalogManager.login("user", CatalogManagerTest.PASSWORD, "localhost").first().getString("sessionId");
         studyId = OpenCGAWSServer.catalogManager.getStudyId("user@1000G:phase1");
@@ -65,7 +66,7 @@ public class VariableSetWSServerTest {
         objectMapper = new ObjectMapper();
         Variable variable = new Variable("MY_VARIABLE", "", Variable.VariableType.TEXT, "whatever", true, false, null, 6L, "", "", null,
                 null);
-        String json = webTarget.path("variables").path(String.valueOf(variableSetId)).path("field").path("add")
+        String json = webTarget.path("variableSet").path(String.valueOf(variableSetId)).path("field").path("add")
                 .queryParam("sid", sessionId).request().post(Entity.json(variable), String.class);
 
         QueryResponse<VariableSet> response = WSServerTestUtils.parseResult(json, VariableSet.class);
@@ -107,7 +108,7 @@ public class VariableSetWSServerTest {
         variable.setName("OTHER_ID");
         variable.setDefaultValue("other default value");
 
-        json = webTarget.path("variables").path(String.valueOf(variableSetId)).path("field").path("add")
+        json = webTarget.path("variableSet").path(String.valueOf(variableSetId)).path("field").path("add")
                 .queryParam("sid", sessionId).request().post(Entity.json(variable), String.class);
 
         response = WSServerTestUtils.parseResult(json, VariableSet.class);
@@ -144,7 +145,7 @@ public class VariableSetWSServerTest {
 
     @Test
     public void renameFieldFromVariableSet() throws Exception {
-        String json = webTarget.path("variables").path(String.valueOf(variableSetId)).path("field").path("rename")
+        String json = webTarget.path("variableSet").path(String.valueOf(variableSetId)).path("field").path("rename")
                 .queryParam("sid", sessionId)
                 .queryParam("oldName", "PHEN")
                 .queryParam("newName", "PHEN_renamed")
@@ -197,7 +198,7 @@ public class VariableSetWSServerTest {
 
     @Test
     public void deleteFieldFromVariableSet() throws Exception {
-        String json = webTarget.path("variables").path(String.valueOf(variableSetId)).path("field").path("delete")
+        String json = webTarget.path("variableSet").path(String.valueOf(variableSetId)).path("field").path("delete")
                 .queryParam("sid", sessionId)
                 .queryParam("name", "PHEN")
                 .request().get(String.class);

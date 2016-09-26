@@ -5,6 +5,7 @@ logFile: null
 openRegister: false
 userDefaultDiskQuota: 200000
 
+databasePrefix: ${OPENCGA.CATALOG.DB.PREFIX}
 dataDir: ${OPENCGA.CATALOG.ROOTDIR}
 tempJobsDir: ${OPENCGA.CATALOG.JOBS.ROOTDIR}
 toolsDir: "tools"
@@ -57,3 +58,12 @@ database:
   password: ${OPENCGA.CATALOG.DB.PASSWORD}
   options:
     authenticationDatabase: ${OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE}
+
+# LDAP configuration example
+#authenticationOrigins:
+#- id: ldap            # Any id
+#  type: LDAP          # At the moment, we only support LDAP
+#  host: ldap://localhost:9000
+#  options:
+#    usersSearch: dc=ge,dc=co,dc=uk # Base search to look for the users
+#    groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Base search to look for the groups

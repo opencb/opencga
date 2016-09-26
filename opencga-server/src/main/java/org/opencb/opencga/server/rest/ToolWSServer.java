@@ -21,7 +21,7 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.analysis.ToolManager;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
+import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.core.exception.VersionException;
 
@@ -66,7 +66,7 @@ public class ToolWSServer extends OpenCGAWSServer {
                 QueryResult<Tool> toolResult = catalogManager.getTool(catalogManager.getToolId(id), sessionId);
                 Tool tool = toolResult.getResult().get(0);
                 ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
-                tool.setManifest(toolManager.getAnalysis());
+                tool.setManifest(toolManager.getManifest());
                 tool.setResult(toolManager.getResult());
                 results.add(toolResult);
             }
@@ -91,11 +91,11 @@ public class ToolWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "alias", required = false) @QueryParam(value = "alias") @DefaultValue("") String alias) {
         try {
             QueryOptions qOptions = new QueryOptions();
-            parseQueryParams(params, CatalogUserDBAdaptor.ToolQueryParams::getParam, query, qOptions);
+            parseQueryParams(params, UserDBAdaptor.ToolQueryParams::getParam, query, qOptions);
             QueryResult<Tool> toolResult = catalogManager.getAllTools(query, qOptions, sessionId);
             for (Tool tool : toolResult.getResult()) {
                 ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), "");
-                tool.setManifest(toolManager.getAnalysis());
+                tool.setManifest(toolManager.getManifest());
                 tool.setResult(toolManager.getResult());
             }
             return createOkResponse(toolResult);

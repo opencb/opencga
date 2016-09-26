@@ -21,9 +21,7 @@ import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumSet;
+import java.util.*;
 
 /**
  * Created by imedina on 16/03/16.
@@ -43,6 +41,15 @@ public class CatalogConfigurationTest {
 
         catalogConfiguration.setMonitor(new Monitor());
         catalogConfiguration.setExecution(new Execution());
+
+        List<AuthenticationOrigin> authenticationOriginList = new ArrayList<>();
+        authenticationOriginList.add(new AuthenticationOrigin("opencga", AuthenticationOrigin.AuthenticationType.OPENCGA.toString(),
+                "localhost", Collections.emptyMap()));
+        Map<String, Object> myMap = new HashMap<>();
+        myMap.put("ou", "People");
+        authenticationOriginList.add(new AuthenticationOrigin("opencga", AuthenticationOrigin.AuthenticationType.LDAP.toString(),
+                "ldap://10.10.0.20:389", myMap));
+        catalogConfiguration.setAuthenticationOrigins(authenticationOriginList);
 
         EmailServer emailServer = new EmailServer("localhost", "", "", "", "", false);
         catalogConfiguration.setEmailServer(emailServer);

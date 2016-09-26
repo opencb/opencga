@@ -488,6 +488,9 @@ public class CliOptionsParser extends OptionsParser {
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
         public String outdir;
 
+        @Parameter(names = {"--custom-name"}, description = "Provide a name to the custom annotation")
+        public String customAnnotationKey = null;
+
         @Parameter(names = {"--species"}, description = "Species. Default hsapiens", required = false, arity = 1)
         public String species = "hsapiens";
 

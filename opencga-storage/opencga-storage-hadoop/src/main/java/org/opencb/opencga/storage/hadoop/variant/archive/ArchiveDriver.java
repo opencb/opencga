@@ -12,6 +12,7 @@ import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.io.compress.Compression;
@@ -71,6 +72,8 @@ public class ArchiveDriver extends Configured implements Tool {
 
     public int run(String[] args) throws Exception {
         Configuration conf = getConf();
+        HBaseConfiguration.addHbaseResources(conf);
+
         URI inputFile = URI.create(conf.get(CONFIG_ARCHIVE_INPUT_FILE_VCF));
         URI inputMetaFile = URI.create(conf.get(CONFIG_ARCHIVE_INPUT_FILE_VCF_META));
         String tableName = conf.get(CONFIG_ARCHIVE_TABLE_NAME);
@@ -154,30 +157,32 @@ public class ArchiveDriver extends Configured implements Tool {
 
     private VcfMeta readMetaData(Configuration conf, URI inputMetaFile) throws IOException {
         Path from = new Path(inputMetaFile);
-        FileSystem fs = FileSystem.get(conf);
-        DatumReader<VariantFileMetadata> userDatumReader = new SpecificDatumReader<>(VariantFileMetadata.class);
-        VariantFileMetadata variantFileMetadata;
-        if (inputMetaFile.toString().endsWith("json") || inputMetaFile.toString().endsWith("json.gz")) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-
-            try (InputStream ids = inputMetaFile.toString().endsWith("json.gz") ? new GZIPInputStream(fs.open(from)) : fs.open(from)) {
-                variantFileMetadata = objectMapper.readValue(ids, VariantSource.class).getImpl();
-            }
-        } else {
-            try (FSDataInputStream ids = fs.open(from);
-                 DataFileStream<VariantFileMetadata> dataFileReader = new DataFileStream<>(ids, userDatumReader)) {
-                Iterator<VariantFileMetadata> iter = dataFileReader.iterator();
-                if (!iter.hasNext()) {
-                    throw new IllegalStateException(String.format("No Meta data object found in %s !!!", inputMetaFile));
+        try (FileSystem fs = FileSystem.get(conf)) {
+            DatumReader<VariantFileMetadata> userDatumReader = new SpecificDatumReader<>(VariantFileMetadata.class);
+            VariantFileMetadata variantFileMetadata;
+            if (inputMetaFile.toString().endsWith("json") || inputMetaFile.toString().endsWith("json.gz")) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+                try (InputStream ids = inputMetaFile.toString().endsWith("json.gz")
+                        ? new GZIPInputStream(fs.open(from)) : fs.open(from)) {
+                    variantFileMetadata = objectMapper.readValue(ids, VariantSource.class).getImpl();
                 }
-                variantFileMetadata = iter.next();
-                if (iter.hasNext()) {
-                    logger.warn(String.format("More than 1 entry found in metadata file %s", inputMetaFile));
+            } else {
+                try (FSDataInputStream ids = fs.open(from);
+                      DataFileStream<VariantFileMetadata> dataFileReader = new DataFileStream<>(ids, userDatumReader)
+                ) {
+                    Iterator<VariantFileMetadata> iter = dataFileReader.iterator();
+                    if (!iter.hasNext()) {
+                        throw new IllegalStateException(String.format("No Meta data object found in %s !!!", inputMetaFile));
+                    }
+                    variantFileMetadata = iter.next();
+                    if (iter.hasNext()) {
+                        logger.warn(String.format("More than 1 entry found in metadata file %s", inputMetaFile));
+                    }
                 }
             }
+            return new VcfMeta(new VariantSource(variantFileMetadata));
         }
-        return new VcfMeta(new VariantSource(variantFileMetadata));
     }
 
     public static String buildCommandLineArgs(URI input, URI inputMeta, String server, String outputTable,
@@ -230,7 +235,7 @@ public class ArchiveDriver extends Configured implements Tool {
 
         conf.set(CONFIG_ARCHIVE_INPUT_FILE_VCF, toolArgs[0]);
         conf.set(CONFIG_ARCHIVE_INPUT_FILE_VCF_META, toolArgs[1]);
-        HBaseManager.addHBaseSettings(conf, toolArgs[2]);
+        conf = HBaseManager.addHBaseSettings(conf, toolArgs[2]);
         conf.set(CONFIG_ARCHIVE_TABLE_NAME, toolArgs[3]);
         conf.set(GenomeHelper.CONFIG_STUDY_ID, toolArgs[4]);
         conf.set(CONFIG_ARCHIVE_FILE_ID, toolArgs[5]);

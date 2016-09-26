@@ -24,12 +24,13 @@ import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.config.ClientConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -57,6 +58,8 @@ public abstract class AbstractParentClient<T, A> {
     protected static final String GET = "GET";
     protected static final String POST = "POST";
 
+    protected Logger logger;
+
     protected AbstractParentClient(String userId, String sessionId, ClientConfiguration configuration) {
         this.userId = userId;
         this.sessionId = sessionId;
@@ -82,6 +85,7 @@ public abstract class AbstractParentClient<T, A> {
     }
 
     private void init() {
+        this.logger = LoggerFactory.getLogger(this.getClass().toString());
         this.client = ClientBuilder.newClient();
         jsonObjectMapper = new ObjectMapper();
     }
@@ -102,7 +106,15 @@ public abstract class AbstractParentClient<T, A> {
     }
 
     public QueryResponse<T> update(String id, ObjectMap params) throws CatalogException, IOException {
-        return execute(category, id, "update", params, GET, clazz);
+        //TODO REVISAR
+        if (params.containsKey("method") && params.get("method").equals("GET")) {
+            return execute(category, id, "update", params, GET, clazz);
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        String json = mapper.writeValueAsString(params);
+        ObjectMap p = new ObjectMap("body", json);
+        logger.debug("Json in update client: " + json);
+        return execute(category, id, "update", p, POST, clazz);
     }
 
     public QueryResponse<T> delete(String id, ObjectMap params) throws CatalogException, IOException {
@@ -146,15 +158,18 @@ public abstract class AbstractParentClient<T, A> {
     protected <T> QueryResponse<T> execute(String category1, String id1, String category2, String id2, String action,
                                            Map<String, Object> params, String method, Class<T> clazz) throws IOException {
 
-        // Remove null or empty params
-        for (Map.Entry<String, Object> param : params.entrySet()) {
-            Object value = param.getValue();
-            if (value == null || (value instanceof String && ((String) value).isEmpty())) {
-                params.remove(param.getKey());
-            }
+        if (params == null) {
+            params = new HashMap<>();
         }
 
-        System.out.println("configuration = " + configuration);
+//        // Remove null or empty params
+//        for (Map.Entry<String, Object> param : params.entrySet()) {
+//            Object value = param.getValue();
+//            if (value == null || (value instanceof String && ((String) value).isEmpty())) {
+//                params.remove(param.getKey());
+//            }
+//        }
+
         // Build the basic URL
         WebTarget path = client
                 .target(configuration.getRest().getHost())
@@ -179,10 +194,6 @@ public abstract class AbstractParentClient<T, A> {
 
         // Add the last URL part, the 'action'
         path = path.path(action);
-
-        if (params == null) {
-            params = new HashMap<>();
-        }
 
         int numRequiredFeatures = (int) params.getOrDefault(QueryOptions.LIMIT, Integer.MAX_VALUE);
         int limit = Math.min(numRequiredFeatures, BATCH_SIZE);
@@ -255,7 +266,7 @@ public abstract class AbstractParentClient<T, A> {
                 }
             }
 
-            System.out.println("GET URL: " + path.getUri().toURL());
+            logger.debug("GET URL: " + path.getUri().toURL());
             jsonString = path.request().get().readEntity(String.class);
         } else if (method.equalsIgnoreCase(POST)) {
             // TODO we still have to check the limit of the query, and keep querying while there are more results
@@ -271,9 +282,20 @@ public abstract class AbstractParentClient<T, A> {
 //                }
 //            }
 
-            System.out.println("POST URL: " + path.getUri().toURL());
-            jsonString = path.request().accept(MediaType.APPLICATION_JSON).post(Entity.entity(params, MediaType.APPLICATION_JSON),
-                    String.class);
+            if (params != null) {
+                for (String s : params.keySet()) {
+                    if (!s.equals("body")) {
+                        path = path.queryParam(s, params.get(s));
+                    }
+                }
+            }
+
+//            ObjectMap json = new ObjectMap("body", params.get("body"));
+
+            logger.debug("POST URL: " + path.getUri().toURL());
+//            jsonString = path.request().accept(MediaType.APPLICATION_JSON).post(Entity.entity(json, MediaType.APPLICATION_JSON),
+//                    String.class);est().accept(MediaType.APPLICATION_JSON).post(Entity.entity(json, MediaType.APPLICATION_JSON),
+            jsonString = path.request().post(Entity.json(params.get("body")), String.class);
         }
         return parseResult(jsonString, clazz);
     }

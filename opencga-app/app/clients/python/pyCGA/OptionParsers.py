@@ -11,7 +11,7 @@ class option_parser_login:
         self.login_subparsers.add_argument('--host', metavar='OpenCGA Host', required=True, help='Optional')
         self.login_subparsers.add_argument('--instance', metavar='instance',  default="opencga", required=False, help='Optional')
         self.login_subparsers.add_argument('--user', metavar='User', required=True, help='Required. User name')
-        self.login_subparsers.add_argument('--pwd', metavar='Password', required=True, help='Required. User password')
+        self.login_subparsers.add_argument('--pwd', metavar='Password', required=False, help='Required. User password')
         self.login_subparsers.add_argument('--debug', default=False, action='store_true', help='Optional. Store log in /home/user/openCGA.log')
         self.logout_subparsers = self.subparsers.add_parser("logout", help="Use this command to log out, using your current Session Id")
         self.logout_subparsers.add_argument('--user', metavar='User', required=True, help='Required. User name')

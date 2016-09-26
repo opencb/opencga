@@ -4,16 +4,16 @@ package org.opencb.opencga.catalog.audit;
 //
 //import static org.opencb.opencga.catalog.db.api.CatalogDBAdaptor.FilterOption.Type.TEXT;
 
-import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
+import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 
-import static org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor.FilterOption.Type.TEXT;
+import static org.opencb.opencga.catalog.db.AbstractDBAdaptor.FilterOption.Type.TEXT;
 
 /**
  * Created on 18/08/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public enum AuditFilterOption implements AbstractCatalogDBAdaptor.FilterOption {
+public enum AuditFilterOption implements AbstractDBAdaptor.FilterOption {
     id("id", "", TEXT),
     timeStamp("timeStamp", "", TEXT),
     resource("resource", "", TEXT),

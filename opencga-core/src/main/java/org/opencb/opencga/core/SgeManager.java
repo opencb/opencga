@@ -18,10 +18,8 @@ package org.opencb.opencga.core;
 
 import com.google.common.base.Splitter;
 import org.apache.tools.ant.types.Commandline;
-import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.exec.Command;
-import org.opencb.opencga.core.exec.RunnableProcess;
 import org.opencb.opencga.core.exec.SingleProcess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +53,7 @@ public class  SgeManager {
     public static final String EXECUTION_ERROR = "execution error";
 
     protected static Logger logger = LoggerFactory.getLogger(SgeManager.class);
+    @Deprecated
     private static Properties analysisProperties = Config.getAnalysisProperties();
 
     static {

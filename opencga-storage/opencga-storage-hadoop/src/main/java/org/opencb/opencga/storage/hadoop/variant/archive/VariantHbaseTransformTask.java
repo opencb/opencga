@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
@@ -36,6 +37,7 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
     private final AtomicLong timeProto = new AtomicLong(0);
     private final AtomicLong timeIndex = new AtomicLong(0);
     private final AtomicLong timePut = new AtomicLong(0);
+    private final AtomicInteger bufferSize = new AtomicInteger(200);
     private final TableName tableName;
     private Connection connection;
     private BufferedMutator tableMutator;
@@ -54,6 +56,14 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
         this.tableName = table == null ? null : TableName.valueOf(table);
     }
 
+    public void setBufferSize(Integer size) {
+        this.bufferSize.set(size);
+    }
+
+    public int getBufferSize() {
+        return bufferSize.get();
+    }
+
     @Override
     public List<VcfSlice> apply(List<Variant> batch) {
         return encodeVariants(batch);
@@ -63,7 +73,7 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
         long curr = System.currentTimeMillis();
         variants.forEach(var -> addVariant(var));
         this.timeIndex.addAndGet(System.currentTimeMillis() - curr);
-        List<VcfSlice> data = checkSlices(1000);
+        List<VcfSlice> data = checkSlices(getBufferSize());
         curr = System.currentTimeMillis();
         submit(data);
         this.timePut.addAndGet(System.currentTimeMillis() - curr);
@@ -93,15 +103,21 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
         if (lookupOrder.size() < limit) {
             return EMPTY_LIST;
         }
+
+        SortedMap<Long, String> keys = orderKeys(lookupOrder, storedChr, getHelper().getChunkSize());
         List<VcfSlice> retSlice = new ArrayList<>();
-        while (lookupOrder.size() > limit) { // 1000 key buffer
-            String key = findSmallest(lookupOrder, storedChr, getHelper().getChunkSize());
+        while (lookupOrder.size() > limit) { // key buffer size
+            if (keys.isEmpty()) {
+                keys = orderKeys(lookupOrder, storedChr, getHelper().getChunkSize()); // next Chromosome starts
+            }
+            Long firstKey = keys.firstKey();
+            String key = keys.remove(firstKey);
             lookupOrder.remove(key);
             List<Variant> data = buffer.remove(key);
             if (data.size() > 0) {
                 String chr = data.get(0).getChromosome();
                 if (storedChr.add(chr)) {
-                    logger.info(String.format("Flush for %s: %s", chr, StringUtils.join(lookupOrder, ',')));
+                    logger.debug("Flush for {}: {}", chr, lookupOrder);
                     lookup.clear(); // clear for each Chromosome
                     lookup.addAll(lookupOrder);
                 }
@@ -118,24 +134,21 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
         return retSlice;
     }
 
-    private String findSmallest(LinkedList<String> lookupOrder, Set<String> storedChr, int chunkSize) {
+    private SortedMap<Long, String> orderKeys(LinkedList<String> lookupOrder, Set<String> storedChr, int chunkSize) {
         List<String> currentChr = lookupOrder.stream().filter(s -> storedChr.contains(getHelper().splitBlockId(s)[0]))
                 .collect(Collectors.toList());
         // first finish off current chromosome
         if (currentChr.isEmpty()) {
             currentChr = new ArrayList<String>(lookupOrder);
         }
+
         // find min position
-        long minPos = -1;
-        String key = null;
+        TreeMap<Long, String> idx = new TreeMap<>();
         for (String slice : currentChr) {
             Long extr = getHelper().extractPositionFromBlockId(slice);
-            if (minPos < 0 || minPos > extr.longValue()) {
-                key = slice;
-                minPos = extr.longValue();
-            }
+            idx.put(extr, slice);
         }
-        return key;
+        return idx;
     }
 
     private void addVariant(Variant var) {

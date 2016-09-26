@@ -283,7 +283,8 @@ public class VariantCommandExecutor extends CommandExecutor {
                         if (queryVariantsCommandOptions.annotations != null) {
                             options.add("annotations", queryVariantsCommandOptions.annotations);
                         }
-                        VariantVcfExporter.htsExport(iterator, studyConfigurationResult.first(), outputStream, options);
+                        VariantVcfExporter.htsExport(iterator, studyConfigurationResult.first(),
+                                variantDBAdaptor.getVariantSourceDBAdaptor(), outputStream, options);
                     } else {
                         logger.warn("no study found named " + query.getAsStringList(RETURNED_STUDIES.key()).get(0));
                     }
@@ -392,12 +393,16 @@ public class VariantCommandExecutor extends CommandExecutor {
         if (annotateVariantsCommandOptions.annotator != null) {
             options.put(VariantAnnotationManager.ANNOTATION_SOURCE, annotateVariantsCommandOptions.annotator);
         }
+        if (annotateVariantsCommandOptions.customAnnotationKey != null) {
+            options.put(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, annotateVariantsCommandOptions.customAnnotationKey);
+        }
         if (annotateVariantsCommandOptions.species != null) {
             options.put(VariantAnnotationManager.SPECIES, annotateVariantsCommandOptions.species);
         }
         if (annotateVariantsCommandOptions.assembly != null) {
             options.put(VariantAnnotationManager.ASSEMBLY, annotateVariantsCommandOptions.assembly);
         }
+        options.putAll(annotateVariantsCommandOptions.commonOptions.params);
 
         VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(configuration, storageEngine);
 //            VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(annotatorSource, annotatorProperties,
@@ -453,7 +458,8 @@ public class VariantCommandExecutor extends CommandExecutor {
 //                annotationFile = new URI(null, c.load, null);
                 annotationFile = Paths.get(annotateVariantsCommandOptions.load).toUri();
             }
-            variantAnnotationManager.loadAnnotation(annotationFile, new QueryOptions());
+            variantAnnotationManager.loadAnnotation(annotationFile, new QueryOptions(options));
+
             logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
         }
     }

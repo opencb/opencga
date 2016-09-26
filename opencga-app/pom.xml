@@ -110,6 +110,26 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
+
+        <!--Uncomment if hadoop dependencies are provided-->
+        <!--<dependency>-->
+            <!--<groupId>org.apache.hadoop</groupId>-->
+            <!--<artifactId>hadoop-common</artifactId>-->
+            <!--<version>${hadoop.version}</version>-->
+            <!--<scope>test</scope>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+            <!--<groupId>org.apache.hadoop</groupId>-->
+            <!--<artifactId>hadoop-client</artifactId>-->
+            <!--<version>${hadoop.version}</version>-->
+            <!--<scope>test</scope>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+            <!--<groupId>org.apache.hbase</groupId>-->
+            <!--<artifactId>hbase-server</artifactId>-->
+            <!--<version>${hbase.version}</version>-->
+            <!--<scope>test</scope>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-client</artifactId>
@@ -165,14 +185,15 @@
                     <!--Do we need to include the configuration folder in the classpath?-->
                     <includeConfigurationDirectoryInClasspath>false</includeConfigurationDirectoryInClasspath>
                     <extraJvmArguments>-Xms256m -Xmx2048m</extraJvmArguments>
+                    <environmentSetupFileName>${opencga.env.file}</environmentSetupFileName>
                     <programs>
-                        <program>
-                            <name>opencga-old.sh</name>
-                            <mainClass>org.opencb.opencga.app.cli.main.OpenCGAMainOld</mainClass>
-                            <platforms>
-                                <platform>unix</platform>
-                            </platforms>
-                        </program>
+                        <!--<program>-->
+                            <!--<name>opencga-old.sh</name>-->
+                            <!--<mainClass>org.opencb.opencga.app.cli.main.OpenCGAMainOld</mainClass>-->
+                            <!--<platforms>-->
+                                <!--<platform>unix</platform>-->
+                            <!--</platforms>-->
+                        <!--</program>-->
                         <program>
                             <name>opencga.sh</name>
                             <mainClass>org.opencb.opencga.app.cli.main.OpencgaMain</mainClass>
@@ -187,13 +208,13 @@
                                 <platform>unix</platform>
                             </platforms>
                         </program>
-                        <program>
-                            <name>opencga-daemon.sh</name>
-                            <mainClass>org.opencb.opencga.app.daemon.OpenCGADaemon</mainClass>
-                            <platforms>
-                                <platform>unix</platform>
-                            </platforms>
-                        </program>
+                        <!--<program>-->
+                            <!--<name>opencga-daemon.sh</name>-->
+                            <!--<mainClass>org.opencb.opencga.app.daemon.OpenCGADaemon</mainClass>-->
+                            <!--<platforms>-->
+                                <!--<platform>unix</platform>-->
+                            <!--</platforms>-->
+                        <!--</program>-->
                         <program>
                             <mainClass>org.opencb.opencga.app.cli.analysis.AnalysisMain</mainClass>
                             <name>opencga-analysis.sh</name>
@@ -235,13 +256,14 @@
                                     <arg value="${build.dir}"/>
                                 </exec>
                                 <exec executable="mkdir">
-                                    <arg value="${build.dir}"/>
+                                    <arg value="-p"/>
+                                    <arg value="${build.dir}/conf"/>
                                 </exec>
 
                                 <echo>Copying to ${build.dir}</echo>
                                 <exec executable="cp">
                                     <arg value="-r"/>
-                                    <arg value="${app.dir}/bin"/>
+                                    <!--<arg value="${app.dir}/bin"/>-->
                                     <arg value="${project.basedir}/target/appassembler/bin"/>
                                     <arg value="${project.basedir}/target/appassembler/libs"/>
                                     <arg value="${project.basedir}/target/conf"/>
@@ -253,9 +275,17 @@
                                     <arg value="${build.dir}"/>
                                 </exec>
 
+                                <echo>Copying to ${build.dir}/obsolete</echo>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${app.dir}/bin"/>
+                                    <arg value="${build.dir}/bin/obsolete"/>
+                                </exec>
+
                                 <echo>Coping configuration files</echo>
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/../opencga-core/target/classes/configuration.yml"/>
+                                    <arg value="${project.basedir}/../opencga-core/target/classes/log4j.properties"/>
                                     <arg value="${project.basedir}/../opencga-catalog/target/classes/catalog-configuration.yml"/>
                                     <arg value="${project.basedir}/../opencga-storage/opencga-storage-core/target/classes/storage-configuration.yml"/>
                                     <arg value="${project.basedir}/../opencga-client/target/classes/client-configuration.yml"/>
@@ -280,7 +310,7 @@
 
     <profiles>
         <profile>
-            <id>STORAGE-MONGODB</id>
+            <id>storage-mongodb</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
@@ -296,9 +326,11 @@
             </properties>
         </profile>
         <profile>
-            <id>STORAGE-HBASE</id>
+            <id>storage-hadoop</id>
             <activation>
-                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>storage-hadoop</name>
+                </property>
             </activation>
             <dependencies>
                 <dependency>
@@ -307,6 +339,32 @@
                     <version>${opencga.version}</version>
                 </dependency>
             </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.8</version>
+                        <executions>
+                            <execution>
+                                <id>install-hadoop</id>
+                                <phase>install</phase>
+                                <configuration>
+                                    <target>
+                                        <echo>Copying hadoop jar with dependencies to ${build.dir}</echo>
+                                        <exec executable="cp">
+                                            <arg value="${project.basedir}/../opencga-storage/opencga-storage-hadoop/target/opencga-storage-hadoop-${opencga.version}-jar-with-dependencies.jar"/>
+                                            <arg value="${build.dir}"/>
+                                        </exec>
+                                    </target>
+                                </configuration>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>

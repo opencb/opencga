@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
@@ -9,7 +10,7 @@ import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
-import org.opencb.opencga.catalog.db.api.CatalogAuditDBAdaptor;
+import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
 
 import java.util.Collections;
 
@@ -20,7 +21,7 @@ import java.util.Collections;
  */
 public class CatalogMongoAuditDBAdaptorTest {
 
-    private CatalogAuditDBAdaptor auditDbAdaptor;
+    private AuditDBAdaptor auditDbAdaptor;
 
     @Before
     public void beforeClass() throws Exception {
@@ -36,7 +37,18 @@ public class CatalogMongoAuditDBAdaptorTest {
                 .add("authenticationDatabase", catalogConfiguration.getDatabase().getOptions().get("authenticationDatabase"))
                 .build();
 
-        String database = catalogConfiguration.getDatabase().getDatabase();
+//        String database = catalogConfiguration.getDatabase().getDatabase();
+        String database;
+        if(StringUtils.isNotEmpty(catalogConfiguration.getDatabasePrefix())) {
+            if (!catalogConfiguration.getDatabasePrefix().endsWith("_")) {
+                database = catalogConfiguration.getDatabasePrefix() + "_catalog";
+            } else {
+                database = catalogConfiguration.getDatabasePrefix() + "catalog";
+            }
+        } else {
+            database = "opencga_test_catalog";
+        }
+
         /**
          * Database is cleared before each execution
          */
@@ -46,7 +58,7 @@ public class CatalogMongoAuditDBAdaptorTest {
         db.getDb().drop();
 
 
-        auditDbAdaptor = new CatalogMongoDBAdaptorFactory(Collections.singletonList(dataStoreServerAddress), mongoDBConfiguration, database)
+        auditDbAdaptor = new MongoDBAdaptorFactory(Collections.singletonList(dataStoreServerAddress), mongoDBConfiguration, database)
                 .getCatalogAuditDbAdaptor();
     }
 

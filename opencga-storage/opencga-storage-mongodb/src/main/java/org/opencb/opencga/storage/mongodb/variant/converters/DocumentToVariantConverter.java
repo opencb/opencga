@@ -46,6 +46,7 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
 
     public static final String STUDIES_FIELD = "studies";
     public static final String ANNOTATION_FIELD = "annotation";
+    public static final String CUSTOM_ANNOTATION_FIELD = "customAnnotation";
     public static final String STATS_FIELD = "stats";
 
     public static final String AT_FIELD = "_at";
@@ -105,6 +106,7 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
             fieldsMap.put(key, null);
         }
         fieldsMap.put("annotation", ANNOTATION_FIELD);
+        fieldsMap.put("annotation.additionalAttributes", CUSTOM_ANNOTATION_FIELD);
         fieldsMap.put("sourceEntries.cohortStats", STATS_FIELD);
         fieldsMap.put("studies.stats", STATS_FIELD);
         fieldsMap.put("stats", STATS_FIELD);
@@ -226,8 +228,16 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
         } else {
             mongoAnnotation = (Document) object.get(ANNOTATION_FIELD);
         }
-        if (mongoAnnotation != null) {
-            VariantAnnotation annotation = variantAnnotationConverter.convertToDataModelType(mongoAnnotation);
+        Document customAnnotation = object.get(CUSTOM_ANNOTATION_FIELD, Document.class);
+        if (mongoAnnotation != null || customAnnotation != null) {
+            VariantAnnotation annotation;
+            if (mongoAnnotation != null) {
+                annotation = variantAnnotationConverter
+                        .convertToDataModelType(mongoAnnotation, customAnnotation);
+            } else {
+                annotation = new VariantAnnotation();
+                annotation.setAdditionalAttributes(variantAnnotationConverter.convertAdditionalAttributesToDataModelType(customAnnotation));
+            }
             annotation.setChromosome(variant.getChromosome());
             annotation.setAlternate(variant.getAlternate());
             annotation.setReference(variant.getReference());

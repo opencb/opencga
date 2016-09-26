@@ -20,7 +20,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
@@ -38,8 +38,8 @@ public class FileDaemon extends MonitorParentDaemon {
 
     private CatalogFileUtils catalogFileUtils;
 
-    public FileDaemon(int period, int deleteDelay, CatalogManager catalogManager) {
-        super(period, catalogManager);
+    public FileDaemon(int period, int deleteDelay, String sessionId, CatalogManager catalogManager) {
+        super(period, sessionId, catalogManager);
         this.deleteDelay = deleteDelay;
         this.deleteDelayMillis = (long) (deleteDelay * 24 * 60 * 60 * 1000);
 
@@ -73,7 +73,7 @@ public class FileDaemon extends MonitorParentDaemon {
     private void checkDeletedFiles() throws CatalogException {
         QueryResult<File> files = catalogManager.searchFile(
                 -1,
-                new Query(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(), File.FileStatus.TRASHED),
+                new Query(FileDBAdaptor.QueryParams.FILE_STATUS.key(), File.FileStatus.TRASHED),
                 new QueryOptions(),
                 sessionId);
 
@@ -103,7 +103,7 @@ public class FileDaemon extends MonitorParentDaemon {
     private void checkPendingRemoveFiles() throws CatalogException {
         QueryResult<File> files = catalogManager.searchFile(
                 -1,
-                new Query(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(), File.FileStatus.DELETED),
+                new Query(FileDBAdaptor.QueryParams.FILE_STATUS.key(), File.FileStatus.DELETED),
                 new QueryOptions(),
                 sessionId);
 
@@ -113,7 +113,7 @@ public class FileDaemon extends MonitorParentDaemon {
                 long deleteTimeMillis = TimeUtils.toDate(file.getStatus().getDate()).toInstant().toEpochMilli();
                 if ((currentTimeMillis - deleteTimeMillis) > deleteDelayMillis) {
                     if (file.getType().equals(File.Type.FILE)) {
-                        catalogManager.delete(Long.toString(file.getId()), null, sessionId);
+                        catalogManager.getFileManager().delete(Long.toString(file.getId()), null, sessionId);
                     } else {
                         System.out.println("empty block");
                     }

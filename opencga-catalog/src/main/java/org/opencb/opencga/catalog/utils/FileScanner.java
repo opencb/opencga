@@ -3,7 +3,7 @@ package org.opencb.opencga.catalog.utils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
@@ -46,8 +47,8 @@ public class FileScanner {
     /**
      * Check tracking from all files from a study.
      *
-     * Set file status File.Status.MISSING if the file (fileUri) is unreachable
-     * Set file status to File.Status.READY if was File.Status.MISSING and file (fileUri) is reachable
+     * Set file status {@link File.FileStatus#MISSING} if the file (fileUri) is unreachable
+     * Set file status to {@link File.FileStatus#READY} if was {@link File.FileStatus#MISSING} and file (fileUri) is reachable
      *
      * @param study             The study to check
      * @param sessionId         User sessionId
@@ -57,7 +58,7 @@ public class FileScanner {
      */
     public List<File> checkStudyFiles(Study study, boolean calculateChecksum, String sessionId) throws CatalogException {
         Query query = new Query();
-        query.put(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), Arrays.asList(
+        query.put(FileDBAdaptor.QueryParams.STATUS_NAME.key(), Arrays.asList(
                 File.FileStatus.READY, File.FileStatus.MISSING, File.FileStatus.TRASHED));
         QueryResult<File> files = catalogManager.getAllFiles(study.getId(), query, new QueryOptions(), sessionId);
 
@@ -86,16 +87,17 @@ public class FileScanner {
         long studyId = study.getId();
 //        File root = catalogManager.getAllFiles(studyId, new QueryOptions("path", ""), sessionId).first();
         Query query = new Query();
-        query.put(CatalogFileDBAdaptor.FileFilterOption.uri.toString(), "~.*"); //Where URI exists
-        query.put(CatalogFileDBAdaptor.FileFilterOption.type.toString(), File.Type.DIRECTORY);
+        query.put(FileDBAdaptor.FileFilterOption.uri.toString(), "~.*"); //Where URI exists
+        query.put(FileDBAdaptor.FileFilterOption.type.toString(), File.Type.DIRECTORY);
         List<File> files = catalogManager.searchFile(studyId, query, sessionId).getResult();
 
         List<File> scan = new LinkedList<>();
         for (File file : files) {
             scan.addAll(scan(file, catalogManager.getFileUri(file), FileScannerPolicy.REPLACE, calculateChecksum,
                     false, sessionId));
-            scan.addAll(checkStudyFiles(study, calculateChecksum, sessionId));
         }
+        // TODO: Scan per file
+        scan.addAll(checkStudyFiles(study, calculateChecksum, sessionId));
 
         return scan;
     }
@@ -116,7 +118,7 @@ public class FileScanner {
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(studyUri);
         Map<String, URI> linkedFolders = new HashMap<>();
         linkedFolders.put("", studyUri);
-        Query query = new Query(CatalogFileDBAdaptor.QueryParams.URI.key(), "~.*"); //Where URI exists)
+        Query query = new Query(FileDBAdaptor.QueryParams.URI.key(), "~.*"); //Where URI exists)
         QueryOptions queryOptions = new QueryOptions("include", "projects.studies.files.path,projects.studies.files.uri");
         catalogManager.getAllFiles(studyId, query, queryOptions, sessionId).getResult()
                 .forEach(f -> linkedFolders.put(f.getPath(), f.getUri()));
@@ -164,7 +166,7 @@ public class FileScanner {
     public List<File> scan(File directory, URI directoryToScan, FileScannerPolicy policy,
                            boolean calculateChecksum, boolean deleteSource, String sessionId)
             throws IOException, CatalogException {
-        return scan(directory, directoryToScan, policy, calculateChecksum, deleteSource, -1, sessionId);
+        return scan(directory, directoryToScan, policy, calculateChecksum, deleteSource, uri -> true, -1, sessionId);
     }
 
     /**
@@ -175,6 +177,7 @@ public class FileScanner {
      * @param policy                What to do when there is a file in the target path. See {@link FileScannerPolicy}
      * @param calculateChecksum     Calculates checksum of all the files in the directory to scan
      * @param deleteSource          After moving, deletes the source file. If false, force copy.
+     * @param filter                File filter. Excludes the file when this predicate returns false.
      * @param jobId                 If any, the job that has generated this files
      * @param sessionId             User sessionId
      * @return found and new files.
@@ -182,8 +185,11 @@ public class FileScanner {
      * @throws CatalogException     if a Catalog error occurs
      */
     public List<File> scan(File directory, URI directoryToScan, FileScannerPolicy policy,
-                           boolean calculateChecksum, boolean deleteSource, long jobId, String sessionId)
+                           boolean calculateChecksum, boolean deleteSource, Predicate<URI> filter, long jobId, String sessionId)
             throws IOException, CatalogException {
+        if (filter == null) {
+            filter = uri -> true;
+        }
         if (directoryToScan == null) {
             directoryToScan = catalogManager.getFileUri(directory);
         }
@@ -203,11 +209,17 @@ public class FileScanner {
         while (iterator.hasNext()) {
             long fileScanStart = System.currentTimeMillis();
             URI uri = iterator.next();
+            if (!filter.test(uri)) {
+                continue;
+            }
             URI generatedFile = directoryToScan.relativize(uri);
             String filePath = URI.create(directory.getPath()).resolve(generatedFile).toString();
 //            String filePath = Paths.get(directory.getPath(), generatedFile.toString()).toString();
+            if (generatedFile.getPath().endsWith("/") && !filePath.endsWith("/")) {
+                filePath += "/";
+            }
 
-            Query query = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), filePath);
+            Query query = new Query(FileDBAdaptor.QueryParams.PATH.key(), filePath);
             QueryResult<File> searchFile = catalogManager.searchFile(studyId, query, sessionId);
             File file = null;
             boolean returnFile = false;
@@ -218,8 +230,8 @@ public class FileScanner {
                     case DELETE:
                         logger.info("Deleting file { id:" + existingFile.getId() + ", path:\"" + existingFile.getPath() + "\" }");
                         // Delete completely the file/folder !
-                        catalogManager.delete(Long.toString(existingFile.getId()), new QueryOptions(FileManager.SKIP_TRASH, true),
-                                sessionId);
+                        catalogManager.getFileManager().delete(Long.toString(existingFile.getId()),
+                                new QueryOptions(FileManager.SKIP_TRASH, true), sessionId);
                         break;
                     case REPLACE:
                         file = existingFile;

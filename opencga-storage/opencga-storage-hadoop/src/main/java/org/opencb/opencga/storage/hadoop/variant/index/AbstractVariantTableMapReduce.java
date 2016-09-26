@@ -4,11 +4,10 @@ import com.google.common.collect.BiMap;
 import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.HConstants;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -20,7 +19,6 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
-import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowProto;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,18 +33,19 @@ import java.util.stream.Collectors;
  *
  * @author Matthias Haimel mh719+git@cam.ac.uk
  */
-public abstract class AbstractVariantTableMapReduce extends TableMapper<ImmutableBytesWritable, Put> {
+public abstract class AbstractVariantTableMapReduce extends TableMapper<ImmutableBytesWritable, Mutation> {
     public static final String COUNTER_GROUP_NAME = "OPENCGA.HBASE";
+    public static final String SPECIFIC_PUT = "opencga.storage.hadoop.hbase.merge.use_specific_put";
     private Logger LOG = LoggerFactory.getLogger(this.getClass());
 
     private VariantTableHelper helper;
-    private StudyConfiguration studyConfiguration = null;
+    protected StudyConfiguration studyConfiguration = null;
     private Connection dbConnection = null;
 
-    private ArchiveResultToVariantConverter resultConverter;
+    protected ArchiveResultToVariantConverter resultConverter;
 
-    private VariantMerger variantMerger;
-    private HBaseToVariantConverter hbaseToVariantConverter;
+    protected VariantMerger variantMerger;
+    protected HBaseToVariantConverter hbaseToVariantConverter;
     private SortedMap<Long, String> times = new TreeMap<>();
     private long lastTime;
     private Map<String, Long> timeSum = new HashMap<>();
@@ -129,18 +128,16 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
     }
 
     private Set<Integer> extractFileIds(Result value) {
-        Set<String> fieldIds = new HashSet<String>();
-        for (Entry<byte[], NavigableMap<byte[], NavigableMap<Long, byte[]>>> grp : value.getMap().entrySet()) {
-            Set<String> keys = grp.getValue().keySet().stream().map(k -> Bytes.toString(k)).collect(Collectors.toSet());
-            fieldIds.addAll(keys);
-        }
-        Set<Integer> fieldInts = fieldIds.stream().filter(s -> !StringUtils.equals(GenomeHelper.VARIANT_COLUMN, s))
+        NavigableMap<byte[], byte[]> map = value.getNoVersionMap().get(getHelper().getColumnFamily());
+        Set<Integer> fileIds = map.keySet().stream().map(k -> Bytes.toString(k))
+                .filter(s -> !StringUtils.equals(GenomeHelper.VARIANT_COLUMN, s))
                 .map(s -> Integer.parseInt(s)).collect(Collectors.toSet());
-        return fieldInts;
+        return fileIds;
     }
 
     protected List<Variant> parseCurrentVariantsRegion(Result value, String chromosome)
             throws InvalidProtocolBufferException {
+
         List<VariantTableStudyRow> tableStudyRows = parseVariantStudyRowsFromArchive(value, chromosome);
 
         HBaseToVariantConverter converter = getHbaseToVariantConverter();
@@ -154,18 +151,24 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
     }
 
     protected List<VariantTableStudyRow> parseVariantStudyRowsFromArchive(Result value, String chr) throws InvalidProtocolBufferException {
-        List<VariantTableStudyRow> tableStudyRows;
-        byte[] protoData = value.getValue(getHelper().getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
-        if (protoData != null && protoData.length > 0) {
-            VariantTableStudyRowsProto variantTableStudyRowsProto = VariantTableStudyRowsProto.parseFrom(protoData);
-            tableStudyRows = new ArrayList<>(variantTableStudyRowsProto.getRowsCount());
-            for (VariantTableStudyRowProto variantTableStudyRowProto : variantTableStudyRowsProto.getRowsList()) {
-                tableStudyRows.add(new VariantTableStudyRow(variantTableStudyRowProto, chr, getStudyConfiguration().getStudyId()));
+        Cell latestCell = value.getColumnLatestCell(getHelper().getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
+        if (null != latestCell) {
+            byte[] protoData = CellUtil.cloneValue(latestCell);
+            if (protoData != null && protoData.length > 0) {
+                VariantTableStudyRowsProto variantTableStudyRowsProto = VariantTableStudyRowsProto.parseFrom(protoData);
+                List<VariantTableStudyRow> tableStudyRows = parseVariantStudyRowsFromArchive(chr,
+                        variantTableStudyRowsProto);
+                return tableStudyRows;
             }
-        } else {
-            tableStudyRows = Collections.emptyList();
         }
-        return tableStudyRows;
+        return Collections.emptyList();
+    }
+
+    protected List<VariantTableStudyRow> parseVariantStudyRowsFromArchive(String chr, VariantTableStudyRowsProto
+            variantTableStudyRowsProto) {
+        return variantTableStudyRowsProto.getRowsList().stream()
+                            .map(v -> new VariantTableStudyRow(v, chr, getStudyConfiguration().getStudyId()))
+                            .collect(Collectors.toList());
     }
 
     /**
@@ -185,11 +188,12 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
         for (Variant variant : analysisVar) {
             VariantTableStudyRow row = new VariantTableStudyRow(variant, studyId, idMapping);
             rows.add(row);
+            boolean specificPut = context.getConfiguration().getBoolean(SPECIFIC_PUT, true);
             Put put = null;
-            if (null != newSampleIds) {
-                put = row.createSpecificPut(getHelper(), newSampleIds, timestamp);
+            if (specificPut && null != newSampleIds) {
+                put = row.createSpecificPut(getHelper(), newSampleIds);
             } else {
-                put = row.createPut(getHelper(), timestamp);
+                put = row.createPut(getHelper());
             }
             if (put != null) {
                 context.write(new ImmutableBytesWritable(getHelper().getOutputTable()), put);
@@ -201,20 +205,19 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
     protected void updateOutputTable(Context context, Collection<VariantTableStudyRow> variants) throws IOException, InterruptedException {
 
         for (VariantTableStudyRow variant : variants) {
-            Put put = variant.createPut(getHelper(), timestamp);
+            Put put = variant.createPut(getHelper());
 
             if (put != null) {
                 context.write(new ImmutableBytesWritable(getHelper().getOutputTable()), put);
                 context.getCounter(COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(1);
             }
         }
-
     }
 
-    protected void updateArchiveTable(ImmutableBytesWritable key, Context context, List<VariantTableStudyRow> tableStudyRows)
+    protected void updateArchiveTable(byte[] rowKey, Context context, List<VariantTableStudyRow> tableStudyRows)
             throws IOException, InterruptedException {
-        Put put = new Put(key.get(), timestamp);
-        byte[] value = VariantTableStudyRow.toProto(tableStudyRows).toByteArray();
+        Put put = new Put(rowKey);
+        byte[] value = VariantTableStudyRow.toProto(tableStudyRows, timestamp).toByteArray();
         put.addColumn(getHelper().getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B, value);
         context.write(new ImmutableBytesWritable(getHelper().getIntputTable()), put);
         context.getCounter(COUNTER_GROUP_NAME, "ARCHIVE_TABLE_ROW_PUT").increment(1);
@@ -224,6 +227,7 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
     @Override
     protected void setup(Context context) throws IOException,
             InterruptedException {
+        Thread.currentThread().setName(context.getTaskAttemptID().toString());
         getLog().debug("Setup configuration");
 
         // Open DB connection
@@ -239,7 +243,7 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
                 "Loaded Meta Map: File id idx {}; FileId: {} Study {};",
                 k, v.getVariantSource().getFileId(), v.getVariantSource().getStudyId()));
         resultConverter = new ArchiveResultToVariantConverter(vcfMetaMap, helper.getColumnFamily());
-        hbaseToVariantConverter = new HBaseToVariantConverter(this.helper);
+        hbaseToVariantConverter = new HBaseToVariantConverter(this.helper).setFailOnEmptyVariants(true);
         variantMerger = new VariantMerger();
 
         timestamp = context.getConfiguration().getLong(AbstractVariantTableDriver.TIMESTAMP, -1);
@@ -260,6 +264,7 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
 
     @Override
     protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
+        getLog().info("Start mapping key: " + Bytes.toString(key.get()));
         startTime();
         if (value.isEmpty()) {
             context.getCounter(COUNTER_GROUP_NAME, "VCF_RESULT_EMPTY").increment(1);
@@ -291,10 +296,10 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
             sampleIds.addAll(sids);
         }
 
-        getLog().info("Processing slice {}", sliceKey);
+        getLog().debug("Processing slice {}", sliceKey);
 
 
-        VariantMapReduceContext ctx = new VariantMapReduceContext(currRowKey, context, key, value, sliceKey, fileIds,
+        VariantMapReduceContext ctx = new VariantMapReduceContext(currRowKey, context, value, fileIds,
                 sampleIds, chr, startPos, nextStartPos);
 
         endTime("1 Prepare slice");
@@ -309,19 +314,17 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
             context.getCounter(COUNTER_GROUP_NAME, "VCF_TIMER_" + entry.getKey().replace(' ', '_')).increment(entry.getValue());
         }
         this.timeSum.clear();
+        getLog().info("Finished mapping key: " + Bytes.toString(key.get()));
     }
 
     abstract void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException;
 
-    protected class VariantMapReduceContext {
-        public VariantMapReduceContext(byte[] currRowKey, Context context, ImmutableBytesWritable key, Result value,
-                                       String sliceKey, Set<Integer> fileIds, Set<Integer> sampleIds, String chr, long startPos,
-                                       long nextStartPos) {
+    protected static class VariantMapReduceContext {
+        public VariantMapReduceContext(byte[] currRowKey, Context context, Result value, Set<Integer> fileIds,
+                                       Set<Integer> sampleIds, String chr, long startPos, long nextStartPos) {
             this.currRowKey = currRowKey;
             this.context = context;
-            this.key = key;
             this.value = value;
-            this.sliceKey = sliceKey;
             this.fileIds = fileIds;
             this.sampleIds = sampleIds;
             this.chr = chr;
@@ -331,9 +334,7 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
 
         protected final byte[] currRowKey;
         protected final Context context;
-        protected final ImmutableBytesWritable key;
         protected final Result value;
-        protected final String sliceKey;
         protected final Set<Integer> fileIds;
         protected final Set<Integer> sampleIds;
         private final String chr;
@@ -349,32 +350,12 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
             return context;
         }
 
-        public ImmutableBytesWritable getKey() {
-            return key;
-        }
-
         public Result getValue() {
             return value;
         }
 
-        public String getSliceKey() {
-            return sliceKey;
-        }
-
-        public Set<Integer> getFileIds() {
-            return fileIds;
-        }
-
         public Set<Integer> getSampleIds() {
             return sampleIds;
-        }
-
-        public long getStartPos() {
-            return startPos;
-        }
-
-        public long getNextStartPos() {
-            return nextStartPos;
         }
 
         public String getChromosome() {

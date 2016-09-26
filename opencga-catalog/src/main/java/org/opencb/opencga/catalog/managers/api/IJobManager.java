@@ -4,7 +4,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
@@ -18,6 +18,7 @@ import java.util.Map;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Deprecated
 public interface IJobManager extends ResourceManager<Long, Job> {
 
     Long getStudyId(long jobId) throws CatalogException;
@@ -31,7 +32,7 @@ public interface IJobManager extends ResourceManager<Long, Job> {
      * @return the numeric job id.
      * @throws CatalogException when more than one job id is found or the study or project ids cannot be resolved.
      */
-    Long getJobId(String userId, String jobStr) throws CatalogException;
+    Long getId(String userId, String jobStr) throws CatalogException;
 
     /**
      * Obtains the list of job ids corresponding to the comma separated list of job strings given in jobStr.
@@ -41,10 +42,10 @@ public interface IJobManager extends ResourceManager<Long, Job> {
      * @return A list of job ids.
      * @throws CatalogException CatalogException.
      */
-    default List<Long> getJobIds(String userId, String jobStr) throws CatalogException {
+    default List<Long> getIds(String userId, String jobStr) throws CatalogException {
         List<Long> jobIds = new ArrayList<>();
         for (String jobId : jobStr.split(",")) {
-            jobIds.add(getJobId(userId, jobId));
+            jobIds.add(getId(userId, jobId));
         }
         return jobIds;
     }
@@ -59,11 +60,11 @@ public interface IJobManager extends ResourceManager<Long, Job> {
      * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
      * the job id is not valid or the members given do not exist.
      */
-    QueryResult<JobAclEntry> getJobAcls(String jobStr, List<String> members, String sessionId) throws CatalogException;
-    default List<QueryResult<JobAclEntry>> getJobAcls(List<String> jobIds, List<String> members, String sessionId) throws CatalogException {
+    QueryResult<JobAclEntry> getAcls(String jobStr, List<String> members, String sessionId) throws CatalogException;
+    default List<QueryResult<JobAclEntry>> getAcls(List<String> jobIds, List<String> members, String sessionId) throws CatalogException {
         List<QueryResult<JobAclEntry>> result = new ArrayList<>(jobIds.size());
         for (String jobId : jobIds) {
-            result.add(getJobAcls(jobId, members, sessionId));
+            result.add(getAcls(jobId, members, sessionId));
         }
         return result;
     }
@@ -75,18 +76,19 @@ public interface IJobManager extends ResourceManager<Long, Job> {
                             Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, Job.JobStatus status,
                             long startTime, long endTime, QueryOptions options, String sessionId) throws CatalogException;
 
-    QueryResult<Job> readAll(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult<Job> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
     URI createJobOutDir(long studyId, String dirName, String sessionId) throws CatalogException;
 
+    @Deprecated
     long getToolId(String toolId) throws CatalogException;
 
     QueryResult<Tool> createTool(String alias, String description, Object manifest, Object result, String path, boolean openTool,
                                  String sessionId) throws CatalogException;
 
-    QueryResult<Tool> readTool(long id, String sessionId) throws CatalogException;
+    QueryResult<Tool> getTool(long id, String sessionId) throws CatalogException;
 
-    QueryResult<Tool> readAllTools(Query query, QueryOptions queryOptions, String sessionId) throws CatalogException;
+    QueryResult<Tool> getTools(Query query, QueryOptions queryOptions, String sessionId) throws CatalogException;
 
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.
@@ -103,7 +105,7 @@ public interface IJobManager extends ResourceManager<Long, Job> {
     QueryResult rank(long studyId, Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException;
 
     default QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
-        long studyId = query.getLong(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key());
+        long studyId = query.getLong(JobDBAdaptor.QueryParams.STUDY_ID.key());
         if (studyId == 0L) {
             throw new CatalogException("Job[rank]: Study id not found in the query");
         }
@@ -124,7 +126,7 @@ public interface IJobManager extends ResourceManager<Long, Job> {
     QueryResult groupBy(long studyId, Query query, String field, QueryOptions options, String sessionId) throws CatalogException;
 
     default QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        long studyId = query.getLong(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key());
+        long studyId = query.getLong(JobDBAdaptor.QueryParams.STUDY_ID.key());
         if (studyId == 0L) {
             throw new CatalogException("Job[groupBy]: Study id not found in the query");
         }
@@ -145,11 +147,14 @@ public interface IJobManager extends ResourceManager<Long, Job> {
     QueryResult groupBy(long studyId, Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException;
 
     default QueryResult groupBy(Query query, List<String> field, QueryOptions options, String sessionId) throws CatalogException {
-        long studyId = query.getLong(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key());
+        long studyId = query.getLong(JobDBAdaptor.QueryParams.STUDY_ID.key());
         if (studyId == 0L) {
             throw new CatalogException("Job[groupBy]: Study id not found in the query");
         }
         return groupBy(studyId, query, field, options, sessionId);
     }
+
+    QueryResult<Job> queue(long studyId, String jobName, String executable, Job.Type type, Map<String, String> params, List<Long> input,
+                           List<Long> output, long outDirId, String userId, Map<String, Object> attributes) throws CatalogException;
 
 }

@@ -93,7 +93,8 @@
                     <repositoryLayout>flat</repositoryLayout>
                     <useWildcardClassPath>true</useWildcardClassPath>
                     <extraJvmArguments>-Xms256m -Xmx4096m</extraJvmArguments>
-                    <!--<extraJvmArguments>-Dlog4j.configuration=file:conf/log4j.properties</extraJvmArguments>-->
+                    <!-- -Dlog4j.debug -->
+                    <environmentSetupFileName>${opencga.env.file}</environmentSetupFileName>
                     <programs>
                         <program>
                             <mainClass>org.opencb.opencga.storage.app.StorageMain</mainClass>
@@ -102,16 +103,16 @@
                                 <platform>unix</platform>
                             </platforms>
                         </program>
-                        <program>
-                            <mainClass>org.opencb.opencga.storage.app.service.OpenCGAStorageServiceMain</mainClass>
-                            <name>opencga-storage-server.sh</name>
-                            <platforms>
-                                <platform>unix</platform>
-                            </platforms>
-                        </program>
+                        <!--<program>-->
+                            <!--<mainClass>org.opencb.opencga.storage.app.service.OpenCGAStorageServiceMain</mainClass>-->
+                            <!--<name>opencga-storage-server.sh</name>-->
+                            <!--<platforms>-->
+                                <!--<platform>unix</platform>-->
+                            <!--</platforms>-->
+                        <!--</program>-->
                         <program>
                             <mainClass>org.opencb.opencga.storage.app.StorageServerMain</mainClass>
-                            <name>opencga-storage-server2.sh</name>
+                            <name>opencga-storage-server.sh</name>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
@@ -181,7 +182,7 @@
 
     <profiles>
         <profile>
-            <id>STORAGE-MONGODB1</id>
+            <id>storage-mongodb</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
@@ -207,9 +208,11 @@
         </profile>
 
         <profile>
-            <id>STORAGE-HADOOP</id>
+            <id>storage-hadoop</id>
             <activation>
-                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>storage-hadoop</name>
+                </property>
             </activation>
 
             <dependencies>

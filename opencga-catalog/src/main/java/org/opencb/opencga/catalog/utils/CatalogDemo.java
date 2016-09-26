@@ -30,8 +30,8 @@ public final class CatalogDemo {
             if (force) {
                 catalogManager.deleteCatalogDB(force);
             } else {
-                throw new CatalogException("A database with the name " + catalogConfiguration.getDatabase().getDatabase() + " already "
-                        + "exists.");
+//                throw new CatalogException("A database called " + catalogConfiguration.getDatabase().getDatabase() + " already exists");
+                throw new CatalogException("A database called " + catalogManager.getCatalogDatabase() + " already exists");
             }
         }
         catalogManager.installCatalogDB();

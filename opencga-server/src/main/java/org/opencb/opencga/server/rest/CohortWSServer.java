@@ -21,11 +21,11 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
+import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
-import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.exception.VersionException;
@@ -94,7 +94,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 }
                 for (String s : variable.getAllowedValues()) {
                     QueryOptions samplesQOptions = new QueryOptions("include", "projects.studies.samples.id");
-                    Query samplesQuery = new Query(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + "." + variableName, s)
+                    Query samplesQuery = new Query(SampleDBAdaptor.QueryParams.ANNOTATION.key() + "." + variableName, s)
                             .append("variableSetId", variableSetId);
                     cohorts.add(createCohort(studyId, s, type, cohortDescription, samplesQuery, samplesQOptions));
                 }
@@ -147,10 +147,13 @@ public class CohortWSServer extends OpenCGAWSServer {
         try {
             long cohortId = catalogManager.getCohortId(cohortStr, sessionId);
             Cohort cohort = catalogManager.getCohort(cohortId, queryOptions, sessionId).first();
-            query.put("id", cohort.getSamples());
+            if (cohort.getSamples() == null || cohort.getSamples().size() == 0) {
+                return createOkResponse(new QueryResult<>("Samples from cohort " + cohortStr, -1, 0, 0, "The cohort has no samples", "", Collections.emptyList()));
+            }
             long studyId = catalogManager.getStudyIdByCohortId(cohortId);
+            query = new Query(SampleDBAdaptor.QueryParams.ID.key(), cohort.getSamples());
             QueryResult<Sample> allSamples = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
-            allSamples.setId("getCohortSamples");
+            allSamples.setId("Samples from cohort " + cohortStr);
             return createOkResponse(allSamples);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -159,9 +162,13 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     private QueryResult<Cohort> createCohort(long studyId, String cohortName, Study.Type type, String cohortDescription, Query query,
                                              QueryOptions queryOptions) throws CatalogException {
+        //TODO CHANGE THIS for can insert the name also id(number)
         QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
         List<Long> sampleIds = new ArrayList<>(queryResult.getNumResults());
         sampleIds.addAll(queryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList()));
+        //TODO FOR THIS. Its possible change the param query to a String
+        //List<QueryResult<Sample>> queryResults = new LinkedList<>();
+        //List<Long> sampleIds = catalogManager.getSampleIds(query.get("id").toString(), sessionId);
         return catalogManager.createCohort(studyId, cohortName, type, cohortDescription, sampleIds, null, sessionId);
     }
 
@@ -202,7 +209,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "", required = false) @QueryParam("creationDate") String creationDate,
                            @ApiParam(value = "", required = false) @QueryParam("description") String description,
-                           @ApiParam(value = "Comma separated values of sampleIds. Will replace all existing sampleIds", required = true) @QueryParam("samples") String samples) {
+                           @ApiParam(value = "Comma separated values of sampleIds. Will replace all existing sampleIds", required = false) @QueryParam("samples") String samples) {
         try {
             long cohortId = catalogManager.getCohortId(cohortStr, sessionId);
             // TODO: Change queryOptions, queryOptions
@@ -245,15 +252,12 @@ public class CohortWSServer extends OpenCGAWSServer {
                         variantStorage.calculateStats(outdirId, cohortIds, sessionId, new QueryOptions(queryOptions));
                 return createOkResponse(jobQueryResult);
             } else if (delete) {
-                List<QueryResult<Cohort>> results = new LinkedList<>();
-                for (Long cohortId : cohortIds) {
-                    results.add(catalogManager.deleteCohort(cohortId, queryOptions, sessionId));
-                }
+                List<QueryResult<Cohort>> results = catalogManager.getCohortManager().delete(cohortIdsCsv, queryOptions, sessionId);
                 return createOkResponse(results);
             } else {
                 long studyId = catalogManager.getStudyIdByCohortId(cohortIds.get(0));
                 return createOkResponse(catalogManager.getAllCohorts(studyId,
-                        new Query(CatalogCohortDBAdaptor.QueryParams.ID.key(), cohortIdsCsv), new QueryOptions(), sessionId).first());
+                        new Query(CohortDBAdaptor.QueryParams.ID.key(), cohortIdsCsv), new QueryOptions(), sessionId).first());
             }
 
         } catch (Exception e) {
@@ -266,9 +270,10 @@ public class CohortWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Delete cohort.", position = 5)
     public Response deleteCohort(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortStr) {
         try {
-            long cohortId = catalogManager.getCohortId(cohortStr, sessionId);
-            return createOkResponse(catalogManager.deleteCohort(cohortId, queryOptions, sessionId));
-        } catch (Exception e) {
+//            long cohortId = catalogManager.getCohortId(cohortStr, sessionId);
+            List<QueryResult<Cohort>> delete = catalogManager.getCohortManager().delete(cohortStr, queryOptions, sessionId);
+            return createOkResponse(delete);
+        } catch (CatalogException | IOException e) {
             return createErrorResponse(e);
         }
     }
@@ -354,7 +359,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     public Response searchAnnotationSetGET(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortStr,
                                            @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
                                            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
-                                           @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                           @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(catalogManager.getCohortManager().searchAnnotationSetAsMap(cohortStr, variableSetId, annotation, sessionId));
@@ -370,7 +375,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @Path("/{cohortId}/annotationSets/info")
     @ApiOperation(value = "Return all the annotation sets of the cohort [NOT TESTED]", position = 12)
     public Response infoAnnotationSetGET(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortStr,
-                                         @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                         @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(catalogManager.getCohortManager().getAllAnnotationSetsAsMap(cohortStr, sessionId));
@@ -441,7 +446,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Return the annotation set [NOT TESTED]", position = 16)
     public Response infoAnnotationGET(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortStr,
                                       @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
-                                      @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                      @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(catalogManager.getCohortManager().getAnnotationSetAsMap(cohortStr, annotationSetName, sessionId));
@@ -483,7 +488,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @GET
     @Path("/groupBy")
     @ApiOperation(value = "Group cohorts by several fields", position = 24)
-    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("by") String by,
+    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("fields") String fields,
                             @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyStr,
                             @ApiParam(value = "Comma separated list of ids.", required = false) @DefaultValue("") @QueryParam("id") String ids,
                             @ApiParam(value = "Comma separated list of names.", required = false) @DefaultValue("") @QueryParam("name") String names,
@@ -496,11 +501,11 @@ public class CohortWSServer extends OpenCGAWSServer {
         try {
             Query query = new Query();
             QueryOptions qOptions = new QueryOptions();
-            parseQueryParams(params, CatalogCohortDBAdaptor.QueryParams::getParam, query, qOptions);
+            parseQueryParams(params, CohortDBAdaptor.QueryParams::getParam, query, qOptions);
 
             logger.debug("query = " + query.toJson());
             logger.debug("queryOptions = " + qOptions.toJson());
-            QueryResult result = catalogManager.cohortGroupBy(query, qOptions, by, sessionId);
+            QueryResult result = catalogManager.cohortGroupBy(query, qOptions, fields, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

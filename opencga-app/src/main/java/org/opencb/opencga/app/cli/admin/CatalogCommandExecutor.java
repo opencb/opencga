@@ -114,16 +114,8 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             throw new CatalogException("No admin password found. Please, insert your password.");
         }
 
-        System.out.println("\nInstalling database " + catalogConfiguration.getDatabase().getDatabase() + " in "
-                + catalogConfiguration.getDatabase().getHosts() + "\n");
-
-//        if (!catalogCommandOptions.installCatalogCommandOptions.overwrite) {
-//            if (checkDatabaseExists()) {
-//                throw new CatalogException("The database " + catalogConfiguration.getDatabase().getDatabase() + " already exists.");
-//            }
-//        }
-
         CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
+        logger.info("\nInstalling database {} in {}\n", catalogManager.getCatalogDatabase(), catalogConfiguration.getDatabase().getHosts());
         catalogManager.installCatalogDB();
     }
 
@@ -132,7 +124,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
      *
      * @return true if exists.
      */
-    private boolean checkDatabaseExists() {
+    private boolean checkDatabaseExists(String database) {
         List<DataStoreServerAddress> dataStoreServerAddresses = new ArrayList<>();
         for (String host : catalogConfiguration.getDatabase().getHosts()) {
             if (host.contains(":")) {
@@ -144,7 +136,9 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             }
         }
         MongoDataStoreManager mongoDataStoreManager = new MongoDataStoreManager(dataStoreServerAddresses);
-        return mongoDataStoreManager.exists(catalogConfiguration.getDatabase().getDatabase());
+//        return mongoDataStoreManager.exists(catalogConfiguration.getDatabase().getDatabase());
+//        return mongoDataStoreManager.exists(catalogConfiguration.getDatabase().getDatabase());
+        return mongoDataStoreManager.exists(database);
     }
 
     private void delete() throws CatalogException {
@@ -168,13 +162,14 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             throw new CatalogException("No admin password found. Please, insert your password.");
         }
 
-        if (!checkDatabaseExists()) {
-            throw new CatalogException("The database " + catalogConfiguration.getDatabase().getDatabase() + " does not exist.");
-        }
-        System.out.println("\nDeleting " + catalogConfiguration.getDatabase().getDatabase() + " from "
-                + catalogConfiguration.getDatabase().getHosts() + "\n");
-
         CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
+
+        if (!checkDatabaseExists(catalogManager.getCatalogDatabase())) {
+            throw new CatalogException("The database " + catalogManager.getCatalogDatabase() + " does not exist.");
+        }
+//        System.out.println("\nDeleting " + catalogConfiguration.getDatabase().getDatabase() + " from "
+//                + catalogConfiguration.getDatabase().getHosts() + "\n");
+        logger.info("\nDeleting database {} from {}\n", catalogManager.getCatalogDatabase(), catalogConfiguration.getDatabase().getHosts());
         catalogManager.deleteCatalogDB(false);
     }
 
@@ -199,22 +194,25 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
             throw new CatalogException("No admin password found. Please, insert your password.");
         }
 
-        if (!checkDatabaseExists()) {
-            throw new CatalogException("The database " + catalogConfiguration.getDatabase().getDatabase() + " does not exist.");
+        CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
+        if (!checkDatabaseExists(catalogManager.getCatalogDatabase())) {
+            throw new CatalogException("The database " + catalogManager.getCatalogDatabase() + " does not exist.");
         }
 
-        System.out.println("\nChecking and installing non-existent indexes in" + catalogConfiguration.getDatabase().getDatabase() + " in "
-                + catalogConfiguration.getDatabase().getHosts() + "\n");
+//        System.out.println("\nChecking and installing non-existent indexes in" + catalogConfiguration.getDatabase().getDatabase() + " in "
+//                + catalogConfiguration.getDatabase().getHosts() + "\n");
+        logger.info("\nChecking and installing non-existent indexes in {} in {}\n",
+                catalogManager.getCatalogDatabase(), catalogConfiguration.getDatabase().getHosts());
+        catalogManager.getUserManager().validatePassword("admin", catalogConfiguration.getAdmin().getPassword(), true);
 
-        CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
-        catalogManager.validateAdminPassword();
         catalogManager.installIndexes();
     }
 
     private void daemons() throws Exception {
         if (catalogCommandOptions.daemonCatalogCommandOptions.start) {
             // Server crated and started
-            MonitorService monitorService = new MonitorService(catalogConfiguration);
+            MonitorService monitorService = new MonitorService(catalogCommandOptions.daemonCatalogCommandOptions.commonOptions.adminPassword,
+                    catalogConfiguration, appHome);
             monitorService.start();
             monitorService.blockUntilShutdown();
             logger.info("Shutting down OpenCGA Storage REST server");

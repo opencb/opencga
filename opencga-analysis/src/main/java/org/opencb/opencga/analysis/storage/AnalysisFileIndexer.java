@@ -26,11 +26,13 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.JobFactory;
-import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
+import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
+import org.opencb.opencga.analysis.variant.CatalogStudyConfigurationFactory;
+import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.Config;
@@ -68,6 +70,7 @@ import java.util.stream.Collectors;
  * ?????????????????????????????
  *
  */
+@Deprecated
 public class AnalysisFileIndexer {
 
     //Properties
@@ -76,6 +79,7 @@ public class AnalysisFileIndexer {
     //Options
     public static final String PARAMETERS = "parameters";
     public static final String TRANSFORM = "transform";
+    public static final String CREATE = "create";
     public static final String LOAD = "load";
     public static final String LOG_LEVEL = "logLevel";
 
@@ -157,8 +161,8 @@ public class AnalysisFileIndexer {
                     long jobId = inputFile.getIndex().getJobId();
                     Query query;
                     if (inputFile.getBioformat().equals(File.Bioformat.VARIANT)) {
-                        query = new Query(CatalogFileDBAdaptor.QueryParams.JOB_ID.key(), jobId)
-                                .append(CatalogFileDBAdaptor.QueryParams.NAME.key(), "~" + inputFile.getName() + ".variants");
+                        query = new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), jobId)
+                                .append(FileDBAdaptor.QueryParams.NAME.key(), "~" + inputFile.getName() + ".variants");
                     } else {
                         throw new CatalogException("Error: can't load this file. Only transformed files can be loaded.");
                     }
@@ -175,7 +179,7 @@ public class AnalysisFileIndexer {
                         try {
                             // Read the VariantSource to get the source file
                             VariantSource variantSource = utils.readVariantSource(catalogManager.getFileUri(inputFile));
-                            Query query = new Query(CatalogFileDBAdaptor.QueryParams.NAME.key(), variantSource.getFileName());
+                            Query query = new Query(FileDBAdaptor.QueryParams.NAME.key(), variantSource.getFileName());
                             QueryResult<File> result = catalogManager.searchFile(studyIdByOutDirId, query, sessionId);
                             if (result.getResult().size() == 0) {
                                 // TODO: Continue with the transformed file as indexed file?
@@ -222,7 +226,7 @@ public class AnalysisFileIndexer {
             originalFile = inputFile;
         }
 
-        final DataStore dataStore = getDataStore(catalogManager, catalogManager.getStudyIdByFileId(originalFile.getId()), originalFile.getBioformat(), sessionId);
+        final DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, catalogManager.getStudyIdByFileId(originalFile.getId()), originalFile.getBioformat(), sessionId);
 
         /** Check if file can be indexed **/
         if (originalFile.getIndex() != null) {
@@ -285,7 +289,7 @@ public class AnalysisFileIndexer {
         if (!simulate) {
             Cohort defaultCohort = null;
             QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyIdByOutDirId,
-                    new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), new QueryOptions(), sessionId);
+                    new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), new QueryOptions(), sessionId);
             if (cohorts.getResult().isEmpty()) {
                 defaultCohort = catalogManager.createCohort(studyIdByOutDirId, StudyEntry.DEFAULT_COHORT, Study.Type.COLLECTION,
                         "Default cohort with almost all indexed samples", Collections.emptyList(), null, sessionId).first();
@@ -415,25 +419,6 @@ public class AnalysisFileIndexer {
         catalogManager.modifyFile(fileId, new ObjectMap("index", index), sessionId);
     }
 
-    public static DataStore getDataStore(CatalogManager catalogManager, long studyId, File.Bioformat bioformat, String sessionId) throws CatalogException {
-        Study study = catalogManager.getStudy(studyId, sessionId).first();
-        DataStore dataStore;
-        if (study.getDataStores() != null && study.getDataStores().containsKey(bioformat)) {
-            dataStore = study.getDataStores().get(bioformat);
-        } else {
-            long projectId = catalogManager.getProjectIdByStudyId(study.getId());
-            Project project = catalogManager.getProject(projectId, new QueryOptions("include", Arrays.asList("projects.alias", "projects.dataStores")), sessionId).first();
-            if (project.getDataStores() != null && project.getDataStores().containsKey(bioformat)) {
-                dataStore = project.getDataStores().get(bioformat);
-            } else { //get default datastore
-                String userId = catalogManager.getUserIdByStudyId(studyId); //Must use the UserByStudyId instead of the file owner.
-                String alias = project.getAlias();
-                dataStore = new DataStore(StorageManagerFactory.get().getDefaultStorageManagerName(), Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX, "opencga_") + userId + "_" + alias);
-            }
-        }
-        return dataStore;
-    }
-
     /**
      *
      * @param study                     Study where file is located
@@ -448,7 +433,6 @@ public class AnalysisFileIndexer {
      *
      * @throws CatalogException
      */
-
     private String createCommandLine(Study study, File originalFile, File inputFile, List<Sample> sampleList,
                                      long outDirId, URI outDirUri, String randomString, final ObjectMap indexAttributes, final DataStore dataStore,
                                      String sessionId, QueryOptions options)

@@ -17,11 +17,12 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.File;
@@ -135,7 +136,7 @@ public class SampleWSServer extends OpenCGAWSServer {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
             QueryOptions qOptions = new QueryOptions();
-            parseQueryParams(params, CatalogSampleDBAdaptor.QueryParams::getParam, query, qOptions);
+            parseQueryParams(params, SampleDBAdaptor.QueryParams::getParam, query, qOptions);
             QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, query, qOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -227,7 +228,14 @@ public class SampleWSServer extends OpenCGAWSServer {
         try {
             // FIXME: The id resolution should not go here
             long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
-            QueryResult<Sample> queryResult = catalogManager.modifySample(sampleId, queryOptions, sessionId);
+
+            ObjectMap params = new ObjectMap();
+            params.putIfNotNull(SampleDBAdaptor.QueryParams.NAME.key(), name);
+            params.putIfNotNull(SampleDBAdaptor.QueryParams.DESCRIPTION.key(), description);
+            params.putIfNotNull(SampleDBAdaptor.QueryParams.SOURCE.key(), source);
+            params.putIfNotNull(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
+
+            QueryResult<Sample> queryResult = catalogManager.getSampleManager().update(sampleId, params, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -247,12 +255,12 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some sample attributes using POST method", position = 6)
     public Response updateByPost(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
-                                 @ApiParam(value = "params", required = true) UpdateSample params) {
+                                 @ApiParam(value = "params", required = true) UpdateSample parameters) {
         try {
             // FIXME: The id resolution should not go here
             long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
-            QueryResult<Sample> queryResult = catalogManager.modifySample(sampleId,
-                    new QueryOptions(jsonObjectMapper.writeValueAsString(params)), sessionId);
+            ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
+            QueryResult<Sample> queryResult = catalogManager.getSampleManager().update(sampleId, params, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -290,21 +298,27 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{sampleId}/delete")
     @ApiOperation(value = "Delete a sample", position = 9)
-    public Response delete(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr) {
+    public Response delete(@ApiParam(value = "Comma separated list of sample ids", required = true) @PathParam("sampleId") String sampleStr) {
         try {
-            // FIXME: The id resolution should not go here
-            long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
-            QueryResult<Sample> queryResult = catalogManager.deleteSample(sampleId, queryOptions, sessionId);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
+            List<QueryResult<Sample>> delete = catalogManager.getSampleManager().delete(sampleStr, queryOptions, sessionId);
+            return createOkResponse(delete);
+        } catch (CatalogException | IOException e) {
             return createErrorResponse(e);
         }
+//        try {
+//            // FIXME: The id resolution should not go here
+//            long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
+//            QueryResult<Sample> queryResult = catalogManager.deleteSample(sampleId, queryOptions, sessionId);
+//            return createOkResponse(queryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
     }
 
     @GET
     @Path("/groupBy")
     @ApiOperation(value = "Group samples by several fields", position = 10)
-    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("by") String by,
+    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("fields") String fields,
                             @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyIdStr,
                             @ApiParam(value = "Comma separated list of ids.") @QueryParam("id") String id,
                             @ApiParam(value = "Comma separated list of names.") @QueryParam("name") String name,
@@ -316,11 +330,11 @@ public class SampleWSServer extends OpenCGAWSServer {
         try {
             Query query = new Query();
             QueryOptions qOptions = new QueryOptions();
-            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, query, qOptions);
+            parseQueryParams(params, FileDBAdaptor.QueryParams::getParam, query, qOptions);
 
             logger.debug("query = " + query.toJson());
             logger.debug("queryOptions = " + qOptions.toJson());
-            QueryResult result = catalogManager.sampleGroupBy(query, qOptions, by, sessionId);
+            QueryResult result = catalogManager.sampleGroupBy(query, qOptions, fields, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -333,7 +347,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     public Response searchAnnotationSetGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
                                            @ApiParam(value = "variableSetId") @QueryParam("variableSetId") long variableSetId,
                                            @ApiParam(value = "annotation") @QueryParam("annotation") String annotation,
-                                           @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                           @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "true") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(catalogManager.getSampleManager().searchAnnotationSetAsMap(sampleStr, variableSetId, annotation, sessionId));
@@ -349,7 +363,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Path("/{sampleId}/annotationSets/info")
     @ApiOperation(value = "Return the annotation sets of the sample [NOT TESTED]", position = 12)
     public Response infoAnnotationSetGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
-                                         @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                         @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(catalogManager.getSampleManager().getAllAnnotationSetsAsMap(sampleStr, sessionId));
@@ -419,7 +433,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Return the annotation set [NOT TESTED]", position = 16)
     public Response infoAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
                                         @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
-                                        @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                        @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(catalogManager.getSampleManager().getAnnotationSetAsMap(sampleStr, annotationSetName, sessionId));

@@ -20,6 +20,7 @@ import com.beust.jcommander.*;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.GeneralOptions;
+import org.opencb.opencga.catalog.models.Account;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.List;
@@ -68,6 +69,7 @@ public class AdminCliOptionsParser {
         jCommander.addCommand("users", usersCommandOptions);
         JCommander usersSubCommands = jCommander.getCommands().get("users");
         usersSubCommands.addCommand("create", usersCommandOptions.createUserCommandOptions);
+        usersSubCommands.addCommand("import", usersCommandOptions.importUserCommandOptions);
         usersSubCommands.addCommand("delete", usersCommandOptions.deleteUserCommandOptions);
         usersSubCommands.addCommand("disk-quota", usersCommandOptions.diskQuotaUserCommandOptions);
         usersSubCommands.addCommand("stats", usersCommandOptions.statsUserCommandOptions);
@@ -196,6 +198,7 @@ public class AdminCliOptionsParser {
     public class UsersCommandOptions extends CommandOptions {
 
         CreateUserCommandOptions createUserCommandOptions;
+        ImportUserCommandOptions importUserCommandOptions;
         DeleteUserCommandOptions deleteUserCommandOptions;
         StatsUserCommandOptions statsUserCommandOptions;
         DiskQuotaUserCommandOptions diskQuotaUserCommandOptions;
@@ -204,6 +207,7 @@ public class AdminCliOptionsParser {
 
         public UsersCommandOptions() {
             this.createUserCommandOptions = new CreateUserCommandOptions();
+            this.importUserCommandOptions = new ImportUserCommandOptions();
             this.deleteUserCommandOptions = new DeleteUserCommandOptions();
             this.statsUserCommandOptions = new StatsUserCommandOptions();
             this.diskQuotaUserCommandOptions = new DiskQuotaUserCommandOptions();
@@ -271,7 +275,8 @@ public class AdminCliOptionsParser {
      */
     class CatalogDatabaseCommandOptions {
 
-        @Parameter(names = {"-d", "--database-name"}, description = "Database name for the catalog metadata, eg. opencga_catalog. If not present is read from catalog-configuration.yml")
+        @Parameter(names = {"-d", "--database"}, description = "Database name for the catalog metadata, eg. opencga_catalog. If not present is read from catalog-configuration.yml")
+        @Deprecated
         public String database;
 
         @Parameter(names = {"--database-host"}, description = "Database host and port, eg. localhost:27017. If not present is read from catalog-configuration.yml")
@@ -416,10 +421,6 @@ public class AdminCliOptionsParser {
      * USER SUB-COMMANDS
      */
 
-    public class UserCommandOptions {
-
-    }
-
     @Parameters(commandNames = {"create"}, commandDescription = "Create a new user with a default project in Catalog database and the workspace")
     public class CreateUserCommandOptions extends CatalogDatabaseCommandOptions {
 
@@ -432,7 +433,8 @@ public class AdminCliOptionsParser {
         @Parameter(names = {"--user-name"}, description = "User name", required = true, arity = 1)
         public String userName;
 
-        @Parameter(names = {"--user-password"}, description = "User password", required = true,  password = true, arity = 0)
+//        @Parameter(names = {"--user-password"}, description = "User password", required = true, password = true, arity = 0)
+        @Parameter(names = {"--user-password"}, description = "User password", required = true, arity = 1)
         public String userPassword;
 
         @Parameter(names = {"--user-email"}, description = "User email", required = true, arity = 1)
@@ -456,6 +458,34 @@ public class AdminCliOptionsParser {
         @Parameter(names = {"--project-organization"}, description = "Project organization", required = false, arity = 1)
         public String projectOrganization;
 
+    }
+
+    @Parameters(commandNames = {"import"}, commandDescription = "Import users from an authentication origin into catalog")
+    public class ImportUserCommandOptions extends CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+
+        @Parameter(names = {"-u", "--users"}, description = "Comma separated list of user ids", required = true, arity = 1)
+        public String users;
+
+        @Parameter(names = {"-g", "--groups"}, description = "Comma separated list of group ids [PENDING]", arity = 1)
+        public String groups;
+
+        @Parameter(names = {"--auth-origin"}, description = "Authentication id (as defined in the catalog configuration file) of the origin"
+                + " to be used to import users from.", arity = 1, required = true)
+        public String authOrigin;
+
+        @Parameter(names = {"--type"}, description = "User account type of the users to be imported (guest or full).", arity = 1)
+        public String type = Account.FULL;
+
+        @Parameter(names = {"--expiration-date"}, description = "Expiration date (DD/MM/YYYY). By default, 1 year starting from the "
+                + "import day", arity = 1)
+        public String expDate;
+
+        @Parameter(names = {"--studies"}, description = "Comma separated list of studies where the imported users will be synchronized "
+                + "with their belonging groups. If empty, users will not have any special permission.", arity = 1)
+        public String studies;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete the user Catalog database entry and the workspace")

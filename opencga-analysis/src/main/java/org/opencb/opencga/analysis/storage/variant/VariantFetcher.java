@@ -8,10 +8,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
+import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
@@ -20,6 +20,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -221,7 +222,7 @@ public class VariantFetcher {
         return regions;
     }
 
-    protected Long getMainStudyId(Query query) throws CatalogException {
+    public Long getMainStudyId(Query query) throws CatalogException {
         Long id = getMainStudyId(query, VariantDBAdaptor.VariantQueryParams.STUDIES.key());
         if (id == null) {
             id = getMainStudyId(query, VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key());
@@ -252,7 +253,7 @@ public class VariantFetcher {
             for (Map.Entry<Integer, List<Integer>> entry : samplesToReturn.entrySet()) {
                 if (!entry.getValue().isEmpty()) {
                     QueryResult<Sample> samplesQueryResult = catalogManager.getAllSamples(entry.getKey(),
-                            new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), entry.getValue()),
+                            new Query(SampleDBAdaptor.QueryParams.ID.key(), entry.getValue()),
                             new QueryOptions("exclude", Arrays.asList("projects.studies.samples.annotationSets",
                                     "projects.studies.samples.attributes"))
                             , sessionId);
@@ -266,7 +267,7 @@ public class VariantFetcher {
         } else {
             logger.debug("Missing returned samples! Obtaining returned samples from catalog.");
             List<Integer> returnedStudies = dbAdaptor.getReturnedStudies(query, queryOptions);
-            List<Study> studies = catalogManager.getAllStudies(new Query(CatalogStudyDBAdaptor.StudyFilterOptions.id.toString(), returnedStudies),
+            List<Study> studies = catalogManager.getAllStudies(new Query(StudyDBAdaptor.StudyFilterOptions.id.toString(), returnedStudies),
                     new QueryOptions("include", "projects.studies.id"), sessionId).getResult();
             samplesMap = new HashMap<>();
             List<Long> returnedSamples = new LinkedList<>();
@@ -286,7 +287,7 @@ public class VariantFetcher {
     }
 
     protected VariantDBAdaptor getVariantDBAdaptor(long studyId, String sessionId) throws CatalogException, StorageManagerException {
-        DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
+        DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
 
         String storageEngine = dataStore.getStorageEngine();
         String dbName = dataStore.getDbName();
@@ -316,6 +317,10 @@ public class VariantFetcher {
         }
 
         return query;
+    }
+
+    public VariantSourceDBAdaptor getSourceDBAdaptor(int studyId, String sessionId) throws CatalogException, StorageManagerException {
+        return getVariantDBAdaptor(studyId, sessionId).getVariantSourceDBAdaptor();
     }
 
 }

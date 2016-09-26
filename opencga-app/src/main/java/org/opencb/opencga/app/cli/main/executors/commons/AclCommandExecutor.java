@@ -24,7 +24,6 @@ public class AclCommandExecutor<T,U> {
             throws CatalogException,IOException {
         ObjectMap objectMap = new ObjectMap();
         objectMap.putIfNotNull("permissions", aclCommandOptions.permissions);
-
         return client.createAcl(aclCommandOptions.id, aclCommandOptions.members, objectMap);
     }
 
@@ -33,7 +32,6 @@ public class AclCommandExecutor<T,U> {
         ObjectMap objectMap = new ObjectMap();
         objectMap.putIfNotNull("permissions", aclCommandOptions.permissions);
         objectMap.putIfNotNull("templateId", aclCommandOptions.templateId);
-
         return client.createAcl(aclCommandOptions.id, aclCommandOptions.members, objectMap);
     }
 
@@ -53,7 +51,6 @@ public class AclCommandExecutor<T,U> {
         objectMap.putIfNotNull(StudyClient.AclParams.ADD_PERMISSIONS.key(), aclCommandOptions.addPermissions);
         objectMap.putIfNotNull(StudyClient.AclParams.REMOVE_PERMISSIONS.key(), aclCommandOptions.removePermissions);
         objectMap.putIfNotNull(StudyClient.AclParams.SET_PERMISSIONS.key(), aclCommandOptions.setPermissions);
-
         return client.updateAcl(aclCommandOptions.id, aclCommandOptions.memberId, objectMap);
     }
 

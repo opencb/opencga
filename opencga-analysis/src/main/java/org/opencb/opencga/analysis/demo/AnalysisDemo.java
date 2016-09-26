@@ -6,11 +6,11 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
+import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
@@ -58,7 +58,7 @@ public class AnalysisDemo {
         long inputFileId = file.getId();
 
         QueryResult<File> outdirResult = catalogManager.searchFile(studyId,
-                new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "data/jobs/"), sessionId);
+                new Query(FileDBAdaptor.QueryParams.PATH.key(), "data/jobs/"), sessionId);
         long outDirId;
         if (outdirResult.getResult().isEmpty()) {
             outDirId = catalogManager.createFolder(studyId, Paths.get("data/jobs/"), true, null, sessionId).first().getId();

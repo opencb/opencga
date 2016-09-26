@@ -25,13 +25,13 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisOutputRecorder;
-import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
+import org.opencb.opencga.catalog.monitor.ExecutionOutputRecorder;
+import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
+import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Study;
@@ -50,6 +50,7 @@ import java.util.Properties;
 /**
  * Created by jacobo on 23/10/14.
  */
+@Deprecated
 public class DaemonLoop implements Runnable {
 
     public static final String PORT = "OPENCGA.APP.DAEMON.PORT";
@@ -66,9 +67,10 @@ public class DaemonLoop implements Runnable {
     private CatalogManager catalogManager;
 
     private static Logger logger = LoggerFactory.getLogger(DaemonLoop.class);
-    private AnalysisOutputRecorder analysisOutputRecorder;
+    private ExecutionOutputRecorder analysisOutputRecorder;
     private String sessionId;
 
+    @Deprecated
     public DaemonLoop(Properties properties) {
         this.properties = properties;
         try {
@@ -108,7 +110,7 @@ public class DaemonLoop implements Runnable {
             e.printStackTrace();
             exit = true;
         }
-        analysisOutputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
+        analysisOutputRecorder = new ExecutionOutputRecorder(catalogManager, sessionId);
 
         while (!exit) {
             try {
@@ -190,7 +192,7 @@ public class DaemonLoop implements Runnable {
                         case Job.JobStatus.PREPARED:
                             try {
                                 ExecutorManager.execute(catalogManager, job, sessionId);
-                            } catch (AnalysisExecutionException e) {
+                            } catch (ExecutionException e) {
                                 ObjectMap params = new ObjectMap("status", Job.JobStatus.ERROR);
                                 String error = Job.ERRNO_NO_QUEUE;
                                 params.put("error", error);
@@ -214,7 +216,7 @@ public class DaemonLoop implements Runnable {
 
             logger.info("----- Pending deletions -----");
             try {
-                QueryResult<File> files = catalogManager.searchFile(-1, new Query(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(),
+                QueryResult<File> files = catalogManager.searchFile(-1, new Query(FileDBAdaptor.QueryParams.FILE_STATUS.key(),
                         File.FileStatus.TRASHED), new QueryOptions(), sessionId);
                 long currentTimeMillis = System.currentTimeMillis();
                 for (File file : files.getResult()) {

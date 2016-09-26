@@ -21,13 +21,19 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.monitor.daemons.ExecutionDaemon;
 import org.opencb.opencga.catalog.monitor.daemons.FileDaemon;
+import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
 
 /**
  * Created by imedina on 16/06/16.
@@ -36,14 +42,17 @@ public class MonitorService {
 
     private CatalogConfiguration catalogConfiguration;
     private CatalogManager catalogManager;
+    private String appHome;
 
     private static Server server;
     private int port;
 
     private ExecutionDaemon executionDaemon;
+    private IndexDaemon indexDaemon;
     private FileDaemon fileDaemon;
 
     private Thread executionThread;
+    private Thread indexThread;
     private Thread fileThread;
 
     private boolean exit;
@@ -51,23 +60,32 @@ public class MonitorService {
     protected static Logger logger;
 
 
-    public MonitorService(CatalogConfiguration catalogConfiguration) {
+    public MonitorService(String password, CatalogConfiguration catalogConfiguration, String appHome)
+            throws IOException, URISyntaxException {
         this.catalogConfiguration = catalogConfiguration;
+        this.appHome = appHome;
 
-        init();
+        init(password);
     }
 
-    private void init() {
+    private void init(String password) throws IOException, URISyntaxException {
         logger = LoggerFactory.getLogger(this.getClass());
 
         try {
             this.catalogManager = new CatalogManager(this.catalogConfiguration);
+            QueryResult<ObjectMap> login = this.catalogManager.login("admin", password,
+                    this.catalogConfiguration.getDatabase().getHosts().get(0));
+            String sessionId = login.first().getString("sessionId");
 
-            executionDaemon = new ExecutionDaemon(catalogConfiguration.getMonitor().getExecutionDaemonInterval(), catalogManager);
+            executionDaemon = new ExecutionDaemon(catalogConfiguration.getMonitor().getExecutionDaemonInterval(), sessionId,
+                    catalogManager, appHome);
+            indexDaemon = new IndexDaemon(catalogConfiguration.getMonitor().getExecutionDaemonInterval(), sessionId, catalogManager,
+                    appHome);
             fileDaemon = new FileDaemon(catalogConfiguration.getMonitor().getFileDaemonInterval(),
-                    catalogConfiguration.getMonitor().getDaysToRemove(), catalogManager);
+                    catalogConfiguration.getMonitor().getDaysToRemove(), sessionId, catalogManager);
 
             executionThread = new Thread(executionDaemon);
+            indexThread = new Thread(indexDaemon);
             fileThread = new Thread(fileDaemon);
 
             this.port = catalogConfiguration.getMonitor().getPort();
@@ -80,7 +98,8 @@ public class MonitorService {
 
         // Launching the two daemons in two different threads
         executionThread.start();
-        fileThread.start();
+        indexThread.start();
+//        fileThread.start();
 
         // Preparing the REST server configuration
         ResourceConfig resourceConfig = new ResourceConfig();

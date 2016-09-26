@@ -64,14 +64,25 @@ public class VariantDBAdaptorUtilsTest extends GenericTest {
 
     @Test
     public void testSplitOperators() throws Exception {
-        assertArrayEquals(new String[]{"key", "=", "value"}, VariantDBAdaptorUtils.splitOperator("key=value"));
-        assertArrayEquals(new String[]{"key", "==", "value"}, VariantDBAdaptorUtils.splitOperator("key==value"));
-        assertArrayEquals(new String[]{"key", "!=", "value"}, VariantDBAdaptorUtils.splitOperator("key!=value"));
-        assertArrayEquals(new String[]{"key", "<", "value"}, VariantDBAdaptorUtils.splitOperator("key<value"));
-        assertArrayEquals(new String[]{"key", "<=", "value"}, VariantDBAdaptorUtils.splitOperator("key<=value"));
-        assertArrayEquals(new String[]{"key", ">", "value"}, VariantDBAdaptorUtils.splitOperator("key>value"));
-        assertArrayEquals(new String[]{"key", ">=", "value"}, VariantDBAdaptorUtils.splitOperator("key>=value"));
-        assertArrayEquals(new String[]{"key", "~", "value"}, VariantDBAdaptorUtils.splitOperator("key~value"));
-        assertArrayEquals(new String[]{"key", "=~", "value"}, VariantDBAdaptorUtils.splitOperator("key=~value"));
+        test("=");
+        test("==");
+        test("!");
+        test("!=");
+        test("<");
+        test("<=");
+        test(">");
+        test(">=");
+        test("~");
+        test("=~");
     }
+
+    private void test(String operator) {
+        test("key", operator, "value");
+        test("", operator, "value");
+    }
+
+    private void test(String key, String operator, String value) {
+        assertArrayEquals("Split " + key + operator + value, new String[]{key, operator, value}, VariantDBAdaptorUtils.splitOperator(key + operator + value));
+    }
+
 }

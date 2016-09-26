@@ -3,7 +3,7 @@ package org.opencb.opencga.catalog.managers.api;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Annotation;
 import org.opencb.opencga.catalog.models.AnnotationSet;
@@ -18,6 +18,7 @@ import java.util.Map;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Deprecated
 public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotationSetManager {
 
     Long getStudyId(long sampleId) throws CatalogException;
@@ -31,7 +32,7 @@ public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotati
      * @return the numeric sample id.
      * @throws CatalogException when more than one sample id is found or the study or project ids cannot be resolved.
      */
-    Long getSampleId(String userId, String sampleStr) throws CatalogException;
+    Long getId(String userId, String sampleStr) throws CatalogException;
 
     /**
      * Obtains the list of sampleIds corresponding to the comma separated list of sample strings given in sampleStr.
@@ -41,23 +42,23 @@ public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotati
      * @return A list of sample ids.
      * @throws CatalogException CatalogException.
      */
-    default List<Long> getSampleIds(String userId, String sampleStr) throws CatalogException {
+    default List<Long> getIds(String userId, String sampleStr) throws CatalogException {
         List<Long> sampleIds = new ArrayList<>();
         for (String sampleId : sampleStr.split(",")) {
-            sampleIds.add(getSampleId(userId, sampleId));
+            sampleIds.add(getId(userId, sampleId));
         }
         return sampleIds;
     }
 
     @Deprecated
-    Long getSampleId(String fileId) throws CatalogException;
+    Long getId(String fileId) throws CatalogException;
 
     QueryResult<Sample> create(long studyId, String name, String source, String description, Map<String, Object> attributes,
                                QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<Annotation> load(File file) throws CatalogException;
 
-    QueryResult<Sample> readAll(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult<Sample> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
     /**
      * Retrieve the sample Acls for the given members in the sample.
@@ -69,12 +70,12 @@ public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotati
      * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
      * the sample id is not valid or the members given do not exist.
      */
-    QueryResult<SampleAclEntry> getSampleAcls(String sampleStr, List<String> members, String sessionId) throws CatalogException;
-    default List<QueryResult<SampleAclEntry>> getSampleAcls(List<String> sampleIds, List<String> members, String sessionId)
+    QueryResult<SampleAclEntry> getAcls(String sampleStr, List<String> members, String sessionId) throws CatalogException;
+    default List<QueryResult<SampleAclEntry>> getAcls(List<String> sampleIds, List<String> members, String sessionId)
             throws CatalogException {
         List<QueryResult<SampleAclEntry>> result = new ArrayList<>(sampleIds.size());
         for (String sampleStr : sampleIds) {
-            result.add(getSampleAcls(sampleStr, members, sessionId));
+            result.add(getAcls(sampleStr, members, sessionId));
         }
         return result;
     }
@@ -106,7 +107,7 @@ public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotati
     QueryResult rank(long studyId, Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException;
 
     default QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
-        long studyId = query.getLong(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key());
+        long studyId = query.getLong(SampleDBAdaptor.QueryParams.STUDY_ID.key());
         if (studyId == 0L) {
             throw new CatalogException("Sample[rank]: Study id not found in the query");
         }
@@ -127,7 +128,7 @@ public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotati
     QueryResult groupBy(long studyId, Query query, String field, QueryOptions options, String sessionId) throws CatalogException;
 
     default QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        long studyId = query.getLong(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key());
+        long studyId = query.getLong(SampleDBAdaptor.QueryParams.STUDY_ID.key());
         if (studyId == 0L) {
             throw new CatalogException("Sample[groupBy]: Study id not found in the query");
         }
@@ -148,7 +149,7 @@ public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotati
     QueryResult groupBy(long studyId, Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException;
 
     default QueryResult groupBy(Query query, List<String> field, QueryOptions options, String sessionId) throws CatalogException {
-        long studyId = query.getLong(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key());
+        long studyId = query.getLong(SampleDBAdaptor.QueryParams.STUDY_ID.key());
         if (studyId == 0L) {
             throw new CatalogException("Sample[groupBy]: Study id not found in the query");
         }

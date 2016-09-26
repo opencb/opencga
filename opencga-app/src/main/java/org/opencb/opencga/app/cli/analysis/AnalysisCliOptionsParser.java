@@ -374,11 +374,19 @@ public class AnalysisCliOptionsParser {
 //        @Parameter(names = {"--study-id"}, description = "Unque ID for the study", arity = 1)
 //        public long studyId;
 
-        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
-        public String fileId = VariantStorageManager.Options.FILE_ID.defaultValue().toString();
+        @Parameter(names = {"--file-id"}, description = "CSV of file ids to be indexed", required = true, arity = 1)
+        public String fileId = null;
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Unique ID for the file", required = false, arity = 1)
-        public String outdirId = null;
+        @Parameter(names = {"--transformed-files"}, description = "CSV of paths corresponding to the location of the transformed files.",
+                required = false, arity = 1)
+        public String transformedPaths = null;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
+        public String outdir = null;
+
+        @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
+                + "transformed files will not be registered in catalog.", required = false, arity = 1)
+        public String catalogPath = null;
 
         @Parameter(names = {"--exclude-genotypes"}, description = "Index excluding the genotype information")
         public boolean excludeGenotype = false;
@@ -444,7 +452,7 @@ public class AnalysisCliOptionsParser {
         public String studyId;
 
         @Parameter(names = {"-f", "--file-id"}, description = "Calculate stats only for the selected file", required = false, arity = 1)
-        public int fileId;
+        public String fileId;
 
         @Parameter(names = {"--cohort-ids"}, description = "Cohort Ids for the cohorts to be calculated.")
         String cohortIds;
@@ -453,8 +461,15 @@ public class AnalysisCliOptionsParser {
         @Parameter(names = {"--output-filename"}, description = "Output file name. Default: database name", required = false, arity = 1)
         public String fileName;
 
-        @Parameter(names = {"--outdir-id"}, description = "Output directory", required = false, arity = 1)
-        public String outdirId;
+//        @Parameter(names = {"--outdir-id"}, description = "Output directory", required = false, arity = 1)
+//        public String outdirId;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
+        public String outdir = null;
+
+        @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
+                + "transformed files will not be registered in catalog.", required = false, arity = 1)
+        public String catalogPath = null;
 
 //        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
 //        public String outdir = ".";
@@ -490,6 +505,9 @@ public class AnalysisCliOptionsParser {
 
         @Parameter(names = {"--load"}, description = "Run only the load of the annotations into the DB from FILE")
         public String load = null;
+
+        @Parameter(names = {"--custom-name"}, description = "Provide a name to the custom annotation")
+        public String customAnnotationKey = null;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
         public org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource annotator;

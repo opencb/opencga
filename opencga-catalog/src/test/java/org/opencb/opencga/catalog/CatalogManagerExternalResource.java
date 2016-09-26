@@ -18,7 +18,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Properties;
 
 /**
  * Created on 05/05/16
@@ -27,7 +26,7 @@ import java.util.Properties;
  */
 public class CatalogManagerExternalResource extends ExternalResource {
 
-    private CatalogManager catalogManager;
+    private static CatalogManager catalogManager;
     private CatalogConfiguration catalogConfiguration;
     private Path opencgaHome;
 
@@ -82,7 +81,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
         return opencgaHome;
     }
 
-    public static void clearCatalog(CatalogConfiguration catalogConfiguration) throws IOException {
+    public static void clearCatalog(CatalogConfiguration catalogConfiguration) throws IOException, CatalogException {
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
         for (String hostPort : catalogConfiguration.getDatabase().getHosts()) {
             if (hostPort.contains(":")) {
@@ -94,9 +93,16 @@ public class CatalogManagerExternalResource extends ExternalResource {
             }
         }
         MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
-        MongoDataStore db = mongoManager.get(catalogConfiguration.getDatabase().getDatabase());
+
+        if (catalogManager == null) {
+            catalogManager = new CatalogManager(catalogConfiguration);
+        }
+
+//        MongoDataStore db = mongoManager.get(catalogConfiguration.getDatabase().getDatabase());
+        MongoDataStore db = mongoManager.get(catalogManager.getCatalogDatabase());
         db.getDb().drop();
-        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
+//        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
+        mongoManager.close(catalogManager.getCatalogDatabase());
 
         Path rootdir = Paths.get(URI.create(catalogConfiguration.getDataDir()));
         deleteFolderTree(rootdir.toFile());
@@ -104,33 +110,6 @@ public class CatalogManagerExternalResource extends ExternalResource {
             Path jobsDir = Paths.get(URI.create(catalogConfiguration.getTempJobsDir()));
             if (jobsDir.toFile().exists()) {
                 deleteFolderTree(jobsDir.toFile());
-            }
-        }
-    }
-
-    @Deprecated
-    public static void clearCatalog(Properties properties) throws IOException {
-        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : properties.getProperty(CatalogManager.CATALOG_DB_HOSTS, "localhost").split(",")) {
-            if (hostPort.contains(":")) {
-                String[] split = hostPort.split(":");
-                Integer port = Integer.valueOf(split[1]);
-                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
-            } else {
-                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
-            }
-        }
-        MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
-        MongoDataStore db = mongoManager.get(properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
-        db.getDb().drop();
-        mongoManager.close(properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
-
-        Path rootdir = Paths.get(URI.create(properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR)));
-        CatalogManagerExternalResource.deleteFolderTree(rootdir.toFile());
-        if (properties.containsKey(CatalogManager.CATALOG_JOBS_ROOTDIR)) {
-            Path jobsDir = Paths.get(URI.create(properties.getProperty(CatalogManager.CATALOG_JOBS_ROOTDIR)));
-            if (jobsDir.toFile().exists()) {
-                CatalogManagerExternalResource.deleteFolderTree(jobsDir.toFile());
             }
         }
     }

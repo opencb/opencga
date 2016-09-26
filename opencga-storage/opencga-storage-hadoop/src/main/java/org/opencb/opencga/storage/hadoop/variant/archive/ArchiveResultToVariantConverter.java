@@ -66,8 +66,10 @@ public class ArchiveResultToVariantConverter {
             if (resolveConflict) {
                 varList = resolveConflicts(varList);
             }
-            LOG.info(String.format("For Column %s found %s entries",
-                    ArchiveHelper.getFileIdFromColumnName(entry.getKey()), varList.size()));
+            if (LOG.isDebugEnabled()) {
+                LOG.debug(String.format("For Column %s found %s entries",
+                        ArchiveHelper.getFileIdFromColumnName(entry.getKey()), varList.size()));
+            }
             variantList.addAll(varList);
         }
         return variantList;

@@ -27,8 +27,9 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisOutputRecorder;
-import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
+import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
+import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
+import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DataStore;
@@ -101,6 +102,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         return alignmentStorageManager;
     }
 
+    @Deprecated
     private void index()
             throws CatalogException, AnalysisExecutionException, JsonProcessingException, IllegalAccessException, InstantiationException,
             ClassNotFoundException, StorageManagerException {
@@ -144,6 +146,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         }
     }
 
+    @Deprecated
     private void index(Job job) throws CatalogException, IllegalAccessException, ClassNotFoundException, InstantiationException, StorageManagerException {
 
         AnalysisCliOptionsParser.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
@@ -160,7 +163,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
          * Getting VariantStorageManager
          * We need to find out the Storage Engine Id to be used from Catalog
          */
-        DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.ALIGNMENT, sessionId);
+        DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.ALIGNMENT, sessionId);
         initAlignmentStorageManager(dataStore);
 
 
@@ -196,7 +199,8 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         URI inputUri = catalogManager.getFileUri(file);
 //        FileUtils.checkFile(Paths.get(inputUri.getPath()));
 
-        URI outdirUri = job.getTmpOutDirUri();
+//        URI outdirUri = job.getTmpOutDirUri();
+        URI outdirUri = IndexDaemon.getJobTemporaryFolder(job.getId(), catalogConfiguration.getTempJobsDir()).toUri();
 //        FileUtils.checkDirectory(Paths.get(outdirUri.getPath()));
 
 
@@ -226,7 +230,8 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
             throw e;
         } finally {
             // 4) Save indexation result.
-            new AnalysisOutputRecorder(catalogManager, sessionId).saveStorageResult(job, storageETLResult);
+            // TODO: Uncomment this line
+//            new ExecutionOutputRecorder(catalogManager, sessionId).saveStorageResult(job, storageETLResult);
         }
     }
 
@@ -257,7 +262,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
          * Getting VariantStorageManager
          * We need to find out the Storage Engine Id to be used from Catalog
          */
-        DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.ALIGNMENT, sessionId);
+        DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.ALIGNMENT, sessionId);
         initAlignmentStorageManager(dataStore);
 
         AlignmentDBAdaptor dbAdaptor = alignmentStorageManager.getDBAdaptor(dataStore.getDbName());

@@ -96,8 +96,7 @@ storageEngines:
   options: {}
   alignment:
     manager: "org.opencb.opencga.storage.hadoop.alignment.MongoDBAlignmentStorageManager"
-    options:
-      fs.defaultFS: "${OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS}"
+    options: {}
     database:
       hosts:
       - "${OPENCGA.STORAGE.VARIANT.DB.HOSTS}"
@@ -113,13 +112,21 @@ storageEngines:
       assembly: "GRCh37"
       #Plugin specific options
       hadoop.bin: "hadoop"
-      hadoop.env: "HADOOP_USER_CLASSPATH_FIRST=true,HADOOP_CLASSPATH=${OPENCGA.INSTALLATION.DIR}/libs/protobuf-java-3.0.0-beta-1.jar"
+#      hadoop.env: # See opencga-env.sh
+#      - "HADOOP_USER_CLASSPATH_FIRST=true"
+#      - "HADOOP_CLASSPATH=$HADOOP_CLASSPATH:${OPENCGA.INSTALLATION.DIR}/libs/protobuf-java-${google.protobuf}.jar"
+#      - ....
       opencga.storage.hadoop.jar-with-dependencies: "opencga-storage-hadoop-${opencga.version}-jar-with-dependencies.jar"
       opencga.archive.chunk_size: 1000
       opencga.archive.table.compression: "snappy"
       opencga.variant.table.compression: "snappy"
-      fs.defaultFS: "${OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS}"
       opencga.storage.hadoop.hbase.namespace: "${OPENCGA.STORAGE.HADOOP.HBASE.NAMESPACE}"
+      opencga.storage.hadoop.hbase.archive.table.prefix: "${OPENCGA.STORAGE.HADOOP.HBASE.ARCHIVE.TABLE.PREFIX}"
+      # Increase the ScannerTimeoutPeriod from 60000 (1min) to 300000 (5min) to avoid ScannerTimeoutExceptions
+      # See opencb/opencga#352 for more info.
+      opencga.storage.hadoop.mapreduce.scanner.timeout: 300000
+      #Hadoop options
+      #fs.defaultFS: "${OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS}"
     database:
       hosts:
       - "${OPENCGA.STORAGE.HADOOP.VARIANT.DB.HOSTS}"

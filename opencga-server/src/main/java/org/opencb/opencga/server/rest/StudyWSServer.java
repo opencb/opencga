@@ -24,12 +24,12 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
 import org.opencb.opencga.catalog.utils.FileScanner;
-import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
@@ -93,7 +93,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "projectId") @QueryParam("projectId") String projectId,
                                   @ApiParam(value = "name") @QueryParam("name") String name,
                                   @ApiParam(value = "alias") @QueryParam("alias") String alias,
-                                  @ApiParam(value = "type") @QueryParam("type") String type,
+                                  @ApiParam(value = "type") @QueryParam("Comma separated list of type") String type,
                                   @ApiParam(value = "creationDate") @QueryParam("creationDate") String creationDate,
                                   @ApiParam(value = "status") @QueryParam("status") String status,
                                   @ApiParam(value = "attributes") @QueryParam("attributes") String attributes,
@@ -102,9 +102,9 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             // FIXME this is not needed right?
             QueryOptions qOptions = new QueryOptions(queryOptions);
-            parseQueryParams(params, CatalogStudyDBAdaptor.QueryParams::getParam, query, qOptions);
+            parseQueryParams(params, StudyDBAdaptor.QueryParams::getParam, query, qOptions);
             if (projectId != null) {
-                query.put(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), catalogManager.getProjectId(projectId, sessionId));
+                query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), catalogManager.getProjectId(projectId, sessionId));
             }
             QueryResult<Study> queryResult = catalogManager.getAllStudies(query, qOptions, sessionId);
             return createOkResponse(queryResult);
@@ -123,26 +123,16 @@ public class StudyWSServer extends OpenCGAWSServer {
                            @ApiParam(defaultValue = "attributes") @DefaultValue("") @QueryParam("attributes") String attributes,
                            @ApiParam(defaultValue = "stats") @DefaultValue("") @QueryParam("stats") String stats) throws IOException {
         try {
-            ObjectMap objectMap = new ObjectMap();
-            if(!name.isEmpty()) {
-                objectMap.put("name", name);
-            }
-            if(!type.isEmpty()) {
-                objectMap.put("type", type);
-            }
-            if(!description.isEmpty()) {
-                objectMap.put("description", description);
-            }
-            if(!attributes.isEmpty()) {
-                objectMap.put("attributes", attributes);
-            }
-            if(!stats.isEmpty()) {
-                objectMap.put("stats", stats);
-            }
+            ObjectMap params = new ObjectMap();
+            params.putIfNotEmpty("name", name);
+            params.putIfNotEmpty("type", type);
+            params.putIfNotEmpty("description", description);
+            params.putIfNotEmpty("attributes", attributes);
+            params.putIfNotEmpty("stats", stats);
 
-            logger.debug(objectMap.toJson());
+            logger.debug(params.toJson());
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
-            QueryResult result = catalogManager.modifyStudy(studyId, objectMap, sessionId);
+            QueryResult result = catalogManager.modifyStudy(studyId, params, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -227,7 +217,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
             QueryOptions qOptions = new QueryOptions(queryOptions);
-            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, query, qOptions);
+            parseQueryParams(params, FileDBAdaptor.QueryParams::getParam, query, qOptions);
             QueryResult queryResult = catalogManager.getAllFiles(studyId, query, qOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -255,7 +245,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
             QueryOptions qOptions = new QueryOptions(queryOptions);
-            parseQueryParams(params, CatalogSampleDBAdaptor.QueryParams::getParam, query, qOptions);
+            parseQueryParams(params, SampleDBAdaptor.QueryParams::getParam, query, qOptions);
             QueryResult queryResult = catalogManager.getAllSamples(studyId, query, qOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -363,7 +353,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/alignments")
-    @ApiOperation(value = "Fetch alignments", position = 11, response = Alignment[].class)
+    @ApiOperation(value = "Fetch alignments. [PENDING]", position = 11, response = Alignment[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
@@ -395,9 +385,9 @@ public class StudyWSServer extends OpenCGAWSServer {
         QueryOptions qOptions = new QueryOptions(queryOptions);
         try {
             File file = catalogManager.getAllFiles(studyId, query
-                            .append(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.ALIGNMENT)
-                            .append(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleId)
-                            .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY),
+                            .append(FileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.ALIGNMENT)
+                            .append(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleId)
+                            .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY),
                     qOptions, sessionId).first();
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -425,7 +415,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             ObjectMap indexAttributes = new ObjectMap(file.getIndex().getAttributes());
             DataStore dataStore;
             try {
-                dataStore = AnalysisFileIndexer.getDataStore(catalogManager, Integer.parseInt(studyIdStr), File.Bioformat.VARIANT, sessionId);
+                dataStore = AbstractFileIndexer.getDataStore(catalogManager, Integer.parseInt(studyIdStr), File.Bioformat.VARIANT, sessionId);
             } catch (CatalogException e) {
                 e.printStackTrace();
                 return createErrorResponse(e);
@@ -496,7 +486,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             Map<String, URI> untrackedFiles = fileScanner.untrackedFiles(study, sessionId);
 
             /** Get missing files **/
-            List<File> missingFiles = catalogManager.getAllFiles(studyId, query.append(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(),
+            List<File> missingFiles = catalogManager.getAllFiles(studyId, query.append(FileDBAdaptor.QueryParams.FILE_STATUS.key(),
                     File.FileStatus.MISSING), queryOptions, sessionId).getResult();
 
             ObjectMap fileStatus = new ObjectMap("untracked", untrackedFiles).append("found", found).append("missing", missingFiles);
@@ -680,13 +670,14 @@ public class StudyWSServer extends OpenCGAWSServer {
                     "<il><b>id</b>, <b>lastModified</b> and <b>diskUsage</b> parameters will be ignored.<br></il>" +
                     "<il><b>type</b> accepted values: [<b>'CASE_CONTROL', 'CASE_SET', 'CONTROL_SET', 'FAMILY', 'PAIRED', 'TRIO'</b>].<br></il>" +
                     "<ul>")
-    public Response createStudyPOST(@ApiParam(value = "projectId", required = true) @QueryParam("projectId") String projectIdStr,
+    public Response createStudyPOST(@ApiParam(value = "Project id or alias", required = true) @QueryParam("projectId") String projectIdStr,
                                     @ApiParam(value="studies", required = true) List<Study> studies) {
 //        List<Study> catalogStudies = new LinkedList<>();
         List<QueryResult<Study>> queryResults = new LinkedList<>();
         long projectId;
         try {
-            projectId = catalogManager.getProjectId(projectIdStr);
+            String userId = catalogManager.getUserManager().getId(sessionId);
+            projectId = catalogManager.getProjectManager().getId(userId, projectIdStr);
         } catch (CatalogException e) {
             e.printStackTrace();
             return createErrorResponse(e);
@@ -748,8 +739,8 @@ public class StudyWSServer extends OpenCGAWSServer {
         public String name;
         public Study.Type type;
         public String description;
-        public String status;
-        public String lastModified;
+//        public String status;
+//        public String lastModified;
 //        public long diskUsage;
 //        public String cipher;
 
@@ -766,7 +757,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response updateByPost(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                  @ApiParam(value = "params", required = true) UpdateStudy updateParams) {
         try {
-            long studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
             QueryResult queryResult = catalogManager.modifyStudy(studyId, new QueryOptions(jsonObjectMapper.writeValueAsString(updateParams)), sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {

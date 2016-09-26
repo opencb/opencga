@@ -38,11 +38,13 @@ public class CatalogConfiguration {
     private boolean openRegister;
     private int userDefaultDiskQuota;
 
+    private String databasePrefix;
     private String dataDir;
     private String tempJobsDir;
     private String toolsDir;
 
     private Admin admin;
+    private List<AuthenticationOrigin> authenticationOrigins;
     private Monitor monitor;
     private Execution execution;
     private Audit audit;
@@ -106,6 +108,7 @@ public class CatalogConfiguration {
         sb.append(", tempJobsDir='").append(tempJobsDir).append('\'');
         sb.append(", toolsDir='").append(toolsDir).append('\'');
         sb.append(", admin=").append(admin);
+        sb.append(", authenticationOrigins=").append(authenticationOrigins);
         sb.append(", monitor=").append(monitor);
         sb.append(", execution=").append(execution);
         sb.append(", audit=").append(audit);
@@ -152,6 +155,15 @@ public class CatalogConfiguration {
         return this;
     }
 
+    public String getDatabasePrefix() {
+        return databasePrefix;
+    }
+
+    public CatalogConfiguration setDatabasePrefix(String databasePrefix) {
+        this.databasePrefix = databasePrefix;
+        return this;
+    }
+
     public String getDataDir() {
         return dataDir;
     }
@@ -185,6 +197,15 @@ public class CatalogConfiguration {
 
     public CatalogConfiguration setAdmin(Admin admin) {
         this.admin = admin;
+        return this;
+    }
+
+    public List<AuthenticationOrigin> getAuthenticationOrigins() {
+        return authenticationOrigins;
+    }
+
+    public CatalogConfiguration setAuthenticationOrigins(List<AuthenticationOrigin> authenticationOrigins) {
+        this.authenticationOrigins = authenticationOrigins;
         return this;
     }
 

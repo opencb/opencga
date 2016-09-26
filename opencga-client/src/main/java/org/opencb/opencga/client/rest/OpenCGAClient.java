@@ -131,7 +131,11 @@ public class OpenCGAClient {
             sessionId = login.firstResult().getString("sessionId");
 
             if (this.sessionId != null) { // If the latest sessionId is still active
-                userClient.logout();
+                try {
+                    userClient.logout();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
 
             setSessionId(sessionId);

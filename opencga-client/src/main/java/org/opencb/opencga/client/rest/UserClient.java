@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.client.rest;
 
+import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
@@ -40,21 +41,60 @@ public class UserClient extends AbstractParentClient<User, User> {
         this.clazz = User.class;
     }
 
-    public QueryResponse<User> create(String user, String password, ObjectMap params) {
+    /*public QueryResponse<User> create(String user, String password, ObjectMap params)throws IOException {
+        //TODO param: method for GET o POST
         QueryResponse<User> response = null;
-        params = addParamsToObjectMap(params, "userId", user, "password", password);
-        try {
-            response = execute(USERS_URL, "create", params, POST, User.class);
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
+        if (params.containsKey("method") && params.get("method").equals("GET")) {
+            params = addParamsToObjectMap(params, "userId", user, "password", password);
+            try {
+                response = execute(USERS_URL, "create", params, GET, User.class);
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+            }
+        }else {
+            params = addParamsToObjectMap(params, "userId", user, "password", password);
+            ObjectMapper mapper = new ObjectMapper();
+            try {
+                String json = mapper.writeValueAsString(params);
+                ObjectMap p = new ObjectMap("body", json);
+                response = execute(USERS_URL, "create", p, POST, User.class);
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+            }
         }
         return response;
+    }*/
+    public QueryResponse<User> create(String user, String password, ObjectMap params)throws IOException {
+        //TODO TEST
+        if (params.containsKey("method") && params.get("method").equals("GET")) {
+            params = addParamsToObjectMap(params, "userId", user, "password", password);
+                return execute(USERS_URL, "create", params, GET, User.class);
+        }
+        params = addParamsToObjectMap(params, "userId", user, "password", password);
+        ObjectMapper mapper = new ObjectMapper();
+        String json = mapper.writeValueAsString(params);
+        ObjectMap p = new ObjectMap("body", json);
+        return execute(USERS_URL, "create", p, POST, User.class);
     }
-
+    /*
+    Deprecated
     QueryResponse<ObjectMap> login(String user, String password) {
         QueryResponse<ObjectMap> response = null;
         try {
-            response = execute(USERS_URL, user, "login", createParamsMap("password", password), POST, ObjectMap.class);
+            response = execute(USERS_URL, user, "login", createParamsMap("password", password), GET, ObjectMap.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return response;
+    }*/
+    QueryResponse<ObjectMap> login(String user, String password) {
+        QueryResponse<ObjectMap> response = null;
+        ObjectMap p = new ObjectMap("password", password);
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            String json = mapper.writeValueAsString(p);
+            ObjectMap objectMap = new ObjectMap("body", json);
+            response = execute(USERS_URL, user, "login", objectMap, POST, ObjectMap.class);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -78,9 +118,10 @@ public class UserClient extends AbstractParentClient<User, User> {
     public QueryResponse<Project> getProjects(QueryOptions options) throws CatalogException, IOException {
         return execute(USERS_URL, getUserId(), "projects", options, GET, Project.class);
     }
-
+    /*Deprecated
     public QueryResponse<User> changePassword(String currentPassword, String newPassword, ObjectMap params)
             throws CatalogException, IOException {
+
         params = addParamsToObjectMap(params, "password", currentPassword, "npassword", newPassword);
         QueryResponse<User> execute = execute(USERS_URL, getUserId(), "change-password", params, POST, User.class);
         if (!execute.getError().isEmpty()) {
@@ -88,15 +129,24 @@ public class UserClient extends AbstractParentClient<User, User> {
         }
         return execute;
     }
-
-    public QueryResponse<User> resetPassword(String email, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "email", email);
+    */
+    public QueryResponse<User> changePassword(String currentPassword, String newPassword, ObjectMap params)
+            throws CatalogException, IOException {
+        if (params.containsKey("method") && params.get("method").equals("GET")) {
+            params = addParamsToObjectMap(params, "password", currentPassword, "npassword", newPassword);
+            return execute(USERS_URL, getUserId(), "change-password", params, GET, User.class);
+        }
+        ObjectMapper mapper = new ObjectMapper();
+        params = addParamsToObjectMap(params, "password", currentPassword, "npassword", newPassword);
+        String json = mapper.writeValueAsString(params);
+        ObjectMap objectMap = new ObjectMap("body", json);
+        return execute(USERS_URL, getUserId(), "change-password", objectMap, POST, User.class);
+    }
+    public QueryResponse<User> resetPassword(ObjectMap params) throws CatalogException, IOException {
         return execute(USERS_URL, getUserId(), "change-password", params, GET, User.class);
     }
 
-    public QueryResponse<User> update(ObjectMap params) throws CatalogException, IOException {
-        return execute(USERS_URL, getUserId(), "update", params, GET, User.class);
-    }
+
 
 //    public QueryResponse<User> delete(ObjectMap params) throws CatalogException, IOException {
 //        return super.delete(getUserId(), params);

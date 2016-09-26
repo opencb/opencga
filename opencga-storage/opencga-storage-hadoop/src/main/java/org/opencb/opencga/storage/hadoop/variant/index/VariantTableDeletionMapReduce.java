@@ -3,16 +3,10 @@
  */
 package org.opencb.opencga.storage.hadoop.variant.index;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-
+import com.google.common.collect.BiMap;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Delete;
-import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Mutation;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
@@ -21,9 +15,10 @@ import org.apache.hadoop.mapreduce.Mapper;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-
-import com.google.common.collect.BiMap;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Removes Sample data for a provided file from the Analysis (Variant) and the
@@ -38,12 +33,13 @@ public class VariantTableDeletionMapReduce extends AbstractVariantTableMapReduce
     private Table archiveTable;
 
     @Override
-    protected void setup(Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put>.Context context) throws IOException,
+    protected void setup(Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Mutation>.Context context) throws IOException,
             InterruptedException {
         super.setup(context);
         this.analysisTable = getDbConnection().getTable(TableName.valueOf(getHelper().getOutputTable()));
         this.archiveTable = getDbConnection().getTable(TableName.valueOf(getHelper().getIntputTable()));
     }
+
     @Override
     protected void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException {
         List<Variant> updateLst = new ArrayList<>();
@@ -82,7 +78,7 @@ public class VariantTableDeletionMapReduce extends AbstractVariantTableMapReduce
         List<VariantTableStudyRow> rows = new ArrayList<>();
         deleteFromAnalysisTable(ctx.context, removeLst);
         updateOutputTable(ctx.context, updateLst, rows, null);
-        updateArchiveTable(ctx.key, ctx.context, rows);
+        updateArchiveTable(ctx.getCurrRowKey(), ctx.context, rows);
         deleteFromArchiveTable(ctx.context, ctx.currRowKey, ctx.fileIds);
     }
 
@@ -97,13 +93,14 @@ public class VariantTableDeletionMapReduce extends AbstractVariantTableMapReduce
         this.archiveTable.delete(del);
     }
 
-    private void deleteFromAnalysisTable(Context context, List<Variant> removeLst) throws IOException {
+    private void deleteFromAnalysisTable(Context context, List<Variant> removeLst) throws IOException, InterruptedException {
         int studyId = getStudyConfiguration().getStudyId();
         BiMap<String, Integer> idMapping = getStudyConfiguration().getSampleIds();
         for (Variant variant : removeLst) {
             VariantTableStudyRow row = new VariantTableStudyRow(variant, studyId, idMapping);
             Delete delete = row.createDelete(getHelper());
-            this.analysisTable.delete(delete);
+//            this.analysisTable.delete(delete);
+            context.write(new ImmutableBytesWritable(getHelper().getOutputTable()), delete);
             context.getCounter(COUNTER_GROUP_NAME, "ANALYSIS_TABLE_ROW-DELETE").increment(1);
         }
     }
@@ -144,15 +141,30 @@ public class VariantTableDeletionMapReduce extends AbstractVariantTableMapReduce
         Integer gtPos = se.getFormatPositions().get("GT");
         List<List<String>> samplesData = se.getSamplesData();
         for (List<String> data : samplesData) {
-            String gt = data.get(gtPos);
-            int[] idxArr = new Genotype(gt).getAllelesIdx();
-            for (int i = 0; i < idxArr.length; i++) {
-                if (idxArr[i] == 1) {
+            String gts = data.get(gtPos);
+            if (gts.contains(",")) {
+                for (String gt :  gts.split(",")) {
+                    if (hasAlt(gt)) {
+                        return true; // Found at least one ALT genotype
+                    }
+                }
+            } else {
+                if (hasAlt(gts)) {
                     return true; // Found at least one ALT genotype
                 }
             }
         }
         // Only contains secondary alternate, HOM_REF, no-call, etc. -> remove!!!
+        return false;
+    }
+
+    private boolean hasAlt(String gt) {
+        int[] idxArr = new Genotype(gt).getAllelesIdx();
+        for (int anIdxArr : idxArr) {
+            if (anIdxArr == 1) {
+                return true;
+            }
+        }
         return false;
     }
 

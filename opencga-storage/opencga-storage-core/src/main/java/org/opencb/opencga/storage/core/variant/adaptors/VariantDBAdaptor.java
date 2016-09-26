@@ -18,12 +18,10 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.client.rest.CellBaseClient;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
@@ -95,7 +93,7 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
         ANNOT_SIFT("sift", TEXT_ARRAY,
                 "Sift, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description} e.g. >0.1 , ~=tolerant"),
         ANNOT_PROTEIN_SUBSTITUTION("protein_substitution", TEXT_ARRAY,
-                "Protein substitution score. {protein_score}[<|>|<=|>=]{number} or {protein_score}[~=|=|]{description} "
+                "Protein substitution score. {protein_score}[<|>|<=|>=]{number} or {protein_score}[~=|=]{description} "
                         + "e.g. polyphen>0.1 , sift=tolerant"),
         ANNOT_CONSERVATION("conservation", TEXT_ARRAY,
                 "Conservation score: {conservation_score}[<|>|<=|>=]{number}  e.g. phastCons>0.5,phylop<0.1,gerp>0.1"),
@@ -122,6 +120,9 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
                 "List of drug names"),
         ANNOT_FUNCTIONAL_SCORE("annot-functional-score", TEXT_ARRAY,
                 "Functional score: {functional_score}[<|>|<=|>=]{number}  e.g. cadd_scaled>5.2 , cadd_raw<=0.3"),
+
+        ANNOT_CUSTOM("annot-custom", TEXT_ARRAY,
+                "Custom annotation: {key}[<|>|<=|>=]{number} or {key}[~=|=]{text}"),
 
 
         UNKNOWN_GENOTYPE("unknownGenotype", TEXT, "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]");
@@ -355,6 +356,17 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
     QueryResult addAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
 
     QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
+
+    /**
+     * Update custom annotation for all the variants with in a given region.
+     *
+     * @param query       Region to update
+     * @param name        Custom annotation name.
+     * @param attribute   Custom annotation for the region
+     * @param options     Other options
+     * @return            Result of the insertion
+     */
+    QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, QueryOptions options);
 
     QueryResult deleteAnnotation(String annotationId, Query query, QueryOptions queryOptions);
 
