@@ -56,6 +56,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <opencga.war.name>opencga</opencga.war.name>
         <opencga.env.file>opencga-env.sh</opencga.env.file>
+
+        <!-- This prevents findbugs plugin to check all the dependency locations -->
+        <dependency.locations.enabled>false</dependency.locations.enabled>
     </properties>
 
     <scm>
@@ -410,6 +413,7 @@
                 <version>3.0.4</version>
                 <configuration>
                     <xmlOutput>true</xmlOutput>
+                    <onlyAnalyze>org.opencb.cellbase.*</onlyAnalyze>
                     <!-- Optional directory to put findbugs xdoc xml report -->
                     <xmlOutputDirectory>target/site</xmlOutputDirectory>
                 </configuration>
