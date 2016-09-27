@@ -1284,6 +1284,7 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.get(studyId, query, options, sessionId);
     }
 
+    @Deprecated
     public QueryResult<Sample> modifySample(long sampleId, QueryOptions queryOptions, String sessionId) throws CatalogException {
         return sampleManager.update(sampleId, queryOptions, queryOptions, sessionId);
     }

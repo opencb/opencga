@@ -170,7 +170,10 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
             if (doLoad) {
                 int batchLoad = getOptions().getInt(Options.MERGE_BATCH_SIZE.key(), Options.MERGE_BATCH_SIZE.defaultValue());
-                List<Integer> fileIds = new ArrayList<>(batchLoad);
+                // Files to merge
+                List<Integer> filesToMerge = new ArrayList<>(batchLoad);
+                List<StorageETLResult> resultsToMerge = new ArrayList<>(batchLoad);
+
                 Iterator<Map.Entry<URI, MongoDBVariantStorageETL>> iterator = storageETLMap.entrySet().iterator();
                 while (iterator.hasNext()) {
                     Map.Entry<URI, MongoDBVariantStorageETL> entry = iterator.next();
@@ -178,28 +181,40 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
                     URI input = etlResult.getPostTransformResult() == null ? entry.getKey() : etlResult.getPostTransformResult();
                     MongoDBVariantStorageETL storageETL = entry.getValue();
 
-
                     if (doStage) {
                         storageETL.getOptions().put(STAGE.key(), true);
                         storageETL.getOptions().put(MERGE.key(), false);
                         loadFile(storageETL, etlResult, results, input, outdirUri);
+                        etlResult.setLoadExecuted(false);
+                        etlResult.getLoadStats().put(STAGE.key(), true);
                     }
 
                     if (doMerge) {
-                        fileIds.add(storageETL.getOptions().getInt(Options.FILE_ID.key()));
-                        if (fileIds.size() == batchLoad || !iterator.hasNext()) {
+                        filesToMerge.add(storageETL.getOptions().getInt(Options.FILE_ID.key()));
+                        resultsToMerge.add(etlResult);
+                        if (filesToMerge.size() == batchLoad || !iterator.hasNext()) {
                             long millis = System.currentTimeMillis();
                             try {
                                 storageETL.getOptions().put(MERGE.key(), true);
-                                storageETL.getOptions().put(Options.FILE_ID.key(), new ArrayList<>(fileIds));
-                                storageETL.merge(fileIds);
+                                storageETL.getOptions().put(Options.FILE_ID.key(), new ArrayList<>(filesToMerge));
+                                storageETL.merge(filesToMerge);
                                 storageETL.postLoad(input, outdirUri);
-                                fileIds.clear();
                             } catch (Exception e) {
-                                etlResult.setLoadError(e);
+                                for (StorageETLResult storageETLResult : resultsToMerge) {
+                                    storageETLResult.setLoadError(e);
+                                }
                                 throw new StorageETLException("Exception executing merge.", e, results);
                             } finally {
-                                etlResult.setLoadTimeMillis(etlResult.getLoadTimeMillis() + System.currentTimeMillis() - millis);
+                                long mergeTime = System.currentTimeMillis() - millis;
+                                for (StorageETLResult storageETLResult : resultsToMerge) {
+                                    storageETLResult.setLoadTimeMillis(storageETLResult.getLoadTimeMillis() + mergeTime);
+                                    for (Map.Entry<String, Object> statsEntry : storageETL.getLoadStats().entrySet()) {
+                                        storageETLResult.getLoadStats().putIfAbsent(statsEntry.getKey(), statsEntry.getValue());
+                                    }
+                                    storageETLResult.setLoadExecuted(true);
+                                }
+                                filesToMerge.clear();
+                                resultsToMerge.clear();
                             }
                         }
                     }

@@ -200,8 +200,15 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                 .append(VariantStorageManager.Options.ANNOTATE.key(), false)
                 .append("merge", false);
 
-        variantStorageManager.index(uris, outputUri, true, true, true);
+        List<StorageETLResult> results = variantStorageManager.index(uris, outputUri, true, true, true);
 
+        for (StorageETLResult result : results) {
+            System.out.println(result.toString());
+            assertTrue(result.isTransformExecuted());
+            assertNull(result.getTransformError());
+            assertTrue(result.isLoadExecuted());
+            assertNull(result.getLoadError());
+        }
 
         studyConfigurationBatchFile = studyConfigurationManager.getStudyConfiguration(studyConfigurationBatchFile.getStudyId(), null).first();
         checkLoadedVariants(dbAdaptor, studyConfigurationBatchFile, true, false, -1);
@@ -272,7 +279,17 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                 .append(VariantStorageManager.Options.STUDY_NAME.key(), STUDY_NAME)
                 .append(VariantStorageManager.Options.STUDY_ID.key(), STUDY_ID);
 
-        variantStorageManager.index(Arrays.asList(chr1, chr22), outputUri, true, true, true);
+        List<StorageETLResult> results = variantStorageManager.index(Arrays.asList(chr1, chr22), outputUri, true, true, true);
+
+        for (StorageETLResult result : results) {
+            System.out.println(result.toString());
+            assertTrue(result.isTransformExecuted());
+            assertNull(result.getTransformError());
+            assertTrue(result.isLoadExecuted());
+            assertNull(result.getLoadError());
+        }
+
+
     }
 
     @Test
