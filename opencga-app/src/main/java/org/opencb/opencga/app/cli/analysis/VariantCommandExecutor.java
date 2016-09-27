@@ -689,7 +689,8 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
     }
 
     @Deprecated
-    private void annotate() throws StorageManagerException, IOException, URISyntaxException, VariantAnnotatorException, CatalogException, AnalysisExecutionException, IllegalAccessException, InstantiationException, ClassNotFoundException {
+    private void annotate() throws StorageManagerException, IOException, URISyntaxException, VariantAnnotatorException, CatalogException,
+            AnalysisExecutionException, IllegalAccessException, InstantiationException, ClassNotFoundException {
 
         AnalysisCliOptionsParser.AnnotateVariantCommandOptions cliOptions = variantCommandOptions.annotateVariantCommandOptions;
 
@@ -699,7 +700,8 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             long studyId = catalogManager.getStudyId(cliOptions.studyId, sessionId);
             long outDirId;
             if (isEmpty(cliOptions.outdirId)) {
-                outDirId = catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.PATH.key(), ""), null, sessionId).first().getId();
+                outDirId = catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.PATH.key(), ""), null, sessionId)
+                        .first().getId();
             } else {
                 outDirId = catalogManager.getFileId(cliOptions.outdirId, sessionId);
             }
@@ -809,7 +811,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             query.put(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
         }
 //        URI outputUri = job.getTmpOutDirUri();
-        URI outputUri = null;
+        URI outputUri = IndexDaemon.getJobTemporaryFolder(job.getId(), catalogConfiguration.getTempJobsDir()).toUri();
         Path outDir = Paths.get(outputUri.resolve(".").getPath());
 
         /*
