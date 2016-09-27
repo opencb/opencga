@@ -42,6 +42,7 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.core.common.ProgressLogger;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -98,9 +99,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         String subCommandString = variantCommandOptions.getParsedSubCommand();
         configure();
 
-        if (StringUtils.isNotEmpty(variantCommandOptions.commonOptions.sessionId)) {
-            sessionId = variantCommandOptions.commonOptions.sessionId;
-        }
+        sessionId = getSessionId(variantCommandOptions.commonOptions);
 
         switch (subCommandString) {
             case "ibs":
@@ -509,45 +508,27 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 //        }
 //    }
 
-    @Deprecated
     private void stats() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException,
-            StorageManagerException, InstantiationException, IllegalAccessException {
+            StorageManagerException, InstantiationException, IllegalAccessException, URISyntaxException {
         AnalysisCliOptionsParser.StatsVariantCommandOptions cliOptions = variantCommandOptions.statsVariantCommandOptions;
 
+        long studyId = catalogManager.getStudyId(cliOptions.studyId, sessionId);
+        VariantStorage variantStorage = new VariantStorage(catalogManager);
 
-        String sessionId = variantCommandOptions.commonOptions.sessionId;
+        QueryOptions options = new QueryOptions()
+                .append(VariantStatisticsManager.OUTPUT_FILE_NAME, cliOptions.fileName)
+//                .append(AnalysisFileIndexer.CREATE, cliOptions.create)
+//                .append(AnalysisFileIndexer.LOAD, cliOptions.load)
+//                .append(AnalysisFileIndexer.LOG_LEVEL, cliOptions.commonOptions.logLevel) // unused
+                .append(VariantStorageManager.Options.UPDATE_STATS.key(), cliOptions.updateStats)
+                .append(VariantStorageManager.Options.AGGREGATED_TYPE.key(), cliOptions.aggregated)
+                .append(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), cliOptions.aggregationMappingFile);
+        options.putIfNotEmpty(VariantStorageManager.Options.FILE_ID.key(), cliOptions.fileId);
 
-        // 1) Create, if not provided, an indexation job
-        if (isEmpty(cliOptions.job.jobId)) {
-            Job job;
-            long studyId = catalogManager.getStudyId(cliOptions.studyId);
-            long outDirId;
-            if (isEmpty(cliOptions.outdirId)) {
-                outDirId = catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.PATH.key(), ""), null, sessionId).first().getId();
-            } else {
-                outDirId = catalogManager.getFileId(cliOptions.outdirId);
-            }
-            VariantStorage variantStorage = new VariantStorage(catalogManager);
+        options.putAll(cliOptions.commonOptions.params);
 
-            List<String> extraParams = cliOptions.commonOptions.params.entrySet()
-                    .stream()
-                    .map(entry -> "-D" + entry.getKey() + "=" + entry.getValue())
-                    .collect(Collectors.toList());
-
-            QueryOptions options = new QueryOptions()
-                    .append(ExecutorManager.EXECUTE, !cliOptions.job.queue)
-                    .append(ExecutorManager.SIMULATE, false)
-                    .append(VariantStatisticsManager.OUTPUT_FILE_NAME, cliOptions.fileName)
-//                    .append(AnalysisFileIndexer.CREATE, cliOptions.create)
-//                    .append(AnalysisFileIndexer.LOAD, cliOptions.load)
-                    .append(AnalysisFileIndexer.PARAMETERS, extraParams)
-                    .append(AnalysisFileIndexer.LOG_LEVEL, cliOptions.commonOptions.logLevel)
-                    .append(VariantStorageManager.Options.UPDATE_STATS.key(), cliOptions.updateStats)
-                    .append(VariantStorageManager.Options.FILE_ID.key(), cliOptions.fileId)
-                    .append(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), cliOptions.aggregationMappingFile);
-
-
-            List<Long> cohortIds = new LinkedList<>();
+        List<Long> cohortIds = new LinkedList<>();
+        if (StringUtils.isNotBlank(cliOptions.cohortIds)) {
             for (String cohort : cliOptions.cohortIds.split(",")) {
                 if (StringUtils.isNumeric(cohort)) {
                     cohortIds.add(Long.parseLong(cohort));
@@ -561,14 +542,13 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                     }
                 }
             }
-            QueryResult<Job> result = variantStorage.calculateStats(outDirId, cohortIds, sessionId, options);
-            if (cliOptions.job.queue) {
-                System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result));
-            }
-        } else {
-            long studyId = catalogManager.getStudyId(cliOptions.studyId);
-            stats(getJob(studyId, cliOptions.job.jobId, sessionId));
         }
+        variantStorage.calculateStats(studyId, cohortIds, cliOptions.catalogPath, cliOptions.outdir, sessionId, options);
+//        QueryResult<Job> result = variantStorage.calculateStats(outDirId, cohortIds, sessionId, options);
+//        if (cliOptions.job.queue) {
+//            System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result));
+//        }
+
     }
 
     @Deprecated
@@ -579,7 +559,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 //        long inputFileId = catalogManager.getFileId(cliOptions.fileId);
 
         // 1) Initialize VariantStorageManager
-        long studyId = catalogManager.getStudyId(cliOptions.studyId);
+        long studyId = catalogManager.getStudyId(cliOptions.studyId, sessionId);
         Study study = catalogManager.getStudy(studyId, sessionId).first();
 
         /*
@@ -606,12 +586,13 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         options.put(VariantStorageManager.Options.OVERWRITE_STATS.key(), cliOptions.overwriteStats);
         options.put(VariantStorageManager.Options.UPDATE_STATS.key(), cliOptions.updateStats);
         if (cliOptions.region != null) {
-            options.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), cliOptions.region);
+            options.putIfNotNull(VariantDBAdaptor.VariantQueryParams.REGION.key(), cliOptions.region);
         }
-        if (cliOptions.fileId != 0) {
-            options.put(VariantStorageManager.Options.FILE_ID.key(), cliOptions.fileId);
+        long fileId = catalogManager.getFileId(cliOptions.fileId, sessionId);
+        if (fileId != 0) {
+            options.put(VariantStorageManager.Options.FILE_ID.key(), fileId);
         }
-        options.put(VariantStorageManager.Options.STUDY_ID.key(), cliOptions.studyId);
+        options.put(VariantStorageManager.Options.STUDY_ID.key(), studyId);
 
         if (cliOptions.commonOptions.params != null) {
             options.putAll(cliOptions.commonOptions.params);
@@ -669,10 +650,10 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
          */
 //        URI outputUri = UriUtils.createUri(cliOptions.fileName == null ? "" : cliOptions.fileName);
 //        URI outputUri = job.getTmpOutDirUri();
-        URI outputUri = null;
+        URI outputUri = IndexDaemon.getJobTemporaryFolder(job.getId(), catalogConfiguration.getTempJobsDir()).toUri();
         String filename;
         if (isEmpty(cliOptions.fileName)) {
-            filename = VariantStorageManager.buildFilename(studyConfiguration.getStudyName(), cliOptions.fileId);
+            filename = VariantStorageManager.buildFilename(studyConfiguration.getStudyName(), (int) fileId);
         } else {
             filename = cliOptions.fileName;
         }
@@ -708,19 +689,21 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
     }
 
     @Deprecated
-    private void annotate() throws StorageManagerException, IOException, URISyntaxException, VariantAnnotatorException, CatalogException, AnalysisExecutionException, IllegalAccessException, InstantiationException, ClassNotFoundException {
+    private void annotate() throws StorageManagerException, IOException, URISyntaxException, VariantAnnotatorException, CatalogException,
+            AnalysisExecutionException, IllegalAccessException, InstantiationException, ClassNotFoundException {
 
         AnalysisCliOptionsParser.AnnotateVariantCommandOptions cliOptions = variantCommandOptions.annotateVariantCommandOptions;
 
         // 1) Create, if not provided, an indexation job
         if (isEmpty(cliOptions.job.jobId)) {
             Job job;
-            long studyId = catalogManager.getStudyId(cliOptions.studyId);
+            long studyId = catalogManager.getStudyId(cliOptions.studyId, sessionId);
             long outDirId;
             if (isEmpty(cliOptions.outdirId)) {
-                outDirId = catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.PATH.key(), ""), null, sessionId).first().getId();
+                outDirId = catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.PATH.key(), ""), null, sessionId)
+                        .first().getId();
             } else {
-                outDirId = catalogManager.getFileId(cliOptions.outdirId);
+                outDirId = catalogManager.getFileId(cliOptions.outdirId, sessionId);
             }
 
             VariantStorage variantStorage = new VariantStorage(catalogManager);
@@ -753,7 +736,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             }
 
         } else {
-            long studyId = catalogManager.getStudyId(cliOptions.studyId);
+            long studyId = catalogManager.getStudyId(cliOptions.studyId, sessionId);
             String jobId = cliOptions.job.jobId;
             annotate(getJob(studyId, jobId, sessionId));
         }
@@ -768,7 +751,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 //        long inputFileId = catalogManager.getFileId(cliOptions.fileId);
 
         // 1) Initialize VariantStorageManager
-        long studyId = catalogManager.getStudyId(cliOptions.studyId);
+        long studyId = catalogManager.getStudyId(cliOptions.studyId, sessionId);
         Study study = catalogManager.getStudy(studyId, sessionId).first();
 
         /*
@@ -802,7 +785,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             options.put(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, cliOptions.customAnnotationKey);
         }
 
-        VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(storageConfiguration, dataStore.getStorageEngine());
+        VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(storageConfiguration, dataStore.getStorageEngine(), options);
 //            VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(annotatorSource, annotatorProperties,
 // cliOptions.species, cliOptions.assembly);
         VariantAnnotationManager variantAnnotationManager = new VariantAnnotationManager(annotator, dbAdaptor);
@@ -828,7 +811,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             query.put(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
         }
 //        URI outputUri = job.getTmpOutDirUri();
-        URI outputUri = null;
+        URI outputUri = IndexDaemon.getJobTemporaryFolder(job.getId(), catalogConfiguration.getTempJobsDir()).toUri();
         Path outDir = Paths.get(outputUri.resolve(".").getPath());
 
         /*
@@ -846,7 +829,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             logger.info("Starting annotation creation ");
             annotationFile = variantAnnotationManager.createAnnotation(outDir, cliOptions.fileName == null
                     ? dataStore.getDbName()
-                    : cliOptions.fileName, query, new QueryOptions());
+                    : cliOptions.fileName, query, new QueryOptions(options));
             logger.info("Finished annotation creation {}ms", System.currentTimeMillis() - start);
         }
 
@@ -854,7 +837,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             long start = System.currentTimeMillis();
             logger.info("Starting annotation load");
             if (annotationFile == null) {
-                long fileId = catalogManager.getFileId(cliOptions.load);
+                long fileId = catalogManager.getFileId(cliOptions.load, sessionId);
                 annotationFile = catalogManager.getFileUri(catalogManager.getFile(fileId, sessionId).first());
             }
             variantAnnotationManager.loadAnnotation(annotationFile, new QueryOptions(options));

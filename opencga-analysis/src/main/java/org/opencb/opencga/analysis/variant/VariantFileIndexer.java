@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.analysis.variant;
 
-import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
@@ -35,30 +34,24 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.api.IFileManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
-import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.JOB_STATUS_FILE;
 import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_STATS;
 
 /**
@@ -68,11 +61,8 @@ public class VariantFileIndexer extends AbstractFileIndexer {
 
     private final CatalogConfiguration catalogConfiguration;
     private final StorageConfiguration storageConfiguration;
-    private final CatalogManager catalogManager;
     private final IFileManager fileManager;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
-    protected Logger logger;
 
     public static final String TRANSFORM = "transform";
     public static final String LOAD = "load";
@@ -91,19 +81,28 @@ public class VariantFileIndexer extends AbstractFileIndexer {
 
     public VariantFileIndexer(CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration)
             throws CatalogException {
+        super(new CatalogManager(catalogConfiguration), LoggerFactory.getLogger(VariantFileIndexer.class));
         this.catalogConfiguration = catalogConfiguration;
         this.storageConfiguration = storageConfiguration;
-        this.catalogManager = new CatalogManager(catalogConfiguration);
-        this.fileManager = this.catalogManager.getFileManager();
-
-        logger = LoggerFactory.getLogger(VariantFileIndexer.class);
+        this.fileManager = catalogManager.getFileManager();
     }
 
-    public void index(String fileIds, String outdirString, String sessionId, QueryOptions options)
+    public List<StorageETLResult> index(String fileIds, String outdirString, String sessionId, QueryOptions options)
             throws CatalogException, AnalysisExecutionException, IOException, IllegalAccessException, InstantiationException,
             ClassNotFoundException, StorageManagerException, URISyntaxException {
 
-        Path outdir = Paths.get(outdirString);
+        // Query catalog for user data
+        String userId = catalogManager.getUserManager().getId(sessionId);
+        List<Long> fileIdsLong = fileManager.getIds(userId, fileIds);
+        return index(fileIdsLong, outdirString, sessionId, options);
+    }
+
+    public List<StorageETLResult> index(List<Long> fileIds, String outdirString, String sessionId, QueryOptions options)
+            throws CatalogException, AnalysisExecutionException, IOException, IllegalAccessException, InstantiationException,
+            ClassNotFoundException, StorageManagerException, URISyntaxException {
+
+        URI outdirUri = UriUtils.createDirectoryUri(outdirString);
+        Path outdir = Paths.get(outdirUri);
         FileUtils.checkDirectory(outdir, true);
 
         // Check the output directory does not correspond with a catalog directory
@@ -115,10 +114,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         }
 
         // Outdir must be empty
-        List<URI> uris = catalogManager.getCatalogIOManagerFactory().get(outdir.toUri()).listFiles(outdir.toUri());
-        if (!uris.isEmpty()) {
-            throw new AnalysisExecutionException("Unable to execute index. Outdir '" + outdir + "' must be empty!");
-        }
+        outdirMustBeEmpty(outdir);
 
         writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
 
@@ -126,7 +122,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         Thread hook = new Thread(() -> {
             try {
                 // If the status has not been changed by the method and is still running, we assume that the execution failed.
-                Job.JobStatus status = objectMapper.reader(Job.JobStatus.class).readValue(outdir.resolve(JOB_STATUS_FILE).toFile());
+                Job.JobStatus status = readJobStatus(outdir);
                 if (status.getName().equalsIgnoreCase(Job.JobStatus.RUNNING)) {
                     writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.ERROR, "Job finished with an error."));
                 }
@@ -151,16 +147,13 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         // Obtain the type of analysis (transform, load or index)
         Type step = getType(load, transform);
 
-        // Query catalog for user data
-        String userId = catalogManager.getUserManager().getId(sessionId);
 
-        List<Long> fileIdsLong = fileManager.getIds(userId, fileIds);
         // We read all input files from fileId. This can either be a single file and then we just use it,
         // or this can be a directory, in that case we use all VCF files in that directory or subdirectory
         List<File> inputFiles = new ArrayList<>();
         long studyIdByInputFileId = -1;
 
-        for (Long fileIdLong : fileIdsLong) {
+        for (Long fileIdLong : fileIds) {
             long studyId = fileManager.getStudyId(fileIdLong);
             if (studyId == -1) {
                 // Skip the file. Something strange occurred.
@@ -205,7 +198,8 @@ public class VariantFileIndexer extends AbstractFileIndexer {
             }
         }
 
-        logger.debug("Index - Number of files to be indexed: {}, list of files: {}", inputFiles.size(), inputFiles.toString());
+        logger.debug("Index - Number of files to be indexed: {}, list of files: {}", inputFiles.size(),
+                inputFiles.stream().map(File::getName).collect(Collectors.toList()));
 
         Study study = catalogManager.getStudyManager().get(studyIdByInputFileId, new QueryOptions(), sessionId).getResult().get(0);
 
@@ -240,7 +234,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
 
         if (filesToIndex.size() == 0) {
             logger.warn("Nothing to do.");
-            return;
+            return Collections.emptyList();
         }
 
         // Only if we are not transforming or if a path has been passed, we will update catalog information
@@ -254,15 +248,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         }
 
         // Update study configuration BEFORE executing the index
-        try {
-            StudyConfigurationManager studyConfigurationManager = StorageManagerFactory.get()
-                    .getVariantStorageManager(dataStore.getStorageEngine())
-                    .getDBAdaptor(dataStore.getDbName()).getStudyConfigurationManager();
-            new CatalogStudyConfigurationFactory(catalogManager)
-                    .updateStudyConfigurationFromCatalog(studyIdByInputFileId, studyConfigurationManager, sessionId);
-        } catch (StorageManagerException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-            logger.error("An error occurred when trying to update the study configuration. Error " + e.getMessage(), e);
-        }
+        updateStudyConfiguration(sessionId, studyIdByInputFileId, dataStore);
 
         logger.info("Starting to {}", step);
         List<StorageETLResult> storageETLResults;
@@ -301,43 +287,28 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         if (!step.equals(Type.TRANSFORM) || options.get(CATALOG_PATH) != null) {
             if (!step.equals(Type.LOAD) && options.get(CATALOG_PATH) != null) {
                 // Copy results to catalog
-                copyResult(outdir, catalogPathId, sessionId);
+                copyResults(outdir, catalogPathId, sessionId);
             }
             updateFileInfo(study, filesToIndex, storageETLResults, outdir, options, sessionId);
         }
 
-        writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.DONE, "Job completed"));
+        if (exception == null) {
+            writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.DONE, "Job completed"));
+        } else {
+            writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.ERROR, "Job with errors: " + exception.getMessage()));
+        }
         Runtime.getRuntime().removeShutdownHook(hook);
 
         // Throw the exception!
         if (exception != null) {
             throw exception;
         }
+        return storageETLResults;
     }
 
-    public void writeJobStatus(Path outdir, Job.JobStatus jobStatus) throws IOException {
-        objectMapper.writer().writeValue(outdir.resolve(JOB_STATUS_FILE).toFile(), jobStatus);
-    }
-
-    private void copyResult(Path tmpOutdirPath, long catalogPathOutDir, String sessionId) throws CatalogException, IOException {
-        File outDir = fileManager.get(catalogPathOutDir, new QueryOptions(), sessionId).first();
-
-        FileScanner fileScanner = new FileScanner(catalogManager);
-//        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutdirPath.toUri());
-
-        List<File> files;
-        try {
-            logger.info("Scanning files from {} to move to {}", tmpOutdirPath, outDir.getUri());
-            // Avoid copy the job.status file!
-            Predicate<URI> fileStatusFilter = uri -> !uri.getPath().endsWith(JOB_STATUS_FILE);
-            files = fileScanner.scan(outDir, tmpOutdirPath.toUri(), FileScanner.FileScannerPolicy.DELETE, true, false, fileStatusFilter, -1, sessionId);
-        } catch (IOException e) {
-            logger.warn("IOException when scanning temporal directory. Error: {}", e.getMessage());
-            throw e;
-        } catch (CatalogException e) {
-            logger.warn("CatalogException when scanning temporal directory. Error: {}", e.getMessage());
-            throw e;
-        }
+    @Override
+    protected List<File> copyResults(Path tmpOutdirPath, long catalogPathOutDir, String sessionId) throws CatalogException, IOException {
+        List<File> files = super.copyResults(tmpOutdirPath, catalogPathOutDir, sessionId);
 
         List<File> avroFiles = new ArrayList<>(files.size());
         for (File file : files) {
@@ -375,6 +346,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
 //        } else {
 //            logger.error("Error processing job output. Temporal job out dir is not empty. " + uriList);
 //        }
+        return files;
     }
 
     private Type getType(Boolean load, Boolean transform) {
@@ -500,14 +472,6 @@ public class VariantFileIndexer extends AbstractFileIndexer {
      * Updates the file stats from a transformed variant file.
      * Reads the stats generated on the transform step.
      *
-     * @param job           Job that executed successfully the transform step
-     * @param sessionId     User sessionId
-     * @throws CatalogException if a Catalog error occurs
-     */
-    /**
-     * Updates the file stats from a transformed variant file.
-     * Reads the stats generated on the transform step.
-     *
      * @param inputFile
      * @param outdir
      * @param sessionId
@@ -515,19 +479,19 @@ public class VariantFileIndexer extends AbstractFileIndexer {
      */
     private void updateVariantFileStats(File inputFile, Path outdir, String sessionId) throws CatalogException, IOException {
         if (inputFile.getBioformat().equals(File.Bioformat.VARIANT)) {
-            Path statsFile = outdir.resolve(inputFile.getName() + ".file.json.gz");
-            if (!statsFile.toFile().exists()) {
+            Path metaFile = outdir.resolve(inputFile.getName() + "." + VariantReaderUtils.METADATA_FILE_FORMAT_GZ);
+            if (!metaFile.toFile().exists()) {
                 throw new IOException("Stats file not found.");
             }
-            try (InputStream is = FileUtils.newInputStream(statsFile)) {
-                VariantSource variantSource = new ObjectMapper().readValue(is, VariantSource.class);
-                VariantGlobalStats stats = variantSource.getStats();
-                ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(VARIANT_STATS, stats));
-                fileManager.update(inputFile.getId(), params, new QueryOptions(), sessionId);
-            } catch (IOException e) {
-                throw new CatalogException("Error reading file \"" + statsFile + "\"", e);
+            VariantGlobalStats stats;
+            try {
+                VariantSource variantSource = VariantReaderUtils.readVariantSource(metaFile, null);
+                stats = variantSource.getStats();
+            } catch (StorageManagerException e) {
+                throw new CatalogException("Error reading file \"" + metaFile + "\"", e);
             }
-
+            ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.STATS.key(), new ObjectMap(VARIANT_STATS, stats));
+            fileManager.update(inputFile.getId(), params, new QueryOptions(), sessionId);
         }
 //        long studyId = catalogManager.getStudyIdByJobId(job.getId());
 //        Query query = new Query()
@@ -601,6 +565,10 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         }
     }
 
+    private void updateCohorts() {
+
+    }
+
     private List<File> filterTransformFiles(List<File> fileList) throws CatalogException {
         if (fileList == null || fileList.isEmpty()) {
             return new ArrayList<>();
@@ -656,39 +624,54 @@ public class VariantFileIndexer extends AbstractFileIndexer {
             File file = fileList.get(i);
 
             if (file.getFormat().equals(File.Format.VCF) || file.getFormat().equals(File.Format.GVCF)) {
-                if (file.getIndex() == null || FileIndex.IndexStatus.NONE.equals(file.getIndex().getStatus().getName())) {
-                    if (avroFiles != null) {
-                        filteredFiles.add(file);
-                        fileUris.add(UriUtils.createUri(avroFiles.get(i)));
-                    } else {
-                        logger.warn("Cannot load vcf file " + file.getId() + " if no avro file is provided.");
-                    }
-                } else if (FileIndex.IndexStatus.TRANSFORMED.equals(file.getIndex().getStatus().getName())) {
-                    // We will attempt to use the avro file registered in catalog
-                    long avroId = file.getIndex().getTransformedFile().getId();
-                    if (avroId == -1) {
-                        logger.error("This code should never be executed. Every vcf file containing the transformed status should have a "
-                                + "registered avro file");
-                        throw new CatalogException("Internal error. No avro file could be found for file " + file.getId());
-                    }
-                    QueryResult<File> avroQueryResult = fileManager.get(avroId, new QueryOptions(), sessionId);
-                    if (avroQueryResult.getNumResults() != 1) {
-                        logger.error("This code should never be executed. No avro file could be found under ");
-                        throw new CatalogException("Internal error. No avro file could be found under id " + avroId);
-                    }
-
-                    if (avroFiles != null) {
-                        // Check that the uri from the avro file obtained from catalog is the same the user has put as input
-                        URI avroUri = UriUtils.createUri(avroFiles.get(i));
-                        if (!avroUri.equals(avroQueryResult.first().getUri())) {
-                            throw new CatalogException("An Avro file was found for file " + file.getId() + " in "
-                                    + avroQueryResult.first().getUri() + ". However, the user selected a different one in " + avroUri);
+                String status = file.getIndex() == null ? FileIndex.IndexStatus.NONE : file.getIndex().getStatus().getName();
+                switch (status) {
+                    case FileIndex.IndexStatus.NONE:
+                        if (avroFiles != null) {
+                            filteredFiles.add(file);
+                            fileUris.add(UriUtils.createUri(avroFiles.get(i)));
+                        } else {
+                            logger.warn("Cannot load vcf file " + file.getId() + " if no avro file is provided.");
                         }
-                    }
-                    filteredFiles.add(file);
-                    fileUris.add(avroQueryResult.first().getUri());
-                } else {
-                    logger.warn("We can only load files previously transformed, the status is {}", file.getIndex().getStatus().getName());
+                        break;
+                    case FileIndex.IndexStatus.TRANSFORMED:
+                        // We will attempt to use the avro file registered in catalog
+                        long avroId = file.getIndex().getTransformedFile().getId();
+                        if (avroId == -1) {
+                            logger.error("This code should never be executed. Every vcf file containing the transformed status should have a "
+                                    + "registered avro file");
+                            throw new CatalogException("Internal error. No avro file could be found for file " + file.getId());
+                        }
+                        QueryResult<File> avroQueryResult = fileManager.get(avroId, new QueryOptions(), sessionId);
+                        if (avroQueryResult.getNumResults() != 1) {
+                            logger.error("This code should never be executed. No avro file could be found under ");
+                            throw new CatalogException("Internal error. No avro file could be found under id " + avroId);
+                        }
+
+                        if (avroFiles != null) {
+                            // Check that the uri from the avro file obtained from catalog is the same the user has put as input
+                            URI avroUri = UriUtils.createUri(avroFiles.get(i));
+                            if (!avroUri.equals(avroQueryResult.first().getUri())) {
+                                throw new CatalogException("An Avro file was found for file " + file.getId() + " in "
+                                        + avroQueryResult.first().getUri() + ". However, the user selected a different one in " + avroUri);
+                            }
+                        }
+                        filteredFiles.add(file);
+                        fileUris.add(avroQueryResult.first().getUri());
+                        break;
+                    case FileIndex.IndexStatus.TRANSFORMING:
+                        logger.warn("We can only load files previously transformed. Skipping file ", file.getName());
+                        break;
+                    case FileIndex.IndexStatus.LOADING:
+                    case FileIndex.IndexStatus.INDEXING:
+                        logger.warn("Unable to load this file. Already being loaded. Skipping file ", file.getName());
+                        break;
+                    case FileIndex.IndexStatus.READY:
+                        logger.warn("Already loaded file. Skipping file ", file.getName());
+                        break;
+                    default:
+                        logger.warn("We can only load files previously transformed, File {} with status is {}", file.getName(), status);
+                        break;
                 }
             } else if (file.getFormat().equals(File.Format.AVRO)) {
                 if (avroFiles != null) {

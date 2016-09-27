@@ -36,6 +36,7 @@ import java.net.URI;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
  * Created on 15/10/15
@@ -79,6 +80,9 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
             Assert.assertNotNull(stats);
 
             allVariantsQueryResult = null;
+            dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
+            VariantHbaseTestUtils.printVariantsFromVariantsTable(dbAdaptor);
+            VariantHbaseTestUtils.printVariantsFromArchiveTable(dbAdaptor, studyConfiguration);
         }
         HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
         dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
@@ -113,6 +117,7 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
                 .map(type -> source.getStats().getVariantTypeCount(type))
                 .reduce((a, b) -> a + b)
                 .orElse(0).longValue();
+        count  -= 1; // Deletion is in conflict with other variant: 1:10403:ACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC:A
         assertEquals(count, totalCount);
         assertEquals(totalCount, partialCount1 + partialCount2);
     }
@@ -196,6 +201,7 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
         long count = Arrays.stream(VariantTableMapper.getTargetVariantType())
                 .map(type -> source.getStats().getVariantTypeCount(type))
                 .reduce((a, b) -> a + b).orElse(0).longValue();
+        count  -= 1; // Deletion is in conflict with other variant: 1:10403:ACCCTAACCCTAACCCTAACCCTAACCCTAACCCTAAC:A
         assertEquals(count, numVariants);
     }
 

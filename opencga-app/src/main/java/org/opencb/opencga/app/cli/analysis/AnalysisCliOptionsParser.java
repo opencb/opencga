@@ -452,7 +452,7 @@ public class AnalysisCliOptionsParser {
         public String studyId;
 
         @Parameter(names = {"-f", "--file-id"}, description = "Calculate stats only for the selected file", required = false, arity = 1)
-        public int fileId;
+        public String fileId;
 
         @Parameter(names = {"--cohort-ids"}, description = "Cohort Ids for the cohorts to be calculated.")
         String cohortIds;
@@ -461,8 +461,15 @@ public class AnalysisCliOptionsParser {
         @Parameter(names = {"--output-filename"}, description = "Output file name. Default: database name", required = false, arity = 1)
         public String fileName;
 
-        @Parameter(names = {"--outdir-id"}, description = "Output directory", required = false, arity = 1)
-        public String outdirId;
+//        @Parameter(names = {"--outdir-id"}, description = "Output directory", required = false, arity = 1)
+//        public String outdirId;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
+        public String outdir = null;
+
+        @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
+                + "transformed files will not be registered in catalog.", required = false, arity = 1)
+        public String catalogPath = null;
 
 //        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
 //        public String outdir = ".";
@@ -514,8 +521,8 @@ public class AnalysisCliOptionsParser {
         @Parameter(names = {"--species"}, description = "Species. Default hsapiens", required = false, arity = 1)
         public String species = "hsapiens";
 
-        @Parameter(names = {"--assembly"}, description = "Assembly. Default GRc37", required = false, arity = 1)
-        public String assembly = "GRc37";
+        @Parameter(names = {"--assembly"}, description = "Assembly. Default GRCh37", required = false, arity = 1)
+        public String assembly = "GRCh37";
 
         @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
         public List<String> filterRegion;

@@ -48,6 +48,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -188,9 +191,12 @@ public class VariantStatisticsManager {
         logger.info("ReaderQueryOptions: " + readerOptions.toJson());
         VariantDBReader reader = new VariantDBReader(studyConfiguration, variantDBAdaptor, readerQuery, readerOptions);
         List<ParallelTaskRunner.Task<Variant, String>> tasks = new ArrayList<>(numTasks);
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<Long> future = executor.submit(() -> variantDBAdaptor.count(readerQuery).first());
+        executor.shutdown();
+        ProgressLogger progressLogger = new ProgressLogger("Calculated stats:", future, 200).setBatchSize(5000);
         for (int i = 0; i < numTasks; i++) {
-            tasks.add(new VariantStatsWrapperTask(overwrite, cohorts, studyConfiguration, null/*FILE_ID*/,
-                    variantSourceStats, tagmap));
+            tasks.add(new VariantStatsWrapperTask(overwrite, cohorts, studyConfiguration, variantSourceStats, tagmap, progressLogger));
         }
         Path variantStatsPath = Paths.get(output.getPath() + VARIANT_STATS_SUFFIX);
         logger.info("will write stats to {}", variantStatsPath);
@@ -200,7 +206,6 @@ public class VariantStatisticsManager {
         ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numTasks, batchSize, numTasks * 2, false);
         ParallelTaskRunner runner = new ParallelTaskRunner<>(reader, tasks, writer, config);
         try {
-
             logger.info("starting stats creation for cohorts {}", cohorts.keySet());
             long start = System.currentTimeMillis();
             runner.run();
@@ -225,6 +230,7 @@ public class VariantStatisticsManager {
         private boolean overwrite;
         private Map<String, Set<String>> cohorts;
         private StudyConfiguration studyConfiguration;
+        private final ProgressLogger progressLogger;
         //        private String fileId;
         private ObjectMapper jsonObjectMapper;
         private ObjectWriter variantsWriter;
@@ -233,12 +239,12 @@ public class VariantStatisticsManager {
         private VariantStatisticsCalculator variantStatisticsCalculator;
 
         VariantStatsWrapperTask(boolean overwrite, Map<String, Set<String>> cohorts,
-                                       StudyConfiguration studyConfiguration, String fileId,
-                                       VariantSourceStats variantSourceStats, Properties tagmap) {
+                                StudyConfiguration studyConfiguration,
+                                VariantSourceStats variantSourceStats, Properties tagmap, ProgressLogger progressLogger) {
             this.overwrite = overwrite;
             this.cohorts = cohorts;
             this.studyConfiguration = studyConfiguration;
-//            this.fileId = fileId;
+            this.progressLogger = progressLogger;
             jsonObjectMapper = new ObjectMapper(new JsonFactory());
             jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
             variantsWriter = jsonObjectMapper.writerFor(VariantStatsWrapper.class);
@@ -278,9 +284,13 @@ public class VariantStatisticsManager {
                 }
             }
             logger.debug("another batch of {} elements calculated. time: {}ms", strings.size(), System.currentTimeMillis() - start);
-            if (variants.size() != 0) {
-                logger.info("stats created up to position {}:{}", variants.get(variants.size() - 1).getChromosome(),
-                        variants.get(variants.size() - 1).getStart());
+            if (!variants.isEmpty()) {
+                progressLogger.increment(variants.size(), () -> ", up to position "
+                        + variants.get(variants.size() - 1).getChromosome()
+                        + ":"
+                        + variants.get(variants.size() - 1).getStart());
+//                logger.info("stats created up to position {}:{}", variants.get(variants.size() - 1).getChromosome(),
+//                        variants.get(variants.size() - 1).getStart());
             } else {
                 logger.info("task with empty batch");
             }
@@ -337,7 +347,7 @@ public class VariantStatisticsManager {
                     size -> {
                         ArrayList<VariantStatsWrapper> statsBatch = new ArrayList<>(size);
                         try {
-                            while (parser.nextToken() != null || statsBatch.size() == size) {
+                            while (parser.nextToken() != null && statsBatch.size() < size) {
                                 variantsNumber[0]++;
                                 statsBatch.add(parser.readValueAs(VariantStatsWrapper.class));
                             }

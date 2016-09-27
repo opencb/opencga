@@ -404,7 +404,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
         options.putAll(annotateVariantsCommandOptions.commonOptions.params);
 
-        VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(configuration, storageEngine);
+        VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(configuration, storageEngine, options);
 //            VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(annotatorSource, annotatorProperties,
 // annotateVariantsCommandOptions.species, annotateVariantsCommandOptions.assembly);
         VariantAnnotationManager variantAnnotationManager = new VariantAnnotationManager(annotator, dbAdaptor);
@@ -447,7 +447,7 @@ public class VariantCommandExecutor extends CommandExecutor {
             logger.info("Starting annotation creation ");
             annotationFile = variantAnnotationManager.createAnnotation(outDir, annotateVariantsCommandOptions.fileName == null
                     ? annotateVariantsCommandOptions.dbName
-                    : annotateVariantsCommandOptions.fileName, query, new QueryOptions());
+                    : annotateVariantsCommandOptions.fileName, query, new QueryOptions(options));
             logger.info("Finished annotation creation {}ms", System.currentTimeMillis() - start);
         }
 

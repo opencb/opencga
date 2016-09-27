@@ -403,7 +403,7 @@ public abstract class VariantStorageETL implements StorageETL {
             //Read VariantSource
             source = VariantStorageManager.readVariantSource(input, source);
             Pair<Long, Long> times = processProto(input, fileName, output, source, outputVariantsFile, outputMetaFile,
-                    includeSrc, parser, generateReferenceBlocks, batchSize, extension, compression, malformedHandler);
+                    includeSrc, parser, generateReferenceBlocks, batchSize, extension, compression, malformedHandler, failOnError);
             start = times.getKey();
             end = times.getValue();
         } else {
@@ -438,7 +438,8 @@ public abstract class VariantStorageETL implements StorageETL {
     protected Pair<Long, Long> processProto(
             Path input, String fileName, Path output, VariantSource source, Path outputVariantsFile,
             Path outputMetaFile, boolean includeSrc, String parser, boolean generateReferenceBlocks,
-            int batchSize, String extension, String compression, BiConsumer<String, RuntimeException> malformatedHandler)
+            int batchSize, String extension, String compression, BiConsumer<String, RuntimeException> malformatedHandler,
+            boolean failOnError)
             throws StorageManagerException {
         throw new NotImplementedException("Please request feature");
     }
@@ -463,7 +464,7 @@ public abstract class VariantStorageETL implements StorageETL {
         //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
         StudyConfiguration studyConfiguration;
         try {
-            studyConfiguration = checkOrCreateStudyConfiguration();
+            studyConfiguration = checkOrCreateStudyConfiguration(true);
             VariantSource source = readVariantSource(input, options);
             securePreLoad(studyConfiguration, source);
             dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
@@ -592,10 +593,6 @@ public abstract class VariantStorageETL implements StorageETL {
                 studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), extraFieldsType);
             }
         }
-    }
-
-    protected StudyConfiguration checkOrCreateStudyConfiguration() throws StorageManagerException {
-        return checkOrCreateStudyConfiguration(false);
     }
 
     protected StudyConfiguration checkOrCreateStudyConfiguration(boolean forceFetch) throws StorageManagerException {
