@@ -7,7 +7,7 @@ reqs = [str(ir.req) for ir in install_reqs if ir.req is not None]
 setup(
     name='pyCGA',
     packages=['pyCGA', 'pyCGA.Utils'],
-    version='0.1.2',
+    version='0.2.4',
     scripts=[os.path.join(os.path.dirname(__file__),'pyCGA/Scripts/pyCGA'), os.path.join(os.path.dirname(__file__),'pyCGA/Scripts/pyCGAIdConverter'),
              os.path.join(os.path.dirname(__file__),'pyCGA/Scripts/pyCGAVariantFetcher'), os.path.join(os.path.dirname(__file__),'pyCGA/Scripts/pyCGALogin')],
     url='',
