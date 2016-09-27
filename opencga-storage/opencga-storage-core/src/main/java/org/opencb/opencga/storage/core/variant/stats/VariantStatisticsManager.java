@@ -194,7 +194,7 @@ public class VariantStatisticsManager {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         Future<Long> future = executor.submit(() -> variantDBAdaptor.count(readerQuery).first());
         executor.shutdown();
-        ProgressLogger progressLogger = new ProgressLogger("Calculated stats:", future, 200);
+        ProgressLogger progressLogger = new ProgressLogger("Calculated stats:", future, 200).setBatchSize(5000);
         for (int i = 0; i < numTasks; i++) {
             tasks.add(new VariantStatsWrapperTask(overwrite, cohorts, studyConfiguration, variantSourceStats, tagmap, progressLogger));
         }

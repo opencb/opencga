@@ -785,7 +785,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             options.put(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, cliOptions.customAnnotationKey);
         }
 
-        VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(storageConfiguration, dataStore.getStorageEngine());
+        VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(storageConfiguration, dataStore.getStorageEngine(), options);
 //            VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(annotatorSource, annotatorProperties,
 // cliOptions.species, cliOptions.assembly);
         VariantAnnotationManager variantAnnotationManager = new VariantAnnotationManager(annotator, dbAdaptor);
@@ -829,7 +829,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             logger.info("Starting annotation creation ");
             annotationFile = variantAnnotationManager.createAnnotation(outDir, cliOptions.fileName == null
                     ? dataStore.getDbName()
-                    : cliOptions.fileName, query, new QueryOptions());
+                    : cliOptions.fileName, query, new QueryOptions(options));
             logger.info("Finished annotation creation {}ms", System.currentTimeMillis() - start);
         }
 
