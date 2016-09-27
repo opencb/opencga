@@ -413,7 +413,6 @@
                 <version>3.0.4</version>
                 <configuration>
                     <xmlOutput>true</xmlOutput>
-                    <onlyAnalyze>org.opencb.cellbase.*</onlyAnalyze>
                     <!-- Optional directory to put findbugs xdoc xml report -->
                     <xmlOutputDirectory>target/site</xmlOutputDirectory>
                 </configuration>
