@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.hadoop.variant.archive.mr;
 
-import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections.map.HashedMap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;

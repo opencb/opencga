@@ -506,6 +506,22 @@ public class FileManagerTest extends GenericTest {
     }
 
     @Test
+    public void testCreateFileInLinkedFolder() throws Exception {
+        // Create an empty folder
+        Path dir = catalogManagerResource.getOpencgaHome().resolve("folder_to_link");
+        Files.createDirectory(dir);
+        URI uri = dir.toUri();
+
+        // Link the folder in the root
+        catalogManager.link(uri, "", Long.toString(studyId), new ObjectMap(), sessionIdUser);
+
+        File file = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder_to_link/file.txt", "", false, -1, sessionIdUser).first();
+
+        assertEquals(uri.resolve("file.txt"), file.getUri());
+
+    }
+
+    @Test
     public void testDownloadAndHeadFile() throws CatalogException, IOException, InterruptedException {
         long projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
         long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser).first().getId();

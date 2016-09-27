@@ -3,9 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import org.apache.hadoop.conf.Configuration;
 import org.junit.*;
@@ -63,6 +61,7 @@ public class VariantTableMapperTest extends VariantStorageManagerTestUtils imple
         HBaseToVariantConverter conv = new HBaseToVariantConverter(dbAdaptor.getGenomeHelper(), buildStudyManager());
         HBaseManager hm = new HBaseManager(conf);
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
+        Set<Integer> passPos = new HashSet<>(Arrays.asList(10032,13488));
         for(Variant variant : dbAdaptor){
             List<StudyEntry> studies = variant.getStudies();
             StudyEntry se = studies.get(0);
@@ -70,7 +69,7 @@ public class VariantTableMapperTest extends VariantStorageManagerTestUtils imple
             String passString = fe.getAttributes().get("PASS");
             Integer passCnt = Integer.parseInt(passString);
             System.out.println(String.format("Variant = %s; Studies=%s; Pass=%s;",variant,studies.size(),passCnt));
-            assertEquals("Position issue with PASS", variant.getStart().equals(10032), passCnt.equals(1));
+            assertEquals("Position issue with PASS", passPos.contains(variant.getStart()), passCnt.equals(1));
         }
         System.out.println("End query from HBase : " + DB_NAME);
 //        assertEquals(source.getStats().getVariantTypeCount(VariantType.SNP) + source.getStats().getVariantTypeCount(VariantType.SNV), numVariants);
@@ -87,6 +86,7 @@ public class VariantTableMapperTest extends VariantStorageManagerTestUtils imple
         HBaseToVariantConverter conv = new HBaseToVariantConverter(dbAdaptor.getGenomeHelper(), buildStudyManager());
         HBaseManager hm = new HBaseManager(conf);
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
+        Set<Integer> passPos = new HashSet<>(Arrays.asList(10032,13488));
         for(Variant variant : dbAdaptor){
             List<StudyEntry> studies = variant.getStudies();
             StudyEntry se = studies.get(0);
@@ -95,7 +95,7 @@ public class VariantTableMapperTest extends VariantStorageManagerTestUtils imple
             String passString = fe.getAttributes().get("PASS");
             Integer passCnt = Integer.parseInt(passString);
             System.out.println(String.format("Variant = %s; Studies=%s; Pass=%s;",variant,studies.size(),passCnt));
-            assertEquals("Position issue with PASS", variant.getStart().equals(10032), passCnt.equals(1));
+            assertEquals("Position issue with PASS", passPos.contains(variant.getStart()), passCnt.equals(1));
         }
         System.out.println("End query from HBase : " + DB_NAME);
 //        assertEquals(source.getStats().getVariantTypeCount(VariantType.SNP) + source.getStats().getVariantTypeCount(VariantType.SNV), numVariants);

@@ -99,9 +99,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         String subCommandString = variantCommandOptions.getParsedSubCommand();
         configure();
 
-        if (StringUtils.isNotEmpty(variantCommandOptions.commonOptions.sessionId)) {
-            sessionId = variantCommandOptions.commonOptions.sessionId;
-        }
+        sessionId = getSessionId(variantCommandOptions.commonOptions);
 
         switch (subCommandString) {
             case "ibs":
@@ -514,9 +512,6 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             StorageManagerException, InstantiationException, IllegalAccessException, URISyntaxException {
         AnalysisCliOptionsParser.StatsVariantCommandOptions cliOptions = variantCommandOptions.statsVariantCommandOptions;
 
-
-        String sessionId = variantCommandOptions.commonOptions.sessionId;
-
         long studyId = catalogManager.getStudyId(cliOptions.studyId, sessionId);
         VariantStorage variantStorage = new VariantStorage(catalogManager);
 
@@ -526,26 +521,29 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 //                .append(AnalysisFileIndexer.LOAD, cliOptions.load)
 //                .append(AnalysisFileIndexer.LOG_LEVEL, cliOptions.commonOptions.logLevel) // unused
                 .append(VariantStorageManager.Options.UPDATE_STATS.key(), cliOptions.updateStats)
+                .append(VariantStorageManager.Options.AGGREGATED_TYPE.key(), cliOptions.aggregated)
                 .append(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), cliOptions.aggregationMappingFile);
         options.putIfNotEmpty(VariantStorageManager.Options.FILE_ID.key(), cliOptions.fileId);
 
         options.putAll(cliOptions.commonOptions.params);
 
         List<Long> cohortIds = new LinkedList<>();
-        for (String cohort : cliOptions.cohortIds.split(",")) {
-            if (StringUtils.isNumeric(cohort)) {
-                cohortIds.add(Long.parseLong(cohort));
-            } else {
-                QueryResult<Cohort> result = catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), cohort),
-                        new QueryOptions("include", "projects.studies.cohorts.id"), sessionId);
-                if (result.getResult().isEmpty()) {
-                    throw new CatalogException("Cohort \"" + cohort + "\" not found!");
+        if (StringUtils.isNotBlank(cliOptions.cohortIds)) {
+            for (String cohort : cliOptions.cohortIds.split(",")) {
+                if (StringUtils.isNumeric(cohort)) {
+                    cohortIds.add(Long.parseLong(cohort));
                 } else {
-                    cohortIds.add(result.first().getId());
+                    QueryResult<Cohort> result = catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), cohort),
+                            new QueryOptions("include", "projects.studies.cohorts.id"), sessionId);
+                    if (result.getResult().isEmpty()) {
+                        throw new CatalogException("Cohort \"" + cohort + "\" not found!");
+                    } else {
+                        cohortIds.add(result.first().getId());
+                    }
                 }
             }
         }
-        variantStorage.calculateStats(cohortIds, cliOptions.catalogPath, cliOptions.outdir, sessionId, options);
+        variantStorage.calculateStats(studyId, cohortIds, cliOptions.catalogPath, cliOptions.outdir, sessionId, options);
 //        QueryResult<Job> result = variantStorage.calculateStats(outDirId, cohortIds, sessionId, options);
 //        if (cliOptions.job.queue) {
 //            System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result));
@@ -691,7 +689,8 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
     }
 
     @Deprecated
-    private void annotate() throws StorageManagerException, IOException, URISyntaxException, VariantAnnotatorException, CatalogException, AnalysisExecutionException, IllegalAccessException, InstantiationException, ClassNotFoundException {
+    private void annotate() throws StorageManagerException, IOException, URISyntaxException, VariantAnnotatorException, CatalogException,
+            AnalysisExecutionException, IllegalAccessException, InstantiationException, ClassNotFoundException {
 
         AnalysisCliOptionsParser.AnnotateVariantCommandOptions cliOptions = variantCommandOptions.annotateVariantCommandOptions;
 
@@ -701,7 +700,8 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             long studyId = catalogManager.getStudyId(cliOptions.studyId, sessionId);
             long outDirId;
             if (isEmpty(cliOptions.outdirId)) {
-                outDirId = catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.PATH.key(), ""), null, sessionId).first().getId();
+                outDirId = catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.PATH.key(), ""), null, sessionId)
+                        .first().getId();
             } else {
                 outDirId = catalogManager.getFileId(cliOptions.outdirId, sessionId);
             }
@@ -785,7 +785,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             options.put(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, cliOptions.customAnnotationKey);
         }
 
-        VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(storageConfiguration, dataStore.getStorageEngine());
+        VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(storageConfiguration, dataStore.getStorageEngine(), options);
 //            VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(annotatorSource, annotatorProperties,
 // cliOptions.species, cliOptions.assembly);
         VariantAnnotationManager variantAnnotationManager = new VariantAnnotationManager(annotator, dbAdaptor);
@@ -811,7 +811,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             query.put(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
         }
 //        URI outputUri = job.getTmpOutDirUri();
-        URI outputUri = null;
+        URI outputUri = IndexDaemon.getJobTemporaryFolder(job.getId(), catalogConfiguration.getTempJobsDir()).toUri();
         Path outDir = Paths.get(outputUri.resolve(".").getPath());
 
         /*
@@ -829,7 +829,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             logger.info("Starting annotation creation ");
             annotationFile = variantAnnotationManager.createAnnotation(outDir, cliOptions.fileName == null
                     ? dataStore.getDbName()
-                    : cliOptions.fileName, query, new QueryOptions());
+                    : cliOptions.fileName, query, new QueryOptions(options));
             logger.info("Finished annotation creation {}ms", System.currentTimeMillis() - start);
         }
 

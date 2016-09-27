@@ -56,9 +56,9 @@ public class SampleClient extends AnnotationClient<Sample, SampleAclEntry> {
         return execute(SAMPLES_URL, "load", params, GET, Sample.class);
     }
 
-    public QueryResponse<Sample> groupBy(String studyId, String fields, ObjectMap params) throws CatalogException, IOException {
+    public QueryResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "studyId", studyId, "fields", fields);
-        return execute(SAMPLES_URL, "groupBy", params, GET, Sample.class);
+        return execute(SAMPLES_URL, "groupBy", params, GET, ObjectMap.class);
     }
 
 }

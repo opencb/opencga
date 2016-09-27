@@ -36,6 +36,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Predicate;
 
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager.MongoDBVariantOptions.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager.Options;
@@ -305,59 +306,76 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                 .append(VariantSourceDBAdaptor.VariantSourceQueryParam.FILE_ID.key(), fileId);
         Iterator<VariantSource> iterator = dbAdaptor.getVariantSourceDBAdaptor().iterator(query, new QueryOptions());
 
-        BatchFileOperation operation = null;
         boolean loadStageResume = false;
+        boolean stage = true;
+
+        BatchFileOperation operation = getBatchFileOperation(studyConfiguration.getBatches(),
+                op -> op.getOperationName().equals(STAGE.key())
+                        && op.getFileIds().equals(Collections.singletonList(fileId)));
 
         if (iterator.hasNext()) {
             // Already indexed!
             logger.info("File \"{}\" ({}) already staged!", fileName, fileId);
-            options.put(STAGE.key(), false);
+            stage = false;
+            if (operation != null && !operation.currentStatus().equals(BatchFileOperation.Status.READY)) {
+                // There was an error writing the operation status. Restore to "READY"
+                operation.addStatus(BatchFileOperation.Status.READY);
+            }
         } else {
             loadStageResume = options.getBoolean(STAGE_RESUME.key());
 
-            List<BatchFileOperation> batches = studyConfiguration.getBatches();
-            // Reverse search
-            for (int i = batches.size() - 1; i >= 0; i--) {
-                BatchFileOperation op = batches.get(i);
-                if (op.getOperationName().equals(STAGE.key()) && op.getFileIds().size() == 1 && op.getFileIds().get(0) == fileId) {
-                    switch (op.currentStatus()) {
-                        case READY:
-                            // Already indexed!
-                            // TODO: Believe this ready? What if deleted?
-                            logger.info("File \"{}\" ({}) already staged!", fileName, fileId);
-                            options.put(STAGE.key(), false);
+            if (operation != null) {
+                switch (operation.currentStatus()) {
+                    case READY:
+                        // Already indexed!
+                        // TODO: Believe this ready? What if deleted?
+                        logger.info("File \"{}\" ({}) already staged!", fileName, fileId);
+                        stage = false;
 
-                            //dbAdaptor.getVariantSourceDBAdaptor().updateVariantSource(source);
-                            break;
-                        case RUNNING:
-                            if (!loadStageResume) {
-                                throw MongoVariantStorageManagerException.fileBeingStagedException(fileId, fileName);
-                            }
-                        case ERROR:
-                            // Resume stage
-                            loadStageResume = true;
-                            options.put(STAGE_RESUME.key(), true);
-                            break;
-                        default:
-                            throw new IllegalStateException("Unknown status: " + op.currentStatus());
-                    }
-                    operation = op;
-                    break;
-                } else if (op.getOperationName().equals(MERGE.key())) {
-                    // Avoid stage new files if there are ongoing merge operations
-                    if (!op.currentStatus().equals(BatchFileOperation.Status.READY)) {
-                        throw MongoVariantStorageManagerException.operationInProgressException(op);
-                    }
+                        //dbAdaptor.getVariantSourceDBAdaptor().updateVariantSource(source);
+                        break;
+                    case RUNNING:
+                        if (!loadStageResume) {
+                            throw MongoVariantStorageManagerException.fileBeingStagedException(fileId, fileName);
+                        }
+                    case ERROR:
+                        // Resume stage
+                        loadStageResume = true;
+                        options.put(STAGE_RESUME.key(), true);
+                        break;
+                    default:
+                        throw new IllegalStateException("Unknown status: " + operation.currentStatus());
                 }
-            }
-
-            if (operation == null) {
+            } else {
                 operation = new BatchFileOperation(STAGE.key(), Collections.singletonList(fileId), System.currentTimeMillis());
                 studyConfiguration.getBatches().add(operation);
             }
-            operation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
+            if (stage) {
+                operation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
+            }
         }
+
+        if (stage) {
+            BatchFileOperation mergeOperation = getBatchFileOperation(studyConfiguration.getBatches(),
+                    op -> op.getOperationName().equals(MERGE.key()) && !op.currentStatus().equals(BatchFileOperation.Status.READY));
+            if (mergeOperation != null) {
+                // Avoid stage new files if there are ongoing merge operations
+                throw MongoVariantStorageManagerException.operationInProgressException(mergeOperation);
+            }
+        }
+
+        options.put(STAGE.key(), stage);
         return operation;
+    }
+
+    private BatchFileOperation getBatchFileOperation(List<BatchFileOperation> batches, Predicate<BatchFileOperation> filter) {
+        for (int i = batches.size() - 1; i >= 0; i--) {
+            BatchFileOperation op = batches.get(i);
+            if (filter.test(op)) {
+                return op;
+            }
+        }
+        return null;
     }
 
     public void stageError() throws StorageManagerException {
@@ -369,9 +387,10 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         // Stage loading finished. Save VariantSource and update BatchOperation
         source.setFileId(options.getString(Options.FILE_ID.key()));
         source.setStudyId(options.getString(Options.STUDY_ID.key()));
-        dbAdaptor.getVariantSourceDBAdaptor().updateVariantSource(source);
 
         setStatus(BatchFileOperation.Status.READY, STAGE.key(), Collections.singletonList(options.getInt(Options.FILE_ID.key())));
+        dbAdaptor.getVariantSourceDBAdaptor().updateVariantSource(source);
+
     }
 
     /**

@@ -55,9 +55,9 @@ public class IndividualClient extends AnnotationClient<Individual, IndividualAcl
         return execute(INDIVIDUALS_URL, individualId, "annotate", params, POST, Individual.class);
     }
 
-    public QueryResponse<Individual> groupBy(String studyId, String fields, ObjectMap params) throws CatalogException, IOException {
+    public QueryResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "studyId", studyId, "fields", fields);
-        return execute(INDIVIDUALS_URL, "groupBy", params, GET, Individual.class);
+        return execute(INDIVIDUALS_URL, "groupBy", params, GET, ObjectMap.class);
     }
 
 }

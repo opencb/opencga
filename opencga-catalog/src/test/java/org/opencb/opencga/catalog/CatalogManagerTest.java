@@ -132,6 +132,8 @@ public class CatalogManagerTest extends GenericTest {
 
         catalogManager.createFolder(studyId2, Paths.get("data/test/folder/"), true, null, sessionIdUser);
 
+        catalogManager.createFolder(studyId, Paths.get("analysis/"), true, null, sessionIdUser);
+        catalogManager.createFolder(studyId2, Paths.get("analysis/"), true, null, sessionIdUser);
 
         testFolder = catalogManager.createFolder(studyId, Paths.get("data/test/folder/"), true, null, sessionIdUser).first();
         ObjectMap attributes = new ObjectMap();

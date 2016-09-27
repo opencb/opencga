@@ -36,6 +36,7 @@ public class SampleWSServerTest {
     @BeforeClass
     static public void initServer() throws Exception {
         serverTestUtils = new WSServerTestUtils();
+        serverTestUtils.setUp();
         serverTestUtils.initServer();
     }
 
@@ -46,7 +47,7 @@ public class SampleWSServerTest {
 
     @Before
     public void init() throws Exception {
-        serverTestUtils.setUp();
+//        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
         sessionId = OpenCGAWSServer.catalogManager.login("user", CatalogManagerTest.PASSWORD, "localhost").first().getString("sessionId");
         studyId = OpenCGAWSServer.catalogManager.getStudyId("user@1000G:phase1");
@@ -80,8 +81,7 @@ public class SampleWSServerTest {
     @Test
     public void updateGet() throws IOException {
         String json = webTarget.path("samples").path(Long.toString(s1)).path("update")
-                .queryParam("individualId", in1).queryParam("sid", sessionId)
-                .request().get(String.class);
+                .queryParam("individualId", in1).queryParam("sid", sessionId).request().get(String.class);
 
         Sample sample = WSServerTestUtils.parseResult(json, Sample.class).getResponse().get(0).first();
         assertEquals(in1, sample.getIndividualId());
@@ -100,10 +100,14 @@ public class SampleWSServerTest {
         assertEquals(entity.attributes, sample.getAttributes());
     }
 
+    /*       COHORT TESTS !!        */
     @Test
     public void createEmptyCohort() throws IOException {
         String json = webTarget.path("cohorts").path("create")
-                .queryParam("sid", sessionId).queryParam("studyId", studyId).queryParam("name", "Name").queryParam("type", Study.Type.COLLECTION)
+                .queryParam("sid", sessionId)
+                .queryParam("studyId", studyId)
+                .queryParam("name", "Name")
+                .queryParam("type", Study.Type.COLLECTION)
                 .request().get(String.class);
         Cohort c = WSServerTestUtils.parseResult(json, Cohort.class).getResponse().get(0).first();
         assertEquals(0, c.getSamples().size());
@@ -121,17 +125,4 @@ public class SampleWSServerTest {
         assertEquals(Study.Type.FAMILY, c.getType());
     }
 
-    @Test
-    public void shareMultipleSamplesWithMultipleUsers () throws IOException {
-
-        String shareWith = "user2,user3";
-        String sampleIds = "34,35,36,37";
-
-        String json = webTarget.path("samples").path(sampleIds).path("share")
-                .queryParam("sid", sessionId).queryParam("userIds", shareWith).queryParam("unshare", false).queryParam("read", true)
-                .queryParam("write", true).request().get(String.class);
-        List<QueryResult<AclEntry>> response = WSServerTestUtils.parseResult(json, AclEntry.class).getResponse();
-        assertEquals(8, response.get(0).getNumResults());
-
-    }
 }

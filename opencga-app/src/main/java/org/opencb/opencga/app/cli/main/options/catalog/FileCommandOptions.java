@@ -434,8 +434,6 @@ public class FileCommandOptions {
         @Parameter(names = {"--path"}, description = "Path", required = false, arity = 1)
         public String path;
 
-
-
     }
 
     @Parameters(commandNames = {"relink"}, commandDescription = "Change location of linked or STAGED file.")

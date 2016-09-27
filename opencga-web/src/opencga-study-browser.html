@@ -14,7 +14,7 @@
   ~ limitations under the License.
   -->
 <link rel="import" href="../lib/jsorolla/src/lib/opencga/catalog/opencga-study.html">
-<link rel="import" href="../lib/jsorolla/src/lib/opencga/catalog/opencga-annotation-filter-selector.html">
+<link rel="import" href="../lib/jsorolla/src/lib/opencga/catalog/variableSets/opencga-variable-set-panel.html">
 <link rel="import" href="components/files/opencga-files-panel.html">
 <link rel="import" href="components/samples/opencga-samples-panel.html">
 <link rel="import" href="components/panels/opencga-panels-panel.html">
@@ -24,48 +24,41 @@
         <style is="custom-style" include="jso-styles"></style>
 
         <div style="margin: 10px">
-            <div hidden$="{{_showFilters}}">
-                <h2>{{study.name}}</h2>
+            <h2>{{study.name}}</h2>
 
-                <ul id="myTabs" class="nav nav-tabs" role="tablist">
-                    <li role="presentation" class="active"><a href="#{{prefix}}studyInfo" role="tab" data-toggle="tab">Summary</a></li>
-                    <li role="presentation"><a href="#{{prefix}}dashboardFiles" role="tab" data-toggle="tab">Files<span class="badge">{{study.files}}</span></a></li>
-                    <li role="presentation"><a id="{{prefix}}SampleTab" href="#{{prefix}}dashboardSamples" role="tab" data-toggle="tab">Samples</a></li>
-                    <li role="presentation"><a href="#{{prefix}}dashboardJobs" role="tab" data-toggle="tab">Jobs</a></li>
-                    <li role="presentation"><a href="#{{prefix}}dashboardPanels" role="tab" data-toggle="tab">Panels</a></li>
-                    <li role="presentation"><a href="#{{prefix}}dashboardFilters" role="tab" data-toggle="tab">Filter annotation</a></li>
-                </ul>
+            <ul id="myTabs" class="nav nav-pills" role="tablist">
+                <li role="presentation" class="active"><a href="#{{prefix}}studyInfo" role="tab" data-toggle="tab">Summary</a></li>
+                <li role="presentation"><a href="#{{prefix}}dashboardFiles" role="tab" data-toggle="tab">Files<span class="badge">{{study.files}}</span></a></li>
+                <li role="presentation"><a id="{{prefix}}SampleTab" href="#{{prefix}}dashboardSamples" role="tab" data-toggle="tab">Samples</a></li>
+                <li role="presentation"><a href="#{{prefix}}dashboardJobs" role="tab" data-toggle="tab">Jobs</a></li>
+                <li role="presentation"><a href="#{{prefix}}dashboardPanels" role="tab" data-toggle="tab">Panels</a></li>
+                <li role="presentation"><a href="#{{prefix}}dashboardFilters" role="tab" data-toggle="tab">Filter annotation</a></li>
+            </ul>
 
-                <div class="tab-content">
-                    <div id="{{prefix}}studyInfo" role="tabpanel" class="tab-pane active">
-                        <opencga-study opencga-client="{{opencgaClient}}" study="{{study}}" on-filter-variable-set="showFilters"></opencga-study>
-                    </div>
-
-                    <div id="{{prefix}}dashboardFiles" role="tabpanel" class="tab-pane">
-                        <opencga-files-panel opencga-client="{{opencgaClient}}" study-id="{{study.id}}"></opencga-files-panel>
-                    </div>
-
-                    <div id="{{prefix}}dashboardSamples" role="tabpanel" class="tab-pane">
-                        <opencga-samples-panel opencga-client="{{opencgaClient}}" study-id="{{study.id}}"></opencga-samples-panel>
-                    </div>
-
-                    <div id="{{prefix}}dashboardPanels" role="tabpanel" class="tab-pane">
-                        <opencga-panels-panel opencga-client="{{opencgaClient}}" study-id="{{study.id}}"></opencga-panels-panel>
-                    </div>
-
-                    <div role="tabpanel" class="tab-pane" id="{{prefix}}dashboardJobs">
-                        <h4>Jobs</h4>
-                    </div>
-
-                    <div id="{{prefix}}dashboardFilters" role="tabpanel" class="tab-pane">
-                        <opencga-annotation-filters opencga-client="{{opencgaClient}}" variable-set="{{study}}"></opencga-annotation-filters>
-                    </div>
+            <div class="tab-content">
+                <div id="{{prefix}}studyInfo" role="tabpanel" class="tab-pane active">
+                    <opencga-study opencga-client="{{opencgaClient}}" study="{{study}}"></opencga-study>
                 </div>
-            </div>
-            <div hidden$="{{!_showFilters}}">
-                <h2>Filters for {{_variableSet.name}}</h2>
-                <opencga-annotation-filter-selector variable-set="{{_variableSet}}" on-opencga-filter-selector-cancel="hideFilters"
-                on-opencga-filter-selector-sample="filterSamples"></opencga-annotation-filter-selector>
+
+                <div id="{{prefix}}dashboardFiles" role="tabpanel" class="tab-pane">
+                    <opencga-files-panel opencga-client="{{opencgaClient}}" study-id="{{study.id}}"></opencga-files-panel>
+                </div>
+
+                <div id="{{prefix}}dashboardSamples" role="tabpanel" class="tab-pane">
+                    <opencga-samples-panel opencga-client="{{opencgaClient}}" study-id="{{study.id}}"></opencga-samples-panel>
+                </div>
+
+                <div id="{{prefix}}dashboardPanels" role="tabpanel" class="tab-pane">
+                    <opencga-panels-panel opencga-client="{{opencgaClient}}" study-id="{{study.id}}"></opencga-panels-panel>
+                </div>
+
+                <div role="tabpanel" class="tab-pane" id="{{prefix}}dashboardJobs">
+                    <h4>Jobs</h4>
+                </div>
+
+                <div id="{{prefix}}dashboardFilters" role="tabpanel" class="tab-pane">
+                    <opencga-variable-set-panel opencga-client="{{opencgaClient}}" study-id="{{study.id}}"></opencga-variable-set-panel>
+                </div>
             </div>
         </div>
     </template>
@@ -89,23 +82,6 @@
                 if (typeof this.prefix === "undefined" || this.prefix == "") {
                     this.prefix = Utils.randomString(6);
                 }
-                this._showFilters = false;
-            },
-
-            showFilters: function(e) {
-                this._showFilters = true;
-                this._variableSet = e.detail.variableSet;
-            },
-
-            hideFilters: function() {
-                this._showFilters = false;
-                this._variableSet = {};
-            },
-
-            filterSamples: function(e) {
-                this._showFilters = false;
-                this._variableSet = {};
-                $('#' + this.prefix + "SampleTab").click();
             }
         });
     </script>

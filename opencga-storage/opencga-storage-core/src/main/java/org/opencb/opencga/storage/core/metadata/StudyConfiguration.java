@@ -144,7 +144,15 @@ public class StudyConfiguration {
 
     @Override
     public String toString() {
-        return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
+        return toString(ToStringStyle.SIMPLE_STYLE);
+    }
+
+    public String toJson() {
+        return toString(ToStringStyle.JSON_STYLE);
+    }
+
+    public String toString(ToStringStyle style) {
+        return new ToStringBuilder(this, style)
                 .append("studyId", studyId)
                 .append("studyName", studyName)
                 .append("fileIds", fileIds)

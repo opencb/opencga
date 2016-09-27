@@ -7,6 +7,7 @@ import java.text.DecimalFormat;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Supplier;
 
 /**
  * Created on 13/04/16
@@ -77,15 +78,23 @@ public class ProgressLogger {
     }
 
     public void increment(long delta) {
-        increment(delta, "");
+        increment(delta, "", null);
     }
 
     public void increment(long delta, String message) {
+        increment(delta, message, null);
+    }
+
+    public void increment(long delta, Supplier<String> supplier) {
+        increment(delta, null, supplier);
+    }
+
+    private void increment(long delta, String message, Supplier<String> supplier) {
         long previousCount = count.addAndGet(delta);
         long count = previousCount + delta;
 
         if (previousCount / batchSize != count / batchSize) {
-            log(count, message);
+            log(count, supplier == null ? message : supplier.get());
         }
 
     }

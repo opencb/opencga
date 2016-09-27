@@ -141,8 +141,16 @@
                             return $.extend({}, _this.filters, auxParams);
                         },
                         responseHandler: function(response) {
+                            if (!_this.hasOwnProperty("numTotalResults")) {
+                                _this.numTotalResults = 0;
+                            }
+                            if (_this.numTotalResults !== response.response[0].numTotalResults
+                                    && response.response[0].numTotalResults > response.queryOptions.limit) {
+                                _this.numTotalResults = response.response[0].numTotalResults;
+                            }
+
                             return {
-                                total: response.response[0].numTotalResults,
+                                total: _this.numTotalResults,
                                 rows: response.response[0].result
                             }
                         },

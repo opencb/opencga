@@ -13,6 +13,8 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
+<link rel="import" href="../../../lib/jsorolla/src/lib/opencga/catalog/filters/opencga-annotation-filter-widget.html">
+
 <dom-module id="opencga-samples-filter">
     <template>
         <style is="custom-style" include="jso-styles">
@@ -31,40 +33,75 @@
 
             <!--Filter tab content-->
             <div class="tab-content">
-                <div role="tabpanel" class="tab-pane active" id="filter1">
-                    <button type="button" class="btn btn-default" on-click="clear">Clear</button>
-                    <button type="button" id="submitButton" class="btn btn-default" on-click="executeQuery">Submit</button>
-                    <br>
+                <div role="tabpanel" class="panel panel-default tab-pane active" id="filter1" style="padding: 5px;">
 
-                    <!--GeneID filter menu-->
-                    <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+                    <button type="button" class="btn btn-default" style="margin-bottom: 15px;" on-click="clear">Clear all</button>
+
+                    <div class="panel-group" id="{{prefix}}Accordion">
+                        <!--Sample name-->
                         <div class="panel panel-default">
-                            <div class="panel-heading" role="tab" id="headingOne">
+                            <div class="panel-heading">
                                 <h4 class="panel-title">
-                                    <a role="button" data-toggle="collapse" data-parent="#accordion" href="#sampleFilterName"
-                                       aria-expanded="true" aria-controls="sampleFilterName">
-                                        Sample name
+                                    <i hidden$="{{!sampleNameSearch.length}}" class="fa fa-check" aria-hidden="true" style="color: green;"></i>
+                                    <a href data-toggle="collapse" data-parent$="#{{prefix}}Accordion" href$="#{{prefix}}SampleNameCollapse">
+                                        Name
                                     </a>
                                 </h4>
                             </div>
-                            <div id="sampleFilterName" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingOne">
+                            <div id="{{prefix}}SampleNameCollapse" class="panel-collapse collapse">
+                                <div class="form-group has-feedback panel-body">
+                                    <input type="text" id="{{prefix}}SampleName" class="form-control" placeholder="Search by sample name"
+                                           on-keyup="calculateFilters" value="{{sampleNameSearch::input}}">
+                                    <i class="fa fa-search form-control-feedback" aria-hidden="true" style="padding: 15px; margin-right: 20px;"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h4 class="panel-title">
+                                    <i hidden$="{{!sampleSourceSearch.length}}" class="fa fa-check" aria-hidden="true" style="color: green;"></i>
+                                    <a href data-toggle="collapse" data-parent$="#{{prefix}}Accordion" href$="#{{prefix}}SampleSourceCollapse">
+                                        Sources
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="{{prefix}}SampleSourceCollapse" class="panel-collapse collapse">
+                                <div class="form-group has-feedback panel-body">
+                                    <input type="text" id="{{prefix}}SampleSource" class="form-control" placeholder="Search by sample source"
+                                           on-keyup="calculateFilters"  value="{{sampleSourceSearch::input}}">
+                                    <i class="fa fa-search form-control-feedback" aria-hidden="true" style="padding: 15px; margin-right: 20px;"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="panel panel-default">
+                            <div class="panel-heading">
+                                <h4 class="panel-title">
+                                    <i hidden$="{{!filteredVariables.variables.length}}" class="fa fa-check" aria-hidden="true" style="color: green;"></i>
+                                    <a href data-toggle="collapse" data-parent$="#{{prefix}}Accordion" href$="#{{prefix}}SampleVariablesCollapse">
+                                        Variables
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="{{prefix}}SampleVariablesCollapse" class="panel-collapse collapse">
                                 <div class="panel-body">
-                                    <form class="form-inline">
-                                        Search:
-                                        <div style="float: right">
-                                            <input id="sampleNameText" type="text" class="form-control" list="json-sample-datalist" value=""
-                                                   on-keyup="callAutocomplete">
-                                            <datalist id="json-sample-datalist">
-                                                <template is="dom-repeat" items="{{_autocompleteData}}">
-                                                    <option value="{{item.name}}">
-                                                </template>
-                                            </datalist>
-                                            <button type="button" class="btn btn-default btn-sm form-control" on-click="addSampleName">
-                                                <i class="fa fa-plus"></i>
-                                            </button>
-                                        </div>
-                                    </form>
-                                    <textarea id="sampleFilterTextArea" class="form-control" rows="3"></textarea>
+                                    <opencga-annotation-filter-widget opencga-client="{{opencgaClient}}" study-id="{{studyId}}"
+                                    filtered-variables="{{filteredVariables}}">
+                                    </opencga-annotation-filter-widget>
+
+                                    <div hidden$="{{!filteredVariables.variables.length}}" class="panel panel-success">
+                                        <div class="panel-heading">Active filters <span class="badge">{{filteredVariables.variables.length}}</span></div>
+                                        <ul class="list-group" style="max-height: 150px; overflow-y: auto;">
+                                            <template is="dom-repeat" items="{{filteredVariables.variables}}" as="filter">
+                                                <li class="list-group-item">
+                                                    <a on-click="removeVariableFilter" class="btn btn-default" data-variable="{{filter}}">
+                                                        <i class="fa fa-times add-right-margin" aria-hidden="true"></i>
+                                                        {{filter.name}}: {{filter.value}}
+                                                    </a>
+                                                </li>
+                                            </template>
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -84,6 +121,9 @@
                 studyId: {
                     type: Number
                 },
+                prefix: {
+                    type: String
+                },
                 filters: {
                     type: Object,
                     notify: true
@@ -93,9 +133,19 @@
                     value: []
                 }
             },
-            clear: function (e) {
-                // we empty the textareas
-                this.$.sampleFilterTextArea.value = "";
+            observers: [
+                'calculateFilters(filteredVariables.variables.splices)'
+            ],
+            ready: function() {
+                if (typeof this.prefix === "undefined" || this.prefix == "") {
+                    this.prefix = Utils.randomString(6);
+                }
+                this.clear();
+            },
+            clear: function () {
+                this.sampleNameSearch = "";
+                this.sampleSourceSearch = "";
+                this.filteredVariables = { variables: [] };
             },
             executeQuery: function (e) {
                 this.filters = {
@@ -127,6 +177,32 @@
                     }.bind(this));
                 }
 
+            },
+            removeVariableFilter: function(e) {
+                for (let i = 0; i < this.filteredVariables.variables.length; i++) {
+                    if (e.target.dataVariable === this.filteredVariables.variables[i]) {
+                        this.splice("filteredVariables.variables", i, 1);
+                    }
+                }
+            },
+            calculateFilters: function() {
+                let filters = {};
+                if (this.sampleNameSearch !== undefined && this.sampleNameSearch.length > 0) {
+                    filters["name"] = "~" + this.sampleNameSearch;
+                }
+                if (this.sampleSourceSearch !== undefined && this.sampleSourceSearch.length > 0) {
+                    filters["source"] = "~" + this.sampleSourceSearch;
+                }
+                if (this.filteredVariables.variables !== undefined && this.filteredVariables.variables.length > 0) {
+                    filters["variableSetId"] = this.filteredVariables.variableSet;
+                    let annotations = [];
+                    this.filteredVariables.variables.forEach(function(variable) {
+                        annotations.push(variable.name + "=" + variable.value);
+                    })
+                    filters["annotation"] = annotations.join(";");
+                }
+
+                this.filters = filters;
             }
         });
     </script>

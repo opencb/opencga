@@ -121,7 +121,7 @@ public class VariantAnnotationManager {
     public URI createAnnotation(Path outDir, String fileName, Query query, QueryOptions options) throws IOException {
 
         boolean gzip = options == null || options.getBoolean("gzip", true);
-        boolean avro = options == null || options.getBoolean("avro", false);
+        boolean avro = options == null || options.getBoolean("annotation.file.avro", false);
         Path path = Paths.get(outDir != null
                 ? outDir.toString()
                 : "/tmp", fileName + ".annot" + (avro ? ".avro" : ".json") + (gzip ? ".gz" : ""));
@@ -361,7 +361,16 @@ public class VariantAnnotationManager {
 
     public static VariantAnnotator buildVariantAnnotator(StorageConfiguration configuration, String storageEngineId)
             throws VariantAnnotatorException {
-        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+        return buildVariantAnnotator(configuration, storageEngineId, null);
+    }
+
+    public static VariantAnnotator buildVariantAnnotator(StorageConfiguration configuration, String storageEngineId, ObjectMap options)
+            throws VariantAnnotatorException {
+        ObjectMap storageOptions = new ObjectMap(configuration.getStorageEngine(storageEngineId).getVariant().getOptions());
+        if (options != null) {
+            storageOptions.putAll(options);
+        }
+        options = storageOptions;
         AnnotationSource annotationSource = VariantAnnotationManager.AnnotationSource.valueOf(
                 options.getString(ANNOTATION_SOURCE, options.containsKey(VARIANT_ANNOTATOR_CLASSNAME)
                         ? AnnotationSource.OTHER.name()

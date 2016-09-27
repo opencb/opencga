@@ -433,7 +433,8 @@ public class AdminCliOptionsParser {
         @Parameter(names = {"--user-name"}, description = "User name", required = true, arity = 1)
         public String userName;
 
-        @Parameter(names = {"--user-password"}, description = "User password", required = true,  password = true, arity = 0)
+//        @Parameter(names = {"--user-password"}, description = "User password", required = true, password = true, arity = 0)
+        @Parameter(names = {"--user-password"}, description = "User password", required = true, arity = 1)
         public String userPassword;
 
         @Parameter(names = {"--user-email"}, description = "User email", required = true, arity = 1)
