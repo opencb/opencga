@@ -27,6 +27,7 @@ package org.opencb.opencga.app.daemon;
 //import net.dpml.http.ServletContextHandler;
 
 
+import org.apache.log4j.*;
 import org.opencb.opencga.core.common.Config;
 
 
@@ -60,6 +61,11 @@ public class OpenCGADaemon {
 
         OptionParser.GeneralOptions opts = optionParser.getGeneralOptions();
 
+        if (opts.help) {
+            System.out.println(optionParser.usage());
+            return;
+        }
+
         //Get properties
         String propertyAppHome = System.getProperty("app.home");
         if (propertyAppHome != null) {
@@ -72,7 +78,11 @@ public class OpenCGADaemon {
                 opencgaHome = Paths.get("opencga-app", "build").toString(); //If it has not been run from the shell script (debug)
             }
         }
+
         Config.setGcsaHome(opencgaHome);
+
+        setLogLevel(opts.logLevel);
+
         File configFile;
         if(opts.conf.isEmpty()) {
             configFile = Paths.get(opencgaHome, "conf", "daemon.properties").toFile();
@@ -111,6 +121,35 @@ public class OpenCGADaemon {
         return daemon;
     }
 
+
+    public static void setLogLevel(String logLevel) {
+
+        String logFile = null;
+        org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
+        try {
+            java.nio.file.Path logs = Paths.get(Config.getOpenCGAHome(), "logs");
+            //Files.createDirectory(logs);
+            PatternLayout layout = new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} [%t] %-5p %c{1}:%L - %m%n");
+            logFile = logs.resolve("daemon.log").toString();
+            RollingFileAppender rollingFileAppender = new RollingFileAppender(layout, logFile, true);
+            rollingFileAppender.setThreshold(Level.DEBUG);
+            rollingFileAppender.setMaxFileSize("100MB");
+            rollingFileAppender.setMaxBackupIndex(50);
+            rootLogger.setLevel(Level.TRACE);
+            rootLogger.addAppender(rollingFileAppender);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // This small hack allow to configure the appropriate Logger level from the command line, this is done
+        // by setting the DEFAULT_LOG_LEVEL_KEY before the logger object is created.
+//        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
+
+        ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
+        stderr.setThreshold(Level.toLevel(logLevel));
+
+        logger = LoggerFactory.getLogger(OpenCGADaemon.class);
+    }
 
 }
 

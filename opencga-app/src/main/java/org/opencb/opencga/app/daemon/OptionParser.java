@@ -69,7 +69,7 @@ public class OptionParser {
         boolean verbose = false;
 
         @Parameter(names = {"-L", "--log-level"}, description = "This parameter set the level of the logging", required = false, arity = 1)
-        int logLevel;
+        String logLevel = "info";
 
         @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
         Map<String, String> params = new HashMap<String, String>();
