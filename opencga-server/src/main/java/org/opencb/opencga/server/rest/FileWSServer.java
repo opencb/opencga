@@ -607,7 +607,8 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/{fileId}/index")
     @ApiOperation(value = "Index variant files", position = 14, response = QueryResponse.class)
     public Response index(@ApiParam("Comma separated list of file ids (files or directories)") @PathParam(value = "fileId") String fileIdStr,
-                          @ApiParam("Study id") @QueryParam("studyId") String studyId,
+                          // Study id is not ingested by the analysis index command line. No longer needed.
+//                          @ApiParam("Study id") @QueryParam("studyId") String studyId,
                           @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr,
                           @ApiParam("Boolean indicating that only the transform step will be run") @DefaultValue("false") @QueryParam("transform") boolean transform,
                           @ApiParam("Boolean indicating that only the load step will be run") @DefaultValue("false") @QueryParam("load") boolean load,
@@ -618,7 +619,7 @@ public class FileWSServer extends OpenCGAWSServer {
                           @ApiParam("Overwrite annotations already present in variants") @DefaultValue("false") @QueryParam("overwrite") boolean overwriteAnnotations) {
 
         Map<String, String> params = new LinkedHashMap<>();
-        addParamIfNotNull(params, "studyId", studyId);
+//        addParamIfNotNull(params, "studyId", studyId);
         addParamIfNotNull(params, "outdir", outDirStr);
         addParamIfTrue(params, "transform", transform);
         addParamIfTrue(params, "load", load);

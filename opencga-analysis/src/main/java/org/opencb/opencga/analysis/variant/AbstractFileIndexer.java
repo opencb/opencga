@@ -20,11 +20,14 @@ import org.slf4j.Logger;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
 
+import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.ERR_LOG_EXTENSION;
 import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.JOB_STATUS_FILE;
+import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.OUT_LOG_EXTENSION;
 
 /**
  * Created by pfurio on 23/08/16.
@@ -43,7 +46,19 @@ public abstract class AbstractFileIndexer {
     protected void outdirMustBeEmpty(Path outdir) throws CatalogIOException, AnalysisExecutionException {
         List<URI> uris = catalogManager.getCatalogIOManagerFactory().get(outdir.toUri()).listFiles(outdir.toUri());
         if (!uris.isEmpty()) {
-            throw new AnalysisExecutionException("Unable to execute index. Outdir '" + outdir + "' must be empty!");
+            // Only allow stdout and stderr files
+            for (URI uri : uris) {
+                // Obtain the extension
+                int i = uri.toString().lastIndexOf(".");
+                if (i <= 0) {
+                    throw new AnalysisExecutionException("Unable to execute index. Outdir '" + outdir + "' must be empty!");
+                }
+                String extension = uri.toString().substring(i);
+                // If the extension is not one of the ones created by the daemons, throw the exception.
+                if (!ERR_LOG_EXTENSION.equalsIgnoreCase(extension) && !OUT_LOG_EXTENSION.equalsIgnoreCase(extension)) {
+                    throw new AnalysisExecutionException("Unable to execute index. Outdir '" + outdir + "' must be empty!");
+                }
+            }
         }
     }
 
@@ -71,7 +86,12 @@ public abstract class AbstractFileIndexer {
             logger.info("Scanning files from {} to move to {}", tmpOutdirPath, outDir.getUri());
             // Avoid copy the job.status file!
             Predicate<URI> fileStatusFilter = uri -> !uri.getPath().endsWith(JOB_STATUS_FILE);
-            files = fileScanner.scan(outDir, tmpOutdirPath.toUri(), FileScanner.FileScannerPolicy.DELETE, true, false, fileStatusFilter, -1, sessionId);
+            // TODO: Check whether we want to store the logs as well. At this point, we are also storing them.
+//            Predicate<URI> fileStatusFilter = uri -> (!uri.getPath().endsWith(JOB_STATUS_FILE)
+//                    && !uri.getPath().endsWith(OUT_LOG_EXTENSION)
+//                    && !uri.getPath().endsWith(ERR_LOG_EXTENSION));
+            files = fileScanner.scan(outDir, tmpOutdirPath.toUri(), FileScanner.FileScannerPolicy.DELETE, true, false, fileStatusFilter, -1,
+                    sessionId);
         } catch (IOException e) {
             logger.warn("IOException when scanning temporal directory. Error: {}", e.getMessage());
             throw e;

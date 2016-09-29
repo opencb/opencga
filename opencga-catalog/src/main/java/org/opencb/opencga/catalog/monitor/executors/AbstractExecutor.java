@@ -20,6 +20,8 @@ public abstract class AbstractExecutor {
     public static final String NUM_THREADS = "num_threads";
     public static final String MAX_MEM = "max_mem";
     public static final String JOB_STATUS_FILE = "job.status";
+    public static final String OUT_LOG_EXTENSION = ".out";
+    public static final String ERR_LOG_EXTENSION = ".err";
 
     protected Logger logger;
     protected ObjectMapper objectMapper;

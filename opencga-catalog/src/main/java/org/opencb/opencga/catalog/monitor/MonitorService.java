@@ -152,6 +152,8 @@ public class MonitorService {
     public void stop() throws Exception {
         executionDaemon.setExit(true);
         fileDaemon.setExit(true);
+        indexDaemon.setExit(true);
+        executionDaemon.setExit(true);
 
         // By setting exit to true the monitor thread will close the Jetty server
         exit = true;

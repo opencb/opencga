@@ -276,7 +276,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         String fileIds = filesCommandOptions.indexCommandOptions.fileIds;
 
         ObjectMap o = new ObjectMap();
-        o.putIfNotNull("studyId", filesCommandOptions.indexCommandOptions.studyId);
+//        o.putIfNotNull("studyId", filesCommandOptions.indexCommandOptions.studyId);
         o.putIfNotNull("outDir", filesCommandOptions.indexCommandOptions.outdir);
         o.putIfNotNull("transform", filesCommandOptions.indexCommandOptions.transform);
         o.putIfNotNull("load", filesCommandOptions.indexCommandOptions.load);

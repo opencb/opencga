@@ -284,8 +284,8 @@ public class FileCommandOptions {
         @Parameter(names = {"--id"}, description = "Comma separated list of file ids (files or directories)", required = true, arity = 1)
         public String fileIds;
 
-        @Parameter(names = {"-s", "--study-id"}, description = "The study id or alias where you want to load the data", arity = 1)
-        public String studyId;
+//        @Parameter(names = {"-s", "--study-id"}, description = "The study id or alias where you want to load the data", arity = 1)
+//        public String studyId;
 
         @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
         public boolean transform;

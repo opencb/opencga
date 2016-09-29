@@ -35,7 +35,7 @@ public abstract class MonitorParentDaemon implements Runnable {
 
     protected String sessionId;
 
-    protected static Logger logger;
+    protected Logger logger;
 
     public MonitorParentDaemon(int interval, String sessionId, CatalogManager catalogManager) {
         this.interval = interval;
