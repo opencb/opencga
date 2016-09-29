@@ -21,14 +21,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.QueryFilter;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
 
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
-import static org.opencb.commons.datastore.core.QueryParam.Type.BOOLEAN;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -91,11 +89,19 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
 
     String getUserIdBySessionId(String sessionId);
 
-    void addQueryFilter(String userId, QueryFilter queryFilter) throws CatalogDBException;
+    // Config operations
+    QueryResult addConfig(String userId, String name, ObjectMap params) throws CatalogDBException;
 
-    QueryResult<Long> deleteQueryFilter(String userId, String filterId) throws CatalogDBException;
+    QueryResult updateConfig(String userId, String name, ObjectMap params) throws CatalogDBException;
 
-    QueryResult<QueryFilter> getQueryFilter(String userId, String filterId) throws CatalogDBException;
+    QueryResult deleteConfig(String userId, String name) throws CatalogDBException;
+
+    // Filter operations
+    QueryResult<User.Filter> addFilter(String userId, User.Filter filter) throws CatalogDBException;
+
+    QueryResult<Long> updateFilter(String userId, String name, ObjectMap params) throws CatalogDBException;
+
+    QueryResult deleteFilter(String userId, String name) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT_ARRAY, ""),
@@ -132,7 +138,9 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         SESSION_LOGIN("sessions.login", TEXT_ARRAY, ""),
         SESSION_LOGOUT("sessions.logout", TEXT_ARRAY, ""),
 
-        CONFIG_OPENCGA_FILTERS("configs.opencga-filters", TEXT_ARRAY, "");
+        CONFIGS("configs", TEXT_ARRAY, ""),
+        CONFIGS_FILTERS("configs.filters", TEXT_ARRAY, ""),
+        CONFIGS_FILTERS_NAME("configs.filters.name", TEXT, "");
 
         private static Map<String, QueryParams> map;
         static {
@@ -172,6 +180,56 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         }
 
         public static QueryParams getParam(String key) {
+            return map.get(key);
+        }
+    }
+
+    enum FilterParams implements QueryParam {
+        NAME("name", TEXT, ""),
+        DESCRIPTION("description", TEXT, ""),
+        BIOFORMAT("bioformat", TEXT, ""),
+        QUERY("query", TEXT, ""),
+        OPTIONS("options", TEXT, "");
+
+        private static Map<String, FilterParams> map;
+
+        static {
+            map = new LinkedMap();
+            for (FilterParams params : FilterParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        FilterParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+
+        public static Map<String, FilterParams> getMap() {
+            return map;
+        }
+
+        public static FilterParams getParam(String key) {
             return map.get(key);
         }
     }

@@ -18,9 +18,11 @@ package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.core.exception.VersionException;
@@ -311,6 +313,75 @@ public class UserWSServer extends OpenCGAWSServer {
             String nPassword = map.get("npassword");
             QueryResult result = catalogManager.changePassword(userId, password, nPassword);
             return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{userId}/configs/filters/create")
+    @ApiOperation(value = "Store a custom filter", response = User.Filter.class)
+    public Response addFilter(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+                           @ApiParam(name = "params", value = "Filter parameters", required = true) User.Filter params) {
+        try {
+            return createOkResponse(catalogManager.getUserManager().addFilter(userId, sessionId, params.getName(), params.getDescription(),
+                    params.getBioformat(), params.getQuery(), params.getOptions()));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    private static class UpdateFilter {
+        public File.Bioformat bioformat;
+        public String description;
+        public Query query;
+        public QueryOptions options;
+    }
+
+    @POST
+    @Path("/{userId}/configs/filters/{name}/update")
+    @ApiOperation(value = "Update a custom filter", response = User.Filter.class)
+    public Response updateFilter(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+                              @ApiParam(value = "Filter name", required = true) @PathParam("name") String name,
+                              @ApiParam(name = "params", value = "Filter parameters", required = true) UpdateFilter params) {
+        try {
+            return createOkResponse(catalogManager.getUserManager().updateFilter(userId, sessionId, name,
+                    new ObjectMap(jsonObjectMapper.writeValueAsString(params))));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{userId}/configs/filters/{name}/delete")
+    @ApiOperation(value = "Delete a custom filter", response = User.Filter.class)
+    public Response deleteFilter(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+                                 @ApiParam(value = "Filter name", required = true) @PathParam("name") String name) {
+        try {
+            return createOkResponse(catalogManager.getUserManager().deleteFilter(userId, sessionId, name));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{userId}/configs/filters/{name}/info")
+    @ApiOperation(value = "Fetch filter", response = User.Filter.class)
+    public Response getFilter(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+                                 @ApiParam(value = "Filter name", required = true) @PathParam("name") String name) {
+        try {
+            return createOkResponse(catalogManager.getUserManager().getFilter(userId, sessionId, name));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{userId}/configs/filters/list")
+    @ApiOperation(value = "Fetch all the filters", response = User.Filter.class)
+    public Response getFilters(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId) {
+        try {
+            return createOkResponse(catalogManager.getUserManager().getAllFilters(userId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

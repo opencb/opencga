@@ -17,10 +17,11 @@
 package org.opencb.opencga.catalog.managers.api;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.QueryFilter;
+import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.User;
 
 import javax.naming.NamingException;
@@ -112,10 +113,72 @@ public interface IUserManager extends ResourceManager<String, User> {
     @Deprecated
     QueryResult logoutAnonymous(String sessionId) throws CatalogException;
 
-    void addQueryFilter(String sessionId, QueryFilter queryFilter) throws CatalogException;
+    /*          Filter operations     */
 
-    QueryResult<Long> deleteQueryFilter(String sessionId, String filterId) throws CatalogException;
+    /**
+     * Add a new filter to the user account.
+     *
+     *
+     * @param userId user id to whom the filter will be associated.
+     * @param sessionId session id of the user asking to store the filter.
+     * @param name Filter name.
+     * @param description Filter description.
+     * @param bioformat Bioformat where the filter should be applied.
+     * @param query Query object.
+     * @param queryOptions Query options object.
+     * @return the created filter.
+     * @throws CatalogException if there already exists a filter with that same name for the user or if the user corresponding to the
+     * session id is not the same as the provided user id.
+     */
+    QueryResult<User.Filter> addFilter(String userId, String sessionId, String name, String description, File.Bioformat bioformat,
+                                       Query query, QueryOptions queryOptions) throws CatalogException;
 
-    QueryResult<QueryFilter> getQueryFilter(String sessionId, String filterId) throws CatalogException;
+    /**
+     * Update the filter information.
+     *
+     *
+     * @param userId user id to whom the filter should be updated.
+     * @param sessionId session id of the user asking to update the filter.
+     * @param name Filter name.
+     * @param params Map containing the parameters to be updated.
+     * @return the updated filter.
+     * @throws CatalogException if the filter could not be updated because the filter name is not correct or if the user corresponding to
+     * the session id is not the same as the provided user id.
+     */
+    QueryResult<User.Filter> updateFilter(String userId, String sessionId, String name, ObjectMap params) throws CatalogException;
+
+    /**
+     * Delete the filter.
+     *
+     *
+     * @param userId user id to whom the filter should be deleted.
+     * @param sessionId session id of the user asking to delete the filter.
+     * @param name filter name to be deleted.
+     * @return the deleted filter.
+     * @throws CatalogException when the filter cannot be removed or the name is not correct or if the user corresponding to the
+     * session id is not the same as the provided user id.
+     */
+    QueryResult<User.Filter> deleteFilter(String userId, String sessionId, String name) throws CatalogException;
+
+    /**
+     * Retrieves a filter.
+     *
+     * @param userId user id having the filter stored.
+     * @param sessionId session id of the user fetching the filter.
+     * @param name Filter name to be fetched.
+     * @return the filter.
+     * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
+     */
+    QueryResult<User.Filter> getFilter(String userId, String sessionId, String name) throws CatalogException;
+
+    /**
+     * Retrieves all the user filters.
+     *
+     * @param userId user id having the filters.
+     * @param sessionId session id of the user fetching the filters.
+     * @return the filters.
+     * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
+     */
+    QueryResult<User.Filter> getAllFilters(String userId, String sessionId) throws CatalogException;
 
 }
