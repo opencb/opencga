@@ -45,7 +45,7 @@ public class VariantLocalConflictResolverTest {
 //        b.setType(VariantType.NO_VARIATION);
         VariantType ta = a.getType();
         VariantType tb = b.getType();
-        List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b));
+        Collection<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b));
         assertEquals(2,resolved.size());
         assertEquals(true, resolved.contains(a));
     }
@@ -55,7 +55,7 @@ public class VariantLocalConflictResolverTest {
         Variant a = addAttribute(getVariantFilter("2:10048155:TCTTTTTTTT:AC", "PASS"),QUAL,"220");
         Variant b = addAttribute(getVariantFilter("2:10048156:T", "SiteConflict"),QUAL,".");
         Variant c = addAttribute(getVariantFilter("2:10048157:C", "PASS"),QUAL,".");
-        List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b));
+        List<Variant> resolved = new ArrayList<>(new VariantLocalConflictResolver().resolve(Arrays.asList(a, b)));
         assertEquals(1,resolved.size());
         assertEquals(a, resolved.get(0));
     }
@@ -65,7 +65,7 @@ public class VariantLocalConflictResolverTest {
         Variant a = addGT(addAttribute(getVariantFilter("2:10048155:TCTTTTTTTT:AC", "SiteConflict"),QUAL,"220"), "0/1");
         Variant b = addGT(addAttribute(getVariantFilter("2:10048156:T:T", "PASS"),QUAL,"."), "0/1");
         Variant c = addGT(addAttribute(getVariantFilter("2:10048157:C:C", "PASS"),QUAL,"."), "0/1");
-        List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b, c));
+        Collection<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b, c));
         assertEquals(4,resolved.size());
 //        assertEquals(a, resolved.get(0));
     }
@@ -76,7 +76,7 @@ public class VariantLocalConflictResolverTest {
         Variant b = addGT(addAttribute(getVariantFilter("2:10048155:TCTTTTTTTT:-", "PASS"),QUAL,"220"), "2/1");
         a.getStudies().get(0).getSecondaryAlternates().add(new AlternateCoordinate("2",b.getStart(),b.getEnd(),b.getReference(),b.getAlternate(), INDEL));
         b.getStudies().get(0).getSecondaryAlternates().add(new AlternateCoordinate("2",a.getStart(),a.getEnd(),a.getReference(),a.getAlternate(), INDEL));
-        List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b));
+        Collection<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b));
         assertEquals(1,resolved.size());
     }
 
@@ -86,7 +86,7 @@ public class VariantLocalConflictResolverTest {
         Variant b = addGT(addAttribute(getVariantFilter("2:10048155:ATATATATATAT:-", "PASS"),QUAL,"220"), "2/1");
         a.getStudies().get(0).getSecondaryAlternates().add(new AlternateCoordinate("2",b.getStart(),b.getEnd(),b.getReference(),b.getAlternate(), INDEL));
         b.getStudies().get(0).getSecondaryAlternates().add(new AlternateCoordinate("2",a.getStart(),a.getEnd(),a.getReference(),a.getAlternate(), INDEL));
-        List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b));
+        List<Variant> resolved = new ArrayList<>(new VariantLocalConflictResolver().resolve(Arrays.asList(a, b)));
         System.out.println("a.toString() = " + a.toString());
         System.out.println("b.getStudies().get(0).getSecondaryAlternates().get(0).toString() = " + b.getStudies().get(0).getSecondaryAlternates().get(0).toString());
         assertEquals(1,resolved.size());
@@ -101,7 +101,7 @@ public class VariantLocalConflictResolverTest {
         Variant b = addGT(addAttribute(getVariantFilter("2:10048155:AAA:-", "PASS"),QUAL,"220"), "0/1");
         System.out.println("a.toString() = " + a.toJson());
         System.out.println("b.toString() = " + b.toJson());
-        List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b));
+        Collection<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b));
         resolved.forEach(res -> System.out.println("res.toJson() = " + res.toJson()));
         assertEquals(1,resolved.size());
     }
@@ -111,7 +111,7 @@ public class VariantLocalConflictResolverTest {
         Variant a = addGT(addAttribute(getVariantFilter("1:10048155:-:AT", "PASS"),QUAL,"220"), "0/1");
         Variant b = addGT(addAttribute(getVariantFilter("1:10048155:-:ATT", "PASS"),QUAL,"220"), "0/1");
         Variant c = addGT(addAttribute(getVariantFilter("1:10048155:-:ATTT", "PASS"),QUAL,"220"), "0/1");
-        List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b, c));
+        Collection<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b, c));
         assertEquals(1,resolved.size());
     }
 
@@ -143,7 +143,7 @@ public class VariantLocalConflictResolverTest {
         List<Variant> variants = new VariantNormalizer().normalize(Arrays.asList(v1, v2), false);
         variants.forEach(norm -> System.out.println("norm.toJson() = " + norm.toJson()));
         System.out.println();
-        List<Variant> resolved = new VariantLocalConflictResolver().resolve(variants);
+        Collection<Variant> resolved = new VariantLocalConflictResolver().resolve(variants);
         resolved.forEach(res -> System.out.println("res.toJson() = " + res.toJson()));
 
         List<Variant> resVar = resolved.stream().filter(v -> !v.getType().equals(NO_VARIATION)).collect
@@ -164,7 +164,7 @@ public class VariantLocalConflictResolverTest {
         Variant a = addGT(addAttribute(getVariantFilter("1:100:A:T", "PASS"),QUAL,"731"), "0/1");
         Variant b = addGT(addAttribute(getVariantFilter("1:100-103:AAAA", "PASS"),QUAL,"390"), "0/0");
         b.setType(NO_VARIATION);
-        List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b));
+        Collection<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b));
         assertEquals(2,resolved.size());
     }
 
@@ -173,7 +173,7 @@ public class VariantLocalConflictResolverTest {
         Variant a = addGTAndFilter(addAttribute(getVariantFilter("1:102::TTT", "PASS"),QUAL,"731"), "0/1", "PASS");
         Variant b = addGTAndFilter(addAttribute(getVariantFilter("1:100-103:AAAA", "PASS"),QUAL,"390"), "0/0", "PASS");
         b.setType(NO_VARIATION);
-        List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b));
+        List<Variant> resolved = new ArrayList<>(new VariantLocalConflictResolver().resolve(Arrays.asList(a, b)));
         assertEquals(3,resolved.size());
         assertEquals("SiteConflict", resolved.get(2).getStudies().get(0).getSampleData("1", GENOTYPE_FILTER_KEY));
     }
@@ -183,7 +183,7 @@ public class VariantLocalConflictResolverTest {
         Variant a = addAttribute(getVariantFilter("1:100:-:GGTTG", "PASS"),QUAL,"731");
         Variant b = addAttribute(getVariantFilter("1:100-103:AAAA", "PASS"),QUAL,"390");
         b.setType(NO_VARIATION);
-        List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b));
+        Collection<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b));
         assertEquals(2,resolved.size());
     }
 
@@ -193,15 +193,28 @@ public class VariantLocalConflictResolverTest {
         Variant b = addGT(addAttribute(getVariantFilter("1:100:A:T", "PASS"),QUAL,"390"), "0/1");
         Variant c = addGT(addAttribute(getVariantFilter("1:99:G:C", "PASS"),QUAL,"390"), "0/1");
         b.setType(NO_VARIATION);
-        List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b, c));
+        Collection<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b, c));
         assertEquals(3,resolved.size());
+    }
+
+    @Test
+    public void resolve_INS_SNP_SEC_ALT() throws Exception {
+        Variant a = addGT(addAttribute(getVariantFilter("1:100:-:GGTTG", "PASS"),QUAL,"390"), "1/2");
+        Variant b = addGT(addAttribute(getVariantFilter("1:102:-:AGGA", "PASS"),QUAL,"390"), "0/1");
+        Variant c = addGT(addAttribute(getVariantFilter("1:100:G:-", "PASS"),QUAL,"390"), "0/0");
+        c.setType(NO_VARIATION);
+        a.getStudies().get(0).getSecondaryAlternates().add(
+                new AlternateCoordinate(b.getChromosome(), b.getStart(), b.getEnd(), b.getReference(), b.getAlternate(),
+                        INDEL));
+        Collection<Variant> resolved = new VariantLocalConflictResolver().resolveConflicts(Arrays.asList(a, c, b));
+        assertEquals(2,resolved.size());
     }
 
     @Test
     public void resolvePass() throws Exception {
         Variant a = addAttribute(getVariantFilter("1:5731287:C:-", "PASS"),QUAL,"731");
         Variant b = addAttribute(getVariantFilter("1:5731287:C:G", "SiteConflict"),QUAL,"390");
-        List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b));
+        List<Variant> resolved = new ArrayList<>(new VariantLocalConflictResolver().resolve(Arrays.asList(a, b)));
         assertEquals(1,resolved.size());
         assertEquals(a, resolved.get(0));
     }
@@ -209,7 +222,7 @@ public class VariantLocalConflictResolverTest {
     @Test
     public void resolveStrangeSet() throws Exception {
         Variant b = addAttribute(getVariantFilter("1:5731287:C:G", "SiteConflict"),QUAL,"390");
-        List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(b));
+        Collection<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(b));
         assertEquals(1,resolved.size());
     }
 
@@ -217,7 +230,7 @@ public class VariantLocalConflictResolverTest {
     public void resolveQUality() throws Exception {
         Variant a = addAttribute(getVariantFilter("1:5731287:C:-", "PASS"),QUAL,"731");
         Variant b = addAttribute(getVariantFilter("1:5731287:C:G", "PASS"),QUAL,"1390");
-        List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b));
+        List<Variant> resolved = new ArrayList<>(new VariantLocalConflictResolver().resolve(Arrays.asList(a, b)));
         assertEquals(1,resolved.size());
         assertEquals(b, resolved.get(0));
     }
