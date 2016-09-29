@@ -79,12 +79,15 @@ public class VariantLocalConflictResolver {
                 } else if (allSameTypeAndGT(resolved, q, VariantType.NO_VARIATION)) {
                     List<Variant> collect = resolved.stream().filter(r -> r.overlapWith(q, true))
                             .collect(Collectors.toList());
-                    if (collect.size() != 1) {
-                        throw new IllegalStateException("Found " + collect.size() + " overlapping variants for " + q);
-                    }
+                    collect.add(q);
+                    List<Pair<Integer, Integer>> pairs = buildRegions(collect);
+                    collect.sort(varPositionOrder);
                     Variant variant = collect.get(0);
-                    variant.setStart(Math.min(variant.getStart(), q.getStart()));
-                    variant.setEnd(Math.max(variant.getEnd(), q.getEnd()));
+                    int minPos = pairs.stream().mapToInt(p -> p.getLeft()).min().getAsInt();
+                    if (!variant.getStart().equals(minPos)) {
+                        throw new IllegalStateException("Sorting and merging of NO_VARIATOIN regions went wrong: " + q);
+                    }
+                    variant.setEnd(pairs.stream().mapToInt(p -> p.getRight()).max().getAsInt());
                     variant.setLength((variant.getEnd() - variant.getStart()) + 1);
                 } else {
                     // does not fit
