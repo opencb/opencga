@@ -197,6 +197,24 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
+    @GET
+    @Path("/bioformats")
+    @ApiOperation(value = "List of accepted file bioformats", position = 3)
+    public Response getBioformats() {
+        List<File.Bioformat> bioformats = Arrays.asList(File.Bioformat.values());
+        QueryResult<File.Bioformat> queryResult = new QueryResult("Bioformats", 0, bioformats.size(), bioformats.size(), "", "", bioformats);
+        return createOkResponse(queryResult);
+    }
+
+    @GET
+    @Path("/formats")
+    @ApiOperation(value = "List of accepted file formats", position = 3)
+    public Response getFormats() {
+        List<File.Format> formats = Arrays.asList(File.Format.values());
+        QueryResult<File.Format> queryResult = new QueryResult("Formats", 0, formats.size(), formats.size(), "", "", formats);
+        return createOkResponse(queryResult);
+    }
+
     @POST
     @Path("/upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
