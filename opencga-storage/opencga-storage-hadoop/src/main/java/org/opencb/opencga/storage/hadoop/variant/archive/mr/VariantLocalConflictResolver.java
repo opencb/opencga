@@ -33,33 +33,86 @@ public class VariantLocalConflictResolver {
         List<Variant> varSorted = new ArrayList<>(variants);
         Collections.sort(varSorted, POS_REF_ALT_COMP);
         List<Variant> resolved = new ArrayList<>(variants.size());
-        List<Variant> currVariants = new ArrayList<>();
-        for (Variant var : varSorted) {
-            if (currVariants.isEmpty()) { // init
-                currVariants.add(var);
-            } else if (!VariantLocalConflictResolver.hasAnyConflictOverlapInclSecAlt(currVariants, var)) { // no overlap
-                resolved.addAll(resolve(currVariants));
-                currVariants.clear();
-                currVariants.add(var);
-            } else { // partial or full overlap
-                currVariants.add(var);
+
+        Map<Variant, List<Variant>> varToAlt = varSorted.stream().collect(
+                Collectors.toMap(v -> v, v -> expandToVariants(v)));
+
+        // Remove redundant variants (variant with one alt already represented in a SecAlt)
+        List<Variant> redundantSet = new ArrayList<>();
+        for (Variant query : varSorted) {
+            if (varToAlt.get(query).size() == 1) {
+                for (Variant target : varSorted) {
+                    if (!query.equals(target) && !redundantSet.contains(target)) {
+                        List<Variant> tarAlts = varToAlt.get(target);
+                        long count = tarAlts.stream().filter(v -> v.onSameRegion(query)
+                                && v.getReference().equals(query.getReference())
+                                && v.getAlternate().equals(query.getAlternate()))
+                                .count();
+                        if (count > 0) {
+                            redundantSet.add(query);
+                            break;
+                        }
+                    }
+                }
             }
         }
-        resolved.addAll(resolve(currVariants));
+        varSorted.removeAll(redundantSet);
+        redundantSet.forEach(v -> varToAlt.remove(v));
+
+        List<Pair<Variant, Variant>> altIdx = varToAlt.entrySet().stream().flatMap(
+                e -> e.getValue().stream().map(v -> new ImmutablePair<>(v, e.getKey()))).collect(Collectors.toList());
+
+        while (!varSorted.isEmpty()) {
+            Variant query = varSorted.get(0);
+            List<Variant> queryAlts = varToAlt.get(query);
+
+            Set<Variant> conflictSet = findConflictSet(queryAlts, varToAlt, altIdx);
+
+            if (conflictSet.isEmpty()) {
+                throw new IllegalStateException("Variant didn't find itself: " + query);
+            } else if (conflictSet.size() == 1) {
+                if (!conflictSet.contains(query)) {
+                    throw new IllegalStateException("Variant didn't find itself, but others: " + query);
+                }
+                resolved.add(query);
+            } else {
+                resolved.addAll(resolve(conflictSet));
+            }
+            varSorted.removeAll(conflictSet);
+        }
         return resolved;
+    }
+
+    private Set<Variant> findConflictSet(List<Variant> queryAlts, Map<Variant, List<Variant>> varToAlt,
+                                         List<Pair<Variant, Variant>> altIdx) {
+        Set<Variant> conflictSet = new HashSet<>();
+        Collection<Variant> querySet = queryAlts;
+
+        long count = 1;
+        while (count > 0) {
+            // find all overlaps between query Alts and all other found regions -> until nothing else is found
+            count = querySet.stream().flatMap(
+                    a -> altIdx.stream().filter(p -> hasConflictOverlap(a, p.getKey())).map(p -> p.getValue()))
+                    .filter(v -> conflictSet.add(v)).count();
+            querySet = conflictSet.stream().flatMap(v -> varToAlt.get(v).stream())
+                    .collect(Collectors.toSet());
+        }
+        return conflictSet;
     }
 
     /**
      * Returns a nonredudant set of variants, where each position of the genome is only covered once.<br>
      * Conflicting regions are converted as NO_VARIATION.
      *
-     * @param conflicts List of Variants with conflicts.
+     * @param conflicts Collection of Variants with conflicts.
      * @return List of Variants
      */
-    public List<Variant> resolve(List<Variant> conflicts) {
+    public Collection<Variant> resolve(Collection<Variant> conflicts) {
         if (conflicts.size() < 2) {
             return conflicts;
         }
+        Map<Variant, List<Variant>> varToAlt = conflicts.stream().collect(
+                Collectors.toMap(v -> v, v -> expandToVariants(v)));
         // <start,end> pair stream
         List<Pair<Integer, Integer>> secAltPairs = buildRegions(conflicts);
 
@@ -68,30 +121,33 @@ public class VariantLocalConflictResolver {
 
         List<Variant> sorted = new ArrayList<>(conflicts);
         sorted.sort(VARIANT_COMP);
+
         List<Variant> resolved = new ArrayList<>();
         List<Variant> misfit = new ArrayList<>();
-        for (Variant q : sorted) {
+        for (Variant query : sorted) {
             if (resolved.isEmpty()) {
-                resolved.add(q);
+                resolved.add(query);
             } else {
-                if (!hasAnyConflictOverlapInclSecAlt(resolved, q)) {
-                    resolved.add(q);
-                } else if (allSameTypeAndGT(resolved, q, VariantType.NO_VARIATION)) {
-                    List<Variant> collect = resolved.stream().filter(r -> r.overlapWith(q, true))
+                if (!hasAnyConflictOverlapInclSecAlt(resolved, query)) {
+                    resolved.add(query);
+                } else if (allSameTypeAndGT(resolved, VariantType.NO_VARIATION)) {
+                    List<Variant> collect = resolved.stream().filter(r -> r.overlapWith(query, true))
                             .collect(Collectors.toList());
-                    collect.add(q);
+                    collect.add(query);
                     List<Pair<Integer, Integer>> pairs = buildRegions(collect);
                     collect.sort(varPositionOrder);
-                    Variant variant = collect.get(0);
+                    Variant variant = deepCopy(collect.get(0));
                     int minPos = pairs.stream().mapToInt(p -> p.getLeft()).min().getAsInt();
                     if (!variant.getStart().equals(minPos)) {
-                        throw new IllegalStateException("Sorting and merging of NO_VARIATOIN regions went wrong: " + q);
+                        throw new IllegalStateException("Sorting and merging of NO_VARIATOIN regions went wrong: " + query);
                     }
                     variant.setEnd(pairs.stream().mapToInt(p -> p.getRight()).max().getAsInt());
                     variant.setLength((variant.getEnd() - variant.getStart()) + 1);
+                    resolved.clear();
+                    resolved.add(variant);
                 } else {
                     // does not fit
-                    misfit.add(q);
+                    misfit.add(query);
                 }
             }
         }
@@ -102,17 +158,25 @@ public class VariantLocalConflictResolver {
         return resolved;
     }
 
-    private boolean allSameTypeAndGT(List<Variant> resolved, Variant q, VariantType type) {
-        if (!q.getType().equals(type)) {
+    private boolean allSameTypeAndGT(List<Variant> conflicts, Variant query, VariantType type) {
+        List<Variant> tmp = new ArrayList<>(conflicts.size() + 1);
+        tmp.addAll(conflicts);
+        tmp.add(query);
+        return allSameTypeAndGT(tmp, type);
+    }
+    private boolean allSameTypeAndGT(Collection<Variant> conflicts, VariantType type) {
+        boolean differentType = conflicts.stream().filter(v -> !v.getType().equals(type)).findAny().isPresent();
+        if (differentType) {
             return false;
         }
-        StudyEntry studyEntry = q.getStudies().get(0);
+
+        StudyEntry studyEntry = conflicts.stream().findAny().get().getStudies().get(0);
         String sample = studyEntry.getSamplesName().stream().findFirst().get();
 
         String gt = studyEntry.getSampleData(sample, GENOTYPE_KEY);
-        long count = resolved.stream().filter(v -> v.getType().equals(type)
+        long count = conflicts.stream().filter(v -> v.getType().equals(type)
                 && StringUtils.equals(gt, v.getStudies().get(0).getSampleData(sample, GENOTYPE_KEY))).count();
-        return ((int) count) == resolved.size();
+        return ((int) count) == conflicts.size();
     }
 
     private static VariantPositionComparator varPositionOrder = new VariantPositionComparator();
@@ -123,17 +187,10 @@ public class VariantLocalConflictResolver {
         // find missing pieces
         List<Pair<Integer, Integer>> holes = getMissingRegions(resolved, start, end);
 
-        // create NO_VARIANT fillers for holes
-        if (holes.size() == 1) { // only one hole - use query variant
-            Pair<Integer, Integer> h = holes.get(0);
-            changeVariantToNoCall(q, h.getKey(), h.getValue());
-            resolved.add(q);
-        } else {
-            for (Pair<Integer, Integer> h : holes) { // > 1 hole -> need to make copies of variant object
-                Variant v = deepCopy(q);
-                changeVariantToNoCall(v, h.getKey(), h.getValue());
-                resolved.add(v);
-            }
+        for (Pair<Integer, Integer> h : holes) { // > 1 hole -> need to make copies of variant object
+            Variant v = deepCopy(q);
+            changeVariantToNoCall(v, h.getKey(), h.getValue());
+            resolved.add(v);
         }
     }
     public static List<Pair<Integer, Integer>> getMissingRegions(List<Variant> target, Variant query) {
@@ -155,7 +212,9 @@ public class VariantLocalConflictResolver {
         int maxTarget = targetReg.stream().mapToInt(p -> p.getRight()).max().getAsInt();
         if (maxTarget < minTarget) {
             // Insertion -> split query region into two
-            return Arrays.asList(new ImmutablePair<>(min, maxTarget), new ImmutablePair<>(minTarget, max));
+            return Arrays.asList(
+                    new ImmutablePair<>(Math.min(min, maxTarget), Math.max(min, maxTarget)),
+                    new ImmutablePair<>(Math.min(minTarget, max), Math.max(minTarget, max)));
         }
         // find missing pieces
         List<Pair<Integer, Integer>> holes = new ArrayList<>();
@@ -188,7 +247,7 @@ public class VariantLocalConflictResolver {
         return holes;
     }
 
-    private static List<Pair<Integer, Integer>> buildRegions(List<Variant> target) {
+    private static List<Pair<Integer, Integer>> buildRegions(Collection<Variant> target) {
         return target.stream().map(v -> buildRegions(v)).flatMap(l -> l.stream()).collect(Collectors.toList());
     }
 
@@ -278,7 +337,8 @@ public class VariantLocalConflictResolver {
         String ref  = ObjectUtils.firstNonNull(altA.getReference(), a.getReference());
         String alt  = ObjectUtils.firstNonNull(altA.getAlternate(), a.getAlternate());
         try {
-            return new Variant(chr, start, end, ref, alt);
+            Variant variant = new Variant(chr, start, end, ref, alt);
+            return variant;
         } catch (IllegalArgumentException e) {
             String msg = altA + "\n" + a.toJson() + "\n";
             throw new IllegalStateException(msg, e);
