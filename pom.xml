@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2015 OpenCB
+  ~ Copyright 2015-2016 OpenCB
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>1.0.0-rc1</version>
+    <version>1.0.0-rc1.1</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -36,7 +36,7 @@
     </modules>
 
     <properties>
-        <opencga.version>1.0.0-rc1</opencga.version>
+        <opencga.version>1.0.0-rc1.1</opencga.version>
         <java.version>1.8</java.version>
         <biodata.version>0.8.2</biodata.version>
         <cellbase.version>4.5.0-beta</cellbase.version>

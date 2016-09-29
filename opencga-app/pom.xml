@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2015 OpenCB
+  ~ Copyright 2015-2016 OpenCB
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>1.0.0-rc1</version>
+        <version>1.0.0-rc1.1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -263,7 +263,7 @@
                                 <echo>Copying to ${build.dir}</echo>
                                 <exec executable="cp">
                                     <arg value="-r"/>
-                                    <!--<arg value="${app.dir}/bin"/>-->
+                                    <arg value="${app.dir}/bin"/>
                                     <arg value="${project.basedir}/target/appassembler/bin"/>
                                     <arg value="${project.basedir}/target/appassembler/libs"/>
                                     <arg value="${project.basedir}/target/conf"/>
@@ -275,12 +275,12 @@
                                     <arg value="${build.dir}"/>
                                 </exec>
 
-                                <echo>Copying to ${build.dir}/obsolete</echo>
-                                <exec executable="cp">
-                                    <arg value="-r"/>
-                                    <arg value="${app.dir}/bin"/>
-                                    <arg value="${build.dir}/bin/obsolete"/>
-                                </exec>
+                                <!--<echo>Copying to ${build.dir}/obsolete</echo>-->
+                                <!--<exec executable="cp">-->
+                                    <!--<arg value="-r"/>-->
+                                    <!--<arg value="${app.dir}/bin"/>-->
+                                    <!--<arg value="${build.dir}/bin/obsolete"/>-->
+                                <!--</exec>-->
 
                                 <echo>Coping configuration files</echo>
                                 <exec executable="cp">
