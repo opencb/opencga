@@ -40,10 +40,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -146,7 +143,10 @@ public class ArchiveDriver extends Configured implements Tool {
     public static boolean createArchiveTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con) throws IOException {
         Algorithm compression = Compression.getCompressionAlgorithmByName(
                 genomeHelper.getConf().get(CONFIG_ARCHIVE_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName()));
-        return HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(), compression);
+        int nSplits = 100;
+        List<byte[]> preSplits = GenomeHelper.generateBootPreSplitsHuman(nSplits,
+                (chr, pos) -> genomeHelper.generateBlockIdAsBytes(chr, pos));
+        return HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(), preSplits, compression);
     }
 
     private void storeMetaData(VcfMeta meta, Configuration conf) throws IOException {
