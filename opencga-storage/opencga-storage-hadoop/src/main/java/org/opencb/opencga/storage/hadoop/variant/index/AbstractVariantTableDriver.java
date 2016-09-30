@@ -276,10 +276,40 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         }
     }
 
-    public static boolean createVariantTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con) throws IOException {
+    public static boolean createVariantTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con)
+            throws IOException {
+        int nsplits = 100;
+        String[] chr = new String[]{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15",
+                "16", "17", "18", "19", "20", "21", "22", "X", "Y"};
+        long[] posarr = new long[]{249250621, 243199373, 198022430, 191154276, 180915260, 171115067, 159138663,
+                146364022, 141213431, 135534747, 135006516, 133851895, 115169878, 107349540, 102531392, 90354753,
+                81195210, 78077248, 59128983, 63025520, 48129895, 51304566, 155270560, 59373566};
+        long total = Arrays.stream(posarr).sum();
+
+        long chunkSize = total / nsplits;
+        List<byte[]> splitList = new ArrayList<>();
+        long splitPos = chunkSize;
+        while (splitPos < total) {
+            long tmpPos = 0;
+            int arrayPos = -1;
+            for (int i = 0; i < chr.length; i++) {
+                if ((tmpPos + posarr[i]) > splitPos) {
+                    arrayPos = i;
+                    break;
+                }
+                tmpPos += posarr[i];
+            }
+            byte[] rowKey = genomeHelper.generateVariantRowKey(chr[arrayPos], (int) (splitPos - tmpPos), "", "");
+            String s = Bytes.toHex(rowKey);
+            System.out.println("Split " + chr[arrayPos] + " at " + (splitPos - tmpPos));
+            splitList.add(rowKey);
+            splitPos += chunkSize;
+        }
         return genomeHelper.getHBaseManager().createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(),
-                Compression.getCompressionAlgorithmByName(
-                        genomeHelper.getConf().get(CONFIG_VARIANT_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName())));
+                splitList, Compression.getCompressionAlgorithmByName(
+                        genomeHelper.getConf().get(
+                                CONFIG_VARIANT_TABLE_COMPRESSION,
+                                Compression.Algorithm.SNAPPY.getName())));
     }
 
     public static String[] configure(String[] args, Configured configured) throws Exception {

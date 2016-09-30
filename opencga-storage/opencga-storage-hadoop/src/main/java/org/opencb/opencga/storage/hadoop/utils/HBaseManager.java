@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -290,6 +292,13 @@ public class HBaseManager extends Configured implements AutoCloseable {
      **/
     public static boolean createTableIfNeeded(Connection con, String tableName, byte[] columnFamily, Compression.Algorithm compressionType)
             throws IOException {
+       return createTableIfNeeded(con, tableName, columnFamily, Collections.emptyList(), compressionType);
+    }
+
+
+    public static boolean createTableIfNeeded(Connection con, String tableName, byte[] columnFamily,
+                                              List<byte[]> presplits, Compression.Algorithm compressionType)
+            throws IOException {
         TableName tName = TableName.valueOf(tableName);
         LOGGER.info("CreateIfNeeded with connection {}", con);
         return act(con, tableName, (table, admin) -> {
@@ -301,8 +310,13 @@ public class HBaseManager extends Configured implements AutoCloseable {
                 }
                 descr.addFamily(family);
                 try {
-                    LOGGER.info("Create New HBASE table {}", tableName);
-                    admin.createTable(descr);
+                    if (!presplits.isEmpty()) {
+                        LOGGER.info("Create New HBASE table {} with {} presplits", tableName, presplits.size());
+                        admin.createTable(descr, presplits.toArray(new byte[0][]));
+                    } else {
+                        LOGGER.info("Create New HBASE table - no pre-splits {}", tableName);
+                        admin.createTable(descr);
+                    }
                 } catch (TableExistsException e) {
                     return false;
                 }
