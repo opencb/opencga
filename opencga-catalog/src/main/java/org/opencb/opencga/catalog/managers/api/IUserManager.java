@@ -114,10 +114,8 @@ public interface IUserManager extends ResourceManager<String, User> {
     QueryResult logoutAnonymous(String sessionId) throws CatalogException;
 
     /*          Filter operations     */
-
     /**
      * Add a new filter to the user account.
-     *
      *
      * @param userId user id to whom the filter will be associated.
      * @param sessionId session id of the user asking to store the filter.
@@ -180,5 +178,43 @@ public interface IUserManager extends ResourceManager<String, User> {
      * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
      */
     QueryResult<User.Filter> getAllFilters(String userId, String sessionId) throws CatalogException;
+
+    /*        CONFIGS            */
+
+    /**
+     * Creates or updates a configuration.
+     *
+     * @param userId user id to whom the config will be associated.
+     * @param sessionId session id of the user asking to store the config.
+     * @param name Name of the configuration (normally, name of the application).
+     * @param config Configuration to be stored.
+     * @return the set configuration.
+     * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id.
+     */
+    QueryResult setConfig(String userId, String sessionId, String name, ObjectMap config) throws CatalogException;
+
+    /**
+     * Deletes a configuration.
+     *
+     * @param userId user id to whom the configuration should be deleted.
+     * @param sessionId session id of the user asking to delete the configuration.
+     * @param name Name of the configuration to be deleted (normally, name of the application).
+     * @return the deleted configuration.
+     * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id or the configuration
+     * did not exist.
+     */
+    QueryResult deleteConfig(String userId, String sessionId, String name) throws CatalogException;
+
+    /**
+     * Retrieves a configuration.
+     *
+     * @param userId user id having the configuration stored.
+     * @param sessionId session id of the user attempting to fetch the configuration.
+     * @param name Name of the configuration to be fetched (normally, name of the application).
+     * @return the configuration.
+     * @throws CatalogException if the user corresponding to the session id is not the same as the provided user id or the configuration
+     * does not exist.
+     */
+    QueryResult getConfig(String userId, String sessionId, String name) throws CatalogException;
 
 }

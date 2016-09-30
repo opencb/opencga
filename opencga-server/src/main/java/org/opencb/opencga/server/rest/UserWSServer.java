@@ -319,6 +319,43 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @POST
+    @Path("/{userId}/configs/create")
+    @ApiOperation(value = "Create or update a user configuration", response = Map.class)
+    public Response setConfiguration(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+                    @ApiParam(value = "Configuration name (typically the name of the application)", required = true) @QueryParam("name") String name,
+                    @ApiParam(name = "params", value = "Configuration", required = true) ObjectMap params) {
+        try {
+            return createOkResponse(catalogManager.getUserManager().setConfig(userId, sessionId, name, params));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{userId}/configs/{name}/delete")
+    @ApiOperation(value = "Delete a user configuration", response = Map.class)
+    public Response deleteConfiguration(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+                                     @ApiParam(value = "Configuration name (typically the name of the application)", required = true) @PathParam("name") String name) {
+        try {
+            return createOkResponse(catalogManager.getUserManager().deleteConfig(userId, sessionId, name));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{userId}/configs/{name}/info")
+    @ApiOperation(value = "Fetch a user configuration", response = Map.class)
+    public Response getConfiguration(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+                                     @ApiParam(value = "Configuration name (typically the name of the application)", required = true) @PathParam("name") String name) {
+        try {
+            return createOkResponse(catalogManager.getUserManager().getConfig(userId, sessionId, name));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
     @Path("/{userId}/configs/filters/create")
     @ApiOperation(value = "Store a custom filter", response = User.Filter.class)
     public Response addFilter(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,

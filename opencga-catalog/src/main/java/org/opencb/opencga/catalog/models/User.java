@@ -66,6 +66,7 @@ public class User {
         private ObjectReader objectReader;
 
         public UserConfiguration() {
+            this(new HashMap<>());
         }
 
         public UserConfiguration(Map<String, Object> map) {
@@ -75,6 +76,9 @@ public class User {
 
         public List<Filter> getFilters() {
             Object object = get(FILTERS);
+            if (object == null) {
+                return new LinkedList<>();
+            }
             if (isListFilters(object)) {
                 return (List<Filter>) object;
             } else {
@@ -219,12 +223,10 @@ public class User {
         this.tools = tools;
         this.sessions = sessions;
         if (configs == null) {
-            configs = new HashMap<>();
+            this.configs = new UserConfiguration();
+        } else {
+            this.configs = new UserConfiguration(configs);
         }
-//        if (!configs.containsKey(FILTERS)) {
-//            configs.put(FILTERS, new LinkedList<>());
-//        }
-        this.configs = new UserConfiguration(configs);
         this.attributes = attributes;
     }
 

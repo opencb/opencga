@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -29,9 +27,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -240,5 +236,46 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         User.UserConfiguration configs = userQueryResult.first().getConfigs();
         assertTrue(configs.getFilters().size() == 0);
     }
+
+
+    @Test
+    public void setConfigTest() throws CatalogDBException, IOException {
+        ObjectMap objectMap = new ObjectMap()
+                .append("key1", Arrays.asList(1,2,3,4,5))
+                .append("key2", new ObjectMap("key21", 21).append("key22", 22));
+
+        QueryResult queryResult = catalogUserDBAdaptor.setConfig(user4.getId(), "config1", objectMap);
+
+        assertEquals(1, queryResult.getNumResults());
+
+        LinkedHashMap result = (LinkedHashMap) queryResult.first();
+        assertTrue(result.get("key1") instanceof List);
+        assertTrue(result.get("key2") instanceof Map);
+
+        // Update the config
+        objectMap.put("key2", objectMap.get("key1"));
+        queryResult = catalogUserDBAdaptor.setConfig(user4.getId(), "config1", objectMap);
+        assertEquals(1, queryResult.getNumResults());
+
+        result = (LinkedHashMap) queryResult.first();
+        assertTrue(result.get("key1") instanceof List);
+        assertTrue(result.get("key2") instanceof List);
+    }
+
+    @Test
+    public void deleteConfigTest() throws CatalogDBException, IOException {
+        ObjectMap objectMap = new ObjectMap()
+                .append("key1", Arrays.asList(1,2,3,4,5))
+                .append("key2", new ObjectMap("key21", 21).append("key22", 22));
+
+        catalogUserDBAdaptor.setConfig(user4.getId(), "config1", objectMap);
+
+        catalogUserDBAdaptor.deleteConfig(user4.getId(), "config1");
+
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("Could not delete config1 configuration");
+        catalogUserDBAdaptor.deleteConfig(user4.getId(), "config1");
+    }
+
 
 }

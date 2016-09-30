@@ -90,11 +90,9 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
     String getUserIdBySessionId(String sessionId);
 
     // Config operations
-    QueryResult addConfig(String userId, String name, ObjectMap params) throws CatalogDBException;
+    QueryResult setConfig(String userId, String name, ObjectMap config) throws CatalogDBException;
 
-    QueryResult updateConfig(String userId, String name, ObjectMap params) throws CatalogDBException;
-
-    QueryResult deleteConfig(String userId, String name) throws CatalogDBException;
+    QueryResult<Long> deleteConfig(String userId, String name) throws CatalogDBException;
 
     // Filter operations
     QueryResult<User.Filter> addFilter(String userId, User.Filter filter) throws CatalogDBException;

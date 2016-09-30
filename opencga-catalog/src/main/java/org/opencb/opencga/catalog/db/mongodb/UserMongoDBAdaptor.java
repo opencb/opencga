@@ -334,30 +334,56 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public QueryResult addConfig(String userId, String name, ObjectMap params) throws CatalogDBException {
-        return null;
+    public QueryResult setConfig(String userId, String name, ObjectMap config) throws CatalogDBException {
+        long startTime = startQuery();
+
+        // Set the config
+        Bson bsonQuery = Filters.eq(QueryParams.ID.key(), userId);
+        Bson filterDocument = getMongoDBDocument(config, "Config");
+        Bson update = Updates.set(QueryParams.CONFIGS.key() + "." + name, filterDocument);
+
+        QueryResult<UpdateResult> queryResult = userCollection.update(bsonQuery, update, null);
+
+        if (queryResult.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("Could not create " + name + " configuration ");
+        }
+
+        QueryResult<User> userQueryResult = get(userId, new QueryOptions(), "");
+        if (userQueryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Internal error: Could not retrieve user " + userId + " information");
+        }
+
+        return endQuery("Set config", startTime, Arrays.asList(userQueryResult.first().getConfigs().get(name)));
     }
 
     @Override
-    public QueryResult updateConfig(String userId, String name, ObjectMap params) throws CatalogDBException {
-        return null;
-    }
+    public QueryResult<Long> deleteConfig(String userId, String name) throws CatalogDBException {
+        long startTime = startQuery();
 
-    @Override
-    public QueryResult deleteConfig(String userId, String name) throws CatalogDBException {
-        return null;
+        // Insert the config
+        Bson bsonQuery = Filters.and(
+                Filters.eq(QueryParams.ID.key(), userId),
+                Filters.exists(QueryParams.CONFIGS.key() + "." + name)
+        );
+        Bson update = Updates.unset(QueryParams.CONFIGS.key() + "." + name);
+
+        QueryResult<UpdateResult> queryResult = userCollection.update(bsonQuery, update, null);
+
+        if (queryResult.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("Could not delete " + name + " configuration ");
+        }
+
+        QueryResult<User> userQueryResult = get(userId, new QueryOptions(), "");
+        if (userQueryResult.getNumResults() == 0) {
+            throw new CatalogDBException("Internal error: Could not retrieve user " + userId + " information");
+        }
+
+        return endQuery("Delete config", startTime, Arrays.asList(queryResult.first().getModifiedCount()));
     }
 
     @Override
     public QueryResult<User.Filter> addFilter(String userId, User.Filter filter) throws CatalogDBException {
         long startTime = startQuery();
-//        // Check if there exists a filter for that user with the same id
-//        Query query = new Query()
-//                .append(ID.key(), userId)
-//                .append(CONFIGS_FILTERS_NAME.key(), filter.getName());
-//        if (count(query).getNumResults() > 0) {
-//            throw new CatalogDBException("There already exists a filter with name " + filter.getName() + " for user " + userId);
-//        }
 
         // Insert the filter
         Bson bsonQuery = Filters.and(
