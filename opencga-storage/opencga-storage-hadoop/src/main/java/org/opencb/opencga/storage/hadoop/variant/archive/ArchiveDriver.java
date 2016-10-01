@@ -53,6 +53,7 @@ public class ArchiveDriver extends Configured implements Tool {
     public static final String CONFIG_ARCHIVE_INPUT_FILE_VCF_META = "opencga.archive.input.file.vcf.meta";
     public static final String CONFIG_ARCHIVE_TABLE_NAME          = "opencga.archive.table.name";
     public static final String CONFIG_ARCHIVE_TABLE_COMPRESSION   = "opencga.archive.table.compression";
+    public static final String CONFIG_ARCHIVE_TABLE_PRESPLIT_SIZE = "opencga.archive.table.presplit.size";
     public static final String CONFIG_ARCHIVE_CHUNK_SIZE          = "opencga.archive.chunk_size";
     public static final String CONFIG_ARCHIVE_ROW_KEY_SEPARATOR   = "opencga.archive.row_key_sep";
 
@@ -143,7 +144,7 @@ public class ArchiveDriver extends Configured implements Tool {
     public static boolean createArchiveTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con) throws IOException {
         Algorithm compression = Compression.getCompressionAlgorithmByName(
                 genomeHelper.getConf().get(CONFIG_ARCHIVE_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName()));
-        int nSplits = 100;
+        int nSplits = genomeHelper.getConf().getInt(CONFIG_ARCHIVE_TABLE_PRESPLIT_SIZE, 100);
         List<byte[]> preSplits = GenomeHelper.generateBootPreSplitsHuman(nSplits,
                 (chr, pos) -> genomeHelper.generateBlockIdAsBytes(chr, pos));
         return HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(), preSplits, compression);
