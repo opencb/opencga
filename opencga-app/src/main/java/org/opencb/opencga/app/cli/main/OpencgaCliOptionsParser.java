@@ -104,6 +104,7 @@ public class OpencgaCliOptionsParser {
         studySubCommands.addCommand("delete", studyCommandOptions.deleteCommandOptions);
         studySubCommands.addCommand("update", studyCommandOptions.updateCommandOptions);
         studySubCommands.addCommand("scan-files", studyCommandOptions.scanFilesCommandOptions);
+        studySubCommands.addCommand("resync-files", studyCommandOptions.resyncFilesCommandOptions);
         studySubCommands.addCommand("files", studyCommandOptions.filesCommandOptions);
         studySubCommands.addCommand("jobs", studyCommandOptions.jobsCommandOptions);
         studySubCommands.addCommand("alignments", studyCommandOptions.alignmentsCommandOptions);

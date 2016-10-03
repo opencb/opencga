@@ -37,6 +37,7 @@ public class StudyCommandOptions {
     public InfoCommandOptions infoCommandOptions;
     public FilesCommandOptions filesCommandOptions;
     public ScanFilesCommandOptions scanFilesCommandOptions;
+    public ResyncFilesCommandOptions resyncFilesCommandOptions;
     public StatusCommandOptions statusCommandOptions;
     public SearchCommandOptions searchCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
@@ -74,6 +75,7 @@ public class StudyCommandOptions {
         this.infoCommandOptions = new InfoCommandOptions();
         this.filesCommandOptions = new FilesCommandOptions();
         this.scanFilesCommandOptions = new ScanFilesCommandOptions();
+        this.resyncFilesCommandOptions = new ResyncFilesCommandOptions();
         this.statusCommandOptions = new StatusCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
@@ -196,6 +198,12 @@ public class StudyCommandOptions {
 
     @Parameters(commandNames = {"scan-files"}, commandDescription = "Scans the study folder to find untracked or missing files")
     public class ScanFilesCommandOptions extends BaseStudyCommand {
+
+    }
+
+    @Parameters(commandNames = {"resync-files"}, commandDescription = "Scans the study folder to find untracked or missing files and "
+            + "updates the status")
+    public class ResyncFilesCommandOptions extends BaseStudyCommand {
 
     }
 

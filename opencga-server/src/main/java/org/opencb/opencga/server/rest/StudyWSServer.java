@@ -468,7 +468,6 @@ public class StudyWSServer extends OpenCGAWSServer {
         return createOkResponse(results);
     }
 
-    @Deprecated
     @GET
     @Path("/{studyId}/scanFiles")
     @ApiOperation(value = "Scans the study folder to find untracked or missing files", position = 12)
@@ -519,6 +518,24 @@ public class StudyWSServer extends OpenCGAWSServer {
 //                    System.out.printf(format, file.getPath(), catalogManager.getFileUri(file));
 //                }
 //            }
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{studyId}/resyncFiles")
+    @ApiOperation(value = "Scan the study folder to find untracked or missing files and update their status", position = 12)
+    public Response resyncFiles(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
+        try {
+            long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
+            Study study = catalogManager.getStudy(studyId, sessionId).first();
+            FileScanner fileScanner = new FileScanner(catalogManager);
+
+            /* Resync files */
+            List<File> resyncFiles = fileScanner.reSync(study, false, sessionId);
+
+            return createOkResponse(new QueryResult<>("status", 0, 1, 1, null, null, Arrays.asList(resyncFiles)));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

@@ -89,6 +89,9 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             case "scan-files":
                 queryResponse = scanFiles();
                 break;
+            case "resync-files":
+                queryResponse = resyncFiles();
+                break;
             case "files":
                 queryResponse = files();
                 break;
@@ -276,9 +279,13 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private QueryResponse scanFiles() throws CatalogException, IOException {
-
-        logger.debug("Scan the study folder to find changes. [DEPRECATED] \n");
+        logger.debug("Scan the study folder to find changes.\n");
         return openCGAClient.getStudyClient().scanFiles(studiesCommandOptions.scanFilesCommandOptions.id, null);
+    }
+
+    private QueryResponse resyncFiles() throws CatalogException, IOException {
+        logger.debug("Scan the study folder to find changes.\n");
+        return openCGAClient.getStudyClient().resyncFiles(studiesCommandOptions.resyncFilesCommandOptions.id, null);
     }
 
     private QueryResponse<File> files() throws CatalogException, IOException {
