@@ -1053,8 +1053,8 @@ public class FileWSServer extends OpenCGAWSServer {
 
     public static class UpdateFile {
         public String name;
-        //        public File.Format format;
-//        public File.Bioformat bioformat;
+        public File.Format format;
+        public File.Bioformat bioformat;
 //        public String path;
 //        public String ownerId;
 //        public String creationDate;
@@ -1064,7 +1064,7 @@ public class FileWSServer extends OpenCGAWSServer {
 //        public int experimentId;
         public List<Integer> sampleIds;
         public Integer jobId;
-        //        public Map<String, Object> stats;
+        public Map<String, Object> stats;
         public Map<String, Object> attributes;
     }
 
