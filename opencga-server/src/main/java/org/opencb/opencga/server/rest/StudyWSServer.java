@@ -93,7 +93,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "projectId") @QueryParam("projectId") String projectId,
                                   @ApiParam(value = "name") @QueryParam("name") String name,
                                   @ApiParam(value = "alias") @QueryParam("alias") String alias,
-                                  @ApiParam(value = "type") @QueryParam("Comma separated list of type") String type,
+                                  @ApiParam(value = "Comma separated list of types") @QueryParam("type") String type,
                                   @ApiParam(value = "creationDate") @QueryParam("creationDate") String creationDate,
                                   @ApiParam(value = "status") @QueryParam("status") String status,
                                   @ApiParam(value = "attributes") @QueryParam("attributes") String attributes,
