@@ -223,7 +223,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                                 queryOptions.add("annotations", cliOptions.annotations);
                             }
 //                            VariantVcfExporter.htsExport(iterator, studyConfiguration, outputStream, queryOptions);
-                            long studyId = variantFetcher.getMainStudyId(query);
+                            long studyId = variantFetcher.getMainStudyId(query, sessionId);
                             VariantSourceDBAdaptor sourceDBAdaptor = variantFetcher.getSourceDBAdaptor((int) studyId, sessionId);
                             exporter = new VariantVcfExporter(studyConfiguration, sourceDBAdaptor, outputStream, queryOptions);
                         } else {

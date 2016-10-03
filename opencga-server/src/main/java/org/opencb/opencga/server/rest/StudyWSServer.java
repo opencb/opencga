@@ -287,7 +287,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+//            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
     public Response getVariants(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStrCvs,
                                 @ApiParam(value = "List of variant ids") @QueryParam("ids") String ids,
@@ -331,6 +331,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]") @QueryParam("unknownGenotype") String unknownGenotype,
 //                                @ApiParam(value = "Limit the number of returned variants. Max value: " + VariantFetcher.LIMIT_MAX) @DefaultValue("" + VariantFetcher.LIMIT_DEFAULT) @QueryParam("limit") int limit,
                                 @ApiParam(value = "Returns the samples metadata group by studyId, instead of the variants", required = false) @QueryParam("samplesMetadata") boolean samplesMetadata,
+                                @ApiParam(value = "Count results", required = false) @QueryParam("count") boolean count,
                                 @ApiParam(value = "Sort the results", required = false) @QueryParam("sort") boolean sort,
                                 @ApiParam(value = "Group variants by: [ct, gene, ensemblGene]", required = false) @DefaultValue("") @QueryParam("groupBy") String groupBy,
                                 @ApiParam(value = "Calculate histogram. Requires one region.", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
@@ -343,7 +344,11 @@ public class StudyWSServer extends OpenCGAWSServer {
             VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
             for (String studyIdStr : studyIds) {
                 long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
-                queryResults.add(variantFetcher.getVariantsPerStudy(studyId, region, histogram, groupBy, interval, sessionId, queryOptions));
+                if (count) {
+                    queryResults.add(variantFetcher.count(studyId, queryOptions, sessionId));
+                } else {
+                    queryResults.add(variantFetcher.getVariantsPerStudy(studyId, region, histogram, groupBy, interval, sessionId, queryOptions));
+                }
             }
             return createOkResponse(queryResults);
         } catch (Exception e) {
