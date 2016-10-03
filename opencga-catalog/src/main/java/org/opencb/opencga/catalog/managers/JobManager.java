@@ -117,7 +117,7 @@ public class JobManager extends AbstractManager implements IJobManager {
     @Override
     public QueryResult<JobAclEntry> getAcls(String jobStr, List<String> members, String sessionId) throws CatalogException {
         long startTime = System.currentTimeMillis();
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         Long jobId = getId(userId, jobStr);
         authorizationManager.checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.SHARE);
         Long studyId = getStudyId(jobId);
@@ -213,8 +213,7 @@ public class JobManager extends AbstractManager implements IJobManager {
 
     @Override
     public QueryResult<ObjectMap> visit(long jobId, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.VIEW);
         return jobDBAdaptor.incJobVisits(jobId);
     }
@@ -256,9 +255,8 @@ public class JobManager extends AbstractManager implements IJobManager {
                                    List<Long> inputFiles, List<Long> outputFiles, Map<String, Object> attributes,
                                    Map<String, Object> resourceManagerAttributes, Job.JobStatus status, long startTime,
                                    long endTime, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(name, "name");
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         ParamUtils.checkParameter(toolName, "toolName");
         ParamUtils.checkParameter(commandLine, "commandLine");
         description = ParamUtils.defaultString(description, "");
@@ -311,7 +309,6 @@ public class JobManager extends AbstractManager implements IJobManager {
     @Override
     public QueryResult<Job> get(Long jobId, QueryOptions options, String sessionId)
             throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = catalogManager.getUserManager().getId(sessionId);
         authorizationManager.checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.VIEW);
         QueryResult<Job> queryResult = jobDBAdaptor.get(jobId, options);
@@ -327,7 +324,6 @@ public class JobManager extends AbstractManager implements IJobManager {
 
     @Override
     public QueryResult<Job> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         // If studyId is null, check if there is any on the query
@@ -343,7 +339,7 @@ public class JobManager extends AbstractManager implements IJobManager {
             catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().checkValidAdminSession(sessionId);
             userId = "admin";
         } else {
-            userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+            userId = userManager.getId(sessionId);
         }
 
         if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
@@ -358,7 +354,6 @@ public class JobManager extends AbstractManager implements IJobManager {
 
     @Override
     public QueryResult<Job> update(Long jobId, ObjectMap parameters, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkObj(parameters, "parameters");
         String userId = this.catalogManager.getUserManager().getId(sessionId);
         authorizationManager.checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.UPDATE);
@@ -370,7 +365,6 @@ public class JobManager extends AbstractManager implements IJobManager {
     @Override
     public List<QueryResult<Job>> delete(String jobIdStr, QueryOptions options, String sessionId) throws CatalogException, IOException {
         ParamUtils.checkParameter(jobIdStr, "id");
-        ParamUtils.checkParameter(sessionId, "sessionId");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         boolean deleteFiles = options.getBoolean(DELETE_FILES);
@@ -442,7 +436,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         ParamUtils.checkObj(studyId, "studyId");
         ParamUtils.checkObj(sessionId, "sessionId");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_JOBS);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -465,7 +459,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         ParamUtils.checkObj(studyId, "studyId");
         ParamUtils.checkObj(sessionId, "sessionId");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_JOBS);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -489,7 +483,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         ParamUtils.checkObj(studyId, "studyId");
         ParamUtils.checkObj(sessionId, "sessionId");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_JOBS);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -517,10 +511,9 @@ public class JobManager extends AbstractManager implements IJobManager {
 
     @Override
     public URI createJobOutDir(long studyId, String dirName, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(dirName, "dirName");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
 
         URI uri = studyDBAdaptor.get(studyId, new QueryOptions("include", Collections.singletonList("projects.studies.uri")))
                 .first().getUri();
@@ -551,10 +544,9 @@ public class JobManager extends AbstractManager implements IJobManager {
         ParamUtils.checkParameter(alias, "alias");
         ParamUtils.checkObj(description, "description"); //description can be empty
         ParamUtils.checkParameter(path, "path");
-        ParamUtils.checkParameter(sessionId, "sessionId");
         //TODO: Check Path
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
 
         List<ToolAclEntry> acl = Arrays.asList(new ToolAclEntry(userId, EnumSet.allOf(ToolAclEntry.ToolPermissions.class)));
         if (openTool) {
@@ -574,9 +566,7 @@ public class JobManager extends AbstractManager implements IJobManager {
 
     @Override
     public QueryResult<Tool> getTool(long id, String sessionId) throws CatalogException {
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        ParamUtils.checkParameter(sessionId, "sessionId");
-
+        String userId = userManager.getId(sessionId);
         //TODO: Check ACLs
         return jobDBAdaptor.getTool(id);
     }
