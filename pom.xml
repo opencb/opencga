@@ -183,6 +183,45 @@
                 <artifactId>opencga-client</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage-hadoop</artifactId>
+                <version>${opencga.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>javax.servlet</groupId>
+                        <artifactId>servlet-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>servlet-api</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>com.sun.jersey</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.hadoop</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.hbase</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                    <!--<exclusion>-->
+                    <!--<groupId>org.apache.phoenix</groupId>-->
+                    <!--<artifactId>*</artifactId>-->
+                    <!--</exclusion>-->
+                    <!--<exclusion>-->
+                    <!--<groupId>org.apache.spark</groupId>-->
+                    <!--<artifactId>*</artifactId>-->
+                    <!--</exclusion>-->
+                    <exclusion>
+                        <groupId>org.apache.zookeeper</groupId>
+                        <artifactId>*</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
 
             <!-- OpenCB dependencies -->
             <dependency>
@@ -377,6 +416,11 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
                     <version>2.6</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-shade-plugin</artifactId>
+                    <version>2.4.3</version>
                 </plugin>
             </plugins>
         </pluginManagement>

@@ -195,14 +195,14 @@
                             <!--</platforms>-->
                         <!--</program>-->
                         <program>
-                            <name>opencga.sh</name>
+                            <id>opencga.sh</id>
                             <mainClass>org.opencb.opencga.app.cli.main.OpencgaMain</mainClass>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
                         </program>
                         <program>
-                            <name>opencga-admin.sh</name>
+                            <id>opencga-admin.sh</id>
                             <mainClass>org.opencb.opencga.app.cli.admin.AdminMain</mainClass>
                             <platforms>
                                 <platform>unix</platform>
@@ -217,7 +217,7 @@
                         <!--</program>-->
                         <program>
                             <mainClass>org.opencb.opencga.app.cli.analysis.AnalysisMain</mainClass>
-                            <name>opencga-analysis.sh</name>
+                            <id>opencga-analysis.sh</id>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
@@ -336,7 +336,6 @@
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
                     <artifactId>opencga-storage-hadoop</artifactId>
-                    <version>${opencga.version}</version>
                 </dependency>
             </dependencies>
             <build>
