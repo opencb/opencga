@@ -63,6 +63,8 @@ class WS:
         self.pre_url = os.path.join(self.host, self.instance, "webservices", "rest", version)
         self.r_session = requests.Session()
 
+        self.last_error = None
+
     @staticmethod
     def check_server_response(response):
         if response == 200:
@@ -151,15 +153,13 @@ class WS:
             try:
                 r = response.json()
             except:
-                logging.error("WS Failed, status: " + str(response.status_code))
-                raise ServerResponseException("WS Failed, status: " + str(response.status_code))
+                raise ServerResponseException(self.get_error_msg(response))
 
             qs = r['queryOptions']
             error = r['error']
             is_file_exist_error = re.match('.* File from study .* already exists', error)
             if not is_file_exist_error:
-                logging.error("WS Failed, status: " + str(response.status_code))
-                raise ServerResponseException("WS Failed, status: " + str(response.status_code))
+                raise ServerResponseException(self.get_error_msg(response))
             else:
                 if 'folder' in qs:
                     e = qs['folder']
@@ -185,8 +185,7 @@ class WS:
             total_result, skipped, num_results, results = self.get_result(response.json())
             return results
         else:
-            logging.error("WS Failed, status: " + str(response.status_code))
-            raise ServerResponseException("WS Failed, status: " + str(response.status_code))
+            raise ServerResponseException(self.get_error_msg(response))
 
     def general_method(self, ws_category1, action, item_id1=None, ws_category2=None, item_id2=None, data=None,
                        use_buffer=False, pag=1000, limit=-1, skip=0, **options):
@@ -260,8 +259,23 @@ class WS:
                 for batch in self.run_ws(url, skip=skip, limit=limit, step=pag):
                     result += batch
 
+            self.last_error = None
             return result
 
-        except ServerResponseException or WSErrorException:
-            logging.error(ServerResponseException.message)
-            print(ServerResponseException.message)
+        except ServerResponseException or WSErrorException as e:
+            logging.error(e.e)
+            self.last_error = e
+
+    def get_error_msg(self, response):
+        error_str = "status: {}".format(response.status_code)
+        try:
+            error_str += ", message: {}".format(response.json()["error"])
+        except:
+            pass
+        try:
+            responses = response.json()["response"]
+            if len(responses) > 0:
+                error_str += "," + ",".join(r["errorMsg"] for r in responses if r["errorMsg"])
+        except:
+            pass
+        return error_str
