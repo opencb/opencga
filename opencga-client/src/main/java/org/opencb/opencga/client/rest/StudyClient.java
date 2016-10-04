@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 OpenCB
+ * Copyright 2015-2016 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -140,6 +140,10 @@ public class StudyClient extends AbstractParentClient<Study, StudyAclEntry> {
 
     public QueryResponse scanFiles(String studyId, QueryOptions options) throws CatalogException, IOException {
         return execute(STUDY_URL, studyId, "scanFiles", options, GET, Object.class);
+    }
+
+    public QueryResponse resyncFiles(String studyId, QueryOptions options) throws CatalogException, IOException {
+        return execute(STUDY_URL, studyId, "resyncFiles", options, GET, Object.class);
     }
 
     public QueryResponse<ObjectMap> createGroup(String studyId, String groupId, String users, QueryOptions options)

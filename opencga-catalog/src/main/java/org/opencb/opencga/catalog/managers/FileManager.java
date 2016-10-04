@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2016 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.NotImplementedException;
@@ -25,6 +41,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IFileManager;
+import org.opencb.opencga.catalog.managers.api.IUserManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.DatasetAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
@@ -61,6 +78,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     protected static Logger logger;
     private FileMetadataReader fileMetadataReader;
+    private IUserManager userManager;
 
     public static final String SKIP_TRASH = "SKIP_TRASH";
     public static final String DELETE_EXTERNAL_FILES = "DELETE_EXTERNAL_FILES";
@@ -90,6 +108,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
                 catalogConfiguration);
         fileMetadataReader = new FileMetadataReader(this.catalogManager);
+        this.userManager = catalogManager.getUserManager();
     }
 
     public static List<String> getParentPaths(String filePath) {
@@ -500,7 +519,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
         // The folder already exists
         // Check if the user had permissions
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkFilePermission(fileQueryResult.first().getId(), userId, FileAclEntry.FilePermissions.CREATE);
         return fileQueryResult;
     }
@@ -511,9 +530,8 @@ public class FileManager extends AbstractManager implements IFileManager {
                                     List<Long> sampleIds, long jobId, Map<String, Object> stats, Map<String, Object> attributes,
                                     boolean parents, QueryOptions options, String sessionId) throws CatalogException {
         /** Check and set all the params and create a File object **/
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkPath(path, "filePath");
+        String userId = userManager.getId(sessionId);
 
         type = ParamUtils.defaultObject(type, File.Type.FILE);
         format = ParamUtils.defaultObject(format, File.Format.PLAIN);  //TODO: Inference from the file name
@@ -691,10 +709,9 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     @Override
     public QueryResult<File> get(Long id, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
 //        authorizationManager.checkFilePermission(id, userId, CatalogPermission.READ);
         authorizationManager.checkFilePermission(id, userId, FileAclEntry.FilePermissions.VIEW);
 
@@ -847,10 +864,9 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     @Override
     public QueryResult<File> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
 
         if (studyId <= 0) {
             throw new CatalogDBException("Permission denied. Only the files of one study can be seen at a time.");
@@ -882,7 +898,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     @Override
     public QueryResult<File> get(String path, boolean recursive, Query query, QueryOptions options, String sessionId)
             throws CatalogException {
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
 
         // Prepare the path directory
         if (!path.startsWith("/")) {
@@ -930,11 +946,10 @@ public class FileManager extends AbstractManager implements IFileManager {
     public QueryResult<File> update(Long fileId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(parameters, "Parameters");
-        ParamUtils.checkParameter(sessionId, "sessionId");
         if (fileId <= 0) {
             throw new CatalogException("File not found.");
         }
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         File file = get(fileId, null, sessionId).first();
 
         if (isRootFolder(file)) {
@@ -1007,8 +1022,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 //    @Override
 //    public QueryResult<File> delete(Long fileId, QueryOptions options, String sessionId)
 //            throws CatalogException {        //Safe delete: Don't delete. Just rename file and set {deleting:true}
-//        ParamUtils.checkParameter(sessionId, "sessionId");
-//        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+//        String userId = userManager.getId(sessionId);
 //
 //        authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.DELETE);
 //
@@ -1088,7 +1102,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         // FIXME use userManager instead of userDBAdaptor
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
 
         // Check 1. No comma-separated values are valid, only one single File or Directory can be deleted.
         List<Long> fileIds = getIds(userId, fileIdStr);
@@ -1492,7 +1506,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
 
         studyDBAdaptor.checkId(studyId);
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_FILES);
 
         pathDestiny = ParamUtils.defaultString(pathDestiny, "");
@@ -1800,7 +1814,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         // FIXME use userManager instead of userDBAdaptor
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
 
         // Check 1. No comma-separated values are valid, only one single File or Directory can be deleted.
         long fileId = getId(userId, fileIdStr);
@@ -1970,7 +1984,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 //            throw new CatalogException("Cannot unlink a file that has not been linked.");
 //        }
 //
-//        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+//        String userId = userManager.getId(sessionId);
 //        authorizationManager.checkFilePermission(fileId, userId, FileAcl.FilePermissions.DELETE);
 //
 //        List<File> filesToDelete;
@@ -1997,7 +2011,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         ParamUtils.checkObj(studyId, "studyId");
         ParamUtils.checkObj(sessionId, "sessionId");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_FILES);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -2020,7 +2034,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         ParamUtils.checkObj(studyId, "studyId");
         ParamUtils.checkObj(sessionId, "sessionId");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_FILES);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -2044,7 +2058,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         ParamUtils.checkObj(studyId, "studyId");
         ParamUtils.checkObj(sessionId, "sessionId");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_FILES);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -2086,9 +2100,8 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     @Override
     public QueryResult<File> rename(long fileId, String newName, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkFileName(newName, "name");
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
         long projectId = studyDBAdaptor.getProjectIdByStudyId(studyId);
         String ownerId = projectDBAdaptor.getOwnerId(projectId);
@@ -2173,10 +2186,9 @@ public class FileManager extends AbstractManager implements IFileManager {
     public QueryResult<Dataset> createDataset(long studyId, String name, String description, List<Long> files,
                                               Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkObj(files, "files");
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
 
         description = ParamUtils.defaultString(description, "");
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
@@ -2200,8 +2212,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     @Override
     public QueryResult<Dataset> readDataset(long dataSetId, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
 
         QueryResult<Dataset> queryResult = datasetDBAdaptor.get(dataSetId, options);
 
@@ -2244,7 +2255,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     @Override
     public QueryResult<DatasetAclEntry> getDatasetAcls(String datasetStr, List<String> members, String sessionId) throws CatalogException {
         long startTime = System.currentTimeMillis();
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         Long datasetId = getDatasetId(userId, datasetStr);
         authorizationManager.checkDatasetPermission(datasetId, userId, DatasetAclEntry.DatasetPermissions.SHARE);
         Long studyId = getStudyIdByDataset(datasetId);
@@ -2343,8 +2354,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     @Override
     public DataInputStream grep(long fileId, String pattern, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.VIEW);
 
         URI fileUri = getUri(get(fileId, null, sessionId).first());
@@ -2355,8 +2365,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     @Override
     public DataInputStream download(long fileId, int start, int limit, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.DOWNLOAD);
 
         URI fileUri = getUri(get(fileId, null, sessionId).first());
@@ -2371,7 +2380,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     @Override
     public QueryResult index(String fileIdStr, String type, Map<String, String> params, String sessionId) throws CatalogException {
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         List<Long> fileFolderIdList = getIds(userId, fileIdStr);
 
         long studyId = -1;
@@ -2544,7 +2553,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     @Override
     public QueryResult<FileAclEntry> getAcls(String fileStr, List<String> members, String sessionId) throws CatalogException {
         long startTime = System.currentTimeMillis();
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         Long fileId = getId(userId, fileStr);
         authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.SHARE);
         Long studyId = getStudyId(fileId);

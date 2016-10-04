@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 OpenCB
+ * Copyright 2015-2016 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ public abstract class MonitorParentDaemon implements Runnable {
 
     protected String sessionId;
 
-    protected static Logger logger;
+    protected Logger logger;
 
     public MonitorParentDaemon(int interval, String sessionId, CatalogManager catalogManager) {
         this.interval = interval;

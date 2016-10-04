@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 OpenCB
+ * Copyright 2015-2016 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,15 @@
 
 package org.opencb.opencga.catalog.models;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.*;
 
 /**
  * Created by imedina on 11/09/14.
@@ -51,9 +56,146 @@ public class User {
      */
     private List<Session> sessions;
 
-    private Map<String, Object> configs;
+    private UserConfiguration configs;
     private Map<String, Object> attributes;
 
+    public static class UserConfiguration extends ObjectMap {
+
+        private static final String FILTERS = "filters";
+        private ObjectMapper objectMapper;
+        private ObjectReader objectReader;
+
+        public UserConfiguration() {
+            this(new HashMap<>());
+        }
+
+        public UserConfiguration(Map<String, Object> map) {
+            super(map);
+            put(FILTERS, new ArrayList<>());
+        }
+
+        public List<Filter> getFilters() {
+            Object object = get(FILTERS);
+            if (object == null) {
+                return new LinkedList<>();
+            }
+            if (isListFilters(object)) {
+                return (List<Filter>) object;
+            } else {
+                //convert with objectMapper
+                List<Filter> filters = new ArrayList<>();
+                try {
+                    if (objectMapper == null) {
+                        objectMapper = new ObjectMapper();
+                        objectReader = objectMapper.readerFor(Filter.class);
+                    }
+                    for (Object filterObject : ((List) object)) {
+                        filters.add(objectReader.readValue(objectMapper.writeValueAsString(filterObject)));
+                    }
+                    setFilters(filters);
+                    return filters;
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }
+        }
+
+        public UserConfiguration setFilters(List<Filter> filters) {
+            put(FILTERS, filters);
+            return this;
+        }
+
+        private boolean isListFilters(Object object) {
+            if (object instanceof List) {
+                List list = (List) object;
+                if (!list.isEmpty()) {
+                    if (list.get(0) instanceof Filter) {
+                        return true;
+                    }
+                } else {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+    }
+
+    public static class Filter {
+        private String name;
+        private String description;
+        private File.Bioformat bioformat;
+        private Query query;
+        private QueryOptions options;
+
+        public Filter() {
+        }
+
+        public Filter(String name, String description, File.Bioformat bioformat, Query query, QueryOptions options) {
+            this.name = name;
+            this.description = description;
+            this.bioformat = bioformat;
+            this.query = query;
+            this.options = options;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("Filter{");
+            sb.append("name='").append(name).append('\'');
+            sb.append(", description='").append(description).append('\'');
+            sb.append(", bioformat=").append(bioformat);
+            sb.append(", query=").append(query);
+            sb.append(", options=").append(options);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public Filter setName(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public Filter setDescription(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public File.Bioformat getBioformat() {
+            return bioformat;
+        }
+
+        public Filter setBioformat(File.Bioformat bioformat) {
+            this.bioformat = bioformat;
+            return this;
+        }
+
+        public Query getQuery() {
+            return query;
+        }
+
+        public Filter setQuery(Query query) {
+            this.query = query;
+            return this;
+        }
+
+        public QueryOptions getOptions() {
+            return options;
+        }
+
+        public Filter setOptions(QueryOptions options) {
+            this.options = options;
+            return this;
+        }
+    }
 
     public User() {
     }
@@ -80,7 +222,11 @@ public class User {
         this.projects = projects;
         this.tools = tools;
         this.sessions = sessions;
-        this.configs = configs;
+        if (configs == null) {
+            this.configs = new UserConfiguration();
+        } else {
+            this.configs = new UserConfiguration(configs);
+        }
         this.attributes = attributes;
     }
 
@@ -255,14 +401,18 @@ public class User {
         return this;
     }
 
-    public Map<String, Object> getConfigs() {
+    public UserConfiguration getConfigs() {
         return configs;
     }
 
-    public User setConfigs(Map<String, Object> configs) {
+    public User setConfigs(UserConfiguration configs) {
         this.configs = configs;
         return this;
     }
+//    public User setConfigs(Map<String, Object> configs) {
+//        this.configs = configs;
+//        return this;
+//    }
 
     public Map<String, Object> getAttributes() {
         return attributes;

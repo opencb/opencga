@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 OpenCB
+ * Copyright 2015-2016 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,6 +88,9 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "scan-files":
                 queryResponse = scanFiles();
+                break;
+            case "resync-files":
+                queryResponse = resyncFiles();
                 break;
             case "files":
                 queryResponse = files();
@@ -276,9 +279,13 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private QueryResponse scanFiles() throws CatalogException, IOException {
-
-        logger.debug("Scan the study folder to find changes. [DEPRECATED] \n");
+        logger.debug("Scan the study folder to find changes.\n");
         return openCGAClient.getStudyClient().scanFiles(studiesCommandOptions.scanFilesCommandOptions.id, null);
+    }
+
+    private QueryResponse resyncFiles() throws CatalogException, IOException {
+        logger.debug("Scan the study folder to find changes.\n");
+        return openCGAClient.getStudyClient().resyncFiles(studiesCommandOptions.resyncFilesCommandOptions.id, null);
     }
 
     private QueryResponse<File> files() throws CatalogException, IOException {
