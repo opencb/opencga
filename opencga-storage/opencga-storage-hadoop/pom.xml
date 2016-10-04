@@ -322,10 +322,28 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <filters>
+                                <filter>
+                                    <artifact>com.sun.jersey:jersey-server</artifact>
+                                    <excludes>
+                                        <exclude>com/sun/jersey/server/impl/provider/RuntimeDelegateImpl*</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>com.sun.jersey:jersey-client</artifact>
+                                    <excludes>
+                                        <exclude>com/sun/ws/rs/ext/RuntimeDelegateImpl*</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
                             <relocations>
                                 <relocation>
                                     <pattern>javax.servlet</pattern>
                                     <shadedPattern>shaded.javax.servlet</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>javax.ws.rs</pattern>
+                                    <shadedPattern>shaded.javax.ws.rs</shadedPattern>
                                 </relocation>
                             </relocations>
                             <artifactSet>
