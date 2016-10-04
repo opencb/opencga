@@ -67,24 +67,24 @@ public class VariantFetcher {
 
     public QueryResult rank(Query query, QueryOptions queryOptions, String rank, String sessionId)
             throws Exception {
-        return getVariantsPerStudy(getMainStudyId(query), query, queryOptions, false, null, rank, 0, null, sessionId);
+        return getVariantsPerStudy(getMainStudyId(query, sessionId), query, queryOptions, false, null, rank, 0, null, sessionId);
     }
 
     public QueryResult groupBy(Query query, QueryOptions queryOptions, String groupBy, String sessionId)
             throws Exception {
-        return getVariantsPerStudy(getMainStudyId(query), query, queryOptions, false, groupBy, null, 0, null, sessionId);
+        return getVariantsPerStudy(getMainStudyId(query, sessionId), query, queryOptions, false, groupBy, null, 0, null, sessionId);
     }
 
     public QueryResult<Variant> get(Query query, QueryOptions queryOptions, String sessionId)
             throws Exception {
         queryOptions.remove("model");
-        return getVariantsPerStudy(getMainStudyId(query), query, queryOptions, false, null, null, 0, null, sessionId);
+        return getVariantsPerStudy(getMainStudyId(query, sessionId), query, queryOptions, false, null, null, 0, null, sessionId);
     }
 
     public QueryResult<org.ga4gh.models.Variant> getGa4gh(Query query, QueryOptions queryOptions, String sessionId)
             throws Exception {
         queryOptions.put("model", "ga4gh");
-        return getVariantsPerStudy(getMainStudyId(query), query, queryOptions, false, null, null, 0, null, sessionId);
+        return getVariantsPerStudy(getMainStudyId(query, sessionId), query, queryOptions, false, null, null, 0, null, sessionId);
     }
 
     public Map<Long, List<Sample>> getSamplesMetadata(long studyId, Query query, QueryOptions queryOptions, String sessionId)
@@ -133,7 +133,8 @@ public class VariantFetcher {
         return getVariantsPerStudy(studyId, getVariantQuery(queryOptions), queryOptions, histogram, groupBy, null, interval, fileIdNum, sessionId);
     }
 
-    public QueryResult getVariantsPerStudy(long studyId, Query query, QueryOptions queryOptions, boolean histogram, String groupBy, String rank, int interval, Long fileIdNum, String sessionId)
+    public QueryResult getVariantsPerStudy(long studyId, Query query, QueryOptions queryOptions,
+                                           boolean histogram, String groupBy, String rank, int interval, Long fileIdNum, String sessionId)
             throws Exception {
         QueryResult result;
         logger.debug("queryVariants = {}", query.toJson());
@@ -191,7 +192,7 @@ public class VariantFetcher {
 
     public VariantDBIterator iterator(Query query, QueryOptions queryOptions, String sessionId) throws CatalogException, StorageManagerException {
 
-        long studyId = getMainStudyId(query);
+        long studyId = getMainStudyId(query, sessionId);
 
         VariantDBAdaptor dbAdaptor = getVariantDBAdaptor(studyId, sessionId);
 
@@ -200,9 +201,28 @@ public class VariantFetcher {
 
         return dbAdaptor.iterator(query, queryOptions);
     }
+
+    public QueryResult<Long> countByFile(long fileId, QueryOptions params, String sessionId) throws CatalogException, StorageManagerException, IOException {
+        Query query = getVariantQuery(params);
+        if (getMainStudyId(query, VariantDBAdaptor.VariantQueryParams.STUDIES.key(), sessionId) == null) {
+            long studyId = catalogManager.getStudyIdByFileId(fileId);
+            query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
+        }
+        query.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileId);
+        return count(query, sessionId);
+    }
+
+    public QueryResult<Long> count(long studyId, QueryOptions params, String sessionId) throws CatalogException, StorageManagerException, IOException {
+        Query query = getVariantQuery(params);
+        if (getMainStudyId(query, VariantDBAdaptor.VariantQueryParams.STUDIES.key(), sessionId) == null) {
+            query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
+        }
+        return count(query, sessionId);
+    }
+
     public QueryResult<Long> count(Query query, String sessionId) throws CatalogException, StorageManagerException, IOException {
 
-        long studyId = getMainStudyId(query);
+        long studyId = getMainStudyId(query, sessionId);
 
         try (VariantDBAdaptor dbAdaptor = getVariantDBAdaptor(studyId, sessionId)) {
 
@@ -238,10 +258,10 @@ public class VariantFetcher {
         return regions;
     }
 
-    public Long getMainStudyId(Query query) throws CatalogException {
-        Long id = getMainStudyId(query, VariantDBAdaptor.VariantQueryParams.STUDIES.key());
+    public Long getMainStudyId(Query query, String sessionId) throws CatalogException {
+        Long id = getMainStudyId(query, VariantDBAdaptor.VariantQueryParams.STUDIES.key(), sessionId);
         if (id == null) {
-            id = getMainStudyId(query, VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key());
+            id = getMainStudyId(query, VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), sessionId);
         }
         if (id != null) {
             return id;
@@ -250,11 +270,12 @@ public class VariantFetcher {
         }
     }
 
-    private Long getMainStudyId(Query query, String key) throws CatalogException {
+    private Long getMainStudyId(Query query, String key, String sessionId) throws CatalogException {
         if (query.containsKey(key)) {
             for (String id : query.getAsStringList(key)) {
                 if (!id.startsWith("!")) {
-                    return catalogManager.getStudyId(id);
+                    long studyId = catalogManager.getStudyId(id, sessionId);
+                    return studyId > 0 ? studyId : null;
                 }
             }
         }
