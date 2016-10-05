@@ -34,7 +34,8 @@
     "iron-input": "PolymerElements/iron-input#^1.0.9",
     "eonasdan-bootstrap-datetimepicker": "latest",
     "moment": "^2.14.1",
-    "highcharts": "^5.0.0"
+    "highcharts": "^5.0.0",
+    "jstat": "^1.5.3"
   },
   "resolutions": {
     "highcharts": "^5.0.0"
