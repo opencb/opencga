@@ -61,7 +61,7 @@ public class HadoopVariantStorageETL extends AbstractHadoopVariantStorageETL {
         Class execClass = ArchiveDriver.class;
         String executable = hadoopRoute + " jar " + jar + " " + execClass.getName();
         String args = ArchiveDriver.buildCommandLineArgs(input, vcfMeta,
-                archiveTableCredentials.getHostUri().toString(), archiveTableCredentials.getTable(), studyId,
+                archiveTableCredentials.toString(), archiveTableCredentials.getTable(), studyId,
                 fileId, options);
 
         long startTime = System.currentTimeMillis();

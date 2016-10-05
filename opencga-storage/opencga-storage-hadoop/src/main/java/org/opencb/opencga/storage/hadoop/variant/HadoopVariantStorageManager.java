@@ -347,7 +347,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             String jar = AbstractHadoopVariantStorageETL.getJarWithDependencies(options);
 
             Class execClass = VariantTableDeletionDriver.class;
-            String args = VariantTableDeletionDriver.buildCommandLineArgs(variantsTable.getHostUri().toString(), archiveTable,
+            String args = VariantTableDeletionDriver.buildCommandLineArgs(variantsTable.toString(), archiveTable,
                     variantsTable.getTable(), studyId, fileList, options);
             String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
 
@@ -425,10 +425,10 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         String user = db.getUser();
         String pass = db.getPassword();
         List<String> hostList = db.getHosts();
-        if (hostList.size() != 1) {
+        if (hostList != null && hostList.size() > 1) {
             throw new IllegalStateException("Expect only one server name");
         }
-        String target = hostList.get(0);
+        String target = hostList != null && !hostList.isEmpty() ? hostList.get(0) : null;
         try {
             String server;
             Integer port;

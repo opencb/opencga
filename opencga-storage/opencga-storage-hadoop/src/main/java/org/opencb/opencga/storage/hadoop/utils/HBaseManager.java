@@ -31,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -328,22 +327,20 @@ public class HBaseManager extends Configured implements AutoCloseable {
         });
     }
 
-    public static Configuration addHBaseSettings(Configuration conf, String hostUri) throws URISyntaxException {
-        URI uri = new URI(hostUri);
-        HBaseCredentials credentials = HBaseCredentials.fromURI(uri, null, null, null);
+    public static Configuration addHBaseSettings(Configuration conf, String credentialsStr) throws URISyntaxException {
+        HBaseCredentials credentials = new HBaseCredentials(credentialsStr);
         return addHBaseSettings(conf, credentials);
     }
 
     public static Configuration addHBaseSettings(Configuration conf, HBaseCredentials credentials) {
         conf = HBaseConfiguration.create(conf);
 
-        if (StringUtils.isNotEmpty(credentials.getHost())) {
-            conf.set(HConstants.ZOOKEEPER_QUORUM, credentials.getHost());
+        if (StringUtils.isNotEmpty(credentials.getZookeeperQuorums())) {
+            conf.set(HConstants.ZOOKEEPER_QUORUM, credentials.getZookeeperQuorums());
         }
         //ZKConfig.getZKQuorumServersString(conf)
 
-        // TODO: Check if property 'hbase.master' exists and is used.
-        conf.set("hbase.master", credentials.getHostAndPort());
+//        conf.set("hbase.master", credentials.getHostAndPort());
 
         // Skip default values
         if (!credentials.isDefaultZookeeperClientPort()) {
