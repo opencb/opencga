@@ -41,6 +41,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.*;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -363,6 +364,28 @@ public class FileManagerTest extends GenericTest {
         thrown.expect(CatalogException.class);
         thrown.expectMessage("already linked");
         catalogManager.link(uri, "data", Long.toString(studyId), new ObjectMap(), sessionIdUser);
+    }
+
+    @Test
+    public void testLinkNormalizedUris() throws CatalogException, IOException, URISyntaxException {
+        Path path = Paths.get(catalogManager.getStudyUri(studyId).resolve("data"));
+        URI uri = new URI("file://" + path.toString() + "/../data");
+        ObjectMap params = new ObjectMap("parents", true);
+        QueryResult<File> allFiles = catalogManager.link(uri, "test/myLinkedFolder/", Long.toString(studyId), params, sessionIdUser);
+        assertEquals(6, allFiles.getNumResults());
+        for (File file : allFiles.getResult()) {
+            assertTrue(file.getUri().isAbsolute());
+            assertEquals(file.getUri().normalize(), file.getUri());
+        }
+    }
+
+    @Test
+    public void testLinkNonExistentFile() throws CatalogException, IOException {
+        URI uri= Paths.get(catalogManager.getStudyUri(studyId).resolve("inexistentData")).toUri();
+        ObjectMap params = new ObjectMap("parents", true);
+        thrown.expect(CatalogIOException.class);
+        thrown.expectMessage("does not exist");
+        catalogManager.link(uri, "test/myLinkedFolder/", Long.toString(studyId), params, sessionIdUser);
     }
 
     @Test
