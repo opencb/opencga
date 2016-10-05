@@ -540,6 +540,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
     @Override
     public URI load(URI input) throws IOException, StorageManagerException {
         int studyId = getStudyId();
+        int fileId = options.getInt(Options.FILE_ID.key());
 
         boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
         boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
@@ -548,7 +549,13 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
         ArchiveHelper.setStudyId(conf, studyId);
 
         if (loadArch) {
-            loadArch(input);
+            Set<Integer> loadedFiles = dbAdaptor.getVariantSourceDBAdaptor().getLoadedFiles(studyId);
+            if (!loadedFiles.contains(fileId)) {
+                loadArch(input);
+            } else {
+                logger.info("File {} already loaded in archive table. Skip this step!",
+                        Paths.get(input.getPath()).getFileName().toString());
+            }
         }
 
         if (loadVar) {
