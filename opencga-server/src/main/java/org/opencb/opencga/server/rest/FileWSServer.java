@@ -1139,13 +1139,19 @@ public class FileWSServer extends OpenCGAWSServer {
 
             List<QueryResult<File>> queryResultList = new ArrayList<>();
             logger.info("path: {}", path);
-            for (String uri : uriList) {
-                logger.info("uri: {}", uri);
-                try {
-                    URI myUri = UriUtils.createUri(uri);
-                    queryResultList.add(catalogManager.link(myUri, path, studyIdStr, objectMap, sessionId));
-                } catch (URISyntaxException | CatalogException | IOException e) {
-                    queryResultList.add(new QueryResult<>("Link file", -1, 0, 0, "", e.getMessage(), Collections.emptyList()));
+            if (uriList.size() == 1) {
+                // If it is just one uri to be linked, it will return an error response if there is some kind of error.
+                URI myUri = UriUtils.createUri(uriList.get(0));
+                queryResultList.add(catalogManager.link(myUri, path, studyIdStr, objectMap, sessionId));
+            } else {
+                for (String uri : uriList) {
+                    logger.info("uri: {}", uri);
+                    try {
+                        URI myUri = UriUtils.createUri(uri);
+                        queryResultList.add(catalogManager.link(myUri, path, studyIdStr, objectMap, sessionId));
+                    } catch (URISyntaxException | CatalogException | IOException e) {
+                        queryResultList.add(new QueryResult<>("Link file", -1, 0, 0, "", e.getMessage(), Collections.emptyList()));
+                    }
                 }
             }
             return createOkResponse(queryResultList);
