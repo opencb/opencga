@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 OpenCB
+ * Copyright 2015-2016 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -223,7 +223,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                                 queryOptions.add("annotations", cliOptions.annotations);
                             }
 //                            VariantVcfExporter.htsExport(iterator, studyConfiguration, outputStream, queryOptions);
-                            long studyId = variantFetcher.getMainStudyId(query);
+                            long studyId = variantFetcher.getMainStudyId(query, sessionId);
                             VariantSourceDBAdaptor sourceDBAdaptor = variantFetcher.getSourceDBAdaptor((int) studyId, sessionId);
                             exporter = new VariantVcfExporter(studyConfiguration, sourceDBAdaptor, outputStream, queryOptions);
                         } else {

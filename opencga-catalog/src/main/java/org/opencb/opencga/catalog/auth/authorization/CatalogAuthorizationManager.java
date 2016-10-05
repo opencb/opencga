@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2016 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.auth.authorization;
 
 import org.opencb.commons.datastore.core.Query;
@@ -45,6 +61,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private final PanelDBAdaptor panelDBAdaptor;
     private final MetaDBAdaptor metaDBAdaptor;
     private final AuditManager auditManager;
+
+    private final String ADMIN = "admin";
+    private final String ANONYMOUS = "anonymous";
 
     public CatalogAuthorizationManager(DBAdaptorFactory catalogDBAdaptorFactory, AuditManager auditManager) {
         this.auditManager = auditManager;
@@ -98,14 +117,17 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         StudyAclEntry studyAcl = null;
-        if (userId.equals("admin")) {
-            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList("admin"));
+        if (userId.equals(ADMIN)) {
+            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList(ADMIN));
             if (studyAclQueryResult.getNumResults() == 1) {
                 studyAcl = studyAclQueryResult.first();
             }
         } else {
-            QueryResult<Group> group = getGroupBelonging(studyId, userId);
-            String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+            String groupId = null;
+            if (!userId.equalsIgnoreCase(ANONYMOUS)) {
+                QueryResult<Group> group = getGroupBelonging(studyId, userId);
+                groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+            }
             studyAcl = getStudyAclBelonging(studyId, userId, groupId);
         }
         if (studyAcl == null) {
@@ -133,8 +155,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         FileAclEntry fileAcl = null;
 
-        if (userId.equals("admin")) {
-            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList("admin"));
+        if (userId.equals(ADMIN)) {
+            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList(ADMIN));
             if (studyAclQueryResult.getNumResults() == 1) {
                 fileAcl = transformStudyAclToFileAcl(studyAclQueryResult.first());
             }
@@ -178,8 +200,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      */
     private FileAclEntry resolveFilePermissions(File file, String userId, long studyId,
                                                 StudyAuthenticationContext studyAuthenticationContext) throws CatalogException {
-        QueryResult<Group> group = getGroupBelonging(studyId, userId);
-        String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+        String groupId = null;
+        if (!userId.equalsIgnoreCase(ANONYMOUS)) {
+            QueryResult<Group> group = getGroupBelonging(studyId, userId);
+            groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+        }
 
         // We obtain all the paths from our current position to the root folder
         List<String> paths = FileManager.getParentPaths(file.getPath());
@@ -220,8 +245,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         SampleAclEntry sampleAcl = null;
-        if (userId.equals("admin")) {
-            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList("admin"));
+        if (userId.equals(ADMIN)) {
+            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList(ADMIN));
             if (studyAclQueryResult.getNumResults() == 1) {
                 sampleAcl = transformStudyAclToSampleAcl(studyAclQueryResult.first());
             }
@@ -249,8 +274,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (sample.getAcl() == null) {
             return resolveSamplePermissions(studyId, sample.getId(), userId);
         } else {
-            QueryResult<Group> group = getGroupBelonging(studyId, userId);
-            String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+            String groupId = null;
+            if (!userId.equalsIgnoreCase(ANONYMOUS)) {
+                QueryResult<Group> group = getGroupBelonging(studyId, userId);
+                groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+            }
 
             Map<String, SampleAclEntry> userAclMap = new HashMap<>();
             for (SampleAclEntry sampleAcl : sample.getAcl()) {
@@ -261,8 +289,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private SampleAclEntry resolveSamplePermissions(long studyId, long sampleId, String userId) throws CatalogException {
-        QueryResult<Group> group = getGroupBelonging(studyId, userId);
-        String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+        String groupId = null;
+        if (!userId.equalsIgnoreCase(ANONYMOUS)) {
+            QueryResult<Group> group = getGroupBelonging(studyId, userId);
+            groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+        }
 
         List<String> userIds = (groupId == null)
                 ? Arrays.asList(userId, OTHER_USERS_ID)
@@ -299,8 +330,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         IndividualAclEntry individualAcl = null;
-        if (userId.equals("admin")) {
-            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList("admin"));
+        if (userId.equals(ADMIN)) {
+            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList(ADMIN));
             if (studyAclQueryResult.getNumResults() == 1) {
                 individualAcl = transformStudyAclToIndividualAcl(studyAclQueryResult.first());
             }
@@ -317,8 +348,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (individual.getAcl() == null) {
             return resolveIndividualPermissions(studyId, individual.getId(), userId);
         } else {
-            QueryResult<Group> group = getGroupBelonging(studyId, userId);
-            String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+            String groupId = null;
+            if (!userId.equalsIgnoreCase(ANONYMOUS)) {
+                QueryResult<Group> group = getGroupBelonging(studyId, userId);
+                groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+            }
 
             Map<String, IndividualAclEntry> userAclMap = new HashMap<>();
             for (IndividualAclEntry individualAcl : individual.getAcl()) {
@@ -329,8 +363,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private IndividualAclEntry resolveIndividualPermissions(long studyId, long individualId, String userId) throws CatalogException {
-        QueryResult<Group> group = getGroupBelonging(studyId, userId);
-        String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+        String groupId = null;
+        if (!userId.equalsIgnoreCase(ANONYMOUS)) {
+            QueryResult<Group> group = getGroupBelonging(studyId, userId);
+            groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+        }
 
         List<String> userIds = (groupId == null)
                 ? Arrays.asList(userId, OTHER_USERS_ID)
@@ -366,8 +403,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         JobAclEntry jobAcl = null;
-        if (userId.equals("admin")) {
-            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList("admin"));
+        if (userId.equals(ADMIN)) {
+            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList(ADMIN));
             if (studyAclQueryResult.getNumResults() == 1) {
                 jobAcl = transformStudyAclToJobAcl(studyAclQueryResult.first());
             }
@@ -385,8 +422,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (job.getAcl() == null) {
             return resolveJobPermissions(studyId, job.getId(), userId);
         } else {
-            QueryResult<Group> group = getGroupBelonging(studyId, userId);
-            String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+            String groupId = null;
+            if (!userId.equalsIgnoreCase(ANONYMOUS)) {
+                QueryResult<Group> group = getGroupBelonging(studyId, userId);
+                groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+            }
 
             Map<String, JobAclEntry> userAclMap = new HashMap<>();
             for (JobAclEntry jobAcl : job.getAcl()) {
@@ -397,8 +437,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private JobAclEntry resolveJobPermissions(long studyId, long jobId, String userId) throws CatalogException {
-        QueryResult<Group> group = getGroupBelonging(studyId, userId);
-        String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+        String groupId = null;
+        if (!userId.equalsIgnoreCase(ANONYMOUS)) {
+            QueryResult<Group> group = getGroupBelonging(studyId, userId);
+            groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+        }
 
         List<String> userIds = (groupId == null)
                 ? Arrays.asList(userId, OTHER_USERS_ID)
@@ -434,8 +477,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         CohortAclEntry cohortAcl = null;
-        if (userId.equals("admin")) {
-            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList("admin"));
+        if (userId.equals(ADMIN)) {
+            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList(ADMIN));
             if (studyAclQueryResult.getNumResults() == 1) {
                 cohortAcl = transformStudyAclToCohortAcl(studyAclQueryResult.first());
             }
@@ -452,8 +495,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (cohort.getAcl() == null) {
             return resolveCohortPermissions(studyId, cohort.getId(), userId);
         } else {
-            QueryResult<Group> group = getGroupBelonging(studyId, userId);
-            String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+            String groupId = null;
+            if (!userId.equalsIgnoreCase(ANONYMOUS)) {
+                QueryResult<Group> group = getGroupBelonging(studyId, userId);
+                groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+            }
 
             Map<String, CohortAclEntry> userAclMap = new HashMap<>();
             for (CohortAclEntry cohortAcl : cohort.getAcl()) {
@@ -464,8 +510,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private CohortAclEntry resolveCohortPermissions(long studyId, long cohortId, String userId) throws CatalogException {
-        QueryResult<Group> group = getGroupBelonging(studyId, userId);
-        String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+        String groupId = null;
+        if (!userId.equalsIgnoreCase(ANONYMOUS)) {
+            QueryResult<Group> group = getGroupBelonging(studyId, userId);
+            groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+        }
 
         List<String> userIds = (groupId == null)
                 ? Arrays.asList(userId, OTHER_USERS_ID)
@@ -502,8 +551,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         DatasetAclEntry datasetAcl = null;
-        if (userId.equals("admin")) {
-            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList("admin"));
+        if (userId.equals(ADMIN)) {
+            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList(ADMIN));
             if (studyAclQueryResult.getNumResults() == 1) {
                 datasetAcl = transformStudyAclToDatasetAcl(studyAclQueryResult.first());
             }
@@ -520,8 +569,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (dataset.getAcl() == null) {
             return resolveDatasetPermissions(studyId, dataset.getId(), userId);
         } else {
-            QueryResult<Group> group = getGroupBelonging(studyId, userId);
-            String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+            String groupId = null;
+            if (!userId.equalsIgnoreCase(ANONYMOUS)) {
+                QueryResult<Group> group = getGroupBelonging(studyId, userId);
+                groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+            }
 
             Map<String, DatasetAclEntry> userAclMap = new HashMap<>();
             for (DatasetAclEntry datasetAcl : dataset.getAcl()) {
@@ -532,8 +584,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private DatasetAclEntry resolveDatasetPermissions(long studyId, long datasetId, String userId) throws CatalogException {
-        QueryResult<Group> group = getGroupBelonging(studyId, userId);
-        String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+        String groupId = null;
+        if (!userId.equalsIgnoreCase(ANONYMOUS)) {
+            QueryResult<Group> group = getGroupBelonging(studyId, userId);
+            groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+        }
 
         List<String> userIds = (groupId == null)
                 ? Arrays.asList(userId, OTHER_USERS_ID)
@@ -570,8 +625,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         DiseasePanelAclEntry panelAcl = null;
-        if (userId.equals("admin")) {
-            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList("admin"));
+        if (userId.equals(ADMIN)) {
+            QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList(ADMIN));
             if (studyAclQueryResult.getNumResults() == 1) {
                 panelAcl = transformStudyAclToDiseasePanelAcl(studyAclQueryResult.first());
             }
@@ -588,8 +643,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (panel.getAcl() == null) {
             return resolveDiseasePanelPermissions(studyId, panel.getId(), userId);
         } else {
-            QueryResult<Group> group = getGroupBelonging(studyId, userId);
-            String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+            String groupId = null;
+            if (!userId.equalsIgnoreCase(ANONYMOUS)) {
+                QueryResult<Group> group = getGroupBelonging(studyId, userId);
+                groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+            }
 
             Map<String, DiseasePanelAclEntry> userAclMap = new HashMap<>();
             for (DiseasePanelAclEntry panelAcl : panel.getAcl()) {
@@ -600,8 +658,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private DiseasePanelAclEntry resolveDiseasePanelPermissions(long studyId, long panelId, String userId) throws CatalogException {
-        QueryResult<Group> group = getGroupBelonging(studyId, userId);
-        String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+        String groupId = null;
+        if (!userId.equalsIgnoreCase(ANONYMOUS)) {
+            QueryResult<Group> group = getGroupBelonging(studyId, userId);
+            groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+        }
 
         List<String> userIds = (groupId == null)
                 ? Arrays.asList(userId, OTHER_USERS_ID)
@@ -634,7 +695,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (projects == null || projects.isEmpty()) {
             return;
         }
-        if (userId.equals("admin")) {
+        if (userId.equals(ADMIN)) {
             return;
         }
         Iterator<Project> projectIt = projects.iterator();
@@ -655,7 +716,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (studies == null || studies.isEmpty()) {
             return;
         }
-        if (userId.equals("admin")) {
+        if (userId.equals(ADMIN)) {
             return;
         }
         Iterator<Study> studyIt = studies.iterator();
@@ -687,7 +748,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (files == null || files.isEmpty()) {
             return;
         }
-        if (userId.equals("admin")) {
+        if (userId.equals(ADMIN)) {
             return;
         }
         if (isStudyOwner(studyId, userId)) {
@@ -711,7 +772,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (samples == null || samples.isEmpty()) {
             return;
         }
-        if (userId.equals("admin")) {
+        if (userId.equals(ADMIN)) {
             return;
         }
         if (isStudyOwner(studyId, userId)) {
@@ -738,7 +799,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (individuals == null || individuals.isEmpty()) {
             return;
         }
-        if (userId.equals("admin")) {
+        if (userId.equals(ADMIN)) {
             return;
         }
         if (isStudyOwner(studyId, userId)) {
@@ -765,7 +826,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (cohorts == null || cohorts.isEmpty()) {
             return;
         }
-        if (userId.equals("admin")) {
+        if (userId.equals(ADMIN)) {
             return;
         }
         if (isStudyOwner(studyId, userId)) {
@@ -792,7 +853,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (jobs == null || jobs.isEmpty()) {
             return;
         }
-        if (userId.equals("admin")) {
+        if (userId.equals(ADMIN)) {
             return;
         }
         if (isStudyOwner(studyId, userId)) {
@@ -814,7 +875,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (datasets == null || datasets.isEmpty()) {
             return;
         }
-        if (userId.equals("admin")) {
+        if (userId.equals(ADMIN)) {
             return;
         }
         if (isStudyOwner(studyId, userId)) {
@@ -842,7 +903,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         // We obtain the permissions present in the demanded template (if present)
         EnumSet<StudyAclEntry.StudyPermissions> studyPermissions = AuthorizationManager.getLockedAcls();
         if (template != null && !template.isEmpty()) {
-            if (template.equals("admin")) {
+            if (template.equals(ADMIN)) {
                 studyPermissions = AuthorizationManager.getAdminAcls();
             } else if (template.equals("analyst")) {
                 studyPermissions = AuthorizationManager.getAnalystAcls();
@@ -2213,7 +2274,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         List<String> memberList = new ArrayList<>();
         memberList.add(member);
         if (!member.startsWith("@")) { // User
-            if (member.equals("admin") || isStudyOwner(studyId, member)) {
+            if (member.equals(ADMIN) || isStudyOwner(studyId, member)) {
                 return true;
             }
             if (!member.equals("anonymous") && !member.equals("*")) {

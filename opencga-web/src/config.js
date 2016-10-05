@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 OpenCB
+ * Copyright 2015-2016 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,7 @@
  */
 
 var opencga = {
-    host: "squalet.hpc.cam.ac.uk:8080/opencga",
-    // host: "bioinfodev.hpc.cam.ac.uk/hgva",
+    host: "bioinfodev.hpc.cam.ac.uk/hgva-0.8",
     version: "v1",
     cookies: {
         userName: "opencga_userId",

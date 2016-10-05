@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2016 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
@@ -71,7 +87,7 @@ public class CohortManager extends AbstractManager implements ICohortManager {
                 throw new CatalogException("Error: Some sampleId does not exist in the study " + studyId);
             }
         }
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_COHORTS);
         Cohort cohort = new Cohort(name, type, TimeUtils.getTime(), description, sampleIds, attributes);
         QueryResult<Cohort> queryResult = cohortDBAdaptor.insert(cohort, studyId, null);
@@ -113,11 +129,10 @@ public class CohortManager extends AbstractManager implements ICohortManager {
 
     @Override
     public QueryResult<Cohort> get(Long cohortId, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         //options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         long studyId = cohortDBAdaptor.getStudyIdByCohortId(cohortId);
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
 
         authorizationManager.checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.VIEW);
 
@@ -132,7 +147,7 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         query = ParamUtils.defaultObject(query, Query::new);
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
             throw CatalogAuthorizationException.deny(userId, "view", "cohorts", studyId, null);
         }
@@ -153,7 +168,7 @@ public class CohortManager extends AbstractManager implements ICohortManager {
     @Override
     public QueryResult<Cohort> update(Long cohortId, ObjectMap parameters, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(parameters, "Update parameters");
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
 
         authorizationManager.checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.UPDATE);
 
@@ -184,7 +199,6 @@ public class CohortManager extends AbstractManager implements ICohortManager {
     @Override
     public List<QueryResult<Cohort>> delete(String cohortIdStr, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(cohortIdStr, "id");
-        ParamUtils.checkParameter(sessionId, "sessionId");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getId(sessionId);
@@ -226,7 +240,6 @@ public class CohortManager extends AbstractManager implements ICohortManager {
     @Override
     public List<QueryResult<Cohort>> restore(String cohortIdStr, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(cohortIdStr, "id");
-        ParamUtils.checkParameter(sessionId, "sessionId");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getId(sessionId);
@@ -273,9 +286,8 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         ParamUtils.checkObj(fields, "fields");
         ParamUtils.checkObj(studyId, "studyId");
-        ParamUtils.checkObj(sessionId, "sessionId");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_COHORTS);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -296,9 +308,8 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         ParamUtils.checkObj(field, "field");
         ParamUtils.checkObj(studyId, "studyId");
-        ParamUtils.checkObj(sessionId, "sessionId");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_COHORTS);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -319,9 +330,8 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         query = ParamUtils.defaultObject(query, Query::new);
         ParamUtils.checkObj(field, "field");
         ParamUtils.checkObj(studyId, "studyId");
-        ParamUtils.checkObj(sessionId, "sessionId");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_COHORTS);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -339,12 +349,11 @@ public class CohortManager extends AbstractManager implements ICohortManager {
     public QueryResult<AnnotationSet> createAnnotationSet(String id, long variableSetId, String annotationSetName,
                                                           Map<String, Object> annotations, Map<String, Object> attributes,
                                                           String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
         ParamUtils.checkObj(annotations, "annotations");
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         long cohortId = getId(userId, id);
         authorizationManager.checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.CREATE_ANNOTATIONS);
 
@@ -372,9 +381,8 @@ public class CohortManager extends AbstractManager implements ICohortManager {
     }
 
     private long commonGetAllAnnotationSets(String id, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(id, "id");
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         long cohortId = getId(userId, id);
         authorizationManager.checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS);
         return cohortId;
@@ -393,10 +401,9 @@ public class CohortManager extends AbstractManager implements ICohortManager {
     }
 
     private long commonGetAnnotationSet(String id, String annotationSetName, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkAlias(annotationSetName, "annotationSetName");
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         long cohortId = getId(userId, id);
         authorizationManager.checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS);
         return cohortId;
@@ -406,11 +413,10 @@ public class CohortManager extends AbstractManager implements ICohortManager {
     public QueryResult<AnnotationSet> updateAnnotationSet(String id, String annotationSetName, Map<String, Object> newAnnotations,
                                                           String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
         ParamUtils.checkObj(newAnnotations, "newAnnotations");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         long cohortId = getId(userId, id);
         authorizationManager.checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.UPDATE_ANNOTATIONS);
 
@@ -438,10 +444,9 @@ public class CohortManager extends AbstractManager implements ICohortManager {
     @Override
     public QueryResult<AnnotationSet> deleteAnnotationSet(String id, String annotationSetName, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         long cohortId = getId(userId, id);
         authorizationManager.checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.DELETE_ANNOTATIONS);
 
@@ -494,9 +499,8 @@ public class CohortManager extends AbstractManager implements ICohortManager {
     private QueryResult<Cohort> commonSearchAnnotationSet(String id, long variableSetId, @Nullable String annotation, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(id, "id");
-        ParamUtils.checkParameter(sessionId, "sessionId");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         long cohortId = getId(userId, id);
         authorizationManager.checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS);
 

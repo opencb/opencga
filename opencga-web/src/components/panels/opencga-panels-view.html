@@ -1,5 +1,5 @@
 <!--
-  ~ Copyright 2015 OpenCB
+  ~ Copyright 2015-2016 OpenCB
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -87,58 +87,58 @@
             },
             callPanel: function() {
                 var me = this;
-                this.opencgaClient.panels().info(3553).then(function(response) {
-                    me._panel = response.response[0].result[0];
-                    me._panel.status.date
-
-                    me.variants = [];
-                    let allVariants = me._panel.variants;
-                    for (let i = 0; i < allVariants.length; i++) {
-                        let variant = allVariants[i].split(":");
-                        me.push("variants", {
-                            "chr": variant[0],
-                            "pos": variant[1],
-                            "ref": variant[2],
-                            "alt": variant[3]
-                        });
-                    }
-
-                    me.regions = [];
-                    let allRegions = me._panel.regions;
-                    for (let i = 0; i < allRegions.length; i++) {
-                        let first = allRegions[i].split(":");
-                        let pos;
-                        if (first.length == 1) {
-                            pos = ["", ""];
-                        } else {
-                            let tmp = first[1].split("-");
-                            if (tmp.length == 1) {
-                                pos = [first[1], first[1]];
-                            } else {
-                                pos = [tmp[0], tmp[1]];
-                            }
-                        }
-                        me.push("regions", {
-                            "name": allRegions[i],
-                            "chr": first[0],
-                            "start": pos[0],
-                            "end": pos[1]
-                        });
-                    }
-
-                    me.genes = [];
-                    let allGenes = me._panel.genes;
-                    for (let i = 0; i < allGenes.length; i++) {
-                        me.push("genes", {
-                            "name": allGenes[i],
-                            "chr": "",
-                            "start": "",
-                            "end": ""
-                        });
-                    }
-                }).catch(function(response) {
-                    console.log(response.error);
-                });
+//                this.opencgaClient.panels().info(3553).then(function(response) {
+//                    me._panel = response.response[0].result[0];
+//                    me._panel.status.date
+//
+//                    me.variants = [];
+//                    let allVariants = me._panel.variants;
+//                    for (let i = 0; i < allVariants.length; i++) {
+//                        let variant = allVariants[i].split(":");
+//                        me.push("variants", {
+//                            "chr": variant[0],
+//                            "pos": variant[1],
+//                            "ref": variant[2],
+//                            "alt": variant[3]
+//                        });
+//                    }
+//
+//                    me.regions = [];
+//                    let allRegions = me._panel.regions;
+//                    for (let i = 0; i < allRegions.length; i++) {
+//                        let first = allRegions[i].split(":");
+//                        let pos;
+//                        if (first.length == 1) {
+//                            pos = ["", ""];
+//                        } else {
+//                            let tmp = first[1].split("-");
+//                            if (tmp.length == 1) {
+//                                pos = [first[1], first[1]];
+//                            } else {
+//                                pos = [tmp[0], tmp[1]];
+//                            }
+//                        }
+//                        me.push("regions", {
+//                            "name": allRegions[i],
+//                            "chr": first[0],
+//                            "start": pos[0],
+//                            "end": pos[1]
+//                        });
+//                    }
+//
+//                    me.genes = [];
+//                    let allGenes = me._panel.genes;
+//                    for (let i = 0; i < allGenes.length; i++) {
+//                        me.push("genes", {
+//                            "name": allGenes[i],
+//                            "chr": "",
+//                            "start": "",
+//                            "end": ""
+//                        });
+//                    }
+//                }).catch(function(response) {
+//                    console.log(response.error);
+//                });
             }
         });
     </script>

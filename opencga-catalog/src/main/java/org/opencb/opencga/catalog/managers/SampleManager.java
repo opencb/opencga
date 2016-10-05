@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2016 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.StringUtils;
@@ -109,12 +125,11 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     public QueryResult<AnnotationSet> annotate(long sampleId, String annotationSetName, long variableSetId, Map<String, Object> annotations,
                                                Map<String, Object> attributes, boolean checkAnnotationSet,
                                                String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
         ParamUtils.checkObj(annotations, "annotations");
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.CREATE_ANNOTATIONS);
 
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
@@ -143,11 +158,10 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             sessionId)
             throws CatalogException {
 
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
         ParamUtils.checkObj(newAnnotations, "newAnnotations");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.UPDATE_ANNOTATIONS);
 
         // Get sample
@@ -193,7 +207,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     @Deprecated
     public QueryResult<AnnotationSet> deleteAnnotation(long sampleId, String annotationId, String sessionId) throws CatalogException {
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
 
         authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.DELETE_ANNOTATIONS);
 
@@ -227,13 +241,12 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     public QueryResult<Sample> create(long studyId, String name, String source, String description,
                                       Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(name, "name");
         source = ParamUtils.defaultString(source, "");
         description = ParamUtils.defaultString(description, "");
         attributes = ParamUtils.defaultObject(attributes, Collections.<String, Object>emptyMap());
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_SAMPLES);
 
         Sample sample = new Sample(-1, name, source, -1, description, Collections.emptyList(), Collections.emptyList(), attributes);
@@ -248,9 +261,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
     @Override
     public QueryResult<Sample> get(Long sampleId, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.VIEW);
         QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(sampleId, options);
         authorizationManager.filterSamples(userId, getStudyId(sampleId), sampleQueryResult.getResult());
@@ -262,9 +274,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     public QueryResult<Sample> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        ParamUtils.checkParameter(sessionId, "sessionId");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
 
         if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
             throw CatalogAuthorizationException.deny(userId, "view", "samples", studyId, null);
@@ -282,7 +293,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     public List<QueryResult<Sample>> delete(String sampleIdStr, QueryOptions options, String sessionId)
             throws CatalogException, IOException {
         ParamUtils.checkParameter(sampleIdStr, "id");
-        ParamUtils.checkParameter(sessionId, "sessionId");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getId(sessionId);
@@ -324,7 +334,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     @Override
     public List<QueryResult<Sample>> restore(String sampleIdStr, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sampleIdStr, "id");
-        ParamUtils.checkParameter(sessionId, "sessionId");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getId(sessionId);
@@ -367,7 +376,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     @Override
     public QueryResult<SampleAclEntry> getAcls(String sampleStr, List<String> members, String sessionId) throws CatalogException {
         long startTime = System.currentTimeMillis();
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         Long sampleId = getId(userId, sampleStr);
         authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.SHARE);
         Long studyId = getStudyId(sampleId);
@@ -477,9 +486,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             CatalogException {
         ParamUtils.checkObj(parameters, "parameters");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        ParamUtils.checkParameter(sessionId, "sessionId");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
 
         authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.UPDATE);
 
@@ -527,7 +535,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkObj(studyId, "studyId");
         ParamUtils.checkObj(sessionId, "sessionId");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -550,7 +558,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkObj(studyId, "studyId");
         ParamUtils.checkObj(sessionId, "sessionId");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -574,7 +582,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkObj(studyId, "studyId");
         ParamUtils.checkObj(sessionId, "sessionId");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -595,12 +603,11 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     public QueryResult<AnnotationSet> createAnnotationSet(String id, long variableSetId, String annotationSetName,
                                                           Map<String, Object> annotations, Map<String, Object> attributes,
                                                           String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
         ParamUtils.checkObj(annotations, "annotations");
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         long sampleId = getId(userId, id);
         authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.CREATE_ANNOTATIONS);
 
@@ -628,9 +635,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     private long commonGetAllAnnotationSets(String id, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(id, "id");
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         long sampleId = getId(userId, id);
         authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
         return sampleId;
@@ -649,10 +655,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     private long commonGetAnnotationSet(String id, String annotationSetName, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkAlias(annotationSetName, "annotationSetName");
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         long sampleId = getId(userId, id);
         authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
         return sampleId;
@@ -662,11 +667,10 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     public QueryResult<AnnotationSet> updateAnnotationSet(String id, String annotationSetName, Map<String, Object> newAnnotations,
                                                           String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
         ParamUtils.checkObj(newAnnotations, "newAnnotations");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         long sampleId = getId(userId, id);
         authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.UPDATE_ANNOTATIONS);
 
@@ -694,10 +698,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     @Override
     public QueryResult<AnnotationSet> deleteAnnotationSet(String id, String annotationSetName, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         long sampleId = getId(userId, id);
         authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.DELETE_ANNOTATIONS);
 
@@ -756,9 +759,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     private QueryResult<Sample> commonSearchAnnotationSet(String id, long variableSetId, @Nullable String annotation, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(id, "id");
-        ParamUtils.checkParameter(sessionId, "sessionId");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         long sampleId = getId(userId, id);
         authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
 
