@@ -932,6 +932,27 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     }
 
     @Test
+    public void testGetAllVariants_genes() {
+        Query query = new Query(GENE.key(), "FLG-AS1");
+        QueryResult<Variant> result = dbAdaptor.get(query, new QueryOptions());
+
+        assertThat(result, everyResult(allVariants, hasAnnotation(hasGenes(Collections.singletonList("FLG-AS1")))));
+
+        for (Variant variant : result.getResult()) {
+            System.out.println("variant = " + variant);
+        }
+
+        query = new Query(GENE.key(), "WRONG_GENE");
+        result = dbAdaptor.get(query, new QueryOptions());
+
+        assertThat(result, everyResult(allVariants, hasAnnotation(hasGenes(Collections.singletonList("WRONG_GENE")))));
+        assertThat(result, numResults(is(0)));
+        for (Variant variant : result.getResult()) {
+            System.out.println("variant = " + variant);
+        }
+    }
+
+    @Test
     public void testGetAllVariants_studies() {
 
         Query query = new Query(STUDIES.key(), studyConfiguration.getStudyName());

@@ -226,7 +226,7 @@ public class VariantSqlQueryParser {
 
     /**
      * Transform QueryParams that are inclusive.
-
+     *
      * A variant will pass this filters if matches with ANY of this filters.
      *
      * {@link VariantQueryParams#REGION}
@@ -246,11 +246,7 @@ public class VariantSqlQueryParser {
         if (isValidParam(query, REGION)) {
             List<Region> regions = Region.parseRegions(query.getString(REGION.key()));
             for (Region region : regions) {
-                List<String> subFilters = new ArrayList<>(3);
-                subFilters.add(buildFilter(VariantColumn.CHROMOSOME, "=", region.getChromosome()));
-                subFilters.add(buildFilter(VariantColumn.POSITION, ">=", Integer.toString(region.getStart())));
-                subFilters.add(buildFilter(VariantColumn.POSITION, "<=", Integer.toString(region.getEnd())));
-                regionFilters.add(appendFilters(subFilters, QueryOperation.AND.toString()));
+                regionFilters.add(getRegionFilter(region));
             }
         }
 
@@ -281,13 +277,31 @@ public class VariantSqlQueryParser {
         }
 
         // TODO: Ask cellbase for gene region?
-        addQueryFilter(query, GENE, VariantColumn.GENES, regionFilters);
+//        addQueryFilter(query, GENE, VariantColumn.GENES, regionFilters);
+        if (isValidParam(query, GENE)) {
+            for (String gene : query.getAsStringList(GENE.key())) {
+                Region region = utils.getGeneRegion(gene);
+                if (region != null) {
+                    regionFilters.add(getRegionFilter(region));
+                } else {
+                    regionFilters.add(getVoidFilter());
+                }
+            }
+        }
 
         if (regionFilters.isEmpty()) {
             // chromosome != _METADATA
             regionFilters.add(VariantColumn.CHROMOSOME + " != '" + genomeHelper.getMetaRowKeyString() + "'");
         }
         return regionFilters;
+    }
+
+    private String getRegionFilter(Region region) {
+        List<String> subFilters = new ArrayList<>(3);
+        subFilters.add(buildFilter(VariantColumn.CHROMOSOME, "=", region.getChromosome()));
+        subFilters.add(buildFilter(VariantColumn.POSITION, ">=", Integer.toString(region.getStart())));
+        subFilters.add(buildFilter(VariantColumn.POSITION, "<=", Integer.toString(region.getEnd())));
+        return appendFilters(subFilters, QueryOperation.AND.toString());
     }
 
     /**
@@ -645,7 +659,7 @@ public class VariantSqlQueryParser {
             if (genesByGo.isEmpty()) {
                 // If any gene was found, the query will return no results.
                 // FIXME: Find another way of returning empty results
-                filters.add(buildFilter(VariantColumn.CHROMOSOME, "=", "_SKIP"));
+                filters.add(getVoidFilter());
             } else {
                 addQueryFilter(new Query(ANNOT_GO.key(), genesByGo), ANNOT_GO, VariantColumn.GENES, filters);
             }
@@ -661,7 +675,7 @@ public class VariantSqlQueryParser {
             if (genesByExpression.isEmpty()) {
                 // If any gene was found, the query will return no results.
                 // FIXME: Find another way of returning empty results
-                filters.add(buildFilter(VariantColumn.CHROMOSOME, "=", "_SKIP"));
+                filters.add(getVoidFilter());
             } else {
                 addQueryFilter(new Query(ANNOT_EXPRESSION.key(), genesByExpression), ANNOT_EXPRESSION, VariantColumn.GENES, filters);
             }
@@ -676,6 +690,13 @@ public class VariantSqlQueryParser {
             dynamicColumns.add(column);
             return column;
         }, null, filters);
+    }
+
+    /**
+     * @return a filter which does not match with any chromosome.
+     */
+    private String getVoidFilter() {
+        return buildFilter(VariantColumn.CHROMOSOME, "=", "_VOID");
     }
 
     protected void addStatsFilters(Query query, StudyConfiguration defaultStudyConfiguration, List<String> filters) {
