@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 OpenCB
+ * Copyright 2015-2016 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.opencb.opencga.server;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
@@ -29,7 +30,9 @@ import org.opencb.opencga.server.rest.AdminRestWebService;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.DispatcherType;
 import java.nio.file.Path;
+import java.util.EnumSet;
 
 /**
  * Created by imedina on 02/01/16.
@@ -93,6 +96,9 @@ public class RestServer extends AbstractStorageServer {
         ServletContextHandler context = new ServletContextHandler(server, null, ServletContextHandler.SESSIONS);
         context.addServlet(sh, "/opencga/webservices/rest/*");
         context.setInitParameter("config-dir", configDir.toFile().toString());
+
+        // To add CORS Java filtert class to Jetty
+        context.addFilter(CORSFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ERROR));
 
         server.start();
         logger.info("REST server started, listening on {}", port);

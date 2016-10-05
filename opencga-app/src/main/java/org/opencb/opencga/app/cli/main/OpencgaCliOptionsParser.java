@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 OpenCB
+ * Copyright 2015-2016 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -104,6 +104,7 @@ public class OpencgaCliOptionsParser {
         studySubCommands.addCommand("delete", studyCommandOptions.deleteCommandOptions);
         studySubCommands.addCommand("update", studyCommandOptions.updateCommandOptions);
         studySubCommands.addCommand("scan-files", studyCommandOptions.scanFilesCommandOptions);
+        studySubCommands.addCommand("resync-files", studyCommandOptions.resyncFilesCommandOptions);
         studySubCommands.addCommand("files", studyCommandOptions.filesCommandOptions);
         studySubCommands.addCommand("jobs", studyCommandOptions.jobsCommandOptions);
         studySubCommands.addCommand("alignments", studyCommandOptions.alignmentsCommandOptions);

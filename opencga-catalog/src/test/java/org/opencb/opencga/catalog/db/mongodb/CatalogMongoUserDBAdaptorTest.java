@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 OpenCB
+ * Copyright 2015-2016 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,15 +21,13 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.QueryFilter;
-import org.opencb.opencga.catalog.models.Session;
-import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.catalog.models.*;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -182,38 +180,102 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     }
 
     @Test
-    public void addAndGetQueryFilterTest() throws CatalogDBException {
-        QueryFilter queryFilter = new QueryFilter("myFilter",
-                new Query("key1", "value1").append("key2", "value2").append("key3", "value3"),
-                new QueryOptions("key1", "value1").append("key2", "value2").append("key3", "value3")
-        );
-        catalogUserDBAdaptor.addQueryFilter(user4.getId(), queryFilter);
-        QueryFilter queryFilterResult = catalogUserDBAdaptor.getQueryFilter(user4.getId(), queryFilter.getId()).first();
-        assertEquals(queryFilter.getId(), queryFilterResult.getId());
-        assertEquals(queryFilter.getQuery().size(), queryFilterResult.getQuery().size());
-        assertEquals(queryFilter.getQueryOptions().size(), queryFilterResult.getQueryOptions().size());
-        queryFilter.setId("newId");
-        catalogUserDBAdaptor.addQueryFilter(user4.getId(), queryFilter);
-        thrown.expect(CatalogDBException.class);
-        thrown.expectMessage("There already exists a filter with name");
-        catalogUserDBAdaptor.addQueryFilter(user4.getId(), queryFilter);
+    public void addFilterTest() throws CatalogDBException, IOException {
+        Query query = new Query("key1", "value1").append("key2", "value2");
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("key1", "key2"));
+        User.Filter filter = new User.Filter("filter1", "Description of filter 1", File.Bioformat.ALIGNMENT, query, options);
+
+        catalogUserDBAdaptor.addFilter(user4.getId(), filter);
+        QueryResult<User> userQueryResult = catalogUserDBAdaptor.get(user4.getId(), new QueryOptions(), null);
+
+        User.Filter filterResult = userQueryResult.first().getConfigs().getFilters().get(0);
+
+        assertEquals(filter.getName(), filterResult.getName());
+        assertEquals(filter.getDescription(), filterResult.getDescription());
+        assertEquals(filter.getBioformat(), filterResult.getBioformat());
+        assertEquals(filter.getQuery().safeToString(), filterResult.getQuery().safeToString());
+        assertEquals(filter.getOptions().safeToString(), filterResult.getOptions().safeToString());
     }
 
     @Test
-    public void deleteQueryFilterTest() throws CatalogDBException {
-        QueryFilter queryFilter = new QueryFilter("myFilter",
-                new Query("key1", "value1").append("key2", "value2").append("key3", "value3"),
-                new QueryOptions("key1", "value1").append("key2", "value2").append("key3", "value3")
-        );
-        catalogUserDBAdaptor.addQueryFilter(user4.getId(), queryFilter);
-        queryFilter.setId("newId");
-        catalogUserDBAdaptor.addQueryFilter(user4.getId(), queryFilter);
+    public void updateFilterTest() throws CatalogDBException, IOException {
+        Query query = new Query("key1", "value1").append("key2", "value2");
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("key1", "key2"));
+        User.Filter filter = new User.Filter("filter1", "Description of filter 1", File.Bioformat.ALIGNMENT, query, options);
+        catalogUserDBAdaptor.addFilter(user4.getId(), filter);
 
-        catalogUserDBAdaptor.getQueryFilter(user4.getId(), queryFilter.getId());
-        catalogUserDBAdaptor.deleteQueryFilter(user4.getId(), queryFilter.getId());
-        thrown.expect(CatalogDBException.class);
-        thrown.expectMessage("could not be found in the database");
-        catalogUserDBAdaptor.getQueryFilter(user4.getId(), queryFilter.getId());
+        ObjectMap params = new ObjectMap()
+                .append(UserDBAdaptor.FilterParams.DESCRIPTION.key(), "The description has changed")
+                .append(UserDBAdaptor.FilterParams.BIOFORMAT.key(), File.Bioformat.VARIANT)
+                .append(UserDBAdaptor.FilterParams.QUERY.key(), new Query("key3", "whatever"))
+                .append(UserDBAdaptor.FilterParams.OPTIONS.key(), new QueryOptions("options", "optionsValue"));
+        catalogUserDBAdaptor.updateFilter(user4.getId(), filter.getName(), params);
+
+        QueryResult<User> userQueryResult = catalogUserDBAdaptor.get(user4.getId(), new QueryOptions(), null);
+
+        User.Filter filterResult = userQueryResult.first().getConfigs().getFilters().get(0);
+
+        assertEquals(filter.getName(), filterResult.getName());
+        assertEquals(params.get(UserDBAdaptor.FilterParams.DESCRIPTION.key()), filterResult.getDescription());
+        assertEquals(params.get(UserDBAdaptor.FilterParams.BIOFORMAT.key()), filterResult.getBioformat());
+        assertEquals(((Query) params.get(UserDBAdaptor.FilterParams.QUERY.key())).safeToString(), filterResult.getQuery().safeToString());
+        assertEquals(((QueryOptions) params.get(UserDBAdaptor.FilterParams.OPTIONS.key())).safeToString(),
+                filterResult.getOptions().safeToString());
     }
+
+    @Test
+    public void deleteFilterTest() throws CatalogDBException, IOException {
+        Query query = new Query("key1", "value1").append("key2", "value2");
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList("key1", "key2"));
+        User.Filter filter = new User.Filter("filter1", "Description of filter 1", File.Bioformat.ALIGNMENT, query, options);
+
+        catalogUserDBAdaptor.addFilter(user4.getId(), filter);
+        catalogUserDBAdaptor.deleteFilter(user4.getId(), filter.getName());
+        QueryResult<User> userQueryResult = catalogUserDBAdaptor.get(user4.getId(), new QueryOptions(), null);
+
+        User.UserConfiguration configs = userQueryResult.first().getConfigs();
+        assertTrue(configs.getFilters().size() == 0);
+    }
+
+
+    @Test
+    public void setConfigTest() throws CatalogDBException, IOException {
+        ObjectMap objectMap = new ObjectMap()
+                .append("key1", Arrays.asList(1,2,3,4,5))
+                .append("key2", new ObjectMap("key21", 21).append("key22", 22));
+
+        QueryResult queryResult = catalogUserDBAdaptor.setConfig(user4.getId(), "config1", objectMap);
+
+        assertEquals(1, queryResult.getNumResults());
+
+        LinkedHashMap result = (LinkedHashMap) queryResult.first();
+        assertTrue(result.get("key1") instanceof List);
+        assertTrue(result.get("key2") instanceof Map);
+
+        // Update the config
+        objectMap.put("key2", objectMap.get("key1"));
+        queryResult = catalogUserDBAdaptor.setConfig(user4.getId(), "config1", objectMap);
+        assertEquals(1, queryResult.getNumResults());
+
+        result = (LinkedHashMap) queryResult.first();
+        assertTrue(result.get("key1") instanceof List);
+        assertTrue(result.get("key2") instanceof List);
+    }
+
+    @Test
+    public void deleteConfigTest() throws CatalogDBException, IOException {
+        ObjectMap objectMap = new ObjectMap()
+                .append("key1", Arrays.asList(1,2,3,4,5))
+                .append("key2", new ObjectMap("key21", 21).append("key22", 22));
+
+        catalogUserDBAdaptor.setConfig(user4.getId(), "config1", objectMap);
+
+        catalogUserDBAdaptor.deleteConfig(user4.getId(), "config1");
+
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("Could not delete config1 configuration");
+        catalogUserDBAdaptor.deleteConfig(user4.getId(), "config1");
+    }
+
 
 }

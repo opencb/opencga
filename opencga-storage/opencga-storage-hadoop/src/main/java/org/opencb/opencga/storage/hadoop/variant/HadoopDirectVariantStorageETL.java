@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2016 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.storage.hadoop.variant;
 
 import org.apache.commons.lang3.NotImplementedException;
@@ -8,6 +24,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.ProgressLogger;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -100,6 +117,8 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
         ArchiveHelper helper = new ArchiveHelper(dbAdaptor.getGenomeHelper(), meta);
 
 
+        ProgressLogger progressLogger = new ProgressLogger("Loaded slices:",
+                source.getStats() != null ? source.getStats().getNumRecords() : 0);
         VariantHbasePutTask hbaseWriter = new VariantHbasePutTask(helper, table);
         long counter = 0;
         long start = System.currentTimeMillis();
@@ -110,6 +129,7 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
             while (null != slice) {
                 ++counter;
                 hbaseWriter.write(slice);
+                progressLogger.increment(1);
                 slice = VcfSlice.parseDelimitedFrom(in);
             }
             hbaseWriter.post();

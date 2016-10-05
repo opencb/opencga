@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 OpenCB
+ * Copyright 2015-2016 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -380,7 +380,7 @@ public class OpenCGAWSServer {
 
     protected Response createErrorResponse(Exception e) {
         // First we print the exception in Server logs
-        e.printStackTrace();
+        logger.error("Catch error: " + e.getMessage(), e);
 
         // Now we prepare the response to client
         QueryResponse queryResponse = new QueryResponse();

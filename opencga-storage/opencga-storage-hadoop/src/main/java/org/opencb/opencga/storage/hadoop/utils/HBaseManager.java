@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2016 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.storage.hadoop.utils;
 
 import org.apache.commons.lang3.StringUtils;
@@ -15,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
@@ -302,22 +317,20 @@ public class HBaseManager extends Configured implements AutoCloseable {
         });
     }
 
-    public static Configuration addHBaseSettings(Configuration conf, String hostUri) throws URISyntaxException {
-        URI uri = new URI(hostUri);
-        HBaseCredentials credentials = HBaseCredentials.fromURI(uri, null, null, null);
+    public static Configuration addHBaseSettings(Configuration conf, String credentialsStr) throws URISyntaxException {
+        HBaseCredentials credentials = new HBaseCredentials(credentialsStr);
         return addHBaseSettings(conf, credentials);
     }
 
     public static Configuration addHBaseSettings(Configuration conf, HBaseCredentials credentials) {
         conf = HBaseConfiguration.create(conf);
 
-        if (StringUtils.isNotEmpty(credentials.getHost())) {
-            conf.set(HConstants.ZOOKEEPER_QUORUM, credentials.getHost());
+        if (StringUtils.isNotEmpty(credentials.getZookeeperQuorums())) {
+            conf.set(HConstants.ZOOKEEPER_QUORUM, credentials.getZookeeperQuorums());
         }
         //ZKConfig.getZKQuorumServersString(conf)
 
-        // TODO: Check if property 'hbase.master' exists and is used.
-        conf.set("hbase.master", credentials.getHostAndPort());
+//        conf.set("hbase.master", credentials.getHostAndPort());
 
         // Skip default values
         if (!credentials.isDefaultZookeeperClientPort()) {

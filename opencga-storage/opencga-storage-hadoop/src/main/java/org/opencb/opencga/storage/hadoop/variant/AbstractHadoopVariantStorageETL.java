@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2016 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.storage.hadoop.variant;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -524,6 +540,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
     @Override
     public URI load(URI input) throws IOException, StorageManagerException {
         int studyId = getStudyId();
+        int fileId = options.getInt(Options.FILE_ID.key());
 
         boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
         boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
@@ -532,7 +549,13 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
         ArchiveHelper.setStudyId(conf, studyId);
 
         if (loadArch) {
-            loadArch(input);
+            Set<Integer> loadedFiles = dbAdaptor.getVariantSourceDBAdaptor().getLoadedFiles(studyId);
+            if (!loadedFiles.contains(fileId)) {
+                loadArch(input);
+            } else {
+                logger.info("File {} already loaded in archive table. Skip this step!",
+                        Paths.get(input.getPath()).getFileName().toString());
+            }
         }
 
         if (loadVar) {
@@ -551,7 +574,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
         options.put(HADOOP_LOAD_VARIANT_PENDING_FILES, pendingFiles);
 
         Class execClass = VariantTableDriver.class;
-        String args = VariantTableDriver.buildCommandLineArgs(variantsTableCredentials.getHostUri().toString(),
+        String args = VariantTableDriver.buildCommandLineArgs(variantsTableCredentials.toString(),
                 archiveTableCredentials.getTable(),
                 variantsTableCredentials.getTable(), studyId, pendingFiles, options);
         String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();

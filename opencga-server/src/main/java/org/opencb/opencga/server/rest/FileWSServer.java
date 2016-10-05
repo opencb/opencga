@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 OpenCB
+ * Copyright 2015-2016 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -195,6 +195,24 @@ public class FileWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
+
+    @GET
+    @Path("/bioformats")
+    @ApiOperation(value = "List of accepted file bioformats", position = 3)
+    public Response getBioformats() {
+        List<File.Bioformat> bioformats = Arrays.asList(File.Bioformat.values());
+        QueryResult<File.Bioformat> queryResult = new QueryResult("Bioformats", 0, bioformats.size(), bioformats.size(), "", "", bioformats);
+        return createOkResponse(queryResult);
+    }
+
+    @GET
+    @Path("/formats")
+    @ApiOperation(value = "List of accepted file formats", position = 3)
+    public Response getFormats() {
+        List<File.Format> formats = Arrays.asList(File.Format.values());
+        QueryResult<File.Format> queryResult = new QueryResult("Formats", 0, formats.size(), formats.size(), "", "", formats);
+        return createOkResponse(queryResult);
     }
 
     @POST
@@ -607,7 +625,8 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/{fileId}/index")
     @ApiOperation(value = "Index variant files", position = 14, response = QueryResponse.class)
     public Response index(@ApiParam("Comma separated list of file ids (files or directories)") @PathParam(value = "fileId") String fileIdStr,
-                          @ApiParam("Study id") @QueryParam("studyId") String studyId,
+                          // Study id is not ingested by the analysis index command line. No longer needed.
+//                          @ApiParam("Study id") @QueryParam("studyId") String studyId,
                           @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr,
                           @ApiParam("Boolean indicating that only the transform step will be run") @DefaultValue("false") @QueryParam("transform") boolean transform,
                           @ApiParam("Boolean indicating that only the load step will be run") @DefaultValue("false") @QueryParam("load") boolean load,
@@ -618,7 +637,7 @@ public class FileWSServer extends OpenCGAWSServer {
                           @ApiParam("Overwrite annotations already present in variants") @DefaultValue("false") @QueryParam("overwrite") boolean overwriteAnnotations) {
 
         Map<String, String> params = new LinkedHashMap<>();
-        addParamIfNotNull(params, "studyId", studyId);
+//        addParamIfNotNull(params, "studyId", studyId);
         addParamIfNotNull(params, "outdir", outDirStr);
         addParamIfTrue(params, "transform", transform);
         addParamIfTrue(params, "load", load);
@@ -883,7 +902,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+//            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
     public Response getVariants(@ApiParam(value = "", required = true) @PathParam("fileId") String fileIdCsv,
                                 @ApiParam(value = "List of variant ids") @QueryParam("ids") String ids,
@@ -928,6 +947,7 @@ public class FileWSServer extends OpenCGAWSServer {
 //                                @ApiParam(value = "Limit the number of returned variants. Max value: " + VariantFetcher.LIMIT_MAX) @DefaultValue(""+VariantFetcher.LIMIT_DEFAULT) @QueryParam("limit") int limit,
 //                                @ApiParam(value = "Skip some number of variants.") @QueryParam("skip") int skip,
                                 @ApiParam(value = "Returns the samples metadata group by studyId, instead of the variants", required = false) @QueryParam("samplesMetadata") boolean samplesMetadata,
+                                @ApiParam(value = "Count results", required = false) @QueryParam("count") boolean count,
                                 @ApiParam(value = "Sort the results", required = false) @QueryParam("sort") boolean sort,
                                 @ApiParam(value = "Group variants by: [ct, gene, ensemblGene]", required = false) @DefaultValue("") @QueryParam("groupBy") String groupBy,
                                 @ApiParam(value = "Calculate histogram. Requires one region.", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
@@ -939,9 +959,14 @@ public class FileWSServer extends OpenCGAWSServer {
             VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
             List<String> fileIds = convertPathList(fileIdCsv, sessionId);
 //            String[] splitFileId = fileIdCsv.split(",");
-            for (String fileId : fileIds) {
+            for (String fileIdStr : fileIds) {
                 QueryResult result;
-                result = variantFetcher.getVariantsPerFile(region, histogram, groupBy, interval, fileId, sessionId, queryOptions);
+                if (count) {
+                    long fileId = catalogManager.getFileId(fileIdStr, sessionId);
+                    result = variantFetcher.countByFile(fileId, queryOptions, sessionId);
+                } else {
+                    result = variantFetcher.getVariantsPerFile(region, histogram, groupBy, interval, fileIdStr, sessionId, queryOptions);
+                }
                 results.add(result);
             }
         } catch (Exception e) {
@@ -1034,8 +1059,8 @@ public class FileWSServer extends OpenCGAWSServer {
 
     public static class UpdateFile {
         public String name;
-        //        public File.Format format;
-//        public File.Bioformat bioformat;
+        public File.Format format;
+        public File.Bioformat bioformat;
 //        public String path;
 //        public String ownerId;
 //        public String creationDate;
@@ -1045,7 +1070,7 @@ public class FileWSServer extends OpenCGAWSServer {
 //        public int experimentId;
         public List<Integer> sampleIds;
         public Integer jobId;
-        //        public Map<String, Object> stats;
+        public Map<String, Object> stats;
         public Map<String, Object> attributes;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 OpenCB
+ * Copyright 2015-2016 OpenCB
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -152,6 +152,8 @@ public class MonitorService {
     public void stop() throws Exception {
         executionDaemon.setExit(true);
         fileDaemon.setExit(true);
+        indexDaemon.setExit(true);
+        executionDaemon.setExit(true);
 
         // By setting exit to true the monitor thread will close the Jetty server
         exit = true;
