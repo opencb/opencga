@@ -72,7 +72,7 @@ public class ArchiveResultToVariantConverter {
 
     public List<Variant> convert(Result value, boolean resolveConflict) throws InvalidProtocolBufferException {
         return Arrays.stream(value.rawCells()).filter(c -> Bytes.equals(CellUtil.cloneFamily(c), columnFamily))
-                .filter(c -> Bytes.startsWith(CellUtil.cloneQualifier(c), GenomeHelper.VARIANT_COLUMN_B_PREFIX))
+                .filter(c -> !Bytes.startsWith(CellUtil.cloneQualifier(c), GenomeHelper.VARIANT_COLUMN_B_PREFIX))
                 .flatMap(c -> {
                     try {
                         List<Variant> variants = archiveCellToVariants(
