@@ -77,7 +77,7 @@ public class ArchiveDriver extends Configured implements Tool {
 
     public static final int DEFAULT_CHUNK_SIZE = 1000;
 
-    private final Logger logger = LoggerFactory.getLogger(ArchiveDriver.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ArchiveDriver.class);
 
     public ArchiveDriver() {
     }
@@ -99,9 +99,9 @@ public class ArchiveDriver extends Configured implements Tool {
 
 /*  SERVER details  */
         if (createArchiveTableIfNeeded(genomeHelper, tableName)) {
-            logger.info(String.format("Create table '%s' in hbase!", tableName));
+            LOGGER.info(String.format("Create table '%s' in hbase!", tableName));
         } else {
-            logger.info(String.format("Table '%s' exists in hbase!", tableName));
+            LOGGER.info(String.format("Table '%s' exists in hbase!", tableName));
         }
 
         // add metadata config as string
@@ -192,7 +192,7 @@ public class ArchiveDriver extends Configured implements Tool {
                 }
                 variantFileMetadata = iter.next();
                 if (iter.hasNext()) {
-                    logger.warn(String.format("More than 1 entry found in metadata file %s", inputMetaFile));
+                    LOGGER.warn(String.format("More than 1 entry found in metadata file %s", inputMetaFile));
                 }
             }
         }
@@ -224,7 +224,12 @@ public class ArchiveDriver extends Configured implements Tool {
     }
 
     public static void main(String[] args) throws Exception {
-        System.exit(privateMain(args, null));
+        try {
+            System.exit(privateMain(args, null));
+        } catch (Exception e) {
+            LOGGER.error("Error: ", e);
+            System.exit(1);
+        }
     }
 
     public static int privateMain(String[] args, Configuration conf) throws Exception {

@@ -18,6 +18,8 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -26,6 +28,7 @@ import org.apache.hadoop.hbase.mapreduce.TableMapper;
 public class VariantTableDeletionDriver extends AbstractVariantTableDriver {
 
     public static final String JOB_OPERATION_NAME = "Delete";
+    protected static final Logger LOGGER = LoggerFactory.getLogger(VariantTableDeletionDriver.class);
 
     public VariantTableDeletionDriver() { /* nothing */}
 
@@ -44,7 +47,12 @@ public class VariantTableDeletionDriver extends AbstractVariantTableDriver {
     }
 
     public static void main(String[] args) throws Exception {
-        System.exit(privateMain(args, null));
+        try {
+            System.exit(privateMain(args, null));
+        } catch (Exception e) {
+            LOGGER.error("Error: ", e);
+            System.exit(1);
+        }
     }
 
     public static int privateMain(String[] args, Configuration conf) throws Exception {

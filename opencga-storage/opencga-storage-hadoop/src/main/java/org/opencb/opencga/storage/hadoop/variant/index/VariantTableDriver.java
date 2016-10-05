@@ -71,8 +71,8 @@ public class VariantTableDriver extends AbstractVariantTableDriver {
             System.exit(privateMain(args, null, new VariantTableDriver()));
         } catch (Exception e) {
             LOG.error("Problems", e);
-            System.err.println("");
             e.printStackTrace();
+            System.exit(1);
         }
     }
 
