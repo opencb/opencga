@@ -310,16 +310,16 @@ public class VariantFileIndexer extends AbstractFileIndexer {
     protected List<File> copyResults(Path tmpOutdirPath, long catalogPathOutDir, String sessionId) throws CatalogException, IOException {
         List<File> files = super.copyResults(tmpOutdirPath, catalogPathOutDir, sessionId);
 
-        List<File> avroFiles = new ArrayList<>(files.size());
-        for (File file : files) {
-            if (File.Format.AVRO.equals(file.getFormat())) {
-                avroFiles.add(file);
-            }
-        }
+//        List<File> avroFiles = new ArrayList<>(files.size());
+//        for (File file : files) {
+//            if (File.Format.AVRO.equals(file.getFormat())) {
+//                avroFiles.add(file);
+//            }
+//        }
 
-        logger.info("{} avro files found", avroFiles.size());
-        if (avroFiles.size() > 0) {
-            fileManager.matchUpVariantFiles(avroFiles, sessionId);
+        logger.info("{} files found", files.size());
+        if (files.size() > 0) {
+            fileManager.matchUpVariantFiles(files, sessionId);
         }
 //
 //        if (!ioManager.exists(tmpOutdirPath.toUri())) {
