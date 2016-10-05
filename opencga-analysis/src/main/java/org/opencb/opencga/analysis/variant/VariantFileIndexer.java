@@ -278,6 +278,10 @@ public class VariantFileIndexer extends AbstractFileIndexer {
             logger.error("Error executing " + step, e);
             storageETLResults = Collections.emptyList();
             exception = e;
+        } catch (RuntimeException e) {
+            logger.error("Error executing " + step, e);
+            storageETLResults = Collections.emptyList();
+            exception = new StorageManagerException("Error executing " + step, e);
         }
 
 //        logger.debug("Writing storageETLResults to file {}", outdir.resolve("storageETLresults"));
