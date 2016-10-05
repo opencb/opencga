@@ -231,19 +231,44 @@ public class FileManager extends AbstractManager implements IFileManager {
         return getId(studyIds, fileName);
     }
 
+    //FIXME: This should use org.opencb.opencga.storage.core.variant.io.VariantReaderUtils
+    private String getOriginalFile(String name) {
+        if (name.endsWith(".variants.avro.gz")
+                || name.endsWith(".variants.proto.gz")
+                || name.endsWith(".variants.json.gz")) {
+            int idx = name.lastIndexOf(".variants.");
+            return name.substring(0, idx);
+        } else {
+            return null;
+        }
+    }
+
+    private boolean isTransformedFile(String name) {
+        return getOriginalFile(name) != null;
+    }
+
+    private String getMetaFile(String path) {
+        String file = getOriginalFile(path);
+        if (file != null) {
+            return file + ".file.json.gz";
+        } else {
+            return null;
+        }
+    }
+
     @Override
-    public void matchUpVariantFiles(List<File> avroFiles, String sessionId) throws CatalogException {
+    public void matchUpVariantFiles(List<File> transformedFiles, String sessionId) throws CatalogException {
         String userId = catalogManager.getUserManager().getId(sessionId);
-        for (File avroFile : avroFiles) {
-            authorizationManager.checkFilePermission(avroFile.getId(), userId, FileAclEntry.FilePermissions.UPDATE);
-            if (!File.Format.AVRO.equals(avroFile.getFormat())) {
+        for (File transformedFile : transformedFiles) {
+            authorizationManager.checkFilePermission(transformedFile.getId(), userId, FileAclEntry.FilePermissions.UPDATE);
+            String variantPathName = getOriginalFile(transformedFile.getPath());
+            if (variantPathName == null) {
                 // Skip the file.
-                logger.warn("The file {} is not a proper AVRO file", avroFile.getName());
+                logger.warn("The file {} is not a variant transformed file", transformedFile.getName());
                 continue;
             }
 
-            Long studyId = getStudyId(avroFile.getId());
-            String variantPathName = avroFile.getPath().replace(".variants.avro.gz", "");
+            Long studyId = getStudyId(transformedFile.getId());
             logger.info("Looking for vcf file in path {}", variantPathName);
             Query query = new Query()
                     .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
@@ -258,7 +283,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
             if (fileQueryResult.getNumResults() == 0) {
                 // Search in the whole study
-                String variantFileName = avroFile.getName().replace(".variants.avro.gz", "");
+                String variantFileName = getOriginalFile(transformedFile.getName());
                 logger.info("Looking for vcf file by name {}", variantFileName);
                 query = new Query()
                         .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
@@ -274,13 +299,13 @@ public class FileManager extends AbstractManager implements IFileManager {
 
             if (fileQueryResult.getNumResults() == 0 || fileQueryResult.getNumResults() > 1) {
                 // VCF file not found
-                logger.warn("The vcf file corresponding to the file " + avroFile.getName() + " could not be found");
+                logger.warn("The vcf file corresponding to the file " + transformedFile.getName() + " could not be found");
                 continue;
             }
             File vcf = fileQueryResult.first();
 
-            // Look for the json file. It should be in the same directory where the avro file is.
-            String jsonPathName = avroFile.getPath().replace(".variants.avro.gz", ".file.json.gz");
+            // Look for the json file. It should be in the same directory where the transformed file is.
+            String jsonPathName = getMetaFile(transformedFile.getPath());
             query = new Query()
                     .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                     .append(FileDBAdaptor.QueryParams.PATH.key(), jsonPathName)
@@ -288,7 +313,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
             if (fileQueryResult.getNumResults() != 1) {
                 // Skip. This should not ever happen
-                logger.warn("The json file corresponding to the file " + avroFile.getName() + " could not be found");
+                logger.warn("The json file corresponding to the file " + transformedFile.getName() + " could not be found");
                 continue;
             }
             File json = fileQueryResult.first();
@@ -306,22 +331,22 @@ public class FileManager extends AbstractManager implements IFileManager {
             fileDBAdaptor.update(json.getId(), params);
 //            update(json.getId(), params, new QueryOptions(), sessionId);
 
-            // Update avro file
-            logger.debug("Updating avro relation");
-            relatedFiles = avroFile.getRelatedFiles();
+            // Update transformed file
+            logger.debug("Updating transformed relation");
+            relatedFiles = transformedFile.getRelatedFiles();
             if (relatedFiles == null) {
                 relatedFiles = new ArrayList<>();
             }
             relatedFiles.add(new File.RelatedFile(vcf.getId(), File.RelatedFile.Relation.PRODUCED_FROM));
             params = new ObjectMap(FileDBAdaptor.QueryParams.RELATED_FILES.key(), relatedFiles);
-            fileDBAdaptor.update(avroFile.getId(), params);
-//            update(avroFile.getId(), params, new QueryOptions(), sessionId);
+            fileDBAdaptor.update(transformedFile.getId(), params);
+//            update(transformedFile.getId(), params, new QueryOptions(), sessionId);
 
             // Update vcf file
             logger.debug("Updating vcf relation");
             FileIndex index = vcf.getIndex();
             if (index.getTransformedFile() == null) {
-                index.setTransformedFile(new FileIndex.TransformedFile(avroFile.getId(), json.getId()));
+                index.setTransformedFile(new FileIndex.TransformedFile(transformedFile.getId(), json.getId()));
             }
             String status = vcf.getIndex().getStatus().getName();
             if (FileIndex.IndexStatus.NONE.equals(status)) {
@@ -330,7 +355,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             }
             params = new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), index);
             fileDBAdaptor.update(vcf.getId(), params);
-//            FileIndex.TransformedFile transformedFile = new FileIndex.TransformedFile(avroFile.getId(), json.getId());
+//            FileIndex.TransformedFile transformedFile = new FileIndex.TransformedFile(transformedFile.getId(), json.getId());
 //            params = new ObjectMap()
 //                    .append(CatalogFileDBAdaptor.QueryParams.INDEX_TRANSFORMED_FILE.key(), transformedFile)
 //                    .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.TRANSFORMED);
@@ -1638,9 +1663,9 @@ public class FileManager extends AbstractManager implements IFileManager {
                         new QueryOptions(), sessionId, false);
                 queryResult.setResult(Arrays.asList(file));
 
-                // If it is an avro file, we will try to link it with the correspondent original file
+                // If it is a transformed file, we will try to link it with the correspondent original file
                 try {
-                    if (File.Format.AVRO.equals(file.getFormat())) {
+                    if (isTransformedFile(file.getName())) {
                         matchUpVariantFiles(Arrays.asList(file), sessionId);
                     }
                 } catch (CatalogException e) {
@@ -1653,8 +1678,8 @@ public class FileManager extends AbstractManager implements IFileManager {
                         + "was found in the same path.");
             }
         } else {
-            // This list will contain the list of avro files detected during the link
-            List<File> avroFiles = new ArrayList<>();
+            // This list will contain the list of transformed files detected during the link
+            List<File> transformedFiles = new ArrayList<>();
 
             // We remove the / at the end for replacement purposes in the walkFileTree
             String finalExternalPathDestinyStr = externalPathDestinyStr.substring(0, externalPathDestinyStr.length() - 1);
@@ -1721,9 +1746,9 @@ public class FileManager extends AbstractManager implements IFileManager {
                             QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, studyId, new QueryOptions());
                             File file = fileMetadataReader.setMetadataInformation(queryResult.first(), queryResult.first().getUri(),
                                     new QueryOptions(), sessionId, false);
-                            if (File.Format.AVRO.equals(file.getFormat())) {
-                                logger.info("Detected avro file {}", file.getPath());
-                                avroFiles.add(file);
+                            if (isTransformedFile(file.getName())) {
+                                logger.info("Detected transformed file {}", file.getPath());
+                                transformedFiles.add(file);
                             }
                         } else {
                             throw new CatalogException("Cannot link the file " + filePath.getFileName().toString()
@@ -1775,10 +1800,10 @@ public class FileManager extends AbstractManager implements IFileManager {
                 }
             });
 
-            // Try to link avro files with their corresponding original files if any
+            // Try to link transformed files with their corresponding original files if any
             try {
-                if (avroFiles.size() > 0) {
-                    matchUpVariantFiles(avroFiles, sessionId);
+                if (transformedFiles.size() > 0) {
+                    matchUpVariantFiles(transformedFiles, sessionId);
                 }
             } catch (CatalogException e) {
                 logger.warn("Matching avro to variant file: {}", e.getMessage());
