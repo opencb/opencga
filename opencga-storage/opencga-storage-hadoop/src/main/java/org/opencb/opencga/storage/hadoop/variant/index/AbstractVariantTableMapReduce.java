@@ -232,7 +232,6 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
 
         for (VariantTableStudyRow variant : variants) {
             Put put = variant.createPut(getHelper());
-
             if (put != null) {
                 context.write(new ImmutableBytesWritable(getHelper().getOutputTable()), put);
                 context.getCounter(COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(1);
@@ -242,6 +241,11 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
 
     protected void updateArchiveTable(byte[] rowKey, Context context, List<VariantTableStudyRow> tableStudyRows)
             throws IOException, InterruptedException {
+        if (tableStudyRows.isEmpty()) {
+            getLog().info("No new data - tableStudyRows emtpy");
+            return;
+        }
+        getLog().info("Store variants: " + tableStudyRows.size());
         Put put = new Put(rowKey);
         for (VariantTableStudyRow row : tableStudyRows) {
             byte[] value = VariantTableStudyRow.toProto(Collections.singletonList(row), timestamp).toByteArray();

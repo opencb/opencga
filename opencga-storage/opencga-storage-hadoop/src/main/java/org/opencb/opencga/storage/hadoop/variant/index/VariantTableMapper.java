@@ -83,9 +83,10 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
     protected void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException {
         List<Cell> variantCells = GenomeHelper.getVariantColumns(ctx.getValue().rawCells());
         if (!variantCells.isEmpty()) {
-            getLog().info("Column _V: found " + variantCells.size() + " columns");
             byte[] data = CellUtil.cloneValue(variantCells.get(0));
             VariantTableStudyRowsProto proto = VariantTableStudyRowsProto.parseFrom(data);
+            getLog().info("Column _V: found " + variantCells.size()
+                    + " columns - check timestamp " + timestamp + " with " + proto.getTimestamp());
             if (proto.getTimestamp() == timestamp) {
                 ctx.context.getCounter(COUNTER_GROUP_NAME, "ALREADY_LOADED_SLICE").increment(1);
                 for (Cell cell : variantCells) {
@@ -117,6 +118,10 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
                 getLog().debug("Loaded variant from archive table: " + tmpVar.toJson());
             }
         }
+
+        getLog().info("Loaded current: " + analysisVar.size()
+                + "; archive: " + archiveVar.size()
+                + "; target: " + archiveTarget.size());
         ctx.context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ARCHIVE_TARGET").increment(archiveTarget.size());
         endTime("4 Filter archive variants by target");
 
