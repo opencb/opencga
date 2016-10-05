@@ -113,6 +113,9 @@ public class VariantSqlQueryParser {
             sb.append(" LIMIT ").append(options.getInt(QueryOptions.LIMIT));
         }
 
+//        if (options.getInt(QueryOptions.SKIP) > 0) {
+//            sb.append(" OFFSET ").append(options.getInt(QueryOptions.SKIP));
+//        }
 
         return sb.toString();
     }

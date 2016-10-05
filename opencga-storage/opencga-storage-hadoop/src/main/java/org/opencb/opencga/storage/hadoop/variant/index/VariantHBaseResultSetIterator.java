@@ -61,6 +61,14 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
         hasNext = fetch(resultSet::next);
     }
 
+    public void skip(int skip) throws SQLException {
+        if (skip > 0) {
+            for (int count = 0; count < skip && hasNext; count++) {
+                hasNext = fetch(resultSet::next);
+            }
+        }
+    }
+
     @Override
     public void close() throws SQLException {
         logger.debug("Close variant iterator. Fetch = {}ms, Convert = {}ms",
