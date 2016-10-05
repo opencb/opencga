@@ -8,6 +8,7 @@ import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.client.TableConfiguration;
+import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.mapreduce.MultiTableOutputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
@@ -234,12 +235,14 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
             scan.setAttribute(Scan.HINT_LOOKAHEAD, Bytes.toBytes(lookAhead));
         }
         // specify return columns (file IDs)
+        FilterList filter = new FilterList(FilterList.Operator.MUST_PASS_ONE);
         for (String fileIdStr : fileArr) {
             int id = Integer.parseInt(fileIdStr);
-            getLog().info("Add file to scan filter: " + fileIdStr);
-            scan.addColumn(gh.getColumnFamily(), Bytes.toBytes(ArchiveHelper.getColumnName(id)));
+            filter.addFilter(new ColumnRangeFilter(Bytes.toBytes(ArchiveHelper.getColumnName(id)), true,
+                    Bytes.toBytes(ArchiveHelper.getColumnName(id)), true));
         }
-        scan.addColumn(gh.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
+        filter.addFilter(new ColumnPrefixFilter(GenomeHelper.VARIANT_COLUMN_B_PREFIX));
+        scan.setFilter(filter);
         return scan;
     }
 

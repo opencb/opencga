@@ -4,6 +4,7 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.NamespaceDescriptor;
 import org.apache.hadoop.hbase.TableName;
@@ -77,14 +78,19 @@ public class VariantHbaseTestUtils {
         GenomeHelper helper = dbAdaptor.getGenomeHelper();
         helper.getHBaseManager().act(HadoopVariantStorageManager.getArchiveTableName(studyConfiguration.getStudyId(), dbAdaptor.getConfiguration()), table -> {
             for (Result result : table.getScanner(helper.getColumnFamily())) {
-                try {
-                    byte[] value = result.getValue(helper.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
-                    if (value != null) {
-                        out.println(VariantTableStudyRowsProto.parseFrom(value));
+                GenomeHelper.getVariantColumns(result.rawCells()).stream()
+                        .filter(c -> Bytes.startsWith(CellUtil.cloneFamily(c), helper.getColumnFamily()))
+                        .forEach(c -> {
+                    try {
+                        byte[] value = CellUtil.cloneValue(c);
+                        if (value != null) {
+                            out.println(VariantTableStudyRowsProto.parseFrom(value));
+                        }
+                    } catch (Exception e) {
+                        out.println("e.getMessage() = " + e.getMessage());
                     }
-                } catch (Exception e) {
-                    out.println("e.getMessage() = " + e.getMessage());
-                }
+                });
+
             }
             return 0;
         });

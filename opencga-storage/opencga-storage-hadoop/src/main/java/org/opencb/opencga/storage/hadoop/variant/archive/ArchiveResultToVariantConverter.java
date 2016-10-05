@@ -4,7 +4,9 @@
 package org.opencb.opencga.storage.hadoop.variant.archive;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
@@ -15,7 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 /**
@@ -30,7 +31,7 @@ public class ArchiveResultToVariantConverter {
 
     public ArchiveResultToVariantConverter(Map<Integer, VcfMeta> metaIdx, byte[] columnFamily) {
         this.columnFamily = columnFamily;
-        this.metaIdx = new HashMap<Integer, VcfMeta>(metaIdx);
+        this.metaIdx = new HashMap<>(metaIdx);
     }
 
     public List<Variant> convert(Result value, Long start, Long end, boolean resolveConflict) throws InvalidProtocolBufferException {
@@ -54,25 +55,26 @@ public class ArchiveResultToVariantConverter {
     }
 
     public List<Variant> convert(Result value, boolean resolveConflict) throws InvalidProtocolBufferException {
-        List<Variant> variantList = new ArrayList<>();
-        NavigableMap<byte[], byte[]> fm = value.getFamilyMap(columnFamily);
-        for (Entry<byte[], byte[]> entry : fm.entrySet()) {
-            if (Arrays.equals(entry.getKey(), GenomeHelper.VARIANT_COLUMN_B)) {
-                //Ignore Variants column. It does not contain any VcfSlice information
-                continue;
-            }
-            // for each FILE (column in HBase
-            List<Variant> varList = archiveCellToVariants(entry.getKey(), entry.getValue());
-            if (resolveConflict) {
-                varList = resolveConflicts(varList);
-            }
-            if (LOG.isDebugEnabled()) {
-                LOG.debug(String.format("For Column %s found %s entries",
-                        ArchiveHelper.getFileIdFromColumnName(entry.getKey()), varList.size()));
-            }
-            variantList.addAll(varList);
-        }
-        return variantList;
+        return Arrays.stream(value.rawCells()).filter(c -> Bytes.equals(CellUtil.cloneFamily(c), columnFamily))
+                .filter(c -> Bytes.startsWith(CellUtil.cloneQualifier(c), GenomeHelper.VARIANT_COLUMN_B_PREFIX))
+                .flatMap(c -> {
+                    try {
+                        List<Variant> variants = archiveCellToVariants(
+                                CellUtil.cloneQualifier(c),
+                                CellUtil.cloneValue(c));
+                        if (resolveConflict) {
+                            variants = resolveConflicts(variants);
+                        }
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug(String.format("For Column %s found %s entries",
+                                    ArchiveHelper.getFileIdFromColumnName(CellUtil.cloneQualifier(c)),
+                                    c.getValueLength()));
+                        }
+                        return variants.stream();
+                    } catch (InvalidProtocolBufferException e) {
+                        throw new IllegalStateException(e);
+                    }
+                }).collect(Collectors.toList());
     }
 
     private List<Variant> archiveCellToVariants(byte[] key, byte[] value) throws InvalidProtocolBufferException {

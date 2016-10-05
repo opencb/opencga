@@ -65,25 +65,26 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
 
     @Override
     protected void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException {
-        List<Cell> list = ctx.getValue().getColumnCells(getHelper().getColumnFamily(), GenomeHelper
-                .VARIANT_COLUMN_B);
-        Cell latestCell = ctx.value.getColumnLatestCell(getHelper().getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
-        if (latestCell != null) {
-            getLog().info("Column _V: found " + list.size() + " versions.");
-            byte[] data = CellUtil.cloneValue(latestCell);
+        List<Cell> variantCells = GenomeHelper.getVariantColumns(ctx.getValue().rawCells());
+        if (!variantCells.isEmpty()) {
+            getLog().info("Column _V: found " + variantCells.size() + " columns");
+            byte[] data = CellUtil.cloneValue(variantCells.get(0));
             VariantTableStudyRowsProto proto = VariantTableStudyRowsProto.parseFrom(data);
             if (proto.getTimestamp() == timestamp) {
-                List<VariantTableStudyRow> variants = parseVariantStudyRowsFromArchive(ctx.getChromosome(), proto);
                 ctx.context.getCounter(COUNTER_GROUP_NAME, "ALREADY_LOADED_SLICE").increment(1);
-                ctx.context.getCounter(COUNTER_GROUP_NAME, "ALREADY_LOADED_ROWS").increment(variants.size());
-                updateOutputTable(ctx.context, variants);
-                endTime("X Unpack, convert and write ANALYSIS variants (" + GenomeHelper.VARIANT_COLUMN + ")");
+                for (Cell cell : variantCells) {
+                    VariantTableStudyRowsProto rows = VariantTableStudyRowsProto.parseFrom(CellUtil.cloneValue(cell));
+                    List<VariantTableStudyRow> variants = parseVariantStudyRowsFromArchive(ctx.getChromosome(), rows);
+                    ctx.context.getCounter(COUNTER_GROUP_NAME, "ALREADY_LOADED_ROWS").increment(variants.size());
+                    updateOutputTable(ctx.context, variants);
+                }
+                endTime("X Unpack, convert and write ANALYSIS variants (" + GenomeHelper.VARIANT_COLUMN_PREFIX + ")");
                 return;
             }
         }
-        List<Variant> analysisVar = parseCurrentVariantsRegion(ctx.getValue(), ctx.getChromosome());
+        List<Variant> analysisVar = parseCurrentVariantsRegion(variantCells, ctx.getChromosome());
         ctx.getContext().getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ANALYSIS").increment(analysisVar.size());
-        endTime("2 Unpack and convert input ANALYSIS variants (" + GenomeHelper.VARIANT_COLUMN + ")");
+        endTime("2 Unpack and convert input ANALYSIS variants (" + GenomeHelper.VARIANT_COLUMN_PREFIX + ")");
 
         // Archive: unpack Archive data (selection only
         List<Variant> archiveVar = getResultConverter().convert(ctx.value, ctx.startPos, ctx.nextStartPos, true);

@@ -6,6 +6,7 @@ import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.filter.PrefixFilter;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -534,13 +535,15 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
 
         hm.act(tableName, table -> {
             Scan scan = new Scan();
-            scan.addColumn(helper.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
+            scan.setFilter(new PrefixFilter(GenomeHelper.VARIANT_COLUMN_B_PREFIX));
             ResultScanner resultScanner = table.getScanner(scan);
             for (Result result : resultScanner) {
-                Cell cell = result.getColumnLatestCell(helper.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
-                assertNotNull(cell);
-                VariantTableStudyRowsProto proto = VariantTableStudyRowsProto.parseFrom(CellUtil.cloneValue(cell));
-                assertEquals(ts, proto.getTimestamp());
+                List<Cell> cells = GenomeHelper.getVariantColumns(result.rawCells());
+                assertNotEquals(0, cells.size());
+                for (Cell cell : cells) {
+                    VariantTableStudyRowsProto proto = VariantTableStudyRowsProto.parseFrom(CellUtil.cloneValue(cell));
+                    assertEquals(ts, proto.getTimestamp());
+                }
             }
             resultScanner.close();
             return null;
