@@ -128,7 +128,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
                 vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
             }
 
-            assertEquals(dbAdaptor.count(new Query(ANNOTATION_EXISTS.key(), true)).first(), dbAdaptor.count(new Query()).first());
+            if (params.getBoolean(VariantStorageManager.Options.ANNOTATE.key())) {
+                assertEquals(dbAdaptor.count(new Query(ANNOTATION_EXISTS.key(), true)).first(), dbAdaptor.count(new Query()).first());
+            }
         }
         allVariants = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.SORT, true));
         options = new QueryOptions();
@@ -147,6 +149,25 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     public void testGetAllVariants() {
         long numResults = dbAdaptor.count(null).first();
         assertEquals(NUM_VARIANTS, numResults);
+    }
+
+    @Test
+    public void testGetAllVariants_limit_skip() {
+        int numVariants = allVariants.getResult().size();
+        for (int batchSize : new int[]{5, 50, 100, 1000}) {
+            List<Variant> variants = new ArrayList<>();
+            Set<String> variantStr = new HashSet<>();
+            for (int i = 0; i < numVariants / batchSize + 1; i++) {
+                QueryResult<Variant> result = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.LIMIT, batchSize).append(QueryOptions.SKIP, i * batchSize));
+                variants.addAll(result.getResult());
+                for (Variant variant : result.getResult()) {
+                    variantStr.add(variant.toString());
+                }
+            }
+            assertEquals(numVariants, variants.size());
+            assertEquals(variantStr.size(), variants.size());
+        }
+
     }
 
     @Test
@@ -928,6 +949,27 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             assertEquals("1", variant.getChromosome());
             assertTrue(lastStart <= variant.getStart());
             lastStart = variant.getStart();
+        }
+    }
+
+    @Test
+    public void testGetAllVariants_genes() {
+        Query query = new Query(GENE.key(), "FLG-AS1");
+        QueryResult<Variant> result = dbAdaptor.get(query, new QueryOptions());
+
+        assertThat(result, everyResult(allVariants, hasAnnotation(hasGenes(Collections.singletonList("FLG-AS1")))));
+
+        for (Variant variant : result.getResult()) {
+            System.out.println("variant = " + variant);
+        }
+
+        query = new Query(GENE.key(), "WRONG_GENE");
+        result = dbAdaptor.get(query, new QueryOptions());
+
+        assertThat(result, everyResult(allVariants, hasAnnotation(hasGenes(Collections.singletonList("WRONG_GENE")))));
+        assertThat(result, numResults(is(0)));
+        for (Variant variant : result.getResult()) {
+            System.out.println("variant = " + variant);
         }
     }
 

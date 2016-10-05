@@ -380,6 +380,14 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 throw new RuntimeException(e);
             }
         } else {
+
+            int limit = options.getInt(QueryOptions.LIMIT, -1);
+            int skip = options.getInt(QueryOptions.SKIP, -1);
+            // Increment the limit with the skip to do a client side skip
+            if (limit > 0 && skip > 0) {
+                options = new QueryOptions(options);
+                options.put(QueryOptions.LIMIT, limit + skip);
+            }
             logger.debug("Table name = " + variantTable);
             String sql = queryParser.parse(query, options);
             logger.info(sql);
@@ -396,7 +404,12 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 Statement statement = getJdbcConnection().createStatement();
                 ResultSet resultSet = statement.executeQuery(sql);
                 List<String> returnedSamples = getDBAdaptorUtils().getReturnedSamples(query, options);
-                return new VariantHBaseResultSetIterator(resultSet, genomeHelper, getStudyConfigurationManager(), options, returnedSamples);
+                VariantHBaseResultSetIterator iterator = new VariantHBaseResultSetIterator(
+                        resultSet, genomeHelper, getStudyConfigurationManager(), options, returnedSamples);
+
+                // Client side skip!
+                iterator.skip(skip);
+                return iterator;
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }

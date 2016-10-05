@@ -193,7 +193,8 @@ public class HBaseCredentials implements OpenCGACredentials {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        String zooPath = StringUtils.equals(DEFAULT_ZOOKEEPER_ZNODE_PARENT, getZookeeperZnode()) ? null : getZookeeperZnode();
+//        String zooPath = StringUtils.equals(DEFAULT_ZOOKEEPER_ZNODE_PARENT, getZookeeperZnode()) ? null : getZookeeperZnode();
+        String zooPath = getZookeeperZnode();
         if (zookeeperQuorumList.isEmpty()) {
             sb.append(DEFAULT_HOST);
         } else {
@@ -201,7 +202,10 @@ public class HBaseCredentials implements OpenCGACredentials {
                 if (sb.length() > 0) {
                     sb.append(',');
                 }
-                sb.append("hbase://").append(zookeeperQuorum).append(zooPath);
+                sb.append("hbase://").append(zookeeperQuorum);
+                if (zooPath != null) {
+                    sb.append(zooPath);
+                }
             }
         }
         return sb.toString();

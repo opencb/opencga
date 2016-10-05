@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Gene;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.cellbase.core.api.GeneDBAdaptor;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -300,9 +301,21 @@ public class VariantDBAdaptorUtils {
         return cohortId;
     }
 
+    public Region getGeneRegion(String geneStr) {
+        QueryOptions params = new QueryOptions(QueryOptions.INCLUDE, "name,chromosome,start,end");
+        try {
+            Gene gene = adaptor.getCellBaseClient().getGeneClient().get(Collections.singletonList(geneStr), params).firstResult();
+            if (gene != null) {
+                return new Region(gene.getChromosome(), gene.getStart(), gene.getEnd());
+            } else {
+                return null;
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
 
     public Set<String> getGenesByGo(List<String> goValues) {
-        System.out.println("goValues = " + goValues);
         Set<String> genes = new HashSet<>();
         QueryOptions params = new QueryOptions(QueryOptions.INCLUDE, "name,chromosome,start,end");
         try {

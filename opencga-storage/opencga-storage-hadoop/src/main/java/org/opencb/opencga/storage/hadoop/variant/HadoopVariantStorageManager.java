@@ -450,9 +450,11 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
                     zookeeperPath = uri.getPath();
                 }
             }
-            HBaseCredentials credentials = new HBaseCredentials(server, table, user, pass, port);
+            HBaseCredentials credentials;
             if (!StringUtils.isBlank(zookeeperPath)) {
                 credentials = new HBaseCredentials(server, table, user, pass, port, zookeeperPath);
+            } else {
+                credentials = new HBaseCredentials(server, table, user, pass, port);
             }
             return credentials;
         } catch (URISyntaxException e) {
