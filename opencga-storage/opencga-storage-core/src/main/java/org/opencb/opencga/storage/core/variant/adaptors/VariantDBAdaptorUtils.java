@@ -51,6 +51,7 @@ public class VariantDBAdaptorUtils {
     public static final String STUDIES_FIELD = "studies";
     public static final String STATS_FIELD = "stats";
     public static final String ANNOTATION_FIELD = "annotation";
+    private static final int GENE_EXTRA_REGION = 5000;
 
     static {
         Map<String, String> map =  new HashMap<>();
@@ -306,7 +307,9 @@ public class VariantDBAdaptorUtils {
         try {
             Gene gene = adaptor.getCellBaseClient().getGeneClient().get(Collections.singletonList(geneStr), params).firstResult();
             if (gene != null) {
-                return new Region(gene.getChromosome(), gene.getStart(), gene.getEnd());
+                int start = Math.max(0, gene.getStart() - GENE_EXTRA_REGION);
+                int end = gene.getEnd() + GENE_EXTRA_REGION;
+                return new Region(gene.getChromosome(), start, end);
             } else {
                 return null;
             }
