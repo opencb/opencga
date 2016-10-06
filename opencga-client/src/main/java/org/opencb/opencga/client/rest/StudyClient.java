@@ -142,6 +142,10 @@ public class StudyClient extends AbstractParentClient<Study, StudyAclEntry> {
         return execute(STUDY_URL, studyId, "scanFiles", options, GET, Object.class);
     }
 
+    public QueryResponse resyncFiles(String studyId, QueryOptions options) throws CatalogException, IOException {
+        return execute(STUDY_URL, studyId, "resyncFiles", options, GET, Object.class);
+    }
+
     public QueryResponse<ObjectMap> createGroup(String studyId, String groupId, String users, QueryOptions options)
             throws CatalogException, IOException {
         ObjectMap params = new ObjectMap(options);

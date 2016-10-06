@@ -365,9 +365,9 @@
             changeView: function(e) {
                 e.preventDefault(); // prevents the hash change to "#" and allows to manipulate the hash fragment as needed
                 $('.content').hide(); // hides all content divs
-                if (typeof e.srcElement.attributes.href !== "undefined") {
-                    $(e.srcElement.attributes.href.value).show(); // get the href and use it find which div to show
-                    this.tool = e.srcElement.attributes.href.value;
+                if (typeof e.target.attributes.href !== "undefined") {
+                    $(e.target.attributes.href.value).show(); // get the href and use it find which div to show
+                    this.tool = e.target.attributes.href.value;
                 } else {
                     this.tool = "#home";
                     $("#home").show(); // get the href and use it find which div to show
@@ -444,7 +444,7 @@
                     if (this.projects[i].name == this.project || this.projects[i].alias == this.project) {
                         this.selectedProject = this.projects[i];
                         for (let j = 0; j < this.projects[i].studies.length; j++) {
-                            if (this.projects[i].studies[j].name == e.srcElement.innerHTML || this.projects[i].studies[j].alias == e.srcElement.innerHTML) {
+                            if (this.projects[i].studies[j].name == e.target.innerHTML || this.projects[i].studies[j].alias == e.target.innerHTML) {
                                 this.study = this.projects[i].studies[j];
                             }
                         }

@@ -103,8 +103,8 @@ public class FileScanner {
         long studyId = study.getId();
 //        File root = catalogManager.getAllFiles(studyId, new QueryOptions("path", ""), sessionId).first();
         Query query = new Query();
-        query.put(FileDBAdaptor.FileFilterOption.uri.toString(), "~.*"); //Where URI exists
-        query.put(FileDBAdaptor.FileFilterOption.type.toString(), File.Type.DIRECTORY);
+        query.put(FileDBAdaptor.QueryParams.URI.key(), "~.*"); //Where URI exists
+        query.put(FileDBAdaptor.QueryParams.TYPE.key(), File.Type.DIRECTORY);
         List<File> files = catalogManager.searchFile(studyId, query, sessionId).getResult();
 
         List<File> scan = new LinkedList<>();

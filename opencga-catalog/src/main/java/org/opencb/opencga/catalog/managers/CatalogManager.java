@@ -505,8 +505,7 @@ public class CatalogManager implements AutoCloseable {
                                           String description, Status status, String cipher, String uriScheme, URI uri, Map<File.Bioformat,
             DataStore> datastores, Map<String, Object> stats, Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
-        QueryResult<Study> result = studyManager.create(projectId, name, alias, type, creationDate, description, status,
-                cipher, uriScheme,
+        QueryResult<Study> result = studyManager.create(projectId, name, alias, type, creationDate, description, status, cipher, uriScheme,
                 uri, datastores, stats, attributes, options, sessionId);
         //if (uri != null) {
 //        createFolder(result.getResult().get(0).getId(), Paths.get("data"), true, null, sessionId);
@@ -810,7 +809,6 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<File> getAllFilesInFolder(long folderId, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkId(folderId, "folderId");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         long studyId = getStudyIdByFileId(folderId);

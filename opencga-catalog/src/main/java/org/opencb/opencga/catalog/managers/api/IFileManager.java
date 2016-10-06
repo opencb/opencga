@@ -99,7 +99,7 @@ public interface IFileManager extends ResourceManager<Long, File> {
         return fileIds;
     }
 
-    void matchUpVariantFiles(List<File> avroFiles, String sessionId) throws CatalogException;
+    void matchUpVariantFiles(List<File> transformedFiles, String sessionId) throws CatalogException;
 
     @Deprecated
     Long getId(String fileId) throws CatalogException;

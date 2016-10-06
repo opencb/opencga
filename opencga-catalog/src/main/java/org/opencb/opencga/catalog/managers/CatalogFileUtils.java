@@ -272,7 +272,6 @@ public class CatalogFileUtils {
             throws CatalogException {
         ParamUtils.checkObj(file, "file");
         ParamUtils.checkObj(externalUri, "externalUri");
-        ParamUtils.checkParameter(sessionId, "sessionId");
 
         checkCanLinkFile(file, relink);
         if (file.getType() == File.Type.DIRECTORY) {
@@ -302,7 +301,6 @@ public class CatalogFileUtils {
                            URI externalUri, boolean createFoundFiles, boolean relink, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(externalUri, "externalUri");
-        ParamUtils.checkParameter(sessionId, "sessionId");
 
         File folder = catalogManager.createFolder(studyId, Paths.get(filePath), new File.FileStatus(File.FileStatus.STAGE), parents,
                 description, null, sessionId).first();

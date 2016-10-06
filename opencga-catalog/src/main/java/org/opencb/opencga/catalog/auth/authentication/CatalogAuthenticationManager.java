@@ -84,7 +84,7 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
 
     @Override
     public String getUserId(String token) throws CatalogException {
-        if (token == null) {
+        if (token == null || token.isEmpty() || token.equalsIgnoreCase("null")) {
             return "anonymous";
         }
 

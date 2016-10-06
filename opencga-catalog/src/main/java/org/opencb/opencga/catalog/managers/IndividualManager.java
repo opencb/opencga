@@ -95,7 +95,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         ParamUtils.checkAlias(name, "name");
         family = ParamUtils.defaultObject(family, "");
 
-        String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_INDIVIDUALS);
 
         QueryResult<Individual> queryResult = individualDBAdaptor.insert(new Individual(0, name, fatherId, motherId,
@@ -113,7 +113,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         ParamUtils.checkObj(sessionId, "sessionId");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.VIEW);
         QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(individualId, options);
         long studyId = individualDBAdaptor.getStudyIdByIndividualId(individualId);
@@ -135,7 +135,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
             throw CatalogAuthorizationException.deny(userId, "view", "individual", studyId, null);
         }
@@ -149,7 +149,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     @Override
     public List<QueryResult<Individual>> restore(String individualIdStr, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(individualIdStr, "id");
-        ParamUtils.checkParameter(sessionId, "sessionId");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getId(sessionId);
@@ -193,7 +192,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     public QueryResult<IndividualAclEntry> getAcls(String individualStr, List<String> members, String sessionId)
             throws CatalogException {
         long startTime = System.currentTimeMillis();
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         Long individualId = getId(userId, individualStr);
         authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.SHARE);
         Long studyId = getStudyId(individualId);
@@ -342,12 +341,11 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     @Deprecated
     public QueryResult<AnnotationSet> annotate(long individualId, String annotationSetName, long variableSetId, Map<String, Object>
             annotations, Map<String, Object> attributes, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
         ParamUtils.checkObj(annotations, "annotations");
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.CREATE_ANNOTATIONS);
 
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
@@ -376,11 +374,10 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     public QueryResult<AnnotationSet> updateAnnotation(long individualId, String annotationSetName, Map<String, Object> newAnnotations,
                                                        String sessionId) throws CatalogException {
 
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
         ParamUtils.checkObj(newAnnotations, "newAnnotations");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.UPDATE_ANNOTATIONS);
 
         QueryOptions queryOptions = new QueryOptions("include", "projects.studies.individuals.annotationSets");
@@ -425,7 +422,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     @Override
     @Deprecated
     public QueryResult<AnnotationSet> deleteAnnotation(long individualId, String annotationId, String sessionId) throws CatalogException {
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
 
         authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.DELETE_ANNOTATIONS);
 
@@ -442,7 +439,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         ParamUtils.defaultObject(parameters, QueryOptions::new);
         ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.UPDATE);
 
         options.putAll(parameters); //FIXME: Use separated params and options, or merge
@@ -456,7 +453,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     public List<QueryResult<Individual>> delete(String individualIdStr, QueryOptions options, String sessionId)
             throws CatalogException, IOException {
         ParamUtils.checkParameter(individualIdStr, "id");
-        ParamUtils.checkParameter(sessionId, "sessionId");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getId(sessionId);
@@ -503,7 +499,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         ParamUtils.checkObj(studyId, "studyId");
         ParamUtils.checkObj(sessionId, "sessionId");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -527,7 +523,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         ParamUtils.checkObj(studyId, "studyId");
         ParamUtils.checkObj(sessionId, "sessionId");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -551,7 +547,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         ParamUtils.checkObj(studyId, "studyId");
         ParamUtils.checkObj(sessionId, "sessionId");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
@@ -570,12 +566,11 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     public QueryResult<AnnotationSet> createAnnotationSet(String id, long variableSetId, String annotationSetName,
                                                           Map<String, Object> annotations, Map<String, Object> attributes,
                                                           String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
         ParamUtils.checkObj(annotations, "annotations");
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         long individualId = getId(userId, id);
         authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.CREATE_ANNOTATIONS);
 
@@ -603,9 +598,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     }
 
     private long commonGetAllInvidualSets(String id, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(id, "id");
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         long individualId = getId(userId, id);
         authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
         return individualId;
@@ -624,10 +618,9 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     }
 
     private long commonGetAnnotationSet(String id, String annotationSetName, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkAlias(annotationSetName, "annotationSetName");
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         long individualId = getId(userId, id);
         authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
         return individualId;
@@ -637,11 +630,10 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     public QueryResult<AnnotationSet> updateAnnotationSet(String id, String annotationSetName, Map<String, Object> newAnnotations,
                                                           String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
         ParamUtils.checkObj(newAnnotations, "newAnnotations");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         long individualId = getId(userId, id);
         authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.UPDATE_ANNOTATIONS);
 
@@ -669,10 +661,9 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     @Override
     public QueryResult<AnnotationSet> deleteAnnotationSet(String id, String annotationSetName, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         long individualId = getId(userId, id);
         authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.DELETE_ANNOTATIONS);
 
@@ -725,9 +716,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     private QueryResult<Individual> commonSearchAnnotationSet(String id, long variableSetId, @Nullable String annotation, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(id, "id");
-        ParamUtils.checkParameter(sessionId, "sessionId");
 
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = userManager.getId(sessionId);
         long individualId = getId(userId, id);
         authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
 

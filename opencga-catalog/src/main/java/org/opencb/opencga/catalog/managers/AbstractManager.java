@@ -33,10 +33,7 @@ import org.opencb.opencga.catalog.models.Study;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -177,6 +174,10 @@ public abstract class AbstractManager {
         String ownerId = (String) parameters.get("user");
         String aliasProject = (String) parameters.get("project");
         String aliasStudy = (String) parameters.get("study");
+
+        if (ownerId.equalsIgnoreCase("anonymous")) {
+            return new LinkedList<>();
+        }
 
         if (aliasStudy != null && StringUtils.isNumeric(aliasStudy)) {
             return Arrays.asList(Long.parseLong(aliasStudy));
