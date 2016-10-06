@@ -15,8 +15,7 @@
  */
 
 var opencga = {
-    host: "squalet.hpc.cam.ac.uk:8080/opencga",
-    // host: "bioinfodev.hpc.cam.ac.uk/hgva",
+    host: "bioinfodev.hpc.cam.ac.uk/hgva-0.8",
     version: "v1",
     cookies: {
         userName: "opencga_userId",

@@ -1,0 +1,157 @@
+<dom-module id="opencga-sample-comparator">
+    <template>
+        <style is="custom-style" include="jso-styles"></style>
+
+        <div>
+            <template is="dom-repeat" items="{{variableSets}}" as="variableSet">
+                <h3><i id="{{variableSet.id}}" class="fa fa-minus-circle" aria-hidden="true"
+                       on-click="iconChange"></i> {{variableSet.name}}</h3>
+
+                <div id="{{variableSet.id}}Content">
+                    <table id="{{variableSet.id}}Table" data-search="true" data-show-columns="true" data-pagination="true" data-page-list="[10, 25, 50]">
+                        <thead style="background-color: #eee"></thead>
+                    </table>
+                </div>
+            </template>
+        </div>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'opencga-sample-comparator',
+
+            properties: {
+                opencgaClient: {
+                    type: Object
+                },
+                study: {
+                    type: Object,
+                    observer: 'getVariableSets'
+                },
+                samples: {
+                    type: Array,
+                    observer: 'dataChanged'
+                },
+                variableSets: {
+                    type: Array,
+                    observer: 'dataChanged'
+                },
+                sampleIds: {
+                    type: Array,
+                    value: [],
+                    observer: 'getSamples'
+                },
+                variableIds: {
+                    type: Array,
+                    observer: 'getVariableSets'
+                },
+                cohortId: {
+                    type: String,
+                    value: "",
+                    observer: 'getSamples'
+                }
+            },
+            getSamples: function () {
+                if (this.opencgaClient instanceof OpenCGAClient) {
+                    if (this.cohortId != "") {
+                        this.opencgaClient.cohorts().getSamples(this.cohortId).then(function (response) {
+                           this.samples = response.response[0].result; // TODO test it with the cohort id
+                        }).catch(function() {
+                            console.log("Could not obtain the samples");
+                        });
+                    } else if (this.sampleIds.length > 0) {
+                        this.opencgaClient.samples().info(this.sampleIds.join(',')).then(function (response) {
+                            this.samples = response.response[0].result; // TODO test it with the sample ids
+                        }).catch(function() {
+                            console.log("Could not obtain the samples");
+                        });
+                    }
+                }
+            },
+            getVariableSets: function () {
+                if (this.opencgaClient instanceof OpenCGAClient) {
+                    if (typeof this.study !== "undefined" && this.study.id != "") {
+                        this.opencgaClient.studies().info(this.study.id).then(function (response) {
+                            this.variableSets = response.response[0].result; // TODO test it with the study id
+                        }).catch(function() {
+                            console.log("Could not obtain the variable sets");
+                        });
+                    } else if (this.variableIds.length == 1) {
+                        this.opencgaClient.variables().info(this.variableIds[0]).then(function (response) {
+                            this.variableSets = response.response[0].result; // TODO test it with the variable id
+                        }).catch(function() {
+                            console.log("Could not obtain the variable set");
+                        });
+                    } else if (this.variableIds.length > 1) {
+                        this.opencgaClient.variables().search({id: this.variableIds.join(',')}).then(function (response) {
+                            this.variableSets = response.response[0].result; // TODO test it with the variable ids
+                        }).catch(function() {
+                            console.log("Could not obtain the variable sets");
+                        });
+                    }
+                }
+            },
+            dataChanged: function () {
+                this.refreshVariableSetTable(); // Refreshing the table columns whenever the samples change
+                let _this = this;
+                if (typeof _this.variableSets !== "undefined" && _this.variableSets.length > 0) {
+                    for (let i in _this.variableSets) {
+                        $('#' + _this.variableSets[i].id + 'Table').bootstrapTable('destroy');
+                        $('#' + _this.variableSets[i].id + 'Table').bootstrapTable({
+                            data: _this.variableSets[i].variables,
+                            columns: _this._variableSetColumns
+                        });
+                    }
+                }
+            },
+            refreshVariableSetTable: function () {
+                let _this = this;
+                let cols = [
+                    [
+                        {
+                            title: 'Variable Set',
+                            field: 'name',
+                            rowspan: 2,
+                            colspan: 1
+                        },
+                        {
+                            title: 'Samples',
+                            rowspan: 1,
+                            colspan: _this.samples.length
+                        }
+                    ],
+                    []
+                ];
+
+                for (let i = 0; i < _this.samples.length; i++) {
+                    cols[1].splice(i, 0,
+                            {
+                                title: _this.samples[i].name,
+                                field: {sample : _this.samples[i]},
+                                rowspan: 1,
+                                colspan: 1,
+                                formatter: this.variableSetFormatter
+                            });
+                }
+                _this._variableSetColumns = cols;
+            },
+            variableSetFormatter: function (value, row, index) {
+                let sample = this.field.sample;
+                for (let i in sample.annotationSets) {
+                    let annotationSet = sample.annotationSets[i];
+                    let annotations = annotationSet.annotations;
+                    for (let j in annotations) {
+                        if (annotations[j].name == row.name) {
+                            return annotations[j].value;
+                        }
+                    }
+                }
+            },
+            iconChange: function (e) {
+                let id = e.model.__data__.variableSet.id;
+                $('#' + id).toggleClass('fa-minus-circle fa-plus-circle');
+                $('#' + id + 'Content').toggleClass('collapse collapse-in');
+            },
+        });
+    </script>
+</dom-module>
