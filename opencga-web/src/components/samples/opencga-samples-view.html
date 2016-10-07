@@ -24,7 +24,8 @@
             }
         </style>
 
-        <table id="samplestable" data-search="true" data-show-columns="true" data-pagination="true" data-page-list="[10, 25, 50]">
+        <table id="samplestable" data-search="true" data-show-columns="true" data-pagination="true" data-page-list="[10, 25, 50]"
+               data-checkbox-header="false" data-maintain-selected="true" style="cursor: pointer;">
             <thead style="background-color: #eee"></thead>
         </table>
 
@@ -37,7 +38,7 @@
 
             <div class="tab-content">
                 <div id="sampleViewAnnotation" role="tabpanel" class="tab-pane active">
-                    <opencga-sample-comparator samples="{{samples}}" variable-sets="{{variableSets}}"></opencga-sample-comparator>
+                    <opencga-sample-comparator opencga-client="{{opencgaClient}}" samples="{{samples}}" variable-sets="{{variableSets}}"></opencga-sample-comparator>
                 </div>
 
                 <div id="sampleViewAcl" role="tabpanel" class="tab-pane">
@@ -141,6 +142,15 @@
                         },
                         columns: this._columns,
 
+                        onClickRow: function(row, element) {
+                            let index = element[0].getAttribute("data-index");
+                            if (row.state) {
+                                $('#samplestable').bootstrapTable('uncheck', index);
+                            } else {
+                                $('#samplestable').bootstrapTable('check', index);
+                            }
+                        },
+
                         onCheck: function (row, elem) {
                             _this.push("samples", row);
                             _this.set('samples', _this.samples.slice());
@@ -162,20 +172,6 @@
 
                     this.opencgaClient.studies().info(this.studyId, {include: "variableSets"}).then(function (response) {
                         _this.variableSets = response.response[0].result[0].variableSets;
-                        for (let i = 0; i < _this.variableSets.length; i++) {
-                            let sortedVariableSet = _this.variableSets[i].variables;
-                            sortedVariableSet.sort(function sortByRank(a, b) {
-                                if (a.rank > b.rank) {
-                                    return 1;
-                                }
-                                if (a.rank < b.rank) {
-                                    return -1;
-                                }
-                                return 0;
-                            });
-                            _this.variableSets[i].varibles = sortedVariableSet;
-                            console.log("this.variableSets", _this.variableSets)
-                        }
                     }).catch(function() {
                         console.log("Could not obtain the variable sets of the study " + _this.studyId);
                     });
