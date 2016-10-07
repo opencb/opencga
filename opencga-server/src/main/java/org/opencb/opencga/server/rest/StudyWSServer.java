@@ -313,7 +313,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Biotype") @QueryParam("annot-biotype") String annot_biotype,
                                 @ApiParam(value = "Polyphen, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description} e.g. <=0.9 , =benign") @QueryParam("polyphen") String polyphen,
                                 @ApiParam(value = "Sift, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description} e.g. >0.1 , ~=tolerant") @QueryParam("sift") String sift,
-//                                @ApiParam(value = "") @QueryParam("protein_substitution") String protein_substitution,
+                                @ApiParam(value = "Protein substitution score. {protein_score}[<|>|<=|>=]{number} or {protein_score}[~=|=]{description} e.g. polyphen>0.1 , sift=tolerant") @QueryParam("protein_substitution") String protein_substitution,
                                 @ApiParam(value = "Conservation score: {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1") @QueryParam("conservation") String conservation,
                                 @ApiParam(value = "Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}") @QueryParam("annot-population-maf") String annotPopulationMaf,
                                 @ApiParam(value = "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}") @QueryParam("alternate_frequency") String alternate_frequency,

@@ -31,6 +31,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.ANNOTATION_FIELD;
+
 /**
  * Created by jacobo on 13/01/15.
  */
@@ -58,9 +60,7 @@ public class DocumentToVariantAnnotationConverter
     public static final String CT_SO_ACCESSION_FIELD = "so";
     public static final String CT_PROTEIN_KEYWORDS = "kw";
     public static final String CT_PROTEIN_SUBSTITUTION_SCORE_FIELD = "ps_score";
-    @Deprecated
     public static final String CT_PROTEIN_POLYPHEN_FIELD = "polyphen";
-    @Deprecated
     public static final String CT_PROTEIN_SIFT_FIELD = "sift";
     public static final String CT_PROTEIN_FEATURE_FIELD = "pd";
     public static final String CT_PROTEIN_FEATURE_ID_FIELD = "id";
@@ -82,6 +82,9 @@ public class DocumentToVariantAnnotationConverter
     public static final String POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD = "altFq";
 
     public static final String CONSERVED_REGION_SCORE_FIELD = "cr_score";
+    public static final String CONSERVED_REGION_PHYLOP_FIELD = "cr_phylop";
+    public static final String CONSERVED_REGION_PHASTCONS_FIELD = "cr_phastcons";
+    public static final String CONSERVED_REGION_GERP_FIELD = "cr_gerp";
 
     public static final String GENE_TRAIT_FIELD = "gn_trait";
     public static final String GENE_TRAIT_ID_FIELD = "id";
@@ -109,14 +112,40 @@ public class DocumentToVariantAnnotationConverter
     public static final String CLINICAL_CLINVAR_FIELD = "clinvar";
 
     public static final String FUNCTIONAL_SCORE = "fn_score";
+    public static final String FUNCTIONAL_CADD_RAW_FIELD = "fn_cadd_r";
+    public static final String FUNCTIONAL_CADD_SCALED_FIELD = "fn_cadd_s";
 
     public static final String DEFAULT_STRAND_VALUE = "+";
     public static final String DEFAULT_DRUB_SOURCE = "dgidb";
+
+    public static final Map<String, String> SCORE_FIELD_MAP;
 
     private final ObjectMapper jsonObjectMapper;
     private final ObjectWriter writer;
 
     protected static Logger logger = LoggerFactory.getLogger(DocumentToVariantAnnotationConverter.class);
+
+    public static final String POLYPHEN = "polyphen";
+    public static final String SIFT = "sift";
+
+    public static final String PHAST_CONS = "phastCons";
+    public static final String PHYLOP = "phylop";
+    public static final String GERP = "gerp";
+
+    public static final String CADD_SCALED = "cadd_scaled";
+    public static final String CADD_RAW = "cadd_raw";
+
+    static {
+        Map<String, String> scoreFieldMap = new HashMap<>(7);
+        scoreFieldMap.put(SIFT, ANNOTATION_FIELD + "." + CONSEQUENCE_TYPE_FIELD + "." + CT_PROTEIN_SIFT_FIELD);
+        scoreFieldMap.put(POLYPHEN, ANNOTATION_FIELD + "." + CONSEQUENCE_TYPE_FIELD + "." + CT_PROTEIN_POLYPHEN_FIELD);
+        scoreFieldMap.put(PHAST_CONS, ANNOTATION_FIELD + "." + CONSERVED_REGION_PHASTCONS_FIELD);
+        scoreFieldMap.put(PHYLOP, ANNOTATION_FIELD + "." + CONSERVED_REGION_PHYLOP_FIELD);
+        scoreFieldMap.put(GERP, ANNOTATION_FIELD + "." + CONSERVED_REGION_GERP_FIELD);
+        scoreFieldMap.put(CADD_SCALED, ANNOTATION_FIELD + "." + FUNCTIONAL_CADD_SCALED_FIELD);
+        scoreFieldMap.put(CADD_RAW, ANNOTATION_FIELD + "." + FUNCTIONAL_CADD_RAW_FIELD);
+        SCORE_FIELD_MAP = Collections.unmodifiableMap(scoreFieldMap);
+    }
 
     public DocumentToVariantAnnotationConverter() {
         jsonObjectMapper = new ObjectMapper();
@@ -163,18 +192,8 @@ public class DocumentToVariantAnnotationConverter
                             proteinSubstitutionScores.add(buildScore(document));
                         }
                     }
-                    if (ct.containsKey(CT_PROTEIN_POLYPHEN_FIELD)) {
-                        Document dbObject = (Document) ct.get(CT_PROTEIN_POLYPHEN_FIELD);
-                        proteinSubstitutionScores.add(new Score(getDefault(dbObject, SCORE_SCORE_FIELD, 0.0),
-                                "polyphen",
-                                getDefault(dbObject, SCORE_DESCRIPTION_FIELD, "")));
-                    }
-                    if (ct.containsKey(CT_PROTEIN_SIFT_FIELD)) {
-                        Document dbObject = (Document) ct.get(CT_PROTEIN_SIFT_FIELD);
-                        proteinSubstitutionScores.add(new Score(getDefault(dbObject, SCORE_SCORE_FIELD, 0.0),
-                                "sift",
-                                getDefault(dbObject, SCORE_DESCRIPTION_FIELD, "")));
-                    }
+                    addScore(ct, proteinSubstitutionScores, POLYPHEN, CT_PROTEIN_POLYPHEN_FIELD);
+                    addScore(ct, proteinSubstitutionScores, SIFT, CT_PROTEIN_SIFT_FIELD);
 
 
                     List<ProteinFeature> features = new ArrayList<>();
@@ -226,6 +245,9 @@ public class DocumentToVariantAnnotationConverter
                 conservedRegionScores.add(buildScore(dbObject));
             }
         }
+        addScore(object, conservedRegionScores, PHAST_CONS, CONSERVED_REGION_PHASTCONS_FIELD);
+        addScore(object, conservedRegionScores, PHYLOP, CONSERVED_REGION_PHYLOP_FIELD);
+        addScore(object, conservedRegionScores, GERP, CONSERVED_REGION_GERP_FIELD);
         va.setConservation(conservedRegionScores);
 
         //Population frequencies
@@ -311,6 +333,8 @@ public class DocumentToVariantAnnotationConverter
                 functionalScore.add(buildScore(document));
             }
         }
+        addScore(object, functionalScore, CADD_SCALED, FUNCTIONAL_CADD_SCALED_FIELD);
+        addScore(object, functionalScore, CADD_RAW, FUNCTIONAL_CADD_RAW_FIELD);
         va.setFunctionalScore(functionalScore);
 
         //Clinical Data
@@ -326,10 +350,21 @@ public class DocumentToVariantAnnotationConverter
         return va;
     }
 
+    public void addScore(Document object, List<Score> functionalScore, String source, String key) {
+        if (object.containsKey(key)) {
+            Document document = (Document) object.get(key);
+            functionalScore.add(buildScore(source, document));
+        }
+    }
+
     private Score buildScore(Document document) {
+        return buildScore("", document);
+    }
+
+    private Score buildScore(String source, Document document) {
         return new Score(
                 getDefault(document, SCORE_SCORE_FIELD, 0.0),
-                getDefault(document, SCORE_SOURCE_FIELD, ""),
+                getDefault(document, SCORE_SOURCE_FIELD, source),
                 getDefault(document, SCORE_DESCRIPTION_FIELD, "")
         );
     }
@@ -456,15 +491,13 @@ public class DocumentToVariantAnnotationConverter
                         List<Document> proteinSubstitutionScores = new LinkedList<>();
                         for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
                             if (score != null) {
-//                                if (score.getSource().equals("polyphen")) {
-//                                    putNotNull(ct, CT_PROTEIN_POLYPHEN_FIELD, convertScoreToStorage(score.getScore(), null,
-//                                            score.getDescription()));
-//                                } else if (score.getSource().equals("sift")) {
-//                                    putNotNull(ct, CT_PROTEIN_SIFT_FIELD, convertScoreToStorage(score.getScore(), null,
-//                                            score.getDescription()));
-//                                } else {
+                                if (score.getSource().equals(POLYPHEN)) {
+                                    putNotNull(ct, CT_PROTEIN_POLYPHEN_FIELD, convertScoreToStorageNoSource(score));
+                                } else if (score.getSource().equals(SIFT)) {
+                                    putNotNull(ct, CT_PROTEIN_SIFT_FIELD, convertScoreToStorageNoSource(score));
+                                } else {
                                     proteinSubstitutionScores.add(convertScoreToStorage(score));
-//                                }
+                                }
                             }
                         }
                         putNotNull(ct, CT_PROTEIN_SUBSTITUTION_SCORE_FIELD, proteinSubstitutionScores);
@@ -509,7 +542,15 @@ public class DocumentToVariantAnnotationConverter
             List<Document> conservedRegionScores = new LinkedList<>();
             for (Score score : variantAnnotation.getConservation()) {
                 if (score != null) {
-                    conservedRegionScores.add(convertScoreToStorage(score));
+                    if (score.getSource().equals(PHYLOP)) {
+                        putNotNull(document, CONSERVED_REGION_PHYLOP_FIELD, convertScoreToStorageNoSource(score));
+                    } else if (score.getSource().equals(PHAST_CONS)) {
+                        putNotNull(document, CONSERVED_REGION_PHASTCONS_FIELD, convertScoreToStorageNoSource(score));
+                    } else if (score.getSource().equals(GERP)) {
+                        putNotNull(document, CONSERVED_REGION_GERP_FIELD, convertScoreToStorageNoSource(score));
+                    } else {
+                        conservedRegionScores.add(convertScoreToStorage(score));
+                    }
                 }
             }
             putNotNull(document, CONSERVED_REGION_SCORE_FIELD, conservedRegionScores);
@@ -575,10 +616,15 @@ public class DocumentToVariantAnnotationConverter
         if (variantAnnotation.getFunctionalScore() != null) {
             List<Document> scores = new ArrayList<>(variantAnnotation.getFunctionalScore().size());
             for (Score score : variantAnnotation.getFunctionalScore()) {
-                Document documentScore = new Document();
-                putNotNull(documentScore, SCORE_SCORE_FIELD, score.getScore());
-                putNotNull(documentScore, SCORE_SOURCE_FIELD, score.getSource());
-                scores.add(documentScore);
+                if (score != null) {
+                    if (score.getSource().equals(CADD_RAW)) {
+                        putNotNull(document, FUNCTIONAL_CADD_RAW_FIELD, convertScoreToStorageNoSource(score));
+                    } else if (score.getSource().equals(CADD_SCALED)) {
+                        putNotNull(document, FUNCTIONAL_CADD_SCALED_FIELD, convertScoreToStorageNoSource(score));
+                    } else {
+                        scores.add(convertScoreToStorage(score));
+                    }
+                }
             }
             putNotNull(document, FUNCTIONAL_SCORE, scores);
         }
@@ -619,6 +665,10 @@ public class DocumentToVariantAnnotationConverter
             return list;
         }
         return null;
+    }
+
+    public Document convertScoreToStorageNoSource(Score score) {
+        return convertScoreToStorage(score.getScore(), null, score.getDescription());
     }
 
     private Document convertScoreToStorage(Score score) {
