@@ -390,12 +390,15 @@ public class VariantSqlQueryParser {
             List<String> values = splitValue(value, operation);
             StringBuilder sb = new StringBuilder();
             Iterator<String> iterator = values.iterator();
+            Map<String, Integer> studies = utils.getStudyConfigurationManager().getStudies(options);
+            Set<Integer> notNullStudies = new HashSet<>();
             while (iterator.hasNext()) {
                 String study = iterator.next();
-                Integer studyId = utils.getStudyId(study, options, false);
+                Integer studyId = utils.getStudyId(study, false, studies);
                 if (study.startsWith("!")) {
                     sb.append("\"").append(buildColumnKey(studyId, VariantTableStudyRow.HOM_REF)).append("\" IS NULL ");
                 } else {
+                    notNullStudies.add(studyId);
                     sb.append("\"").append(buildColumnKey(studyId, VariantTableStudyRow.HOM_REF)).append("\" IS NOT NULL ");
                 }
                 if (iterator.hasNext()) {
@@ -405,6 +408,9 @@ public class VariantSqlQueryParser {
                         sb.append(" OR ");
                     }
                 }
+            }
+            // Skip this filter if contains all the existing studies.
+            if (studies.values().size() != notNullStudies.size() || !notNullStudies.containsAll(studies.values())) {
                 filters.add(sb.toString());
             }
             List<Integer> studyIds = utils.getStudyIds(values, options);
@@ -420,15 +426,15 @@ public class VariantSqlQueryParser {
             } else {
                 defaultStudyConfiguration = null;
             }
-            StringBuilder sb = new StringBuilder();
-            for (Iterator<Integer> iterator = studyIds.iterator(); iterator.hasNext();) {
-                Integer studyId = iterator.next();
-                sb.append('"').append(buildColumnKey(studyId, HOM_REF)).append("\" IS NOT NULL");
-                if (iterator.hasNext()) {
-                    sb.append(" OR ");
-                }
-            }
-            filters.add(sb.toString());
+//            StringBuilder sb = new StringBuilder();
+//            for (Iterator<Integer> iterator = studyIds.iterator(); iterator.hasNext();) {
+//                Integer studyId = iterator.next();
+//                sb.append('"').append(buildColumnKey(studyId, HOM_REF)).append("\" IS NOT NULL");
+//                if (iterator.hasNext()) {
+//                    sb.append(" OR ");
+//                }
+//            }
+//            filters.add(sb.toString());
         }
 
         unsupportedFilter(query, FILES);
