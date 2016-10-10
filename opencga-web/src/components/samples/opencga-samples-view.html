@@ -13,6 +13,7 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
+<link rel="import" href="opencga-sample-comparator.html">
 <dom-module id="opencga-samples-view">
     <template>
         <style is="custom-style" include="jso-styles"></style>
@@ -24,10 +25,11 @@
         </style>
 
         <table id="samplestable" data-search="true" data-show-columns="true" data-pagination="true" data-page-list="[10, 25, 50]"
-               data-striped="true">
+               data-checkbox-header="false" data-maintain-selected="true" style="cursor: pointer;">
+            <thead style="background-color: #eee"></thead>
         </table>
 
-        <div style="padding: 10px;" class="row" style="height: 530px">
+        <div style="padding: 10px;height: 530px" class="row">
 
             <ul id="sampleViewTabs" class="nav nav-tabs" role="tablist">
                 <li role="presentation" class="active"><a href="#sampleViewAnnotation" role="tab" data-toggle="tab">Sample Annotations</a></li>
@@ -36,28 +38,7 @@
 
             <div class="tab-content">
                 <div id="sampleViewAnnotation" role="tabpanel" class="tab-pane active">
-                    <template is="dom-repeat" items="{{_sample.annotationSets}}" as="annotationSet">
-
-                        <h3>{{annotationSet.id}} ({{annotationSet.date}})</h3>
-
-                        <table class="table table-hover">
-                            <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Value</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <template is="dom-repeat" items="{{annotationSet.annotations}}" as="annotation">
-                                <tr>
-                                    <td>{{annotation.id}}</td>
-                                    <td>{{annotation.value}}</td>
-                                </tr>
-                            </template>
-                            </tbody>
-                        </table>
-
-                    </template>
+                    <opencga-sample-comparator opencga-client="{{opencgaClient}}" samples="{{samples}}" variable-sets="{{variableSets}}"></opencga-sample-comparator>
                 </div>
 
                 <div id="sampleViewAcl" role="tabpanel" class="tab-pane">
@@ -90,8 +71,8 @@
                     value: {},
                     observer: 'renderFromServer'
                 },
-                sample: {
-                    type: Object
+                samples: {
+                    type: Array
                 }
             },
 
@@ -99,6 +80,10 @@
                 // Columns that will be represented
                 this._columns = [
                     [
+                        {
+                            field: 'state',
+                            checkbox: true
+                        },
                         {
                             title: 'Name',
                             field: 'name',
@@ -118,9 +103,10 @@
             },
 
             renderFromServer: function() {
+                this.samples = [];
+                let _this = this;
                 if (this.opencgaClient instanceof OpenCGAClient && this.studyId > 0) {
                     this._url = 'http://' + this.opencgaClient.getConfig().host +  '/webservices/rest/v1/samples/search';
-                    let _this = this;
 
                     $('#samplestable').bootstrapTable('destroy');
                     $('#samplestable').bootstrapTable({
@@ -155,11 +141,39 @@
                             }
                         },
                         columns: this._columns,
-                        onClickRow: function(row, $element) {
-                            _this._sample = row;
-                            $('.success').removeClass('success');
-                            $($element).addClass('success');
+
+                        onClickRow: function(row, element) {
+                            let index = element[0].getAttribute("data-index");
+                            if (row.state) {
+                                $('#samplestable').bootstrapTable('uncheck', index);
+                            } else {
+                                $('#samplestable').bootstrapTable('check', index);
+                            }
+                        },
+
+                        onCheck: function (row, elem) {
+                            _this.push("samples", row);
+                            _this.set('samples', _this.samples.slice());
+                        },
+
+                        onUncheck: function (row, elem) {
+                            let sampleToDeleteIdx;
+                            for (sampleIdx in _this.samples) {
+                                if (row.name == _this.samples[sampleIdx].name) {
+                                    sampleToDeleteIdx = sampleIdx;
+                                    break;
+                                }
+                            }
+
+                            _this.splice('samples', sampleToDeleteIdx, 1);
+                            _this.set('samples', _this.samples.slice());
                         }
+                    });
+
+                    this.opencgaClient.studies().info(this.studyId, {include: "variableSets"}).then(function (response) {
+                        _this.variableSets = response.response[0].result[0].variableSets;
+                    }).catch(function() {
+                        console.log("Could not obtain the variable sets of the study " + _this.studyId);
                     });
                 }
             },
@@ -170,13 +184,26 @@
                     $('#samplestable').bootstrapTable({
                         data: this.data,
                         columns: this._columns,
-                        onClickRow: function(row) {
-                            _this._sample = row;
+                        onCheck: function (row, elem) {
+                            _this.push("samples", row);
+                            _this.set('samples', _this.samples.slice());
+                        },
+
+                        onUncheck: function (row, elem) {
+                            let sampleToDeleteIdx;
+                            for (sampleIdx in _this.samples) {
+                                if (row.name == _this.samples[sampleIdx].name) {
+                                    sampleToDeleteIdx = sampleIdx;
+                                    break;
+                                }
+                            }
+
+                            _this.splice('samples', sampleToDeleteIdx, 1);
+                            _this.set('samples', _this.samples.slice());
                         }
                     });
                 }
             }
-
         });
     </script>
 </dom-module>
