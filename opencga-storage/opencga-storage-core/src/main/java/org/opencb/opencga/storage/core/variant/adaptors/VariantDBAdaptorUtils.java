@@ -107,14 +107,26 @@ public class VariantDBAdaptorUtils {
      * @return              List of study Ids
      */
     public List<Integer> getStudyIds(List studiesNames, QueryOptions options) {
-        Map<String, Integer> studies = getStudyConfigurationManager().getStudies(options);
+        return getStudyIds(studiesNames, getStudyConfigurationManager().getStudies(options));
+    }
+
+    /**
+     * Get studyIds from a list of studies.
+     * Replaces studyNames for studyIds.
+     * Excludes those studies that starts with '!'
+     *
+     * @param studiesNames  List of study names or study ids
+     * @param studies       Map of available studies. See {@link StudyConfigurationManager#getStudies}
+     * @return              List of study Ids
+     */
+    public List<Integer> getStudyIds(List studiesNames, Map<String, Integer> studies) {
         List<Integer> studiesIds;
         if (studiesNames == null) {
             return Collections.emptyList();
         }
         studiesIds = new ArrayList<>(studiesNames.size());
         for (Object studyObj : studiesNames) {
-            Integer studyId = getStudyId(studyObj, options, true, studies);
+            Integer studyId = getStudyId(studyObj, true, studies);
             if (studyId != null) {
                 studiesIds.add(studyId);
             }
@@ -132,17 +144,17 @@ public class VariantDBAdaptorUtils {
         } else if (studyObj instanceof String && StringUtils.isNumeric((String) studyObj)) {
             return Integer.parseInt((String) studyObj);
         } else {
-            return getStudyId(studyObj, options, skipNegated, getStudyConfigurationManager().getStudies(options));
+            return getStudyId(studyObj, skipNegated, getStudyConfigurationManager().getStudies(options));
         }
     }
 
-    private Integer getStudyId(Object studyObj, QueryOptions options, boolean skipNegated, Map<String, Integer> studies) {
+    public Integer getStudyId(Object studyObj, boolean skipNegated, Map<String, Integer> studies) {
         Integer studyId;
         if (studyObj instanceof Integer) {
             studyId = ((Integer) studyObj);
         } else {
             String studyName = studyObj.toString();
-            if (studyName.startsWith("!")) { //Skip negated studies
+            if (isNegated(studyName)) { //Skip negated studies
                 if (skipNegated) {
                     return null;
                 } else {
@@ -154,12 +166,19 @@ public class VariantDBAdaptorUtils {
             } else {
                 Integer value = studies.get(studyName);
                 if (value == null) {
-                    throw VariantQueryException.studyNotFound(studyName);
+                    throw VariantQueryException.studyNotFound(studyName, studies.keySet());
                 }
                 studyId = value;
             }
         }
+        if (!studies.containsValue(studyId)) {
+            throw VariantQueryException.studyNotFound(studyId, studies.keySet());
+        }
         return studyId;
+    }
+
+    public boolean isNegated(String value) {
+        return value.startsWith("!");
     }
 
     /**
