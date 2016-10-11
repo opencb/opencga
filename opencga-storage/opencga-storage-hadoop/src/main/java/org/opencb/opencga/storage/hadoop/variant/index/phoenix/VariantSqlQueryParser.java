@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
@@ -192,7 +193,7 @@ public class VariantSqlQueryParser {
 
         if (!dynamicColumns.isEmpty()) {
             sb.append(dynamicColumns.stream()
-                    .map(column -> "\"" + column.column() + "\" " + column.sqlType())
+                    .map(column -> SchemaUtil.getEscapedFullColumnName(column.column()) + " " + column.sqlType())
                     .collect(Collectors.joining(",", " ( ", " ) "))
             );
         }
@@ -694,11 +695,7 @@ public class VariantSqlQueryParser {
 
         addQueryFilter(query, ANNOT_DRUG, VariantColumn.DRUG, filters);
 
-        addQueryFilter(query, ANNOT_FUNCTIONAL_SCORE, (keyOpValue, rawValue) -> {
-            Column column = getFunctionalScoreColumn(keyOpValue[0]);
-            dynamicColumns.add(column);
-            return column;
-        }, null, filters);
+        addQueryFilter(query, ANNOT_FUNCTIONAL_SCORE, (keyOpValue, rawValue) -> getFunctionalScoreColumn(keyOpValue[0]), null, filters);
     }
 
     /**

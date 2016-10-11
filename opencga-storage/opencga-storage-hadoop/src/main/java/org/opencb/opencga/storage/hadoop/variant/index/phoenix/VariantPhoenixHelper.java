@@ -126,6 +126,10 @@ public class VariantPhoenixHelper {
         PHYLOP(ANNOTATION_PREFIX + "PHYLOP", PFloat.INSTANCE),
         GERP(ANNOTATION_PREFIX + "GERP", PFloat.INSTANCE),
 
+        //Functional Scores
+        CADD_SCALLED(FUNCTIONAL_SCORE_PREFIX + "CADD_S", PFloat.INSTANCE),
+        CADD_RAW(FUNCTIONAL_SCORE_PREFIX + "CADD_R", PFloat.INSTANCE),
+
         FULL_ANNOTATION(ANNOTATION_PREFIX + "FULL", PVarchar.INSTANCE);
 
         private final String columnName;
@@ -267,6 +271,23 @@ public class VariantPhoenixHelper {
     }
 
     public static Column getFunctionalScoreColumn(String source) {
+        return getFunctionalScoreColumn(source, true);
+    }
+
+    public static Column getFunctionalScoreColumn(String source, boolean throwException) {
+        source = source.toUpperCase();
+        switch (source) {
+            case "CADD_RAW":
+                return CADD_RAW;
+            case "CADD_SCALED":
+                return CADD_SCALLED;
+            default:
+                if (throwException) {
+                    throw VariantQueryException.malformedParam(ANNOT_CONSERVATION, source, "Unknown conservation value.");
+                } else {
+                    logger.warn("Unknown Conservation source {}", source);
+                }
+        }
         return Column.build(FUNCTIONAL_SCORE_PREFIX + source.toUpperCase(), PFloat.INSTANCE);
     }
 
