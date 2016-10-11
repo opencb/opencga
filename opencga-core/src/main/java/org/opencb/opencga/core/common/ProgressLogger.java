@@ -20,8 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.DecimalFormat;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
@@ -34,7 +33,7 @@ public class ProgressLogger {
 
     private static final int DEFAULT_BATCH_SIZE = 5000;
     private static final int MIN_BATCH_SIZE = 200;
-    private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#%");
+    private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.#%");
 
     private final String message;
     private final int numLinesLog;
@@ -64,6 +63,16 @@ public class ProgressLogger {
 
     public ProgressLogger(String message, Future<Long> futureTotalCount, int numLinesLog) {
         this(message, 0, futureTotalCount, numLinesLog);
+    }
+
+    /**
+     *
+     * @param message               Starting message of the logger. Common for all the lines
+     * @param totalCountCallable    Callable function to get asynchronously the total count of elements
+     * @param numLinesLog           Number of lines to print
+     */
+    public ProgressLogger(String message, Callable<Long> totalCountCallable, int numLinesLog) {
+        this(message, 0, getFuture(totalCountCallable), numLinesLog);
     }
 
     private ProgressLogger(String message, long totalCount, Future<Long> futureTotalCount, int numLinesLog) {
@@ -118,7 +127,7 @@ public class ProgressLogger {
     protected void log(long count, String extraMessage) {
         long totalCount = getTotalCount();
         String space;
-        if (extraMessage.isEmpty() || (extraMessage.startsWith(" ") && extraMessage.startsWith(",") && extraMessage.startsWith("."))) {
+        if (extraMessage.isEmpty() || (extraMessage.startsWith(" ") || extraMessage.startsWith(",") || extraMessage.startsWith("."))) {
             space = "";
         } else {
             space = " ";
@@ -150,5 +159,11 @@ public class ProgressLogger {
         return this.totalCount;
     }
 
+    private static Future<Long> getFuture(Callable<Long> totalCountCallable) {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        Future<Long> future = executor.submit(totalCountCallable);
+        executor.shutdown();
+        return future;
+    }
 
 }

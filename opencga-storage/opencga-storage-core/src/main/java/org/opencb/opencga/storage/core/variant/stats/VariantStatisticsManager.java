@@ -32,8 +32,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.core.common.ProgressLogger;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantDBReader;
@@ -48,9 +48,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -191,10 +188,8 @@ public class VariantStatisticsManager {
         logger.info("ReaderQueryOptions: " + readerOptions.toJson());
         VariantDBReader reader = new VariantDBReader(studyConfiguration, variantDBAdaptor, readerQuery, readerOptions);
         List<ParallelTaskRunner.Task<Variant, String>> tasks = new ArrayList<>(numTasks);
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Future<Long> future = executor.submit(() -> variantDBAdaptor.count(readerQuery).first());
-        executor.shutdown();
-        ProgressLogger progressLogger = new ProgressLogger("Calculated stats:", future, 200).setBatchSize(5000);
+        ProgressLogger progressLogger = new ProgressLogger("Calculated stats:",
+                () -> variantDBAdaptor.count(readerQuery).first(), 200).setBatchSize(5000);
         for (int i = 0; i < numTasks; i++) {
             tasks.add(new VariantStatsWrapperTask(overwrite, cohorts, studyConfiguration, variantSourceStats, tagmap, progressLogger));
         }
@@ -203,7 +198,7 @@ public class VariantStatisticsManager {
         StringDataWriter writer = new StringDataWriter(variantStatsPath, true);
 
         // runner
-        ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numTasks, batchSize, numTasks * 2, false);
+        ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder().setNumTasks(numTasks).setBatchSize(batchSize).build();
         ParallelTaskRunner runner = new ParallelTaskRunner<>(reader, tasks, writer, config);
         try {
             logger.info("starting stats creation for cohorts {}", cohorts.keySet());
