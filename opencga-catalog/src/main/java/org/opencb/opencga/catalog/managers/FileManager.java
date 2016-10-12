@@ -2488,7 +2488,8 @@ public class FileManager extends AbstractManager implements IFileManager {
                     // Retrieve all the VCF files that can be found within the directory
                     String path = file.first().getPath().endsWith("/") ? file.first().getPath() : file.first().getPath() + "/";
                     Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.VCF, File.Format.GVCF))
-                            .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + path + "*");
+                            .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + path + "*")
+                            .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
                     QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, queryOptions);
 
                     if (fileQueryResult.getNumResults() == 0) {
