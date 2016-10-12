@@ -303,8 +303,12 @@ public class VariantSqlQueryParser {
     private String getRegionFilter(Region region) {
         List<String> subFilters = new ArrayList<>(3);
         subFilters.add(buildFilter(VariantColumn.CHROMOSOME, "=", region.getChromosome()));
-        subFilters.add(buildFilter(VariantColumn.POSITION, ">=", Integer.toString(region.getStart())));
-        subFilters.add(buildFilter(VariantColumn.POSITION, "<=", Integer.toString(region.getEnd())));
+        if (region.getStart() > 1) {
+            subFilters.add(buildFilter(VariantColumn.POSITION, ">=", Integer.toString(region.getStart())));
+        }
+        if (region.getEnd() < Integer.MAX_VALUE) {
+            subFilters.add(buildFilter(VariantColumn.POSITION, "<=", Integer.toString(region.getEnd())));
+        }
         return appendFilters(subFilters, QueryOperation.AND.toString());
     }
 

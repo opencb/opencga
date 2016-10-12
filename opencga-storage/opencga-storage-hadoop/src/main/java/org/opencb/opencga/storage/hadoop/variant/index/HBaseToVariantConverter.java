@@ -136,6 +136,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                               VariantAnnotation annotation) {
         if (annotation == null) {
             annotation = new VariantAnnotation();
+            annotation.setConsequenceTypes(Collections.emptyList());
         }
         if (failOnEmptyVariants && rows.isEmpty()) {
             throw new IllegalStateException("No Row columns supplied for row " + variant);
