@@ -49,6 +49,7 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
@@ -135,7 +136,7 @@ public class VariantHbaseTestUtils {
                 os.println("Variant = " + variant);
                 for (Map.Entry<byte[], byte[]> entry : result.getFamilyMap(genomeHelper.getColumnFamily()).entrySet()) {
                     String key = Bytes.toString(entry.getKey());
-                    VariantPhoenixHelper.Column column = VariantPhoenixHelper.VariantColumn.getColumn(key);
+                    PhoenixHelper.Column column = VariantPhoenixHelper.VariantColumn.getColumn(key);
                     if (column != null) {
                         os.println("\t" + key + " = " + length(entry.getValue()) + ", "
                                 + column.getPDataType().toObject(entry.getValue()));

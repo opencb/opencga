@@ -246,6 +246,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         VariantDBIterator iterator = iterator(query, options);
         iterator.forEachRemaining(variants::add);
         long numTotalResults;
+        String warn = "";
+        String error = "";
 
         if (options == null) {
             numTotalResults = variants.size();
@@ -256,13 +258,23 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 } else {
                     numTotalResults = count(query).first();
                 }
+                if (options.getBoolean("explain")) {
+                    String sql = queryParser.parse(query, options);
+                    try {
+                        warn = phoenixHelper.getPhoenixHelper().explain(getJdbcConnection(), sql);
+                        logger.warn("EXPLANATION: \n" + warn);
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
             } else {
                 // There are no limit. Do not count.
                 numTotalResults = variants.size();
             }
         }
 
-        return new QueryResult<>("getVariants", ((int) iterator.getTimeFetching()), variants.size(), numTotalResults, "", "", variants);
+        return new QueryResult<>("getVariants", ((int) iterator.getTimeFetching()), variants.size(), numTotalResults,
+                warn, error, variants);
     }
 
     @Override
@@ -513,6 +525,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     public void preUpdateAnnotations() throws IOException {
         try {
             phoenixHelper.updateAnnotationFields(getJdbcConnection(), variantTable);
+//            phoenixHelper.createVariantIndexes(getJdbcConnection(), variantTable);
         } catch (SQLException e) {
             throw new IOException(e);
         }

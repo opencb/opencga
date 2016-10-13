@@ -22,6 +22,7 @@ import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.variant.converter.Converter;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.AbstractPhoenixConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,14 +147,14 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter 
 
         if (variantAnnotation.getConservation() != null) {
             for (Score score : variantAnnotation.getConservation()) {
-                VariantPhoenixHelper.Column column = VariantPhoenixHelper.getConservationScoreColumn(score.getSource());
+                PhoenixHelper.Column column = VariantPhoenixHelper.getConservationScoreColumn(score.getSource());
                 add(put, column, score.getScore());
             }
         }
 
         if (variantAnnotation.getPopulationFrequencies() != null) {
             for (PopulationFrequency pf : variantAnnotation.getPopulationFrequencies()) {
-                VariantPhoenixHelper.Column column = VariantPhoenixHelper.getPopulationFrequencyColumn(pf.getStudy(), pf.getPopulation());
+                PhoenixHelper.Column column = VariantPhoenixHelper.getPopulationFrequencyColumn(pf.getStudy(), pf.getPopulation());
                 addArray(put, column.bytes(), Arrays.asList(pf.getRefAlleleFreq(), pf.getAltAlleleFreq()),
                         ((PArrayDataType) column.getPDataType()));
             }
@@ -161,7 +162,7 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter 
 
         if (variantAnnotation.getFunctionalScore() != null) {
             for (Score score : variantAnnotation.getFunctionalScore()) {
-                VariantPhoenixHelper.Column column = VariantPhoenixHelper.getFunctionalScoreColumn(score.getSource());
+                PhoenixHelper.Column column = VariantPhoenixHelper.getFunctionalScoreColumn(score.getSource());
                 add(put, column, score.getScore());
             }
         }

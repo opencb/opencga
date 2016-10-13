@@ -45,6 +45,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.*;
 
 /**
@@ -699,7 +700,8 @@ public class VariantSqlQueryParser {
 
         addQueryFilter(query, ANNOT_DRUG, VariantColumn.DRUG, filters);
 
-        addQueryFilter(query, ANNOT_FUNCTIONAL_SCORE, (keyOpValue, rawValue) -> getFunctionalScoreColumn(keyOpValue[0]), null, filters);
+        addQueryFilter(query, ANNOT_FUNCTIONAL_SCORE,
+                (keyOpValue, rawValue) -> getFunctionalScoreColumn(keyOpValue[0], rawValue), null, filters);
     }
 
     /**
