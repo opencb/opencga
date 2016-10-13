@@ -63,6 +63,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
     public static final String CONFIG_VARIANT_FILE_IDS          = "opencga.variant.input.file_ids";
     public static final String CONFIG_VARIANT_TABLE_NAME        = "opencga.variant.table.name";
     public static final String CONFIG_VARIANT_TABLE_COMPRESSION = "opencga.variant.table.compression";
+    public static final String CONFIG_VARIANT_TABLE_PRESPLIT_SIZE = "opencga.variant.table.presplit.size";
     public static final String TIMESTAMP                        = "opencga.variant.table.timestamp";
 
     public static final String HBASE_KEYVALUE_SIZE_MAX = "hadoop.load.variant.hbase.client.keyvalue.maxsize";
@@ -292,10 +293,17 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         }
     }
 
-    public static boolean createVariantTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con) throws IOException {
+    public static boolean createVariantTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con)
+            throws IOException {
+        int nsplits = genomeHelper.getConf().getInt(CONFIG_VARIANT_TABLE_PRESPLIT_SIZE, 100);
+        List<byte[]> splitList = GenomeHelper.generateBootPreSplitsHuman(
+                nsplits,
+                (chr, pos) -> genomeHelper.generateVariantRowKey(chr, pos, "", ""));
         return genomeHelper.getHBaseManager().createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(),
-                Compression.getCompressionAlgorithmByName(
-                        genomeHelper.getConf().get(CONFIG_VARIANT_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName())));
+                splitList, Compression.getCompressionAlgorithmByName(
+                        genomeHelper.getConf().get(
+                                CONFIG_VARIANT_TABLE_COMPRESSION,
+                                Compression.Algorithm.SNAPPY.getName())));
     }
 
     public static String[] configure(String[] args, Configured configured) throws Exception {

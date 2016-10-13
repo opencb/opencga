@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -281,29 +282,13 @@ public class HBaseManager extends Configured implements AutoCloseable {
      * @param con HBase connection object
      * @param tableName    HBase table name
      * @param columnFamily Column Family
-     * @return boolean True if a new table was created
-     * @throws IOException throws {@link IOException} from creating a connection / table
-     **/
-    public static boolean createTableIfNeeded(Connection con, String tableName, byte[] columnFamily) throws IOException {
-        return createTableIfNeeded(con, tableName, columnFamily, Compression.Algorithm.SNAPPY);
-    }
-
-
-    public boolean createTableIfNeeded(String tableName, byte[] columnFamily, Compression.Algorithm compressionType) throws IOException {
-        return createTableIfNeeded(getConnection(), tableName, columnFamily, compressionType);
-    }
-
-    /**
-     * Create default HBase table layout with one column family.
-     *
-     * @param con HBase connection object
-     * @param tableName    HBase table name
-     * @param columnFamily Column Family
+     * @param preSplits Pre-split regions at table creation
      * @param compressionType Compression Algorithm
      * @return boolean True if a new table was created
      * @throws IOException throws {@link IOException} from creating a connection / table
      **/
-    public static boolean createTableIfNeeded(Connection con, String tableName, byte[] columnFamily, Compression.Algorithm compressionType)
+    public static boolean createTableIfNeeded(Connection con, String tableName, byte[] columnFamily,
+                                              List<byte[]> preSplits, Compression.Algorithm compressionType)
             throws IOException {
         TableName tName = TableName.valueOf(tableName);
         LOGGER.info("CreateIfNeeded with connection {}", con);
@@ -316,8 +301,13 @@ public class HBaseManager extends Configured implements AutoCloseable {
                 }
                 descr.addFamily(family);
                 try {
-                    LOGGER.info("Create New HBASE table {}", tableName);
-                    admin.createTable(descr);
+                    if (!preSplits.isEmpty()) {
+                        LOGGER.info("Create New HBASE table {} with {} preSplits", tableName, preSplits.size());
+                        admin.createTable(descr, preSplits.toArray(new byte[0][]));
+                    } else {
+                        LOGGER.info("Create New HBASE table - no pre-splits {}", tableName);
+                        admin.createTable(descr);
+                    }
                 } catch (TableExistsException e) {
                     return false;
                 }
