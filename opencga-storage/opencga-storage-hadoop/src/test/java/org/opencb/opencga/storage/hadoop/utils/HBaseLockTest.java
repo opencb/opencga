@@ -53,8 +53,7 @@ public class HBaseLockTest extends VariantStorageManagerTestUtils implements Had
     public void setUp() throws Exception {
         clearDB(DB_NAME);
         HBaseManager hbaseManager = new HBaseManager(configuration.get());
-        hbaseManager.createTableIfNeeded(hbaseManager.getConnection(), DB_NAME, Bytes.toBytes("0"),
-                Collections.emptyList(), Compression.Algorithm.NONE);
+        hbaseManager.createTableIfNeeded(DB_NAME, Bytes.toBytes("0"), Compression.Algorithm.NONE);
         hbaseLock = new HBaseLock(hbaseManager, DB_NAME, Bytes.toBytes("0"), Bytes.toBytes("R"));
     }
 
