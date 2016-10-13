@@ -16,11 +16,17 @@
 
 package org.opencb.opencga.storage.hadoop.variant;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
+
+import java.util.List;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created on 20/11/15
@@ -61,5 +67,30 @@ public class GenomeHelperTest {
         byte[] variantRowkey = genomeHelper.generateVariantRowKey(variant);
         Variant generatedVariant = genomeHelper.extractVariantFromVariantRowKey(variantRowkey);
         Assert.assertEquals(variant, generatedVariant);
+    }
+
+    @Test
+    public void testGenerateSplitArchive() throws Exception {
+        assertOrder(GenomeHelper.generateBootPreSplitsHuman(30, genomeHelper::generateBlockIdAsBytes));
+    }
+
+    @Test
+    public void testGenerateSplitVariants() throws Exception {
+        assertOrder(GenomeHelper.generateBootPreSplitsHuman(30, genomeHelper::generateVariantRowKey));
+    }
+
+    void assertOrder(List<byte[]> bytes) {
+        String prev = "0";
+        for (byte[] bytesKey : bytes) {
+            String key = new String(bytesKey);
+            if (StringUtils.isAsciiPrintable(key)) {
+                System.out.println("key = " + key);
+            } else {
+                System.out.println("key = " + Bytes.toHex(bytesKey));
+            }
+//            System.out.println(prev + ".compareTo(" + key + ") = " + prev.compareTo(key));
+            assertTrue(prev.compareTo(key) < 0);
+            prev = key;
+        }
     }
 }
