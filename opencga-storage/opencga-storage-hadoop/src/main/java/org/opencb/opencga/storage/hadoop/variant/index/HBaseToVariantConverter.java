@@ -68,6 +68,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
     private boolean studyNameAsStudyId = false;
     private boolean mutableSamplesPosition = true;
     private boolean failOnEmptyVariants = false;
+    private boolean simpleGenotypes = false;
 
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
         this(variantTableHelper, new HBaseStudyConfigurationManager(variantTableHelper.getOutputTableAsString(),
@@ -98,6 +99,11 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
     public HBaseToVariantConverter setFailOnEmptyVariants(boolean failOnEmptyVariants) {
         this.failOnEmptyVariants = failOnEmptyVariants;
+        return this;
+    }
+
+    public HBaseToVariantConverter setSimpleGenotypes(boolean simpleGenotypes) {
+        this.simpleGenotypes = simpleGenotypes;
         return this;
     }
 
@@ -221,7 +227,14 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                     continue;   //Sample may not be required. Ignore this sample.
                 }
                 String genotype = entry.getValue();
-                samplesDataArray[samplePosition] = Arrays.asList(genotype, VariantMerger.PASS_VALUE);
+                String returnedGenotype;
+                // FIXME: Decide what to do with lists of genotypes
+                if (simpleGenotypes) {
+                    returnedGenotype = getSimpleGenotype(genotype);
+                } else {
+                    returnedGenotype = genotype;
+                }
+                samplesDataArray[samplePosition] = Arrays.asList(returnedGenotype, VariantMerger.PASS_VALUE);
             }
 
             // Fill gaps (with HOM_REF)
@@ -303,6 +316,20 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             throw new IllegalStateException("No Studies registered for variant!!! " + variant);
         }
         return variant;
+    }
+
+    private String getSimpleGenotype(String genotype) {
+        if (genotype.contains(",")) {
+            String[] split = genotype.split(",");
+            for (String gt : split) {
+                if (gt.contains("1")) {
+                    return "1/.";
+                }
+            }
+            return "0/.";
+        } else {
+            return genotype;
+        }
     }
 
     private void wrongVariant(String message) {
