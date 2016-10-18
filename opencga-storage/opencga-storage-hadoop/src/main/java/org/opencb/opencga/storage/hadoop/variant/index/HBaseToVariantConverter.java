@@ -21,7 +21,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Result;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.*;
+import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
+import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.converter.Converter;
@@ -121,7 +124,10 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                 resultSet.getString(VariantPhoenixHelper.VariantColumn.REFERENCE.column()),
                 resultSet.getString(VariantPhoenixHelper.VariantColumn.ALTERNATE.column())
         );
-        variant.setType(VariantType.valueOf(resultSet.getString(VariantPhoenixHelper.VariantColumn.TYPE.column())));
+        String type = resultSet.getString(VariantPhoenixHelper.VariantColumn.TYPE.column());
+        if (StringUtils.isNotBlank(type)) {
+            variant.setType(VariantType.valueOf(type));
+        }
         try {
             Map<Integer, Map<Integer, VariantStats>> stats = statsConverter.convert(resultSet);
             VariantAnnotation annotation = annotationConverter.convert(resultSet);
