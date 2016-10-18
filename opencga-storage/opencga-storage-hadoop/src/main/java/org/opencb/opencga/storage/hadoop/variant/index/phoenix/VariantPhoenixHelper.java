@@ -223,8 +223,7 @@ public class VariantPhoenixHelper {
                 .append(CHROMOSOME).append(", ")
                 .append(POSITION).append(", ")
                 .append(REFERENCE).append(", ")
-                .append(ALTERNATE).append(") ").append(") ")
-                .append("DEFAULT_COLUMN_FAMILY='").append(columnFamily).append("'").toString();
+                .append(ALTERNATE).append(") ").append(") ").toString();
     }
 
     public void createVariantIndexes(Connection con, String tableName) throws SQLException {

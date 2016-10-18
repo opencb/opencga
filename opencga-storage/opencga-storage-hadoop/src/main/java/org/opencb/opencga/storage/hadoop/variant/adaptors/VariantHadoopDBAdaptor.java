@@ -23,6 +23,7 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.util.QueryUtil;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
@@ -413,7 +414,17 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
             logger.debug("Creating {} iterator", VariantHBaseResultSetIterator.class);
             try {
+                if (true) {
+                    System.err.println("---- " + "EXPLAIN " + sql);
+                    try (Statement statement = getJdbcConnection().createStatement()) {
+                        ResultSet resultSet = statement.executeQuery("EXPLAIN " + sql);
+                        String explain = QueryUtil.getExplainPlan(resultSet);
+                        System.err.println("EXPLANATION: \n" + explain);
+                    }
+                }
+
                 Statement statement = getJdbcConnection().createStatement();
+                statement.setFetchSize(options.getInt("batchSize", -1));
                 ResultSet resultSet = statement.executeQuery(sql);
                 List<String> returnedSamples = getDBAdaptorUtils().getReturnedSamples(query, options);
                 VariantHBaseResultSetIterator iterator = new VariantHBaseResultSetIterator(

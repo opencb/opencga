@@ -21,7 +21,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Result;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.*;
+import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
+import org.opencb.biodata.models.variant.avro.FileEntry;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.converter.Converter;
@@ -68,6 +71,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
     private boolean studyNameAsStudyId = false;
     private boolean mutableSamplesPosition = true;
     private boolean failOnEmptyVariants = false;
+    private boolean simpleGenotypes = false;
 
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
         this(variantTableHelper, new HBaseStudyConfigurationManager(variantTableHelper.getOutputTableAsString(),
@@ -101,6 +105,11 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
         return this;
     }
 
+    public HBaseToVariantConverter setSimpleGenotypes(boolean simpleGenotypes) {
+        this.simpleGenotypes = simpleGenotypes;
+        return this;
+    }
+
     @Override
     public Variant convert(Result result) {
         VariantAnnotation annotation = annotationConverter.convert(result);
@@ -115,7 +124,10 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                 resultSet.getString(VariantPhoenixHelper.VariantColumn.REFERENCE.column()),
                 resultSet.getString(VariantPhoenixHelper.VariantColumn.ALTERNATE.column())
         );
-        variant.setType(VariantType.valueOf(resultSet.getString(VariantPhoenixHelper.VariantColumn.TYPE.column())));
+        String type = resultSet.getString(VariantPhoenixHelper.VariantColumn.TYPE.column());
+        if (StringUtils.isNotBlank(type)) {
+            variant.setType(VariantType.valueOf(type));
+        }
         try {
             Map<Integer, Map<Integer, VariantStats>> stats = statsConverter.convert(resultSet);
             VariantAnnotation annotation = annotationConverter.convert(resultSet);
@@ -221,7 +233,14 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                     continue;   //Sample may not be required. Ignore this sample.
                 }
                 String genotype = entry.getValue();
-                samplesDataArray[samplePosition] = Arrays.asList(genotype, VariantMerger.PASS_VALUE);
+                String returnedGenotype;
+                // FIXME: Decide what to do with lists of genotypes
+                if (simpleGenotypes) {
+                    returnedGenotype = getSimpleGenotype(genotype);
+                } else {
+                    returnedGenotype = genotype;
+                }
+                samplesDataArray[samplePosition] = Arrays.asList(returnedGenotype, VariantMerger.PASS_VALUE);
             }
 
             // Fill gaps (with HOM_REF)
@@ -303,6 +322,20 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             throw new IllegalStateException("No Studies registered for variant!!! " + variant);
         }
         return variant;
+    }
+
+    private String getSimpleGenotype(String genotype) {
+        if (genotype.contains(",")) {
+            String[] split = genotype.split(",");
+            for (String gt : split) {
+                if (gt.contains("1")) {
+                    return "1/.";
+                }
+            }
+            return "0/.";
+        } else {
+            return genotype;
+        }
     }
 
     private void wrongVariant(String message) {
