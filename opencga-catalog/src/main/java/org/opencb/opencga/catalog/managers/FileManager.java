@@ -1530,6 +1530,13 @@ public class FileManager extends AbstractManager implements IFileManager {
             throw new CatalogIOException("File " + uriOrigin + " does not exist");
         }
 
+        final URI normalizedUri;
+        try {
+            normalizedUri = UriUtils.createUri(uriOrigin.normalize().getPath());
+        } catch (URISyntaxException e) {
+            throw new CatalogException(e);
+        }
+
         studyDBAdaptor.checkId(studyId);
         String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_FILES);
@@ -1546,10 +1553,10 @@ public class FileManager extends AbstractManager implements IFileManager {
             }
         }
         String externalPathDestinyStr;
-        if (Paths.get(uriOrigin).toFile().isDirectory()) {
-            externalPathDestinyStr = Paths.get(pathDestiny).resolve(Paths.get(uriOrigin).getFileName()).toString() + "/";
+        if (Paths.get(normalizedUri).toFile().isDirectory()) {
+            externalPathDestinyStr = Paths.get(pathDestiny).resolve(Paths.get(normalizedUri).getFileName()).toString() + "/";
         } else {
-            externalPathDestinyStr = Paths.get(pathDestiny).resolve(Paths.get(uriOrigin).getFileName()).toString();
+            externalPathDestinyStr = Paths.get(pathDestiny).resolve(Paths.get(normalizedUri).getFileName()).toString();
         }
 
         // Check if the path already exists and is not external
@@ -1565,7 +1572,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         // Check if the uri was already linked to that same path
         query = new Query()
-                .append(FileDBAdaptor.QueryParams.URI.key(), uriOrigin)
+                .append(FileDBAdaptor.QueryParams.URI.key(), normalizedUri)
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!="
                         + File.FileStatus.REMOVED)
@@ -1575,7 +1582,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         if (fileDBAdaptor.count(query).first() > 0) {
             // Create a regular expression on URI to return everything linked from that URI
-            query.put(FileDBAdaptor.QueryParams.URI.key(), "~^" + uriOrigin);
+            query.put(FileDBAdaptor.QueryParams.URI.key(), "~^" + normalizedUri);
             query.remove(FileDBAdaptor.QueryParams.PATH.key());
 
             // Limit the number of results and only some fields
@@ -1596,7 +1603,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         // Check if the uri was linked to other path
         query = new Query()
-                .append(FileDBAdaptor.QueryParams.URI.key(), uriOrigin)
+                .append(FileDBAdaptor.QueryParams.URI.key(), normalizedUri)
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!="
                         + File.FileStatus.REMOVED)
@@ -1604,7 +1611,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (fileDBAdaptor.count(query).first() > 0) {
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.PATH.key());
             String path = fileDBAdaptor.get(query, queryOptions).first().getPath();
-            throw new CatalogException(uriOrigin + " was already linked to catalog on a this other path " + path);
+            throw new CatalogException(normalizedUri + " was already linked to catalog on a this other path " + path);
         }
 
         boolean parents = params.getBoolean("parents", false);
@@ -1641,9 +1648,9 @@ public class FileManager extends AbstractManager implements IFileManager {
             }
         }
 
-        Path pathOrigin = Paths.get(uriOrigin);
+        Path pathOrigin = Paths.get(normalizedUri);
         Path externalPathDestiny = Paths.get(externalPathDestinyStr);
-        if (Paths.get(uriOrigin).toFile().isFile()) {
+        if (Paths.get(normalizedUri).toFile().isFile()) {
 
             // Check if there is already a file in the same path
             query = new Query()
@@ -1652,10 +1659,10 @@ public class FileManager extends AbstractManager implements IFileManager {
 
             // Create the file
             if (fileDBAdaptor.count(query).first() == 0) {
-                long diskUsage = Files.size(Paths.get(uriOrigin));
+                long diskUsage = Files.size(Paths.get(normalizedUri));
 
                 File subfile = new File(-1, externalPathDestiny.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
-                        File.Bioformat.NONE, uriOrigin, externalPathDestinyStr, TimeUtils.getTime(), TimeUtils.getTime(), description,
+                        File.Bioformat.NONE, normalizedUri, externalPathDestinyStr, TimeUtils.getTime(), TimeUtils.getTime(), description,
                         new File.FileStatus(File.FileStatus.READY), true, diskUsage, -1, Collections.emptyList(), -1,
                         Collections.emptyList(), Collections.emptyList(), null, Collections.emptyMap(), Collections.emptyMap());
                 QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, studyId, new QueryOptions());
@@ -1690,7 +1697,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
 
                     try {
-                        String destinyPath = dir.toString().replace(Paths.get(uriOrigin).toString(), finalExternalPathDestinyStr);
+                        String destinyPath = dir.toString().replace(Paths.get(normalizedUri).toString(), finalExternalPathDestinyStr);
 
                         if (!destinyPath.isEmpty() && !destinyPath.endsWith("/")) {
                             destinyPath += "/";
@@ -1725,7 +1732,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                 @Override
                 public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs) throws IOException {
                     try {
-                        String destinyPath = filePath.toString().replace(Paths.get(uriOrigin).toString(), finalExternalPathDestinyStr);
+                        String destinyPath = filePath.toString().replace(Paths.get(normalizedUri).toString(), finalExternalPathDestinyStr);
 
                         if (destinyPath.startsWith("/")) {
                             destinyPath = destinyPath.substring(1);
@@ -1811,7 +1818,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
             // Check if the uri was already linked to that same path
             query = new Query()
-                    .append(FileDBAdaptor.QueryParams.URI.key(), "~^" + uriOrigin)
+                    .append(FileDBAdaptor.QueryParams.URI.key(), "~^" + normalizedUri)
                     .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED + ";!="
                             + File.FileStatus.REMOVED)

@@ -1,0 +1,201 @@
+<dom-module id="opencga-sample-comparator">
+    <template>
+        <style is="custom-style" include="jso-styles"></style>
+
+        <div>
+            <br>
+                <div class="dropdown">
+                    <button class="btn btn-default dropdown-toggle" type="button" id="variableSetDropDown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                        {{selectedVariableSet}}
+                        <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="segregationDropdown" on-click="selectVariableSet">
+                        <template is="dom-repeat" items="{{variableSets}}">
+                            <li><a>{{item.name}}</a></li>
+                        </template>
+                    </ul>
+                </div>
+
+                <div id="{{prefix}}Content">
+                    <table id="{{prefix}}SampleComparator" data-search="true" data-show-columns="true" data-pagination="true" data-page-list="[10, 25, 50]">
+
+                        <thead style="background-color: #eee"></thead>
+                    </table>
+                </div>
+        </div>
+    </template>
+
+    <script>
+        Polymer({
+            is: 'opencga-sample-comparator',
+
+            properties: {
+                opencgaClient: {
+                    type: Object
+                },
+                study: {
+                    type: Object,
+                    value: {}
+                },
+                samples: {
+                    type: Array,
+                    value: [],
+                    observer: 'dataChanged'
+                },
+                variableSets: {
+                    type: Array,
+                    observer: 'dataChanged'
+                },
+                sampleIds: {
+                    type: Array,
+                    value: []
+                },
+                variableIds: {
+                    type: Array,
+                    value: []
+                },
+                cohortId: {
+                    type: String,
+                    value: ""
+                },
+                variableSet: {
+                    type: Object,
+                    observer: 'dataChanged'
+                },
+            },
+
+            observers: [
+                'getSamples(opencgaClient, sampleIds)',
+                'getSamples(opencgaClient, cohortId)',
+                'getVariableSets(opencgaClient, study)',
+                'getVariableSets(opencgaClient, variableIds)'
+            ],
+
+            ready: function() {
+                this.selectedVariableSet = "VariableSets";
+
+                if (typeof this.prefix === "undefined" || this.prefix == "") {
+                    this.prefix = Utils.randomString(6);
+                }
+            },
+            selectVariableSet: function (e) {
+                e.preventDefault();
+                this.selectedVariableSet = e.target.innerHTML;
+                let _this = this;
+                for (let i in _this.variableSets) {
+                    let variableSet = _this.variableSets[i];
+                    if (variableSet.name == _this.selectedVariableSet) {
+                        _this.variableSet = variableSet;
+                    }
+                }
+            },
+            getSamples: function (opencgaClient, resource) {
+                let _this = this;
+                if (_this.cohortId != "" && _this.opencgaClient instanceof OpenCGAClient) {
+                    _this.opencgaClient.cohorts().getSamples(_this.cohortId).then(function (response) {
+                        // TODO test it with the actual cohort id
+                        _this.samples = response.response[0].result;
+                    });
+                } else if (_this.sampleIds.length > 0 && _this.opencgaClient instanceof OpenCGAClient) {
+                    let samples = [];
+                    _this.opencgaClient.samples().info(_this.sampleIds.join(',')).then(function (response) {
+                        for (let i in response.response) {
+                            samples.push(response.response[i].result[0]);
+                        }
+                        _this.samples = samples;
+                    });
+                }
+            },
+            getVariableSets: function (opencgaClient, resource) {
+                let _this = this;
+                let variableSets = [];
+                if (_this.opencgaClient instanceof OpenCGAClient) {
+                    if (typeof _this.study !== "undefined" && typeof _this.study.id !== "undefined" && _this.study.id != "") {
+                        _this.opencgaClient.studies().info(_this.study.id).then(function (response) {
+                            _this.variableSets = response.response[0].result[0].variableSets;
+                        });
+                    } else if (_this.variableIds.length == 1) {
+                        _this.opencgaClient.variables().info(_this.variableIds[0]).then(function (response) {
+                            variableSets.push(response.response[0].result[0]);
+                            _this.variableSets = variableSets;
+                        });
+                    } else if (_this.variableIds.length > 1 && typeof _this.study.id !== "undefined" && _this.study.id != "") {
+                        _this.opencgaClient.variables().search({id: _this.variableIds.join(','), studyId: _this.study.id}).then(function (response) {
+                            // TODO test it with more than one variable-set id
+                            for (let i in response.response) {
+                                variableSets.push(response.response[i].result[0]);
+                            }
+                            _this.variableSets = variableSets;
+                        });
+                    }
+                }
+            },
+            dataChanged: function () {
+                this.refreshVariableSetTable(); // Refreshing the table columns whenever the samples change
+                let _this = this;
+                if (typeof _this.variableSet !== "undefined") {
+                        let sortedVariableSet = _this.variableSet.variables;
+                        sortedVariableSet.sort(function sortByRank(a, b) {
+                            if (a.rank > b.rank) {
+                                return 1;
+                            }
+                            if (a.rank < b.rank) {
+                                return -1;
+                            }
+                            return 0;
+                        });
+                        _this.variableSet.varibles = sortedVariableSet;
+
+                        $('#' + _this.prefix + 'SampleComparator').bootstrapTable('destroy');
+                        $('#' + _this.prefix + 'SampleComparator').bootstrapTable({
+                            data: sortedVariableSet,
+                            columns: _this._variableSetColumns
+                        });
+                }
+            },
+            refreshVariableSetTable: function () {
+                let _this = this;
+                let cols = [
+                    [
+                        {
+                            title: 'Variable Set',
+                            field: 'name',
+                            rowspan: 2,
+                            colspan: 1
+                        },
+                        {
+                            title: 'Samples',
+                            rowspan: 1,
+                            colspan: _this.samples.length
+                        }
+                    ],
+                    []
+                ];
+
+                for (let i = 0; i < _this.samples.length; i++) {
+                    cols[1].splice(i, 0,
+                            {
+                                title: _this.samples[i].name,
+                                field: {sample : _this.samples[i]},
+                                rowspan: 1,
+                                colspan: 1,
+                                formatter: this.variableSetFormatter
+                            });
+                }
+                _this._variableSetColumns = cols;
+            },
+            variableSetFormatter: function (value, row, index) {
+                let sample = this.field.sample;
+                for (let i in sample.annotationSets) {
+                    let annotationSet = sample.annotationSets[i];
+                    let annotations = annotationSet.annotations;
+                    for (let j in annotations) {
+                        if (annotations[j].name == row.name) {
+                            return annotations[j].value;
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</dom-module>

@@ -35,7 +35,10 @@
     "eonasdan-bootstrap-datetimepicker": "latest",
     "moment": "^2.14.1",
     "highcharts": "^5.0.0",
-    "jstat": "^1.5.3"
+    "jstat": "^1.5.3",
+    "font-awesome": "^4.6.3",
+    "bootstrap": "^3.3.7",
+    "bootstrap-table": "^1.11.0"
   },
   "resolutions": {
     "highcharts": "^5.0.0"
