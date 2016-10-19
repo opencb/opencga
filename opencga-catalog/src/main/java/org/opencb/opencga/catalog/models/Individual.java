@@ -19,9 +19,7 @@ package org.opencb.opencga.catalog.models;
 import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static java.lang.Math.toIntExact;
 
@@ -68,6 +66,7 @@ public class Individual extends Annotable<IndividualAclEntry> {
     }
 
     public Individual() {
+        this(-1, null, -1, -1, null, null, null, null, null, new LinkedList<>(), new HashMap<>());
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Species species,

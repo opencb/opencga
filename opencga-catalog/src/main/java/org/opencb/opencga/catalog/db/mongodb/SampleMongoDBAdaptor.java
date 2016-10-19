@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
@@ -421,9 +422,16 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
             qOptions = new QueryOptions();
         }
         qOptions = filterOptions(qOptions, FILTER_ROUTE_SAMPLES);
-        QueryResult<Sample> sampleQueryResult = sampleCollection.find(bson, sampleConverter, qOptions);
-        logger.debug("Sample get: query : {}, dbTime: {}", bson, qOptions == null ? "" : qOptions.toJson(),
-                sampleQueryResult.getDbTime());
+        QueryResult<Sample> sampleQueryResult;
+        if (qOptions.get(QueryOptions.INCLUDE) != null && qOptions.getAsStringList(QueryOptions.INCLUDE).contains("individual")) {
+            Bson match = Aggregates.match(bson);
+            Bson lookup = Aggregates.lookup("individual", QueryParams.INDIVIDUAL_ID.key(), IndividualDBAdaptor.QueryParams.ID.key(),
+                    "individual");
+            sampleQueryResult = sampleCollection.aggregate(Arrays.asList(match, lookup), sampleConverter, qOptions);
+        } else {
+            sampleQueryResult = sampleCollection.find(bson, sampleConverter, qOptions);
+        }
+        logger.debug("Sample get: query : {}, dbTime: {}", bson, qOptions == null ? "" : qOptions.toJson(), sampleQueryResult.getDbTime());
         return endQuery("Get sample", startTime, sampleQueryResult);
     }
 
@@ -606,9 +614,9 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     @Deprecated
     public void checkSampleIsParentOfFamily(int id) throws CatalogDBException {
         Sample sample = get(id, new QueryOptions()).first();
-        if (sample.getIndividualId() > 0) {
-            Query query = new Query(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), sample.getIndividualId())
-                    .append(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), sample.getIndividualId());
+        if (sample.getIndividual().getId() > 0) {
+            Query query = new Query(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), sample.getIndividual().getId())
+                    .append(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), sample.getIndividual().getId());
             Long count = dbAdaptorFactory.getCatalogIndividualDBAdaptor().count(query).first();
             if (count > 0) {
                 throw CatalogDBException.sampleIdIsParentOfOtherIndividual(id);

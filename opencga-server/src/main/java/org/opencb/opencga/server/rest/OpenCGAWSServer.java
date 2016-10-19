@@ -294,6 +294,18 @@ public class OpenCGAWSServer {
                 queryOptions.remove("status");
             }
 
+            if (param.equalsIgnoreCase("jobId")) {
+                query.put("job.id", entry.getValue().get(0));
+                query.remove("jobId");
+                queryOptions.remove("jobId");
+            }
+
+            if (param.equalsIgnoreCase("individualId")) {
+                query.put("individual.id", entry.getValue().get(0));
+                query.remove("individualId");
+                queryOptions.remove("individualId");
+            }
+
             if (param.equalsIgnoreCase("sid")) {
                 query.remove("sid");
                 queryOptions.remove("sid");

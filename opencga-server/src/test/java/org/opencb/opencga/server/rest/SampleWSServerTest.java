@@ -100,7 +100,7 @@ public class SampleWSServerTest {
                 .queryParam("individualId", in1).queryParam("sid", sessionId).request().get(String.class);
 
         Sample sample = WSServerTestUtils.parseResult(json, Sample.class).getResponse().get(0).first();
-        assertEquals(in1, sample.getIndividualId());
+        assertEquals(in1, sample.getIndividual().getId());
     }
 
     @Test
@@ -112,7 +112,7 @@ public class SampleWSServerTest {
                 .request().post(Entity.json(entity), String.class);
 
         Sample sample = WSServerTestUtils.parseResult(json, Sample.class).getResponse().get(0).first();
-        assertEquals(entity.individualId, sample.getIndividualId());
+        assertEquals(entity.individualId, sample.getIndividual().getId());
         assertEquals(entity.attributes, sample.getAttributes());
     }
 

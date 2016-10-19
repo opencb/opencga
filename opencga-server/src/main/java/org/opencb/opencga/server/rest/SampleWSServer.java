@@ -260,6 +260,10 @@ public class SampleWSServer extends OpenCGAWSServer {
             // FIXME: The id resolution should not go here
             long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
+            if (params.get("individualId") != null) {
+                params.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), params.get("individualId"));
+                params.remove("individualId");
+            }
             QueryResult<Sample> queryResult = catalogManager.getSampleManager().update(sampleId, params, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {

@@ -118,8 +118,9 @@ public class FileWSServer extends OpenCGAWSServer {
             try {
                 QueryResult<File> fileQueryResult = catalogManager.createFile(studyId, file.getType(), file.getFormat(),
                         file.getBioformat(), file.getPath(), file.getCreationDate(),
-                        file.getDescription(), new File.FileStatus(file.getStatus().getName()), file.getDiskUsage(), file.getExperimentId(),
-                        file.getSampleIds(), file.getJobId(), file.getStats(), file.getAttributes(), true, queryOptions, sessionId);
+                        file.getDescription(), new File.FileStatus(file.getStatus().getName()), file.getDiskUsage(),
+                        file.getExperiment().getId(), file.getSampleIds(), file.getJob().getId(), file.getStats(), file.getAttributes(),
+                        true, queryOptions, sessionId);
 //                file = fileQueryResult.getResult().get(0);
                 System.out.println("fileQueryResult = " + fileQueryResult);
                 queryResults.add(fileQueryResult);
@@ -1040,15 +1041,15 @@ public class FileWSServer extends OpenCGAWSServer {
             QueryOptions qOptions = new QueryOptions();
             parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, parameters, qOptions);*/
             ObjectMap params = new ObjectMap();
-            params.putIfNotEmpty("name", name);
-            params.putIfNotEmpty("format", format);
-            params.putIfNotEmpty("bioformat", bioformat);
-            params.putIfNotEmpty("description", description);
-            params.putIfNotEmpty("attributes", attributes);
-            params.putIfNotEmpty("stats", stats);
-            params.putIfNotEmpty("sampleIds", sampleIds);
-            params.putIfNotEmpty("jobId", jobId);
-            params.putIfNotEmpty("path", path);
+            params.putIfNotEmpty(FileDBAdaptor.QueryParams.NAME.key(), name);
+            params.putIfNotEmpty(FileDBAdaptor.QueryParams.FORMAT.key(), format);
+            params.putIfNotEmpty(FileDBAdaptor.QueryParams.BIOFORMAT.key(), bioformat);
+            params.putIfNotEmpty(FileDBAdaptor.QueryParams.DESCRIPTION.key(), description);
+            params.putIfNotEmpty(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
+            params.putIfNotEmpty(FileDBAdaptor.QueryParams.STATS.key(), stats);
+            params.putIfNotEmpty(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleIds);
+            params.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_ID.key(), jobId);
+            params.putIfNotEmpty(FileDBAdaptor.QueryParams.PATH.key(), path);
             long fileId = catalogManager.getFileId(convertPath(fileIdStr, sessionId), sessionId);
             QueryResult queryResult = catalogManager.getFileManager().update(fileId, params, queryOptions, sessionId);
             return createOkResponse(queryResult);
@@ -1069,7 +1070,7 @@ public class FileWSServer extends OpenCGAWSServer {
         //        public Long diskUsage;
 //        public int experimentId;
         public List<Integer> sampleIds;
-        public Integer jobId;
+        public Long jobId;
         public Map<String, Object> stats;
         public Map<String, Object> attributes;
     }
@@ -1081,8 +1082,13 @@ public class FileWSServer extends OpenCGAWSServer {
                                @ApiParam(name = "params", value = "Parameters to modify", required = true) UpdateFile params) {
         try {
             long fileId = catalogManager.getFileId(convertPath(fileIdStr, sessionId), sessionId);
-            QueryResult<File> queryResult = catalogManager.getFileManager().update(fileId,
-                    new ObjectMap(jsonObjectMapper.writeValueAsString(params)), queryOptions, sessionId);
+            ObjectMap map = new ObjectMap(jsonObjectMapper.writeValueAsString(params));
+            if (map.get("jobId") != null) {
+                map.put(FileDBAdaptor.QueryParams.JOB_ID.key(), map.get("jobId"));
+                map.remove("jobId");
+            }
+
+            QueryResult<File> queryResult = catalogManager.getFileManager().update(fileId, map, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

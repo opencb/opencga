@@ -45,6 +45,7 @@ public class Project {
 
 
     public Project() {
+        this(null, null, null, new Status(), null);
     }
 
     public Project(String name, String alias, String description, Status status, String organization) {

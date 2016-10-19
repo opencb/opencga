@@ -1190,7 +1190,7 @@ public class CatalogManagerTest extends GenericTest {
 
         Sample sample = catalogManager.modifySample(sampleId1, new QueryOptions("individualId", individualId), sessionIdUser).first();
 
-        assertEquals(individualId, sample.getIndividualId());
+        assertEquals(individualId, sample.getIndividual().getId());
     }
 
     @Test
@@ -1212,7 +1212,7 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.modifySample(sampleId1, new QueryOptions("individualId", -1), sessionIdUser).first();
 
         Sample sample = catalogManager.modifySample(sampleId1, new QueryOptions("individualId", -2), sessionIdUser).first();
-        assertEquals(-2, sample.getIndividualId());
+        assertEquals(-2, sample.getIndividual().getId());
     }
 
     @Test

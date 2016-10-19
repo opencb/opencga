@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.models;
 
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -36,6 +37,7 @@ public class Group {
     private List<String> userIds;
 
     public Group() {
+        this(null, new LinkedList<>());
     }
 
     public Group(String name, List<String> userIds) {
