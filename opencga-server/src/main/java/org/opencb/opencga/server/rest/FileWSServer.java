@@ -1028,14 +1028,13 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Update fields of a file", position = 16, response = File.class)
     public Response update(@ApiParam(value = "File id") @PathParam(value = "fileId") String fileIdStr,
                            @ApiParam(value = "File name", required = false) @QueryParam("name") String name,
-                           @ApiParam(value = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)", required = false) @DefaultValue("") @QueryParam("format") String format,
-                           @ApiParam(value = "Bioformat of the file (VARIANT, ALIGNMENT, SEQUENCE, PEDIGREE...NONE)", required = false) @DefaultValue("") @QueryParam("bioformat") String bioformat,
+                           @ApiParam(value = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)", required = false) @QueryParam("format") String format,
+                           @ApiParam(value = "Bioformat of the file (VARIANT, ALIGNMENT, SEQUENCE, PEDIGREE...NONE)", required = false) @QueryParam("bioformat") String bioformat,
                            @ApiParam(value = "Description of the file", required = false) @QueryParam("description") String description,
-                           @ApiParam(value = "Attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
-                           @ApiParam(value = "Stats", required = false) @DefaultValue("") @QueryParam("stats") String stats,
-                           @ApiParam(value = "Sample ids", required = false) @DefaultValue("") @QueryParam("sampleIds") String sampleIds,
-                           @ApiParam(value = "Job id", required = false) @DefaultValue("") @QueryParam("jobId") String jobId,
-                           @ApiParam(value = "Path", required = false) @DefaultValue("") @QueryParam("path") String path) {
+                           @ApiParam(value = "Attributes", required = false) @QueryParam("attributes") String attributes,
+                           @ApiParam(value = "Stats", required = false) @QueryParam("stats") String stats,
+                           @ApiParam(value = "Sample ids", required = false) @QueryParam("sampleIds") String sampleIds,
+                           @ApiParam(value = "Job id", required = false) @QueryParam("jobId") String jobId) {
         try {
             /*ObjectMap parameters = new ObjectMap();
             QueryOptions qOptions = new QueryOptions();
@@ -1049,7 +1048,6 @@ public class FileWSServer extends OpenCGAWSServer {
             params.putIfNotEmpty(FileDBAdaptor.QueryParams.STATS.key(), stats);
             params.putIfNotEmpty(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleIds);
             params.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_ID.key(), jobId);
-            params.putIfNotEmpty(FileDBAdaptor.QueryParams.PATH.key(), path);
             long fileId = catalogManager.getFileId(convertPath(fileIdStr, sessionId), sessionId);
             QueryResult queryResult = catalogManager.getFileManager().update(fileId, params, queryOptions, sessionId);
             return createOkResponse(queryResult);

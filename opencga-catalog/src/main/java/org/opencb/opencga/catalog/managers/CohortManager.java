@@ -172,6 +172,19 @@ public class CohortManager extends AbstractManager implements ICohortManager {
 
         authorizationManager.checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.UPDATE);
 
+        for (Map.Entry<String, Object> param : parameters.entrySet()) {
+            CohortDBAdaptor.QueryParams queryParam = CohortDBAdaptor.QueryParams.getParam(param.getKey());
+            switch (queryParam) {
+                case NAME:
+                case CREATION_DATE:
+                case DESCRIPTION:
+                case SAMPLES:
+                    break;
+                default:
+                    throw new CatalogException("Cannot update " + queryParam);
+            }
+        }
+
         Cohort cohort = get(cohortId, new QueryOptions(QueryOptions.INCLUDE, "projects.studies.cohorts."
                 + CohortDBAdaptor.QueryParams.STATUS_NAME.key()), sessionId).first();
         if (parameters.containsKey(CohortDBAdaptor.QueryParams.SAMPLES.key())
@@ -277,6 +290,26 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         List<Long> cohortIds = cohortQueryResult.getResult().stream().map(Cohort::getId).collect(Collectors.toList());
         String cohortIdStr = StringUtils.join(cohortIds, ",");
         return restore(cohortIdStr, options, sessionId);
+    }
+
+    @Override
+    public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        String userId = userManager.getId(sessionId);
+        long cohortId = getId(userId, id);
+
+        authorizationManager.checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.UPDATE);
+
+        if (status != null && !Cohort.CohortStatus.isValid(status)) {
+            throw new CatalogException("The status " + status + " is not valid cohort status.");
+        }
+
+        ObjectMap parameters = new ObjectMap();
+        parameters.putIfNotNull(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), status);
+        parameters.putIfNotNull(CohortDBAdaptor.QueryParams.STATUS_MSG.key(), message);
+
+        cohortDBAdaptor.update(cohortId, parameters, new QueryOptions());
+        auditManager.recordUpdate(AuditRecord.Resource.cohort, cohortId, userId, parameters, null, null);
     }
 
     @Override

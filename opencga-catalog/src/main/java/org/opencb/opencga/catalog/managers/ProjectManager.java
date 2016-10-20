@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -220,7 +221,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             parameters.remove("alias");
         }
         for (String s : parameters.keySet()) {
-            if (!s.matches("name|description|organization|status|attributes")) {
+            if (!s.matches("name|description|organization|attributes")) {
                 throw new CatalogDBException("Parameter '" + s + "' can't be changed");
             }
         }
@@ -268,6 +269,28 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     @Override
     public List<QueryResult<Project>> restore(Query query, QueryOptions options, String sessionId) throws CatalogException {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
+        throw new NotImplementedException("Project: Operation not yet supported");
+//        ParamUtils.checkParameter(sessionId, "sessionId");
+//        String userId = catalogManager.getUserManager().getId(sessionId);
+//        long projectId = getId(userId, id);
+//        String ownerId = projectDBAdaptor.getOwnerId(projectId);
+//
+//        if (!userId.equals(ownerId)) {
+//            throw new CatalogException("Permission denied: Only the owner of the project can update the status.");
+//        }
+//
+//        if (!Status.isValid(status)) {
+//            throw new CatalogException("The status " + status + " is not valid project status.");
+//        }
+//
+//        ObjectMap param = new ObjectMap(ProjectDBAdaptor.QueryParams.STATUS_NAME.key(), status);
+//        projectDBAdaptor.update(projectId, param);
+//        userDBAdaptor.updateUserLastModified(ownerId);
+//        auditManager.recordUpdate(AuditRecord.Resource.project, projectId, userId, param, null, null);
     }
 
     @Override

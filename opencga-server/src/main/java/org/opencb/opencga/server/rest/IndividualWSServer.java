@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -311,21 +312,40 @@ public class IndividualWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
+
+
     @GET
     @Path("/{individualId}/update")
     @ApiOperation(value = "Update individual information", position = 6, response = Individual.class)
     public Response updateIndividual(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
-                                     @ApiParam(value = "id", required = false) @QueryParam("id") String id,
                                      @ApiParam(value = "name", required = false) @QueryParam("name") String name,
-                                     @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") long fatherId,
-                                     @ApiParam(value = "motherId", required = false) @QueryParam("motherId") long motherId,
+                                     @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") Long fatherId,
+                                     @ApiParam(value = "motherId", required = false) @QueryParam("motherId") Long motherId,
                                      @ApiParam(value = "family", required = false) @QueryParam("family") String family,
                                      @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
-                                     @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity
-                                      ) {
+                                     @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
+                                     @ApiParam(value = "Taxonomy code of the species", required = false) @QueryParam("speciesTaxonomyCode") String speciesTaxonomy,
+                                     @ApiParam(value = "Scientific name of the species", required = false) @QueryParam("speciesScientificName") String speciesScientificName,
+                                     @ApiParam(value = "Common name of the species", required = false) @QueryParam("speciesCommonName") String speciesCommonName,
+                                     @ApiParam(value = "Population name", required = false) @QueryParam("populationName") String populationName,
+                                     @ApiParam(value = "Description of the population", required = false) @QueryParam("populationDescription") String populationDescription,
+                                     @ApiParam(value = "Subpopulation", required = false) @QueryParam("subpopulation") String subpopulation) {
         try {
             long individualId = catalogManager.getIndividualId(individualStr, sessionId);
-            QueryResult<Individual> queryResult = catalogManager.modifyIndividual(individualId, queryOptions, sessionId);
+            ObjectMap params = new ObjectMap();
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.NAME.key(), name);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), fatherId);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), motherId);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.FAMILY.key(), family);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.SEX.key(), sex);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), ethnicity);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.SPECIES_COMMON_NAME.key(), speciesCommonName);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.SPECIES_SCIENTIFIC_NAME.key(), speciesScientificName);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.SPECIES_TAXONOMY_CODE.key(), speciesTaxonomy);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(), populationName);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.POPULATION_DESCRIPTION.key(), populationDescription);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.POPULATION_SUBPOPULATION.key(), subpopulation);
+            QueryResult<Individual> queryResult = catalogManager.getIndividualManager().update(individualId, params, new QueryOptions(), sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

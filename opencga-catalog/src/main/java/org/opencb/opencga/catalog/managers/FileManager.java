@@ -375,6 +375,11 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
     }
 
+    @Override
+    public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
+        throw new NotImplementedException("Project: Operation not yet supported");
+    }
+
     private Long getId(List<Long> studyIds, String fileName) throws CatalogException {
         if (fileName.startsWith("/")) {
             fileName = fileName.substring(1);

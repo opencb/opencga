@@ -214,6 +214,12 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         }
 
         objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.updateCommandOptions.ethnicity);
+        objectMap.putIfNotEmpty("speciesTaxonomyCode", individualsCommandOptions.updateCommandOptions.speciesTaxonomyCode);
+        objectMap.putIfNotEmpty("speciesCommonName", individualsCommandOptions.updateCommandOptions.speciesCommonName);
+        objectMap.putIfNotEmpty("speciesScientificName", individualsCommandOptions.updateCommandOptions.speciesScientificName);
+        objectMap.putIfNotEmpty("populationName", individualsCommandOptions.updateCommandOptions.populationName);
+        objectMap.putIfNotEmpty("populationDescription", individualsCommandOptions.updateCommandOptions.populationDescription);
+        objectMap.putIfNotEmpty("subpopulation", individualsCommandOptions.updateCommandOptions.populationSubpopulation);
 
         return openCGAClient.getIndividualClient().update(individualsCommandOptions.updateCommandOptions.id, objectMap);
     }

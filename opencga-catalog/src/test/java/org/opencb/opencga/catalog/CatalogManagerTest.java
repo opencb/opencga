@@ -1188,30 +1188,34 @@ public class CatalogManagerTest extends GenericTest {
         long individualId = catalogManager.createIndividual(studyId, "Individual1", "", 0, 0, Individual.Sex.MALE, new QueryOptions(),
                 sessionIdUser).first().getId();
 
-        Sample sample = catalogManager.modifySample(sampleId1, new QueryOptions("individualId", individualId), sessionIdUser).first();
+        Sample sample = catalogManager.getSampleManager()
+                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId), null, sessionIdUser).first();
 
         assertEquals(individualId, sample.getIndividual().getId());
     }
 
     @Test
     public void testModifySampleBadIndividual() throws CatalogException {
-        long studyId = catalogManager.getStudyId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId(null, "user@1000G:phase1");
         long sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
 
         thrown.expect(CatalogDBException.class);
-        catalogManager.modifySample(sampleId1, new QueryOptions("individualId", 4), sessionIdUser);
+        catalogManager.getSampleManager()
+                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), 4), null, sessionIdUser);
     }
 
     @Test
     public void testModifySampleUnknownIndividual() throws CatalogException {
-        long studyId = catalogManager.getStudyId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId(null, "user@1000G:phase1");
         long sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
 
         // It will not modify anything as the individualId is already -1
         thrown.expect(CatalogDBException.class);
-        catalogManager.modifySample(sampleId1, new QueryOptions("individualId", -1), sessionIdUser).first();
+        catalogManager.getSampleManager()
+                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1), null, sessionIdUser);
 
-        Sample sample = catalogManager.modifySample(sampleId1, new QueryOptions("individualId", -2), sessionIdUser).first();
+        Sample sample = catalogManager.getSampleManager()
+                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -2), null, sessionIdUser).first();
         assertEquals(-2, sample.getIndividual().getId());
     }
 

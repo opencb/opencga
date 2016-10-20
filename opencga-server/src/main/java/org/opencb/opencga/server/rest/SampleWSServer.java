@@ -224,7 +224,8 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
                            @ApiParam(value = "source", required = false) @QueryParam("source") String source,
-                           @ApiParam(value = "individualId", required = false) @QueryParam("individualId") String individualId) {
+                           @ApiParam(value = "individualId", required = false) @QueryParam("individualId") String individualId,
+                           @ApiParam(value = "Attributes", required = false) @QueryParam("attributes") String attributes) {
         try {
             // FIXME: The id resolution should not go here
             long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
@@ -234,6 +235,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             params.putIfNotNull(SampleDBAdaptor.QueryParams.DESCRIPTION.key(), description);
             params.putIfNotNull(SampleDBAdaptor.QueryParams.SOURCE.key(), source);
             params.putIfNotNull(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
+            params.putIfNotNull(SampleDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
 
             QueryResult<Sample> queryResult = catalogManager.getSampleManager().update(sampleId, params, queryOptions, sessionId);
             return createOkResponse(queryResult);

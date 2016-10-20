@@ -209,6 +209,25 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
         public String ethnicity;
 
+        @Parameter(names = {"--species-taxonomy-code"}, description = "Taxonomy code of the species", required = false, arity = 1)
+        public String speciesTaxonomyCode;
+
+        @Parameter(names = {"--species-scientific-name"}, description = "Scientific name of the species", required = false, arity = 1)
+        public String speciesScientificName;
+
+        @Parameter(names = {"--species-common-name"}, description = "Common name of the species", required = false, arity = 1)
+        public String speciesCommonName;
+
+        @Parameter(names = {"--population-name"}, description = "Population name", required = false, arity = 1)
+        public String populationName;
+
+        @Parameter(names = {"--population-description"}, description = "Description of the population", required = false, arity = 1)
+        public String populationDescription;
+
+        @Parameter(names = {"--population-subpopulation"}, description = "Subpopulation name", required = false, arity = 1)
+        public String populationSubpopulation;
+
+
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete individual information")

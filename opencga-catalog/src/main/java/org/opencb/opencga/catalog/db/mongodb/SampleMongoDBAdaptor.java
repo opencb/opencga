@@ -155,28 +155,28 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         Map<String, Object> sampleParams = new HashMap<>();
         //List<Bson> sampleParams = new ArrayList<>();
 
-        String[] acceptedParams = {"source", "description", "name"};
+        String[] acceptedParams = {QueryParams.SOURCE.key(), QueryParams.DESCRIPTION.key(), QueryParams.NAME.key()};
         filterStringParams(parameters, sampleParams, acceptedParams);
 
-        if (sampleParams.containsKey("name")) {
+        if (sampleParams.containsKey(QueryParams.NAME.key())) {
             // Check that the new sample name is still unique
             long studyId = getStudyId(sampleId);
 
             QueryResult<Long> count = sampleCollection.count(
-                    new Document("name", sampleParams.get("name")).append(PRIVATE_STUDY_ID, studyId));
+                    new Document(QueryParams.NAME.key(), sampleParams.get(QueryParams.NAME.key())).append(PRIVATE_STUDY_ID, studyId));
             if (count.getResult().get(0) > 0) {
-                throw new CatalogDBException("Sample { name: '" + sampleParams.get("name") + "'} already exists.");
+                throw new CatalogDBException("Sample { name: '" + sampleParams.get(QueryParams.NAME.key()) + "'} already exists.");
             }
         }
 
-        String[] acceptedIntParams = {"individualId"};
-        filterIntParams(parameters, sampleParams, acceptedIntParams);
+        String[] acceptedLongParams = {QueryParams.INDIVIDUAL_ID.key()};
+        filterLongParams(parameters, sampleParams, acceptedLongParams);
 
-        String[] acceptedMapParams = {"attributes"};
+        String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, sampleParams, acceptedMapParams);
 
-        if (sampleParams.containsKey("individualId")) {
-            int individualId = parameters.getInt("individualId");
+        if (sampleParams.containsKey(QueryParams.INDIVIDUAL_ID.key())) {
+            int individualId = parameters.getInt(QueryParams.INDIVIDUAL_ID.key());
             if (individualId > 0 && !dbAdaptorFactory.getCatalogIndividualDBAdaptor().exists(individualId)) {
                 throw CatalogDBException.idNotFound("Individual", individualId);
             }

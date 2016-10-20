@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -186,6 +187,11 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         List<Long> individualIds = individualQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList());
         String individualStr = StringUtils.join(individualIds, ",");
         return restore(individualStr, options, sessionId);
+    }
+
+    @Override
+    public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
+        throw new NotImplementedException("Project: Operation not yet supported");
     }
 
     @Override
@@ -435,12 +441,32 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     @Override
     public QueryResult<Individual> update(Long individualId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
-        ParamUtils.checkObj(sessionId, "sessionId");
         ParamUtils.defaultObject(parameters, QueryOptions::new);
         ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getId(sessionId);
         authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.UPDATE);
+
+        for (Map.Entry<String, Object> param : parameters.entrySet()) {
+            IndividualDBAdaptor.QueryParams queryParam = IndividualDBAdaptor.QueryParams.getParam(param.getKey());
+            switch (queryParam) {
+                case NAME:
+                case FATHER_ID:
+                case MOTHER_ID:
+                case FAMILY:
+                case SEX:
+                case ETHNICITY:
+                case SPECIES_COMMON_NAME:
+                case SPECIES_SCIENTIFIC_NAME:
+                case SPECIES_TAXONOMY_CODE:
+                case POPULATION_DESCRIPTION:
+                case POPULATION_NAME:
+                case POPULATION_SUBPOPULATION:
+                    break;
+                default:
+                    throw new CatalogException("Cannot update " + queryParam);
+            }
+        }
 
         options.putAll(parameters); //FIXME: Use separated params and options, or merge
         QueryResult<Individual> queryResult = individualDBAdaptor.update(individualId, new ObjectMap(options));
