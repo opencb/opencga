@@ -147,7 +147,10 @@ public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdapt
 
         QueryResult<Document> aggregate = collection.aggregate(aggregation, null);
 
-        AbstractAcl<T> aclResource = converter.convertToDataModelType(aggregate.first());
+        AbstractAcl<T> aclResource = null;
+        if (aggregate.getNumResults() > 0) {
+            aclResource = converter.convertToDataModelType(aggregate.first());
+        }
 
         if (aclResource != null) {
             return aclResource.getAcl();

@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
@@ -166,9 +167,9 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
                 .getId();
         ind1 = catalogManager.createIndividual(s1, "ind1", "", 0, 0, Individual.Sex.UNKNOWN, null, ownerSessionId).first().getId();
         ind2 = catalogManager.createIndividual(s1, "ind2", "", 0, 0, Individual.Sex.UNKNOWN, null, ownerSessionId).first().getId();
-        catalogManager.modifySample(smp1, new QueryOptions("individualId", ind1), ownerSessionId);
-        catalogManager.modifySample(smp2, new QueryOptions("individualId", ind1), ownerSessionId);
-        catalogManager.modifySample(smp2, new QueryOptions("individualId", ind2), ownerSessionId);
+        catalogManager.modifySample(smp1, new QueryOptions(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), ind1), ownerSessionId);
+        catalogManager.modifySample(smp2, new QueryOptions(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), ind1), ownerSessionId);
+        catalogManager.modifySample(smp2, new QueryOptions(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), ind2), ownerSessionId);
 
         catalogManager.createSampleAcls(Long.toString(smp1), externalUser, ALL_SAMPLE_PERMISSIONS, ownerSessionId);
         catalogManager.createSampleAcls(Long.toString(smp3), externalUser, DENY_SAMPLE_PERMISSIONS, ownerSessionId);
