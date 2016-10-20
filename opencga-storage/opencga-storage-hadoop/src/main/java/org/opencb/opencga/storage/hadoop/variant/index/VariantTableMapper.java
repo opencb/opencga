@@ -37,6 +37,7 @@ import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStu
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -109,7 +110,6 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         ctx.context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ARCHIVE").increment(archiveVar.size());
 
         endTime("3 Unpack and convert input ARCHIVE variants");
-
         // Variants of target type
         List<Variant> archiveTarget = filterForVariant(archiveVar.stream(), TARGET_VARIANT_TYPE).collect(Collectors.toList());
         if (!archiveTarget.isEmpty()) {
@@ -132,40 +132,44 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         endTime("5 Check consistency -- skipped");
 
         /* ******** Update Analysis Variants ************** */
-        Set<Variant> analysisNew = getNewVariantsAsTemplates(ctx, analysisVar, archiveTarget);
+        Set<Variant> analysisNew = getNewVariantsAsTemplates(ctx, analysisVar, archiveTarget, (int) ctx.startPos, (int) ctx.nextStartPos);
 
         endTime("6 Create NEW variants");
-
+        NavigableMap<Integer, List<Variant>> varPosRegister = indexAlts(archiveVar, (int) ctx.startPos, (int) ctx.nextStartPos);
         // with current files of same region
         for (Variant var : analysisNew) {
-            Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, archiveVar);
+            Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, varPosRegister);
             this.getVariantMerger().merge(var, cleanList);
         }
         endTime("7 Merge NEW variants");
 
+        getLog().info("Merge 2 ...");
         // with all other gVCF files of same region
         if (!analysisNew.isEmpty()) {
             List<Variant> archiveOther = loadFromArchive(ctx.context, ctx.getCurrRowKey(), ctx.fileIds);
             endTime("8 Load archive slice from hbase");
             if (!archiveOther.isEmpty()) {
                 completeAlternateCoordinates(archiveOther);
+                NavigableMap<Integer, List<Variant>> varPosSortedOther = indexAlts(archiveOther, (int)ctx.startPos, (int)ctx.nextStartPos);
                 ctx.context.getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE").increment(archiveOther.size());
                 ctx.context.getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE_NUM_QUERIES").increment(1);
                 for (Variant var : analysisNew) {
-                    Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, archiveOther);
+                    Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, varPosSortedOther);
                     this.getVariantMerger().merge(var, cleanList);
                 }
                 endTime("8 Merge NEW with archive slice");
             }
         }
 
+        getLog().info("Merge 3 ...");
         // (2) and (3): Same, missing (and overlapping missing) variants
         for (Variant var : analysisVar) {
-            Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, archiveVar);
+            Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, varPosRegister);
             this.getVariantMerger().merge(var, cleanList);
         }
         endTime("9 Merge same and missing");
 
+        getLog().info("Store ...");
         // WRITE VALUES
         List<VariantTableStudyRow> rows = new ArrayList<>(analysisNew.size() + analysisVar.size());
         updateOutputTable(ctx.context, analysisNew, rows, null);
@@ -175,6 +179,39 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
 
         updateArchiveTable(ctx.getCurrRowKey(), ctx.context, rows);
         endTime("11 Update INPUT table");
+    }
+
+    private NavigableMap<Integer, List<Variant>> indexAlts(List<Variant> variants, int startPos, int nextStartPos) {
+        NavigableMap<Integer, List<Variant>> retMap = new TreeMap<>();
+        variants.forEach(v -> {
+            IntStream.range(Math.max(toPosition(v, true), startPos), Math.min(toPosition(v, false) + 1, nextStartPos))
+                    .forEach(p -> {
+                        List<Variant> lst = retMap.get(p);
+                        if (null == lst) {
+                            lst = new ArrayList<Variant>();
+                            retMap.put(p, lst);
+                        }
+                        lst.add(v);
+                    });
+        });
+        return retMap;
+    }
+
+    private static Integer toPosition(Variant variant, boolean isStart) {
+        Integer pos = getPosition(variant.getStart(), variant.getEnd(), isStart);
+        for (StudyEntry study : variant.getStudies()) {
+            List<AlternateCoordinate> alternates = study.getSecondaryAlternates();
+            if (alternates != null) {
+                for (AlternateCoordinate alt : alternates) {
+                    pos =  getPosition(pos, getPosition(alt.getStart(), alt.getEnd(), isStart), isStart);
+                }
+            }
+        }
+        return pos;
+    }
+
+    private static Integer getPosition(Integer start, Integer end, boolean isStart) {
+        return isStart ? Math.min(start, end) : Math.max(start, end);
     }
 
     private void completeAlternateCoordinates(List<Variant> variants) {
@@ -195,8 +232,9 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         }
     }
 
-    private Set<Variant> getNewVariantsAsTemplates(VariantMapReduceContext ctx, List<Variant> analysisVar,
-                                                   List<Variant> archiveTarget) {
+    private Set<Variant> getNewVariantsAsTemplates(
+            VariantMapReduceContext ctx, List<Variant> analysisVar,
+            List<Variant> archiveTarget, int startPos, int nextStartPos) {
         String studyId = Integer.toString(getStudyConfiguration().getStudyId());
         // (1) NEW variants (only create the position, no filling yet)
         Set<String> analysisVarSet = analysisVar.stream().map(Variant::toString).collect(Collectors.toSet());
@@ -208,6 +246,10 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
 
         // For all main variants
         for (Variant tar : archiveTarget) {
+            int minStart = Math.min(tar.getStart(), tar.getEnd());
+            if (minStart < startPos || minStart >= nextStartPos) {
+                continue; // Skip variants with start position in previous or next slice
+            }
             // Get all the archive target variants that are not in the analysis variants.
             // is new Variant?
             String tarString = tar.toString();
@@ -229,6 +271,10 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         for (Variant tar : archiveTarget) {
             List<AlternateCoordinate> secAlt = tar.getStudy(studyId).getSecondaryAlternates();
             for (AlternateCoordinate coordinate : secAlt) {
+                int minStart = Math.min(coordinate.getStart(), coordinate.getEnd());
+                if (minStart < startPos || minStart >= nextStartPos) {
+                    continue; // Skip variants with start position in previous or next slice
+                }
                 String variantString = toVariantString(coordinate);
                 if (!archiveTargetSet.contains(variantString) && !secAltTargetSet.contains(variantString)
                         && !analysisVarSet.contains(variantString)) {
@@ -287,7 +333,29 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         }
     }
 
-    private Collection<Variant> buildOverlappingNonRedundantSet(Variant var, List<Variant> archiveVar) {
+    private Collection<Variant> buildOverlappingNonRedundantSet(Variant var, NavigableMap<Integer, List<Variant>> archiveVar) {
+        int min = toPosition(var, true);
+        int max = toPosition(var, false);
+        return IntStream.range(min, max + 1).mapToObj(j -> j).flatMap(p -> {
+            List<Variant> lst = archiveVar.get(p);
+            if (null == lst) {
+                lst = Collections.emptyList();
+            }
+            return lst.stream();
+        }).collect(Collectors.toSet());
+//        HashSet<Variant> overlap = new HashSet<>(archiveVar.tailSet(minVar, true).headSet(maxVar, true));
+//
+//        NavigableSet<Variant> remaining = archiveVar.tailSet(maxVar, true);
+//        for (Variant v : remaining) {
+//            if (toPosition(v, false) > max) {
+//                break;
+//            }
+//            overlap.add(v);
+//        }
+//        return overlap;
+    }
+
+    private Collection<Variant> buildOverlappingNonRedundantSet2(Variant var, List<Variant> archiveVar) {
         List<Variant> overlap =
                 archiveVar.stream().filter(v -> VariantMerger.hasAnyOverlap(var, v)).collect(Collectors.toList());
         Set<String> origCalls = new HashSet<>();

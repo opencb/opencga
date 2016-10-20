@@ -109,14 +109,38 @@ public class VariantLocalConflictResolver {
         Map<Variant, List<Variant>> altToVarList = variants.stream()
                 .flatMap(v -> expandToVariants(v).stream().map(e -> new ImmutablePair<>(e, v)))
                 .collect(Collectors.groupingBy(Pair::getLeft, Collectors.mapping(Pair::getRight, Collectors.toList())));
+        // reindex the other way
+        Map<Variant, Set<Variant>> varToAlt =
+                altToVarList.entrySet().stream()
+                .flatMap(e -> e.getValue().stream().map(v -> new ImmutablePair<>(v, e.getKey())))
+                .collect(
+                Collectors.groupingBy(
+                        Pair::getKey,
+                        Collectors.mapping(Pair::getValue, Collectors.toSet())));
 
         Map<Variant, Variant> resMap = new HashMap<>();
+        Set<Variant> altBlackList = new HashSet<>();
 
          altToVarList.entrySet().forEach(e -> {
              Variant key = e.getKey();
+             if (altBlackList.contains(key)) {
+                 return; // ignore
+             }
              List<Variant> lst = e.getValue();
+             if (lst.size() > 1) {
+                 // remove exact duplicated call
+                 Set<Set<Variant>> duplicatedCheck = new HashSet<Set<Variant>>();
+                 List<Variant> uniqCalls = new ArrayList<Variant>();
+                 lst.forEach(v -> {
+                     if (duplicatedCheck.add(varToAlt.get(v))) {
+                         uniqCalls.add(v);
+                     }
+                 });
+                 lst = uniqCalls;
+             }
              // conflict
              while (lst.size() > 1) {
+                 // remove calls with no sec-alt
                  Optional<Variant> any = lst.stream().filter(
                          v -> isSamePosRefAlt(v, key)
                                  && v.getStudies().get(0).getSecondaryAlternates().isEmpty()).findAny();
@@ -124,33 +148,12 @@ public class VariantLocalConflictResolver {
                      lst.remove(any.get());
                      continue; // removed one variant with no sec-alt
                  }
-                 // two variant the same, just ref-alt swapped?
-                 if (lst.size() == 2) {
-                     Variant a = lst.get(0);
-                     Variant b = lst.get(1);
-                     // if same
-                     if (isSamePosRefAlt(a, asVariant(b, b.getStudies().get(0).getSecondaryAlternates().get(0)))
-                             && isSamePosRefAlt(b, asVariant(a, a.getStudies().get(0).getSecondaryAlternates().get(0)))) {
-
-                         Variant bKey = asVariant(b);
-                         Variant aKey = asVariant(a);
-                         if (resMap.containsKey(aKey) && resMap.containsKey(bKey)) {
-                             return; //already both added
-                         }
-                         // Otherwise add it both ways (check)
-                         if (!resMap.containsKey(aKey)) {
-                             resMap.put(aKey, a);
-                         }
-                         if (!resMap.containsKey(bKey)) {
-                             resMap.put(bKey, a);
-                         }
-                         // else ignore
-                         return;
-                     }
-                 }
                  // >1 variant with sec-alt ...
-                 // -> remove SecAlt from other variants (shouldn't happen often)
-                 throw new IllegalStateException("Sorry - your VCF files are BAD ... left with: " + lst.size());
+                 // chose 'best' call, remove other.
+                 Collections.sort(lst, VARIANT_COMP);
+                 lst.forEach(v -> altBlackList.addAll(varToAlt.get(v)));
+                 lst = Collections.singletonList(lst.get(0));
+                 altBlackList.removeAll(varToAlt.get(lst.get(0)));
              }
              resMap.put(key, lst.get(0));
          });

@@ -225,6 +225,30 @@ public class VariantLocalConflictResolverTest {
     }
 
     @Test
+    public void resolve_DEL_DEL_SEC_ALT() throws Exception {
+        Variant a = addGT(addAttribute(getVariantFilter("1:100:-:GG", "PASS"),QUAL,"390"), "1/2");
+        Variant b = addGT(addAttribute(getVariantFilter("1:100:-:GG", "PASS"),QUAL,"390"), "1/2");
+        Variant c = addGT(addAttribute(getVariantFilter("1:100:-:GA", "PASS"),QUAL,"390"), "1/2"); // mix with a
+        Variant d = addGT(addAttribute(getVariantFilter("1:100:-:GT", "PASS"),QUAL,"390"), "1/2"); // mix with b
+
+        a.getStudies().get(0).getSecondaryAlternates().add(
+                new AlternateCoordinate(c.getChromosome(), c.getStart(), c.getEnd(), c.getReference(), c.getAlternate(),
+                        INDEL));
+        c.getStudies().get(0).getSecondaryAlternates().add(
+                new AlternateCoordinate(a.getChromosome(), a.getStart(), a.getEnd(), a.getReference(), a.getAlternate(),
+                        INDEL));
+
+        b.getStudies().get(0).getSecondaryAlternates().add(
+                new AlternateCoordinate(d.getChromosome(), d.getStart(), d.getEnd(), d.getReference(), d.getAlternate(),
+                        INDEL));
+        d.getStudies().get(0).getSecondaryAlternates().add(
+                new AlternateCoordinate(b.getChromosome(), b.getStart(), b.getEnd(), b.getReference(), b.getAlternate(),
+                        INDEL));
+        Collection<Variant> resolved = new VariantLocalConflictResolver().resolveConflicts(Arrays.asList(a, b, c, d));
+        assertEquals(1,resolved.size());
+    }
+
+    @Test
     public void resolve_INS_SNP_SEC_ALT() throws Exception {
         Variant a = addGT(addAttribute(getVariantFilter("1:100:-:GGTTG", "PASS"),QUAL,"390"), "1/2");
         Variant b = addGT(addAttribute(getVariantFilter("1:102:-:AGGA", "PASS"),QUAL,"390"), "0/1");
