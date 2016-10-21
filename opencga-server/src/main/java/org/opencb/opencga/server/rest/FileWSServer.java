@@ -573,7 +573,8 @@ public class FileWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Description", required = false) @DefaultValue("") @QueryParam("description") String description,
                            @ApiParam(value = "Disk usage", required = false) @DefaultValue("") @QueryParam("diskUsage") Long diskUsage,
                            @ApiParam(value = "Comma separated list of sample ids", required = false) @DefaultValue("") @QueryParam("sampleIds") String sampleIds,
-                           @ApiParam(value = "Job id that created the file(s) or folder(s)", required = false) @DefaultValue("") @QueryParam("jobId") String jobId,
+                           @ApiParam(value = "(DEPRECATED) Job id that created the file(s) or folder(s)", required = false) @QueryParam("jobId") String jobIdOld,
+                           @ApiParam(value = "Job id that created the file(s) or folder(s)", required = false) @QueryParam("job.id") String jobId,
                            @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
                            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("") @QueryParam("nattributes") String nattributes) {
         try {
@@ -584,7 +585,11 @@ public class FileWSServer extends OpenCGAWSServer {
                 query.remove(FileDBAdaptor.QueryParams.NAME.key());
                 logger.debug("Name attribute empty, it's been removed");
             }
-
+            // TODO: jobId is deprecated. Remember to remove this if after next release
+            if (query.containsKey("jobId") && !query.containsKey(FileDBAdaptor.QueryParams.JOB_ID.key())) {
+                query.put(FileDBAdaptor.QueryParams.JOB_ID.key(), query.get("jobId"));
+                query.remove("jobId");
+            }
             QueryResult<File> result = catalogManager.searchFile(studyIdNum, query, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -1010,20 +1015,27 @@ public class FileWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Attributes", required = false) @QueryParam("attributes") String attributes,
                            @ApiParam(value = "Stats", required = false) @QueryParam("stats") String stats,
                            @ApiParam(value = "Sample ids", required = false) @QueryParam("sampleIds") String sampleIds,
-                           @ApiParam(value = "Job id", required = false) @QueryParam("jobId") String jobId) {
+                           @ApiParam(value = "(DEPRECATED) Job id", required = false) @QueryParam("jobId") String jobIdOld,
+                           @ApiParam(value = "Job id", required = false) @QueryParam("job.id") String jobId) {
         try {
             /*ObjectMap parameters = new ObjectMap();
             QueryOptions qOptions = new QueryOptions();
             parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, parameters, qOptions);*/
-            ObjectMap params = new ObjectMap();
-            params.putIfNotEmpty(FileDBAdaptor.QueryParams.NAME.key(), name);
-            params.putIfNotEmpty(FileDBAdaptor.QueryParams.FORMAT.key(), format);
-            params.putIfNotEmpty(FileDBAdaptor.QueryParams.BIOFORMAT.key(), bioformat);
-            params.putIfNotEmpty(FileDBAdaptor.QueryParams.DESCRIPTION.key(), description);
-            params.putIfNotEmpty(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
-            params.putIfNotEmpty(FileDBAdaptor.QueryParams.STATS.key(), stats);
-            params.putIfNotEmpty(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleIds);
-            params.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_ID.key(), jobId);
+            ObjectMap params = new ObjectMap(query);
+            // TODO: jobId is deprecated. Remember to remove this if after next release
+            if (params.containsKey("jobId") && !params.containsKey(FileDBAdaptor.QueryParams.JOB_ID.key())) {
+                params.put(FileDBAdaptor.QueryParams.JOB_ID.key(), params.get("jobId"));
+                params.remove("jobId");
+            }
+//            params.putIfNotEmpty(FileDBAdaptor.QueryParams.NAME.key(), name);
+//            params.putIfNotEmpty(FileDBAdaptor.QueryParams.FORMAT.key(), format);
+//            params.putIfNotEmpty(FileDBAdaptor.QueryParams.BIOFORMAT.key(), bioformat);
+//            params.putIfNotEmpty(FileDBAdaptor.QueryParams.DESCRIPTION.key(), description);
+//            params.putIfNotEmpty(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
+//            params.putIfNotEmpty(FileDBAdaptor.QueryParams.STATS.key(), stats);
+//            params.putIfNotEmpty(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleIds);
+//            params.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_ID.key(), jobIdOld);
+//            params.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_ID.key(), jobId);
             long fileId = catalogManager.getFileId(convertPath(fileIdStr, sessionId), sessionId);
             QueryResult queryResult = catalogManager.getFileManager().update(fileId, params, queryOptions, sessionId);
             return createOkResponse(queryResult);
@@ -1053,10 +1065,11 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/{fileId}/update")
     @ApiOperation(value = "Modify file", position = 16, response = File.class)
     public Response updatePOST(@ApiParam(value = "File id") @PathParam(value = "fileId") String fileIdStr,
-                               @ApiParam(name = "params", value = "Parameters to modify", required = true) UpdateFile params) {
+                               @ApiParam(name = "params", value = "Parameters to modify", required = true) ObjectMap params) {
         try {
             long fileId = catalogManager.getFileId(convertPath(fileIdStr, sessionId), sessionId);
             ObjectMap map = new ObjectMap(jsonObjectMapper.writeValueAsString(params));
+            // TODO: jobId is deprecated. Remember to remove this if after next release
             if (map.get("jobId") != null) {
                 map.put(FileDBAdaptor.QueryParams.JOB_ID.key(), map.get("jobId"));
                 map.remove("jobId");
@@ -1253,7 +1266,8 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description,
                             @ApiParam(value = "diskUsage", required = false) @DefaultValue("") @QueryParam("diskUsage") Long diskUsage,
                             @ApiParam(value = "Comma separated sampleIds", required = false) @DefaultValue("") @QueryParam("sampleIds") String sampleIds,
-                            @ApiParam(value = "jobId", required = false) @DefaultValue("") @QueryParam("jobId") String jobId,
+                            @ApiParam(value = "(DEPRECATED) Job id", required = false) @QueryParam("jobId") String jobIdOld,
+                            @ApiParam(value = "Job id", required = false) @QueryParam("job.id") String jobId,
                             @ApiParam(value = "attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
                             @ApiParam(value = "numerical attributes", required = false) @DefaultValue("") @QueryParam("nattributes") String nattributes) {
         try {

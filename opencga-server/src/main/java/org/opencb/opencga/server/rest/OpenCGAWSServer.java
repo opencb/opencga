@@ -370,6 +370,12 @@ public class OpenCGAWSServer {
         queryOptions.put(QueryOptions.LIMIT, (limit > 0) ? Math.min(limit, MAX_LIMIT) : DEFAULT_LIMIT);
         query.remove("sid");
 
+//      Exceptions
+        if (query.containsKey("status")) {
+            query.put("status.name", query.get("status"));
+            query.remove("status");
+        }
+
         try {
             logger.info("URL: {}, query = {}, queryOptions = {}", uriInfo.getAbsolutePath().toString(),
                     jsonObjectWriter.writeValueAsString(query), jsonObjectWriter.writeValueAsString(queryOptions));

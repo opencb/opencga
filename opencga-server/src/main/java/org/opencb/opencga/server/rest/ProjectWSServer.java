@@ -41,7 +41,6 @@ import java.util.Map;
 @Api(value = "Projects", position = 2, description = "Methods for working with 'projects' endpoint")
 public class ProjectWSServer extends OpenCGAWSServer {
 
-
     public ProjectWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(uriInfo, httpServletRequest);
     }

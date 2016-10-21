@@ -128,12 +128,18 @@ public class SampleWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "source") @QueryParam("source") String source,
 //                                  @ApiParam(value = "acls") @QueryParam("acls") String acls,
 //                                  @ApiParam(value = "acls.users") @QueryParam("acls.users") String acl_userIds,
-                                  @ApiParam(value = "individualId") @QueryParam("individualId") String individualId,
+                                  @ApiParam(value = "(DEPRECATED) Individual id") @QueryParam("individualId") String individualIdOld,
+                                  @ApiParam(value = "Individual id") @QueryParam("individual.id") String individualId,
                                   @ApiParam(value = "annotationSetName") @QueryParam("annotationSetName") String annotationSetName,
                                   @ApiParam(value = "variableSetId") @QueryParam("variableSetId") String variableSetId,
                                   @ApiParam(value = "annotation") @QueryParam("annotation") String annotation
                                   ) {
         try {
+            // TODO: individualId is deprecated. Remember to remove this if after next release
+            if (query.containsKey("individualId") && !query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
+                query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), query.get("individualId"));
+                query.remove("individualId");
+            }
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
             QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
@@ -149,18 +155,24 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
                            @ApiParam(value = "source", required = false) @QueryParam("source") String source,
-                           @ApiParam(value = "individualId", required = false) @QueryParam("individualId") String individualId,
+                           @ApiParam(value = "(DEPRECATED) Individual id", required = false) @QueryParam("individualId") String individualIdOld,
+                           @ApiParam(value = "Individual id", required = false) @QueryParam("individual.id") String individualId,
                            @ApiParam(value = "Attributes", required = false) @QueryParam("attributes") String attributes) {
         try {
             // FIXME: The id resolution should not go here
             long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
 
-            ObjectMap params = new ObjectMap();
-            params.putIfNotNull(SampleDBAdaptor.QueryParams.NAME.key(), name);
-            params.putIfNotNull(SampleDBAdaptor.QueryParams.DESCRIPTION.key(), description);
-            params.putIfNotNull(SampleDBAdaptor.QueryParams.SOURCE.key(), source);
-            params.putIfNotNull(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
-            params.putIfNotNull(SampleDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
+            ObjectMap params = new ObjectMap(query);
+            // TODO: individualId is deprecated. Remember to remove this if after next release
+            if (params.containsKey("individualId") && !params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
+                params.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), params.get("individualId"));
+                params.remove("individualId");
+            }
+//            params.putIfNotNull(SampleDBAdaptor.QueryParams.NAME.key(), name);
+//            params.putIfNotNull(SampleDBAdaptor.QueryParams.DESCRIPTION.key(), description);
+//            params.putIfNotNull(SampleDBAdaptor.QueryParams.SOURCE.key(), source);
+//            params.putIfNotNull(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
+//            params.putIfNotNull(SampleDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
 
             QueryResult<Sample> queryResult = catalogManager.getSampleManager().update(sampleId, params, queryOptions, sessionId);
             return createOkResponse(queryResult);
@@ -182,7 +194,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some sample attributes using POST method", position = 6)
     public Response updateByPost(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
-                                 @ApiParam(value = "params", required = true) UpdateSample parameters) {
+                                 @ApiParam(value = "params", required = true) ObjectMap parameters) {
         try {
             // FIXME: The id resolution should not go here
             long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
@@ -218,11 +230,17 @@ public class SampleWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "Comma separated list of ids.") @QueryParam("id") String id,
                             @ApiParam(value = "Comma separated list of names.") @QueryParam("name") String name,
                             @ApiParam(value = "source") @QueryParam("source") String source,
-                            @ApiParam(value = "individualId") @QueryParam("individualId") String individualId,
+                            @ApiParam(value = "(DEPRECATED) Individual id") @QueryParam("individualId") String individualIdOld,
+                            @ApiParam(value = "Individual id") @QueryParam("individual.id") String individualId,
                             @ApiParam(value = "annotationSetName") @QueryParam("annotationSetName") String annotationSetName,
                             @ApiParam(value = "variableSetId") @QueryParam("variableSetId") String variableSetId,
                             @ApiParam(value = "annotation") @QueryParam("annotation") String annotation) {
         try {
+            // TODO: individualId is deprecated. Remember to remove this if after next release
+            if (query.containsKey("individualId") && !query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
+                query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), query.get("individualId"));
+                query.remove("individualId");
+            }
             QueryResult result = catalogManager.sampleGroupBy(query, queryOptions, fields, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -333,8 +351,6 @@ public class SampleWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
-
-
 
     @GET
     @Path("/{sampleIds}/acl")
