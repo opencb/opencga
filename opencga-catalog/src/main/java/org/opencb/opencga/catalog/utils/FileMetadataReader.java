@@ -144,11 +144,11 @@ public class FileMetadataReader {
 //        logger.trace("BioformatDetector = " + (System.currentTimeMillis() - start) / 1000.0);
 
         if (format != File.Format.UNKNOWN && !format.equals(file.getFormat())) {
-            modifyParams.put("format", format);
+            modifyParams.put(FileDBAdaptor.QueryParams.FORMAT.key(), format);
             file.setFormat(format);
         }
         if (bioformat != File.Bioformat.NONE && !bioformat.equals(file.getBioformat())) {
-            modifyParams.put("bioformat", bioformat);
+            modifyParams.put(FileDBAdaptor.QueryParams.BIOFORMAT.key(), bioformat);
             file.setBioformat(bioformat);
         }
 
@@ -169,7 +169,7 @@ public class FileMetadataReader {
                     if (alignmentHeader != null) {
                         HashMap<String, Object> attributes = new HashMap<>();
                         attributes.put("alignmentHeader", alignmentHeader);
-                        modifyParams.put("attributes", attributes);
+                        modifyParams.put(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
                     }
                     break;
                 }
@@ -187,7 +187,7 @@ public class FileMetadataReader {
                     if (variantSource != null) {
                         HashMap<String, Object> attributes = new HashMap<>();
                         attributes.put("variantSource", variantSource);
-                        modifyParams.put("attributes", attributes);
+                        modifyParams.put(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
                     }
                     break;
                 }
@@ -206,7 +206,20 @@ public class FileMetadataReader {
 
         if (!modifyParams.isEmpty()) {
 //            start = System.currentTimeMillis();
-            catalogManager.modifyFile(file.getId(), modifyParams, sessionId);
+
+            if (modifyParams.get(FileDBAdaptor.QueryParams.DISK_USAGE.key()) != null) {
+                catalogManager.getFileManager()
+                        .setDiskUsage(file.getId(), modifyParams.getLong(FileDBAdaptor.QueryParams.DISK_USAGE.key()), sessionId);
+                modifyParams.remove(FileDBAdaptor.QueryParams.DISK_USAGE.key());
+            }
+            if (modifyParams.get(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()) != null) {
+                catalogManager.getFileManager()
+                        .setModificationDate(file.getId(), modifyParams.getString(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()),
+                                sessionId);
+                modifyParams.remove(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key());
+            }
+
+            catalogManager.getFileManager().update(file.getId(), modifyParams, new QueryOptions(), sessionId);
 //            logger.trace("modifyFile = " + (System.currentTimeMillis() - start) / 1000.0);
 
             return catalogManager.getFile(file.getId(), options, sessionId).first();
@@ -464,7 +477,8 @@ public class FileMetadataReader {
             try (InputStream is = FileUtils.newInputStream(Paths.get(fileUri.getPath()))) {
                 VariantSource variantSource = new ObjectMapper().readValue(is, VariantSource.class);
                 VariantGlobalStats stats = variantSource.getStats();
-                catalogManager.modifyFile(inputFile.getId(), new ObjectMap("stats", new ObjectMap(VARIANT_STATS, stats)), sessionId);
+                catalogManager.getFileManager().update(inputFile.getId(), new ObjectMap("stats", new ObjectMap(VARIANT_STATS, stats)),
+                        new QueryOptions(), sessionId);
             } catch (IOException e) {
                 throw new CatalogException("Error reading file \"" + fileUri + "\"", e);
             }

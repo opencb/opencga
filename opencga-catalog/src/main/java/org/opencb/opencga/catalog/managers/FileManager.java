@@ -377,7 +377,21 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     @Override
     public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
-        throw new NotImplementedException("Project: Operation not yet supported");
+        String userId = userManager.getId(sessionId);
+        long fileId = getId(userId, id);
+
+        authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.UPDATE);
+
+        if (status != null && !File.FileStatus.isValid(status)) {
+            throw new CatalogException("The status " + status + " is not valid file status.");
+        }
+
+        ObjectMap parameters = new ObjectMap();
+        parameters.putIfNotNull(FileDBAdaptor.QueryParams.STATUS_NAME.key(), status);
+        parameters.putIfNotNull(FileDBAdaptor.QueryParams.STATUS_MSG.key(), message);
+
+        fileDBAdaptor.update(fileId, parameters);
+        auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
     }
 
     private Long getId(List<Long> studyIds, String fileName) throws CatalogException {
@@ -987,52 +1001,27 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
 
         authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.UPDATE);
-        for (String s : parameters.keySet()) {
-            switch (s) { //Special cases
-                //Can be modified anytime
-                case "format":
-                case "bioformat":
-                case "description":
-                case "status.name":
-                case "attributes":
-                case "stats":
-                case "index":
-                case "sampleIds":
-                case "jobId":
-                case "relatedFiles":
+        for (Map.Entry<String, Object> param : parameters.entrySet()) {
+            FileDBAdaptor.QueryParams queryParam = FileDBAdaptor.QueryParams.getParam(param.getKey());
+            switch(queryParam) {
+                case NAME:
+                case FORMAT:
+                case BIOFORMAT:
+                case DESCRIPTION:
+                case ATTRIBUTES:
+                case STATS:
+                case SAMPLE_IDS:
+                case JOB_ID:
                     break;
-                case "uri":
-                    logger.info("File {id: " + fileId + "} uri modified. New value: " + parameters.get("uri"));
-                    break;
-                //Can only be modified when file.status == STAGE
-                case "creationDate":
-                case "modificationDate":
-                case "diskUsage":
-//                            if (!file.getName().equals(File.Status.STAGE)) {
-//                                throw new CatalogException("Parameter '" + s + "' can't be changed when " +
-//                                        "status == " + file.getName().name() + ". " +
-//                                        "Required status STAGE or admin account");
-//                            }
-                    break;
-                //Path and Name must be changed with "raname" and/or "move" methods.
-                case "path":
-                case "name":
-                    break;
-                case "type":
                 default:
-                    throw new CatalogException("Parameter '" + s + "' can't be changed. "
-                            + "Requires admin account");
+                    throw new CatalogException("Parameter '" + queryParam + "' cannot be changed.");
             }
         }
 
-        //Path and Name must be changed with "raname" and/or "move" methods.
+        //Name must be changed with "rename".
         if (parameters.containsKey("name")) {
             logger.info("Rename file using update method!");
             rename(fileId, parameters.getString("name"), sessionId);
-        }
-        if (parameters.containsKey("path")) {
-            logger.info("Move file using update method!");
-            move(fileId, parameters.getString("path"), options, sessionId);
         }
 
         String ownerId = studyDBAdaptor.getOwnerId(fileDBAdaptor.getStudyIdByFileId(fileId));
@@ -2548,6 +2537,42 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
 
         return jobQueryResult;
+    }
+
+    @Override
+    public void setFileIndex(long fileId, FileIndex index, String sessionId) throws CatalogException {
+        String userId = userManager.getId(sessionId);
+
+        authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.UPDATE);
+
+        ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), index);
+        fileDBAdaptor.update(fileId, parameters);
+
+        auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
+    }
+
+    @Override
+    public void setDiskUsage(long fileId, long diskUsage, String sessionId) throws CatalogException {
+        String userId = userManager.getId(sessionId);
+
+        authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.UPDATE);
+
+        ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.DISK_USAGE.key(), diskUsage);
+        fileDBAdaptor.update(fileId, parameters);
+
+        auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
+    }
+
+    @Override
+    public void setModificationDate(long fileId, String date, String sessionId) throws CatalogException {
+        String userId = userManager.getId(sessionId);
+
+        authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.UPDATE);
+
+        ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key(), date);
+        fileDBAdaptor.update(fileId, parameters);
+
+        auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
     }
 
 //    private void indexVariants(File file, long outDirId, ObjectMap params) throws CatalogException {

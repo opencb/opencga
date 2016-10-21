@@ -144,7 +144,8 @@ public class FileManagerTest extends GenericTest {
         ObjectMap attributes = new ObjectMap();
         attributes.put("field", "value");
         attributes.put("numValue", 5);
-        catalogManager.modifyFile(testFolder.getId(), new ObjectMap("attributes", attributes), sessionIdUser);
+        catalogManager.getFileManager().update(testFolder.getId(), new ObjectMap("attributes", attributes), new QueryOptions(),
+                sessionIdUser);
 
         File fileTest1k = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE,
                 testFolder.getPath() + "test_1K.txt.gz",
@@ -154,7 +155,8 @@ public class FileManagerTest extends GenericTest {
         attributes.put("name", "fileTest1k");
         attributes.put("numValue", "10");
         attributes.put("boolean", false);
-        catalogManager.modifyFile(fileTest1k.getId(), new ObjectMap("attributes", attributes), sessionIdUser);
+        catalogManager.getFileManager().update(fileTest1k.getId(), new ObjectMap("attributes", attributes), new QueryOptions(),
+                sessionIdUser);
 
         File fileTest05k = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.DATAMATRIX_EXPRESSION,
                 testFolder.getPath() + "test_0.5K.txt",
@@ -164,7 +166,8 @@ public class FileManagerTest extends GenericTest {
         attributes.put("name", "fileTest05k");
         attributes.put("numValue", 5);
         attributes.put("boolean", true);
-        catalogManager.modifyFile(fileTest05k.getId(), new ObjectMap("attributes", attributes), sessionIdUser);
+        catalogManager.getFileManager().update(fileTest05k.getId(), new ObjectMap("attributes", attributes), new QueryOptions(),
+                sessionIdUser);
 
         File test01k = catalogManager.createFile(studyId, File.Format.IMAGE, File.Bioformat.NONE,
                 testFolder.getPath() + "test_0.1K.png",
@@ -174,7 +177,7 @@ public class FileManagerTest extends GenericTest {
         attributes.put("name", "test01k");
         attributes.put("numValue", 50);
         attributes.put("nested", new ObjectMap("num1", 45).append("num2", 33).append("text", "HelloWorld"));
-        catalogManager.modifyFile(test01k.getId(), new ObjectMap("attributes", attributes), sessionIdUser);
+        catalogManager.getFileManager().update(test01k.getId(), new ObjectMap("attributes", attributes), new QueryOptions(), sessionIdUser);
 
         Set<Variable> variables = new HashSet<>();
         variables.addAll(Arrays.asList(
@@ -221,7 +224,8 @@ public class FileManagerTest extends GenericTest {
                 .append("PHEN", "CONTROL"), null, true, sessionIdUser);
 
 
-        catalogManager.modifyFile(test01k.getId(), new ObjectMap("sampleIds", Arrays.asList(s_1, s_2, s_3, s_4, s_5)), sessionIdUser);
+        catalogManager.getFileManager().update(test01k.getId(), new ObjectMap("sampleIds", Arrays.asList(s_1, s_2, s_3, s_4, s_5)),
+                new QueryOptions(), sessionIdUser);
 
     }
 
@@ -644,7 +648,7 @@ public class FileManagerTest extends GenericTest {
         catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "data/nested/folder/file2.txt",
                 StringUtils.randomString(200).getBytes(), "description", true, sessionIdUser);
 
-        catalogManager.renameFile(catalogManager.getFileId("user@1000G:phase1:data/nested/", sessionIdUser), "nested2", sessionIdUser);
+        catalogManager.getFileManager().rename(catalogManager.getFileId("user@1000G:phase1:data/nested/", sessionIdUser), "nested2", sessionIdUser);
         Set<String> paths = catalogManager.getAllFiles(studyId, new Query(), new QueryOptions(), sessionIdUser).getResult()
                 .stream().map(File::getPath).collect(Collectors.toSet());
 
@@ -654,7 +658,7 @@ public class FileManagerTest extends GenericTest {
         assertTrue(paths.contains("data/nested2/folder/file2.txt"));
         assertTrue(paths.contains("data/file.txt"));
 
-        catalogManager.renameFile(catalogManager.getFileId("user@1000G:phase1:data/", sessionIdUser), "Data", sessionIdUser);
+        catalogManager.getFileManager().rename(catalogManager.getFileId("user@1000G:phase1:data/", sessionIdUser), "Data", sessionIdUser);
         paths = catalogManager.getAllFiles(studyId, new Query(), new QueryOptions(), sessionIdUser).getResult()
                 .stream().map(File::getPath).collect(Collectors.toSet());
 
@@ -682,13 +686,13 @@ public class FileManagerTest extends GenericTest {
         thrown.expect(CatalogParameterException.class);
         thrown.expectMessage(containsString("null or empty"));
 
-        catalogManager.renameFile(catalogManager.getFileId("user@1000G:phase1:data/"), "", sessionIdUser);
+        catalogManager.getFileManager().rename(catalogManager.getFileId("user@1000G:phase1:data/"), "", sessionIdUser);
     }
 
     @Test
     public void renameFileSlashInName() throws CatalogException {
         thrown.expect(CatalogParameterException.class);
-        catalogManager.renameFile(catalogManager.getFileId("user@1000G:phase1:data/"), "my/folder", sessionIdUser);
+        catalogManager.getFileManager().rename(catalogManager.getFileId("user@1000G:phase1:data/"), "my/folder", sessionIdUser);
     }
 
     @Test
@@ -696,7 +700,7 @@ public class FileManagerTest extends GenericTest {
         long studyId = catalogManager.getStudyId("user@1000G:phase1", sessionIdUser);
         catalogManager.getFileManager().createFolder(studyId, "analysis/", new File.FileStatus(), false, "", new QueryOptions(), sessionIdUser);
         thrown.expect(CatalogIOException.class);
-        catalogManager.renameFile(catalogManager.getFileId("user@1000G:phase1:data/", sessionIdUser), "analysis", sessionIdUser);
+        catalogManager.getFileManager().rename(catalogManager.getFileId("user@1000G:phase1:data/", sessionIdUser), "analysis", sessionIdUser);
     }
 
     @Test
@@ -1038,8 +1042,8 @@ public class FileManagerTest extends GenericTest {
         QueryResult<File> fileQueryResult = catalogManager.searchFile(studyId, query, sessionIdUser);
 
         // Change the status to MISSING
-        ObjectMap objectMap = new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.MISSING);
-        catalogManager.modifyFile(fileQueryResult.first().getId(), objectMap, sessionIdUser);
+        catalogManager.getFileManager()
+                .setStatus(Long.toString(fileQueryResult.first().getId()), File.FileStatus.MISSING, null, sessionIdUser);
 
         try {
             catalogManager.getFileManager().delete(Long.toString(fileQueryResult.first().getId()), null, sessionIdUser);
@@ -1049,8 +1053,8 @@ public class FileManagerTest extends GenericTest {
         }
 
         // Change the status to STAGED
-        objectMap = new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.STAGE);
-        catalogManager.modifyFile(fileQueryResult.first().getId(), objectMap, sessionIdUser);
+        catalogManager.getFileManager()
+                .setStatus(Long.toString(fileQueryResult.first().getId()), File.FileStatus.STAGE, null, sessionIdUser);
 
         try {
             catalogManager.getFileManager().delete(Long.toString(fileQueryResult.first().getId()), null, sessionIdUser);

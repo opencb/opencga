@@ -358,7 +358,7 @@ public class AnalysisFileIndexer {
 
         /** Modify file with new information **/
         if (!simulate) {
-            catalogManager.modifyFile(originalFile.getId(), fileModifyParams, sessionId).getResult();
+            catalogManager.getFileManager().update(originalFile.getId(), fileModifyParams, new QueryOptions(), sessionId).getResult();
         }
 
         /** Create job **/
@@ -416,7 +416,7 @@ public class AnalysisFileIndexer {
         } else if (transform && load) {
             index.getAttributes().put("indexJobId", jobId);
         }
-        catalogManager.modifyFile(fileId, new ObjectMap("index", index), sessionId);
+        catalogManager.getFileManager().update(fileId, new ObjectMap("index", index), new QueryOptions(), sessionId);
     }
 
     /**
