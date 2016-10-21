@@ -761,6 +761,7 @@ public class CatalogManager implements AutoCloseable {
         return fileManager.move(fileId, newPath, options, sessionId);
     }
 
+    @Deprecated
     public QueryResult renameFile(long fileId, String newName, String sessionId) throws CatalogException {
         return fileManager.rename(fileId, newName, sessionId);
     }
@@ -784,6 +785,7 @@ public class CatalogManager implements AutoCloseable {
      * @return QueryResult QueryResult
      * @throws CatalogException CatalogException
      */
+    @Deprecated
     public QueryResult modifyFile(long fileId, ObjectMap parameters, String sessionId) throws CatalogException {
         return fileManager.update(fileId, parameters, null, sessionId); //TODO: Add query options
     }

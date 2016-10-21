@@ -277,7 +277,7 @@ public class CatalogStudyConfigurationFactory {
                     index.getStatus().setName(FileIndex.IndexStatus.READY);
                     logger.debug("File \"{}\":{} change status from {} to {}", file.getName(), file.getId(),
                             file.getIndex().getStatus().getName(), FileIndex.IndexStatus.READY);
-                    catalogManager.modifyFile(file.getId(), new ObjectMap("index", index), sessionId);
+                    catalogManager.getFileManager().setFileIndex(file.getId(), index, sessionId);
                 }
             }
         }

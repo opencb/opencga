@@ -139,7 +139,8 @@ public class CatalogManagerTest extends GenericTest {
         ObjectMap attributes = new ObjectMap();
         attributes.put("field", "value");
         attributes.put("numValue", 5);
-        catalogManager.modifyFile(testFolder.getId(), new ObjectMap("attributes", attributes), sessionIdUser);
+        catalogManager.getFileManager().update(testFolder.getId(), new ObjectMap("attributes", attributes), new QueryOptions(),
+                sessionIdUser);
 
         File fileTest1k = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE,
                 testFolder.getPath() + "test_1K.txt.gz",
@@ -149,7 +150,8 @@ public class CatalogManagerTest extends GenericTest {
         attributes.put("name", "fileTest1k");
         attributes.put("numValue", "10");
         attributes.put("boolean", false);
-        catalogManager.modifyFile(fileTest1k.getId(), new ObjectMap("attributes", attributes), sessionIdUser);
+        catalogManager.getFileManager().update(fileTest1k.getId(), new ObjectMap("attributes", attributes), new QueryOptions(),
+                sessionIdUser);
 
         File fileTest05k = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.DATAMATRIX_EXPRESSION,
                 testFolder.getPath() + "test_0.5K.txt",
@@ -159,7 +161,8 @@ public class CatalogManagerTest extends GenericTest {
         attributes.put("name", "fileTest05k");
         attributes.put("numValue", 5);
         attributes.put("boolean", true);
-        catalogManager.modifyFile(fileTest05k.getId(), new ObjectMap("attributes", attributes), sessionIdUser);
+        catalogManager.getFileManager().update(fileTest05k.getId(), new ObjectMap("attributes", attributes), new QueryOptions(),
+                sessionIdUser);
 
         File test01k = catalogManager.createFile(studyId, File.Format.IMAGE, File.Bioformat.NONE,
                 testFolder.getPath() + "test_0.1K.png",
@@ -169,7 +172,7 @@ public class CatalogManagerTest extends GenericTest {
         attributes.put("name", "test01k");
         attributes.put("numValue", 50);
         attributes.put("nested", new ObjectMap("num1", 45).append("num2", 33).append("text", "HelloWorld"));
-        catalogManager.modifyFile(test01k.getId(), new ObjectMap("attributes", attributes), sessionIdUser);
+        catalogManager.getFileManager().update(test01k.getId(), new ObjectMap("attributes", attributes), new QueryOptions(), sessionIdUser);
 
         Set<Variable> variables = new HashSet<>();
         variables.addAll(Arrays.asList(
@@ -216,7 +219,8 @@ public class CatalogManagerTest extends GenericTest {
                 .append("PHEN", "CONTROL"), null, true, sessionIdUser);
 
 
-        catalogManager.modifyFile(test01k.getId(), new ObjectMap("sampleIds", Arrays.asList(s_1, s_2, s_3, s_4, s_5)), sessionIdUser);
+        catalogManager.getFileManager().update(test01k.getId(), new ObjectMap("sampleIds", Arrays.asList(s_1, s_2, s_3, s_4, s_5)),
+                new QueryOptions(), sessionIdUser);
 
     }
 

@@ -294,7 +294,6 @@ public class CohortManager extends AbstractManager implements ICohortManager {
 
     @Override
     public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userManager.getId(sessionId);
         long cohortId = getId(userId, id);
 
