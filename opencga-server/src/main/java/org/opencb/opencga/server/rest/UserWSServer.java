@@ -255,7 +255,7 @@ public class UserWSServer extends OpenCGAWSServer {
             String password = map.get("password");
             String organization = map.containsKey("organization") ? map.get("organization") : "";
 
-            QueryResult queryResult = catalogManager.createUser(userId, name, email, password, organization, null, new QueryOptions());
+            QueryResult queryResult = catalogManager.createUser(userId, name, email, password, organization, null, queryOptions);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

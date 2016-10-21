@@ -56,7 +56,6 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     })
     public Response index(@ApiParam(value = "File id or path") @PathParam("fileId") String fileId) {
         try {
-            parseQueryParams(params, FileDBAdaptor.QueryParams::getParam, query, queryOptions);
             return createOkResponse("[PENDING]");
         } catch (Exception e) {
             return createErrorResponse(e);

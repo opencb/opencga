@@ -123,9 +123,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                       @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
-            QueryOptions qOptions = new QueryOptions(queryOptions);
-            parseQueryParams(params, IndividualDBAdaptor.QueryParams::getParam, query, qOptions);
-            QueryResult<Individual> queryResult = catalogManager.getAllIndividuals(studyId, query, qOptions, sessionId);
+            QueryResult<Individual> queryResult = catalogManager.getAllIndividuals(studyId, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -345,7 +343,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(), populationName);
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.POPULATION_DESCRIPTION.key(), populationDescription);
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.POPULATION_SUBPOPULATION.key(), subpopulation);
-            QueryResult<Individual> queryResult = catalogManager.getIndividualManager().update(individualId, params, new QueryOptions(), sessionId);
+            QueryResult<Individual> queryResult = catalogManager.getIndividualManager().update(individualId, params, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -437,13 +435,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "annotationSetName", required = false) @QueryParam("annotationSetName") String annotationSetName,
                             @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
         try {
-            Query query = new Query();
-            QueryOptions qOptions = new QueryOptions();
-            parseQueryParams(params, IndividualDBAdaptor.QueryParams::getParam, query, qOptions);
-
-            logger.debug("query = " + query.toJson());
-            logger.debug("queryOptions = " + qOptions.toJson());
-            QueryResult result = catalogManager.individualGroupBy(query, qOptions, fields, sessionId);
+            QueryResult result = catalogManager.individualGroupBy(query, queryOptions, fields, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -188,7 +188,7 @@ public class FileWSServer extends OpenCGAWSServer {
             List<QueryResult> results = new LinkedList<>();
             for (String fileId : fileIds.split(",")) {
                 System.out.println("fileId = " + fileId);
-                QueryResult<File> result = catalogManager.getFile(catalogManager.getFileId(fileId, sessionId), this.queryOptions, sessionId);
+                QueryResult<File> result = catalogManager.getFile(catalogManager.getFileId(fileId, sessionId), queryOptions, sessionId);
                 URI fileUri = result.first().getUri();
                 results.add(new QueryResult<>(fileId, 0, 1, 1, "", "", Collections.singletonList(fileUri)));
             }
@@ -578,11 +578,6 @@ public class FileWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("") @QueryParam("nattributes") String nattributes) {
         try {
             long studyIdNum = catalogManager.getStudyId(studyId, sessionId);
-            // TODO this must be changed: only one queryOptions need to be passed
-            Query query = new Query();
-            QueryOptions qOptions = new QueryOptions(this.queryOptions);
-            parseQueryParams(params, FileDBAdaptor.QueryParams::getParam, query, qOptions);
-
             if (query.containsKey(FileDBAdaptor.QueryParams.NAME.key())
                     && (query.get(FileDBAdaptor.QueryParams.NAME.key()) == null
                     || query.getString(FileDBAdaptor.QueryParams.NAME.key()).isEmpty())) {
@@ -590,12 +585,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 logger.debug("Name attribute empty, it's been removed");
             }
 
-            if (!qOptions.containsKey(QueryOptions.LIMIT)) {
-                qOptions.put(QueryOptions.LIMIT, 1000);
-                logger.debug("Adding a limit of 1000");
-            }
-            logger.debug("query = " + query.toJson());
-            QueryResult<File> result = catalogManager.searchFile(studyIdNum, query, qOptions, sessionId);
+            QueryResult<File> result = catalogManager.searchFile(studyIdNum, query, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -615,7 +605,7 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response list(@ApiParam(value = "Folder id") @PathParam("folderId") String folderId) {
         try {
             long fileIdNum = catalogManager.getFileId(convertPath(folderId, sessionId), sessionId);
-            QueryResult result = catalogManager.getAllFilesInFolder(fileIdNum, this.queryOptions, sessionId);
+            QueryResult result = catalogManager.getAllFilesInFolder(fileIdNum, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -699,22 +689,8 @@ public class FileWSServer extends OpenCGAWSServer {
     })
     public Response treeView(@ApiParam(value = "Folder id or path") @PathParam("folderId") String folderId,
                              @ApiParam(value = "Maximum depth to get files from") @DefaultValue("5") @QueryParam("maxDepth") int maxDepth) {
-//                             @ApiParam(value = "Available types (FILE, DIRECTORY)") @DefaultValue("") @QueryParam("type") String type,
-//                             @ApiParam(value = "Comma separated Bioformat values. For existing Bioformats see files/help") @DefaultValue("") @QueryParam("bioformat") String bioformat,
-//                             @ApiParam(value = "Comma separated Format values. For existing Formats see files/help") @DefaultValue("") @QueryParam("format") String formats,
-//                             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @DefaultValue("") @QueryParam("creationDate") String creationDate,
-//                             @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss)") @DefaultValue("") @QueryParam("modificationDate") String modificationDate,
-//                             @ApiParam(value = "Description") @DefaultValue("") @QueryParam("description") String description,
-//                             @ApiParam(value = "Disk usage") @DefaultValue("") @QueryParam("diskUsage") Long diskUsage,
-//                             @ApiParam(value = "Comma separated list of sample ids") @DefaultValue("") @QueryParam("sampleIds") String sampleIds,
-//                             @ApiParam(value = "Job id that created the file(s) or folder(s)") @DefaultValue("") @QueryParam("jobId") String jobId,
-//                             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @DefaultValue("") @QueryParam("attributes") String attributes,
-//                             @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)") @DefaultValue("") @QueryParam("nattributes") String nattributes) {
         try {
-            Query query = new Query();
-            QueryOptions qOptions = new QueryOptions(this.queryOptions);
-            parseQueryParams(params, FileDBAdaptor.QueryParams::getParam, query, qOptions);
-            QueryResult result = catalogManager.getFileManager().getTree(convertPath(folderId, sessionId), query, qOptions, maxDepth, sessionId);
+            QueryResult result = catalogManager.getFileManager().getTree(convertPath(folderId, sessionId), query, queryOptions, maxDepth, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1281,13 +1257,7 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
                             @ApiParam(value = "numerical attributes", required = false) @DefaultValue("") @QueryParam("nattributes") String nattributes) {
         try {
-            Query query = new Query();
-            QueryOptions qOptions = new QueryOptions();
-            parseQueryParams(params, FileDBAdaptor.QueryParams::getParam, query, qOptions);
-
-            logger.debug("query = " + query.toJson());
-            logger.debug("queryOptions = " + qOptions.toJson());
-            QueryResult result = catalogManager.fileGroupBy(query, qOptions, fields, sessionId);
+            QueryResult result = catalogManager.fileGroupBy(query, queryOptions, fields, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

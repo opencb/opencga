@@ -506,20 +506,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                 case DESCRIPTION:
                 case ATTRIBUTES:
                     break;
-                case NATTRIBUTES:
-                case BATTRIBUTES:
-                case STATUS_NAME:
-                case STATUS_MSG:
-                case STATUS_DATE:
-                case STUDY_ID:
-                case ACL:
-                case ACL_MEMBER:
-                case ACL_PERMISSIONS:
-                case ANNOTATION_SETS:
-                case VARIABLE_SET_ID:
-                case ANNOTATION_SET_NAME:
-                case ANNOTATION:
-                case ID:
                 default:
                     throw new CatalogException("Cannot update " + queryParam);
             }
