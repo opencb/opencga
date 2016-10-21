@@ -100,16 +100,21 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
                 return;
             }
         }
+        getLog().info("Parse ...");
         List<Variant> analysisVar = parseCurrentVariantsRegion(variantCells, ctx.getChromosome());
         ctx.getContext().getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ANALYSIS").increment(analysisVar.size());
         endTime("2 Unpack and convert input ANALYSIS variants (" + GenomeHelper.VARIANT_COLUMN_PREFIX + ")");
 
+        getLog().info("Archive ...");
         // Archive: unpack Archive data (selection only
         List<Variant> archiveVar = getResultConverter().convert(ctx.value, ctx.startPos, ctx.nextStartPos, true);
+        getLog().info("Complete ...");
         completeAlternateCoordinates(archiveVar);
         ctx.context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ARCHIVE").increment(archiveVar.size());
 
         endTime("3 Unpack and convert input ARCHIVE variants");
+
+        getLog().info("Filter ...");
         // Variants of target type
         List<Variant> archiveTarget = filterForVariant(archiveVar.stream(), TARGET_VARIANT_TYPE).collect(Collectors.toList());
         if (!archiveTarget.isEmpty()) {
@@ -135,33 +140,52 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         Set<Variant> analysisNew = getNewVariantsAsTemplates(ctx, analysisVar, archiveTarget, (int) ctx.startPos, (int) ctx.nextStartPos);
 
         endTime("6 Create NEW variants");
+
+        getLog().info("Index ...");
         NavigableMap<Integer, List<Variant>> varPosRegister = indexAlts(archiveVar, (int) ctx.startPos, (int) ctx.nextStartPos);
+
+        getLog().info("Merge {} new variants ", analysisNew.size());
+        long overlap = 0;
+        long merge = 0;
+
         // with current files of same region
         for (Variant var : analysisNew) {
+            long start = System.nanoTime();
             Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, varPosRegister);
+            long mid = System.nanoTime();
             this.getVariantMerger().merge(var, cleanList);
+            long end = System.nanoTime();
+            overlap += mid - start;
+            merge += end - mid;
         }
+        getLog().info("Merge 1 - overlap {}; merge {}; ns", overlap, merge);
+
         endTime("7 Merge NEW variants");
 
-        getLog().info("Merge 2 ...");
         // with all other gVCF files of same region
         if (!analysisNew.isEmpty()) {
             List<Variant> archiveOther = loadFromArchive(ctx.context, ctx.getCurrRowKey(), ctx.fileIds);
             endTime("8 Load archive slice from hbase");
             if (!archiveOther.isEmpty()) {
+                overlap = 0;
+                merge = 0;
                 completeAlternateCoordinates(archiveOther);
                 NavigableMap<Integer, List<Variant>> varPosSortedOther = indexAlts(archiveOther, (int)ctx.startPos, (int)ctx.nextStartPos);
                 ctx.context.getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE").increment(archiveOther.size());
                 ctx.context.getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE_NUM_QUERIES").increment(1);
                 for (Variant var : analysisNew) {
+                    long start = System.nanoTime();
                     Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, varPosSortedOther);
+                    long mid = System.nanoTime();
                     this.getVariantMerger().merge(var, cleanList);
+                    overlap += mid - start;
+                    merge += System.nanoTime() - mid;
                 }
+                getLog().info("Merge 2 - overlap {}; merge {}; ns", overlap, merge);
                 endTime("8 Merge NEW with archive slice");
             }
         }
 
-        getLog().info("Merge 3 ...");
         // (2) and (3): Same, missing (and overlapping missing) variants
         for (Variant var : analysisVar) {
             Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, varPosRegister);
@@ -169,12 +193,10 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         }
         endTime("9 Merge same and missing");
 
-        getLog().info("Store ...");
         // WRITE VALUES
         List<VariantTableStudyRow> rows = new ArrayList<>(analysisNew.size() + analysisVar.size());
         updateOutputTable(ctx.context, analysisNew, rows, null);
         updateOutputTable(ctx.context, analysisVar, rows, ctx.sampleIds);
-        endTime("10 Update OUTPUT table");
         endTime("10 Update OUTPUT table");
 
         updateArchiveTable(ctx.getCurrRowKey(), ctx.context, rows);
@@ -333,48 +355,44 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         }
     }
 
+    // Find only Objects with the same object ID
+    private static class VariantWrapper {
+        private Variant var = null;
+        VariantWrapper(Variant var) {
+            this.var = var;
+        }
+
+        @Override
+        public int hashCode() {
+            return System.identityHashCode(this.var);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof VariantWrapper)) {
+                return false;
+            }
+            VariantWrapper wrapper = (VariantWrapper) o;
+            return this.var.equals(wrapper.var);
+        }
+    }
+
     private Collection<Variant> buildOverlappingNonRedundantSet(Variant var, NavigableMap<Integer, List<Variant>> archiveVar) {
         int min = toPosition(var, true);
         int max = toPosition(var, false);
-        return IntStream.range(min, max + 1).mapToObj(j -> j).flatMap(p -> {
+        Set<VariantWrapper> vars = new HashSet<>();
+        IntStream.range(min, max + 1).boxed().forEach(p -> {
             List<Variant> lst = archiveVar.get(p);
-            if (null == lst) {
-                lst = Collections.emptyList();
-            }
-            return lst.stream();
-        }).collect(Collectors.toSet());
-//        HashSet<Variant> overlap = new HashSet<>(archiveVar.tailSet(minVar, true).headSet(maxVar, true));
-//
-//        NavigableSet<Variant> remaining = archiveVar.tailSet(maxVar, true);
-//        for (Variant v : remaining) {
-//            if (toPosition(v, false) > max) {
-//                break;
-//            }
-//            overlap.add(v);
-//        }
-//        return overlap;
-    }
-
-    private Collection<Variant> buildOverlappingNonRedundantSet2(Variant var, List<Variant> archiveVar) {
-        List<Variant> overlap =
-                archiveVar.stream().filter(v -> VariantMerger.hasAnyOverlap(var, v)).collect(Collectors.toList());
-        Set<String> origCalls = new HashSet<>();
-        List<Variant> uniqueList = new ArrayList<>();
-        for (Variant variant : overlap) {
-            FileEntry fileEntry = variant.getStudies().get(0).getFiles().get(0);
-            String call = fileEntry.getCall();
-            if (StringUtils.isBlank(call)) {
-                uniqueList.add(variant);
-            } else {
-                String fileId = fileEntry.getFileId();
-                String id = call.substring(0, call.lastIndexOf(':')) + "-" + fileId;
-                if (!origCalls.contains(id)) {
-                    origCalls.add(id);
-                    uniqueList.add(variant);
+            if (null != lst) {
+                for (Variant v : lst) {
+                    vars.add(new VariantWrapper(v));
                 }
             }
-        }
-        return uniqueList;
+        });
+        return vars.stream().map(v -> v.var).collect(Collectors.toList());
     }
 
     /**

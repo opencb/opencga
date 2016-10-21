@@ -45,37 +45,25 @@ public class VariantLocalConflictResolver {
 
     private static VariantPositionRefAltComparator variantPositionRefAltComparator = new VariantPositionRefAltComparator();
     public List<Variant> resolveConflicts(List<Variant> variants) {
-
-        long start = System.currentTimeMillis();
-        Map<Variant, Variant> altToVar = removeDuplicatedAlts(variants);
-        long end = System.currentTimeMillis();
-//        System.out.println("Remove Duplicated (end - start) = \t" + (end - start));
+        Map<AlternateWrapper, Variant> altToVar = removeDuplicatedAlts(variants);
 
         // reindex the other way
         Map<Variant, List<Variant>> varToAlt = altToVar.entrySet().stream().collect(
                 Collectors.groupingBy(
                         Map.Entry::getValue,
-                        Collectors.mapping(Map.Entry::getKey, Collectors.toList())));
-
+                        Collectors.mapping(e -> e.getKey().getVariant(), Collectors.toList())));
         // sort alts by position
         NavigableSet<Variant> altSorted = new TreeSet<>(variantPositionRefAltComparator);
-        altSorted.addAll(altToVar.keySet());
+        altSorted.addAll(altToVar.keySet().stream().map(v -> v.getVariant()).collect(Collectors.toList()));
 
         List<Variant> resolved = new ArrayList<>();
-        long findConflictAlternates = 0;
-        long resolve = 0;
-
         while (!altSorted.isEmpty()) {
             Variant altQuery = altSorted.first();
-            Variant varQuery = altToVar.get(altQuery);
-            start = System.nanoTime();
+            Variant varQuery = altToVar.get(new AlternateWrapper(altQuery));
             Set<Variant> altConflictSet = findConflictAlternates(varQuery, altSorted, altToVar, varToAlt);
-            end = System.nanoTime();
-            findConflictAlternates += (end - start);
-//            System.out.println("findConflictAlternates (end - start) = \t" + (end - start) + ": " + altConflictSet.size());
 
             Set<Variant> varConflicts = new HashSet<>();
-            altConflictSet.forEach(a -> varConflicts.add(altToVar.get(a)));
+            altConflictSet.forEach(a -> varConflicts.add(altToVar.get(new AlternateWrapper(a))));
 
             if (varConflicts.isEmpty()) {
                 throw new IllegalStateException("Variant didn't find itself: " + altQuery);
@@ -85,16 +73,11 @@ public class VariantLocalConflictResolver {
                 }
                 resolved.add(varQuery);
             } else {
-                start = System.currentTimeMillis();
                 Collection<Variant> varResolved = resolve(altConflictSet, varConflicts, altToVar, varToAlt);
-                end = System.currentTimeMillis();
                 resolved.addAll(varResolved);
-                resolve += (end - start);
             }
             altSorted.removeAll(altConflictSet);
         }
-//        System.out.println("findConflictAlternates = " + findConflictAlternates / (1000*1000));
-//        System.out.println("resolve = " + resolve);
         return resolved;
     }
 
@@ -104,13 +87,13 @@ public class VariantLocalConflictResolver {
      * @param variants Collection of Alts as Variant objects.
      * @return Map Alternate (SecAlt and Alt as variant) to originating Variant.
      */
-    protected Map<Variant, Variant> removeDuplicatedAlts(Collection<Variant> variants) {
+    protected Map<AlternateWrapper, Variant> removeDuplicatedAlts(Collection<Variant> variants) {
         // Remove redundant variants (variant with one alt already represented in a SecAlt)
-        Map<Variant, List<Variant>> altToVarList = variants.stream()
-                .flatMap(v -> expandToVariants(v).stream().map(e -> new ImmutablePair<>(e, v)))
+        Map<AlternateWrapper, List<Variant>> altToVarList = variants.stream()
+                .flatMap(v -> expandToVariants(v).stream().map(e -> new ImmutablePair<>(new AlternateWrapper(e), v)))
                 .collect(Collectors.groupingBy(Pair::getLeft, Collectors.mapping(Pair::getRight, Collectors.toList())));
         // reindex the other way
-        Map<Variant, Set<Variant>> varToAlt =
+        Map<Variant, Set<AlternateWrapper>> varToAlt =
                 altToVarList.entrySet().stream()
                 .flatMap(e -> e.getValue().stream().map(v -> new ImmutablePair<>(v, e.getKey())))
                 .collect(
@@ -118,19 +101,19 @@ public class VariantLocalConflictResolver {
                         Pair::getKey,
                         Collectors.mapping(Pair::getValue, Collectors.toSet())));
 
-        Map<Variant, Variant> resMap = new HashMap<>();
-        Set<Variant> altBlackList = new HashSet<>();
+        Map<AlternateWrapper, Variant> resMap = new HashMap<>();
+        Set<AlternateWrapper> altBlackList = new HashSet<>();
 
          altToVarList.entrySet().forEach(e -> {
-             Variant key = e.getKey();
+             AlternateWrapper key = e.getKey();
              if (altBlackList.contains(key)) {
                  return; // ignore
              }
              List<Variant> lst = e.getValue();
              if (lst.size() > 1) {
                  // remove exact duplicated call
-                 Set<Set<Variant>> duplicatedCheck = new HashSet<Set<Variant>>();
-                 List<Variant> uniqCalls = new ArrayList<Variant>();
+                 Set<Set<AlternateWrapper>> duplicatedCheck = new HashSet<>();
+                 List<Variant> uniqCalls = new ArrayList<>();
                  lst.forEach(v -> {
                      if (duplicatedCheck.add(varToAlt.get(v))) {
                          uniqCalls.add(v);
@@ -142,7 +125,7 @@ public class VariantLocalConflictResolver {
              while (lst.size() > 1) {
                  // remove calls with no sec-alt
                  Optional<Variant> any = lst.stream().filter(
-                         v -> isSamePosRefAlt(v, key)
+                         v -> isSamePosRefAlt(v, key.variant)
                                  && v.getStudies().get(0).getSecondaryAlternates().isEmpty()).findAny();
                  if (any.isPresent()) {
                      lst.remove(any.get());
@@ -176,7 +159,7 @@ public class VariantLocalConflictResolver {
      * @return Set of conflicting Alts.
      */
     public static Set<Variant> findConflictAlternates(Variant varQuery, NavigableSet<Variant> altSorted,
-                                                      Map<Variant, Variant> altToVar, Map<Variant, List<Variant>> varToAlt) {
+                             Map<AlternateWrapper, Variant> altToVar, Map<Variant, List<Variant>> varToAlt) {
 
         // Get ALTs for Variant
         List<Variant> altQueryLst = varToAlt.get(varQuery);
@@ -200,7 +183,7 @@ public class VariantLocalConflictResolver {
             // Get all ALTs from variant of ALT
             List<Variant> qAlts =
                     varToAlt.get(
-                            altToVar.get(q));
+                            altToVar.get(new AlternateWrapper(q)));
             Set<Variant> altResolveList = new HashSet<>(qAlts);
 
             // Add everything which are lower (in sorting order) and their possible ALTs from same variant
@@ -215,7 +198,7 @@ public class VariantLocalConflictResolver {
 
                     // Add all ALTs to the toResolve list, which are not conlicting yet.
                     altResolveList.addAll(remaining.headSet(toResolve, false).stream()
-                            .flatMap(v -> varToAlt.get(altToVar.get(v)).stream())
+                            .flatMap(v -> varToAlt.get(altToVar.get(new AlternateWrapper(v))).stream())
                             .filter(v -> !altConflicts.contains(v)).collect(Collectors.toSet()));
                 }
             }
@@ -232,7 +215,7 @@ public class VariantLocalConflictResolver {
      * @param altConf Collection of Variants with conflicts.
      * @return List of Variants
      */
-    private Collection<Variant> resolve(Set<Variant> altConf, Set<Variant> varConf, Map<Variant, Variant> altToVar,
+    private Collection<Variant> resolve(Set<Variant> altConf, Set<Variant> varConf, Map<AlternateWrapper, Variant> altToVar,
                                         Map<Variant, List<Variant>> varToAlt) {
         if (varConf.size() < 2) {
             return varConf;
@@ -761,6 +744,35 @@ public class VariantLocalConflictResolver {
             }
             feAttr.put(VariantVcfFactory.FILTER, "SiteConflict");
             fe.setAttributes(feAttr);
+        }
+    }
+
+    public static class AlternateWrapper {
+        private final Variant variant;
+
+        public AlternateWrapper(Variant variant) {
+            this.variant = variant;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof AlternateWrapper)) {
+                return false;
+            }
+            AlternateWrapper that = (AlternateWrapper) o;
+            return variant != null ? variant.toString().equals(that.variant.toString()) : that.variant == null;
+        }
+
+        @Override
+        public int hashCode() {
+            return variant != null ? variant.toString().hashCode() : 0;
+        }
+
+        public Variant getVariant() {
+            return variant;
         }
     }
 }
