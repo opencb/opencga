@@ -27,9 +27,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHel
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.*;
 
@@ -133,9 +131,9 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter 
         addVarcharArray(put, TRANSCRIPTS.bytes(), transcripts);
         addVarcharArray(put, BIOTYPE.bytes(), biotype);
         addIntegerArray(put, SO.bytes(), so);
-        addArray(put, POLYPHEN.bytes(), polyphen, (PArrayDataType) POLYPHEN.getPDataType());
+        addArray(put, POLYPHEN.bytes(), sortProteinSubstitutionScores(polyphen), (PArrayDataType) POLYPHEN.getPDataType());
         addArray(put, POLYPHEN_DESC.bytes(), polyphenDesc, (PArrayDataType) POLYPHEN_DESC.getPDataType());
-        addArray(put, SIFT.bytes(), sift, (PArrayDataType) SIFT.getPDataType());
+        addArray(put, SIFT.bytes(), sortProteinSubstitutionScores(sift), (PArrayDataType) SIFT.getPDataType());
         addArray(put, SIFT_DESC.bytes(), siftDesc, (PArrayDataType) SIFT_DESC.getPDataType());
         addVarcharArray(put, TRANSCRIPTION_FLAGS.bytes(), flags);
         addVarcharArray(put, GENE_TRAITS_ID.bytes(), geneTraitId);
@@ -168,6 +166,20 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter 
         }
 
         return put;
+    }
+
+    private List<Double> sortProteinSubstitutionScores(Set<Double> scores) {
+        List<Double> sorted = new ArrayList<>(scores.size());
+        Double min = scores.stream().min(Double::compareTo).orElse(-1.0);
+        Double max = scores.stream().max(Double::compareTo).orElse(-1.0);
+        if (min >= 0) {
+            sorted.add(min);
+            sorted.add(max);
+            scores.remove(min);
+            scores.remove(max);
+            sorted.addAll(scores);
+        }
+        return sorted;
     }
 
     @Override

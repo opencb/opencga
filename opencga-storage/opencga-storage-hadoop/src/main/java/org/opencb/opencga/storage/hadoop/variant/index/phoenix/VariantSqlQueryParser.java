@@ -586,7 +586,7 @@ public class VariantSqlQueryParser {
             } else {
                 return VariantColumn.SIFT_DESC;
             }
-        }, null, filters);
+        }, null, null, null, filters, op -> op.contains(">") ? 2 : op.contains("<") ? 1 : -1);
 
         addQueryFilter(query, ANNOT_POLYPHEN, (keyOpValue, rawValue) -> {
             if (StringUtils.isNotEmpty(keyOpValue[0])) {
@@ -597,7 +597,7 @@ public class VariantSqlQueryParser {
             } else {
                 return VariantColumn.POLYPHEN_DESC;
             }
-        }, null, filters);
+        }, null, null, null, filters, op -> op.contains(">") ? 2 : op.contains("<") ? 1 : -1);
 
         addQueryFilter(query, ANNOT_CONSERVATION,
                 (keyOpValue, rawValue) -> getConservationScoreColumn(keyOpValue[0], rawValue, true), null, filters);
@@ -818,6 +818,27 @@ public class VariantSqlQueryParser {
                                 Function<String, String> operatorParser,
                                 Function<String, Object> valueParser,
                                 Function<String[], String> extraFilters, List<String> filters, int arrayIdx) {
+        addQueryFilter(query, param, columnParser, operatorParser, valueParser, extraFilters, filters, (o) -> arrayIdx);
+    }
+
+    /**
+     * Transforms a Key-Value from a query into a valid SQL filter.
+     *
+     * @param query             Query with the values
+     * @param param             Param to read from the query
+     * @param columnParser      Column parser. Given the [key, op, value] and the original value, returns a {@link Column}
+     * @param operatorParser    Operator parser. Given the [key, op, value], returns a valid SQL operator
+     * @param valueParser       Value parser. Given the [key, op, value], transforms the value to make the query.
+     *                          If the returned value is a Collection, uses each value for the query.
+     * @param extraFilters      Provides extra filters to be concatenated to the filter.
+     * @param filters           List of filters to be modified.
+     * @param arrayIdxParser    Array accessor index in base-1.
+     */
+    private void addQueryFilter(Query query, VariantQueryParams param,
+                                BiFunction<String[], String, Column> columnParser,
+                                Function<String, String> operatorParser,
+                                Function<String, Object> valueParser,
+                                Function<String[], String> extraFilters, List<String> filters, Function<String, Integer> arrayIdxParser) {
         if (isValidParam(query, param)) {
             List<String> subFilters = new LinkedList<>();
             QueryOperation logicOperation = checkOperator(query.getString(param.key()));
@@ -828,14 +849,17 @@ public class VariantSqlQueryParser {
             for (String rawValue : query.getAsStringList(param.key(), logicOperation.separator())) {
                 String[] keyOpValue = splitOperator(rawValue);
                 Column column = columnParser.apply(keyOpValue, rawValue);
-                if (!column.getPDataType().isArrayType() && arrayIdx >= 0) {
-                    throw new VariantQueryException("Unable to use array indexes with non array columns. "
-                            + column + " " + column.sqlType());
-                }
+
 
                 String op = parseOperator(keyOpValue[1]);
                 if (operatorParser != null) {
                     op = operatorParser.apply(op);
+                }
+                int arrayIdx = arrayIdxParser.apply(op);
+
+                if (!column.getPDataType().isArrayType() && arrayIdx >= 0) {
+                    throw new VariantQueryException("Unable to use array indexes with non array columns. "
+                            + column + " " + column.sqlType());
                 }
 
                 final String negatedStr;
