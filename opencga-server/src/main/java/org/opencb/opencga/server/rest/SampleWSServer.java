@@ -77,6 +77,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "lazy", value = "False to return the entire individual object", defaultValue = "true", dataType = "boolean", paramType = "query")
     })
     public Response infoSample(@ApiParam(value = "Comma separated list of sample ids or names", required = true) @PathParam("sampleIds") String sampleStr) {
         try {

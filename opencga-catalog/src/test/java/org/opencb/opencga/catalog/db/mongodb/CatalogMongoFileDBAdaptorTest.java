@@ -150,7 +150,7 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         assertNull(noJobInfoQueryResult.first().getJob().getName());
         assertNull(noJobInfoQueryResult.first().getJob().getDescription());
 
-        queryOptions.put(QueryOptions.INCLUDE, "job");
+        queryOptions.put("lazy", false);
         QueryResult<File> jobInfoQueryResult = catalogFileDBAdaptor.get(fileInsert.first().getId(), queryOptions);
         assertEquals(jobName, jobInfoQueryResult.first().getJob().getName());
         assertEquals(jobDescription, jobInfoQueryResult.first().getJob().getDescription());
