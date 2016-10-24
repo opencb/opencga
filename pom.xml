@@ -39,7 +39,7 @@
         <opencga.version>1.0.0-rc1.1</opencga.version>
         <java.version>1.8</java.version>
         <biodata.version>0.8.2</biodata.version>
-        <cellbase.version>4.5.0-beta</cellbase.version>
+        <cellbase.version>4.5.0-beta1.1</cellbase.version>
         <java-common-libs.version>3.3.1</java-common-libs.version>
         <hpg-bigdata.version>0.6.0</hpg-bigdata.version>
         <jackson.version>2.6.6</jackson.version>
@@ -227,6 +227,18 @@
                         <groupId>org.opencb.biodata</groupId>
                         <artifactId>biodata-formats</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-simple</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <!-- cellbase-lib dependency required to enable direct annotation against the database using the adaptors -->
+            <dependency>
+                <groupId>org.opencb.cellbase</groupId>
+                <artifactId>cellbase-lib</artifactId>
+                <version>${cellbase.version}</version>
+                <exclusions>
                     <exclusion>
                         <groupId>org.slf4j</groupId>
                         <artifactId>slf4j-simple</artifactId>
@@ -456,8 +468,14 @@
                 <OPENCGA.SERVER.REST.PORT>9090</OPENCGA.SERVER.REST.PORT>
                 <OPENCGA.SERVER.GRPC.PORT>9091</OPENCGA.SERVER.GRPC.PORT>
 
-                <OPENCGA.CELLBASE.HOST>http://bioinfodev.hpc.cam.ac.uk/cellbase-4.1.0-beta/webservices/rest/</OPENCGA.CELLBASE.HOST>
                 <OPENCGA.CELLBASE.VERSION>v4</OPENCGA.CELLBASE.VERSION>
+                <OPENCGA.CELLBASE.REST.HOST>http://bioinfodev.hpc.cam.ac.uk/cellbase-4.5.0-beta1.1/</OPENCGA.CELLBASE.REST.HOST>
+                <OPENCGA.CELLBASE.DB.HOST>localhost:27017</OPENCGA.CELLBASE.DB.HOST>
+                <OPENCGA.CELLBASE.DB.USER></OPENCGA.CELLBASE.DB.USER>
+                <OPENCGA.CELLBASE.DB.PASSWORD></OPENCGA.CELLBASE.DB.PASSWORD>
+                <OPENCGA.CELLBASE.DB.AUTHENTICATION_DATABASE></OPENCGA.CELLBASE.DB.AUTHENTICATION_DATABASE>
+                <OPENCGA.CELLBASE.DB.READ_PREFERENCE>secondaryPreferred</OPENCGA.CELLBASE.DB.READ_PREFERENCE>
+
                 <OPENCGA.STORAGE.ENGINE.DEFAULT>mongodb</OPENCGA.STORAGE.ENGINE.DEFAULT>
             </properties>
         </profile>
