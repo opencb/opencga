@@ -118,6 +118,36 @@ public class IndividualCommandOptions {
 
         @Parameter(names = {"--sex"}, description = "Sex. (MALE, FEMALE, UNKNOWN, UNDETERMINED). Default: UNKNOWN", required = false)
         public String sex = "UNKNOWN";
+
+        @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
+        public String ethnicity;
+
+        @Parameter(names = {"--species-taxonomy-code"}, description = "Taxonomy code of the species", required = false, arity = 1)
+        public String speciesTaxonomyCode;
+
+        @Parameter(names = {"--species-scientific-name"}, description = "Scientific name of the species", required = false, arity = 1)
+        public String speciesScientificName;
+
+        @Parameter(names = {"--species-common-name"}, description = "Common name of the species", required = false, arity = 1)
+        public String speciesCommonName;
+
+        @Parameter(names = {"--population-name"}, description = "Population name", required = false, arity = 1)
+        public String populationName;
+
+        @Parameter(names = {"--population-description"}, description = "Description of the population", required = false, arity = 1)
+        public String populationDescription;
+
+        @Parameter(names = {"--population-subpopulation"}, description = "Subpopulation name", required = false, arity = 1)
+        public String populationSubpopulation;
+
+        @Parameter(names = {"--karyotypic-sex"}, description = "Karyotypic sex", required = false, arity = 1)
+        public String karyotypicSex;
+
+        @Parameter(names = {"--life-status"}, description = "Life status", required = false, arity = 1)
+        public String lifeStatus;
+
+        @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
+        public String affectationStatus;
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get individual information")
@@ -169,11 +199,40 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
         public String ethnicity;
 
+        @Deprecated
         @Parameter(names = {"--species"}, description = "species", required = false, arity = 1)
         public String species;
 
+        @Deprecated
         @Parameter(names = {"--population"}, description = "population", required = false, arity = 1)
         public String population;
+
+        @Parameter(names = {"--species-taxonomy-code"}, description = "Taxonomy code of the species", required = false, arity = 1)
+        public String speciesTaxonomyCode;
+
+        @Parameter(names = {"--species-scientific-name"}, description = "Scientific name of the species", required = false, arity = 1)
+        public String speciesScientificName;
+
+        @Parameter(names = {"--species-common-name"}, description = "Common name of the species", required = false, arity = 1)
+        public String speciesCommonName;
+
+        @Parameter(names = {"--population-name"}, description = "Population name", required = false, arity = 1)
+        public String populationName;
+
+        @Parameter(names = {"--population-description"}, description = "Description of the population", required = false, arity = 1)
+        public String populationDescription;
+
+        @Parameter(names = {"--population-subpopulation"}, description = "Subpopulation name", required = false, arity = 1)
+        public String populationSubpopulation;
+
+        @Parameter(names = {"--karyotypic-sex"}, description = "Karyotypic sex", required = false, arity = 1)
+        public String karyotypicSex;
+
+        @Parameter(names = {"--life-status"}, description = "Life status", required = false, arity = 1)
+        public String lifeStatus;
+
+        @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
+        public String affectationStatus;
 
         @Parameter(names = {"--variable-set-id"}, description = "variableSetId", required = false, arity = 1)
         public String variableSetId;
@@ -227,6 +286,14 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--population-subpopulation"}, description = "Subpopulation name", required = false, arity = 1)
         public String populationSubpopulation;
 
+        @Parameter(names = {"--karyotypic-sex"}, description = "Karyotypic sex", required = false, arity = 1)
+        public String karyotypicSex;
+
+        @Parameter(names = {"--life-status"}, description = "Life status", required = false, arity = 1)
+        public String lifeStatus;
+
+        @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
+        public String affectationStatus;
 
     }
 
@@ -268,11 +335,40 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
         public String ethnicity;
 
+        @Deprecated
         @Parameter(names = {"--species"}, description = "species", required = false, arity = 1)
         public String species;
 
+        @Deprecated
         @Parameter(names = {"--population"}, description = "population", required = false, arity = 1)
         public String population;
+
+        @Parameter(names = {"--species-taxonomy-code"}, description = "Taxonomy code of the species", required = false, arity = 1)
+        public String speciesTaxonomyCode;
+
+        @Parameter(names = {"--species-scientific-name"}, description = "Scientific name of the species", required = false, arity = 1)
+        public String speciesScientificName;
+
+        @Parameter(names = {"--species-common-name"}, description = "Common name of the species", required = false, arity = 1)
+        public String speciesCommonName;
+
+        @Parameter(names = {"--population-name"}, description = "Population name", required = false, arity = 1)
+        public String populationName;
+
+        @Parameter(names = {"--population-description"}, description = "Description of the population", required = false, arity = 1)
+        public String populationDescription;
+
+        @Parameter(names = {"--population-subpopulation"}, description = "Subpopulation name", required = false, arity = 1)
+        public String populationSubpopulation;
+
+        @Parameter(names = {"--karyotypic-sex"}, description = "Karyotypic sex", required = false, arity = 1)
+        public String karyotypicSex;
+
+        @Parameter(names = {"--life-status"}, description = "Life status", required = false, arity = 1)
+        public String lifeStatus;
+
+        @Parameter(names = {"--affectation-status"}, description = "Affectation status", required = false, arity = 1)
+        public String affectationStatus;
 
         @Parameter(names = {"--variable-set-id"}, description = "Variable set ids", required = false, arity = 1)
         public String variableSetId;

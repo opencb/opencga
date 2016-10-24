@@ -66,7 +66,7 @@ public class Individual extends Annotable<IndividualAclEntry> {
     }
 
     public Individual() {
-        this(-1, null, -1, -1, null, null, null, null, null, new LinkedList<>(), new HashMap<>());
+        this(-1, null, -1, -1, null, null, null, new Species(), new Population(), new LinkedList<>(), new HashMap<>());
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Species species,
@@ -91,6 +91,29 @@ public class Individual extends Annotable<IndividualAclEntry> {
             this.karyotypicSex = KaryotypicSex.XX;
         } else {
             this.karyotypicSex = KaryotypicSex.UNKNOWN;
+        }
+    }
+
+    public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
+                      String ethnicity, Species species, Population population, LifeStatus lifeStatus,
+                      AffectationStatus affectationStatus) {
+        this(id, name, fatherId, motherId, family, sex, karyotypicSex, ethnicity, species, population, TimeUtils.getTime(), new Status(),
+                lifeStatus, affectationStatus, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyMap());
+
+        if (sex == null) {
+            this.sex = Sex.UNKNOWN;
+        }
+
+        if (karyotypicSex == null) {
+            this.karyotypicSex = KaryotypicSex.UNKNOWN;
+        }
+
+        if (population == null) {
+            new Population();
+        }
+
+        if (species == null) {
+            new Species();
         }
     }
 
@@ -187,6 +210,15 @@ public class Individual extends Annotable<IndividualAclEntry> {
 
 
         public Species() {
+            this.taxonomyCode = "";
+            this.scientificName = "";
+            this.commonName = "";
+        }
+
+        public Species(String commonName, String scientificName, String taxonomyCode) {
+            this.taxonomyCode = taxonomyCode;
+            this.scientificName = scientificName;
+            this.commonName = commonName;
         }
 
         @Override
@@ -262,6 +294,15 @@ public class Individual extends Annotable<IndividualAclEntry> {
 
 
         public Population() {
+            this.name = "";
+            this.subpopulation = "";
+            this.description = "";
+        }
+
+        public Population(String name, String subpopulation, String description) {
+            this.name = name;
+            this.subpopulation = subpopulation;
+            this.description = description;
         }
 
         @Override

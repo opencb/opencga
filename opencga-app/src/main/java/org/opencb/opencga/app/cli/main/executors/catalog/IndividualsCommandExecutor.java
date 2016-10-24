@@ -143,6 +143,17 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             }
         }
 
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.createCommandOptions.ethnicity);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_COMMON_NAME.key(), individualsCommandOptions.createCommandOptions.speciesCommonName);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_SCIENTIFIC_NAME.key(), individualsCommandOptions.createCommandOptions.speciesScientificName);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_TAXONOMY_CODE.key(), individualsCommandOptions.createCommandOptions.speciesTaxonomyCode);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(), individualsCommandOptions.createCommandOptions.populationName);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_SUBPOPULATION.key(), individualsCommandOptions.createCommandOptions.populationSubpopulation);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_DESCRIPTION.key(), individualsCommandOptions.createCommandOptions.populationDescription);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(), individualsCommandOptions.createCommandOptions.karyotypicSex);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(), individualsCommandOptions.createCommandOptions.lifeStatus);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), individualsCommandOptions.createCommandOptions.affectationStatus);
+
         return openCGAClient.getIndividualClient().create(individualsCommandOptions.createCommandOptions.studyId,
                 individualsCommandOptions.createCommandOptions.name, objectMap);
     }
@@ -175,9 +186,19 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.searchCommandOptions.family);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.searchCommandOptions.sex);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.searchCommandOptions.ethnicity);
-        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES.key(), individualsCommandOptions.searchCommandOptions.species);
+        // TODO: Remove these 2 deprecated parameters in future release
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_COMMON_NAME.key(), individualsCommandOptions.searchCommandOptions.species);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                 individualsCommandOptions.searchCommandOptions.population);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_COMMON_NAME.key(), individualsCommandOptions.searchCommandOptions.speciesCommonName);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_TAXONOMY_CODE.key(), individualsCommandOptions.searchCommandOptions.speciesTaxonomyCode);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_SCIENTIFIC_NAME.key(), individualsCommandOptions.searchCommandOptions.speciesScientificName);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(), individualsCommandOptions.searchCommandOptions.populationName);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_SUBPOPULATION.key(), individualsCommandOptions.searchCommandOptions.populationSubpopulation);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_DESCRIPTION.key(), individualsCommandOptions.searchCommandOptions.populationDescription);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(), individualsCommandOptions.searchCommandOptions.karyotypicSex);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(), individualsCommandOptions.searchCommandOptions.lifeStatus);
+        query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), individualsCommandOptions.searchCommandOptions.affectationStatus);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
                 individualsCommandOptions.searchCommandOptions.variableSetId);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ANNOTATION.key(),
@@ -214,12 +235,15 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         }
 
         objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.updateCommandOptions.ethnicity);
-        objectMap.putIfNotEmpty("speciesTaxonomyCode", individualsCommandOptions.updateCommandOptions.speciesTaxonomyCode);
-        objectMap.putIfNotEmpty("speciesCommonName", individualsCommandOptions.updateCommandOptions.speciesCommonName);
-        objectMap.putIfNotEmpty("speciesScientificName", individualsCommandOptions.updateCommandOptions.speciesScientificName);
-        objectMap.putIfNotEmpty("populationName", individualsCommandOptions.updateCommandOptions.populationName);
-        objectMap.putIfNotEmpty("populationDescription", individualsCommandOptions.updateCommandOptions.populationDescription);
-        objectMap.putIfNotEmpty("subpopulation", individualsCommandOptions.updateCommandOptions.populationSubpopulation);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_TAXONOMY_CODE.key(), individualsCommandOptions.updateCommandOptions.speciesTaxonomyCode);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_COMMON_NAME.key(), individualsCommandOptions.updateCommandOptions.speciesCommonName);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_SCIENTIFIC_NAME.key(), individualsCommandOptions.updateCommandOptions.speciesScientificName);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(), individualsCommandOptions.updateCommandOptions.populationName);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_DESCRIPTION.key(), individualsCommandOptions.updateCommandOptions.populationDescription);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_SUBPOPULATION.key(), individualsCommandOptions.updateCommandOptions.populationSubpopulation);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(), individualsCommandOptions.updateCommandOptions.karyotypicSex);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(), individualsCommandOptions.updateCommandOptions.lifeStatus);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), individualsCommandOptions.updateCommandOptions.affectationStatus);
 
         return openCGAClient.getIndividualClient().update(individualsCommandOptions.updateCommandOptions.id, objectMap);
     }
@@ -242,9 +266,19 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.groupByCommandOptions.family);
         objectMap.put(IndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.groupByCommandOptions.sex);
         objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.groupByCommandOptions.ethnicity);
-        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES.key(), individualsCommandOptions.groupByCommandOptions.species);
+        // TODO: Remove these 2 deprecated parameters in future release
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_COMMON_NAME.key(), individualsCommandOptions.groupByCommandOptions.species);
         objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
                 individualsCommandOptions.groupByCommandOptions.population);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_TAXONOMY_CODE.key(), individualsCommandOptions.groupByCommandOptions.speciesTaxonomyCode);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_COMMON_NAME.key(), individualsCommandOptions.groupByCommandOptions.speciesCommonName);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_SCIENTIFIC_NAME.key(), individualsCommandOptions.groupByCommandOptions.speciesScientificName);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(), individualsCommandOptions.groupByCommandOptions.populationName);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_DESCRIPTION.key(), individualsCommandOptions.groupByCommandOptions.populationDescription);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_SUBPOPULATION.key(), individualsCommandOptions.groupByCommandOptions.populationSubpopulation);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(), individualsCommandOptions.groupByCommandOptions.karyotypicSex);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(), individualsCommandOptions.groupByCommandOptions.lifeStatus);
+        objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), individualsCommandOptions.groupByCommandOptions.affectationStatus);
         objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
                 individualsCommandOptions.groupByCommandOptions.variableSetId);
         objectMap.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ANNOTATION.key(),

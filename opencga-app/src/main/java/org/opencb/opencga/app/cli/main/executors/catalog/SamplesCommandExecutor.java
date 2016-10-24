@@ -160,7 +160,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(samplesCommandOptions.infoCommandOptions.exclude)) {
             queryOptions.put(QueryOptions.EXCLUDE, samplesCommandOptions.infoCommandOptions.exclude);
         }
-
+        if (samplesCommandOptions.infoCommandOptions.noLazy) {
+            queryOptions.put("lazy", false);
+        }
         return openCGAClient.getSampleClient().get(samplesCommandOptions.infoCommandOptions.id, queryOptions);
     }
 
