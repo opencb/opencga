@@ -423,7 +423,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         }
         qOptions = filterOptions(qOptions, FILTER_ROUTE_SAMPLES);
         QueryResult<Sample> sampleQueryResult;
-        if (qOptions.get(QueryOptions.INCLUDE) != null && qOptions.getAsStringList(QueryOptions.INCLUDE).contains("individual")) {
+        if (qOptions.get("lazy") != null && !qOptions.getBoolean("lazy")) {
             Bson match = Aggregates.match(bson);
             Bson lookup = Aggregates.lookup("individual", QueryParams.INDIVIDUAL_ID.key(), IndividualDBAdaptor.QueryParams.ID.key(),
                     "individual");

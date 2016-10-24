@@ -94,7 +94,8 @@ public class OpenCGAWSServer {
 //    @ApiParam(name = "skip", value = "Number of documents to be skipped when querying for data.")
     protected long skip;
 
-    protected String count;
+    protected boolean count;
+    protected boolean lazy;
 
     @DefaultValue("")
     @QueryParam("sid")
@@ -357,8 +358,9 @@ public class OpenCGAWSServer {
                     queryOptions.put(entry.getKey(), value);
                     break;
                 case "count":
-                    boolean count = Boolean.parseBoolean(value);
-                    queryOptions.put(entry.getKey(), count);
+                case "lazy":
+                    boolean booleanValue = Boolean.parseBoolean(value);
+                    queryOptions.put(entry.getKey(), booleanValue);
                     break;
                 default:
                     // Query

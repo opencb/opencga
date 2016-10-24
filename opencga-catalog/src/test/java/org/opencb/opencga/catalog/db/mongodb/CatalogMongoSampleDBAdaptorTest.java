@@ -344,7 +344,7 @@ public class CatalogMongoSampleDBAdaptorTest {
         assertNull(noIndividualInfoQueryResult.first().getIndividual().getName());
         assertNull(noIndividualInfoQueryResult.first().getIndividual().getFamily());
 
-        queryOptions.put(QueryOptions.INCLUDE, "individual");
+        queryOptions.put("lazy", false);
         QueryResult<Sample> individualInfoQueryResult = catalogSampleDBAdaptor.get(sampleQR.first().getId(), queryOptions);
         assertEquals(individualName, individualInfoQueryResult.first().getIndividual().getName());
         assertEquals(individualFamily, individualInfoQueryResult.first().getIndividual().getFamily());
