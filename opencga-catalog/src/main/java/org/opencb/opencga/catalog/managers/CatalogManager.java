@@ -1118,10 +1118,12 @@ public class CatalogManager implements AutoCloseable {
         return individualManager.getIds(userId, individualStr);
     }
 
+    @Deprecated
     public QueryResult<Individual> createIndividual(long studyId, String name, String family, long fatherId, long motherId,
                                                     Individual.Sex sex, QueryOptions options, String sessionId)
             throws CatalogException {
-        return individualManager.create(studyId, name, family, fatherId, motherId, sex, options, sessionId);
+        return individualManager.create(studyId, name, family, fatherId, motherId, sex, "", "", "", "", "", "", "",
+                Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, options, sessionId);
     }
 
     public QueryResult<Individual> getIndividual(long individualId, QueryOptions options, String sessionId)

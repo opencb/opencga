@@ -205,6 +205,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(filesCommandOptions.infoCommandOptions.exclude)) {
             queryOptions.put(QueryOptions.EXCLUDE, filesCommandOptions.infoCommandOptions.exclude);
         }
+        if (filesCommandOptions.infoCommandOptions.noLazy) {
+            queryOptions.put("lazy", false);
+        }
         return openCGAClient.getFileClient().get(filesCommandOptions.infoCommandOptions.fileIds, queryOptions);
     }
 
