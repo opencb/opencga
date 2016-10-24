@@ -18,7 +18,6 @@ package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
@@ -116,8 +115,12 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                       @ApiParam(value = "family", required = false) @QueryParam("family") String family,
                                       @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
                                       @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-                                      @ApiParam(value = "species", required = false) @QueryParam("species") String species,
-                                      @ApiParam(value = "population", required = false) @QueryParam("population") String population,
+                                      @ApiParam(value = "Species taxonomy code", required = false) @QueryParam("species.taxonomyCode") String speciesTaxonomyCode,
+                                      @ApiParam(value = "Species scientific name", required = false) @QueryParam("species.scientificName") String speciesScientificName,
+                                      @ApiParam(value = "Species common name", required = false) @QueryParam("species.commonName") String speciesCommonName,
+                                      @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
+                                      @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation") String populationSubpopulation,
+                                      @ApiParam(value = "Population description", required = false) @QueryParam("population.description") String populationDescription,
                                       @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
                                       @ApiParam(value = "annotationSetName", required = false) @QueryParam("annotationSetName") String annotationSetName,
                                       @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
@@ -322,12 +325,12 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                      @ApiParam(value = "family", required = false) @QueryParam("family") String family,
                                      @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
                                      @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-                                     @ApiParam(value = "Taxonomy code of the species", required = false) @QueryParam("speciesTaxonomyCode") String speciesTaxonomy,
-                                     @ApiParam(value = "Scientific name of the species", required = false) @QueryParam("speciesScientificName") String speciesScientificName,
-                                     @ApiParam(value = "Common name of the species", required = false) @QueryParam("speciesCommonName") String speciesCommonName,
-                                     @ApiParam(value = "Population name", required = false) @QueryParam("populationName") String populationName,
-                                     @ApiParam(value = "Description of the population", required = false) @QueryParam("populationDescription") String populationDescription,
-                                     @ApiParam(value = "Subpopulation", required = false) @QueryParam("subpopulation") String subpopulation) {
+                                     @ApiParam(value = "Species taxonomy code", required = false) @QueryParam("species.taxonomyCode") String speciesTaxonomyCode,
+                                     @ApiParam(value = "Species scientific name", required = false) @QueryParam("species.scientificName") String speciesScientificName,
+                                     @ApiParam(value = "Species common name", required = false) @QueryParam("species.commonName") String speciesCommonName,
+                                     @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
+                                     @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation") String populationSubpopulation,
+                                     @ApiParam(value = "Population description", required = false) @QueryParam("population.description") String populationDescription) {
         try {
             long individualId = catalogManager.getIndividualId(individualStr, sessionId);
             ObjectMap params = new ObjectMap();
@@ -339,10 +342,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), ethnicity);
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.SPECIES_COMMON_NAME.key(), speciesCommonName);
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.SPECIES_SCIENTIFIC_NAME.key(), speciesScientificName);
-            params.putIfNotNull(IndividualDBAdaptor.QueryParams.SPECIES_TAXONOMY_CODE.key(), speciesTaxonomy);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.SPECIES_TAXONOMY_CODE.key(), speciesTaxonomyCode);
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(), populationName);
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.POPULATION_DESCRIPTION.key(), populationDescription);
-            params.putIfNotNull(IndividualDBAdaptor.QueryParams.POPULATION_SUBPOPULATION.key(), subpopulation);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.POPULATION_SUBPOPULATION.key(), populationSubpopulation);
             QueryResult<Individual> queryResult = catalogManager.getIndividualManager().update(individualId, params, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -429,8 +432,12 @@ public class IndividualWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "family", required = false) @QueryParam("family") String family,
                             @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
                             @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-                            @ApiParam(value = "species", required = false) @QueryParam("species") String species,
-                            @ApiParam(value = "population", required = false) @QueryParam("population") String population,
+                            @ApiParam(value = "Species taxonomy code", required = false) @QueryParam("species.taxonomyCode") String speciesTaxonomyCode,
+                            @ApiParam(value = "Species scientific name", required = false) @QueryParam("species.scientificName") String speciesScientificName,
+                            @ApiParam(value = "Species common name", required = false) @QueryParam("species.commonName") String speciesCommonName,
+                            @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
+                            @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation") String populationSubpopulation,
+                            @ApiParam(value = "Population description", required = false) @QueryParam("population.description") String populationDescription,
                             @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
                             @ApiParam(value = "annotationSetName", required = false) @QueryParam("annotationSetName") String annotationSetName,
                             @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
