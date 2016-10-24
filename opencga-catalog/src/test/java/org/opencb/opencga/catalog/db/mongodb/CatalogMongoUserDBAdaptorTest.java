@@ -168,15 +168,15 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
     @Test
     public void modifyUserTest() throws CatalogDBException {
-
         ObjectMap genomeMapsConfig = new ObjectMap("lastPosition", "4:1222222:1333333");
         genomeMapsConfig.put("otherConf", Arrays.asList(1, 2, 3, 4, 5));
-        ObjectMap configs = new ObjectMap("genomemaps", genomeMapsConfig);
-        ObjectMap objectMap = new ObjectMap("configs", configs.toJson());
-        catalogUserDBAdaptor.update(user1.getId(), objectMap);
+        catalogUserDBAdaptor.setConfig(user1.getId(), "genomemaps", genomeMapsConfig);
 
         User user = catalogUserDBAdaptor.get(user1.getId(), null, null).first();
-        System.out.println(user);
+        assertNotNull(user.getConfigs().get("genomemaps"));
+        Map<String, Object> genomemaps = (Map<String, Object>) user.getConfigs().get("genomemaps");
+        assertNotNull(genomemaps.get("otherConf"));
+        assertNotNull(genomemaps.get("lastPosition"));
     }
 
     @Test

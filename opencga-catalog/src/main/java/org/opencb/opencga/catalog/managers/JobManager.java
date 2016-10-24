@@ -429,6 +429,26 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
+    public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        String userId = userManager.getId(sessionId);
+        long jobId = getId(userId, id);
+
+        authorizationManager.checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.UPDATE);
+
+        if (status != null && !Job.JobStatus.isValid(status)) {
+            throw new CatalogException("The status " + status + " is not valid job status.");
+        }
+
+        ObjectMap parameters = new ObjectMap();
+        parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_NAME.key(), status);
+        parameters.putIfNotNull(JobDBAdaptor.QueryParams.STATUS_MSG.key(), message);
+
+        jobDBAdaptor.update(jobId, parameters);
+        auditManager.recordUpdate(AuditRecord.Resource.job, jobId, userId, parameters, null, null);
+    }
+
+    @Override
     public QueryResult rank(long studyId, Query query, String field, int numResults, boolean asc, String sessionId)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);

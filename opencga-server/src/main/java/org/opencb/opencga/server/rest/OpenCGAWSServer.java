@@ -94,6 +94,8 @@ public class OpenCGAWSServer {
 //    @ApiParam(name = "skip", value = "Number of documents to be skipped when querying for data.")
     protected long skip;
 
+    protected String count;
+
     @DefaultValue("")
     @QueryParam("sid")
     @ApiParam(value = "Session Id")
@@ -264,46 +266,59 @@ public class OpenCGAWSServer {
         }
     }
 
-
-    /**
-     * Builds the query and the queryOptions based on the query parameters.
-     *
-     * @param params Map of parameters.
-     * @param getParam Method that returns the QueryParams object based on the key.
-     * @param query Query where parameters parsing the getParam function will be inserted.
-     * @param queryOptions QueryOptions where parameters not parsing the getParam function will be inserted.
-     */
-    protected static void parseQueryParams(Map<String, List<String>> params,
-                                           Function<String, org.opencb.commons.datastore.core.QueryParam> getParam,
-                                           ObjectMap query, QueryOptions queryOptions) {
-        for (Map.Entry<String, List<String>> entry : params.entrySet()) {
-            String param = entry.getKey();
-            int indexOf = param.indexOf('.');
-            param = indexOf > 0 ? param.substring(0, indexOf) : param;
-
-            if (getParam.apply(param) != null) {
-                query.put(entry.getKey(), entry.getValue().get(0));
-            } else {
-                queryOptions.add(param, entry.getValue().get(0));
-            }
-
-            // Exceptions
-            if (param.equalsIgnoreCase("status")) {
-                query.put("status.name", entry.getValue().get(0));
-                query.remove("status");
-                queryOptions.remove("status");
-            }
-
-            if (param.equalsIgnoreCase("sid")) {
-                query.remove("sid");
-                queryOptions.remove("sid");
-            }
-        }
-        logger.debug("parseQueryParams: Query {}, queryOptions {}", query.safeToString(), queryOptions.safeToString());
-    }
+//
+//    /**
+//     * Builds the query and the queryOptions based on the query parameters.
+//     *
+//     * @param params Map of parameters.
+//     * @param getParam Method that returns the QueryParams object based on the key.
+//     * @param query Query where parameters parsing the getParam function will be inserted.
+//     * @param queryOptions QueryOptions where parameters not parsing the getParam function will be inserted.
+//     */
+//    @Deprecated
+//    protected static void parseQueryParams(Map<String, List<String>> params,
+//                                           Function<String, org.opencb.commons.datastore.core.QueryParam> getParam,
+//                                           ObjectMap query, QueryOptions queryOptions) {
+//        for (Map.Entry<String, List<String>> entry : params.entrySet()) {
+//            String param = entry.getKey();
+//            int indexOf = param.indexOf('.');
+//            param = indexOf > 0 ? param.substring(0, indexOf) : param;
+//
+//            if (getParam.apply(param) != null) {
+//                query.put(entry.getKey(), entry.getValue().get(0));
+//            } else {
+//                queryOptions.add(param, entry.getValue().get(0));
+//            }
+//
+//            // Exceptions
+//            if (param.equalsIgnoreCase("status")) {
+//                query.put("status.name", entry.getValue().get(0));
+//                query.remove("status");
+//                queryOptions.remove("status");
+//            }
+//
+//            if (param.equalsIgnoreCase("jobId")) {
+//                query.put("job.id", entry.getValue().get(0));
+//                query.remove("jobId");
+//                queryOptions.remove("jobId");
+//            }
+//
+//            if (param.equalsIgnoreCase("individualId")) {
+//                query.put("individual.id", entry.getValue().get(0));
+//                query.remove("individualId");
+//                queryOptions.remove("individualId");
+//            }
+//
+//            if (param.equalsIgnoreCase("sid")) {
+//                query.remove("sid");
+//                queryOptions.remove("sid");
+//            }
+//        }
+//        logger.debug("parseQueryParams: Query {}, queryOptions {}", query.safeToString(), queryOptions.safeToString());
+//    }
 
     private void parseParams() throws VersionException {
-        // If by any reason 'version' is null we try to read it from the URI path, if not present an Exeception is thrown
+        // If by any reason 'version' is null we try to read it from the URI path, if not present an Exception is thrown
         if (version == null) {
             if (uriInfo.getPathParameters().containsKey("version")) {
                 logger.warn("Setting 'version' from UriInfo object");
@@ -319,41 +334,51 @@ public class OpenCGAWSServer {
             version = "v1";
         }
 
-
         MultivaluedMap<String, String> multivaluedMap = uriInfo.getQueryParameters();
-        queryOptions.put("metadata", (multivaluedMap.get("metadata") != null) ? multivaluedMap.get("metadata").get(0).equals("true") : true);
+        queryOptions.put("metadata", multivaluedMap.get("metadata") == null || multivaluedMap.get("metadata").get(0).equals("true"));
 
-        String limitStr = multivaluedMap.getFirst(QueryOptions.LIMIT);
-        if (StringUtils.isNotEmpty(limitStr)) {
-            limit = Integer.parseInt(limitStr);
+        // Add all the others QueryParams from the URL
+        for (Map.Entry<String, List<String>> entry : multivaluedMap.entrySet()) {
+            String value =  entry.getValue().get(0);
+            switch (entry.getKey()) {
+                case QueryOptions.INCLUDE:
+                case QueryOptions.EXCLUDE:
+                case QueryOptions.SORT:
+                    queryOptions.put(entry.getKey(), new LinkedList<>(Splitter.on(",").splitToList(value)));
+                    break;
+                case QueryOptions.LIMIT:
+                    limit = Integer.parseInt(value);
+                    break;
+                case QueryOptions.SKIP:
+                    int skip = Integer.parseInt(value);
+                    queryOptions.put(entry.getKey(), (skip >= 0) ? skip : -1);
+                    break;
+                case QueryOptions.ORDER:
+                    queryOptions.put(entry.getKey(), value);
+                    break;
+                case "count":
+                    boolean count = Boolean.parseBoolean(value);
+                    queryOptions.put(entry.getKey(), count);
+                    break;
+                default:
+                    // Query
+                    query.put(entry.getKey(), value);
+                    break;
+            }
         }
+
         queryOptions.put(QueryOptions.LIMIT, (limit > 0) ? Math.min(limit, MAX_LIMIT) : DEFAULT_LIMIT);
+        query.remove("sid");
 
-        String skip = multivaluedMap.getFirst(QueryOptions.SKIP);
-        if (skip != null) {
-            this.skip = Integer.parseInt(skip);
-            queryOptions.put(QueryOptions.SKIP, this.skip);
+//      Exceptions
+        if (query.containsKey("status")) {
+            query.put("status.name", query.get("status"));
+            query.remove("status");
         }
-
-        parseIncludeExclude(multivaluedMap, QueryOptions.EXCLUDE, exclude);
-        parseIncludeExclude(multivaluedMap, QueryOptions.INCLUDE, include);
-
-        // Now we add all the others QueryParams in the URL such as limit, of, sid, ...
-        // 'sid' query param is excluded from QueryOptions object since is parsed in 'sessionId' attribute
-        multivaluedMap.entrySet().stream()
-                .filter(entry -> !queryOptions.containsKey(entry.getKey()))
-                .filter(entry -> !entry.getKey().equals("sid"))
-                .forEach(entry -> {
-//                    logger.debug("Adding '{}' to queryOptions object", entry);
-                    queryOptions.put(entry.getKey(), entry.getValue().get(0));
-                });
-
-//        if (multivaluedMap.get("sid") != null) {
-//            queryOptions.put("sessionId", multivaluedMap.get("sid").get(0));
-//        }
 
         try {
-            logger.info("URL: {}, queryOptions = {}", uriInfo.getAbsolutePath().toString(), jsonObjectWriter.writeValueAsString(queryOptions));
+            logger.info("URL: {}, query = {}, queryOptions = {}", uriInfo.getAbsolutePath().toString(),
+                    jsonObjectWriter.writeValueAsString(query), jsonObjectWriter.writeValueAsString(queryOptions));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }

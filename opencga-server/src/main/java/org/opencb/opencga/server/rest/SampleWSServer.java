@@ -128,94 +128,25 @@ public class SampleWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "source") @QueryParam("source") String source,
 //                                  @ApiParam(value = "acls") @QueryParam("acls") String acls,
 //                                  @ApiParam(value = "acls.users") @QueryParam("acls.users") String acl_userIds,
-                                  @ApiParam(value = "individualId") @QueryParam("individualId") String individualId,
+                                  @ApiParam(value = "(DEPRECATED) Individual id") @QueryParam("individualId") String individualIdOld,
+                                  @ApiParam(value = "Individual id") @QueryParam("individual.id") String individualId,
                                   @ApiParam(value = "annotationSetName") @QueryParam("annotationSetName") String annotationSetName,
                                   @ApiParam(value = "variableSetId") @QueryParam("variableSetId") String variableSetId,
                                   @ApiParam(value = "annotation") @QueryParam("annotation") String annotation
                                   ) {
         try {
+            // TODO: individualId is deprecated. Remember to remove this if after next release
+            if (query.containsKey("individualId") && !query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
+                query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), query.get("individualId"));
+                query.remove("individualId");
+            }
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
-            QueryOptions qOptions = new QueryOptions();
-            parseQueryParams(params, SampleDBAdaptor.QueryParams::getParam, query, qOptions);
-            QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, query, qOptions, sessionId);
+            QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
-
-//    @POST
-//    @Path("/{sampleId}/annotate")
-//    @Consumes(MediaType.APPLICATION_JSON)
-//    @ApiOperation(value = "annotate sample", position = 5)
-//    public Response annotateSamplePOST(@ApiParam(value = "SampleID", required = true) @PathParam("sampleId") long sampleId,
-//                                       @ApiParam(value = "Annotation set name. Must be unique for the sample", required = true) @QueryParam("annotateSetName") String annotateSetName,
-//                                       @ApiParam(value = "VariableSetId of the new annotation", required = false) @QueryParam("variableSetId") long variableSetId,
-//                                       @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
-//                                       @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete,
-//                                       Map<String, Object> annotations) {
-//        try {
-//            QueryResult<AnnotationSet> queryResult;
-//            if (delete && update) {
-//                return createErrorResponse("Annotate sample", "Unable to update and delete annotations at the same time");
-//            } else if (delete) {
-//                queryResult = catalogManager.deleteSampleAnnotation(sampleId, annotateSetName, sessionId);
-//            } else if (update) {
-//                queryResult = catalogManager.updateSampleAnnotation(sampleId, annotateSetName, annotations, sessionId);
-//            } else {
-//                queryResult = catalogManager.annotateSample(sampleId, annotateSetName, variableSetId,
-//                        annotations, Collections.emptyMap(), sessionId);
-//            }
-//            return createOkResponse(queryResult);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
-
-//    @GET
-//    @Path("/{sampleId}/annotate")
-//    @Consumes(MediaType.APPLICATION_JSON)
-//    @ApiOperation(value = "annotate sample", position = 5)
-//    public Response annotateSampleGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") long sampleId,
-//                                      @ApiParam(value = "Annotation set name. Must be unique for the sample", required = true) @QueryParam("annotateSetName") String annotateSetName,
-//                                      @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
-//                                      @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
-//                                      @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete) {
-//        try {
-//            QueryResult<AnnotationSet> queryResult;
-//
-//            if (delete && update) {
-//                return createErrorResponse("Annotate sample", "Unable to update and delete annotations at the same time");
-//            } else if (delete) {
-//                queryResult = catalogManager.deleteSampleAnnotation(sampleId, annotateSetName, sessionId);
-//            } else {
-//                if (update) {
-//                    for (AnnotationSet annotationSet : catalogManager.getSample(sampleId, null, sessionId).first().getAnnotationSets()) {
-//                        if (annotationSet.getId().equals(annotateSetName)) {
-//                            variableSetId = annotationSet.getVariableSetId();
-//                        }
-//                    }
-//                }
-//                QueryResult<VariableSet> variableSetResult = catalogManager.getVariableSet(variableSetId, null, sessionId);
-//                if(variableSetResult.getResult().isEmpty()) {
-//                    return createErrorResponse("sample - annotate", "VariableSet not find.");
-//                }
-//                Map<String, Object> annotations = variableSetResult.getResult().get(0).getVariables().stream()
-//                        .filter(variable -> params.containsKey(variable.getId()))
-//                        .collect(Collectors.toMap(Variable::getId, variable -> params.getFirst(variable.getId())));
-//
-//                if (update) {
-//                    queryResult = catalogManager.updateSampleAnnotation(sampleId, annotateSetName, annotations, sessionId);
-//                } else {
-//                    queryResult = catalogManager.annotateSample(sampleId, annotateSetName, variableSetId, annotations, Collections.emptyMap(), sessionId);
-//                }
-//            }
-//
-//            return createOkResponse(queryResult);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
 
     @GET
     @Path("/{sampleId}/update")
@@ -224,16 +155,24 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
                            @ApiParam(value = "source", required = false) @QueryParam("source") String source,
-                           @ApiParam(value = "individualId", required = false) @QueryParam("individualId") String individualId) {
+                           @ApiParam(value = "(DEPRECATED) Individual id", required = false) @QueryParam("individualId") String individualIdOld,
+                           @ApiParam(value = "Individual id", required = false) @QueryParam("individual.id") String individualId,
+                           @ApiParam(value = "Attributes", required = false) @QueryParam("attributes") String attributes) {
         try {
             // FIXME: The id resolution should not go here
             long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
 
-            ObjectMap params = new ObjectMap();
-            params.putIfNotNull(SampleDBAdaptor.QueryParams.NAME.key(), name);
-            params.putIfNotNull(SampleDBAdaptor.QueryParams.DESCRIPTION.key(), description);
-            params.putIfNotNull(SampleDBAdaptor.QueryParams.SOURCE.key(), source);
-            params.putIfNotNull(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
+            ObjectMap params = new ObjectMap(query);
+            // TODO: individualId is deprecated. Remember to remove this if after next release
+            if (params.containsKey("individualId") && !params.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
+                params.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), params.get("individualId"));
+                params.remove("individualId");
+            }
+//            params.putIfNotNull(SampleDBAdaptor.QueryParams.NAME.key(), name);
+//            params.putIfNotNull(SampleDBAdaptor.QueryParams.DESCRIPTION.key(), description);
+//            params.putIfNotNull(SampleDBAdaptor.QueryParams.SOURCE.key(), source);
+//            params.putIfNotNull(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
+//            params.putIfNotNull(SampleDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
 
             QueryResult<Sample> queryResult = catalogManager.getSampleManager().update(sampleId, params, queryOptions, sessionId);
             return createOkResponse(queryResult);
@@ -255,45 +194,21 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some sample attributes using POST method", position = 6)
     public Response updateByPost(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
-                                 @ApiParam(value = "params", required = true) UpdateSample parameters) {
+                                 @ApiParam(value = "params", required = true) ObjectMap parameters) {
         try {
             // FIXME: The id resolution should not go here
             long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
             ObjectMap params = new ObjectMap(jsonObjectMapper.writeValueAsString(parameters));
+            if (params.get("individualId") != null) {
+                params.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), params.get("individualId"));
+                params.remove("individualId");
+            }
             QueryResult<Sample> queryResult = catalogManager.getSampleManager().update(sampleId, params, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
-//
-//    @GET
-//    @Path("/{sampleIds}/share")
-//    @ApiOperation(value = "Share samples with other members", position = 7)
-//    public Response share(@PathParam(value = "sampleIds") String sampleIds,
-//                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-//                          @ApiParam(value = "Comma separated list of sample permissions", required = false) @DefaultValue("") @QueryParam("acls") String acls,
-//                          @ApiParam(value = "Boolean indicating whether to allow the change of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
-//        try {
-//            return createOkResponse(catalogManager.shareSample(sampleIds, members, Arrays.asList(acls.split(",")), override,
-//                    sessionId));
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
-//
-//    @GET
-//    @Path("/{sampleIds}/unshare")
-//    @ApiOperation(value = "Remove the permissions for the list of members", position = 8)
-//    public Response unshare(@PathParam(value = "sampleIds") String sampleIds,
-//                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-//                            @ApiParam(value = "Comma separated list of sample permissions", required = false) @DefaultValue("") @QueryParam("acls") String acls) {
-//        try {
-//            return createOkResponse(catalogManager.unshareSample(sampleIds, members, acls, sessionId));
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
 
     @GET
     @Path("/{sampleId}/delete")
@@ -305,14 +220,6 @@ public class SampleWSServer extends OpenCGAWSServer {
         } catch (CatalogException | IOException e) {
             return createErrorResponse(e);
         }
-//        try {
-//            // FIXME: The id resolution should not go here
-//            long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
-//            QueryResult<Sample> queryResult = catalogManager.deleteSample(sampleId, queryOptions, sessionId);
-//            return createOkResponse(queryResult);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
     }
 
     @GET
@@ -323,18 +230,18 @@ public class SampleWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "Comma separated list of ids.") @QueryParam("id") String id,
                             @ApiParam(value = "Comma separated list of names.") @QueryParam("name") String name,
                             @ApiParam(value = "source") @QueryParam("source") String source,
-                            @ApiParam(value = "individualId") @QueryParam("individualId") String individualId,
+                            @ApiParam(value = "(DEPRECATED) Individual id") @QueryParam("individualId") String individualIdOld,
+                            @ApiParam(value = "Individual id") @QueryParam("individual.id") String individualId,
                             @ApiParam(value = "annotationSetName") @QueryParam("annotationSetName") String annotationSetName,
                             @ApiParam(value = "variableSetId") @QueryParam("variableSetId") String variableSetId,
                             @ApiParam(value = "annotation") @QueryParam("annotation") String annotation) {
         try {
-            Query query = new Query();
-            QueryOptions qOptions = new QueryOptions();
-            parseQueryParams(params, FileDBAdaptor.QueryParams::getParam, query, qOptions);
-
-            logger.debug("query = " + query.toJson());
-            logger.debug("queryOptions = " + qOptions.toJson());
-            QueryResult result = catalogManager.sampleGroupBy(query, qOptions, fields, sessionId);
+            // TODO: individualId is deprecated. Remember to remove this if after next release
+            if (query.containsKey("individualId") && !query.containsKey(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key())) {
+                query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), query.get("individualId"));
+                query.remove("individualId");
+            }
+            QueryResult result = catalogManager.sampleGroupBy(query, queryOptions, fields, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -444,8 +351,6 @@ public class SampleWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
-
-
 
     @GET
     @Path("/{sampleIds}/acl")

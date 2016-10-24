@@ -131,7 +131,7 @@ public class AnalysisFileIndexerTest extends AbstractAnalysisFileIndexerTest {
                 .append(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
 
         File transformFile = transformFile(files.get(0), queryOptions);
-        Query searchQuery = new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), transformFile.getJobId())
+        Query searchQuery = new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), transformFile.getJob().getId())
                 .append(FileDBAdaptor.QueryParams.NAME.key(), "~file.(json|avro)");
         File transformSourceFile = catalogManager.getAllFiles(studyId, searchQuery, new QueryOptions(), sessionId).first();
 
@@ -167,7 +167,7 @@ public class AnalysisFileIndexerTest extends AbstractAnalysisFileIndexerTest {
         Query searchQuery = new Query(FileDBAdaptor.QueryParams.ID.key(), job.getOutput())
                 .append(FileDBAdaptor.QueryParams.NAME.key(), "~variants.(json|avro)");
         File transformedFile = catalogManager.getAllFiles(studyId, searchQuery, new QueryOptions(), sessionId).first();
-        assertEquals(job.getId(), transformedFile.getJobId());
+        assertEquals(job.getId(), transformedFile.getJob().getId());
         inputFile = catalogManager.getFile(inputFile.getId(), sessionId).first();
         assertNotNull(inputFile.getStats().get(FileMetadataReader.VARIANT_STATS));
         return transformedFile;

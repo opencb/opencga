@@ -129,7 +129,6 @@ public class JobWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "toolId", required = true) @DefaultValue("") @QueryParam("toolId") String toolIdStr,
                               @ApiParam(value = "execution") @DefaultValue("") @QueryParam("execution") String execution,
                               @ApiParam(value = "description") @DefaultValue("") @QueryParam("description") String description) {
-//        QueryResult<Job> jobResult;
         try {
 //            long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
 //            ToolManager toolManager;
@@ -273,10 +272,6 @@ public class JobWSServer extends OpenCGAWSServer {
         try {
             long studyIdNum = catalogManager.getStudyId(studyId, sessionId);
             // TODO this must be changed: only one queryOptions need to be passed
-            Query query = new Query();
-            QueryOptions qOptions = new QueryOptions(this.queryOptions);
-            parseQueryParams(params, JobDBAdaptor.QueryParams::getParam, query, qOptions);
-
             if (query.containsKey(JobDBAdaptor.QueryParams.NAME.key())
                     && (query.get(JobDBAdaptor.QueryParams.NAME.key()) == null
                     || query.getString(JobDBAdaptor.QueryParams.NAME.key()).isEmpty())) {
@@ -284,12 +279,7 @@ public class JobWSServer extends OpenCGAWSServer {
                 logger.debug("Name attribute empty, it's been removed");
             }
 
-            if (!qOptions.containsKey(QueryOptions.LIMIT)) {
-                qOptions.put(QueryOptions.LIMIT, 1000);
-                logger.debug("Adding a limit of 1000");
-            }
-            logger.debug("query = " + query.toJson());
-            QueryResult<Job> result = catalogManager.getAllJobs(studyIdNum, query, qOptions, sessionId);
+            QueryResult<Job> result = catalogManager.getAllJobs(studyIdNum, query, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -316,50 +306,10 @@ public class JobWSServer extends OpenCGAWSServer {
             QueryOptions options = new QueryOptions(JobManager.DELETE_FILES, deleteFiles);
             List<QueryResult<Job>> delete = catalogManager.getJobManager().delete(jobIds, options, sessionId);
             return createOkResponse(delete);
-//            List<QueryResult> results = new LinkedList<>();
-//            if (deleteFiles) {
-//                QueryResult<Job> jobQueryResult = catalogManager.getJob(jobId, null, sessionId);
-//                List<Long> output = jobQueryResult.getResult().get(0).getOutput();
-//                String filesToDelete = StringUtils.join(output, ",");
-//                results.addAll(catalogManager.getFileManager().delete(filesToDelete, queryOptions, sessionId));
-////                for (Long fileId : jobQueryResult.getResult().get(0).getOutput()) {
-////                    QueryResult queryResult = catalogManager.delete(Long.toString(fileId), queryOptions, sessionId);
-////                    results.add(queryResult);
-////                }
-//            }
-//            results.add(catalogManager.deleteJob(jobId, sessionId));
-//            return createOkResponse(results);
         } catch (CatalogException | IOException e) {
             return createErrorResponse(e);
         }
     }
-//
-//    @GET
-//    @Path("/{jobIds}/share")
-//    @ApiOperation(value = "Share jobs with other members", position = 5)
-//    public Response share(@PathParam(value = "jobIds") String jobIds,
-//                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-//                          @ApiParam(value = "Comma separated list of job permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
-//                          @ApiParam(value = "Boolean indicating whether to allow the change of of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
-//        try {
-//            return createOkResponse(catalogManager.shareJob(jobIds, members, Arrays.asList(permissions.split(",")), override, sessionId));
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
-//
-//    @GET
-//    @Path("/{jobIds}/unshare")
-//    @ApiOperation(value = "Remove the permissions for the list of members", position = 6)
-//    public Response unshare(@PathParam(value = "jobIds") String jobIds,
-//                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-//                            @ApiParam(value = "Comma separated list of job permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions) {
-//        try {
-//            return createOkResponse(catalogManager.unshareJob(jobIds, members, permissions, sessionId));
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
 
     @GET
     @Path("/groupBy")
@@ -376,13 +326,7 @@ public class JobWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description,
                             @ApiParam(value = "attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes) {
         try {
-            Query query = new Query();
-            QueryOptions qOptions = new QueryOptions();
-            parseQueryParams(params, JobDBAdaptor.QueryParams::getParam, query, qOptions);
-
-            logger.debug("query = " + query.toJson());
-            logger.debug("queryOptions = " + qOptions.toJson());
-            QueryResult result = catalogManager.jobGroupBy(query, qOptions, fields, sessionId);
+            QueryResult result = catalogManager.jobGroupBy(query, queryOptions, fields, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

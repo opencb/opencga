@@ -22,6 +22,7 @@ import org.bson.Document;
 import org.opencb.opencga.catalog.models.Sample;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Created by pfurio on 19/01/16.
@@ -39,6 +40,9 @@ public class SampleConverter extends GenericConverter<Sample, Document> {
     public Sample convertToDataModelType(Document object) {
         Sample sample = null;
         try {
+            if (object.get("individual") instanceof List) {
+                object.put("individual", ((List) object.get("individual")).get(0));
+            }
             sample = objectReader.readValue(objectWriter.writeValueAsString(object));
         } catch (IOException e) {
             e.printStackTrace();
@@ -52,6 +56,9 @@ public class SampleConverter extends GenericConverter<Sample, Document> {
         try {
             document = Document.parse(sampleWriter.writeValueAsString(object));
             document.put("id", document.getInteger("id").longValue());
+            long individualId = object.getIndividual() != null
+                    ? (object.getIndividual().getId() == 0 ? -1L : object.getIndividual().getId()) : -1L;
+            document.put("individual", new Document("id", individualId));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }

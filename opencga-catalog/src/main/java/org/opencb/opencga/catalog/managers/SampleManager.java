@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -52,7 +53,6 @@ import java.util.stream.Collectors;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class SampleManager extends AbstractManager implements ISampleManager {
-
 
     protected static Logger logger = LoggerFactory.getLogger(SampleManager.class);
     private IUserManager userManager;
@@ -249,7 +249,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_SAMPLES);
 
-        Sample sample = new Sample(-1, name, source, -1, description, Collections.emptyList(), Collections.emptyList(), attributes);
+        Sample sample = new Sample(-1, name, source, new Individual(), description, Collections.emptyList(), Collections.emptyList(),
+                attributes);
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         QueryResult<Sample> queryResult = sampleDBAdaptor.insert(sample, studyId, options);
@@ -371,6 +372,11 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
         String sampleIdStr = StringUtils.join(sampleIds, ",");
         return restore(sampleIdStr, options, sessionId);
+    }
+
+    @Override
+    public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
+        throw new NotImplementedException("Project: Operation not yet supported");
     }
 
     @Override
@@ -500,20 +506,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                 case DESCRIPTION:
                 case ATTRIBUTES:
                     break;
-                case NATTRIBUTES:
-                case BATTRIBUTES:
-                case STATUS_NAME:
-                case STATUS_MSG:
-                case STATUS_DATE:
-                case STUDY_ID:
-                case ACL:
-                case ACL_MEMBER:
-                case ACL_PERMISSIONS:
-                case ANNOTATION_SETS:
-                case VARIABLE_SET_ID:
-                case ANNOTATION_SET_NAME:
-                case ANNOTATION:
-                case ID:
                 default:
                     throw new CatalogException("Cannot update " + queryParam);
             }

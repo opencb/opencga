@@ -141,7 +141,15 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         }
         qOptions = filterOptions(qOptions, FILTER_ROUTE_FILES);
 
-        QueryResult<File> fileQueryResult = fileCollection.find(bson, fileConverter, qOptions);
+        QueryResult<File> fileQueryResult;
+        // TODO: Add the include for experiments
+        if (qOptions.get(QueryOptions.INCLUDE) != null && qOptions.getAsStringList(QueryOptions.INCLUDE).contains("job")) {
+            Bson match = Aggregates.match(bson);
+            Bson lookup = Aggregates.lookup("job", QueryParams.JOB_ID.key(), JobDBAdaptor.QueryParams.ID.key(), "job");
+            fileQueryResult = fileCollection.aggregate(Arrays.asList(match, lookup), fileConverter, qOptions);
+        } else {
+            fileQueryResult = fileCollection.find(bson, fileConverter, qOptions);
+        }
         logger.debug("File get: query : {}, project: {}, dbTime: {}",
                 bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()), qOptions == null ? "" : qOptions.toJson(),
                 fileQueryResult.getDbTime());

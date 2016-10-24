@@ -100,13 +100,10 @@ public class StudyWSServer extends OpenCGAWSServer {
                                   @Deprecated @ApiParam(value = "numerical attributes") @QueryParam("nattributes") String nattributes,
                                   @Deprecated @ApiParam(value = "boolean attributes") @QueryParam("battributes") boolean battributes) {
         try {
-            // FIXME this is not needed right?
-            QueryOptions qOptions = new QueryOptions(queryOptions);
-            parseQueryParams(params, StudyDBAdaptor.QueryParams::getParam, query, qOptions);
             if (projectId != null) {
                 query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), catalogManager.getProjectId(projectId, sessionId));
             }
-            QueryResult<Study> queryResult = catalogManager.getAllStudies(query, qOptions, sessionId);
+            QueryResult<Study> queryResult = catalogManager.getAllStudies(query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -117,18 +114,20 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{studyId}/update")
     @ApiOperation(value = "Study modify", position = 3, response = Study.class)
     public Response update(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
-                           @ApiParam(value = "name") @DefaultValue("") @QueryParam("name") String name,
-                           @ApiParam(value = "type") @DefaultValue("") @QueryParam("type") String type,
-                           @ApiParam(value = "description") @DefaultValue("") @QueryParam("description") String description,
-                           @ApiParam(defaultValue = "attributes") @DefaultValue("") @QueryParam("attributes") String attributes,
-                           @ApiParam(defaultValue = "stats") @DefaultValue("") @QueryParam("stats") String stats) throws IOException {
+                           @ApiParam(value = "name") @QueryParam("name") String name,
+                           @ApiParam(value = "alias") @QueryParam("alias") String alias,
+                           @ApiParam(value = "type") @QueryParam("type") String type,
+                           @ApiParam(value = "description") @QueryParam("description") String description,
+                           @ApiParam(defaultValue = "attributes") @QueryParam("attributes") String attributes,
+                           @ApiParam(defaultValue = "stats") @QueryParam("stats") String stats) throws IOException {
         try {
             ObjectMap params = new ObjectMap();
-            params.putIfNotEmpty("name", name);
-            params.putIfNotEmpty("type", type);
-            params.putIfNotEmpty("description", description);
-            params.putIfNotEmpty("attributes", attributes);
-            params.putIfNotEmpty("stats", stats);
+            params.putIfNotNull(StudyDBAdaptor.QueryParams.NAME.key(), name);
+            params.putIfNotNull(StudyDBAdaptor.QueryParams.ALIAS.key(), alias);
+            params.putIfNotNull(StudyDBAdaptor.QueryParams.TYPE.key(), type);
+            params.putIfNotNull(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), description);
+            params.putIfNotNull(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
+            params.putIfNotNull(StudyDBAdaptor.QueryParams.STATS.key(), stats);
 
             logger.debug(params.toJson());
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
@@ -216,9 +215,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "numerical attributes", required = false) @DefaultValue("") @QueryParam("nattributes") String nattributes) {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
-            QueryOptions qOptions = new QueryOptions(queryOptions);
-            parseQueryParams(params, FileDBAdaptor.QueryParams::getParam, query, qOptions);
-            QueryResult queryResult = catalogManager.getAllFiles(studyId, query, qOptions, sessionId);
+            QueryResult queryResult = catalogManager.getAllFiles(studyId, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -244,9 +241,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "annotation") @QueryParam("annotation") String annotation) {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
-            QueryOptions qOptions = new QueryOptions(queryOptions);
-            parseQueryParams(params, SampleDBAdaptor.QueryParams::getParam, query, qOptions);
-            QueryResult queryResult = catalogManager.getAllSamples(studyId, query, qOptions, sessionId);
+            QueryResult queryResult = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -747,9 +742,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     })
     public Response getAllStudiesByPost(@ApiParam(value="studies", required = true) Query query) {
         try {
-            QueryOptions qOptions = new QueryOptions(queryOptions);
-//            parseQueryParams(params, CatalogStudyDBAdaptor.QueryParams::getParam, query, qOptions);
-            QueryResult<Study> queryResult = catalogManager.getAllStudies(query, qOptions, sessionId);
+            QueryResult<Study> queryResult = catalogManager.getAllStudies(query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

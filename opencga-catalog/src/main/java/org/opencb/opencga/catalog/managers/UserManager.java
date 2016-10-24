@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -412,7 +413,6 @@ public class UserManager extends AbstractManager implements IUserManager {
      * email
      * organization
      * attributes
-     * configs
      *
      * @throws CatalogException
      */
@@ -426,7 +426,7 @@ public class UserManager extends AbstractManager implements IUserManager {
             ParamUtils.checkParameter(sessionId, "sessionId");
             checkSessionId(userId, sessionId);
             for (String s : parameters.keySet()) {
-                if (!s.matches("name|email|organization|attributes|configs")) {
+                if (!s.matches("name|email|organization|attributes")) {
                     throw new CatalogDBException("Parameter '" + s + "' can't be changed");
                 }
             }
@@ -505,6 +505,11 @@ public class UserManager extends AbstractManager implements IUserManager {
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
         throw new UnsupportedOperationException("User: Operation not supported.");
+    }
+
+    @Override
+    public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
+        throw new NotImplementedException("User: Operation not yet supported");
     }
 
     @Override

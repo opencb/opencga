@@ -139,7 +139,8 @@ public class CatalogManagerTest extends GenericTest {
         ObjectMap attributes = new ObjectMap();
         attributes.put("field", "value");
         attributes.put("numValue", 5);
-        catalogManager.modifyFile(testFolder.getId(), new ObjectMap("attributes", attributes), sessionIdUser);
+        catalogManager.getFileManager().update(testFolder.getId(), new ObjectMap("attributes", attributes), new QueryOptions(),
+                sessionIdUser);
 
         File fileTest1k = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE,
                 testFolder.getPath() + "test_1K.txt.gz",
@@ -149,7 +150,8 @@ public class CatalogManagerTest extends GenericTest {
         attributes.put("name", "fileTest1k");
         attributes.put("numValue", "10");
         attributes.put("boolean", false);
-        catalogManager.modifyFile(fileTest1k.getId(), new ObjectMap("attributes", attributes), sessionIdUser);
+        catalogManager.getFileManager().update(fileTest1k.getId(), new ObjectMap("attributes", attributes), new QueryOptions(),
+                sessionIdUser);
 
         File fileTest05k = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.DATAMATRIX_EXPRESSION,
                 testFolder.getPath() + "test_0.5K.txt",
@@ -159,7 +161,8 @@ public class CatalogManagerTest extends GenericTest {
         attributes.put("name", "fileTest05k");
         attributes.put("numValue", 5);
         attributes.put("boolean", true);
-        catalogManager.modifyFile(fileTest05k.getId(), new ObjectMap("attributes", attributes), sessionIdUser);
+        catalogManager.getFileManager().update(fileTest05k.getId(), new ObjectMap("attributes", attributes), new QueryOptions(),
+                sessionIdUser);
 
         File test01k = catalogManager.createFile(studyId, File.Format.IMAGE, File.Bioformat.NONE,
                 testFolder.getPath() + "test_0.1K.png",
@@ -169,7 +172,7 @@ public class CatalogManagerTest extends GenericTest {
         attributes.put("name", "test01k");
         attributes.put("numValue", 50);
         attributes.put("nested", new ObjectMap("num1", 45).append("num2", 33).append("text", "HelloWorld"));
-        catalogManager.modifyFile(test01k.getId(), new ObjectMap("attributes", attributes), sessionIdUser);
+        catalogManager.getFileManager().update(test01k.getId(), new ObjectMap("attributes", attributes), new QueryOptions(), sessionIdUser);
 
         Set<Variable> variables = new HashSet<>();
         variables.addAll(Arrays.asList(
@@ -216,7 +219,8 @@ public class CatalogManagerTest extends GenericTest {
                 .append("PHEN", "CONTROL"), null, true, sessionIdUser);
 
 
-        catalogManager.modifyFile(test01k.getId(), new ObjectMap("sampleIds", Arrays.asList(s_1, s_2, s_3, s_4, s_5)), sessionIdUser);
+        catalogManager.getFileManager().update(test01k.getId(), new ObjectMap("sampleIds", Arrays.asList(s_1, s_2, s_3, s_4, s_5)),
+                new QueryOptions(), sessionIdUser);
 
     }
 
@@ -1188,31 +1192,35 @@ public class CatalogManagerTest extends GenericTest {
         long individualId = catalogManager.createIndividual(studyId, "Individual1", "", 0, 0, Individual.Sex.MALE, new QueryOptions(),
                 sessionIdUser).first().getId();
 
-        Sample sample = catalogManager.modifySample(sampleId1, new QueryOptions("individualId", individualId), sessionIdUser).first();
+        Sample sample = catalogManager.getSampleManager()
+                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId), null, sessionIdUser).first();
 
-        assertEquals(individualId, sample.getIndividualId());
+        assertEquals(individualId, sample.getIndividual().getId());
     }
 
     @Test
     public void testModifySampleBadIndividual() throws CatalogException {
-        long studyId = catalogManager.getStudyId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId(null, "user@1000G:phase1");
         long sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
 
         thrown.expect(CatalogDBException.class);
-        catalogManager.modifySample(sampleId1, new QueryOptions("individualId", 4), sessionIdUser);
+        catalogManager.getSampleManager()
+                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), 4), null, sessionIdUser);
     }
 
     @Test
     public void testModifySampleUnknownIndividual() throws CatalogException {
-        long studyId = catalogManager.getStudyId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyManager().getId(null, "user@1000G:phase1");
         long sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
 
         // It will not modify anything as the individualId is already -1
         thrown.expect(CatalogDBException.class);
-        catalogManager.modifySample(sampleId1, new QueryOptions("individualId", -1), sessionIdUser).first();
+        catalogManager.getSampleManager()
+                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1), null, sessionIdUser);
 
-        Sample sample = catalogManager.modifySample(sampleId1, new QueryOptions("individualId", -2), sessionIdUser).first();
-        assertEquals(-2, sample.getIndividualId());
+        Sample sample = catalogManager.getSampleManager()
+                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -2), null, sessionIdUser).first();
+        assertEquals(-2, sample.getIndividual().getId());
     }
 
     @Test

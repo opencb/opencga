@@ -18,7 +18,7 @@ var opencga = {
     host: "bioinfodev.hpc.cam.ac.uk/hgva-0.8",
     version: "v1",
     cookies: {
-        userName: "opencga_userId",
+        userId: "opencga_userId",
         sessionId: "opencga_sId"
     }
 };

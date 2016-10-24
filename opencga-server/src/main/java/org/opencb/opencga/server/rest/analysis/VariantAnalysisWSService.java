@@ -57,7 +57,6 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     })
     public Response index(@ApiParam(value = "File id or path") @PathParam("fileId") String fileId) {
         try {
-            parseQueryParams(params, FileDBAdaptor.QueryParams::getParam, query, queryOptions);
             return createOkResponse("[PENDING]");
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -90,7 +89,6 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     })
     public Response ibs() {
         try {
-            parseQueryParams(params, FileDBAdaptor.QueryParams::getParam, query, queryOptions);
             return createOkResponse("[PENDING]");
         } catch (Exception e) {
             return createErrorResponse(e);

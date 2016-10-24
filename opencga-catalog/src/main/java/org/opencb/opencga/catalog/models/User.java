@@ -198,6 +198,7 @@ public class User {
     }
 
     public User() {
+        this(null, null, null, null, null, Status.READY);
     }
 
     public User(String id, String name, String email, String password, String organization, String status) {

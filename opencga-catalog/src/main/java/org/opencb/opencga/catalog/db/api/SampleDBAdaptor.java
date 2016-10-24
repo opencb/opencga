@@ -40,7 +40,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample, SampleAc
         ID("id", INTEGER_ARRAY, ""),
         NAME("name", TEXT_ARRAY, ""),
         SOURCE("source", TEXT_ARRAY, ""),
-        INDIVIDUAL_ID("individualId", INTEGER_ARRAY, ""),
+        INDIVIDUAL_ID("individual.id", INTEGER_ARRAY, ""),
         DESCRIPTION("description", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
