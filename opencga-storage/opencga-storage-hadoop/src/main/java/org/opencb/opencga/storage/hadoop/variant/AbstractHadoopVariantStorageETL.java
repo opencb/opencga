@@ -456,9 +456,10 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
                 options.put(HADOOP_LOAD_VARIANT_PENDING_FILES, pendingFiles);
             }
 
-            boolean resume = conf.getBoolean(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT_RESUME, false);
+            boolean resume = options.getBoolean(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT_RESUME, false);
             BatchFileOperation op = addBatchOperation(studyConfiguration, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles, resume);
 
+            options.put(HADOOP_LOAD_VARIANT_STATUS, op.currentStatus());
             options.put(AbstractVariantTableDriver.TIMESTAMP, op.getTimestamp());
 
         }
@@ -521,7 +522,9 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
             batchFileOperation = new BatchFileOperation(jobOperationName, fileIds, 1);
             newOperation = true;
         }
-        batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
+        if (!Objects.equals(batchFileOperation.currentStatus(), BatchFileOperation.Status.DONE)) {
+            batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
+        }
         if (newOperation) {
             batches.add(batchFileOperation);
         }
@@ -569,6 +572,13 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
     protected abstract void loadArch(URI input) throws StorageManagerException;
 
     public void merge(int studyId, List<Integer> pendingFiles) throws StorageManagerException {
+        // Check if status is "DONE"
+        if (options.get(HADOOP_LOAD_VARIANT_STATUS, BatchFileOperation.Status.class).equals(BatchFileOperation.Status.DONE)) {
+            // Merge operation status : DONE, not READY or RUNNING
+            // Don't need to merge again. Skip merge and run post-load/post-merge step
+            logger.info("Files {} already merged!", pendingFiles);
+            return;
+        }
         String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
         String jar = getJarWithDependencies();
         options.put(HADOOP_LOAD_VARIANT_PENDING_FILES, pendingFiles);

@@ -61,7 +61,8 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
         iterator = resultScanner.iterator();
         converter = new HBaseToVariantConverter(genomeHelper, scm)
                 .setMutableSamplesPosition(false)
-                .setStudyNameAsStudyId(true);
+                .setStudyNameAsStudyId(true)
+                .setSimpleGenotypes(true);
         setLimit(options.getLong("limit"));
     }
 

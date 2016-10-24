@@ -68,7 +68,10 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     public static final String OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES = "opencga.storage.hadoop.jar-with-dependencies";
     public static final String HADOOP_LOAD_ARCHIVE = "hadoop.load.archive";
     public static final String HADOOP_LOAD_VARIANT = "hadoop.load.variant";
+    // Resume merge variants if the current status is RUNNING or DONE
     public static final String HADOOP_LOAD_VARIANT_RESUME = "hadoop.load.variant.resume";
+    // Merge variants operation status. Skip merge and run post-load/post-merge step if status is DONE
+    public static final String HADOOP_LOAD_VARIANT_STATUS = "hadoop.load.variant.status";
     //Other files to be loaded from Archive to Variant
     public static final String HADOOP_LOAD_VARIANT_PENDING_FILES = "opencga.storage.hadoop.load.pending.files";
     public static final String OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY = "opencga.storage.hadoop.intermediate.hdfs.directory";
