@@ -28,78 +28,103 @@
                 font-size: 18px;
                 color: #797979;
             }
+
+            dt {
+                float: left;
+                clear: left;
+                text-align: right;
+                width: 15%;
+                color: #645a5a;
+            }
+
+            dd {
+                float: left;
+                margin-left: 1em;
+                color: #999
+            }
         </style>
 
         <div class="row center">
-            <!--LEFT-->
-            <div class="col-md-2">
-                <div  style="margin: 10px;">
-                    <div class="panel panel-default">
-                        <div class="panel-heading">Notifications</div>
-                        <div class="panel-body">
-                            Notification 1</br>
-                            Notification 2
-                        </div>
-                    </div>
-                    <div class="panel panel-default">
-                        <div class="panel-heading">Query filters</div>
-                        <div class="panel-body">
-                            Filter 1</br>
-                            Filter 2
-                        </div>
-                    </div>
-                </div>
-                <!--<opencga-widget title="Notifications">-->
-                    <!--Notification 1</br>-->
-                    <!--Notification 2-->
-                <!--</opencga-widget>-->
-                <!--<opencga-widget title="Query filters">-->
-                    <!--Filter 1</br>-->
-                    <!--Filter 2-->
-                <!--</opencga-widget>-->
+
+            <div>
+                <h1>User</h1>
+                <dl>
+                    <dt>Name</dt>
+                    <dd>{{_userInfo.name}}</dd>
+                    <dt>Email</dt>
+                    <dd>{{_userInfo.email}}</dd>
+                    <dt>Organization</dt>
+                    <dd>{{_userInfo.organization}}</dd>
+                    <dt>Account type</dt>
+                    <dd>{{_userInfo.account.type}}</dd>
+                    <dt>Date</dt>
+                    <dd>{{_userInfo.account.creationDate}}</dd>
+                </dl>
             </div>
 
-            <!--CENTER-->
-            <div class="col-md-8">
-                <div  style="margin: 10px;">
+            <div style="clear: both; padding-top: 10px;">
+                <div class="col-md-6">
                     <div class="panel panel-primary">
-                        <div class="panel-heading">Projects</div>
-                        <div class="panel-body">
-                            <opencga-projects projects="{{projects}}" hide-text on-project="updateProject"></opencga-projects>
+                        <div class="panel-heading">Configurations</div>
+                        <div class="panel-body" style="max-height: 300px; overflow-y: auto">
+                            <template is="dom-if" if="{{_notEmpty(_userInfo.configs)}}">
+                                <template is="dom-repeat" items="{{_userInfo.configs}}" as="config">
+                                    <div style="margin: 5px;">
+                                        <a class="fa fa-caret-down" style="display: block;" role="button" data-toggle="collapse" aria-hidden="true"
+                                           href="#{{prefix}}{{config.id}}" aria-expanded="false" aria-controls="{{prefix}}{{config.id}}">
+                                            <span style="font-weight: bold"> {{config.name}}</span>
+                                        </a>
+                                        <div class="collapse" id="{{prefix}}{{config.id}}" style="padding: 2px 15px; font-size: initial;">
+                                            {{json2string(config.content)}}
+                                        </div>
+                                    </div>
+                                </template>
+                            </template>
+                            <template is="dom-if" if="{{!_notEmpty(_userInfo.configs)}}">
+                                No configs found.
+                            </template>
                         </div>
                     </div>
                 </div>
-                <!--<opencga-widget title="Projects">-->
-                    <!--<opencga-projects projects="{{projects}}" hide-text on-project="updateProject" on-study="updateStudy"></opencga-projects>-->
-                <!--</opencga-widget>-->
-            </div>
 
-            <!--RIGHT-->
-            <div class="col-md-2">
-                <div  style="margin: 10px;">
-                    <div class="panel panel-default">
-                        <div class="panel-heading">Running jobs</div>
-                        <div class="panel-body">
-                            Job 1</br>
-                            Job 2
-                        </div>
-                    </div>
-                    <div class="panel panel-default">
-                        <div class="panel-heading">Finished jobs</div>
-                        <div class="panel-body">
-                            Job 3</br>
-                            Job 4
+                <div class="col-md-6">
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">Filters</div>
+                        <div class="panel-body" style="max-height: 300px; overflow-y: auto">
+                            <template is="dom-if" if="{{_notEmpty(_userInfo.filters)}}">
+                                <template is="dom-repeat" items="{{_userInfo.filters}}" as="filter">
+                                    <div style="margin: 5px; clear: both;">
+                                        <a class="fa fa-caret-down" style="display: block;" role="button" data-toggle="collapse" aria-hidden="true"
+                                           href="#{{prefix}}{{filter.id}}" aria-expanded="false" aria-controls="{{prefix}}{{filter.id}}">
+                                            <span style="font-weight: bold"> {{filter.name}}</span>
+                                        </a>
+                                        <div class="collapse" id="{{prefix}}{{filter.id}}" style="padding: 2px 15px; font-size: initial;">
+                                            <dl>
+                                                <dt>Name</dt>
+                                                <dd>{{filter.name}}</dd>
+                                                <dt>Description</dt>
+                                                <dd>{{filter.description}}</dd>
+                                                <dt>Bioformat</dt>
+                                                <dd>{{filter.bioformat}}</dd>
+                                                <dt>Query</dt>
+                                                <dd>{{json2string(filter.query)}}</dd>
+                                                <dt>Options</dt>
+                                                <dd>{{json2string(filter.options)}}</dd>
+                                            </dl>
+                                        </div>
+                                    </div>
+                                </template>
+                            </template>
+                            <template is="dom-if" if="{{!_notEmpty(_userInfo.filters)}}">
+                                No filters found.
+                            </template>
                         </div>
                     </div>
                 </div>
-                <!--<opencga-widget title="Running jobs">-->
-                    <!--Job 1</br>-->
-                    <!--Job 2-->
-                <!--</opencga-widget>-->
-                <!--<opencga-widget title="Finished jobs">-->
-                    <!--Job 3</br>-->
-                    <!--Job 4-->
-                <!--</opencga-widget>-->
+            </div>
+            <div style="clear: both; margin: 5px 10px">
+                <opencga-projects opencga-client="{{opencgaClient}}" projects="{{projects}}" hide-text on-project="updateProject">
+                </opencga-projects>
             </div>
         </div>
 
@@ -109,8 +134,56 @@
             is: 'opencga-dashboard',
             properties: {
                 opencgaClient: {
-                    type: Object
+                    type: Object,
+                    observer: 'opencgaClientChanged'
+                },
+                projects: {
+                    type: Array
                 }
+            },
+            ready: function() {
+                if (typeof this.prefix === "undefined" || this.prefix == "") {
+                    this.prefix = Utils.randomString(6);
+                }
+                this._userInfo = {}
+            },
+            opencgaClientChanged: function(client) {
+                if (client !== undefined && client instanceof OpenCGAClient) {
+                    let _this = this;
+                    client.users().info({exclude: "projects"}).then(function(data) {
+                        let tmp = data.response[0].result[0];
+                        // Move filters from configs.filters to filters
+                        if (tmp.configs.hasOwnProperty("filters")) {
+                            tmp.filters = tmp.configs.filters;
+                            delete tmp.configs.filters;
+                            // Create a unique identifier for the filters (necessary for the collapsable). When used the name as an id and it
+                            // contains spaces, the collapsable doesn't work.
+                            for (let i = 0; i < tmp.filters.length; i++) {
+                                tmp.filters[i].id = "filter_" + Utils.randomString();
+                            }
+                        }
+                        // Fix the config to be an array
+                        let configArray = [];
+                        for (key in tmp.configs) {
+                            configArray.push({
+                                id: "config_" + Utils.randomString(),
+                                name: key,
+                                content: tmp.configs[key]
+                            });
+                        }
+                        tmp.configs = configArray;
+                        _this._userInfo = tmp;
+                    })
+                }
+            },
+            _notEmpty: function(element) {
+                if (element === undefined || element.length === 0) {
+                    return false;
+                }
+                return true;
+            },
+            json2string: function(data) {
+                return JSON.stringify(data);
             }
         });
 

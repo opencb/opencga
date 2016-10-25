@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 
 import java.io.IOException;
@@ -126,6 +127,33 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
                 throw new CatalogDBException("The file " + expectedFile.getName() + " could not be found.");
             }
         }
+    }
+
+    // Test if the lookup operation works fine
+    @Test
+    public void getFileWithJob() throws CatalogDBException {
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        QueryOptions queryOptions = new QueryOptions();
+
+        // We create a job
+        String jobName = "jobName";
+        String jobDescription = "This is the description of the job";
+        Job myJob = new Job().setName(jobName).setDescription(jobDescription);
+        QueryResult<Job> jobInsert = catalogJobDBAdaptor.insert(myJob, studyId, queryOptions);
+
+        // We create a new file giving that job
+        File file = new File().setName("Filename").setPath("data/Filename").setJob(jobInsert.first());
+        QueryResult<File> fileInsert = catalogFileDBAdaptor.insert(file, studyId, queryOptions);
+
+        // Get the file
+        QueryResult<File> noJobInfoQueryResult = catalogFileDBAdaptor.get(fileInsert.first().getId(), queryOptions);
+        assertNull(noJobInfoQueryResult.first().getJob().getName());
+        assertNull(noJobInfoQueryResult.first().getJob().getDescription());
+
+        queryOptions.put("lazy", false);
+        QueryResult<File> jobInfoQueryResult = catalogFileDBAdaptor.get(fileInsert.first().getId(), queryOptions);
+        assertEquals(jobName, jobInfoQueryResult.first().getJob().getName());
+        assertEquals(jobDescription, jobInfoQueryResult.first().getJob().getDescription());
     }
 
     @Test

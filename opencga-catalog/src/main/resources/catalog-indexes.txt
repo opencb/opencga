@@ -25,12 +25,12 @@
 {"collection": "file", "fields": {"path": 1, "_studyId": 1}, "options": {"unique": true}}
 {"collection": "file", "fields": {"status.name": 1, "_studyId": 1}, "options": {}}
 {"collection": "file", "fields": {"sampleIds": 1}, "options": {}}
-{"collection": "file", "fields": {"jobId": 1}, "options": {}}
+{"collection": "file", "fields": {"job.id": 1}, "options": {}}
 {"collection": "file", "fields": {"acl.member": 1, "_studyId": 1}, "options": {}}
 {"collection": "file", "fields": {"_studyId": 1}, "options": {}}
 
 {"collection": "sample", "fields": {"name": 1, "_studyId": 1}, "options": {"unique": true}}
-{"collection": "sample", "fields": {"individualId": 1}, "options": {}}
+{"collection": "sample", "fields": {"individual.id": 1}, "options": {}}
 {"collection": "sample", "fields": {"acl.member": 1, "_studyId": 1}, "options": {}}
 {"collection": "sample", "fields": {"annotationSets.name": 1}, "options": {}}
 {"collection": "sample", "fields": {"annotationSets.variableSetId": 1}, "options": {}}

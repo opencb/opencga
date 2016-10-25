@@ -197,25 +197,13 @@ public class UserWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "email", required = false) @QueryParam("email") String email,
                            @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
-                           @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes,
-                           @ApiParam(value = "configs", required = false) @QueryParam("configs") String configs) {
+                           @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes) {
         try {
             ObjectMap objectMap = new ObjectMap();
-            if (name != null) {
-                objectMap.put("name", name);
-            }
-            if (email != null) {
-                objectMap.put("email", email);
-            }
-            if (organization != null) {
-                objectMap.put("organization", organization);
-            }
-            if (attributes != null) {
-                objectMap.put("attributes", attributes);
-            }
-            if (configs != null) {
-                objectMap.put("configs", configs);
-            }
+            objectMap.putIfNotNull("name", name);
+            objectMap.putIfNotNull("email", email);
+            objectMap.putIfNotNull("organization", organization);
+            objectMap.putIfNotNull("attributes", attributes);
 
             QueryResult result = catalogManager.modifyUser(userId, objectMap, sessionId);
             return createOkResponse(result);
@@ -267,7 +255,7 @@ public class UserWSServer extends OpenCGAWSServer {
             String password = map.get("password");
             String organization = map.containsKey("organization") ? map.get("organization") : "";
 
-            QueryResult queryResult = catalogManager.createUser(userId, name, email, password, organization, null, new QueryOptions());
+            QueryResult queryResult = catalogManager.createUser(userId, name, email, password, organization, null, queryOptions);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -96,8 +96,9 @@ public class CatalogStudyConfigurationFactoryTest {
         file = fileMetadataReader.create(studyId, uri, "data/vcfs/", "", true, null, sessionId).first();
         catalogFileUtils.upload(uri, file, null, sessionId, false, false, true, false, Long.MAX_VALUE);
         if (indexed) {
-            catalogManager.modifyFile(file.getId(), new ObjectMap("index", new FileIndex("user", "today",
-                    new FileIndex.IndexStatus(FileIndex.IndexStatus.READY), 1234, Collections.emptyMap())), sessionId);
+            FileIndex fileIndex = new FileIndex("user", "today", new FileIndex.IndexStatus(FileIndex.IndexStatus.READY), 1234,
+                    Collections.emptyMap());
+            catalogManager.getFileManager().setFileIndex(file.getId(), fileIndex, sessionId);
             indexedFiles.add((int) file.getId());
         }
         return catalogManager.getFile(file.getId(), sessionId).first();

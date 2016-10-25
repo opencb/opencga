@@ -153,7 +153,7 @@ public class AnalysisFileIndexer {
         if (!transform && load) { //Don't transform. Just load. Select the original file
             final long indexedFileId;
             // FIXME: What if the original VCF contains a jobId ?
-            if (inputFile.getJobId() <= 0) {
+            if (inputFile.getJob().getId() <= 0) {
 
                 // TODO: Move this code to an external class for relating Transformed and Original files.
                 // If the input file is the original file, read from the Index object
@@ -206,7 +206,7 @@ public class AnalysisFileIndexer {
 //                throw new CatalogException("Error: can't load this file. JobId unknown. Need jobId to know origin file. " +
 //                        "Only transformed files can be loaded.");
             } else {
-                Job job = catalogManager.getJob(inputFile.getJobId(), null, sessionId).first();
+                Job job = catalogManager.getJob(inputFile.getJob().getId(), null, sessionId).first();
                 if (job.getAttributes().containsKey(Job.INDEXED_FILE_ID)) {
                     indexedFileId = new ObjectMap(job.getAttributes()).getInt(Job.INDEXED_FILE_ID);
                 } else {
@@ -358,7 +358,7 @@ public class AnalysisFileIndexer {
 
         /** Modify file with new information **/
         if (!simulate) {
-            catalogManager.modifyFile(originalFile.getId(), fileModifyParams, sessionId).getResult();
+            catalogManager.getFileManager().update(originalFile.getId(), fileModifyParams, new QueryOptions(), sessionId).getResult();
         }
 
         /** Create job **/
@@ -416,7 +416,7 @@ public class AnalysisFileIndexer {
         } else if (transform && load) {
             index.getAttributes().put("indexJobId", jobId);
         }
-        catalogManager.modifyFile(fileId, new ObjectMap("index", index), sessionId);
+        catalogManager.getFileManager().update(fileId, new ObjectMap("index", index), new QueryOptions(), sessionId);
     }
 
     /**

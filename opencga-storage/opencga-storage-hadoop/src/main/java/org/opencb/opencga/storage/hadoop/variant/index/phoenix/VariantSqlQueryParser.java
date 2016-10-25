@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
@@ -192,7 +193,7 @@ public class VariantSqlQueryParser {
 
         if (!dynamicColumns.isEmpty()) {
             sb.append(dynamicColumns.stream()
-                    .map(column -> "\"" + column.column() + "\" " + column.sqlType())
+                    .map(column -> SchemaUtil.getEscapedFullColumnName(column.column()) + " " + column.sqlType())
                     .collect(Collectors.joining(",", " ( ", " ) "))
             );
         }
@@ -302,8 +303,12 @@ public class VariantSqlQueryParser {
     private String getRegionFilter(Region region) {
         List<String> subFilters = new ArrayList<>(3);
         subFilters.add(buildFilter(VariantColumn.CHROMOSOME, "=", region.getChromosome()));
-        subFilters.add(buildFilter(VariantColumn.POSITION, ">=", Integer.toString(region.getStart())));
-        subFilters.add(buildFilter(VariantColumn.POSITION, "<=", Integer.toString(region.getEnd())));
+        if (region.getStart() > 1) {
+            subFilters.add(buildFilter(VariantColumn.POSITION, ">=", Integer.toString(region.getStart())));
+        }
+        if (region.getEnd() < Integer.MAX_VALUE) {
+            subFilters.add(buildFilter(VariantColumn.POSITION, "<=", Integer.toString(region.getEnd())));
+        }
         return appendFilters(subFilters, QueryOperation.AND.toString());
     }
 
@@ -390,12 +395,15 @@ public class VariantSqlQueryParser {
             List<String> values = splitValue(value, operation);
             StringBuilder sb = new StringBuilder();
             Iterator<String> iterator = values.iterator();
+            Map<String, Integer> studies = utils.getStudyConfigurationManager().getStudies(options);
+            Set<Integer> notNullStudies = new HashSet<>();
             while (iterator.hasNext()) {
                 String study = iterator.next();
-                Integer studyId = utils.getStudyId(study, options, false);
+                Integer studyId = utils.getStudyId(study, false, studies);
                 if (study.startsWith("!")) {
                     sb.append("\"").append(buildColumnKey(studyId, VariantTableStudyRow.HOM_REF)).append("\" IS NULL ");
                 } else {
+                    notNullStudies.add(studyId);
                     sb.append("\"").append(buildColumnKey(studyId, VariantTableStudyRow.HOM_REF)).append("\" IS NOT NULL ");
                 }
                 if (iterator.hasNext()) {
@@ -405,6 +413,9 @@ public class VariantSqlQueryParser {
                         sb.append(" OR ");
                     }
                 }
+            }
+            // Skip this filter if contains all the existing studies.
+            if (studies.values().size() != notNullStudies.size() || !notNullStudies.containsAll(studies.values())) {
                 filters.add(sb.toString());
             }
             List<Integer> studyIds = utils.getStudyIds(values, options);
@@ -420,15 +431,15 @@ public class VariantSqlQueryParser {
             } else {
                 defaultStudyConfiguration = null;
             }
-            StringBuilder sb = new StringBuilder();
-            for (Iterator<Integer> iterator = studyIds.iterator(); iterator.hasNext();) {
-                Integer studyId = iterator.next();
-                sb.append('"').append(buildColumnKey(studyId, HOM_REF)).append("\" IS NOT NULL");
-                if (iterator.hasNext()) {
-                    sb.append(" OR ");
-                }
-            }
-            filters.add(sb.toString());
+//            StringBuilder sb = new StringBuilder();
+//            for (Iterator<Integer> iterator = studyIds.iterator(); iterator.hasNext();) {
+//                Integer studyId = iterator.next();
+//                sb.append('"').append(buildColumnKey(studyId, HOM_REF)).append("\" IS NOT NULL");
+//                if (iterator.hasNext()) {
+//                    sb.append(" OR ");
+//                }
+//            }
+//            filters.add(sb.toString());
         }
 
         unsupportedFilter(query, FILES);
@@ -688,11 +699,7 @@ public class VariantSqlQueryParser {
 
         addQueryFilter(query, ANNOT_DRUG, VariantColumn.DRUG, filters);
 
-        addQueryFilter(query, ANNOT_FUNCTIONAL_SCORE, (keyOpValue, rawValue) -> {
-            Column column = getFunctionalScoreColumn(keyOpValue[0]);
-            dynamicColumns.add(column);
-            return column;
-        }, null, filters);
+        addQueryFilter(query, ANNOT_FUNCTIONAL_SCORE, (keyOpValue, rawValue) -> getFunctionalScoreColumn(keyOpValue[0]), null, filters);
     }
 
     /**

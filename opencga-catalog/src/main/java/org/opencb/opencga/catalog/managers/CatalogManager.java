@@ -761,6 +761,7 @@ public class CatalogManager implements AutoCloseable {
         return fileManager.move(fileId, newPath, options, sessionId);
     }
 
+    @Deprecated
     public QueryResult renameFile(long fileId, String newName, String sessionId) throws CatalogException {
         return fileManager.rename(fileId, newName, sessionId);
     }
@@ -784,6 +785,7 @@ public class CatalogManager implements AutoCloseable {
      * @return QueryResult QueryResult
      * @throws CatalogException CatalogException
      */
+    @Deprecated
     public QueryResult modifyFile(long fileId, ObjectMap parameters, String sessionId) throws CatalogException {
         return fileManager.update(fileId, parameters, null, sessionId); //TODO: Add query options
     }
@@ -1116,10 +1118,12 @@ public class CatalogManager implements AutoCloseable {
         return individualManager.getIds(userId, individualStr);
     }
 
+    @Deprecated
     public QueryResult<Individual> createIndividual(long studyId, String name, String family, long fatherId, long motherId,
                                                     Individual.Sex sex, QueryOptions options, String sessionId)
             throws CatalogException {
-        return individualManager.create(studyId, name, family, fatherId, motherId, sex, options, sessionId);
+        return individualManager.create(studyId, name, family, fatherId, motherId, sex, "", "", "", "", "", "", "",
+                Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, options, sessionId);
     }
 
     public QueryResult<Individual> getIndividual(long individualId, QueryOptions options, String sessionId)

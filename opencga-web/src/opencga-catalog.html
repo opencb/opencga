@@ -188,7 +188,8 @@
                     <welcome-web></welcome-web>
                 </div>
                 <div class="collapse content" id="dashboard">
-                    <opencga-dashboard opencga-client="{{opencgaClient}}" projects="{{projects}}" on-project="updateProject" on-study="updateStudy"></opencga-dashboard>
+                    <!--<opencga-dashboard opencga-client="{{opencgaClient}}" projects="{{projects}}" on-project="updateProject" on-study="updateStudy"></opencga-dashboard>-->
+                    <opencga-dashboard projects="{{projects}}" on-project="updateProject" on-study="updateStudy"></opencga-dashboard>
                 </div>
             </div>
 
@@ -302,7 +303,7 @@
 
                 let sid = Cookies.get(this.config.opencga.cookies.sessionId);
                 if (typeof sid !== "undefined" && sid != "") {
-                    this.userId = Cookies.get(this.config.opencga.cookies.userName);
+                    this.userId = Cookies.get(this.config.opencga.cookies.userId);
                     this.sessionId = sid;
                     this.opencgaClient._config.sessionId = sid;
 
@@ -314,8 +315,8 @@
                 this.renderBreadcrumb();
             },
             init: function() {
-                this.opencgaClientConfig = new OpenCGAClientConfig(this.config.opencga.host, this.config.opencga.version,
-                        this.config.opencga.cookies.sessionId, this.config.opencga.cookies.userName);
+                this.opencgaClientConfig = new OpenCGAClientConfig(this.config.opencga.host, this.config.opencga.version, true,
+                        this.config.opencga.cookies.sessionId, this.config.opencga.cookies.userId);
                 this.opencgaClient = new OpenCGAClient(this.opencgaClientConfig);
 
                 if (typeof this.config.opencga.user !== "undefined" && this.config.opencga.user != ""
@@ -359,6 +360,8 @@
                             _this.opencgaClient._config.sessionId = "";
 
                             _this._logged = false;
+
+                            document.querySelector('opencga-dashboard').opencgaClient = {};
                             _this.init();
                         });
             },
@@ -376,8 +379,9 @@
                 this.renderHashFragments();
             },
             getProjects: function () {
+                document.querySelector('opencga-dashboard').opencgaClient = this.opencgaClient;
                 var _this = this;
-                this.opencgaClient.users().projects(this.userId)
+                this.opencgaClient.users().getProjects(this.userId)
                         .then(function (response) {
                             _this.projects = response.response[0].result;
 

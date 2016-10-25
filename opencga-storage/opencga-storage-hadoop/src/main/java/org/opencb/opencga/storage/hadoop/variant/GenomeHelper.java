@@ -39,9 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -289,31 +287,50 @@ public class GenomeHelper implements AutoCloseable {
         return rk;
     }
 
-    public static List<byte[]> generateBootPreSplitsHuman(int numberOfSplits,
-                                                          BiFunction<String, Integer, byte[]> function) {
+    /**
+     * TODO: Query CellBase to get the chromosomes and sizes!
+     * @param numberOfSplits    Number of splits
+     * @param keyGenerator      Function to generate the rowKeys given a chromosome and a start
+     * @return                  List of splits
+     */
+    public static List<byte[]> generateBootPreSplitsHuman(int numberOfSplits, BiFunction<String, Integer, byte[]> keyGenerator) {
         String[] chr = new String[]{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15",
                 "16", "17", "18", "19", "20", "21", "22", "X", "Y", };
         long[] posarr = new long[]{249250621, 243199373, 198022430, 191154276, 180915260, 171115067, 159138663,
                 146364022, 141213431, 135534747, 135006516, 133851895, 115169878, 107349540, 102531392, 90354753,
                 81195210, 78077248, 59128983, 63025520, 48129895, 51304566, 155270560, 59373566, };
-        long total = Arrays.stream(posarr).sum();
+        Map<String, Long> regions = new HashMap<>();
+        for (int i = 0; i < chr.length; i++) {
+            regions.put(chr[i], posarr[i]);
+        }
+        return generateBootPreSplits(numberOfSplits, keyGenerator, regions);
+    }
 
+    static List<byte[]> generateBootPreSplits(int numberOfSplits, BiFunction<String, Integer, byte[]> keyGenerator,
+                                              Map<String, Long> regionsMap) {
+        // Create a sorted map for the regions that sorts as will sort HBase given the row_key generator
+        // In archive table, chr1 goes after chr19, and in Variants table, chr1 is always the first
+        SortedMap<String, Long> sortedRegions = new TreeMap<>((s1, s2) ->
+                Bytes.compareTo(keyGenerator.apply(s1, 0), keyGenerator.apply(s2, 0)));
+        sortedRegions.putAll(regionsMap);
+
+        long total = sortedRegions.values().stream().reduce((a, b) -> a + b).orElse(0L);
         long chunkSize = total / numberOfSplits;
         List<byte[]> splitList = new ArrayList<>();
         long splitPos = chunkSize;
         while (splitPos < total) {
             long tmpPos = 0;
-            int arrayPos = -1;
-            for (int i = 0; i < chr.length; i++) {
-                if ((tmpPos + posarr[i]) > splitPos) {
-                    arrayPos = i;
+            String chr = null;
+
+            for (Map.Entry<String, Long> entry : sortedRegions.entrySet()) {
+                long v = entry.getValue();
+                if ((tmpPos + v) > splitPos) {
+                    chr = entry.getKey();
                     break;
                 }
-                tmpPos += posarr[i];
+                tmpPos += v;
             }
-            byte[] rowKey = function.apply(chr[arrayPos], (int) (splitPos - tmpPos));
-            String s = Bytes.toHex(rowKey);
-            System.out.println("Split " + chr[arrayPos] + " at " + (splitPos - tmpPos));
+            byte[] rowKey = keyGenerator.apply(chr, (int) (splitPos - tmpPos));
             splitList.add(rowKey);
             splitPos += chunkSize;
         }

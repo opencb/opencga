@@ -57,10 +57,10 @@ public interface FileDBAdaptor extends AclDBAdaptor<File, FileAclEntry> {
         RELATED_FILES("relatedFiles", TEXT_ARRAY, ""),
         RELATED_FILES_RELATION("relatedFiles.relation", TEXT, ""),
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
-        EXPERIMENT_ID("experimentId", INTEGER_ARRAY, ""),
+        EXPERIMENT_ID("experiment.id", INTEGER_ARRAY, ""),
         SAMPLE_IDS("sampleIds", INTEGER_ARRAY, ""),
 
-        JOB_ID("jobId", INTEGER_ARRAY, ""),
+        JOB_ID("job.id", INTEGER_ARRAY, ""),
         ACL("acl", TEXT_ARRAY, ""),
         ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
         ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),

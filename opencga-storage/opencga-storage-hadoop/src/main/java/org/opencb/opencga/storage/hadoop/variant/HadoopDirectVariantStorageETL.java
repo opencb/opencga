@@ -129,7 +129,7 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
             while (null != slice) {
                 ++counter;
                 hbaseWriter.write(slice);
-                progressLogger.increment(1);
+                progressLogger.increment(slice.getRecordsCount());
                 slice = VcfSlice.parseDelimitedFrom(in);
             }
             hbaseWriter.post();

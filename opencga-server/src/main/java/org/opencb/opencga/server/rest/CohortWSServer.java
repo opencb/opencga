@@ -172,36 +172,6 @@ public class CohortWSServer extends OpenCGAWSServer {
         return catalogManager.createCohort(studyId, cohortName, type, cohortDescription, sampleIds, null, sessionId);
     }
 
-//
-//    @GET
-//    @Path("/create")
-//    @Produces("application/json")
-//    @ApiOperation(defaultValue = "Create a cohort")
-//    public Response createCohort(
-//            @ApiParam(defaultValue = "studyId", required = true) @QueryParam("studyId") int studyId,
-//            @ApiParam(defaultValue = "cohortName", required = true) @QueryParam("cohortName") String cohortName,
-//            @ApiParam(defaultValue = "cohortDescription", required = false) @QueryParam("cohortDescription") String cohortDescription) {
-//        try {
-//            QueryOptions queryOptions = getAllQueryOptions();
-////            Object cohortInclude = queryOptions.remove("include");
-////            Object cohortExclude = queryOptions.remove("exclude");
-//            queryOptions.add("include", "projects.studies.samples.id");
-//            QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, queryOptions, sessionId);
-//            queryOptions.remove("include");
-//            List<Integer> sampleIds = new ArrayList<>(queryResult.getNumResults());
-//            for (Sample sample : queryResult.getResult()) {
-//                sampleIds.add(sample.getId());
-//            }
-//            QueryResult<Cohort> cohort = catalogManager.createCohort(studyId, cohortName, cohortDescription, sampleIds, null, sessionId);
-//
-//            return createOkResponse(cohort);
-//        } catch (CatalogException e) {
-//            e.printStackTrace();
-//            return createErrorResponse(e.getMessage());
-//        }
-//    }
-//
-
     @GET
     @Path("/{cohortId}/update")
     @ApiOperation(value = "Update some user attributes using GET method", position = 4, response = Cohort.class)
@@ -277,81 +247,6 @@ public class CohortWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
-//    @Deprecated
-//    @POST
-//    @Path("/{cohortId}/annotate")
-//    @Consumes(MediaType.APPLICATION_JSON)
-//    @ApiOperation(value = "annotate cohort [DEPRECATED]", position = 6)
-//    public Response annotateSamplePOST(@ApiParam(value = "CohortID", required = true) @PathParam("cohortId") String cohortId,
-//                                       @ApiParam(value = "Annotation set name. Must be unique for the cohort", required = true) @QueryParam("annotateSetName") String annotateSetName,
-//                                       @ApiParam(value = "VariableSetId of the new annotation", required = false) @QueryParam("variableSetId") long variableSetId,
-//                                       @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
-//                                       @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete,
-//                                       Map<String, Object> annotations) {
-//        try {
-//            QueryResult<AnnotationSet> queryResult;
-//            if (delete && update) {
-//                return createErrorResponse("Annotate cohort", "Unable to update and delete annotations at the same time");
-//            } else if (delete) {
-//                queryResult = catalogManager.deleteCohortAnnotation(cohortId, annotateSetName, sessionId);
-//            } else if (update) {
-//                queryResult = catalogManager.updateCohortAnnotation(cohortId, annotateSetName, annotations, sessionId);
-//            } else {
-//                queryResult = catalogManager.annotateCohort(cohortId, annotateSetName, variableSetId, annotations, Collections.emptyMap(),
-//                        sessionId);
-//            }
-//            return createOkResponse(queryResult);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
-//    @Deprecated
-//    @GET
-//    @Path("/{cohortId}/annotate")
-//    @Consumes(MediaType.APPLICATION_JSON)
-//    @ApiOperation(value = "Annotate cohort[DEPRECATED]", position = 6)
-//    public Response annotateSampleGET(@ApiParam(value = "CohortID", required = true) @PathParam("cohortId") String cohortId,
-//                                      @ApiParam(value = "Annotation set name. Must be unique for the cohort", required = true) @QueryParam("annotateSetName") String annotateSetName,
-//                                      @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
-//                                      @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
-//                                      @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete) {
-//        try {
-//            QueryResult<AnnotationSet> queryResult;
-//
-//            if (delete && update) {
-//                return createErrorResponse("Annotate cohort", "Unable to update and delete annotations at the same time");
-//            } else if (delete) {
-//                queryResult = catalogManager.deleteCohortAnnotation(cohortId, annotateSetName, sessionId);
-//            } else {
-//                if (update) {
-//                    long cohortLongId = catalogManager.getCohortId(cohortId, sessionId);
-//                    for (AnnotationSet annotationSet : catalogManager.getCohort(cohortLongId, null, sessionId).first().getAnnotationSets()) {
-//                        if (annotationSet.getName().equals(annotateSetName)) {
-//                            variableSetId = annotationSet.getVariableSetId();
-//                        }
-//                    }
-//                }
-//                QueryResult<VariableSet> variableSetResult = catalogManager.getVariableSet(variableSetId, null, sessionId);
-//                if(variableSetResult.getResult().isEmpty()) {
-//                    return createErrorResponse("cohort - annotate", "VariableSet not found.");
-//                }
-//                Map<String, Object> annotations = variableSetResult.getResult().get(0).getVariables().stream()
-//                        .filter(variable -> params.containsKey(variable.getName()))
-//                        .collect(Collectors.toMap(Variable::getName, variable -> params.getFirst(variable.getName())));
-//
-//                if (update) {
-//                    queryResult = catalogManager.updateCohortAnnotation(cohortId, annotateSetName, annotations, sessionId);
-//                } else {
-//                    queryResult = catalogManager.annotateCohort(cohortId, annotateSetName, variableSetId, annotations,
-//                            Collections.emptyMap(), sessionId);
-//                }
-//            }
-//
-//            return createOkResponse(queryResult);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
 
     @GET
     @Path("/{cohortId}/annotationSets/search")
@@ -457,33 +352,6 @@ public class CohortWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
-//
-//    @GET
-//    @Path("/{cohortIds}/share")
-//    @ApiOperation(value = "Share cohorts with other members", position = 7)
-//    public Response share(@PathParam(value = "cohortIds") String cohortIds,
-//                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-//                          @ApiParam(value = "Comma separated list of cohort permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
-//                          @ApiParam(value = "Boolean indicating whether to allow the change of of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
-//        try {
-//            return createOkResponse(catalogManager.shareCohorts(cohortIds, members, Arrays.asList(permissions.split(",")), override, sessionId));
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
-//
-//    @GET
-//    @Path("/{cohortIds}/unshare")
-//    @ApiOperation(value = "Remove the permissions for the list of members", position = 8)
-//    public Response unshare(@PathParam(value = "cohortIds") String cohortIds,
-//                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-//                            @ApiParam(value = "Comma separated list of cohort permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions) {
-//        try {
-//            return createOkResponse(catalogManager.unshareCohorts(cohortIds, members, permissions, sessionId));
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
 
     @GET
     @Path("/groupBy")
@@ -499,13 +367,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
                             @ApiParam(value = "numerical attributes", required = false) @DefaultValue("") @QueryParam("nattributes") String nattributes) {
         try {
-            Query query = new Query();
-            QueryOptions qOptions = new QueryOptions();
-            parseQueryParams(params, CohortDBAdaptor.QueryParams::getParam, query, qOptions);
-
-            logger.debug("query = " + query.toJson());
-            logger.debug("queryOptions = " + qOptions.toJson());
-            QueryResult result = catalogManager.cohortGroupBy(query, qOptions, fields, sessionId);
+            QueryResult result = catalogManager.cohortGroupBy(query, queryOptions, fields, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

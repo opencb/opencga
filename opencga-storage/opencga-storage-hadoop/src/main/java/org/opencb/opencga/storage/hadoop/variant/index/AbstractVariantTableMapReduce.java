@@ -276,7 +276,7 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
                 "Loaded Meta Map: File id idx {}; FileId: {} Study {};",
                 k, v.getVariantSource().getFileId(), v.getVariantSource().getStudyId()));
         resultConverter = new ArchiveResultToVariantConverter(vcfMetaMap, helper.getColumnFamily());
-        hbaseToVariantConverter = new HBaseToVariantConverter(this.helper).setFailOnEmptyVariants(true);
+        hbaseToVariantConverter = new HBaseToVariantConverter(this.helper).setFailOnEmptyVariants(true).setSimpleGenotypes(false);
         variantMerger = new VariantMerger();
 
         timestamp = context.getConfiguration().getLong(AbstractVariantTableDriver.TIMESTAMP, -1);

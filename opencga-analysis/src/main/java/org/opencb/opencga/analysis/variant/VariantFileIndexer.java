@@ -465,8 +465,9 @@ public class VariantFileIndexer extends AbstractFileIndexer {
                 if (queryResult.getNumResults() != 0) {
                     logger.debug("Default cohort status set to READY");
                     Cohort defaultCohort = queryResult.first();
-                    params = new ObjectMap(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.READY);
-                    catalogManager.getCohortManager().update(defaultCohort.getId(), params, new QueryOptions(), sessionId);
+                    catalogManager.getCohortManager().setStatus(Long.toString(defaultCohort.getId()), Cohort.CohortStatus.READY, null, sessionId);
+//                    params = new ObjectMap(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.READY);
+//                    catalogManager.getCohortManager().update(defaultCohort.getId(), params, new QueryOptions(), sessionId);
                 }
             }
         }
@@ -551,13 +552,13 @@ public class VariantFileIndexer extends AbstractFileIndexer {
             defaultCohort = cohorts.first();
         }
 
-        ObjectMap updateParams = new ObjectMap();
-
         if (options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key())) {
-            updateParams.append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.CALCULATING);
+//            updateParams.append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.CALCULATING);
+            catalogManager.getCohortManager().setStatus(Long.toString(defaultCohort.getId()), Cohort.CohortStatus.CALCULATING, null, sessionId);
         }
 
         //Samples are the already indexed plus those that are going to be indexed
+        ObjectMap updateParams = new ObjectMap();
         Set<Long> samples = new HashSet<>(defaultCohort.getSamples());
         samples.addAll(sampleList.stream().map(Sample::getId).collect(Collectors.toList()));
         if (samples.size() != defaultCohort.getSamples().size()) {

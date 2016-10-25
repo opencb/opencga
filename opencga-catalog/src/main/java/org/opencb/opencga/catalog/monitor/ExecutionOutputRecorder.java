@@ -182,8 +182,9 @@ public class ExecutionOutputRecorder {
                 jobStatus.setName(Job.JobStatus.ERROR);
                 jobStatus.setMessage("The finished with an unexpected error");
             }
-            ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
-            catalogManager.getJobManager().update(job.getId(), params, new QueryOptions(), sessionId);
+//            ObjectMap params = new ObjectMap(JobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
+//            catalogManager.getJobManager().update(job.getId(), params, new QueryOptions(), sessionId);
+            catalogManager.getJobManager().setStatus(Long.toString(job.getId()), jobStatus.getName(), jobStatus.getMessage(), sessionId);
         } else {
             logger.error("This code should never be executed.");
             throw new CatalogException("Job status = null");

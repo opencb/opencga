@@ -66,9 +66,6 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -273,19 +270,16 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                 }
 
                 ParallelTaskRunner.Task<Variant, Variant> progressTask;
-                ExecutorService executor;
                 if (VariantQueryCommandUtils.isStandardOutput(cliOptions)) {
                     progressTask = batch -> batch;
-                    executor = null;
                 } else {
-                    executor = Executors.newSingleThreadExecutor();
-                    Future<Long> future = executor.submit(() -> {
+                    ProgressLogger progressLogger = new ProgressLogger("Export variants", () -> {
                         Long count = variantFetcher.count(query, sessionId).first();
-                        count = Math.min(queryOptions.getLong(QueryOptions.LIMIT, Long.MAX_VALUE), count - queryOptions.getLong(QueryOptions.SKIP, 0));
+                        long limit = queryOptions.getLong(QueryOptions.LIMIT, Long.MAX_VALUE);
+                        long skip = queryOptions.getLong(QueryOptions.SKIP, 0);
+                        count = Math.min(limit, count - skip);
                         return count;
-                    });
-                    executor.shutdown();
-                    ProgressLogger progressLogger = new ProgressLogger("Export variants", future, 200);
+                    }, 200);
                     progressTask = batch -> {
                         progressLogger.increment(batch.size());
                         return batch;
@@ -305,9 +299,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                 }, progressTask, exporter, config);
 
                 ptr.run();
-                if (executor != null) {
-                    executor.shutdownNow();
-                }
+
                 logger.info("Time fetching data: " + iterator.getTimeFetching(TimeUnit.MILLISECONDS) / 1000.0 + "s");
                 logger.info("Time converting data: " + iterator.getTimeConverting(TimeUnit.MILLISECONDS) / 1000.0 + "s");
 

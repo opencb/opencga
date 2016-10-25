@@ -65,7 +65,7 @@ public class VariantQueryException extends IllegalArgumentException {
         return studyNotFound(study, Collections.emptyList());
     }
 
-    public static VariantQueryException studyNotFound(String study, List<String> availableStudies) {
+    public static VariantQueryException studyNotFound(String study, Collection<String> availableStudies) {
         return new VariantQueryException("Study { name: \"" + study + "\" } not found."
                 + (availableStudies == null || availableStudies.isEmpty() ? "" : " Available studies: " + availableStudies));
     }
@@ -74,7 +74,7 @@ public class VariantQueryException extends IllegalArgumentException {
         return studyNotFound(studyId, Collections.emptyList());
     }
 
-    public static VariantQueryException studyNotFound(int studyId, List<String> availableStudies) {
+    public static VariantQueryException studyNotFound(int studyId, Collection<String> availableStudies) {
         return new VariantQueryException("Study { id: " + studyId + " } not found."
                 + (availableStudies == null || availableStudies.isEmpty() ? "" : " Available studies: " + availableStudies));
     }

@@ -41,7 +41,6 @@ import java.util.Map;
 @Api(value = "Projects", position = 2, description = "Methods for working with 'projects' endpoint")
 public class ProjectWSServer extends OpenCGAWSServer {
 
-
     public ProjectWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(uriInfo, httpServletRequest);
     }
@@ -114,23 +113,17 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Project update", position = 4)
     public Response update(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdStr,
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
+                           @ApiParam(value = "alias", required = false) @QueryParam("alias") String alias,
                            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
                            @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
                            @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes) throws IOException {
         try {
             ObjectMap objectMap = new ObjectMap();
-            if (name != null) {
-                objectMap.put("name", name);
-            }
-            if (description != null) {
-                objectMap.put("description", description);
-            }
-            if (organization != null) {
-                objectMap.put("organization", organization);
-            }
-            if (attributes != null) {
-                objectMap.put("attributes", attributes);
-            }
+            objectMap.putIfNotNull("name", name);
+            objectMap.putIfNotNull("alias", alias);
+            objectMap.putIfNotNull("description", description);
+            objectMap.putIfNotNull("organization", organization);
+            objectMap.putIfNotNull("attributes", attributes);
 
             long projectId = catalogManager.getProjectId(projectIdStr);
             QueryResult result = catalogManager.modifyProject(projectId, objectMap, sessionId);
@@ -149,7 +142,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
         try {
             ObjectMap objectMap = new ObjectMap(params);
             long projectId = catalogManager.getProjectId(projectIdStr);
-            QueryResult result = catalogManager.modifyProject(projectId, objectMap, sessionId);
+            QueryResult result = catalogManager.getProjectManager().update(projectId, objectMap, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

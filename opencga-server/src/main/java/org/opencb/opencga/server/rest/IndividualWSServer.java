@@ -17,7 +17,8 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
-import org.opencb.commons.datastore.core.Query;
+import org.opencb.biodata.formats.drug.drugbank.v43jaxb.KnownActionType;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
@@ -60,16 +61,27 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @Path("/create")
     @ApiOperation(value = "Create individual", position = 1, response = Individual.class)
     public Response createIndividual(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
-                                 @ApiParam(value = "name", required = true) @QueryParam("name") String name,
-                                 @ApiParam(value = "family", required = false) @QueryParam("family") String family,
-                                 @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") long fatherId,
-                                 @ApiParam(value = "motherId", required = false) @QueryParam("motherId") long motherId,
-                                 @ApiParam(value = "sex", required = false) @QueryParam("sex") @DefaultValue("UNKNOWN") Individual.Sex sex){
-                                 //@ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity){
+                                     @ApiParam(value = "name", required = true) @QueryParam("name") String name,
+                                     @ApiParam(value = "family", required = false) @QueryParam("family") String family,
+                                     @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") long fatherId,
+                                     @ApiParam(value = "motherId", required = false) @QueryParam("motherId") long motherId,
+                                     @ApiParam(value = "sex", required = false) @QueryParam("sex") @DefaultValue("UNKNOWN") Individual.Sex sex,
+                                     @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
+                                     @ApiParam(value = "Species taxonomy code", required = false) @QueryParam("species.taxonomyCode") String speciesTaxonomyCode,
+                                     @ApiParam(value = "Species scientific name", required = false) @QueryParam("species.scientificName") String speciesScientificName,
+                                     @ApiParam(value = "Species common name", required = false) @QueryParam("species.commonName") String speciesCommonName,
+                                     @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
+                                     @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation") String populationSubpopulation,
+                                     @ApiParam(value = "Population description", required = false) @QueryParam("population.description") String populationDescription,
+                                     @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex") Individual.KaryotypicSex karyotypicSex,
+                                     @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") Individual.LifeStatus lifeStatus,
+                                     @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")Individual.AffectationStatus affectationStatus){
         //TODO add ethnicity param
         try {
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
-            QueryResult<Individual> queryResult = catalogManager.createIndividual(studyId, name, family, fatherId, motherId, sex, queryOptions, sessionId);
+            QueryResult<Individual> queryResult = catalogManager.getIndividualManager().create(studyId, name, family, fatherId, motherId,
+                    sex, ethnicity, speciesCommonName, speciesScientificName, speciesTaxonomyCode, populationName, populationSubpopulation,
+                    populationDescription, karyotypicSex, lifeStatus, affectationStatus, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -115,16 +127,21 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                       @ApiParam(value = "family", required = false) @QueryParam("family") String family,
                                       @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
                                       @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-                                      @ApiParam(value = "species", required = false) @QueryParam("species") String species,
-                                      @ApiParam(value = "population", required = false) @QueryParam("population") String population,
+                                      @ApiParam(value = "Species taxonomy code", required = false) @QueryParam("species.taxonomyCode") String speciesTaxonomyCode,
+                                      @ApiParam(value = "Species scientific name", required = false) @QueryParam("species.scientificName") String speciesScientificName,
+                                      @ApiParam(value = "Species common name", required = false) @QueryParam("species.commonName") String speciesCommonName,
+                                      @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
+                                      @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation") String populationSubpopulation,
+                                      @ApiParam(value = "Population description", required = false) @QueryParam("population.description") String populationDescription,
+                                      @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex") Individual.KaryotypicSex karyotypicSex,
+                                      @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") Individual.LifeStatus lifeStatus,
+                                      @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")Individual.AffectationStatus affectationStatus,
                                       @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
                                       @ApiParam(value = "annotationSetName", required = false) @QueryParam("annotationSetName") String annotationSetName,
                                       @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
-            QueryOptions qOptions = new QueryOptions(queryOptions);
-            parseQueryParams(params, IndividualDBAdaptor.QueryParams::getParam, query, qOptions);
-            QueryResult<Individual> queryResult = catalogManager.getAllIndividuals(studyId, query, qOptions, sessionId);
+            QueryResult<Individual> queryResult = catalogManager.getAllIndividuals(studyId, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -311,21 +328,46 @@ public class IndividualWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
+
+
     @GET
     @Path("/{individualId}/update")
     @ApiOperation(value = "Update individual information", position = 6, response = Individual.class)
     public Response updateIndividual(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
-                                     @ApiParam(value = "id", required = false) @QueryParam("id") String id,
                                      @ApiParam(value = "name", required = false) @QueryParam("name") String name,
-                                     @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") long fatherId,
-                                     @ApiParam(value = "motherId", required = false) @QueryParam("motherId") long motherId,
+                                     @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") Long fatherId,
+                                     @ApiParam(value = "motherId", required = false) @QueryParam("motherId") Long motherId,
                                      @ApiParam(value = "family", required = false) @QueryParam("family") String family,
                                      @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
-                                     @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity
-                                      ) {
+                                     @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
+                                     @ApiParam(value = "Species taxonomy code", required = false) @QueryParam("species.taxonomyCode") String speciesTaxonomyCode,
+                                     @ApiParam(value = "Species scientific name", required = false) @QueryParam("species.scientificName") String speciesScientificName,
+                                     @ApiParam(value = "Species common name", required = false) @QueryParam("species.commonName") String speciesCommonName,
+                                     @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
+                                     @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation") String populationSubpopulation,
+                                     @ApiParam(value = "Population description", required = false) @QueryParam("population.description") String populationDescription,
+                                     @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex") Individual.KaryotypicSex karyotypicSex,
+                                     @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") Individual.LifeStatus lifeStatus,
+                                     @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")Individual.AffectationStatus affectationStatus) {
         try {
             long individualId = catalogManager.getIndividualId(individualStr, sessionId);
-            QueryResult<Individual> queryResult = catalogManager.modifyIndividual(individualId, queryOptions, sessionId);
+            ObjectMap params = new ObjectMap();
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.NAME.key(), name);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), fatherId);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), motherId);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.FAMILY.key(), family);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.SEX.key(), sex);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), ethnicity);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.SPECIES_COMMON_NAME.key(), speciesCommonName);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.SPECIES_SCIENTIFIC_NAME.key(), speciesScientificName);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.SPECIES_TAXONOMY_CODE.key(), speciesTaxonomyCode);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(), populationName);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.POPULATION_DESCRIPTION.key(), populationDescription);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.POPULATION_SUBPOPULATION.key(), populationSubpopulation);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(), karyotypicSex);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(), lifeStatus);
+            params.putIfNotNull(IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), affectationStatus);
+            QueryResult<Individual> queryResult = catalogManager.getIndividualManager().update(individualId, params, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -411,19 +453,20 @@ public class IndividualWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "family", required = false) @QueryParam("family") String family,
                             @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
                             @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-                            @ApiParam(value = "species", required = false) @QueryParam("species") String species,
-                            @ApiParam(value = "population", required = false) @QueryParam("population") String population,
+                            @ApiParam(value = "Species taxonomy code", required = false) @QueryParam("species.taxonomyCode") String speciesTaxonomyCode,
+                            @ApiParam(value = "Species scientific name", required = false) @QueryParam("species.scientificName") String speciesScientificName,
+                            @ApiParam(value = "Species common name", required = false) @QueryParam("species.commonName") String speciesCommonName,
+                            @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
+                            @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation") String populationSubpopulation,
+                            @ApiParam(value = "Population description", required = false) @QueryParam("population.description") String populationDescription,
+                            @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex") Individual.KaryotypicSex karyotypicSex,
+                            @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") Individual.LifeStatus lifeStatus,
+                            @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")Individual.AffectationStatus affectationStatus,
                             @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
                             @ApiParam(value = "annotationSetName", required = false) @QueryParam("annotationSetName") String annotationSetName,
                             @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
         try {
-            Query query = new Query();
-            QueryOptions qOptions = new QueryOptions();
-            parseQueryParams(params, IndividualDBAdaptor.QueryParams::getParam, query, qOptions);
-
-            logger.debug("query = " + query.toJson());
-            logger.debug("queryOptions = " + qOptions.toJson());
-            QueryResult result = catalogManager.individualGroupBy(query, qOptions, fields, sessionId);
+            QueryResult result = catalogManager.individualGroupBy(query, queryOptions, fields, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -230,7 +230,9 @@ public class IndexDaemon extends MonitorParentDaemon {
                 Job.JobStatus jobStatus = new Job.JobStatus(Job.JobStatus.RUNNING, "The job is running");
                 ObjectMap objectMap = new ObjectMap(JobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
                 try {
-                    catalogManager.getJobManager().update(job.getId(), objectMap, new QueryOptions(), sessionId);
+//                    catalogManager.getJobManager().update(job.getId(), objectMap, new QueryOptions(), sessionId);
+                    catalogManager.getJobManager()
+                            .setStatus(Long.toString(job.getId()), jobStatus.getName(), jobStatus.getMessage(), sessionId);
                 } catch (CatalogException e) {
                     logger.warn("Could not update job {} to status running", job.getId());
                 }
@@ -316,9 +318,11 @@ public class IndexDaemon extends MonitorParentDaemon {
         logger.info("Updating job CLI '{}' from '{}' to '{}'", commandLine.toString(), Job.JobStatus.PREPARED, Job.JobStatus.QUEUED);
 
         try {
+            catalogManager.getJobManager().setStatus(Long.toString(job.getId()), Job.JobStatus.QUEUED,
+                    "The job is in the queue waiting to be executed", sessionId);
+//            Job.JobStatus jobStatus = new Job.JobStatus(Job.JobStatus.QUEUED, "The job is in the queue waiting to be executed");
+//            updateObjectMap.put(JobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
             ObjectMap updateObjectMap = new ObjectMap();
-            Job.JobStatus jobStatus = new Job.JobStatus(Job.JobStatus.QUEUED, "The job is in the queue waiting to be executed");
-            updateObjectMap.put(JobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
             updateObjectMap.put(JobDBAdaptor.QueryParams.COMMAND_LINE.key(), commandLine.toString());
             job.getAttributes().put("sessionId", userSessionId);
 

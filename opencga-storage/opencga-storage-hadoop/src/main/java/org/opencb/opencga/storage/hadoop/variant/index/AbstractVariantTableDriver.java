@@ -302,7 +302,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         List<byte[]> splitList = GenomeHelper.generateBootPreSplitsHuman(
                 nsplits,
                 (chr, pos) -> genomeHelper.generateVariantRowKey(chr, pos, "", ""));
-        return genomeHelper.getHBaseManager().createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(),
+        return HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(),
                 splitList, Compression.getCompressionAlgorithmByName(
                         genomeHelper.getConf().get(
                                 CONFIG_VARIANT_TABLE_COMPRESSION,

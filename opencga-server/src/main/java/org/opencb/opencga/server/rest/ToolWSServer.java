@@ -90,9 +90,7 @@ public class ToolWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "userId", required = false) @QueryParam(value = "userId") @DefaultValue("") String userId,
                            @ApiParam(value = "alias", required = false) @QueryParam(value = "alias") @DefaultValue("") String alias) {
         try {
-            QueryOptions qOptions = new QueryOptions();
-            parseQueryParams(params, UserDBAdaptor.ToolQueryParams::getParam, query, qOptions);
-            QueryResult<Tool> toolResult = catalogManager.getAllTools(query, qOptions, sessionId);
+            QueryResult<Tool> toolResult = catalogManager.getAllTools(query, queryOptions, sessionId);
             for (Tool tool : toolResult.getResult()) {
                 ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), "");
                 tool.setManifest(toolManager.getManifest());

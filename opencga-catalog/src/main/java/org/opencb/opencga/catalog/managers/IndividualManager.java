@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -81,25 +82,41 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                 objectMap.getString(IndividualDBAdaptor.QueryParams.FAMILY.key()),
                 objectMap.getInt(IndividualDBAdaptor.QueryParams.FATHER_ID.key()),
                 objectMap.getInt(IndividualDBAdaptor.QueryParams.MOTHER_ID.key()),
-                objectMap.get(IndividualDBAdaptor.QueryParams.SEX.key(), Individual.Sex.class),
-                options, sessionId);
+                objectMap.get(IndividualDBAdaptor.QueryParams.SEX.key(), Individual.Sex.class), "", "", "", "", "", "", "",
+                Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, options, sessionId);
     }
 
     @Override
-    public QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId,
-                                          Individual.Sex sex, QueryOptions options, String sessionId)
-            throws CatalogException {
-
+    public QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId, Individual.Sex sex,
+                                          String ethnicity, String speciesCommonName, String speciesScientificName,
+                                          String speciesTaxonomyCode, String populationName, String populationSubpopulation,
+                                          String populationDescription, Individual.KaryotypicSex karyotypicSex,
+                                          Individual.LifeStatus lifeStatus, Individual.AffectationStatus affectationStatus,
+                                          QueryOptions options, String sessionId) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         sex = ParamUtils.defaultObject(sex, Individual.Sex.UNKNOWN);
         ParamUtils.checkAlias(name, "name");
         family = ParamUtils.defaultObject(family, "");
+        ethnicity = ParamUtils.defaultObject(ethnicity, "");
+        speciesCommonName = ParamUtils.defaultObject(speciesCommonName, "");
+        speciesScientificName = ParamUtils.defaultObject(speciesScientificName, "");
+        speciesTaxonomyCode = ParamUtils.defaultObject(speciesTaxonomyCode, "");
+        populationName = ParamUtils.defaultObject(populationName, "");
+        populationSubpopulation = ParamUtils.defaultObject(populationSubpopulation, "");
+        populationDescription = ParamUtils.defaultObject(populationDescription, "");
+        karyotypicSex = ParamUtils.defaultObject(karyotypicSex, Individual.KaryotypicSex.UNKNOWN);
+        lifeStatus = ParamUtils.defaultObject(lifeStatus, Individual.LifeStatus.UNKNOWN);
+        affectationStatus = ParamUtils.defaultObject(affectationStatus, Individual.AffectationStatus.UNKNOWN);
 
         String userId = userManager.getId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_INDIVIDUALS);
 
-        QueryResult<Individual> queryResult = individualDBAdaptor.insert(new Individual(0, name, fatherId, motherId,
-                family, sex, null, null, null, Collections.emptyList(), null), studyId, options);
+        Individual individual = new Individual(0, name, fatherId, motherId,
+                family, sex, karyotypicSex, ethnicity, new Individual.Species(speciesCommonName, speciesScientificName,
+                speciesTaxonomyCode), new Individual.Population(populationName, populationSubpopulation, populationDescription), lifeStatus,
+                affectationStatus);
+
+        QueryResult<Individual> queryResult = individualDBAdaptor.insert(individual, studyId, options);
 //      auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
         auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.create, AuditRecord.Magnitude.low,
                 queryResult.first().getId(), userId, null, queryResult.first(), null, null);
@@ -186,6 +203,11 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         List<Long> individualIds = individualQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList());
         String individualStr = StringUtils.join(individualIds, ",");
         return restore(individualStr, options, sessionId);
+    }
+
+    @Override
+    public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
+        throw new NotImplementedException("Project: Operation not yet supported");
     }
 
     @Override
@@ -435,12 +457,35 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     @Override
     public QueryResult<Individual> update(Long individualId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
-        ParamUtils.checkObj(sessionId, "sessionId");
         ParamUtils.defaultObject(parameters, QueryOptions::new);
         ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getId(sessionId);
         authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.UPDATE);
+
+        for (Map.Entry<String, Object> param : parameters.entrySet()) {
+            IndividualDBAdaptor.QueryParams queryParam = IndividualDBAdaptor.QueryParams.getParam(param.getKey());
+            switch (queryParam) {
+                case NAME:
+                case FATHER_ID:
+                case MOTHER_ID:
+                case FAMILY:
+                case SEX:
+                case ETHNICITY:
+                case SPECIES_COMMON_NAME:
+                case SPECIES_SCIENTIFIC_NAME:
+                case SPECIES_TAXONOMY_CODE:
+                case POPULATION_DESCRIPTION:
+                case POPULATION_NAME:
+                case POPULATION_SUBPOPULATION:
+                case KARYOTYPIC_SEX:
+                case LIFE_STATUS:
+                case AFFECTATION_STATUS:
+                    break;
+                default:
+                    throw new CatalogException("Cannot update " + queryParam);
+            }
+        }
 
         options.putAll(parameters); //FIXME: Use separated params and options, or merge
         QueryResult<Individual> queryResult = individualDBAdaptor.update(individualId, new ObjectMap(options));

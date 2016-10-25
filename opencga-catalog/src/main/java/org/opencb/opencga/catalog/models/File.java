@@ -58,14 +58,14 @@ public class File extends AbstractAcl<FileAclEntry> {
     private boolean external;
 
     private long diskUsage;
-    private long experimentId;
+    private Experiment experiment;
     private List<Long> sampleIds;
 
 
     /**
      * This field values -1 when file has been uploaded.
      */
-    private long jobId;
+    private Job job;
     private List<RelatedFile> relatedFiles;
 
 //    private List<FileAclEntry> acl;
@@ -76,18 +76,19 @@ public class File extends AbstractAcl<FileAclEntry> {
 
 
     public File() {
+        this(null, null, null, null, null, null, new FileStatus(), -1);
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String description, FileStatus status,
                 long diskUsage) {
         this(-1, name, type, format, bioformat, null, path, TimeUtils.getTime(), TimeUtils.getTime(), description, status, false,
-                diskUsage, -1, Collections.emptyList(), -1, Collections.emptyList(), Collections.emptyList(), null, Collections.emptyMap(),
-                Collections.emptyMap());
+                diskUsage, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), Collections.emptyList(),
+                new FileIndex(), Collections.emptyMap(), Collections.emptyMap());
     }
 
     public File(long id, String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String creationDate,
-                String modificationDate, String description, FileStatus status, boolean external, long diskUsage, long experimentId,
-                List<Long> sampleIds, long jobId, List<RelatedFile> relatedFiles, List<FileAclEntry> acl, FileIndex index,
+                String modificationDate, String description, FileStatus status, boolean external, long diskUsage, Experiment experiment,
+                List<Long> sampleIds, Job job, List<RelatedFile> relatedFiles, List<FileAclEntry> acl, FileIndex index,
                 Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -102,9 +103,9 @@ public class File extends AbstractAcl<FileAclEntry> {
         this.status = status;
         this.external = external;
         this.diskUsage = diskUsage;
-        this.experimentId = experimentId;
+        this.experiment = experiment;
         this.sampleIds = sampleIds;
-        this.jobId = jobId;
+        this.job = job;
         this.relatedFiles = relatedFiles;
         this.acl = acl;
         this.index = index != null ? index : new FileIndex();
@@ -234,7 +235,7 @@ public class File extends AbstractAcl<FileAclEntry> {
         public enum Relation {
             PRODUCED_FROM,
             PART_OF_PAIR,
-            PEDIGREE;
+            PEDIGREE
         }
 
         public RelatedFile() {
@@ -289,11 +290,10 @@ public class File extends AbstractAcl<FileAclEntry> {
         sb.append(", status=").append(status);
         sb.append(", external=").append(external);
         sb.append(", diskUsage=").append(diskUsage);
-        sb.append(", experimentId=").append(experimentId);
+        sb.append(", experiment=").append(experiment);
         sb.append(", sampleIds=").append(sampleIds);
-        sb.append(", jobId=").append(jobId);
+        sb.append(", job=").append(job);
         sb.append(", relatedFiles=").append(relatedFiles);
-        sb.append(", acl=").append(acl);
         sb.append(", index=").append(index);
         sb.append(", stats=").append(stats);
         sb.append(", attributes=").append(attributes);
@@ -418,15 +418,6 @@ public class File extends AbstractAcl<FileAclEntry> {
         return this;
     }
 
-    public long getExperimentId() {
-        return experimentId;
-    }
-
-    public File setExperimentId(long experimentId) {
-        this.experimentId = experimentId;
-        return this;
-    }
-
     public List<Long> getSampleIds() {
         return sampleIds;
     }
@@ -436,12 +427,21 @@ public class File extends AbstractAcl<FileAclEntry> {
         return this;
     }
 
-    public long getJobId() {
-        return jobId;
+    public Experiment getExperiment() {
+        return experiment;
     }
 
-    public File setJobId(long jobId) {
-        this.jobId = jobId;
+    public File setExperiment(Experiment experiment) {
+        this.experiment = experiment;
+        return this;
+    }
+
+    public Job getJob() {
+        return job;
+    }
+
+    public File setJob(Job job) {
+        this.job = job;
         return this;
     }
 

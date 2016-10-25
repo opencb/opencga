@@ -225,7 +225,8 @@ public class FileMetadataReaderTest {
 
         //Add a sampleId
         long sampleId = catalogManager.createSample(study.getId(), "Bad_Sample", "Air", "", null, null, sessionIdUser).first().getId();
-        catalogManager.modifyFile(file.getId(), new ObjectMap("sampleIds", Collections.singletonList(sampleId)), sessionIdUser);
+        catalogManager.getFileManager().update(file.getId(), new ObjectMap("sampleIds", Collections.singletonList(sampleId)),
+                new QueryOptions(), sessionIdUser);
 
         file = catalogManager.getFile(file.getId(), null, sessionIdUser).first();
         assertEquals(1, file.getSampleIds().size());

@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.app.cli.main;
 
-import org.joda.time.Instant;
+import java.time.Instant;
 
 import java.time.LocalDateTime;
 
@@ -36,7 +36,7 @@ public class SessionFile {
     }
 
     public SessionFile(String userId, String sessionId) {
-        this(userId, sessionId, LocalDateTime.now().toString(), null, Instant.now().getMillis());
+        this(userId, sessionId, LocalDateTime.now().toString(), null, Instant.now().toEpochMilli());
     }
 
     public SessionFile(String userId, String sessionId, String login, String logout, long timestamp) {
