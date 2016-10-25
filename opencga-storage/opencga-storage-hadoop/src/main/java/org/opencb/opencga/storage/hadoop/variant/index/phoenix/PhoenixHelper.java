@@ -1,11 +1,13 @@
 package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.PTable;
 import org.apache.phoenix.schema.types.PArrayDataType;
 import org.apache.phoenix.schema.types.PDataType;
 import org.apache.phoenix.schema.types.PhoenixArray;
+import org.apache.phoenix.util.ColumnInfo;
 import org.apache.phoenix.util.QueryUtil;
 import org.apache.phoenix.util.SchemaUtil;
 import org.slf4j.Logger;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
  */
 public class PhoenixHelper {
 
+    public static final String DEFAULT_TABLE_TYPE = "TABLE";
     private final Configuration conf;
     protected static Logger logger = LoggerFactory.getLogger(VariantPhoenixHelper.class);
 
@@ -49,12 +52,24 @@ public class PhoenixHelper {
         }
     }
 
-    public String buildAlterViewAddColumn(String tableName, String column, String type) {
-        return buildAlterViewAddColumn(tableName, column, type, true);
+    public String buildAlterAddColumn(String tableName, String column, String type) {
+        return buildAlterAddColumn(tableName, column, type, true);
+    }
+
+    public String buildAlterAddColumn(String tableName, String column, String type, boolean ifNotExists) {
+        return buildAlterAddColumn(tableName, column, type, ifNotExists, DEFAULT_TABLE_TYPE);
+    }
+
+    public String buildAlterTableAddColumn(String tableName, String column, String type, boolean ifNotExists) {
+        return buildAlterAddColumn(tableName, column, type, ifNotExists, "TABLE");
     }
 
     public String buildAlterViewAddColumn(String tableName, String column, String type, boolean ifNotExists) {
-        return "ALTER VIEW \"" + tableName + "\" ADD " + (ifNotExists ? "IF NOT EXISTS " : "") + "\"" + column + "\" " + type;
+        return buildAlterAddColumn(tableName, column, type, ifNotExists, "View");
+    }
+
+    private String buildAlterAddColumn(String tableName, String column, String type, boolean ifNotExists, String table) {
+        return "ALTER " + table + " \"" + tableName + "\" ADD " + (ifNotExists ? "IF NOT EXISTS " : "") + "\"" + column + "\" " + type;
     }
 
     public Connection newJdbcConnection() throws SQLException, ClassNotFoundException {
@@ -72,28 +87,31 @@ public class PhoenixHelper {
         return arrayType.toBytes(phoenixArray);
     }
 
-    public void createIndexes(Connection con, String tableName, List<PhoenixHelper.Index> indices) throws SQLException {
+    public void createIndexes(Connection con, String tableName, List<PhoenixHelper.Index> indices, boolean async) throws SQLException {
         for (PhoenixHelper.Index index : indices) {
-            String sql = PhoenixHelper.createIndexSql(index.indexType, tableName, index.indexName, index.columns, index.include);
-            logger.info("Creating index: {}", sql);
+            String sql = createIndexSql(tableName, index, async);
             execute(con, sql);
         }
     }
 
     public void createLocalIndex(Connection con, String tableName, String indexName, List<String> columns, List<String> include)
             throws SQLException {
-        String sql = PhoenixHelper.createIndexSql(PTable.IndexType.LOCAL, tableName, indexName, columns, include);
+        String sql = PhoenixHelper.createIndexSql(PTable.IndexType.LOCAL, tableName, indexName, columns, include, false);
         execute(con, sql);
     }
 
     public void createGlobalIndex(Connection con, String indexName, String tableName, List<String> columns, List<String> include)
             throws SQLException {
-        String sql = PhoenixHelper.createIndexSql(PTable.IndexType.GLOBAL, tableName, indexName, columns, include);
+        String sql = PhoenixHelper.createIndexSql(PTable.IndexType.GLOBAL, tableName, indexName, columns, include, false);
         execute(con, sql);
     }
 
+    public static String createIndexSql(String tableName, Index index, boolean async) {
+        return createIndexSql(index.indexType, tableName, index.indexName, index.columns, index.include, async);
+    }
+
     public static String createIndexSql(PTable.IndexType type, String tableName, String indexName,
-                                        List<String> columns, List<String> include) {
+                                        List<String> columns, List<String> include, boolean async) {
         Objects.requireNonNull(indexName);
         Objects.requireNonNull(tableName);
         if (columns == null || columns.isEmpty()) {
@@ -127,7 +145,12 @@ public class PhoenixHelper {
             }
             sb.append(" )");
         }
-        return sb.toString();
+        if (async) {
+            sb.append(" ASYNC");
+        }
+        String sql = sb.toString();
+        logger.info("Creating index: {}", sql);
+        return sql;
     }
 
     public interface Column {
@@ -139,36 +162,64 @@ public class PhoenixHelper {
 
         String sqlType();
 
+        boolean nullable();
+
         static Column build(String column, PDataType pDataType) {
-            return new Column() {
+            return new ColumnImpl(column, pDataType, false);
+        }
 
-                private byte[] bytes = Bytes.toBytes(column);
+        static Column build(String column, PDataType pDataType, boolean nullable) {
+            return new ColumnImpl(column, pDataType, nullable);
+        }
 
-                @Override
-                public String column() {
-                    return column;
-                }
+        default ColumnInfo toColumnInfo() {
+            return new ColumnInfo(column(), getPDataType().getSqlType());
+        }
+    }
 
-                @Override
-                public byte[] bytes() {
-                    return bytes;
-                }
+    private static class ColumnImpl implements Column {
 
-                @Override
-                public PDataType getPDataType() {
-                    return pDataType;
-                }
+        private final String column;
+        private final PDataType pDataType;
+        private boolean nullable;
 
-                @Override
-                public String sqlType() {
-                    return pDataType.getSqlTypeName();
-                }
+        ColumnImpl(String column, PDataType pDataType, boolean nullable) {
+            this.bytes = Bytes.toBytes(column);
+            this.column = column;
+            this.pDataType = pDataType;
+            this.nullable = nullable;
+        }
 
-                @Override
-                public String toString() {
-                    return column;
-                }
-            };
+        private byte[] bytes;
+
+        @Override
+        public String column() {
+            return column;
+        }
+
+        @Override
+        public byte[] bytes() {
+            return bytes;
+        }
+
+        @Override
+        public PDataType getPDataType() {
+            return pDataType;
+        }
+
+        @Override
+        public String sqlType() {
+            return pDataType.getSqlTypeName();
+        }
+
+        @Override
+        public boolean nullable() {
+            return nullable;
+        }
+
+        @Override
+        public String toString() {
+            return column;
         }
     }
 
@@ -185,25 +236,25 @@ public class PhoenixHelper {
             this.include = null;
         }
 
-        public Index(String indexName, PTable.IndexType indexType, List<String> columns) {
-            this.indexName = indexName;
-            this.indexType = indexType;
-            this.columns = columns;
-            this.include = null;
+        public Index(TableName table, PTable.IndexType indexType, List<?> columns, List<?> include) {
+            this(table.getNameAsString().replaceAll("[:\\\\.]", "_").toUpperCase() + "_" + columns
+                            .stream()
+                            .map(Object::toString)
+                            .collect(Collectors.joining("_"))
+                            .replaceAll("[\"\\[\\]]", "") + "_IDX",
+                    indexType, columns, include);
         }
 
-        public Index(String indexName, PTable.IndexType indexType, List<String> columns, List<String> include) {
+        public Index(String indexName, PTable.IndexType indexType, List<?> columns, List<?> include) {
             this.indexName = indexName;
             this.indexType = indexType;
-            this.columns = columns;
-            this.include = include;
-        }
 
-//        public Index(String indexName, PTable.IndexType indexType, List<Column> columns, List<Column> include) {
-//            this.indexName = indexName;
-//            this.indexType = indexType;
-//            this.columns = columns.stream().map(Column::column).collect(Collectors.toList());
-//            this.include = include.stream().map(Column::column).collect(Collectors.toList());
-//        }
+            this.columns = columns.stream()
+                    .map(o -> o instanceof Column ? ((Column) o).column() : o.toString())
+                    .collect(Collectors.toList());
+            this.include = include.stream()
+                    .map(o -> o instanceof Column ? ((Column) o).column() : o.toString())
+                    .collect(Collectors.toList());
+        }
     }
 }

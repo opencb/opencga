@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.PTable;
 import org.apache.phoenix.schema.types.*;
@@ -30,10 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.ANNOT_FUNCTIONAL_SCORE;
@@ -55,6 +53,7 @@ public class VariantPhoenixHelper {
     public static final byte[] STATS_PROTOBUF_SUFIX_BYTES = Bytes.toBytes(STATS_PROTOBUF_SUFIX);
     public static final String MAF_SUFIX = "_MAF";
     public static final String MGF_SUFIX = "_MGF";
+    private static final String TABLE = "TABLE";
     private final PhoenixHelper phoenixHelper;
     protected static Logger logger = LoggerFactory.getLogger(VariantPhoenixHelper.class);
 
@@ -98,6 +97,7 @@ public class VariantPhoenixHelper {
         private final byte[] columnNameBytes;
         private PDataType pDataType;
         private final String sqlTypeName;
+        private final boolean nullable;
 
         private static Map<String, Column> columns = null;
 
@@ -106,6 +106,7 @@ public class VariantPhoenixHelper {
             this.pDataType = pDataType;
             this.sqlTypeName = pDataType.getSqlTypeName();
             columnNameBytes = Bytes.toBytes(columnName);
+            nullable = false;
         }
 
         @Override
@@ -129,6 +130,11 @@ public class VariantPhoenixHelper {
         }
 
         @Override
+        public boolean nullable() {
+            return nullable;
+        }
+
+        @Override
         public String toString() {
             return columnName;
         }
@@ -143,6 +149,8 @@ public class VariantPhoenixHelper {
             }
             return columns.get(columnName);
         }
+
+
     }
 
 
@@ -168,7 +176,7 @@ public class VariantPhoenixHelper {
     public void updateAnnotationFields(Connection con, String tableName) throws SQLException {
         VariantColumn[] annotColumns = new VariantColumn[]{GENES, BIOTYPE, SO, POLYPHEN, SIFT, PHYLOP, PHASTCONS, FULL_ANNOTATION};
         for (VariantColumn column : annotColumns) {
-            String sql = phoenixHelper.buildAlterViewAddColumn(tableName, column.column(), column.sqlType(), true);
+            String sql = phoenixHelper.buildAlterAddColumn(tableName, column.column(), column.sqlType(), true);
             phoenixHelper.execute(con, sql);
         }
     }
@@ -176,28 +184,32 @@ public class VariantPhoenixHelper {
     public void updateStatsFields(Connection con, String tableName, StudyConfiguration studyConfiguration) throws SQLException {
         for (Integer cohortId : studyConfiguration.getCohortIds().values()) {
             for (Column column : getStatsColumns(studyConfiguration.getStudyId(), cohortId)) {
-                String sql = phoenixHelper.buildAlterViewAddColumn(tableName, column.column(), column.sqlType(), true);
+                String sql = phoenixHelper.buildAlterAddColumn(tableName, column.column(), column.sqlType(), true);
                 phoenixHelper.execute(con, sql);
             }
         }
     }
 
     public void registerNewStudy(Connection con, String table, Integer studyId) throws SQLException {
-        phoenixHelper.execute(con, buildCreateView(table));
-        addView(con, table, studyId, PUnsignedInt.INSTANCE, VariantTableStudyRow.HOM_REF, VariantTableStudyRow.PASS_CNT,
+        phoenixHelper.execute(con, buildCreate(table));
+        addColumns(con, table, studyId, PUnsignedInt.INSTANCE, VariantTableStudyRow.HOM_REF, VariantTableStudyRow.PASS_CNT,
                 VariantTableStudyRow.CALL_CNT);
-        addView(con, table, studyId, PUnsignedIntArray.INSTANCE, VariantTableStudyRow.HET_REF, VariantTableStudyRow.HOM_VAR,
+        addColumns(con, table, studyId, PUnsignedIntArray.INSTANCE, VariantTableStudyRow.HET_REF, VariantTableStudyRow.HOM_VAR,
                 VariantTableStudyRow.OTHER, VariantTableStudyRow.NOCALL);
-        addView(con, table, studyId, PVarbinary.INSTANCE, VariantTableStudyRow.COMPLEX, VariantTableStudyRow.FILTER_OTHER);
+        addColumns(con, table, studyId, PVarbinary.INSTANCE, VariantTableStudyRow.COMPLEX, VariantTableStudyRow.FILTER_OTHER);
         con.commit();
     }
 
-    private void addView(Connection con, String table, Integer studyId, PDataType<?> dataType, String ... columns) throws SQLException {
+    private void addColumns(Connection con, String table, Integer studyId, PDataType<?> dataType, String ... columns) throws SQLException {
         for (String col : columns) {
-            String sql = phoenixHelper.buildAlterViewAddColumn(table,
+            String sql = phoenixHelper.buildAlterAddColumn(table,
                     VariantTableStudyRow.buildColumnKey(studyId, col), dataType.getSqlTypeName());
             phoenixHelper.execute(con, sql);
         }
+    }
+
+    public String buildCreate(String tableName) {
+        return buildCreate(tableName, Bytes.toString(genomeHelper.getColumnFamily()), PhoenixHelper.DEFAULT_TABLE_TYPE);
     }
 
     public String buildCreateView(String tableName) {
@@ -205,7 +217,19 @@ public class VariantPhoenixHelper {
     }
 
     public static String buildCreateView(String tableName, String columnFamily) {
-        StringBuilder sb = new StringBuilder().append("CREATE VIEW IF NOT EXISTS \"").append(tableName).append("\" ").append("(");
+        return buildCreate(tableName, columnFamily, "VIEW");
+    }
+
+    public String buildCreateTable(String tableName) {
+        return buildCreateTable(tableName, Bytes.toString(genomeHelper.getColumnFamily()));
+    }
+
+    public static String buildCreateTable(String tableName, String columnFamily) {
+        return buildCreate(tableName, columnFamily, "TABLE");
+    }
+
+    public static String buildCreate(String tableName, String columnFamily, String table) {
+        StringBuilder sb = new StringBuilder().append("CREATE " + table + " IF NOT EXISTS \"").append(tableName).append("\" ").append("(");
         for (VariantColumn variantColumn : VariantColumn.values()) {
             switch (variantColumn) {
                 case CHROMOSOME:
@@ -227,17 +251,30 @@ public class VariantPhoenixHelper {
     }
 
     public void createVariantIndexes(Connection con, String tableName) throws SQLException {
-        phoenixHelper.createIndexes(con, tableName, Arrays.asList(
-                new PhoenixHelper.Index(tableName + "_PHASTCONS_IDX", PTable.IndexType.LOCAL, PHASTCONS),
-                new PhoenixHelper.Index(tableName + "_PHYLOP_IDX", PTable.IndexType.LOCAL, PHYLOP),
-                new PhoenixHelper.Index(tableName + "_GERP_IDX", PTable.IndexType.LOCAL, GERP)
+        List<PhoenixHelper.Index> indices = buildIndices(tableName);
+        phoenixHelper.createIndexes(con, tableName, indices, false);
+    }
+
+    public static List<PhoenixHelper.Index> buildIndices(String tableName) {
+        TableName table = TableName.valueOf(tableName);
+        List<Column> defaultInclude = Arrays.asList(GENES, SO);
+        return Arrays.asList(
+                new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList(PHASTCONS), defaultInclude),
+                new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList(PHYLOP), defaultInclude),
+                new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList(GERP), defaultInclude),
+                new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList(CADD_RAW), defaultInclude),
+                new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList(CADD_SCALLED), defaultInclude)
+//                new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList("\"" + POLYPHEN + "\"[1]"), defaultInclude),
+//                new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList("\"" + SIFT + "\"[2]"), defaultInclude),
+//                new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList(TYPE), defaultInclude)
+
 //                new PhoenixHelper.Index("POLYPHEN_IDX", PTable.IndexType.LOCAL,
 //                        Arrays.asList(CHROMOSOME.column(), POSITION.column(), REFERENCE.column(), ALTERNATE.column(), POLYPHEN.column()),
 //                        Arrays.asList(TYPE.column())),
 //                new PhoenixHelper.Index("SIFT_IDX", PTable.IndexType.LOCAL,
 //                        Arrays.asList(CHROMOSOME.column(), POSITION.column(), REFERENCE.column(), ALTERNATE.column(), SIFT.column()),
 //                        Arrays.asList(TYPE.column()))
-        ));
+        );
     }
 
     public static Column getFunctionalScoreColumn(String source) {
