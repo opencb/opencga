@@ -412,23 +412,20 @@ public class VariantVcfExporter implements DataWriter<Variant> {
                     boolean filterIsMatching = gtSplit.size() == ftSplit.size();
                     String gt = gtSplit.get(0);
                     String ft = ftSplit.get(0);
-                    if (gtSplit.size() > 1) {
-//                        HashSet<String> set = new HashSet<>(gtSplit);
-                        int idx = gtSplit.indexOf("0/0");
-                        if (filterIsMatching) {
-                            ftSplit.remove(idx);
+                    while (gtSplit.size() > 1) {
+                        int idx = gtSplit.indexOf(".");
+                        if (idx < 0) {
+                            idx = gtSplit.indexOf("0/0");
+                        }
+                        if (idx < 0) {
+                            break;
                         }
                         gtSplit.remove(idx);
-                        if (gtSplit.size() > 1) {
-                            gt = ".";
-                            ft = ".";
-                        } else if (gtSplit.size() == 1) {
-                            gt = gtSplit.get(0);
-                            if (filterIsMatching) {
-                                ft = ftSplit.get(0);
-                            }
-                        }
+                        ftSplit.remove(idx);
                     }
+                    gt = gtSplit.get(0);
+                    ft = ftSplit.get(0);
+
                     org.opencb.biodata.models.feature.Genotype genotype =
                             new org.opencb.biodata.models.feature.Genotype(gt, reference, alternate);
                     List<Allele> alleles = new ArrayList<>();
