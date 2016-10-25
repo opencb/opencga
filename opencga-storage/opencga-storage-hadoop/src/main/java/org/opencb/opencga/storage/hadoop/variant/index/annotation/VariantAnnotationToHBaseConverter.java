@@ -17,7 +17,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 
 import org.apache.hadoop.hbase.client.Put;
-import org.apache.phoenix.schema.types.PArrayDataType;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.variant.converter.Converter;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -36,7 +35,8 @@ import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPho
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter implements Converter<VariantAnnotation, Put> {
+public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter
+        implements Converter<VariantAnnotation, Map<PhoenixHelper.Column, ?>> {
 
 
     private final GenomeHelper genomeHelper;
@@ -45,17 +45,16 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter 
     public VariantAnnotationToHBaseConverter(GenomeHelper genomeHelper) {
         this.genomeHelper = genomeHelper;
     }
+
     private final Logger logger = LoggerFactory.getLogger(VariantAnnotationToHBaseConverter.class);
 
     @Override
-    public Put convert(VariantAnnotation variantAnnotation) {
-        byte[] bytesRowKey = genomeHelper.generateVariantRowKey(variantAnnotation.getChromosome(), variantAnnotation.getStart(),
-                variantAnnotation.getReference(), variantAnnotation.getAlternate());
+    public Map<PhoenixHelper.Column, ?> convert(VariantAnnotation variantAnnotation) {
 
-        Put put = new Put(bytesRowKey);
+        HashMap<PhoenixHelper.Column, Object> map = new HashMap<>();
 
         if (addFullAnnotation) {
-            add(put, FULL_ANNOTATION, variantAnnotation.toString());
+            map.put(FULL_ANNOTATION, variantAnnotation.toString());
         }
 
         Set<String> genes = new HashSet<>();
@@ -127,43 +126,56 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter 
             }
         }
 
-        addVarcharArray(put, GENES.bytes(), genes);
-        addVarcharArray(put, TRANSCRIPTS.bytes(), transcripts);
-        addVarcharArray(put, BIOTYPE.bytes(), biotype);
-        addIntegerArray(put, SO.bytes(), so);
-        addArray(put, POLYPHEN.bytes(), sortProteinSubstitutionScores(polyphen), (PArrayDataType) POLYPHEN.getPDataType());
-        addArray(put, POLYPHEN_DESC.bytes(), polyphenDesc, (PArrayDataType) POLYPHEN_DESC.getPDataType());
-        addArray(put, SIFT.bytes(), sortProteinSubstitutionScores(sift), (PArrayDataType) SIFT.getPDataType());
-        addArray(put, SIFT_DESC.bytes(), siftDesc, (PArrayDataType) SIFT_DESC.getPDataType());
-        addVarcharArray(put, TRANSCRIPTION_FLAGS.bytes(), flags);
-        addVarcharArray(put, GENE_TRAITS_ID.bytes(), geneTraitId);
-        addVarcharArray(put, PROTEIN_KEYWORDS.bytes(), proteinKeywords);
-        addVarcharArray(put, GENE_TRAITS_NAME.bytes(), geneTraitName);
-        addVarcharArray(put, HPO.bytes(), hpo);
-        addVarcharArray(put, DRUG.bytes(), drugs);
-        addVarcharArray(put, XREFS.bytes(), xrefs);
+        map.put(CHROMOSOME, variantAnnotation.getChromosome());
+        map.put(POSITION, variantAnnotation.getStart());
+        map.put(REFERENCE, variantAnnotation.getReference());
+        map.put(ALTERNATE, variantAnnotation.getAlternate());
+        map.put(GENES, genes);
+        map.put(TRANSCRIPTS, transcripts);
+        map.put(BIOTYPE, biotype);
+        map.put(SO, so);
+        map.put(POLYPHEN, sortProteinSubstitutionScores(polyphen));
+        map.put(POLYPHEN_DESC, polyphenDesc);
+        map.put(SIFT, sortProteinSubstitutionScores(sift));
+        map.put(SIFT_DESC, siftDesc);
+        map.put(TRANSCRIPTION_FLAGS, flags);
+        map.put(GENE_TRAITS_ID, geneTraitId);
+        map.put(PROTEIN_KEYWORDS, proteinKeywords);
+        map.put(GENE_TRAITS_NAME, geneTraitName);
+        map.put(HPO, hpo);
+        map.put(DRUG, drugs);
+        map.put(XREFS, xrefs);
 
         if (variantAnnotation.getConservation() != null) {
             for (Score score : variantAnnotation.getConservation()) {
                 PhoenixHelper.Column column = VariantPhoenixHelper.getConservationScoreColumn(score.getSource());
-                add(put, column, score.getScore());
+                map.put(column, score.getScore());
             }
         }
 
         if (variantAnnotation.getPopulationFrequencies() != null) {
             for (PopulationFrequency pf : variantAnnotation.getPopulationFrequencies()) {
                 PhoenixHelper.Column column = VariantPhoenixHelper.getPopulationFrequencyColumn(pf.getStudy(), pf.getPopulation());
-                addArray(put, column.bytes(), Arrays.asList(pf.getRefAlleleFreq(), pf.getAltAlleleFreq()),
-                        ((PArrayDataType) column.getPDataType()));
+                map.put(column, Arrays.asList(pf.getRefAlleleFreq(), pf.getAltAlleleFreq()));
             }
         }
 
         if (variantAnnotation.getFunctionalScore() != null) {
             for (Score score : variantAnnotation.getFunctionalScore()) {
                 PhoenixHelper.Column column = VariantPhoenixHelper.getFunctionalScoreColumn(score.getSource());
-                add(put, column, score.getScore());
+                map.put(column, score.getScore());
             }
         }
+        return map;
+    }
+
+    Put buildPut(VariantAnnotation variantAnnotation, Map<PhoenixHelper.Column, ?> map) {
+
+        byte[] bytesRowKey = genomeHelper.generateVariantRowKey(variantAnnotation.getChromosome(), variantAnnotation.getStart(),
+                variantAnnotation.getReference(), variantAnnotation.getAlternate());
+        Put put = new Put(bytesRowKey);
+
+        map.forEach((column, value) -> add(put, column, value));
 
         return put;
     }

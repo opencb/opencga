@@ -23,6 +23,7 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
@@ -51,6 +52,8 @@ import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseResultSetIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.VariantAnnotationToHBaseConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.VariantAnnotationUpsertExecutor;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.stats.VariantStatsToHBaseConverter;
@@ -562,12 +565,14 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         long start = System.currentTimeMillis();
 
         VariantAnnotationToHBaseConverter converter = new VariantAnnotationToHBaseConverter(new GenomeHelper(configuration));
-        List<Put> puts = converter.apply(variantAnnotations);
+        Iterable<Map<PhoenixHelper.Column, ?>> records = converter.apply(variantAnnotations);
 
-        try (Table table = getConnection().getTable(TableName.valueOf(variantTable))) {
-            table.put(puts);
+        try (VariantAnnotationUpsertExecutor upsertExecutor = new VariantAnnotationUpsertExecutor(getJdbcConnection(),
+                SchemaUtil.getEscapedFullTableName(variantTable))) {
+            upsertExecutor.execute(records);
+            upsertExecutor.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new UncheckedIOException(e);
         }
 
         return new QueryResult("Update annotations", (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
