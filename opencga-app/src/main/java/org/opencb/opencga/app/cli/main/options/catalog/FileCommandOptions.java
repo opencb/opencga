@@ -172,6 +172,9 @@ public class FileCommandOptions {
 
         @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
         public String exclude;
+
+        @Parameter(names = {"--no-lazy"}, description = "Obtain the entire related job and experiment objects", arity = 0)
+        public boolean noLazy;
     }
 
     @Parameters(commandNames = {"download"}, commandDescription = "Download file")

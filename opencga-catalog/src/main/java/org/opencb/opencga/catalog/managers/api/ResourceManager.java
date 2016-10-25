@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.List;
 
@@ -161,5 +162,16 @@ public interface ResourceManager<I, R> {
      * @throws CatalogException CatalogException
      */
     QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException;
+
+    /**
+     * Change the status of an entry.
+     *
+     * @param id id of the entry.
+     * @param status new status that will be set.
+     * @param message message of the status.
+     * @param sessionId session id of the user ordering the action.
+     * @throws CatalogException if any error occurs (user with no permissions, invalid status, id not found).
+     */
+    void setStatus(String id, @Nullable String status, @Nullable String message, String sessionId) throws CatalogException;
 
 }

@@ -177,7 +177,6 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         String password = usersCommandOptions.loginCommandOptions.password;
 
         if (StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(password)) {
-            //  "hgva", "hgva_cafeina", clientConfiguration
             String session = openCGAClient.login(user, password);
             saveSessionFile(user, session);
             System.out.println("You have been logged correctly. This is your new session id " + session + ".");

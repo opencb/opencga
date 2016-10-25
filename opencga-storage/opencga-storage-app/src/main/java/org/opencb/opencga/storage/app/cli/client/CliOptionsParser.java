@@ -495,7 +495,7 @@ public class CliOptionsParser extends OptionsParser {
         public String species = "hsapiens";
 
         @Parameter(names = {"--assembly"}, description = "Assembly. Default GRc37", required = false, arity = 1)
-        public String assembly = "GRc37";
+        public String assembly = "GRCh37";
 
         @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
         public List<String> filterRegion;

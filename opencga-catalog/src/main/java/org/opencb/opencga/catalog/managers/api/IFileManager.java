@@ -316,4 +316,10 @@ public interface IFileManager extends ResourceManager<Long, File> {
      * @throws CatalogException when the files or folders are not in catalog or the study does not match between them.
      * */
     QueryResult index(String fileIdStr, String type, Map<String, String> params, String sessionId) throws CatalogException;
+
+    void setFileIndex(long fileId, FileIndex index, String sessionId) throws CatalogException;
+
+    void setDiskUsage(long fileId, long diskUsage, String sessionId) throws CatalogException;
+
+    void setModificationDate(long fileId, String date, String sessionId) throws CatalogException;
 }

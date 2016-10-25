@@ -409,18 +409,21 @@ public class VariantStorage extends AbstractFileIndexer {
     public Aggregation getAggregation(long studyId, QueryOptions options, String sessionId) throws CatalogException {
         Study study = catalogManager.getStudy(studyId, new QueryOptions("include", "projects.studies.attributes"), sessionId).first();
         Aggregation argsAggregation = options.get(Options.AGGREGATED_TYPE.key(), Aggregation.class, Aggregation.NONE);
-        String studyAggregationStr = study.getAttributes().getOrDefault(Options.AGGREGATED_TYPE.key(), Aggregation.NONE).toString();
-        Aggregation studyAggregation = Aggregation.valueOf(studyAggregationStr);
+        Object studyAggregationObj = study.getAttributes().get(Options.AGGREGATED_TYPE.key());
+        Aggregation studyAggregation = null;
+        if (studyAggregationObj != null) {
+            studyAggregation = Aggregation.valueOf(studyAggregationObj.toString());
+        }
 
         final Aggregation aggregation;
         if (Aggregation.isAggregated(argsAggregation)) {
-            if (!studyAggregation.equals(argsAggregation)) {
+            if (studyAggregation != null && !studyAggregation.equals(argsAggregation)) {
                 // FIXME: Throw an exception?
                 logger.warn("Calculating statistics with aggregation " + argsAggregation + " instead of " + studyAggregation);
             }
             aggregation = argsAggregation;
             // If studyAggregation is not define, update study aggregation
-            if (!study.getAttributes().containsKey(Options.AGGREGATED_TYPE.key())) {
+            if (studyAggregation == null) {
                 //update study aggregation
                 Map<String, Aggregation> attributes = Collections.singletonMap(Options.AGGREGATED_TYPE.key(), argsAggregation);
                 ObjectMap parameters = new ObjectMap("attributes", attributes);

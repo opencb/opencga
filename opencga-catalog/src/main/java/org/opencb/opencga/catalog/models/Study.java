@@ -67,6 +67,7 @@ public class Study extends AbstractAcl<StudyAclEntry> {
 
 
     public Study() {
+        this(null, null, null, null, new Status(), null);
     }
 
     public Study(String name, String alias, Type type, String description, Status status, URI uri) {

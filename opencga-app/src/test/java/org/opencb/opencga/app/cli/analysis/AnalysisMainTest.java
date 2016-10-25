@@ -117,7 +117,7 @@ public class AnalysisMainTest {
         execute(new String[]{"variant", "annotate", "--session-id", sessionId, "--study-id", String.valueOf(studyId), "--output-filename", "myAnnot", "-o", String.valueOf(outdirId)});
         File outputFile = catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.NAME.key(), "~myAnnot"), null, sessionId).first();
         assertNotNull(outputFile);
-        job = catalogManager.getJob(outputFile.getJobId(), null, sessionId).first();
+        job = catalogManager.getJob(outputFile.getJob().getId(), null, sessionId).first();
         assertEquals(Job.JobStatus.READY, job.getStatus().getName());
         assertEquals(outdirId, job.getOutDirId());
 

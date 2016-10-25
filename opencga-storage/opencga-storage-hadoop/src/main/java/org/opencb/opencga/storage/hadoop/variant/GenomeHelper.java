@@ -23,6 +23,8 @@ import com.google.protobuf.MessageLite;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -32,6 +34,7 @@ import org.apache.phoenix.schema.types.PVarchar;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +42,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
+import java.util.stream.Collectors;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk.
@@ -57,8 +61,8 @@ public class GenomeHelper implements AutoCloseable {
     public static final String DEFAULT_ROWKEY_SEPARATOR = "_";
     public static final String DEFAULT_COLUMN_FAMILY = "0"; // MUST BE UPPER CASE!!!
 
-    public static final String VARIANT_COLUMN = "_V";
-    public static final byte[] VARIANT_COLUMN_B = Bytes.toBytes(VARIANT_COLUMN);
+    public static final String VARIANT_COLUMN_PREFIX = "_V";
+    public static final byte[] VARIANT_COLUMN_B_PREFIX = Bytes.toBytes(VARIANT_COLUMN_PREFIX);
 
     private final AtomicInteger chunkSize = new AtomicInteger(ArchiveDriver.DEFAULT_CHUNK_SIZE);
     private final char separator;
@@ -400,5 +404,14 @@ public class GenomeHelper implements AutoCloseable {
     @Override
     public void close() throws IOException {
         this.hBaseManager.close();
+    }
+
+    public static List<Cell> getVariantColumns(Cell[] cells) {
+        return Arrays.stream(cells).filter(c -> Bytes.startsWith(CellUtil.cloneQualifier(c), VARIANT_COLUMN_B_PREFIX))
+                .collect(Collectors.toList());
+    }
+
+    public static String getVariantcolumn(VariantTableStudyRow row) {
+        return VARIANT_COLUMN_PREFIX + "_" + row.getPos() + "_" + row.getRef() + "_" + row.getAlt();
     }
 }

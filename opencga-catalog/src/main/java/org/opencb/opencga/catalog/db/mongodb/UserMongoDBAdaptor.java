@@ -547,7 +547,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
         final String[] acceptedLongParams = {QueryParams.DISK_QUOTA.key(), QueryParams.DISK_USAGE.key()};
         filterLongParams(parameters, userParameters, acceptedLongParams);
 
-        final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), "configs"};
+        final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, userParameters, acceptedMapParams);
 
         if (!userParameters.isEmpty()) {

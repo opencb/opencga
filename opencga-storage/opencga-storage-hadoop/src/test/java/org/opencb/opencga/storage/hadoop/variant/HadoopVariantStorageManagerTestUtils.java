@@ -106,7 +106,8 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
 
             String tableName = "table";
             byte[] columnFamily = Bytes.toBytes("0");
-            hBaseManager.createTableIfNeeded(tableName, columnFamily, Compression.Algorithm.NONE);
+            hBaseManager.createTableIfNeeded(hBaseManager.getConnection(), tableName, columnFamily,
+                    Collections.emptyList(), Compression.Algorithm.NONE);
             hBaseManager.act(tableName, table -> {
                 table.put(Arrays.asList(new Put(Bytes.toBytes("r1")).addColumn(columnFamily, Bytes.toBytes("c"), Bytes.toBytes("value 1")),
                         new Put(Bytes.toBytes("r2")).addColumn(columnFamily, Bytes.toBytes("c"), Bytes.toBytes("value 2")),

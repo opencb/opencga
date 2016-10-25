@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -329,7 +330,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             parameters.remove("alias");
         }
         for (String s : parameters.keySet()) {
-            if (!s.matches("name|type|description|status|attributes|stats")) {
+            if (!s.matches("name|type|description|attributes|stats")) {
                 throw new CatalogDBException("Parameter '" + s + "' can't be changed");
             }
         }
@@ -379,6 +380,11 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     @Override
     public List<QueryResult<Study>> restore(Query query, QueryOptions options, String sessionId) throws CatalogException {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
+        throw new NotImplementedException("Project: Operation not yet supported");
     }
 
     @Override

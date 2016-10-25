@@ -114,6 +114,7 @@ public class CellBaseConfiguration {
         }
         rest.setHosts(hosts);
         clientConfiguration.setRest(rest);
+
         return clientConfiguration;
     }
 }

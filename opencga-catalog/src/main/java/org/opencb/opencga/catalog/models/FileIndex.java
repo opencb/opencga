@@ -39,7 +39,7 @@ public class FileIndex {
 
 
     public FileIndex() {
-        this(null, null, null, -1, Collections.emptyMap());
+        this(null, null, new IndexStatus(), -1, Collections.emptyMap());
     }
 
     public FileIndex(String userId, String creationDate, IndexStatus status, long jobId, Map<String, Object> attributes) {

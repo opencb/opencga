@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -245,11 +246,14 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
                     System.out.println(variant.toJson());
                 }
 
-                Cell cell = result.getColumnLatestCell(archiveHelper.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
-                if (cell != null) {
-                    value = result.getValue(archiveHelper.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
-                    VariantTableStudyRowsProto proto = VariantTableStudyRowsProto.parseFrom(value);
-                    System.out.println(GenomeHelper.VARIANT_COLUMN + " ts:" + cell.getTimestamp() + " value: " + proto);
+                List<Cell> cells = GenomeHelper.getVariantColumns(result.rawCells());
+                if (!cells.isEmpty()) {
+                    for (Cell cell : cells) {
+                        value = CellUtil.cloneValue(cell);
+                        VariantTableStudyRowsProto proto = VariantTableStudyRowsProto.parseFrom(value);
+                        String column = Bytes.toString(CellUtil.cloneQualifier(cell));
+                        System.out.println(column + " ts:" + proto.getTimestamp() + " value: " + proto);
+                    }
                 }
             }
             resultScanner.close();

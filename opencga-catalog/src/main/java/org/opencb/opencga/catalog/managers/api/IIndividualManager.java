@@ -68,7 +68,11 @@ public interface IIndividualManager extends ResourceManager<Long, Individual>, I
     Long getId(String individualId) throws CatalogException;
 
     QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId, Individual.Sex sex,
-                                   QueryOptions options, String sessionId) throws CatalogException;
+                                   String ethnicity, String speciesCommonName, String speciesScientificName, String speciesTaxonomyCode,
+                                   String populationName, String populationSubpopulation, String populationDescription,
+                                   Individual.KaryotypicSex karyotypicSex, Individual.LifeStatus lifeStatus,
+                                   Individual.AffectationStatus affectationStatus, QueryOptions options, String sessionId)
+            throws CatalogException;
 
     QueryResult<Individual> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
 

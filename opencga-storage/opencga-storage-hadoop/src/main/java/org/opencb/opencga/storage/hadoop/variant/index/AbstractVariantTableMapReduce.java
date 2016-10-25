@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Abstract variant table map reduce.
@@ -143,18 +144,23 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
         lastTime = time;
     }
 
+    /**
+     * Extracts file Ids from column names - ignoring _V columns.
+     * @param value
+     * @return Set of file IDs
+     */
     private Set<Integer> extractFileIds(Result value) {
-        NavigableMap<byte[], byte[]> map = value.getNoVersionMap().get(getHelper().getColumnFamily());
-        Set<Integer> fileIds = map.keySet().stream().map(k -> Bytes.toString(k))
-                .filter(s -> !StringUtils.equals(GenomeHelper.VARIANT_COLUMN, s))
-                .map(s -> Integer.parseInt(s)).collect(Collectors.toSet());
-        return fileIds;
+        return Arrays.stream(value.rawCells())
+                .filter(c -> Bytes.equals(CellUtil.cloneFamily(c), getHelper().getColumnFamily()))
+                .filter(c -> !Bytes.startsWith(CellUtil.cloneQualifier(c), GenomeHelper.VARIANT_COLUMN_B_PREFIX))
+                .map(c -> Integer.parseInt(Bytes.toString(CellUtil.cloneQualifier(c))))
+                .collect(Collectors.toSet());
     }
 
-    protected List<Variant> parseCurrentVariantsRegion(Result value, String chromosome)
+    protected List<Variant> parseCurrentVariantsRegion(List<Cell> variantCells, String chromosome)
             throws InvalidProtocolBufferException {
 
-        List<VariantTableStudyRow> tableStudyRows = parseVariantStudyRowsFromArchive(value, chromosome);
+        List<VariantTableStudyRow> tableStudyRows = parseVariantStudyRowsFromArchive(variantCells, chromosome);
 
         HBaseToVariantConverter converter = getHbaseToVariantConverter();
 
@@ -166,18 +172,22 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
 
     }
 
-    protected List<VariantTableStudyRow> parseVariantStudyRowsFromArchive(Result value, String chr) throws InvalidProtocolBufferException {
-        Cell latestCell = value.getColumnLatestCell(getHelper().getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
-        if (null != latestCell) {
-            byte[] protoData = CellUtil.cloneValue(latestCell);
-            if (protoData != null && protoData.length > 0) {
-                VariantTableStudyRowsProto variantTableStudyRowsProto = VariantTableStudyRowsProto.parseFrom(protoData);
-                List<VariantTableStudyRow> tableStudyRows = parseVariantStudyRowsFromArchive(chr,
-                        variantTableStudyRowsProto);
-                return tableStudyRows;
+    protected List<VariantTableStudyRow> parseVariantStudyRowsFromArchive(List<Cell> variantCells, String chr)
+            throws InvalidProtocolBufferException {
+        return variantCells.stream().flatMap(c -> {
+            try {
+                byte[] protoData = CellUtil.cloneValue(c);
+                if (protoData != null && protoData.length > 0) {
+                    VariantTableStudyRowsProto proto = null;
+                        proto = VariantTableStudyRowsProto.parseFrom(protoData);
+                    List<VariantTableStudyRow> tableStudyRows = parseVariantStudyRowsFromArchive(chr, proto);
+                    return tableStudyRows.stream();
+                }
+                return Stream.empty();
+            } catch (InvalidProtocolBufferException e) {
+                throw new IllegalStateException(e);
             }
-        }
-        return Collections.emptyList();
+        }).collect(Collectors.toList());
     }
 
     protected List<VariantTableStudyRow> parseVariantStudyRowsFromArchive(String chr, VariantTableStudyRowsProto
@@ -222,7 +232,6 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
 
         for (VariantTableStudyRow variant : variants) {
             Put put = variant.createPut(getHelper());
-
             if (put != null) {
                 context.write(new ImmutableBytesWritable(getHelper().getOutputTable()), put);
                 context.getCounter(COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(1);
@@ -232,9 +241,17 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
 
     protected void updateArchiveTable(byte[] rowKey, Context context, List<VariantTableStudyRow> tableStudyRows)
             throws IOException, InterruptedException {
+        if (tableStudyRows.isEmpty()) {
+            getLog().info("No new data - tableStudyRows emtpy");
+            return;
+        }
+        getLog().info("Store variants: " + tableStudyRows.size());
         Put put = new Put(rowKey);
-        byte[] value = VariantTableStudyRow.toProto(tableStudyRows, timestamp).toByteArray();
-        put.addColumn(getHelper().getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B, value);
+        for (VariantTableStudyRow row : tableStudyRows) {
+            byte[] value = VariantTableStudyRow.toProto(Collections.singletonList(row), timestamp).toByteArray();
+            String column = GenomeHelper.getVariantcolumn(row);
+            put.addColumn(getHelper().getColumnFamily(), Bytes.toBytes(column), value);
+        }
         context.write(new ImmutableBytesWritable(getHelper().getIntputTable()), put);
         context.getCounter(COUNTER_GROUP_NAME, "ARCHIVE_TABLE_ROW_PUT").increment(1);
         context.getCounter(COUNTER_GROUP_NAME, "ARCHIVE_TABLE_ROWS_IN_PUT").increment(tableStudyRows.size());

@@ -20,6 +20,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index;
 
 import com.google.common.collect.BiMap;
+import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Mutation;
@@ -61,8 +62,8 @@ public class VariantTableDeletionMapReduce extends AbstractVariantTableMapReduce
         List<Variant> updateLst = new ArrayList<>();
         List<Variant> removeLst = new ArrayList<>();
         BiMap<Integer, String> sampleIds = getStudyConfiguration().getSampleIds().inverse();
-
-        List<Variant> analysisVar = parseCurrentVariantsRegion(ctx.getValue(), ctx.getChromosome());
+        List<Cell> cells = GenomeHelper.getVariantColumns(ctx.getValue().rawCells());
+        List<Variant> analysisVar = parseCurrentVariantsRegion(cells, ctx.getChromosome());
         ctx.getContext().getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ANALYSIS").increment(analysisVar.size());
         getLog().info("Loaded {} variants ... ", analysisVar.size());
         if (!analysisVar.isEmpty()) {
@@ -72,7 +73,7 @@ public class VariantTableDeletionMapReduce extends AbstractVariantTableMapReduce
             }
         }
 
-        endTime("2 Unpack and convert input ANALYSIS variants (" + GenomeHelper.VARIANT_COLUMN + ")");
+        endTime("2 Unpack and convert input ANALYSIS variants (" + GenomeHelper.VARIANT_COLUMN_PREFIX + ")");
 
 
         for (Variant var : analysisVar) {

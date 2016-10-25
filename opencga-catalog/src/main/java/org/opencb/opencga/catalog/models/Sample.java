@@ -29,51 +29,34 @@ public class Sample extends Annotable<SampleAclEntry> {
     private long id;
     private String name;
     private String source;
-    private long individualId;
+    private Individual individual;
+
     private String creationDate;
     private Status status;
     private String description;
     private List<OntologyTerm> ontologyTerms;
 
-//    private List<SampleAclEntry> acl;
-//    private List<AnnotationSet> annotationSets;
-
     private Map<String, Object> attributes;
 
 
     public Sample() {
+        this(-1, null, null, new Individual(), null);
     }
 
-    public Sample(long id, String name, String source, long individualId, String description) {
-        this(id, name, source, individualId, description, Collections.emptyList(), new LinkedList<>(), new HashMap<>());
+    public Sample(long id, String name, String source, Individual individual, String description) {
+        this(id, name, source, individual, description, Collections.emptyList(), new LinkedList<>(), new HashMap<>());
     }
 
-    public Sample(long id, String name, String source, long individualId, String description, List<SampleAclEntry> acl,
+    public Sample(long id, String name, String source, Individual individual, String description, List<SampleAclEntry> acl,
                   List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.source = source;
-        this.individualId = individualId;
+        this.individual = individual;
         this.creationDate = TimeUtils.getTime();
         this.status = new Status();
         this.description = description;
         this.ontologyTerms = Collections.emptyList();
-        this.acl = acl;
-        this.annotationSets = annotationSets;
-        this.attributes = attributes;
-    }
-
-    public Sample(long id, String name, String source, long individualId, String creationDate, Status status, String description,
-                  List<OntologyTerm> ontologyTerms, List<SampleAclEntry> acl, List<AnnotationSet> annotationSets,
-                  Map<String, Object> attributes) {
-        this.id = id;
-        this.name = name;
-        this.source = source;
-        this.individualId = individualId;
-        this.creationDate = creationDate;
-        this.status = status;
-        this.description = description;
-        this.ontologyTerms = ontologyTerms;
         this.acl = acl;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
@@ -85,13 +68,11 @@ public class Sample extends Annotable<SampleAclEntry> {
         sb.append("id=").append(id);
         sb.append(", name='").append(name).append('\'');
         sb.append(", source='").append(source).append('\'');
-        sb.append(", individualId=").append(individualId);
+        sb.append(", individual=").append(individual);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", description='").append(description).append('\'');
         sb.append(", ontologyTerms=").append(ontologyTerms);
-        sb.append(", acl=").append(acl);
-        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -124,12 +105,12 @@ public class Sample extends Annotable<SampleAclEntry> {
         return this;
     }
 
-    public long getIndividualId() {
-        return individualId;
+    public Individual getIndividual() {
+        return individual;
     }
 
-    public Sample setIndividualId(long individualId) {
-        this.individualId = individualId;
+    public Sample setIndividual(Individual individual) {
+        this.individual = individual;
         return this;
     }
 
@@ -173,15 +154,6 @@ public class Sample extends Annotable<SampleAclEntry> {
         this.acl = acl;
         return this;
     }
-
-//    public List<AnnotationSet> getAnnotationSets() {
-//        return annotationSets;
-//    }
-//
-//    public Sample setAnnotationSets(List<AnnotationSet> annotationSets) {
-//        this.annotationSets = annotationSets;
-//        return this;
-//    }
 
     public Map<String, Object> getAttributes() {
         return attributes;

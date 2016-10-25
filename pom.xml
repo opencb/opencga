@@ -39,7 +39,7 @@
         <opencga.version>0.9.0-dev</opencga.version>
         <java.version>1.8</java.version>
         <biodata.version>0.9.0-SNAPSHOT</biodata.version>
-        <cellbase.version>4.5.0-beta</cellbase.version>
+        <cellbase.version>4.5.0-rc</cellbase.version>
         <java-common-libs.version>3.4.0-SNAPSHOT</java-common-libs.version>
         <hpg-bigdata.version>1.0.0-alpha</hpg-bigdata.version>
         <jackson.version>2.6.6</jackson.version>
@@ -47,7 +47,8 @@
         <hadoop.version>2.7.1</hadoop.version>
         <hbase.version>1.1.2</hbase.version>
         <!--<hbase.version>1.0.0</hbase.version>&lt;!&ndash; -cdh5.7.0 &ndash;&gt;-->
-        <phoenix.version>4.7.0-HBase-1.1</phoenix.version>
+        <!--<phoenix.version>4.7.0-HBase-1.1</phoenix.version>-->
+        <phoenix.version>4.7.0.2.5.0.0-1245</phoenix.version>
         <avro.version>1.7.7</avro.version>
         <google.protobuf>3.0.0-beta-1</google.protobuf> <!--DO NOT UPGRADE! HBase may not work with a higher version-->
         <google.grpc>0.13.2</google.grpc>
@@ -136,6 +137,10 @@
     </mailingLists>
 
     <repositories>
+        <repository>
+            <id>hortonworks</id>
+            <url>http://repo.hortonworks.com/content/repositories/releases/</url>
+        </repository>
         <repository>
             <id>cloudera</id>
             <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
@@ -269,6 +274,18 @@
                         <groupId>org.opencb.biodata</groupId>
                         <artifactId>biodata-formats</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-simple</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <!-- cellbase-lib dependency required to enable direct annotation against the database using the adaptors -->
+            <dependency>
+                <groupId>org.opencb.cellbase</groupId>
+                <artifactId>cellbase-lib</artifactId>
+                <version>${cellbase.version}</version>
+                <exclusions>
                     <exclusion>
                         <groupId>org.slf4j</groupId>
                         <artifactId>slf4j-simple</artifactId>
@@ -518,8 +535,14 @@
                 <OPENCGA.SERVER.REST.PORT>9090</OPENCGA.SERVER.REST.PORT>
                 <OPENCGA.SERVER.GRPC.PORT>9091</OPENCGA.SERVER.GRPC.PORT>
 
-                <OPENCGA.CELLBASE.HOST>http://bioinfodev.hpc.cam.ac.uk/cellbase-4.1.0-beta/webservices/rest/</OPENCGA.CELLBASE.HOST>
                 <OPENCGA.CELLBASE.VERSION>v4</OPENCGA.CELLBASE.VERSION>
+                <OPENCGA.CELLBASE.REST.HOST>http://bioinfodev.hpc.cam.ac.uk/cellbase-4.5.0-beta1.1/</OPENCGA.CELLBASE.REST.HOST>
+                <OPENCGA.CELLBASE.DB.HOST>localhost:27017</OPENCGA.CELLBASE.DB.HOST>
+                <OPENCGA.CELLBASE.DB.USER></OPENCGA.CELLBASE.DB.USER>
+                <OPENCGA.CELLBASE.DB.PASSWORD></OPENCGA.CELLBASE.DB.PASSWORD>
+                <OPENCGA.CELLBASE.DB.AUTHENTICATION_DATABASE></OPENCGA.CELLBASE.DB.AUTHENTICATION_DATABASE>
+                <OPENCGA.CELLBASE.DB.READ_PREFERENCE>secondaryPreferred</OPENCGA.CELLBASE.DB.READ_PREFERENCE>
+
                 <OPENCGA.STORAGE.ENGINE.DEFAULT>mongodb</OPENCGA.STORAGE.ENGINE.DEFAULT>
             </properties>
         </profile>
