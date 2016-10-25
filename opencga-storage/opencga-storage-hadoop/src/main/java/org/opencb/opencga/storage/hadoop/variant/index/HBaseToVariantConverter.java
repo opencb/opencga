@@ -268,8 +268,9 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
             // Check pass count
             if (passCount != row.getPassCount()) {
-                String message = String.format("Error parsing variant %s. Pass count %s does not match filter fill count: %s",
-                        row.toString(), row.getPassCount(), passCount);
+                String message = String.format(
+                        "Error parsing variant %s. Pass count %s does not match filter fill count: %s using %s loaded samples.",
+                        row.toString(), row.getPassCount(), passCount, loadedSamples.size());
                 wrongVariant(message);
             }
 

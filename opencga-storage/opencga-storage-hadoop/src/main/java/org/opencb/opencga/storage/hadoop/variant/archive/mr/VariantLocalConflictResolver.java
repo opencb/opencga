@@ -654,6 +654,10 @@ public class VariantLocalConflictResolver {
             if (c != 0) {
                 return c;
             }
+            c = o1.getType().compareTo(o2.getType());
+            if (c != 0) {
+                return c;
+            }
             return Integer.compare(o1.hashCode(), o2.hashCode());
         }
     }
@@ -769,7 +773,13 @@ public class VariantLocalConflictResolver {
                 return false;
             }
             AlternateWrapper that = (AlternateWrapper) o;
-            return variant != null ? variant.toString().equals(that.variant.toString()) : that.variant == null;
+            if (variant == null) {
+                if (that.variant == null) {
+                    return true;
+                }
+                return false;
+            }
+            return variantPositionRefAltComparator.compare(variant, that.variant) == 0;
         }
 
         @Override

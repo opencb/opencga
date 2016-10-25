@@ -248,6 +248,17 @@ public class VariantLocalConflictResolverTest {
         assertEquals(1,resolved.size());
     }
 
+
+    @Test
+    public void resolve_DEL_REF() throws Exception {
+        Variant a = addGT(addAttribute(getVariantFilter("1:997:AT:-", "PASS"),QUAL,"390"), "0/1");
+        Variant b = addGT(addAttribute(getVariantFilter("1:997:AT:-", "PASS"),QUAL,"390"), "0/0");
+        b.setEnd(1010);
+        b.setType(NO_VARIATION);
+        Collection<Variant> resolved = new VariantLocalConflictResolver().resolveConflicts(Arrays.asList(a, b));
+        assertEquals(2, resolved.size());
+    }
+
     @Test
     public void resolve_INS_SNP_SEC_ALT() throws Exception {
         Variant a = addGT(addAttribute(getVariantFilter("1:100:-:GGTTG", "PASS"),QUAL,"390"), "1/2");
@@ -411,6 +422,7 @@ public class VariantLocalConflictResolverTest {
         conflictOverlap("1:1000::AT", "1:1000:ATA:-", false);
     }
 
+
     @Test
     public void hasConflictOverlap_INS_INS() throws Exception {
         conflictOverlap("1:1000::AT", "1:999::AT", false);
@@ -482,8 +494,10 @@ public class VariantLocalConflictResolverTest {
     }
     public static Variant addGT(Variant var, String gt){
         StudyEntry se = var.getStudy("1");
+        se.addFormat("GT");
+        se.getFormatPositions();
         se.setSamplesPosition(Collections.singletonMap("1",0));
-        se.setFormat(Collections.singletonList("GT"));
+//        se.setFormat(Collections.singletonList("GT"));
         se.setSamplesData(Collections.singletonList(Collections.singletonList(gt)));
         return var;
     }
