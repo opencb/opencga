@@ -442,7 +442,10 @@ public class VariantLocalConflictResolver {
     }
 
     public static Variant asVariant(Variant v) {
-        return new Variant(v.getChromosome(), v.getStart(), v.getEnd(), v.getReference(), v.getAlternate());
+        Variant variant =
+                new Variant(v.getChromosome(), v.getStart(), v.getEnd(), v.getReference(), v.getAlternate(), v.getStrand());
+        variant.setType(v.getType());
+        return variant;
     }
 
     public static Variant asVariant(Variant a, AlternateCoordinate altA) {
@@ -451,8 +454,10 @@ public class VariantLocalConflictResolver {
         Integer end  = ObjectUtils.firstNonNull(altA.getEnd(), a.getEnd());
         String ref  = ObjectUtils.firstNonNull(altA.getReference(), a.getReference());
         String alt  = ObjectUtils.firstNonNull(altA.getAlternate(), a.getAlternate());
+        VariantType type = ObjectUtils.firstNonNull(altA.getType(), a.getType());
         try {
             Variant variant = new Variant(chr, start, end, ref, alt);
+            variant.setType(type);
             return variant;
         } catch (IllegalArgumentException e) {
             String msg = altA + "\n" + a.toJson() + "\n";
@@ -673,6 +678,7 @@ public class VariantLocalConflictResolver {
 
         Variant v = new Variant(var.getChromosome(), var.getStart(), var.getEnd(), var.getReference(), var
                 .getAlternate());
+        v.setType(var.getType());
         v.setIds(var.getIds());
         v.setStrand(var.getStrand());
         v.setAnnotation(var.getAnnotation());
