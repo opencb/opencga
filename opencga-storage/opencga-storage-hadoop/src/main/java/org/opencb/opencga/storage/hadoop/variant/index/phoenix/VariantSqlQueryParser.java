@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.phoenix.parse.HintNode;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
@@ -90,6 +91,11 @@ public class VariantSqlQueryParser {
             Set<Column> dynamicColumns = new HashSet<>();
             List<String> regionFilters = getRegionFilters(query);
             List<String> filters = getOtherFilters(query, options, dynamicColumns);
+
+            if (filters.isEmpty()) {
+                // Only region filters. Hint no index usage
+                sb.append("/*+ ").append(HintNode.Hint.NO_INDEX.toString()).append(" */ ");
+            }
 
             appendProjectedColumns(sb, query, options);
             appendFromStatement(sb, dynamicColumns);
