@@ -43,6 +43,16 @@
         <dependency>
             <groupId>org.opencb.cellbase</groupId>
             <artifactId>cellbase-lib</artifactId>
+            <exclusions>
+                <exclusion>
+                    <artifactId>saxon</artifactId>
+                    <groupId>net.sf.saxon</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>saxon-xom</artifactId>
+                    <groupId>net.sf.saxon</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.opencb.hpg-bigdata</groupId>
