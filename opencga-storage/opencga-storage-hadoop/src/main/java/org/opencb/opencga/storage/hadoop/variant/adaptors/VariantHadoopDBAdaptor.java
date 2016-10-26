@@ -51,6 +51,7 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseResultSetIterator;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.VariantAnnotationDataLoader;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.VariantAnnotationToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.VariantAnnotationUpsertExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
@@ -534,6 +535,16 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
+    public VariantAnnotationDataLoader annotationLoader(QueryOptions options) {
+        try {
+            return new VariantAnnotationDataLoader(phoenixHelper.newJdbcConnection(this.configuration), variantTable, genomeHelper);
+        } catch (SQLException | ClassNotFoundException e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
     /**
      * Ensure that all the annotation fields exist are defined.
      */
@@ -567,12 +578,13 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         VariantAnnotationToHBaseConverter converter = new VariantAnnotationToHBaseConverter(new GenomeHelper(configuration));
         Iterable<Map<PhoenixHelper.Column, ?>> records = converter.apply(variantAnnotations);
 
-        try (VariantAnnotationUpsertExecutor upsertExecutor = new VariantAnnotationUpsertExecutor(getJdbcConnection(),
-                SchemaUtil.getEscapedFullTableName(variantTable))) {
+        try (java.sql.Connection conn = phoenixHelper.newJdbcConnection(this.configuration);
+             VariantAnnotationUpsertExecutor upsertExecutor =
+                     new VariantAnnotationUpsertExecutor(conn, SchemaUtil.getEscapedFullTableName(variantTable))) {
             upsertExecutor.execute(records);
             upsertExecutor.close();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
+        } catch (SQLException | ClassNotFoundException | IOException e) {
+            throw new RuntimeException(e);
         }
 
         return new QueryResult("Update annotations", (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
