@@ -21,6 +21,7 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.PTable;
 import org.apache.phoenix.schema.types.*;
+import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -191,7 +192,9 @@ public class VariantPhoenixHelper {
     }
 
     public void registerNewStudy(Connection con, String table, Integer studyId) throws SQLException {
-        phoenixHelper.execute(con, buildCreate(table));
+        String sql = buildCreate(table);
+        logger.info(sql);
+        phoenixHelper.execute(con, sql);
         addColumns(con, table, studyId, PUnsignedInt.INSTANCE, VariantTableStudyRow.HOM_REF, VariantTableStudyRow.PASS_CNT,
                 VariantTableStudyRow.CALL_CNT);
         addColumns(con, table, studyId, PUnsignedIntArray.INSTANCE, VariantTableStudyRow.HET_REF, VariantTableStudyRow.HOM_VAR,
@@ -229,7 +232,8 @@ public class VariantPhoenixHelper {
     }
 
     public static String buildCreate(String tableName, String columnFamily, String table) {
-        StringBuilder sb = new StringBuilder().append("CREATE " + table + " IF NOT EXISTS \"").append(tableName).append("\" ").append("(");
+        StringBuilder sb = new StringBuilder().append("CREATE " + table + " IF NOT EXISTS ")
+                .append(SchemaUtil.getEscapedFullTableName(tableName)).append(" ").append("(");
         for (VariantColumn variantColumn : VariantColumn.values()) {
             switch (variantColumn) {
                 case CHROMOSOME:

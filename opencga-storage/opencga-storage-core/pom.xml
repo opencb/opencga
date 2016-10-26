@@ -43,6 +43,12 @@
         <dependency>
             <groupId>org.opencb.cellbase</groupId>
             <artifactId>cellbase-lib</artifactId>
+            <exclusions>
+                <exclusion>
+                    <artifactId>bionetdb-core</artifactId>
+                    <groupId>org.opencb.bionetdb</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.opencb.hpg-bigdata</groupId>

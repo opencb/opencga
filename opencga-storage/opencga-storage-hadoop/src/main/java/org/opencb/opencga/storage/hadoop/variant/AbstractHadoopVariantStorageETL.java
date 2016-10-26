@@ -352,6 +352,15 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
 
     protected void preMerge(URI input) throws StorageManagerException {
         int studyId = getStudyId();
+
+        VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
+        try {
+            phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), variantsTableCredentials.getTable(), studyId);
+            phoenixHelper.createVariantIndexes(dbAdaptor.getJdbcConnection(), variantsTableCredentials.getTable());
+        } catch (SQLException e) {
+            throw new StorageManagerException("Unable to register study in Phoenix", e);
+        }
+
         long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
 
         //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
@@ -643,14 +652,6 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
 
 //            HadoopCredentials dbCredentials = getDbCredentials();
 //            VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor(dbCredentials);
-            int studyId = getStudyId();
-
-            VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
-            try {
-                phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), variantsTableCredentials.getTable(), studyId);
-            } catch (SQLException e) {
-                throw new StorageManagerException("Unable to register study in Phoenix", e);
-            }
 
             options.put(VariantStorageManager.Options.FILE_ID.key(), options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES));
 
