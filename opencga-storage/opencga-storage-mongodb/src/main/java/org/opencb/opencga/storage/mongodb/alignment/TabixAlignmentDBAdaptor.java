@@ -31,6 +31,7 @@ import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.biodata.models.alignment.stats.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.auth.CellbaseCredentials;
@@ -39,6 +40,7 @@ import org.opencb.opencga.core.auth.TabixCredentials;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.XObject;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.utils.SqliteManager;
 import org.slf4j.LoggerFactory;
 
@@ -227,6 +229,16 @@ public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
         queryResult.addResult(alignmentRegion);
         queryResult.setNumResults(1);
         return queryResult;
+    }
+
+    @Override
+    public AlignmentIterator iterator() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AlignmentIterator iterator(Query query, QueryOptions options) {
+        throw new UnsupportedOperationException();
     }
 
     

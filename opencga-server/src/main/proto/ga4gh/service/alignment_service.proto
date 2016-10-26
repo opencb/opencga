@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package ga4gh.service;
+
+option java_package = "org.opencb.opencga.server.grpc";
+option java_outer_classname = "AlignmentServiceModel";
+
+import "ga4gh/service/generic_service.proto";
+import "ga4gh/reads.proto";
+import "ga4gh/service/service_types.proto";
+
+service AlignmentService {
+
+   rpc count(Request) returns (LongResponse) {}
+
+   rpc distinct(Request) returns (StringArrayResponse) {}
+
+   rpc get(Request) returns (stream ReadAlignment) {}
+
+   rpc groupBy(Request) returns (GroupResponse) {}
+
+}

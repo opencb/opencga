@@ -23,7 +23,8 @@ import org.opencb.biodata.formats.alignment.sam.io.AlignmentBamDataReader;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
 
-import org.opencb.biodata.tools.alignment.AlignmentFileUtils;
+import org.opencb.biodata.tools.alignment.AlignmentManager;
+import org.opencb.biodata.tools.alignment.AlignmentUtils;
 import org.opencb.biodata.tools.alignment.tasks.AlignmentRegionCoverageCalculatorTask;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.DataWriter;
@@ -127,7 +128,7 @@ public abstract class AlignmentStorageManager extends StorageManager<AlignmentDB
     public URI preTransform(URI inputUri) throws IOException, FileFormatException {
         UriUtils.checkUri(inputUri, "input file", "file");
         Path input = Paths.get(inputUri.getPath());
-        AlignmentFileUtils.checkBamOrCramFile(new FileInputStream(input.toFile()), input.getFileName().toString(), true);
+        AlignmentUtils.checkBamOrCramFile(new FileInputStream(input.toFile()), input.getFileName().toString(), true);
         return inputUri;
     }
 
@@ -166,7 +167,7 @@ public abstract class AlignmentStorageManager extends StorageManager<AlignmentDB
 
         // Check if a BAM file is passed and it is sorted.
         // Only binaries and sorted BAM files are accepted at this point.
-        AlignmentFileUtils.checkBamOrCramFile(new FileInputStream(input.toFile()), input.getFileName().toString(), true);
+        AlignmentUtils.checkBamOrCramFile(new FileInputStream(input.toFile()), input.getFileName().toString(), true);
 
         ObjectMap options = storageEtlConfiguration.getOptions();
         boolean plain = options.getBoolean(Options.PLAIN.key, Options.PLAIN.defaultValue());
@@ -185,7 +186,8 @@ public abstract class AlignmentStorageManager extends StorageManager<AlignmentDB
 
         //2 Index (bai)
         if (createBai) {
-            Path bamIndexPath = AlignmentFileUtils.createIndex(input, output.resolve(input.getFileName().toString() + ".bai"));
+            new AlignmentManager(input).createIndex(output.resolve(input.getFileName().toString() + ".bai"));
+//            Path bamIndexPath = AlignmentFileUtils.createIndex(input, output.resolve(input.getFileName().toString() + ".bai"));
         }
 
         //3 Calculate Coverage and transform

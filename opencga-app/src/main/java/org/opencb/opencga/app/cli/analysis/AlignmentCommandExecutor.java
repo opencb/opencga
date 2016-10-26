@@ -18,6 +18,9 @@ package org.opencb.opencga.app.cli.analysis;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import ga4gh.Reads;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.feature.gff.Gff;
 import org.opencb.biodata.formats.feature.gff.io.GffReader;
@@ -27,15 +30,17 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
-import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
-import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
+import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
+import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
+import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
+import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
@@ -44,10 +49,8 @@ import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -77,6 +80,9 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
             case "query":
                 query();
                 break;
+            case "query-grpc":
+                queryGrpc();
+                break;
             case "stats":
                 stats();
                 break;
@@ -88,6 +94,45 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
                 break;
 
         }
+    }
+
+    private void queryGrpc() throws InterruptedException {
+        // We create the OpenCGA gRPC request object with the query, queryOptions, storageEngine and database
+        GenericAlignmentServiceModel.Request request = GenericAlignmentServiceModel.Request.newBuilder()
+//                .setStorageEngine(storageEngine)
+//                .setDatabase(database)
+//                .putAllQuery(queryString)
+//                .putAllOptions(queryOptionsString)
+                .build();
+
+        // Connecting to the server host and port
+        String grpcServerHost = "localhost";
+//        if (StringUtils.isNotEmpty(alignmentCommandOptions.commonOptions.host)) {
+//            grpcServerHost = queryGrpcCommandOptions.host;
+//        }
+
+//        int grpcServerPort = configuration.getServer().getGrpc();
+        int grpcServerPort = 9091;
+//        if (queryGrpcCommandOptions.port > 0) {
+//            grpcServerPort = queryGrpcCommandOptions.port;
+//        }
+        logger.debug("Connecting to gRPC server at {}:{}", grpcServerHost, grpcServerPort);
+
+        // We create the gRPC channel to the specified server host and port
+        ManagedChannel channel = ManagedChannelBuilder.forAddress(grpcServerHost, grpcServerPort)
+                .usePlaintext(true)
+                .build();
+
+
+        // We use a blocking stub to execute the query to gRPC
+        AlignmentServiceGrpc.AlignmentServiceBlockingStub serviceBlockingStub = AlignmentServiceGrpc.newBlockingStub(channel);
+        Iterator<Reads.ReadAlignment> alignmentIterator = serviceBlockingStub.get(request);
+        while (alignmentIterator.hasNext()) {
+            Reads.ReadAlignment next = alignmentIterator.next();
+            System.out.println(next.toString());
+        }
+
+        channel.shutdown().awaitTermination(2, TimeUnit.SECONDS);
     }
 
     private AlignmentStorageManager initAlignmentStorageManager(DataStore dataStore)

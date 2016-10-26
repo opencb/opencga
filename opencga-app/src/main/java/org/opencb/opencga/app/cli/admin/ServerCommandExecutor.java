@@ -19,11 +19,15 @@ package org.opencb.opencga.app.cli.admin;
 
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.server.RestServer;
+import org.opencb.opencga.server.grpc.GrpcServer;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
+import java.io.FileInputStream;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 
 /**
@@ -95,8 +99,33 @@ public class ServerCommandExecutor extends AdminCommandExecutor {
         }
     }
 
-    private void grpc() throws CatalogException {
+    private void grpc() throws Exception {
+        if (serverCommandOptions.grpcServerCommandOptions.start) {
 
+            // Server crated and started
+//            FileInputStream fileInputStream = new FileInputStream(Paths.get(this.conf).resolve("storage-configuration.yml").toFile());
+//            StorageConfiguration load = StorageConfiguration.load(fileInputStream);
+            GrpcServer server = new GrpcServer(Paths.get(this.conf));
+            server.start();
+            server.blockUntilShutdown();
+            logger.info("Shutting down OpenCGA Storage GRPC server");
+        }
+
+        if (serverCommandOptions.grpcServerCommandOptions.stop) {
+//            if (serverCommandOptions.restStopCommandOptions.port > 0) {
+//                port = restCommandOptions.restStopCommandOptions.port;
+//            }
+
+            Client client = ClientBuilder.newClient();
+            WebTarget target = client.target("http://localhost:" + 9091)
+                    .path("opencga")
+                    .path("webservices")
+                    .path("rest")
+                    .path("admin")
+                    .path("stop");
+            Response response = target.request().get();
+            logger.info(response.toString());
+        }
     }
 
 }

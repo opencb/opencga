@@ -67,6 +67,7 @@ public class GrpcServer extends AbstractStorageServer {
         server = ServerBuilder.forPort(port)
                 .addService(AdminServiceGrpc.bindService(new AdminGrpcService(catalogConfiguration, storageConfiguration, this)))
                 .addService(VariantServiceGrpc.bindService(new VariantGrpcService(catalogConfiguration, storageConfiguration)))
+                .addService(AlignmentServiceGrpc.bindService(new AlignmentGrpcService(catalogConfiguration, storageConfiguration)))
                 .build()
                 .start();
         logger.info("gRPC server started, listening on {}", port);

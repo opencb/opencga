@@ -32,6 +32,7 @@ import org.opencb.biodata.models.alignment.stats.MeanCoverage;
 import org.opencb.biodata.models.alignment.stats.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
@@ -39,6 +40,7 @@ import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.tasks.AlignmentRegionCoverageCalculatorTask;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.slf4j.LoggerFactory;
@@ -397,6 +399,16 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
     @Override
     public QueryResult getAlignmentRegionInfo(Region region, QueryOptions options) {
         return null;
+    }
+
+    @Override
+    public AlignmentIterator iterator() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AlignmentIterator iterator(Query query, QueryOptions options) {
+        throw new UnsupportedOperationException();
     }
 
     /* ******************************************

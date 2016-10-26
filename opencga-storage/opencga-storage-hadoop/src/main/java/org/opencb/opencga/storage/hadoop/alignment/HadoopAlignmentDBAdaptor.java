@@ -17,9 +17,11 @@
 package org.opencb.opencga.storage.hadoop.alignment;
 
 import org.opencb.biodata.models.core.Region;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 
 import java.util.List;
 
@@ -57,5 +59,16 @@ public class HadoopAlignmentDBAdaptor implements AlignmentDBAdaptor {
     public QueryResult getAlignmentRegionInfo(Region region, QueryOptions options) {
         return null;
     }
+
+    @Override
+    public AlignmentIterator iterator() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AlignmentIterator iterator(Query query, QueryOptions options) {
+        throw new UnsupportedOperationException();
+    }
+
 
 }

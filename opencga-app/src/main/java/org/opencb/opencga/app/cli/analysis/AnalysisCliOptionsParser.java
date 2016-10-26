@@ -81,6 +81,7 @@ public class AnalysisCliOptionsParser {
         JCommander alignmentSubCommands = jCommander.getCommands().get("alignment");
         alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexAlignmentCommandOptions);
         alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryAlignmentCommandOptions);
+        alignmentSubCommands.addCommand("query-grpc", alignmentCommandOptions.queryGRPCAlignmentCommandOptions);
 //        alignmentSubCommands.addCommand("stats", alignmentCommandOptions.statsVariantCommandOptions);
 //        alignmentSubCommands.addCommand("annotate", alignmentCommandOptions.annotateVariantCommandOptions);
 
@@ -238,6 +239,7 @@ public class AnalysisCliOptionsParser {
 
         final IndexAlignmentCommandOptions indexAlignmentCommandOptions;
         final QueryAlignmentCommandOptions queryAlignmentCommandOptions;
+        final QueryGRPCAlignmentCommandOptions queryGRPCAlignmentCommandOptions;
 //        final StatsVariantCommandOptions statsVariantCommandOptions;
 //        final AnnotateVariantCommandOptions annotateVariantCommandOptions;
 //        final DeleteVariantCommandOptions deleteVariantCommandOptions;
@@ -247,6 +249,7 @@ public class AnalysisCliOptionsParser {
         public AlignmentCommandOptions() {
             this.indexAlignmentCommandOptions = new IndexAlignmentCommandOptions();
             this.queryAlignmentCommandOptions = new QueryAlignmentCommandOptions();
+            this.queryGRPCAlignmentCommandOptions = new QueryGRPCAlignmentCommandOptions();
         }
     }
 
@@ -821,6 +824,15 @@ public class AnalysisCliOptionsParser {
         public List<String> stats = new LinkedList<>();
     }
 
+    @Parameters(commandNames = {"query-grpc"}, commandDescription = "Search over indexed alignments")
+    public class QueryGRPCAlignmentCommandOptions extends QueryCommandOptions {
+
+        @ParametersDelegate
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+
+        @Parameter(names = {"--path"}, description = "Path to a indexed bam file", required = false)
+        public String path;
+    }
 
     /*
      *  Tools SUB-COMMANDS

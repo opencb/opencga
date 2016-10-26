@@ -19,14 +19,16 @@ package org.opencb.opencga.storage.mongodb.alignment;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.*;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.alignment.stats.MeanCoverage;
 import org.opencb.biodata.models.alignment.stats.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.tools.alignment.AlignmentFileUtils;
+import org.opencb.biodata.tools.alignment.AlignmentManager;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -82,7 +84,8 @@ public class IndexedAlignmentDBAdaptorTest extends GenericTest {
         System.out.println("bamFile = " + bamFile);
         Files.copy(IndexedAlignmentDBAdaptorTest.class.getClassLoader().getResourceAsStream(bamFileName), bamFile, StandardCopyOption
                 .REPLACE_EXISTING);
-        AlignmentFileUtils.createIndex(bamFile);
+        AlignmentManager alignmentManager = new AlignmentManager(bamFile);
+        alignmentManager.createIndex(bamFile);
 
         ObjectMap options = configuration.getOptions();
         options.put(AlignmentStorageManager.Options.FILE_ID.key(), "HG00096");
