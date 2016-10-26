@@ -23,11 +23,13 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -356,6 +358,25 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
     QueryResult addAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
 
     QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
+
+    default ParallelTaskRunner.Task<VariantAnnotation, Void> annotationLoader(QueryOptions options) {
+        return new ParallelTaskRunner.Task<VariantAnnotation, Void>() {
+            @Override
+            public List<Void> apply(List<VariantAnnotation> batch) throws RuntimeException {
+                updateAnnotations(batch, options);
+                return Collections.emptyList();
+            }
+
+            @Override
+            public void pre() {
+                try {
+                    preUpdateAnnotations();
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }
+        };
+    }
 
     /**
      * Update custom annotation for all the variants with in a given region.
