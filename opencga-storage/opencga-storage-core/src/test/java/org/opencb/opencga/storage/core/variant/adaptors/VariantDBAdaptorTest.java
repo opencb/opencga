@@ -21,6 +21,7 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import htsjdk.variant.variantcontext.VariantContext;
 import org.apache.commons.lang3.StringUtils;
+import org.hamcrest.Matcher;
 import org.junit.*;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -128,6 +129,21 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
                 vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
             }
 
+            for (int i = 0; i < 30  ; i++) {
+                allVariants = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.SORT, true));
+                Long annotated = dbAdaptor.count(new Query(ANNOTATION_EXISTS.key(), true)).first();
+                Long all = dbAdaptor.count(new Query()).first();
+
+                System.out.println("count annotated = " + annotated);
+                System.out.println("count           = " + all);
+                System.out.println("get             = " + allVariants.getNumResults());
+
+                for (Variant variant : allVariants.getResult()) {
+                    if (variant.getAnnotation() == null) {
+                        System.out.println("no annotation for variant = " + variant);
+                    }
+                }
+            }
             if (params.getBoolean(VariantStorageManager.Options.ANNOTATE.key())) {
                 assertEquals(dbAdaptor.count(new Query(ANNOTATION_EXISTS.key(), true)).first(), dbAdaptor.count(new Query()).first());
             }
@@ -718,75 +734,41 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     public void testGetAllVariants_polyphenSift() {
         //POLYPHEN
         //SIFT
-        Query query;
-        Map<Double, Integer> sift = new HashMap<>();
-        Map<String, Integer> siftDesc = new HashMap<>();
-        Map<Double, Integer> polyphen = new HashMap<>();
-        Map<Double, Integer> maxPolyphen = new HashMap<>();
-        Map<String, Integer> polyphenDesc = new HashMap<>();
-        for (Variant variant : allVariants.getResult()) {
-            Set<Double> siftInVariant = new HashSet<>();
-            Set<Double> polyphenInVariant = new HashSet<>();
-            Set<String> siftDescInVariant = new HashSet<>();
-            Set<String> polyphenDescInVariant = new HashSet<>();
-            if (variant.getAnnotation().getConsequenceTypes() != null) {
-                for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
-                    if (consequenceType.getProteinVariantAnnotation() != null) {
-                        if (consequenceType.getProteinVariantAnnotation().getSubstitutionScores() != null) {
-                            for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
-                                if (score.getSource().equals("sift")) {
-                                    siftInVariant.add(score.getScore());
-                                    siftDescInVariant.add(score.getDescription());
-                                } else if (score.getSource().equals("polyphen")) {
-                                    polyphenInVariant.add(score.getScore());
-                                    polyphenDescInVariant.add(score.getDescription());
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            for (Double value : siftInVariant) {
-                sift.put(value, sift.getOrDefault(value, 0) + 1);
-            }
-            for (String value : siftDescInVariant) {
-                siftDesc.put(value, siftDesc.getOrDefault(value, 0) + 1);
-            }
-            for (Double value : polyphenInVariant) {
-                polyphen.put(value, polyphen.getOrDefault(value, 0) + 1);
-            }
-            Optional<Double> max = polyphenInVariant.stream().max(Double::compareTo);
-            if (max.isPresent()) {
-                maxPolyphen.put(max.get(), maxPolyphen.getOrDefault(max.get(), 0) + 1);
-            }
-            for (String value : polyphenDescInVariant) {
-                polyphenDesc.put(value, polyphenDesc.getOrDefault(value, 0) + 1);
-            }
+
+        Map<String, Matcher<Double>> queries = new HashMap<>();
+        queries.put("<0.101", lt(0.101));
+        queries.put("<0.201", lt(0.201));
+        queries.put("<0.501", lt(0.501));
+        queries.put("<0.901", lt(0.901));
+
+        queries.put(">0.101", gt(0.101));
+        queries.put(">0.201", gt(0.201));
+        queries.put(">0.501", gt(0.501));
+        queries.put(">0.901", gt(0.901));
+
+        for (Map.Entry<String, Matcher<Double>> entry : queries.entrySet()) {
+            String q = entry.getKey();
+            Matcher<Double> m = entry.getValue();
+
+            System.out.println("q = " + q + " -> " + m);
+            queryResult = dbAdaptor.get(new Query(ANNOT_SIFT.key(), q), null);
+            assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnySift(m))));
+
+            queryResult = dbAdaptor.get(new Query(ANNOT_POLYPHEN.key(), q), null);
+            assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnyPolyphen(m))));
         }
 
-        for (Map.Entry<String, Integer> entry : siftDesc.entrySet()) {
-            query = new Query(ANNOT_SIFT.key(), entry.getKey());
-            queryResult = dbAdaptor.get(query, null);
-            assertEquals(entry.getKey(), entry.getValue().intValue(), queryResult.getNumResults());
-            System.out.println("queryResult.getDbTime() = " + queryResult.getDbTime());
+        for (String p : Arrays.asList("benign", "possibly damaging", "probably damaging", "unknown")) {
+            queryResult = dbAdaptor.get(new Query(ANNOT_POLYPHEN.key(), p), null);
+            assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnySiftDesc(equalTo(p)))));
         }
-        for (Map.Entry<String, Integer> entry : polyphenDesc.entrySet()) {
-            query = new Query(ANNOT_POLYPHEN.key(), entry.getKey());
-            queryResult = dbAdaptor.get(query, null);
-            assertEquals(entry.getKey(), entry.getValue().intValue(), queryResult.getNumResults());
-            System.out.println("queryResult.getDbTime() = " + queryResult.getDbTime());
+
+        for (String s : Arrays.asList("deleterious", "tolerated")) {
+            queryResult = dbAdaptor.get(new Query(ANNOT_SIFT.key(), s), null);
+            assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnyPolyphenDesc(equalTo(s)))));
         }
-        query = new Query(ANNOT_POLYPHEN.key(), ">0.5");
-        queryResult = dbAdaptor.get(query, null);
-        Integer expected = maxPolyphen.entrySet()
-                .stream()
-                .filter(entry -> entry.getKey() > 0.5)
-                .map(Map.Entry::getValue)
-                .reduce((i, j) -> i + j).orElse(0);
-        assertEquals(expected.intValue(), queryResult.getNumResults());
 
-
-        query = new Query(ANNOT_POLYPHEN.key(), "sift>0.5");
+        Query query = new Query(ANNOT_POLYPHEN.key(), "sift>0.5");
         thrown.expect(VariantQueryException.class);
         dbAdaptor.get(query, null);
 //        for (Map.Entry<Double, Integer> entry : polyphen.entrySet()) {
@@ -824,8 +806,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     public void testGetAllVariants_conservationScore() {
         //ANNOT_CONSERVATION
 
-        assertTrue(countConservationScore("phastCons", allVariants, s -> s > 0.5) > 0);
-        System.out.println("countFunctionalScore(\"phastCons\", allVariants, s -> s > 0.5) = " + countConservationScore("phastCons", allVariants, s -> s > 0.5));
+        long phastCons = countConservationScore("phastCons", allVariants, s -> s > 0.5);
+        assertTrue(phastCons > 0);
+        System.out.println("countFunctionalScore(\"phastCons\", allVariants, s -> s > 0.5) = " + phastCons);
 
         checkConservationScore(new Query(ANNOT_CONSERVATION.key(), "phylop>0.5"), s -> s > 0.5, "phylop");
 

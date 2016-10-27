@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -103,7 +102,7 @@ public class HBaseManager extends Configured implements AutoCloseable {
                 try {
                     con = ConnectionFactory.createConnection(this.getConf());
                     StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-                    LOGGER.info("Opened Hadoop DB connection {} called from {}", con, Arrays.toString(stackTrace));
+                    LOGGER.info("Opened Hadoop DB connection {} called from {}", con, stackTrace);
                 } catch (IOException e) {
                     throw new IllegalStateException("Problems opening connection to DB", e);
                 }
@@ -322,7 +321,7 @@ public class HBaseManager extends Configured implements AutoCloseable {
                                               List<byte[]> preSplits, Compression.Algorithm compressionType)
             throws IOException {
         TableName tName = TableName.valueOf(tableName);
-        LOGGER.info("CreateIfNeeded with connection {}", con);
+        LOGGER.debug("Create table if needed with connection {}", con);
         return act(con, tableName, (table, admin) -> {
             if (!admin.tableExists(tName)) {
                 HTableDescriptor descr = new HTableDescriptor(tName);
@@ -333,11 +332,11 @@ public class HBaseManager extends Configured implements AutoCloseable {
                 descr.addFamily(family);
                 try {
                     if (preSplits != null && !preSplits.isEmpty()) {
-                        LOGGER.info("Create New HBASE table {} with {} preSplits", tableName, preSplits.size());
                         admin.createTable(descr, preSplits.toArray(new byte[0][]));
+                        LOGGER.info("Create New HBASE table {} with {} preSplits", tableName, preSplits.size());
                     } else {
-                        LOGGER.info("Create New HBASE table - no pre-splits {}", tableName);
                         admin.createTable(descr);
+                        LOGGER.info("Create New HBASE table - no pre-splits {}", tableName);
                     }
                 } catch (TableExistsException e) {
                     return false;

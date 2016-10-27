@@ -36,6 +36,7 @@ import org.opencb.biodata.models.variant.protobuf.VariantProto.AlternateCoordina
 import org.opencb.biodata.models.variant.protobuf.VariantProto.VariantType;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.*;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.ComplexFilter.Builder;
@@ -341,7 +342,7 @@ public class VariantTableStudyRow {
                 doPut = true;
                 List<Integer> value = new ArrayList<>(entry.getValue());
                 Collections.sort(value);
-                byte[] bytesArray = VariantPhoenixHelper.toBytes(value, PUnsignedIntArray.INSTANCE);
+                byte[] bytesArray = PhoenixHelper.toBytes(value, PUnsignedIntArray.INSTANCE);
                 put.addColumn(cf, column, bytesArray);
                 newHomRef.removeAll(value);
                 if (StringUtils.equals(entry.getKey(), NOCALL)) {
@@ -396,7 +397,7 @@ public class VariantTableStudyRow {
             List<Integer> value = new ArrayList<>(entry.getValue());
             if (!value.isEmpty()) {
                 Collections.sort(value);
-                byte[] bytesArray = VariantPhoenixHelper.toBytes(value, PUnsignedIntArray.INSTANCE);
+                byte[] bytesArray = PhoenixHelper.toBytes(value, PUnsignedIntArray.INSTANCE);
                 put.addColumn(cf, column, bytesArray);
             }
         }
