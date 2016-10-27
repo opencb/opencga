@@ -53,6 +53,7 @@ public abstract class CommandExecutor {
     protected Configuration configuration;
     protected CatalogConfiguration catalogConfiguration;
     protected StorageConfiguration storageConfiguration;
+    protected ClientConfiguration clientConfiguration;
 
     protected Logger logger;
 
@@ -121,6 +122,11 @@ public abstract class CommandExecutor {
             }
         });
 
+        try {
+            loadClientConfiguration();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 //        loadConfigurations();
     }
 
@@ -178,6 +184,24 @@ public abstract class CommandExecutor {
         return true;
     }
 
+    /**
+     * This method attempts to first data configuration from CLI parameter, if not present then uses
+     * the configuration from installation directory, if not exists then loads JAR storage-configuration.yml.
+     *
+     * @throws IOException If any IO problem occurs
+     */
+    public void loadClientConfiguration() throws IOException {
+        // We load configuration file either from app home folder or from the JAR
+        Path path = Paths.get(this.conf).resolve("client-configuration.yml");
+        if (path != null && Files.exists(path)) {
+            logger.debug("Loading configuration from '{}'", path.toAbsolutePath());
+            this.clientConfiguration = ClientConfiguration.load(new FileInputStream(path.toFile()));
+        } else {
+            logger.debug("Loading configuration from JAR file");
+            this.clientConfiguration = ClientConfiguration
+                    .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("client-configuration.yml"));
+        }
+    }
 
     /**
      * This method attempts to load general configuration from CLI 'conf' parameter, if not exists then loads JAR storage-configuration.yml.

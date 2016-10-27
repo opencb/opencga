@@ -402,12 +402,22 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
+    public QueryResult get(Query query, QueryOptions options) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public AlignmentIterator iterator() {
         throw new UnsupportedOperationException();
     }
 
     @Override
     public AlignmentIterator iterator(Query query, QueryOptions options) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long count(Query query, QueryOptions options) {
         throw new UnsupportedOperationException();
     }
 

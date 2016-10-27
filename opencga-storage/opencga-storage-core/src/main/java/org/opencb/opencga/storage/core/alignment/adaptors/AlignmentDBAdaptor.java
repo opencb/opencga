@@ -19,10 +19,15 @@ package org.opencb.opencga.storage.core.alignment.adaptors;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
@@ -30,6 +35,61 @@ import java.util.List;
  *     TODO: Implement {@link AutoCloseable}
  */
 public interface AlignmentDBAdaptor {
+
+    enum QueryParams implements QueryParam {
+//        SESSION_ID("sid", TEXT, ""),
+//        FILE_ID("fileId", TEXT, ""),
+        REGION("region", TEXT, ""),
+        MIN_MAPQ("minMapQ", INTEGER, ""),
+        LIMIT("limit", INTEGER, ""),
+        SKIP("skip", INTEGER, ""),
+        CONTAINED("contained", BOOLEAN, ""),
+        MD_FIELD("mdField", BOOLEAN, ""),
+        BIN_QUALITIES("binQualities", BOOLEAN, "");
+
+        // Fixme: Index attributes
+        private static Map<String, QueryParams> map = new HashMap<>();
+        static {
+            for (QueryParams param : QueryParams.values()) {
+                map.put(param.key(), param);
+            }
+        }
+
+        // TOCHECK: Pedro. Add annotation support?
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        QueryParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+
+        public static Map<String, QueryParams> getMap() {
+            return map;
+        }
+
+        public static QueryParams getParam(String key) {
+            return map.get(key);
+        }
+    }
 
     //Query Options
     String QO_BAM_PATH = "bam_path";
@@ -63,8 +123,12 @@ public interface AlignmentDBAdaptor {
 
     QueryResult getAlignmentRegionInfo(Region region, QueryOptions options);
 
+    QueryResult get(Query query, QueryOptions options);
+
     AlignmentIterator iterator();
 
     AlignmentIterator iterator(Query query, QueryOptions options);
+
+    long count(Query query, QueryOptions options);
 
 }

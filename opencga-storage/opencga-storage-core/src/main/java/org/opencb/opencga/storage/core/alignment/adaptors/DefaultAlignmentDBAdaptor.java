@@ -1,9 +1,12 @@
 package org.opencb.opencga.storage.core.alignment.adaptors;
 
 import ga4gh.Reads;
+import org.apache.commons.lang3.time.StopWatch;
+import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.AlignmentManager;
 import org.opencb.biodata.tools.alignment.AlignmentOptions;
+import org.opencb.biodata.tools.alignment.filtering.AlignmentFilters;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -55,39 +58,105 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
+    public QueryResult get(Query query, QueryOptions options) {
+        try {
+            StopWatch watch = new StopWatch();
+            watch.start();
+
+            AlignmentOptions alignmentOptions = parseQueryOptions(options);
+            AlignmentFilters alignmentFilters = parseQuery(query);
+            Region region = parseRegion(query);
+
+            List<ReadAlignment> readAlignmentList;
+            if (region != null) {
+                readAlignmentList = alignmentManager.query(region, alignmentOptions, alignmentFilters, ReadAlignment.class);
+            } else {
+                readAlignmentList = alignmentManager.query(alignmentOptions, alignmentFilters, ReadAlignment.class);
+            }
+//            List<String> stringFormatList = new ArrayList<>(readAlignmentList.size());
+//            for (Reads.ReadAlignment readAlignment : readAlignmentList) {
+//                stringFormatList.add(readAlignment());
+//            }
+//            List<JsonFormat> list = alignmentManager.query(region, alignmentOptions, alignmentFilters, Reads.ReadAlignment.class);
+            watch.stop();
+            return new QueryResult("Get alignments", ((int) watch.getTime()), readAlignmentList.size(), readAlignmentList.size(),
+                    null, null, readAlignmentList);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return new QueryResult<>();
+        }
+    }
+
+    @Override
     public ProtoAlignmentIterator iterator() {
         return iterator(new Query(), new QueryOptions());
     }
 
     @Override
     public ProtoAlignmentIterator iterator(Query query, QueryOptions options) {
-        if (options == null) {
-            options = new QueryOptions();
-        }
-        if (query == null) {
-            query = new Query();
-        }
+        try {
+            if (options == null) {
+                options = new QueryOptions();
+            }
+            if (query == null) {
+                query = new Query();
+            }
 
-        // TODO: Parse query
-        return new ProtoAlignmentIterator(
-                alignmentManager.iterator("20", 60000, 65000, new AlignmentOptions(), null, Reads.ReadAlignment.class));
-//
-//        Document mongoQuery = parseQuery(query);
-//        Document projection = createProjection(query, options);
-//        DocumentToVariantConverter converter = getDocumentToVariantConverter(query, options);
-//        options.putIfAbsent(MongoDBCollection.BATCH_SIZE, 100);
-//
-//        return new ProtoAlignmentIterator(alignmentManager.iterator(....));
-//        // Short unsorted queries with timeout or limit don't need the persistent cursor.
-//        if (options.containsKey(QueryOptions.TIMEOUT)
-//                || options.containsKey(QueryOptions.LIMIT)
-//                || !options.containsKey(QueryOptions.SORT)) {
-//            FindIterable<Document> dbCursor = variantsCollection.nativeQuery().find(mongoQuery, projection, options);
-//
-//            return new VariantMongoDBIterator(dbCursor, converter);
-//        } else {
-//            return VariantMongoDBIterator.persistentIterator(variantsCollection, mongoQuery, projection, options, converter);
-//        }
+            AlignmentOptions alignmentOptions = parseQueryOptions(options);
+            AlignmentFilters alignmentFilters = parseQuery(query);
+            Region region = parseRegion(query);
+
+            if (region != null) {
+                return new ProtoAlignmentIterator(
+                        alignmentManager.iterator(region, alignmentOptions, alignmentFilters, Reads.ReadAlignment.class));
+            } else {
+                return new ProtoAlignmentIterator(alignmentManager.iterator(alignmentOptions, alignmentFilters, Reads.ReadAlignment.class));
+            }
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    private Region parseRegion(Query query) {
+        Region region = null;
+        String regionString = query.getString(QueryParams.REGION.key());
+        if (regionString != null && !regionString.isEmpty()) {
+            region = new Region(regionString);
+        }
+        return region;
+    }
+
+    private AlignmentFilters parseQuery(Query query) {
+        AlignmentFilters alignmentFilters = AlignmentFilters.create();
+        int minMapQ = query.getInt(QueryParams.MIN_MAPQ.key());
+        if (minMapQ > 0) {
+            alignmentFilters.addMappingQualityFilter(minMapQ);
+        }
+        return  alignmentFilters;
+    }
+
+    private AlignmentOptions parseQueryOptions(QueryOptions options) {
+        AlignmentOptions alignmentOptions = new AlignmentOptions()
+                .setContained(options.getBoolean(QueryParams.CONTAINED.key()));
+        int limit = options.getInt(QueryParams.LIMIT.key());
+        if (limit > 0) {
+            alignmentOptions.setLimit(limit);
+        }
+        return alignmentOptions;
+    }
+
+    @Override
+    public long count(Query query, QueryOptions options) {
+        ProtoAlignmentIterator iterator = iterator(query, options);
+        long cont = 0;
+        while (iterator.hasNext()) {
+            iterator.next();
+            cont++;
+        }
+        return cont;
     }
 
 }

@@ -41,7 +41,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
     protected OpenCGAClient openCGAClient;
     protected CatalogManager catalogManager;
-    protected ClientConfiguration clientConfiguration;
+//    protected ClientConfiguration clientConfiguration;
     protected IWriter writer;
 
     public OpencgaCommandExecutor(OpencgaCliOptionsParser.OpencgaCommonCommandOptions options) {
@@ -62,7 +62,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         try {
             this.writer = new JsonWriter();
 
-            loadClientConfiguration();
+//            loadClientConfiguration();
             loadCatalogConfiguration();
 
             SessionFile sessionFile = loadSessionFile();
@@ -108,24 +108,24 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         }
     }
 
-    /**
-     * This method attempts to first data configuration from CLI parameter, if not present then uses
-     * the configuration from installation directory, if not exists then loads JAR storage-configuration.yml.
-     *
-     * @throws IOException If any IO problem occurs
-     */
-    public void loadClientConfiguration() throws IOException {
-        // We load configuration file either from app home folder or from the JAR
-        Path path = Paths.get(this.conf).resolve("client-configuration.yml");
-        if (path != null && Files.exists(path)) {
-            logger.debug("Loading configuration from '{}'", path.toAbsolutePath());
-            this.clientConfiguration = ClientConfiguration.load(new FileInputStream(path.toFile()));
-        } else {
-            logger.debug("Loading configuration from JAR file");
-            this.clientConfiguration = ClientConfiguration
-                    .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("client-configuration.yml"));
-        }
-    }
+//    /**
+//     * This method attempts to first data configuration from CLI parameter, if not present then uses
+//     * the configuration from installation directory, if not exists then loads JAR storage-configuration.yml.
+//     *
+//     * @throws IOException If any IO problem occurs
+//     */
+//    public void loadClientConfiguration() throws IOException {
+//        // We load configuration file either from app home folder or from the JAR
+//        Path path = Paths.get(this.conf).resolve("client-configuration.yml");
+//        if (path != null && Files.exists(path)) {
+//            logger.debug("Loading configuration from '{}'", path.toAbsolutePath());
+//            this.clientConfiguration = ClientConfiguration.load(new FileInputStream(path.toFile()));
+//        } else {
+//            logger.debug("Loading configuration from JAR file");
+//            this.clientConfiguration = ClientConfiguration
+//                    .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("client-configuration.yml"));
+//        }
+//    }
 
     public void createOutput(QueryResponse queryResponse) {
         if (queryResponse != null) {

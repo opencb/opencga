@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.server.rest;
 
+import ga4gh.Reads;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
@@ -41,6 +42,7 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.alignment.adaptors.DefaultAlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
@@ -968,8 +970,46 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
-    public Response getAlignments(@ApiParam(value = "fileId", required = true) @PathParam("fileId") String fileId) {
-        return createOkResponse("PENDING");
+    public Response getAlignments(@ApiParam(value = "Id of the alignment file in catalog", required = true) @PathParam("fileId")
+                                              String fileIdStr,
+                                  @ApiParam(value = "Region 'chr:start-end'", required = false) @QueryParam("region") String region,
+                                  @ApiParam(value = "Minimum mapping quality", required = false) @QueryParam("minMapQ") Integer minMapQ,
+                                  @ApiParam(value = "Only alignments completely contained within boundaries of region", required = false)
+                                      @QueryParam("contained") Boolean contained,
+                                  @ApiParam(value = "Force SAM MD optional field to be set with the alignments", required = false)
+                                      @QueryParam("mdField") Boolean mdField,
+                                  @ApiParam(value = "Compress the nucleotide qualities by using 8 quality levels", required = false)
+                                      @QueryParam("binQualities") Boolean binQualities) {
+        try {
+            Query query = new Query();
+            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), region);
+            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
+
+            QueryOptions queryOptions = new QueryOptions();
+            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.LIMIT.key(), limit);
+            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.SKIP.key(), skip);
+            queryOptions.putIfNotNull("count", count);
+            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
+            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.MD_FIELD.key(), mdField);
+            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.BIN_QUALITIES.key(), binQualities);
+
+            String userId = catalogManager.getUserManager().getId(sessionId);
+            Long fileId = catalogManager.getFileManager().getId(userId, fileIdStr);
+
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.URI.key());
+            QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(fileId, options, sessionId);
+
+            if (fileQueryResult != null && fileQueryResult.getNumResults() != 1) {
+                // This should never happen
+                throw new CatalogException("Critical error: File " + fileId + " could not be found in catalog.");
+            }
+            java.nio.file.Path path = Paths.get(fileQueryResult.first().getUri());
+
+            AlignmentDBAdaptor alignmentDBAdaptor = new DefaultAlignmentDBAdaptor(path);
+            return createOkResponse(alignmentDBAdaptor.get(query, queryOptions));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
     }
 
     private ObjectMap getResumeFileJSON(java.nio.file.Path folderPath) throws IOException {

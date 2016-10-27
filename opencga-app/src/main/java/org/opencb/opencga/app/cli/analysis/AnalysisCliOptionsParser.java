@@ -713,7 +713,7 @@ public class AnalysisCliOptionsParser {
         @Parameter(names = {"--limit"}, description = "Limit the number of returned elements.", required = false, arity = 1)
         public int limit;
 
-        @Parameter(names = {"--sort"}, description = "Sort the output variants.")
+        @Parameter(names = {"--sort"}, description = "Sort the output elements.")
         public boolean sort;
 
         @Parameter(names = {"--count"}, description = "Count results. Do not return elements.", required = false, arity = 0)
@@ -798,31 +798,54 @@ public class AnalysisCliOptionsParser {
         @ParametersDelegate
         public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
 
-
-        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter", required = false)
-        public String study;
-
-        @Parameter(names = {"--file-id"}, description = "File unique ID.", required = false, arity = 1)
+        @Parameter(names = {"--file-id"}, description = "Id of the alignment file in catalog", required = true, arity = 1)
         public String fileId;
-//
-//        @Parameter(names = {"--file-path"}, description = "", required = false, arity = 1)
-//        public String filePath;
 
-        @Parameter(names = {"--include-coverage"}, description = " [CSV]", required = false)
-        public boolean coverage = false;
+        @Parameter(names = {"--min-mapq"}, description = "Minimum mapping quality", arity = 1)
+        public int minMappingQuality;
 
-        @Parameter(names = {"-H", "--histogram"}, description = " ", required = false, arity = 1)
-        public boolean histogram = false;
+        @Parameter(names = {"--contained"}, description = "Set flag to select just the alignments completely contained within the "
+                + "boundaries of the region", arity = 0)
+        boolean contained;
 
-        @Parameter(names = {"--view-as-pairs"}, description = " ", required = false)
-        public boolean asPairs;
+        @Parameter(names = {"--md-field"}, description = "Force SAM MD optional field to be set with the alignments", arity = 0)
+        boolean mdField;
 
-        @Parameter(names = {"--process-differences"}, description = " ", required = false)
-        public boolean processDifferences;
-
-        @Parameter(names = {"-S", "--stats-filter"}, description = " [CSV]", required = false)
-        public List<String> stats = new LinkedList<>();
+        @Parameter(names = {"--bin-qualities"}, description = "Compress the nucleotide qualities by using 8 quality levels "
+                + "(there will be loss of information)", arity = 0)
+        boolean binQualities;
     }
+
+//    @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed alignments")
+//    public class QueryAlignmentCommandOptions extends QueryCommandOptions {
+//
+//        @ParametersDelegate
+//        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+//
+//        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter", required = false)
+//        public String study;
+//
+//        @Parameter(names = {"--file-id"}, description = "File unique ID.", required = false, arity = 1)
+//        public String fileId;
+////
+////        @Parameter(names = {"--file-path"}, description = "", required = false, arity = 1)
+////        public String filePath;
+//
+//        @Parameter(names = {"--include-coverage"}, description = " [CSV]", required = false)
+//        public boolean coverage = false;
+//
+//        @Parameter(names = {"-H", "--histogram"}, description = " ", required = false, arity = 1)
+//        public boolean histogram = false;
+//
+//        @Parameter(names = {"--view-as-pairs"}, description = " ", required = false)
+//        public boolean asPairs;
+//
+//        @Parameter(names = {"--process-differences"}, description = " ", required = false)
+//        public boolean processDifferences;
+//
+//        @Parameter(names = {"-S", "--stats-filter"}, description = " [CSV]", required = false)
+//        public List<String> stats = new LinkedList<>();
+//    }
 
     @Parameters(commandNames = {"query-grpc"}, commandDescription = "Search over indexed alignments")
     public class QueryGRPCAlignmentCommandOptions extends QueryCommandOptions {
@@ -830,8 +853,22 @@ public class AnalysisCliOptionsParser {
         @ParametersDelegate
         public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
 
-        @Parameter(names = {"--path"}, description = "Path to a indexed bam file", required = false)
-        public String path;
+        @Parameter(names = {"--file-id"}, description = "Id of the alignment file in catalog", required = true, arity = 1)
+        public String fileId;
+
+        @Parameter(names = {"--min-mapq"}, description = "Minimum mapping quality", arity = 1)
+        public int minMappingQuality;
+
+        @Parameter(names = {"--contained"}, description = "Set flag to select just the alignments completely contained within the "
+                + "boundaries of the region", arity = 0)
+        boolean contained;
+
+        @Parameter(names = {"--md-field"}, description = "Force SAM MD optional field to be set with the alignments", arity = 0)
+        boolean mdField;
+
+        @Parameter(names = {"--bin-qualities"}, description = "Compress the nucleotide qualities by using 8 quality levels "
+            + "(there will be loss of information)", arity = 0)
+        boolean binQualities;
     }
 
     /*
