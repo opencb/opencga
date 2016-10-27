@@ -18,14 +18,23 @@ package org.opencb.opencga.storage.hadoop.variant;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.schema.*;
+import org.apache.phoenix.schema.types.PUnsignedInt;
+import org.apache.phoenix.schema.types.PVarchar;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
 
+import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -66,7 +75,9 @@ public class GenomeHelperTest {
     public void checkVariantRowKeyGeneration(Variant variant) {
         byte[] variantRowkey = genomeHelper.generateVariantRowKey(variant);
         Variant generatedVariant = genomeHelper.extractVariantFromVariantRowKey(variantRowkey);
-        Assert.assertEquals(variant, generatedVariant);
+        byte[] phoenixRowKey = generateVariantRowKeyPhoenix(variant.getChromosome(), variant.getStart(), variant.getReference(), variant.getAlternate());
+        assertArrayEquals(variant.toString(), phoenixRowKey, variantRowkey);
+        assertEquals(variant, generatedVariant);
     }
 
     @Test
@@ -93,4 +104,30 @@ public class GenomeHelperTest {
             prev = key;
         }
     }
+
+
+    public byte[] generateVariantRowKeyPhoenix(String chrom, int position, String ref, String alt) {
+        PTableImpl table;
+        try {
+            List<PColumn> columns = Arrays.asList(
+                    new PColumnImpl(PNameFactory.newName("CHROMOSOME"), null, PVarchar.INSTANCE, null, null, false, 0, SortOrder.ASC, null, null, false, null, false, false),
+                    new PColumnImpl(PNameFactory.newName("POSITION"), null, PUnsignedInt.INSTANCE, null, null, false, 1, SortOrder.ASC, null, null, false, null, false, false),
+                    new PColumnImpl(PNameFactory.newName("REFERENCE"), null, PVarchar.INSTANCE, null, null, true, 2, SortOrder.ASC, null, null, false, null, false, false),
+                    new PColumnImpl(PNameFactory.newName("ALTERNATE"), null, PVarchar.INSTANCE, null, null, true, 3, SortOrder.ASC, null, null, false, null, false, false)
+            );
+            table = PTableImpl.makePTable(new PTableImpl(PNameFactory.newName("user"), null, "rk", 0, Collections.emptyList(), false), columns);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        ImmutableBytesWritable key = new ImmutableBytesWritable();
+        table.newKey(key, new byte[][]{Bytes.toBytes(chrom), Bytes.toBytes(position), Bytes.toBytes(ref), Bytes.toBytes(alt)});
+
+        if (key.getLength() == key.get().length) {
+            return key.get();
+        } else {
+            return Arrays.copyOf(key.get(), key.getLength());
+        }
+    }
+
 }
