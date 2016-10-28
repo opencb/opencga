@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hbase.client.Put;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.variant.converter.Converter;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -166,6 +168,19 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter
                 map.put(column, score.getScore());
             }
         }
+
+        VariantType variantType = Variant.inferType(variantAnnotation.getReference(),
+                variantAnnotation.getAlternate(),
+                variantAnnotation.getReference().length());
+        if (StringUtils.isNotBlank(variantAnnotation.getId())) {
+            if (variantType.equals(VariantType.SNV)) {
+                variantType = VariantType.SNP;
+            } else if (variantType.equals(VariantType.MNV)) {
+                variantType = VariantType.MNP;
+            }
+        }
+        map.put(TYPE, variantType.toString());
+
         return map;
     }
 
