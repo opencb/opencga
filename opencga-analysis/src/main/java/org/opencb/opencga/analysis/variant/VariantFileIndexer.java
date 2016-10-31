@@ -520,7 +520,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
 //            URI fileUri = catalogManager.getFileUri(variantsFile);
 //            try (InputStream is = FileUtils.newInputStream(Paths.get(fileUri.getPath()))) {
 //                VariantSource variantSource = new com.fasterxml.jackson.databind.ObjectMapper().readValue(is, VariantSource.class);
-//                VariantGlobalStats stats = variantSource.getStats();
+//                VariantGlobalStats stats = variantSource.stats();
 //                catalogManager.modifyFile(inputFile.getId(), new ObjectMap("stats", new ObjectMap(VARIANT_STATS, stats)), sessionId);
 //            } catch (IOException e) {
 //                throw new CatalogException("Error reading file \"" + fileUri + "\"", e);

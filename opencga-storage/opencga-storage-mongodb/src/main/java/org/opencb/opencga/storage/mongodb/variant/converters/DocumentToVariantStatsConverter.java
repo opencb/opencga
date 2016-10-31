@@ -216,7 +216,7 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
     /**
      * converts just some cohorts stats in one VariantSourceEntry.
      *
-     * @param cohortStats for instance, you can pass in sourceEntry.getStats()
+     * @param cohortStats for instance, you can pass in sourceEntry.stats()
      * @param studyId     of the source entry
      * @return list of VariantStats (as Documents)
      */

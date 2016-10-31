@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.server.rest;
 
-import ga4gh.Reads;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
@@ -979,7 +978,9 @@ public class FileWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "Force SAM MD optional field to be set with the alignments", required = false)
                                       @QueryParam("mdField") Boolean mdField,
                                   @ApiParam(value = "Compress the nucleotide qualities by using 8 quality levels", required = false)
-                                      @QueryParam("binQualities") Boolean binQualities) {
+                                      @QueryParam("binQualities") Boolean binQualities,
+                                  @ApiParam(value = "Obtain the global alignment stats", required = false, defaultValue = "false")
+                                      @QueryParam("stats") boolean stats) {
         try {
             Query query = new Query();
             query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), region);
@@ -1006,7 +1007,11 @@ public class FileWSServer extends OpenCGAWSServer {
             java.nio.file.Path path = Paths.get(fileQueryResult.first().getUri());
 
             AlignmentDBAdaptor alignmentDBAdaptor = new DefaultAlignmentDBAdaptor(path);
-            return createOkResponse(alignmentDBAdaptor.get(query, queryOptions));
+            if (!stats) {
+                return createOkResponse(alignmentDBAdaptor.get(query, queryOptions));
+            } else {
+                return createOkResponse(alignmentDBAdaptor.stats(query, queryOptions));
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }

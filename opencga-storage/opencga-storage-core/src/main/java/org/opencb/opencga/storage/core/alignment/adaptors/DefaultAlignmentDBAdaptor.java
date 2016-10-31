@@ -7,6 +7,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.AlignmentFilters;
 import org.opencb.biodata.tools.alignment.AlignmentManager;
 import org.opencb.biodata.tools.alignment.AlignmentOptions;
+import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -157,6 +158,27 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
             cont++;
         }
         return cont;
+    }
+
+    @Override
+    public AlignmentGlobalStats stats() {
+        return alignmentManager.stats();
+    }
+
+    @Override
+    public AlignmentGlobalStats stats(Query query, QueryOptions options) {
+        if (options == null) {
+            options = new QueryOptions();
+        }
+        if (query == null) {
+            query = new Query();
+        }
+
+        AlignmentOptions alignmentOptions = parseQueryOptions(options);
+        AlignmentFilters alignmentFilters = parseQuery(query);
+        Region region = parseRegion(query);
+
+        return alignmentManager.stats(region, alignmentOptions, alignmentFilters);
     }
 
 }

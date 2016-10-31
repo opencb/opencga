@@ -714,7 +714,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 //                        QueryResult<File> fileQueryResult = catalogManager.createFile(studyAdded.getId(), file.getType(), file.getFormat(),
 //                                file.getBioformat(), file.getPath(), file.getOwnerId(), file.getCreationDate(),
 //                                file.getDescription(), file.getName(), file.getDiskUsage(), file.getExperimentId(),
-//                                file.getSampleIds(), file.getJobId(), file.getStats(), file.getAttributes(), true, sessionId);
+//                                file.getSampleIds(), file.getJobId(), file.stats(), file.getAttributes(), true, sessionId);
 //                        file = fileQueryResult.getResult().get(0);
 //                        System.out.println("fileQueryResult = " + fileQueryResult);
 //                        studyAdded.getFiles().add(file);

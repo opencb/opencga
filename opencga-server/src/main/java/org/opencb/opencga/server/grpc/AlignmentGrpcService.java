@@ -11,6 +11,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.adaptors.DefaultAlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
 import java.io.IOException;
@@ -76,11 +77,12 @@ public class AlignmentGrpcService extends GenericGrpcService implements Alignmen
             AlignmentDBAdaptor alignmentDBAdaptor = new DefaultAlignmentDBAdaptor(path);
 
             queryOptions = createQueryOptions(request);
-            Iterator iterator = alignmentDBAdaptor.iterator(query, queryOptions);
-            while (iterator.hasNext()) {
-                responseObserver.onNext((Reads.ReadAlignment) iterator.next());
+            try (AlignmentIterator iterator = alignmentDBAdaptor.iterator(query, queryOptions)) {
+                while (iterator.hasNext()) {
+                    responseObserver.onNext((Reads.ReadAlignment) iterator.next());
+                }
+                responseObserver.onCompleted();
             }
-            responseObserver.onCompleted();
 //            alignmentDBAdaptor.close();
         } catch (Exception e) {
             e.printStackTrace();

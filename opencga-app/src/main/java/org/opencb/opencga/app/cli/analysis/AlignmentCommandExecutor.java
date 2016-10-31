@@ -22,6 +22,7 @@ import ga4gh.Reads;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.formats.feature.gff.Gff;
 import org.opencb.biodata.formats.feature.gff.io.GffReader;
@@ -98,6 +99,8 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
     }
 
     private void queryGrpc() throws InterruptedException {
+        StopWatch watch = new StopWatch();
+        watch.start();
         // We create the OpenCGA gRPC request object with the query, queryOptions, storageEngine and database
         Map<String, String> query = new HashMap<>();
         addParam(query, "fileId", alignmentCommandOptions.queryGRPCAlignmentCommandOptions.fileId);
@@ -136,27 +139,32 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
                 .usePlaintext(true)
                 .build();
 
-
         // We use a blocking stub to execute the query to gRPC
         AlignmentServiceGrpc.AlignmentServiceBlockingStub serviceBlockingStub = AlignmentServiceGrpc.newBlockingStub(channel);
+        watch.stop();
+        System.out.println("Time: " + watch.getTime());
+        watch.reset();
+        watch.start();
 
         if (alignmentCommandOptions.queryGRPCAlignmentCommandOptions.count) {
             ServiceTypesModel.LongResponse count = serviceBlockingStub.count(request);
             System.out.println("\nThe number of alignments is " + count.getValue() + "\n");
         } else {
             Iterator<Reads.ReadAlignment> alignmentIterator = serviceBlockingStub.get(request);
+            watch.stop();
+            System.out.println("Time: " + watch.getTime());
             int limit = alignmentCommandOptions.queryGRPCAlignmentCommandOptions.limit;
             if (limit > 0) {
                 long cont = 0;
                 while (alignmentIterator.hasNext() && cont < limit) {
                     Reads.ReadAlignment next = alignmentIterator.next();
                     cont++;
-//                    System.out.println(next.toString());
+                    System.out.println(next.toString());
                 }
             } else {
                 while (alignmentIterator.hasNext()) {
                     Reads.ReadAlignment next = alignmentIterator.next();
-//                    System.out.println(next.toString());
+                    System.out.println(next.toString());
                 }
             }
         }

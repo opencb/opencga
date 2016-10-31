@@ -88,7 +88,7 @@ public class VariantTableMapperTest extends VariantStorageManagerTestUtils imple
             assertEquals("Position issue with PASS", passPos.contains(variant.getStart()), passCnt.equals(1));
         }
         System.out.println("End query from HBase : " + DB_NAME);
-//        assertEquals(source.getStats().getVariantTypeCount(VariantType.SNP) + source.getStats().getVariantTypeCount(VariantType.SNV), numVariants);
+//        assertEquals(source.stats().getVariantTypeCount(VariantType.SNP) + source.stats().getVariantTypeCount(VariantType.SNV), numVariants);
         
     }
 
@@ -114,7 +114,7 @@ public class VariantTableMapperTest extends VariantStorageManagerTestUtils imple
             assertEquals("Position issue with PASS", passPos.contains(variant.getStart()), passCnt.equals(1));
         }
         System.out.println("End query from HBase : " + DB_NAME);
-//        assertEquals(source.getStats().getVariantTypeCount(VariantType.SNP) + source.getStats().getVariantTypeCount(VariantType.SNV), numVariants);
+//        assertEquals(source.stats().getVariantTypeCount(VariantType.SNP) + source.stats().getVariantTypeCount(VariantType.SNV), numVariants);
         
     }
 

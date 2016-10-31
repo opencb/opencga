@@ -140,7 +140,7 @@ public class OpenCGAWSServerTest {
 //        for (Variant variant : variants) {
 //            for (StudyEntry sourceEntry : variant.getStudies()) {
 //                assertEquals(sampleNames.size(), sourceEntry.getSamplesData().size());
-//                assertNotNull("Stats must be calculated", sourceEntry.getStats(StudyEntry.DEFAULT_COHORT));
+//                assertNotNull("Stats must be calculated", sourceEntry.stats(StudyEntry.DEFAULT_COHORT));
 //            }
 //            assertNotNull("Must be annotated", variant.getAnnotation());
 //        }
@@ -162,7 +162,7 @@ public class OpenCGAWSServerTest {
 //        for (Variant variant : variants) {
 //            for (StudyEntry sourceEntry : variant.getStudies()) {
 //                assertEquals(2, sourceEntry.getSamplesData().size());
-//                assertNotNull("Stats must be calculated", sourceEntry.getStats(StudyEntry.DEFAULT_COHORT));
+//                assertNotNull("Stats must be calculated", sourceEntry.stats(StudyEntry.DEFAULT_COHORT));
 //            }
 //            assertNotNull("Must be annotated", variant.getAnnotation());
 //        }

@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.hadoop.alignment;
 
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -77,6 +78,16 @@ public class HadoopAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
     @Override
     public long count(Query query, QueryOptions options) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AlignmentGlobalStats stats() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AlignmentGlobalStats stats(Query query, QueryOptions options) {
         throw new UnsupportedOperationException();
     }
 
