@@ -21,10 +21,12 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionConfiguration;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.client.TableConfiguration;
-import org.apache.hadoop.hbase.filter.*;
+import org.apache.hadoop.hbase.filter.ColumnPrefixFilter;
+import org.apache.hadoop.hbase.filter.ColumnRangeFilter;
+import org.apache.hadoop.hbase.filter.FilterList;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.mapreduce.MultiTableOutputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
@@ -91,8 +93,8 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
     public int run(String[] args) throws Exception {
         Configuration conf = getConf();
         int maxKeyValueSize = conf.getInt(HBASE_KEYVALUE_SIZE_MAX, 10485760); // 10MB
-        getLog().info("HBASE: set " + TableConfiguration.MAX_KEYVALUE_SIZE_KEY + " to " + maxKeyValueSize);
-        conf.setInt(TableConfiguration.MAX_KEYVALUE_SIZE_KEY, maxKeyValueSize); // always overwrite server default (usually 1MB)
+        getLog().info("HBASE: set " + ConnectionConfiguration.MAX_KEYVALUE_SIZE_KEY + " to " + maxKeyValueSize);
+        conf.setInt(ConnectionConfiguration.MAX_KEYVALUE_SIZE_KEY, maxKeyValueSize); // always overwrite server default (usually 1MB)
 
         String inTable = conf.get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, StringUtils.EMPTY);
         String outTable = conf.get(CONFIG_VARIANT_TABLE_NAME, StringUtils.EMPTY);

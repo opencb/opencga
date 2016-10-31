@@ -69,8 +69,31 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
                 org.apache.log4j.Logger.getLogger(FSNamesystem.class.getName() + ".audit").setLevel(Level.WARN);
 
                 utility.set(new HBaseTestingUtility());
+                Configuration conf = utility.get().getConfiguration();
+                HadoopVariantStorageManagerTestUtils.configuration.set(conf);
+
+
+//                // Change port to avoid port collisions
+//                utility.get().getConfiguration().setInt(HConstants.MASTER_INFO_PORT, HConstants.DEFAULT_MASTER_INFOPORT + 1);
+
+                // Enable phoenix secundary indexes
+                conf.set("hbase.regionserver.wal.codec",
+                        org.apache.hadoop.hbase.regionserver.wal.IndexedWALEditCodec.class.getName());
+                conf.set("hbase.region.server.rpc.scheduler.factory.class",
+                        org.apache.hadoop.hbase.ipc.PhoenixRpcSchedulerFactory.class.getName());
+                conf.set("hbase.rpc.controllerfactory.class",
+                        org.apache.hadoop.hbase.ipc.controller.ServerRpcControllerFactory.class.getName());
+
+
+                // Not required in Phoenix 4.8
+//                conf.set("hbase.master.loadbalancer.class",
+//                        org.apache.phoenix.hbase.index.balancer.IndexLoadBalancer.class.getName());
+//                conf.set("hbase.coprocessor.master.classes",
+//                        org.apache.phoenix.hbase.index.master.IndexMasterObserver.class.getName());
+//                conf.set("hbase.coprocessor.regionserver.classes",
+//                        org.apache.hadoop.hbase.regionserver.LocalIndexMerger.class.getName());
+
                 utility.get().startMiniCluster(1);
-                configuration.set(utility.get().getConfiguration());
 
     //            MiniMRCluster miniMRCluster = utility.startMiniMapReduceCluster();
     //            MiniMRClientCluster miniMRClientCluster = MiniMRClientClusterFactory.create(HadoopVariantStorageManagerTestUtils.class, 1, configuration);

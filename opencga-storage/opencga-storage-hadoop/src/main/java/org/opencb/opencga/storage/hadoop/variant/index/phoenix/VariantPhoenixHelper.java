@@ -192,15 +192,19 @@ public class VariantPhoenixHelper {
     }
 
     public void registerNewStudy(Connection con, String table, Integer studyId) throws SQLException {
-        String sql = buildCreate(table);
-        logger.info(sql);
-        phoenixHelper.execute(con, sql);
+        createTableIfNeeded(con, table);
         addColumns(con, table, studyId, PUnsignedInt.INSTANCE, VariantTableStudyRow.HOM_REF, VariantTableStudyRow.PASS_CNT,
                 VariantTableStudyRow.CALL_CNT);
         addColumns(con, table, studyId, PUnsignedIntArray.INSTANCE, VariantTableStudyRow.HET_REF, VariantTableStudyRow.HOM_VAR,
                 VariantTableStudyRow.OTHER, VariantTableStudyRow.NOCALL);
         addColumns(con, table, studyId, PVarbinary.INSTANCE, VariantTableStudyRow.COMPLEX, VariantTableStudyRow.FILTER_OTHER);
         con.commit();
+    }
+
+    public void createTableIfNeeded(Connection con, String table) throws SQLException {
+        String sql = buildCreate(table);
+        logger.info(sql);
+        phoenixHelper.execute(con, sql);
     }
 
     private void addColumns(Connection con, String table, Integer studyId, PDataType<?> dataType, String ... columns) throws SQLException {

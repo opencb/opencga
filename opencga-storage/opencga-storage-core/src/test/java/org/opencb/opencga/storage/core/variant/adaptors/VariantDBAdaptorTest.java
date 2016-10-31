@@ -758,16 +758,6 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnyPolyphen(m))));
         }
 
-        for (String p : Arrays.asList("benign", "possibly damaging", "probably damaging", "unknown")) {
-            queryResult = dbAdaptor.get(new Query(ANNOT_POLYPHEN.key(), p), null);
-            assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnySiftDesc(equalTo(p)))));
-        }
-
-        for (String s : Arrays.asList("deleterious", "tolerated")) {
-            queryResult = dbAdaptor.get(new Query(ANNOT_SIFT.key(), s), null);
-            assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnyPolyphenDesc(equalTo(s)))));
-        }
-
         Query query = new Query(ANNOT_POLYPHEN.key(), "sift>0.5");
         thrown.expect(VariantQueryException.class);
         dbAdaptor.get(query, null);
@@ -777,6 +767,19 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 //            assertEquals(entry.getKey(), entry.getValue(), queryResult.getNumResults());
 //        }
 
+    }
+
+    @Test
+    public void testGetAlVariants_polyphenSiftDescription() {
+        for (String p : Arrays.asList("benign", "possibly damaging", "probably damaging", "unknown")) {
+            queryResult = dbAdaptor.get(new Query(ANNOT_POLYPHEN.key(), p), null);
+            assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnySiftDesc(equalTo(p)))));
+        }
+
+        for (String s : Arrays.asList("deleterious", "tolerated")) {
+            queryResult = dbAdaptor.get(new Query(ANNOT_SIFT.key(), s), null);
+            assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnyPolyphenDesc(equalTo(s)))));
+        }
     }
 
     @Test
@@ -1383,8 +1386,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     public void testExcludeAnnotation() {
         queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, "annotation"));
         assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
+        VariantAnnotation defaultAnnotation = new VariantAnnotation();
+        defaultAnnotation.setConsequenceTypes(Collections.emptyList());
         for (Variant variant : queryResult.getResult()) {
-            assertThat(variant.getAnnotation(), anyOf(is((VariantAnnotation) null), is(new VariantAnnotation())));
+            assertThat(variant.getAnnotation(), anyOf(is((VariantAnnotation) null), is(defaultAnnotation)));
         }
 
     }
