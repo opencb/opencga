@@ -65,6 +65,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*
 @Ignore
 public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtils {
 
+    private static final int QUERIES_LIM = 100;
     protected static int NUM_VARIANTS = 998;
     protected static boolean fileIndexed;
     protected static VariantSource source;
@@ -142,6 +143,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
                     if (variant.getAnnotation() == null) {
                         System.out.println("no annotation for variant = " + variant);
                     }
+                }
+                if (Objects.equals(annotated, all)) {
+                    break;
                 }
             }
             if (params.getBoolean(VariantStorageManager.Options.ANNOTATE.key())) {
@@ -544,7 +548,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             query = new Query(ANNOT_GENE_TRAITS_ID.key(), entry.getKey());
             queryResult = dbAdaptor.get(query, null);
             assertEquals(entry.getValue().intValue(), queryResult.getNumResults());
-            if (i++ == 400) {
+            if (i++ == QUERIES_LIM) {
                 break;
             }
         }
@@ -554,7 +558,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             query = new Query(ANNOT_HPO.key(), entry.getKey());
             queryResult = dbAdaptor.get(query, null);
             assertEquals(entry.getKey(), entry.getValue().intValue(), queryResult.getNumResults());
-            if (i++ == 400) {
+            if (i++ == QUERIES_LIM) {
                 break;
             }
         }
@@ -695,11 +699,15 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         query = new Query(ANNOT_PROTEIN_KEYWORDS.key(), "Complete proteome;!Transmembrane helix");
         assertEquals(combinedKeywordsAndNot, dbAdaptor.count(query).first().intValue());
 
+        int i = 0;
         for (Map.Entry<String, Integer> entry : keywords.entrySet()) {
             System.out.println(entry);
             query = new Query(ANNOT_PROTEIN_KEYWORDS.key(), entry.getKey());
             queryResult = dbAdaptor.get(query, null);
             assertEquals(entry.getValue().intValue(), queryResult.getNumResults());
+            if (++i > QUERIES_LIM) {
+                break;
+            }
         }
 
     }
@@ -719,6 +727,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             }
         }
 
+        int i = 0;
         for (Map.Entry<String, Integer> entry : drugs.entrySet()) {
             if (entry.getKey().contains(",")) {
                 continue;
@@ -726,6 +735,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             query = new Query(ANNOT_DRUG.key(), entry.getKey());
             queryResult = dbAdaptor.get(query, null);
             assertEquals(entry.getKey(), entry.getValue().intValue(), queryResult.getNumResults());
+            if (++i > QUERIES_LIM) {
+                break;
+            }
         }
 
     }
@@ -773,12 +785,12 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     public void testGetAlVariants_polyphenSiftDescription() {
         for (String p : Arrays.asList("benign", "possibly damaging", "probably damaging", "unknown")) {
             queryResult = dbAdaptor.get(new Query(ANNOT_POLYPHEN.key(), p), null);
-            assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnySiftDesc(equalTo(p)))));
+            assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnyPolyphenDesc(equalTo(p)))));
         }
 
         for (String s : Arrays.asList("deleterious", "tolerated")) {
             queryResult = dbAdaptor.get(new Query(ANNOT_SIFT.key(), s), null);
-            assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnyPolyphenDesc(equalTo(s)))));
+            assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasAnySiftDesc(equalTo(s)))));
         }
     }
 
