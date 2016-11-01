@@ -25,6 +25,7 @@ import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.coprocessor.CoprocessorHost;
+import org.apache.hadoop.hbase.fs.HFileSystem;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.io.hfile.CacheConfig;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
@@ -49,6 +50,7 @@ import org.apache.hadoop.hbase.zookeeper.ZKTableStateManager;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.common.Storage;
 import org.apache.hadoop.hdfs.server.datanode.DataNode;
+import org.apache.hadoop.hdfs.server.namenode.EditLogFileOutputStream;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLog;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
@@ -114,6 +116,7 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
                 org.apache.log4j.Logger.getLogger(HRegion.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(HMaster.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(HRegionServer.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(HFileSystem.class).setLevel(Level.WARN);
 //                org.apache.log4j.Logger.getLogger(HBaseAdmin.class).setLevel(Level.WARN); // This logger is interesting!
                 org.apache.log4j.Logger.getLogger(RegionServerQuotaManager.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(MetaMigrationConvertingToPB.class).setLevel(Level.WARN);
@@ -174,6 +177,7 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
                 org.apache.log4j.Logger.getLogger(DatanodeDescriptor.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(FSEditLog.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(FSHLog.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(EditLogFileOutputStream.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger("org.apache.hadoop.hdfs.server.datanode.fsdataset.impl.FsDatasetAsyncDiskService").setLevel(Level.WARN);
 
                 utility.set(new HBaseTestingUtility());

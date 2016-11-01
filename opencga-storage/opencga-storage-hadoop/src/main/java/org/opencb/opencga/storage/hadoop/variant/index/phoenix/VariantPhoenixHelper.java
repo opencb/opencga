@@ -155,7 +155,16 @@ public class VariantPhoenixHelper {
 
     }
 
-    private static final List<Column> HUMAN_POPULATION_FREQUENCIES_COLUMNS = Collections.unmodifiableList(Arrays.asList(
+    private static final Map<String, String> MAPPING_POPULATION_SUDIES;
+    private static final List<Column> HUMAN_POPULATION_FREQUENCIES_COLUMNS;
+
+    static {
+        HashMap<String, String> mappingPopulationStudies = new HashMap<>(2);
+        mappingPopulationStudies.put("1000GENOMES_PHASE_3", "1KG_PHASE3");
+        mappingPopulationStudies.put("ESP_6500", "ESP6500");
+        MAPPING_POPULATION_SUDIES = Collections.unmodifiableMap(mappingPopulationStudies);
+
+        HUMAN_POPULATION_FREQUENCIES_COLUMNS = Collections.unmodifiableList(Arrays.asList(
             getPopulationFrequencyColumn("1kG_phase3", "ALL"),
 
             getPopulationFrequencyColumn("1kG_phase3", "AFR"),
@@ -209,7 +218,9 @@ public class VariantPhoenixHelper {
 
             getPopulationFrequencyColumn("UK10K_ALSPAC", "ALL"),
             getPopulationFrequencyColumn("UK10K_TWINSUK", "ALL")
-    ));
+        ));
+    }
+
 
     public static List<Column> getHumanPopulationFrequenciesColumns() {
         return HUMAN_POPULATION_FREQUENCIES_COLUMNS;
@@ -318,11 +329,24 @@ public class VariantPhoenixHelper {
     }
 
     public void createVariantIndexes(Connection con, String tableName) throws SQLException {
-        List<PhoenixHelper.Index> indices = buildIndices(tableName);
+        List<PhoenixHelper.Index> indices = getIndices(tableName);
         phoenixHelper.createIndexes(con, tableName, indices, false);
     }
 
-    public static List<PhoenixHelper.Index> buildIndices(String tableName) {
+    public static List<PhoenixHelper.Index> getPopFreqIndices(String tableName) {
+        return Arrays.asList(getPopFreqIndex(tableName, "1kG_phase3", "ALL"), getPopFreqIndex(tableName, "EXAC", "ALL"));
+    }
+
+    public static PhoenixHelper.Index getPopFreqIndex(String tableName, String study, String population) {
+        TableName table = TableName.valueOf(tableName);
+        Column column = getPopulationFrequencyColumn(study, population);
+        List<Column> defaultInclude = Arrays.asList(GENES, SO);
+        return new PhoenixHelper.Index(table, PTable.IndexType.LOCAL, Arrays.asList(
+                "\"" + column.column() + "\"[2]",
+                "\"" + column.column() + "\"[1]"), defaultInclude);
+    }
+
+    public static List<PhoenixHelper.Index> getIndices(String tableName) {
         TableName table = TableName.valueOf(tableName);
         List<Column> defaultInclude = Arrays.asList(GENES, SO);
         return Arrays.asList(
@@ -372,13 +396,20 @@ public class VariantPhoenixHelper {
     }
 
     public static Column getPopulationFrequencyColumn(String study, String population) {
-        return Column.build(POPULATION_FREQUENCY_PREFIX + study.toUpperCase() + STUDY_POP_FREQ_SEPARATOR + population.toUpperCase(),
+        study = study.toUpperCase();
+        for (Map.Entry<String, String> entry : MAPPING_POPULATION_SUDIES.entrySet()) {
+            study = study.replace(entry.getKey(), entry.getValue());
+        }
+        return Column.build(POPULATION_FREQUENCY_PREFIX + study + STUDY_POP_FREQ_SEPARATOR + population.toUpperCase(),
                 PFloatArray.INSTANCE);
     }
 
     public static Column getPopulationFrequencyColumn(String studyPopulation) {
-        String studyPopFreq = studyPopulation.replace(VariantDBAdaptorUtils.STUDY_POP_FREQ_SEPARATOR, STUDY_POP_FREQ_SEPARATOR)
-                .toUpperCase();
+        studyPopulation = studyPopulation.toUpperCase();
+        for (Map.Entry<String, String> entry : MAPPING_POPULATION_SUDIES.entrySet()) {
+            studyPopulation = studyPopulation.replace(entry.getKey(), entry.getValue());
+        }
+        String studyPopFreq = studyPopulation.replace(VariantDBAdaptorUtils.STUDY_POP_FREQ_SEPARATOR, STUDY_POP_FREQ_SEPARATOR);
         return Column.build(POPULATION_FREQUENCY_PREFIX + studyPopFreq, PFloatArray.INSTANCE);
     }
 
