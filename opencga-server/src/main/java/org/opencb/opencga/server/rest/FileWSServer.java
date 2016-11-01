@@ -676,18 +676,6 @@ public class FileWSServer extends OpenCGAWSServer {
 //        }
     }
 
-    private void addParamIfNotNull(Map<String, String> params, String key, String value) {
-        if (key != null && value != null) {
-            params.put(key, value);
-        }
-    }
-
-    private void addParamIfTrue(Map<String, String> params, String key, boolean value) {
-        if (key != null && value) {
-            params.put(key, Boolean.toString(value));
-        }
-    }
-
     @GET
     @Path("/{folderId}/tree-view")
     @ApiOperation(value = "Obtain a tree view of the files and folders within a folder", position = 15, response = FileTree[].class)
@@ -1414,7 +1402,7 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
-    private String convertPath(String path, String sessionId) throws CatalogException {
+    public static String convertPath(String path, String sessionId) throws CatalogException {
         return convertPath(path, sessionId, catalogManager);
     }
 
@@ -1471,7 +1459,7 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
-    private List<String> convertPathList(String path, String sessionId) throws CatalogException {
+    public static List<String> convertPathList(String path, String sessionId) throws CatalogException {
         if (path == null) {
             return Collections.emptyList();
         } else if (path.contains(",")) {

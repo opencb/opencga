@@ -397,6 +397,18 @@ public class OpenCGAWSServer {
     }
 
 
+    protected void addParamIfNotNull(Map<String, String> params, String key, String value) {
+        if (key != null && value != null) {
+            params.put(key, value);
+        }
+    }
+
+    protected void addParamIfTrue(Map<String, String> params, String key, boolean value) {
+        if (key != null && value) {
+            params.put(key, Boolean.toString(value));
+        }
+    }
+
     @Deprecated
     @GET
     @Path("/help")
