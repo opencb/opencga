@@ -65,6 +65,9 @@ class WS:
 
         self.last_error = None
 
+        # a triple (method, url, post data) updated before each REST invocation attempt:
+        self.last_invocation = None
+
     @staticmethod
     def check_server_response(response):
         if response == 200:
@@ -172,7 +175,6 @@ class WS:
                 logging.error('WS Failed, File or Folder: ' + str(e) + ' already exists/')
                 raise FileAlreadyExists(e)
 
-
     def run_ws_post(self, url, data):
         """
 
@@ -218,7 +220,8 @@ class WS:
             # This is an example using a post method
             updated_files = ws.general_method("files", "update", data={"attributes": {"new_field": "new_value"}})
 
-            # This is an example using a custom pagination and the buffer, this example will show all the file names in the DB in batches of ten
+            # This is an example using a custom pagination and the buffer, this example will show all the file names in
+            the DB in batches of ten
             for batch in ws.general_method("files", "search", studyId="2", pag=10, use_buffer=True, type="FILE"):
                 for file_result in batch:
                     print file_result["name"]
@@ -251,9 +254,11 @@ class WS:
 
         try:
             if data:
+                self.last_invocation = ("POST", url, data)
                 result = self.run_ws_post(url, data)
             else:
-                result =[]
+                self.last_invocation = ("GET", url, None)
+                result = []
                 if use_buffer:
                     return self.run_ws(url, skip=skip, limit=limit, step=pag)
                 for batch in self.run_ws(url, skip=skip, limit=limit, step=pag):
