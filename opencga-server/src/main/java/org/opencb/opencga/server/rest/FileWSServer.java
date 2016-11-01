@@ -23,24 +23,26 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
+import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.models.DataStore;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.FileIndex;
+import org.opencb.opencga.catalog.models.FileTree;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.storage.core.alignment.AlignmentStorageManagerOld;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.local.DefaultAlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -791,7 +793,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
                     AlignmentDBAdaptor dbAdaptor;
                     try {
-                        AlignmentStorageManagerOld alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
+                        AlignmentStorageManager alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
                         dbAdaptor = alignmentStorageManager.getDBAdaptor(dbName);
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
                         return createErrorResponse(e);
@@ -1006,11 +1008,11 @@ public class FileWSServer extends OpenCGAWSServer {
             }
             java.nio.file.Path path = Paths.get(fileQueryResult.first().getUri());
 
-            AlignmentDBAdaptor alignmentDBAdaptor = new DefaultAlignmentDBAdaptor(path);
+            AlignmentDBAdaptor alignmentDBAdaptor = new DefaultAlignmentDBAdaptor();
             if (!stats) {
-                return createOkResponse(alignmentDBAdaptor.get(, query, queryOptions));
+                return createOkResponse(alignmentDBAdaptor.get(path.toString(), query, queryOptions));
             } else {
-                return createOkResponse(alignmentDBAdaptor.stats(, query, queryOptions));
+                return createOkResponse(alignmentDBAdaptor.stats(path.toString(), query, queryOptions));
             }
         } catch (Exception e) {
             return createErrorResponse(e);

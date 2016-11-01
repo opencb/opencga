@@ -24,17 +24,17 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
-import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
+import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
+import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.storage.core.alignment.AlignmentStorageManagerOld;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
@@ -447,7 +447,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
             AlignmentDBAdaptor dbAdaptor;
             try {
-                AlignmentStorageManagerOld alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
+                AlignmentStorageManager alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
                 dbAdaptor = alignmentStorageManager.getDBAdaptor(dbName);
             } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
                 return createErrorResponse(e);
