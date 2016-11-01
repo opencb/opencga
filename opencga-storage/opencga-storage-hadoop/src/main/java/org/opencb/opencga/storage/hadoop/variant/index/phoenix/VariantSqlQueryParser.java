@@ -265,6 +265,7 @@ public class VariantSqlQueryParser {
 
 //        addQueryFilter(query, ID, VariantColumn.XREFS, regionFilters);
         if (isValidParam(query, ID)) {
+            List<Variant> variants = new ArrayList<>();
             for (String id : query.getAsStringList(ID.key())) {
                 Variant variant = null;
                 if (id.contains(":")) {
@@ -277,13 +278,17 @@ public class VariantSqlQueryParser {
                 if (variant == null) {
                     regionFilters.add(buildFilter(VariantColumn.XREFS, "=", id));
                 } else {
-                    List<String> subFilters = new ArrayList<>(4);
-                    subFilters.add(buildFilter(VariantColumn.CHROMOSOME, "=", variant.getChromosome()));
-                    subFilters.add(buildFilter(VariantColumn.POSITION, "=", variant.getStart().toString()));
-                    subFilters.add(buildFilter(VariantColumn.REFERENCE, "=", variant.getReference()));
-                    subFilters.add(buildFilter(VariantColumn.ALTERNATE, "=", variant.getAlternate()));
-                    regionFilters.add(appendFilters(subFilters, QueryOperation.AND.toString()));
+                    variants.add(variant);
+//                    List<String> subFilters = new ArrayList<>(4);
+//                    subFilters.add(buildFilter(VariantColumn.CHROMOSOME, "=", variant.getChromosome()));
+//                    subFilters.add(buildFilter(VariantColumn.POSITION, "=", variant.getStart().toString()));
+//                    subFilters.add(buildFilter(VariantColumn.REFERENCE, "=", variant.getReference()));
+//                    subFilters.add(buildFilter(VariantColumn.ALTERNATE, "=", varian   t.getAlternate()));
+//                    regionFilters.add(appendFilters(subFilters, QueryOperation.AND.toString()));
                 }
+            }
+            if (!variants.isEmpty()) {
+                regionFilters.add(getVariantFilter(variants));
             }
         }
 
@@ -306,6 +311,42 @@ public class VariantSqlQueryParser {
         }
         return regionFilters;
     }
+
+    private String getVariantFilter(List<Variant> variants) {
+        StringBuilder sb = new StringBuilder().append("(")
+                .append(VariantColumn.CHROMOSOME).append(", ")
+                .append(VariantColumn.POSITION).append(", ")
+                .append(VariantColumn.REFERENCE).append(", ")
+                .append(VariantColumn.ALTERNATE).append(") IN (");
+        Iterator<Variant> iterator = variants.iterator();
+        while (iterator.hasNext()) {
+            Variant variant = iterator.next();
+            sb.append("('").append(variant.getChromosome()).append("', ")
+                    .append(variant.getStart()).append(", ")
+                    .append("'").append(variant.getReference()).append("', ")
+                    .append("'").append(variant.getAlternate()).append("') ");
+            if (iterator.hasNext()) {
+                sb.append(",");
+            }
+        }
+        sb.append(")");
+        return sb.toString();
+    }
+
+//    private String getRegionFilter(Region region) {
+//        if (region.getStart() == region.getEnd()) {
+//            return String.format("(%s,%s) = ('%s',%s)",
+//                    VariantColumn.CHROMOSOME,
+//                    VariantColumn.POSITION,
+//                    region.getChromosome(), region.getStart());
+//        } else {
+//            return String.format("(%s,%s) BETWEEN ('%s',%s) AND ('%s',%s)",
+//                    VariantColumn.CHROMOSOME,
+//                    VariantColumn.POSITION,
+//                    region.getChromosome(), region.getStart(),
+//                    region.getChromosome(), region.getEnd());
+//        }
+//    }
 
     private String getRegionFilter(Region region) {
         List<String> subFilters = new ArrayList<>(3);
@@ -615,7 +656,7 @@ public class VariantSqlQueryParser {
         addQueryFilter(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY,
                 (keyOpValue, s) -> {
                     Column column = getPopulationFrequencyColumn(keyOpValue[0]);
-                    dynamicColumns.add(column);
+//                    dynamicColumns.add(column);
                     return column;
                 }, null, null,
                 keyOpValue -> {
@@ -625,7 +666,7 @@ public class VariantSqlQueryParser {
                     if (op.startsWith("<")) {
                         // If asking "less than", add "OR FIELD IS NULL" to read NULL values as 0, so accept the filter
                         return " OR \"" + column.column() + "\"[2] " + op + " " + value
-                                + " OR \"" + column.column() + "\" IS NULL";
+                                + " OR \"" + column.column() + "\"[2] IS NULL";
                     } else if (op.startsWith(">")) {
                         return " AND \"" + column.column() + "\"[2] " + op + " " + value;
                     } else {
@@ -637,13 +678,13 @@ public class VariantSqlQueryParser {
         addQueryFilter(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY,
                 (keyOpValue, s) -> {
                     Column column = getPopulationFrequencyColumn(keyOpValue[0]);
-                    dynamicColumns.add(column);
+//                    dynamicColumns.add(column);
                     return column;
                 }, null, null,
                 keyOpValue -> {
                     // If asking "less than", add "OR FIELD IS NULL" to read NULL values as 0, so accept the filter
                     if (keyOpValue[1].startsWith("<")) {
-                        return " OR \"" + getPopulationFrequencyColumn(keyOpValue[0]).column() + "\" IS NULL";
+                        return " OR \"" + getPopulationFrequencyColumn(keyOpValue[0]).column() + "\"[2] IS NULL";
                     }
                     return "";
                 }, filters, 2);
@@ -651,13 +692,13 @@ public class VariantSqlQueryParser {
         addQueryFilter(query, ANNOT_POPULATION_REFERENCE_FREQUENCY,
                 (keyOpValue, s) -> {
                     Column column = getPopulationFrequencyColumn(keyOpValue[0]);
-                    dynamicColumns.add(column);
+//                    dynamicColumns.add(column);
                     return column;
                 }, null, null,
                 keyOpValue -> {
                     // If asking "less than", add "OR FIELD IS NULL" to read NULL values as 0, so accept the filter
                     if (keyOpValue[1].startsWith("<")) {
-                        return " OR \"" + getPopulationFrequencyColumn(keyOpValue[0]).column() + "\" IS NULL";
+                        return " OR \"" + getPopulationFrequencyColumn(keyOpValue[0]).column() + "\"[1] IS NULL";
                     }
                     return "";
                 }, filters, 1);

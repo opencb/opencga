@@ -49,6 +49,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.VariantStorageETL;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
@@ -62,6 +63,7 @@ import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbaseTransformTa
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.transform.VariantSliceReader;
 import org.slf4j.Logger;
@@ -71,6 +73,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -355,8 +358,16 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
 
         VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
         try {
-            phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), variantsTableCredentials.getTable(), studyId);
-            phoenixHelper.createVariantIndexes(dbAdaptor.getJdbcConnection(), variantsTableCredentials.getTable());
+            Connection jdbcConnection = dbAdaptor.getJdbcConnection();
+            String tableName = variantsTableCredentials.getTable();
+            phoenixHelper.registerNewStudy(jdbcConnection, tableName, studyId);
+            if (options.getString(VariantAnnotationManager.SPECIES, "hsapiens").equalsIgnoreCase("hsapiens")) {
+                List<PhoenixHelper.Column> columns = VariantPhoenixHelper.getHumanPopulationFrequenciesColumns();
+                phoenixHelper.getPhoenixHelper().addMissingColumns(jdbcConnection, tableName, columns, true);
+                List<PhoenixHelper.Index> popFreqIndices = VariantPhoenixHelper.getPopFreqIndices(tableName);
+                phoenixHelper.getPhoenixHelper().createIndexes(jdbcConnection, tableName, popFreqIndices, false);
+            }
+            phoenixHelper.createVariantIndexes(jdbcConnection, tableName);
         } catch (SQLException e) {
             throw new StorageManagerException("Unable to register study in Phoenix", e);
         }

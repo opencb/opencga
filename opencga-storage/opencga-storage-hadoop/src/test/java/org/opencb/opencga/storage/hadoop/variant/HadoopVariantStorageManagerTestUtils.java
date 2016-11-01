@@ -20,13 +20,57 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hbase.*;
-import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.coprocessor.CoprocessorHost;
+import org.apache.hadoop.hbase.fs.HFileSystem;
 import org.apache.hadoop.hbase.io.compress.Compression;
+import org.apache.hadoop.hbase.io.hfile.CacheConfig;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
+import org.apache.hadoop.hbase.master.AssignmentManager;
+import org.apache.hadoop.hbase.master.HMaster;
+import org.apache.hadoop.hbase.master.RegionStates;
+import org.apache.hadoop.hbase.master.TableNamespaceManager;
+import org.apache.hadoop.hbase.master.procedure.MasterDDLOperationHelper;
+import org.apache.hadoop.hbase.master.procedure.ModifyTableProcedure;
+import org.apache.hadoop.hbase.procedure.ProcedureManagerHost;
+import org.apache.hadoop.hbase.procedure.ZKProcedureUtil;
+import org.apache.hadoop.hbase.procedure2.ProcedureExecutor;
+import org.apache.hadoop.hbase.procedure2.store.wal.WALProcedureStore;
+import org.apache.hadoop.hbase.quotas.RegionServerQuotaManager;
+import org.apache.hadoop.hbase.regionserver.*;
+import org.apache.hadoop.hbase.regionserver.compactions.CompactionConfiguration;
+import org.apache.hadoop.hbase.regionserver.wal.FSHLog;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.util.FSTableDescriptors;
+import org.apache.hadoop.hbase.zookeeper.RecoverableZooKeeper;
+import org.apache.hadoop.hbase.zookeeper.ZKTableStateManager;
+import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
+import org.apache.hadoop.hdfs.server.common.Storage;
+import org.apache.hadoop.hdfs.server.datanode.DataNode;
+import org.apache.hadoop.hdfs.server.namenode.EditLogFileOutputStream;
+import org.apache.hadoop.hdfs.server.namenode.FSEditLog;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
+import org.apache.hadoop.hdfs.server.namenode.NameNode;
+import org.apache.hadoop.http.HttpServer2;
+import org.apache.hadoop.io.compress.CodecPool;
 import org.apache.log4j.Level;
+import org.apache.phoenix.coprocessor.MetaDataEndpointImpl;
+import org.apache.phoenix.hbase.index.Indexer;
+import org.apache.phoenix.hbase.index.covered.data.IndexMemStore;
+import org.apache.phoenix.hbase.index.parallel.BaseTaskRunner;
+import org.apache.phoenix.hbase.index.write.ParallelWriterIndexCommitter;
+import org.apache.phoenix.hbase.index.write.recovery.TrackingParallelWriterIndexCommitter;
+import org.apache.phoenix.schema.MetaDataClient;
 import org.apache.tools.ant.types.Commandline;
+import org.apache.zookeeper.ClientCnxn;
+import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.server.NIOServerCnxn;
+import org.apache.zookeeper.server.NIOServerCnxnFactory;
+import org.apache.zookeeper.server.PrepRequestProcessor;
+import org.apache.zookeeper.server.ZooKeeperServer;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -65,12 +109,103 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
         public void before() throws Throwable {
             if (utility.get() == null) {
 
-                //Disable HBase logging
+                // Disable most of the useless loggers
+
+                // HBase loggers
+                org.apache.log4j.Logger.getLogger(HStore.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(HRegion.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(HMaster.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(HRegionServer.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(HFileSystem.class).setLevel(Level.WARN);
+//                org.apache.log4j.Logger.getLogger(HBaseAdmin.class).setLevel(Level.WARN); // This logger is interesting!
+                org.apache.log4j.Logger.getLogger(RegionServerQuotaManager.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(MetaMigrationConvertingToPB.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(TableNamespaceManager.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(ProcedureManagerHost.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(ZKProcedureUtil.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(WALProcedureStore.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(ProcedureExecutor.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(ModifyTableProcedure.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(DefaultStoreFlusher.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(StoreFile.Reader.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(RegionCoprocessorHost.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(CoprocessorHost.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(RegionStates.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(AssignmentManager.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(MasterDDLOperationHelper.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(FSTableDescriptors.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(ZKTableStateManager.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(MetaTableAccessor.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(RSRpcServices.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(CacheConfig.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(CompactionConfiguration.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(CompactSplitThread.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger("org.apache.hadoop.metrics2.impl.MetricsConfig").setLevel(Level.ERROR);
+                org.apache.log4j.Logger.getLogger("org.apache.hadoop.hbase.client.ConnectionManager$HConnectionImplementation").setLevel(Level.WARN);
+
+                // Phoenix loggers
+                org.apache.log4j.Logger.getLogger(ParallelWriterIndexCommitter.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(BaseTaskRunner.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(Indexer.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(IndexMemStore.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(TrackingParallelWriterIndexCommitter.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(MetaDataEndpointImpl.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(MetaDataClient.class).setLevel(Level.WARN);
+//                org.apache.log4j.Logger.getLogger(QueryUtil.class).setLevel(Level.WARN); // Interesting. Only logs the new connections
+
+                // Hadoop loggers
+                org.apache.log4j.Logger.getLogger(CodecPool.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(HttpServer2.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(org.apache.hadoop.ipc.Server.class).setLevel(Level.WARN);
+
+                // Zookeeper loggers
+                org.apache.log4j.Logger.getLogger(ZooKeeper.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(ZooKeeperServer.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(ClientCnxn.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(NIOServerCnxn.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(NIOServerCnxnFactory.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(PrepRequestProcessor.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(RecoverableZooKeeper.class).setLevel(Level.WARN);
+
+                // HDFS loggers
                 org.apache.log4j.Logger.getLogger(FSNamesystem.class.getName() + ".audit").setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(Storage.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(FSNamesystem.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(NameNode.stateChangeLog.getName()).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(NameNode.blockStateChangeLog.getName()).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(DataNode.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(DatanodeDescriptor.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(FSEditLog.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(FSHLog.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(EditLogFileOutputStream.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger("org.apache.hadoop.hdfs.server.datanode.fsdataset.impl.FsDatasetAsyncDiskService").setLevel(Level.WARN);
 
                 utility.set(new HBaseTestingUtility());
+                Configuration conf = utility.get().getConfiguration();
+                HadoopVariantStorageManagerTestUtils.configuration.set(conf);
+
+
+//                // Change port to avoid port collisions
+//                utility.get().getConfiguration().setInt(HConstants.MASTER_INFO_PORT, HConstants.DEFAULT_MASTER_INFOPORT + 1);
+
+                // Enable phoenix secundary indexes
+                conf.set("hbase.regionserver.wal.codec",
+                        org.apache.hadoop.hbase.regionserver.wal.IndexedWALEditCodec.class.getName());
+                conf.set("hbase.region.server.rpc.scheduler.factory.class",
+                        org.apache.hadoop.hbase.ipc.PhoenixRpcSchedulerFactory.class.getName());
+                conf.set("hbase.rpc.controllerfactory.class",
+                        org.apache.hadoop.hbase.ipc.controller.ServerRpcControllerFactory.class.getName());
+
+
+                // Not required in Phoenix 4.8
+//                conf.set("hbase.master.loadbalancer.class",
+//                        org.apache.phoenix.hbase.index.balancer.IndexLoadBalancer.class.getName());
+//                conf.set("hbase.coprocessor.master.classes",
+//                        org.apache.phoenix.hbase.index.master.IndexMasterObserver.class.getName());
+//                conf.set("hbase.coprocessor.regionserver.classes",
+//                        org.apache.hadoop.hbase.regionserver.LocalIndexMerger.class.getName());
+
                 utility.get().startMiniCluster(1);
-                configuration.set(utility.get().getConfiguration());
 
     //            MiniMRCluster miniMRCluster = utility.startMiniMapReduceCluster();
     //            MiniMRClientCluster miniMRClientCluster = MiniMRClientClusterFactory.create(HadoopVariantStorageManagerTestUtils.class, 1, configuration);

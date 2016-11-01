@@ -13,10 +13,7 @@ import org.apache.phoenix.util.SchemaUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -70,6 +67,43 @@ public class PhoenixHelper {
 
     private String buildAlterAddColumn(String tableName, String column, String type, boolean ifNotExists, String table) {
         return "ALTER " + table + " \"" + tableName + "\" ADD " + (ifNotExists ? "IF NOT EXISTS " : "") + "\"" + column + "\" " + type;
+    }
+
+    public String buildAlterAddColumns(String tableName, Collection<Column> columns, boolean ifNotExists) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ALTER ").append(DEFAULT_TABLE_TYPE).append(" \"").append(tableName)
+                .append("\" ADD ").append(ifNotExists ? "IF NOT EXISTS " : "");
+        Iterator<Column> iterator = columns.iterator();
+        while (iterator.hasNext()) {
+            Column column = iterator.next();
+            sb.append("\"").append(column.column()).append("\" ").append(column.sqlType());
+            if (iterator.hasNext()) {
+                sb.append(", ");
+            }
+        }
+        return sb.toString();
+    }
+
+    public void addMissingColumns(Connection con, String tableName, Collection<Column> annotColumns, boolean oneCall)
+            throws SQLException {
+        Set<String> columns = getColumns(con, tableName).stream().map(Column::column).collect(Collectors.toSet());
+        List<Column> missingColumns = annotColumns.stream()
+                .filter(column -> !columns.contains(column.column()))
+                .collect(Collectors.toList());
+        if (!missingColumns.isEmpty()) {
+            logger.info("Adding missing columns: " + missingColumns);
+            if (oneCall) {
+                String sql = buildAlterAddColumns(tableName, missingColumns, true);
+                VariantPhoenixHelper.logger.info(sql);
+                execute(con, sql);
+            } else {
+                for (Column column : missingColumns) {
+                    String sql = buildAlterAddColumn(tableName, column.column(), column.sqlType(), true);
+                    VariantPhoenixHelper.logger.info(sql);
+                    execute(con, sql);
+                }
+            }
+        }
     }
 
     public Connection newJdbcConnection() throws SQLException, ClassNotFoundException {
@@ -153,6 +187,23 @@ public class PhoenixHelper {
         return sql;
     }
 
+    public List<Column> getColumns(Connection con, String table) throws SQLException {
+        String sql = "SELECT * FROM \"" + table + "\" LIMIT 0";
+        VariantPhoenixHelper.logger.debug(sql);
+
+        try (Statement statement = con.createStatement()) {
+            ResultSet resultSet = statement.executeQuery(sql);
+            ResultSetMetaData metaData = resultSet.getMetaData();
+            List<Column> columns = new ArrayList<>(metaData.getColumnCount());
+            // 1-based
+            for (int i = 1; i <= metaData.getColumnCount(); i++) {
+                columns.add(Column.build(metaData.getColumnName(i), PDataType.fromSqlTypeName(metaData.getColumnTypeName(i))));
+            }
+            return columns;
+        }
+    }
+
+
     public interface Column {
         String column();
 
@@ -220,6 +271,31 @@ public class PhoenixHelper {
         @Override
         public String toString() {
             return column;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof ColumnImpl)) {
+                return false;
+            }
+
+            ColumnImpl column1 = (ColumnImpl) o;
+
+            if (column != null ? !column.equals(column1.column) : column1.column != null) {
+                return false;
+            }
+            return pDataType != null ? pDataType.equals(column1.pDataType) : column1.pDataType == null;
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = column != null ? column.hashCode() : 0;
+            result = 31 * result + (pDataType != null ? pDataType.hashCode() : 0);
+            return result;
         }
     }
 

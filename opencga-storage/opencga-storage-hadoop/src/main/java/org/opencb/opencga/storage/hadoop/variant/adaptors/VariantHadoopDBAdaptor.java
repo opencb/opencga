@@ -51,7 +51,7 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseResultSetIterator;
-import org.opencb.opencga.storage.hadoop.variant.index.annotation.VariantAnnotationDataLoader;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.VariantAnnotationPhoenixDBWriter;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.VariantAnnotationToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.VariantAnnotationUpsertExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
@@ -535,25 +535,12 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantAnnotationDataLoader annotationLoader(QueryOptions options) {
+    public VariantAnnotationPhoenixDBWriter annotationLoader(QueryOptions options) {
         try {
-            return new VariantAnnotationDataLoader(phoenixHelper.newJdbcConnection(this.configuration), variantTable, genomeHelper);
+            return new VariantAnnotationPhoenixDBWriter(this, options, variantTable,
+                    phoenixHelper.newJdbcConnection(this.configuration), true);
         } catch (SQLException | ClassNotFoundException e) {
-            e.printStackTrace();
             throw new RuntimeException(e);
-        }
-    }
-
-    @Override
-    /**
-     * Ensure that all the annotation fields exist are defined.
-     */
-    public void preUpdateAnnotations() throws IOException {
-        try {
-            phoenixHelper.updateAnnotationFields(getJdbcConnection(), variantTable);
-//            phoenixHelper.createVariantIndexes(getJdbcConnection(), variantTable);
-        } catch (SQLException e) {
-            throw new IOException(e);
         }
     }
 

@@ -332,6 +332,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             queryOptions.put(VariantAnnotationManager.ANNOTATION_SOURCE, cliOptions.annotator);
         }
         queryOptions.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, cliOptions.overwriteAnnotations);
+        queryOptions.putAll(cliOptions.commonOptions.params);
         /*
         *         // 2) Read and validate cli args. Configure options
         ObjectMap options = storageConfiguration.getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();

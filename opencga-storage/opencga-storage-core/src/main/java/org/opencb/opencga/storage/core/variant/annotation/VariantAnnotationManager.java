@@ -39,6 +39,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantDBReader;
+import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.avro.AvroDataReader;
 import org.opencb.opencga.storage.core.variant.io.avro.AvroDataWriter;
 import org.opencb.opencga.storage.core.variant.io.avro.VariantAnnotationJsonDataReader;
@@ -187,7 +188,7 @@ public class VariantAnnotationManager {
     public void loadAnnotation(URI uri, QueryOptions options) throws IOException, StorageManagerException {
         Path path = Paths.get(uri);
         String fileName = path.getFileName().toString().toLowerCase();
-        if (fileName.endsWith("avro.gz") || fileName.endsWith("avro") || fileName.endsWith("json.gz") || fileName.endsWith("json")) {
+        if (VariantReaderUtils.isAvro(fileName) || VariantReaderUtils.isJson(fileName)) {
             loadVariantAnnotation(uri, options);
         } else {
             loadCustomAnnotation(uri, options);
@@ -207,8 +208,6 @@ public class VariantAnnotationManager {
         final int numConsumers = options.getInt(VariantAnnotationManager.NUM_WRITERS, 6);
         boolean avro = uri.getPath().endsWith("avro") || uri.getPath().endsWith("avro.gz");
 
-        dbAdaptor.preUpdateAnnotations();
-
         ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numConsumers, batchSize, numConsumers * 2, true, false);
         DataReader<VariantAnnotation> reader;
 
@@ -219,8 +218,9 @@ public class VariantAnnotationManager {
             reader = new VariantAnnotationJsonDataReader(Paths.get(uri).toFile());
         }
         try {
-            ParallelTaskRunner<VariantAnnotation, Void> ptr = new ParallelTaskRunner<>(reader,
-                    () -> dbAdaptor.annotationLoader(options), null, config);
+            ProgressLogger progressLogger = new ProgressLogger("Loaded annotations: ");
+            ParallelTaskRunner<VariantAnnotation, Object> ptr = new ParallelTaskRunner<>(reader,
+                    () -> dbAdaptor.annotationLoader(options).setProgressLogger(progressLogger), null, config);
             ptr.run();
         } catch (Exception e) {
             e.printStackTrace();

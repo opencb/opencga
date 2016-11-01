@@ -43,7 +43,6 @@ public class VariantAnnotationUpsertExecutor extends UpsertExecutor<Map<Column, 
             public void errorOnRecord(Map<Column, ?> columnMap, Throwable e) {
                 LOG.error("ERROR LOADING: " + columnMap, e);
                 if (e instanceof Exception) {
-                    System.exit(0);
                     throw new RuntimeException(e);
                 }
             }
@@ -70,19 +69,16 @@ public class VariantAnnotationUpsertExecutor extends UpsertExecutor<Map<Column, 
                 Column column = columnList.get(fieldIndex);
                 Object sqlValue;
                 sqlValue = map.get(column);
-                if (column.getPDataType().isArrayType()) {
-                    if (sqlValue instanceof Collection) {
-                        sqlValue = toArray(column.getPDataType(), (Collection) sqlValue);
-                    }
-//                    else {
-//                        LOG.debug("Column " + column + " is not a collection " + sqlValue);
-//                    }
-                }
                 if (sqlValue != null) {
-//                    LOG.debug("column = " + column + " , sqlValue.getClass() = " + sqlValue.getClass());
+                    if (column.getPDataType().isArrayType()) {
+                        if (sqlValue instanceof Collection) {
+                            sqlValue = toArray(column.getPDataType(), (Collection) sqlValue);
+                        } else {
+                            throw new IllegalArgumentException("Column " + column + " is not a collection " + sqlValue);
+                        }
+                    }
                     preparedStatement.setObject(fieldIndex + 1, sqlValue);
                 } else {
-//                    LOG.debug("column = " + column + " is null");
                     preparedStatement.setNull(fieldIndex + 1, dataTypes.get(fieldIndex).getSqlType());
                 }
             }
@@ -91,7 +87,7 @@ public class VariantAnnotationUpsertExecutor extends UpsertExecutor<Map<Column, 
             LOG.debug("preparedStatement.getUpdateCount() = " + preparedStatement.getUpdateCount());
             upsertListener.upsertDone(++upsertCount);
 
-        } catch (Exception e) {
+        } catch (RuntimeException | SQLException e) {
             if (LOG.isDebugEnabled()) {
                 // Even though this is an error we only log it with debug logging because we're notifying the
                 // listener, and it can do its own logging if needed
@@ -126,9 +122,9 @@ public class VariantAnnotationUpsertExecutor extends UpsertExecutor<Map<Column, 
         LOG.debug("GLOBAL_MUTATION_SQL_COUNTER = " + GLOBAL_MUTATION_SQL_COUNTER.getMetric().getTotalSum());
     }
 
-    void putDynamicColumns(Map<Column, ?> map) {
-        EnumSet<VariantPhoenixHelper.VariantColumn> variantColumns = EnumSet.allOf(VariantPhoenixHelper.VariantColumn.class);
-
-    }
+//    void putDynamicColumns(Map<Column, ?> map) {
+//        EnumSet<VariantPhoenixHelper.VariantColumn> variantColumns = EnumSet.allOf(VariantPhoenixHelper.VariantColumn.class);
+//
+//    }
 
 }

@@ -22,6 +22,7 @@ import org.ga4gh.methods.SearchVariantsRequest;
 import org.ga4gh.methods.SearchVariantsResponse;
 import org.ga4gh.models.Variant;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 
@@ -105,7 +106,8 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
                     return createErrorResponse(method, "Invalid page token \"" + request.getPageToken() + "\"");
                 }
             }
-
+            // Get all query options
+            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             queryOptions.add("model", "ga4gh");
             SearchVariantsResponse response = new SearchVariantsResponse();
 
