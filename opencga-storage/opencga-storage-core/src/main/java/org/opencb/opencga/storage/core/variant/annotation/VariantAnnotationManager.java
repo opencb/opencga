@@ -208,8 +208,6 @@ public class VariantAnnotationManager {
         final int numConsumers = options.getInt(VariantAnnotationManager.NUM_WRITERS, 6);
         boolean avro = uri.getPath().endsWith("avro") || uri.getPath().endsWith("avro.gz");
 
-        dbAdaptor.preUpdateAnnotations();
-
         ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numConsumers, batchSize, numConsumers * 2, true, false);
         DataReader<VariantAnnotation> reader;
 
@@ -220,8 +218,9 @@ public class VariantAnnotationManager {
             reader = new VariantAnnotationJsonDataReader(Paths.get(uri).toFile());
         }
         try {
-            ParallelTaskRunner<VariantAnnotation, Void> ptr = new ParallelTaskRunner<>(reader,
-                    () -> dbAdaptor.annotationLoader(options), null, config);
+            ProgressLogger progressLogger = new ProgressLogger("Loaded annotations: ");
+            ParallelTaskRunner<VariantAnnotation, Object> ptr = new ParallelTaskRunner<>(reader,
+                    () -> dbAdaptor.annotationLoader(options).setProgressLogger(progressLogger), null, config);
             ptr.run();
         } catch (Exception e) {
             e.printStackTrace();
