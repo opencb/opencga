@@ -37,7 +37,7 @@ import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageManagerOld;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
@@ -88,8 +88,8 @@ public class IndexedAlignmentDBAdaptorTest extends GenericTest {
         alignmentManager.createIndex(bamFile);
 
         ObjectMap options = configuration.getOptions();
-        options.put(AlignmentStorageManager.Options.FILE_ID.key(), "HG00096");
-        options.put(AlignmentStorageManager.Options.DB_NAME.key(), DB_NAME);
+        options.put(AlignmentStorageManagerOld.Options.FILE_ID.key(), "HG00096");
+        options.put(AlignmentStorageManagerOld.Options.DB_NAME.key(), DB_NAME);
         StorageETLResult storageETLResult = manager.index(Collections.singletonList(bamFile.toUri()), rootDir.toUri(), true, true, true).get(0);
         System.out.println("storageETLResult = " + storageETLResult);
 

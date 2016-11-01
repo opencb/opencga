@@ -1,13 +1,11 @@
 package org.opencb.opencga.storage.core.alignment.adaptors;
 
 import org.junit.Test;
-import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
+import org.opencb.opencga.storage.core.alignment.local.DefaultAlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.iterators.ProtoAlignmentIterator;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import static org.junit.Assert.*;
 
 /**
  * Created by pfurio on 26/10/16.
@@ -16,9 +14,9 @@ public class DefaultAlignmentDBAdaptorTest {
 
     @Test
     public void iterator() throws Exception {
-        Path inputPath = Paths.get(getClass().getResource("/HG00096.chrom20.small.bam").toURI());
-        DefaultAlignmentDBAdaptor defaultAlignmentDBAdaptor = new DefaultAlignmentDBAdaptor(inputPath);
-        ProtoAlignmentIterator iterator = defaultAlignmentDBAdaptor.iterator();
+        String inputPath = getClass().getResource("/HG00096.chrom20.small.bam").toString();
+        DefaultAlignmentDBAdaptor defaultAlignmentDBAdaptor = new DefaultAlignmentDBAdaptor();
+        ProtoAlignmentIterator iterator = defaultAlignmentDBAdaptor.iterator(inputPath);
         while (iterator.hasNext()) {
             System.out.println(iterator.next().toString());
         }

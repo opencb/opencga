@@ -16,29 +16,21 @@
 
 package org.opencb.opencga.storage.mongodb.alignment;
 
-import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.CellBaseSequenceDBAdaptor;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.SequenceDBAdaptor;
-import org.opencb.biodata.models.alignment.AlignmentRegion;
-import org.opencb.commons.run.Runner;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
-import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.StorageETL;
+import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
-import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
-import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataReader;
+import org.opencb.opencga.storage.core.alignment.local.DefaultAlignmentStorageETL;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.sequence.SqliteSequenceDBAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.stream.Collectors;
 
 /**
@@ -94,6 +86,16 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         return new IndexedAlignmentDBAdaptor(adaptor, getMongoCredentials(dbName));
     }
 
+    @Override
+    public void testConnection() throws StorageManagerException {
+
+    }
+
+    @Override
+    public StorageETL newStorageETL(boolean connected) throws StorageManagerException {
+        return new DefaultAlignmentStorageETL(getDBAdaptor());
+    }
+
     private MongoCredentials getMongoCredentials(String mongoDbName) {
         try {   //TODO: Use user and password
             String hosts = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getDatabase().getHosts()
@@ -112,55 +114,55 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         }
     }
 
-
-    @Override
-    public URI transform(URI inputUri, URI pedigree, URI outputUri) throws IOException, FileFormatException, StorageManagerException {
-        configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(Options.WRITE_ALIGNMENTS.key(), false);
-        configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(Options.CREATE_BAM_INDEX.key(), true);
-        configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(Options.INCLUDE_COVERAGE.key(), true);
-        return super.transform(inputUri, pedigree, outputUri);
-    }
-
-    @Override
-    public URI preLoad(URI input, URI output) throws IOException {
-        return input;
-    }
-
-    @Override
-    public URI load(URI inputUri) throws IOException {
-        UriUtils.checkUri(inputUri, "input uri", "file");
-        Path input = Paths.get(inputUri.getPath());
-
-//        ObjectMapper objectMapper = new ObjectMapper();
-//        System.out.println("configuration = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(configuration));
-
-        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions();
-        String fileId = options.getString(Options.FILE_ID.key(), input.getFileName().toString().split("\\.")[0]);
-        String dbName = options.getString(Options.DB_NAME.key(), Options.DB_NAME.defaultValue());
-
-        //Reader
-        AlignmentCoverageJsonDataReader alignmentDataReader = getAlignmentCoverageJsonDataReader(input);
-        alignmentDataReader.setReadRegionCoverage(false);   //Only load mean coverage
-
-        //Writer
-        CoverageMongoDBWriter dbWriter = this.getDBWriter(dbName);
-
-        //Runner
-        Runner<AlignmentRegion> runner = new Runner<>(alignmentDataReader, Arrays.asList(dbWriter), new LinkedList<>(), 1);
-
-        logger.info("Loading coverage...");
-        long start = System.currentTimeMillis();
-        runner.run();
-        long end = System.currentTimeMillis();
-        logger.info("end - start = " + (end - start) / 1000.0 + "s");
-        logger.info("Alignments loaded!");
-
-        return inputUri;    //TODO: Return something like this: mongo://<host>/<dbName>/<collectionName>
-    }
-
-    @Override
-    public URI postLoad(URI input, URI output) throws IOException {
-        return input;
-    }
+//
+//    @Override
+//    public URI transform(URI inputUri, URI pedigree, URI outputUri) throws IOException, FileFormatException, StorageManagerException {
+//        configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(Options.WRITE_ALIGNMENTS.key(), false);
+//        configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(Options.CREATE_BAM_INDEX.key(), true);
+//        configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().put(Options.INCLUDE_COVERAGE.key(), true);
+//        return super.transform(inputUri, pedigree, outputUri);
+//    }
+//
+//    @Override
+//    public URI preLoad(URI input, URI output) throws IOException {
+//        return input;
+//    }
+//
+//    @Override
+//    public URI load(URI inputUri) throws IOException {
+//        UriUtils.checkUri(inputUri, "input uri", "file");
+//        Path input = Paths.get(inputUri.getPath());
+//
+////        ObjectMapper objectMapper = new ObjectMapper();
+////        System.out.println("configuration = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(configuration));
+//
+//        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions();
+//        String fileId = options.getString(Options.FILE_ID.key(), input.getFileName().toString().split("\\.")[0]);
+//        String dbName = options.getString(Options.DB_NAME.key(), Options.DB_NAME.defaultValue());
+//
+//        //Reader
+//        AlignmentCoverageJsonDataReader alignmentDataReader = getAlignmentCoverageJsonDataReader(input);
+//        alignmentDataReader.setReadRegionCoverage(false);   //Only load mean coverage
+//
+//        //Writer
+//        CoverageMongoDBWriter dbWriter = this.getDBWriter(dbName);
+//
+//        //Runner
+//        Runner<AlignmentRegion> runner = new Runner<>(alignmentDataReader, Arrays.asList(dbWriter), new LinkedList<>(), 1);
+//
+//        logger.info("Loading coverage...");
+//        long start = System.currentTimeMillis();
+//        runner.run();
+//        long end = System.currentTimeMillis();
+//        logger.info("end - start = " + (end - start) / 1000.0 + "s");
+//        logger.info("Alignments loaded!");
+//
+//        return inputUri;    //TODO: Return something like this: mongo://<host>/<dbName>/<collectionName>
+//    }
+//
+//    @Override
+//    public URI postLoad(URI input, URI output) throws IOException {
+//        return input;
+//    }
 
 }

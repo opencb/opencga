@@ -21,7 +21,7 @@ import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 
 import java.util.List;
@@ -62,34 +62,35 @@ public class HadoopAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
-    public QueryResult get(Query query, QueryOptions options) {
+    public QueryResult get(String fileId, Query query, QueryOptions options) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public AlignmentIterator iterator() {
+    public AlignmentIterator iterator(String fileId) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public AlignmentIterator iterator(Query query, QueryOptions options) {
+    public AlignmentIterator iterator(String fileId, Query query, QueryOptions options) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public long count(Query query, QueryOptions options) {
+    public long count(String fileId, Query query, QueryOptions options) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public AlignmentGlobalStats stats() {
+    public AlignmentGlobalStats stats(String fileId) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public AlignmentGlobalStats stats(Query query, QueryOptions options) {
+    public AlignmentGlobalStats stats(String fileId, Query query, QueryOptions options) {
         throw new UnsupportedOperationException();
     }
+
 
 
 }

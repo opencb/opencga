@@ -39,9 +39,9 @@ import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
-import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
-import org.opencb.opencga.storage.core.alignment.adaptors.DefaultAlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageManagerOld;
+import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.alignment.local.DefaultAlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
@@ -791,7 +791,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
                     AlignmentDBAdaptor dbAdaptor;
                     try {
-                        AlignmentStorageManager alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
+                        AlignmentStorageManagerOld alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
                         dbAdaptor = alignmentStorageManager.getDBAdaptor(dbName);
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
                         return createErrorResponse(e);
@@ -1008,9 +1008,9 @@ public class FileWSServer extends OpenCGAWSServer {
 
             AlignmentDBAdaptor alignmentDBAdaptor = new DefaultAlignmentDBAdaptor(path);
             if (!stats) {
-                return createOkResponse(alignmentDBAdaptor.get(query, queryOptions));
+                return createOkResponse(alignmentDBAdaptor.get(, query, queryOptions));
             } else {
-                return createOkResponse(alignmentDBAdaptor.stats(query, queryOptions));
+                return createOkResponse(alignmentDBAdaptor.stats(, query, queryOptions));
             }
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.alignment.adaptors;
+package org.opencb.opencga.storage.core.alignment;
 
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
@@ -124,16 +124,16 @@ public interface AlignmentDBAdaptor {
 
     QueryResult getAlignmentRegionInfo(Region region, QueryOptions options);
 
-    QueryResult get(Query query, QueryOptions options);
+    QueryResult get(String fileId, Query query, QueryOptions options);
 
-    AlignmentIterator iterator();
+    AlignmentIterator iterator(String fileId);
 
-    AlignmentIterator iterator(Query query, QueryOptions options);
+    AlignmentIterator iterator(String fileId, Query query, QueryOptions options);
 
-    long count(Query query, QueryOptions options);
+    long count(String fileId, Query query, QueryOptions options);
 
-    AlignmentGlobalStats stats();
+    AlignmentGlobalStats stats(String fileId) throws Exception;
 
-    AlignmentGlobalStats stats(Query query, QueryOptions options);
+    AlignmentGlobalStats stats(String fileId, Query query, QueryOptions options) throws Exception;
 
 }

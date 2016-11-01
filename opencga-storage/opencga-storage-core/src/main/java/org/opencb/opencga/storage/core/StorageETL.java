@@ -50,9 +50,9 @@ public interface StorageETL extends AutoCloseable {
 
     URI preTransform(URI input) throws IOException, FileFormatException, StorageManagerException;
 
-    URI transform(URI input, URI pedigree, URI output) throws IOException, FileFormatException, StorageManagerException;
+    URI transform(URI input, URI pedigree, URI output) throws Exception;
 
-    URI postTransform(URI input) throws IOException, FileFormatException, StorageManagerException;
+    URI postTransform(URI input) throws Exception;
 
     default ObjectMap getTransformStats() {
         return new ObjectMap();

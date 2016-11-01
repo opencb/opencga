@@ -25,15 +25,16 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.StorageETL;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
-import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageManagerOld;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -98,7 +99,7 @@ public class AlignmentCommandExecutor extends CommandExecutor {
 
     }
 
-    private void index() throws URISyntaxException, StorageManagerException, IOException, FileFormatException {
+    private void index() throws Exception {
         CliOptionsParser.IndexAlignmentsCommandOptions indexAlignmentsCommandOptions = commandOptions.indexAlignmentsCommandOptions;
 
         URI inputUri = UriUtils.createUri(indexAlignmentsCommandOptions.input.get(0));
@@ -116,22 +117,23 @@ public class AlignmentCommandExecutor extends CommandExecutor {
              */
         ObjectMap alignmentOptions = storageConfiguration.getAlignment().getOptions();
         if (Integer.parseInt(indexAlignmentsCommandOptions.fileId) != 0) {
-            alignmentOptions.put(AlignmentStorageManager.Options.FILE_ID.key(), indexAlignmentsCommandOptions.fileId);
+            alignmentOptions.put(AlignmentStorageManagerOld.Options.FILE_ID.key(), indexAlignmentsCommandOptions.fileId);
         }
         if (indexAlignmentsCommandOptions.dbName != null && !indexAlignmentsCommandOptions.dbName.isEmpty()) {
-            alignmentOptions.put(AlignmentStorageManager.Options.DB_NAME.key(), indexAlignmentsCommandOptions.dbName);
+            alignmentOptions.put(AlignmentStorageManagerOld.Options.DB_NAME.key(), indexAlignmentsCommandOptions.dbName);
         }
         if (indexAlignmentsCommandOptions.commonOptions.params != null) {
             alignmentOptions.putAll(indexAlignmentsCommandOptions.commonOptions.params);
         }
 
-        alignmentOptions.put(AlignmentStorageManager.Options.PLAIN.key(), false);
-        alignmentOptions.put(AlignmentStorageManager.Options.INCLUDE_COVERAGE.key(), indexAlignmentsCommandOptions.calculateCoverage);
+        alignmentOptions.put(AlignmentStorageManagerOld.Options.PLAIN.key(), false);
+        alignmentOptions.put(AlignmentStorageManagerOld.Options.INCLUDE_COVERAGE.key(), indexAlignmentsCommandOptions.calculateCoverage);
         if (indexAlignmentsCommandOptions.meanCoverage != null && !indexAlignmentsCommandOptions.meanCoverage.isEmpty()) {
-            alignmentOptions.put(AlignmentStorageManager.Options.MEAN_COVERAGE_SIZE_LIST.key(), indexAlignmentsCommandOptions.meanCoverage);
+            alignmentOptions.put(AlignmentStorageManagerOld.Options.MEAN_COVERAGE_SIZE_LIST.key(),
+                    indexAlignmentsCommandOptions.meanCoverage);
         }
-        alignmentOptions.put(AlignmentStorageManager.Options.COPY_FILE.key(), false);
-        alignmentOptions.put(AlignmentStorageManager.Options.ENCRYPT.key(), "null");
+        alignmentOptions.put(AlignmentStorageManagerOld.Options.COPY_FILE.key(), false);
+        alignmentOptions.put(AlignmentStorageManagerOld.Options.ENCRYPT.key(), "null");
         logger.debug("Configuration options: {}", alignmentOptions.toJson());
 
 
@@ -149,27 +151,29 @@ public class AlignmentCommandExecutor extends CommandExecutor {
             load = indexAlignmentsCommandOptions.load;
         }
 
+        StorageETL storageETL = alignmentStorageManager.newStorageETL(true);
+
         if (extract) {
             logger.info("-- Extract alignments -- {}", inputUri);
-            nextFileUri = alignmentStorageManager.extract(inputUri, outdirUri);
+            nextFileUri = storageETL.extract(inputUri, outdirUri);
         }
 
         if (transform) {
             logger.info("-- PreTransform alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.preTransform(nextFileUri);
+            nextFileUri = storageETL.preTransform(nextFileUri);
             logger.info("-- Transform alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.transform(nextFileUri, null, outdirUri);
+            nextFileUri = storageETL.transform(nextFileUri, null, outdirUri);
             logger.info("-- PostTransform alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.postTransform(nextFileUri);
+            nextFileUri = storageETL.postTransform(nextFileUri);
         }
 
         if (load) {
             logger.info("-- PreLoad alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.preLoad(nextFileUri, outdirUri);
+            nextFileUri = storageETL.preLoad(nextFileUri, outdirUri);
             logger.info("-- Load alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.load(nextFileUri);
+            nextFileUri = storageETL.load(nextFileUri);
             logger.info("-- PostLoad alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.postLoad(nextFileUri, outdirUri);
+            nextFileUri = storageETL.postLoad(nextFileUri, outdirUri);
         }
     }
 

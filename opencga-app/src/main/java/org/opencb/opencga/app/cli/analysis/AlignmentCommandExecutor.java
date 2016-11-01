@@ -24,10 +24,6 @@ import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.ga4gh.models.ReadAlignment;
-import org.opencb.biodata.formats.feature.gff.Gff;
-import org.opencb.biodata.formats.feature.gff.io.GffReader;
-import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
@@ -44,8 +40,8 @@ import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
 import org.opencb.opencga.server.grpc.ServiceTypesModel;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
-import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageManagerOld;
+import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
@@ -62,7 +58,7 @@ import java.util.stream.Collectors;
  */
 public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
     private final AnalysisCliOptionsParser.AlignmentCommandOptions alignmentCommandOptions;
-    private AlignmentStorageManager alignmentStorageManager;
+    private AlignmentStorageManagerOld alignmentStorageManager;
 
     public AlignmentCommandExecutor(AnalysisCliOptionsParser.AlignmentCommandOptions options) {
         super(options.commonOptions);
@@ -190,7 +186,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         }
     }
 
-    private AlignmentStorageManager initAlignmentStorageManager(DataStore dataStore)
+    private AlignmentStorageManagerOld initAlignmentStorageManager(DataStore dataStore)
             throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException {
 
         String storageEngine = dataStore.getStorageEngine();
@@ -270,22 +266,22 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         // 2) Read and validate cli args. Configure options
         ObjectMap alignmentOptions = alignmentStorageManager.getOptions();
         if (Integer.parseInt(cliOptions.fileId) != 0) {
-            alignmentOptions.put(AlignmentStorageManager.Options.FILE_ID.key(), cliOptions.fileId);
+            alignmentOptions.put(AlignmentStorageManagerOld.Options.FILE_ID.key(), cliOptions.fileId);
         }
 
-        alignmentOptions.put(AlignmentStorageManager.Options.DB_NAME.key(), dataStore.getDbName());
+        alignmentOptions.put(AlignmentStorageManagerOld.Options.DB_NAME.key(), dataStore.getDbName());
 
         if (cliOptions.commonOptions.params != null) {
             alignmentOptions.putAll(cliOptions.commonOptions.params);
         }
 
-        alignmentOptions.put(AlignmentStorageManager.Options.PLAIN.key(), false);
-        alignmentOptions.put(AlignmentStorageManager.Options.INCLUDE_COVERAGE.key(), cliOptions.calculateCoverage);
+        alignmentOptions.put(AlignmentStorageManagerOld.Options.PLAIN.key(), false);
+        alignmentOptions.put(AlignmentStorageManagerOld.Options.INCLUDE_COVERAGE.key(), cliOptions.calculateCoverage);
         if (cliOptions.meanCoverage != null && !cliOptions.meanCoverage.isEmpty()) {
-            alignmentOptions.put(AlignmentStorageManager.Options.MEAN_COVERAGE_SIZE_LIST.key(), cliOptions.meanCoverage);
+            alignmentOptions.put(AlignmentStorageManagerOld.Options.MEAN_COVERAGE_SIZE_LIST.key(), cliOptions.meanCoverage);
         }
-        alignmentOptions.put(AlignmentStorageManager.Options.COPY_FILE.key(), false);
-        alignmentOptions.put(AlignmentStorageManager.Options.ENCRYPT.key(), "null");
+        alignmentOptions.put(AlignmentStorageManagerOld.Options.COPY_FILE.key(), false);
+        alignmentOptions.put(AlignmentStorageManagerOld.Options.ENCRYPT.key(), "null");
         logger.debug("Configuration options: {}", alignmentOptions.toJson());
 
 

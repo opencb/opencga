@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.alignment.adaptors;
+package org.opencb.opencga.storage.core.alignment.local;
 
 import ga4gh.Reads;
 import org.apache.commons.lang3.time.StopWatch;
@@ -11,10 +11,12 @@ import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.iterators.ProtoAlignmentIterator;
 
-import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 /**
@@ -22,10 +24,7 @@ import java.util.List;
  */
 public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
-    private AlignmentManager alignmentManager;
-
-    public DefaultAlignmentDBAdaptor(Path input) throws IOException {
-        alignmentManager = new AlignmentManager(input);
+    public DefaultAlignmentDBAdaptor() {
     }
 
     @Override
@@ -59,10 +58,14 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
-    public QueryResult get(Query query, QueryOptions options) {
+    public QueryResult get(String fileId, Query query, QueryOptions options) {
         try {
             StopWatch watch = new StopWatch();
             watch.start();
+
+            Path path = Paths.get(fileId);
+            FileUtils.checkFile(path);
+            AlignmentManager alignmentManager = new AlignmentManager(path);
 
             AlignmentOptions alignmentOptions = parseQueryOptions(options);
             AlignmentFilters alignmentFilters = parseQuery(query);
@@ -89,12 +92,12 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
-    public ProtoAlignmentIterator iterator() {
-        return iterator(new Query(), new QueryOptions());
+    public ProtoAlignmentIterator iterator(String fileId) {
+        return iterator(fileId, new Query(), new QueryOptions());
     }
 
     @Override
-    public ProtoAlignmentIterator iterator(Query query, QueryOptions options) {
+    public ProtoAlignmentIterator iterator(String fileId, Query query, QueryOptions options) {
         try {
             if (options == null) {
                 options = new QueryOptions();
@@ -102,6 +105,10 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
             if (query == null) {
                 query = new Query();
             }
+
+            Path path = Paths.get(fileId);
+            FileUtils.checkFile(path);
+            AlignmentManager alignmentManager = new AlignmentManager(path);
 
             AlignmentOptions alignmentOptions = parseQueryOptions(options);
             AlignmentFilters alignmentFilters = parseQuery(query);
@@ -150,8 +157,8 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
-    public long count(Query query, QueryOptions options) {
-        ProtoAlignmentIterator iterator = iterator(query, options);
+    public long count(String fileId, Query query, QueryOptions options) {
+        ProtoAlignmentIterator iterator = iterator(fileId, query, options);
         long cont = 0;
         while (iterator.hasNext()) {
             iterator.next();
@@ -161,12 +168,16 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
-    public AlignmentGlobalStats stats() {
+    public AlignmentGlobalStats stats(String fileId) throws Exception {
+        Path path = Paths.get(fileId);
+        FileUtils.checkFile(path);
+        // TODO: This is wrong ! Go to the database or file
+        AlignmentManager alignmentManager = new AlignmentManager(path);
         return alignmentManager.stats();
     }
 
     @Override
-    public AlignmentGlobalStats stats(Query query, QueryOptions options) {
+    public AlignmentGlobalStats stats(String fileId, Query query, QueryOptions options) throws Exception {
         if (options == null) {
             options = new QueryOptions();
         }
@@ -174,9 +185,15 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
             query = new Query();
         }
 
+        Path path = Paths.get(fileId);
+        FileUtils.checkFile(path);
+
         AlignmentOptions alignmentOptions = parseQueryOptions(options);
         AlignmentFilters alignmentFilters = parseQuery(query);
         Region region = parseRegion(query);
+
+        // TODO: Check if it is already in catalog
+        AlignmentManager alignmentManager = new AlignmentManager(path);
 
         return alignmentManager.stats(region, alignmentOptions, alignmentFilters);
     }
