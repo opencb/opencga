@@ -550,7 +550,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
      */
     public void preUpdateAnnotations() throws IOException {
         try {
-            phoenixHelper.updateAnnotationFields(getJdbcConnection(), variantTable);
+            phoenixHelper.updateAnnotationColumns(getJdbcConnection(), variantTable);
 //            phoenixHelper.createVariantIndexes(getJdbcConnection(), variantTable);
         } catch (SQLException e) {
             throw new IOException(e);

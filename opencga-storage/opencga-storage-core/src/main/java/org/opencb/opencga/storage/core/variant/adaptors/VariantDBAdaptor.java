@@ -359,7 +359,7 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
 
     QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
 
-    default ParallelTaskRunner.Task<VariantAnnotation, Void> annotationLoader(QueryOptions options) {
+    default ParallelTaskRunner.TaskWithException<VariantAnnotation, Void, ?> annotationLoader(QueryOptions options) {
         return new ParallelTaskRunner.Task<VariantAnnotation, Void>() {
             @Override
             public List<Void> apply(List<VariantAnnotation> batch) throws RuntimeException {

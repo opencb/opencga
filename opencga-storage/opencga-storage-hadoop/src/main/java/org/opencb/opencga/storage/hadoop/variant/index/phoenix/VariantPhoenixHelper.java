@@ -23,6 +23,7 @@ import org.apache.phoenix.schema.PTable;
 import org.apache.phoenix.schema.types.*;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
@@ -54,8 +55,9 @@ public class VariantPhoenixHelper {
     public static final byte[] STATS_PROTOBUF_SUFIX_BYTES = Bytes.toBytes(STATS_PROTOBUF_SUFIX);
     public static final String MAF_SUFIX = "_MAF";
     public static final String MGF_SUFIX = "_MGF";
-    private static final String TABLE = "TABLE";
+    private static final String STUDY_POP_FREQ_SEPARATOR = "_";
     private final PhoenixHelper phoenixHelper;
+    private final GenomeHelper genomeHelper;
     protected static Logger logger = LoggerFactory.getLogger(VariantPhoenixHelper.class);
 
     public enum VariantColumn implements Column {
@@ -151,11 +153,67 @@ public class VariantPhoenixHelper {
             return columns.get(columnName);
         }
 
-
     }
 
+    private static final List<Column> HUMAN_POPULATION_FREQUENCIES_COLUMNS = Collections.unmodifiableList(Arrays.asList(
+            getPopulationFrequencyColumn("1kG_phase3", "ALL"),
 
-    private final GenomeHelper genomeHelper;
+            getPopulationFrequencyColumn("1kG_phase3", "AFR"),
+            getPopulationFrequencyColumn("1kG_phase3", "AMR"),
+            getPopulationFrequencyColumn("1kG_phase3", "EAS"),
+            getPopulationFrequencyColumn("1kG_phase3", "EUR"),
+            getPopulationFrequencyColumn("1kG_phase3", "SAS"),
+
+            getPopulationFrequencyColumn("1kG_phase3", "ACB"),
+            getPopulationFrequencyColumn("1kG_phase3", "ASW"),
+            getPopulationFrequencyColumn("1kG_phase3", "BEB"),
+            getPopulationFrequencyColumn("1kG_phase3", "CDX"),
+            getPopulationFrequencyColumn("1kG_phase3", "CEU"),
+            getPopulationFrequencyColumn("1kG_phase3", "CHB"),
+            getPopulationFrequencyColumn("1kG_phase3", "CHD"),
+            getPopulationFrequencyColumn("1kG_phase3", "CHS"),
+            getPopulationFrequencyColumn("1kG_phase3", "CLM"),
+            getPopulationFrequencyColumn("1kG_phase3", "ESN"),
+            getPopulationFrequencyColumn("1kG_phase3", "FIN"),
+            getPopulationFrequencyColumn("1kG_phase3", "GBR"),
+            getPopulationFrequencyColumn("1kG_phase3", "GIH"),
+            getPopulationFrequencyColumn("1kG_phase3", "GWD"),
+            getPopulationFrequencyColumn("1kG_phase3", "IBS"),
+            getPopulationFrequencyColumn("1kG_phase3", "ITU"),
+            getPopulationFrequencyColumn("1kG_phase3", "JPT"),
+            getPopulationFrequencyColumn("1kG_phase3", "KHV"),
+            getPopulationFrequencyColumn("1kG_phase3", "LWK"),
+            getPopulationFrequencyColumn("1kG_phase3", "MSL"),
+            getPopulationFrequencyColumn("1kG_phase3", "MXL"),
+            getPopulationFrequencyColumn("1kG_phase3", "PEL"),
+            getPopulationFrequencyColumn("1kG_phase3", "PJL"),
+            getPopulationFrequencyColumn("1kG_phase3", "PUR"),
+            getPopulationFrequencyColumn("1kG_phase3", "STU"),
+            getPopulationFrequencyColumn("1kG_phase3", "TSI"),
+            getPopulationFrequencyColumn("1kG_phase3", "YRI"),
+
+            getPopulationFrequencyColumn("ESP6500", "ALL"),
+            getPopulationFrequencyColumn("ESP6500", "EA"),
+            getPopulationFrequencyColumn("ESP6500", "AA"),
+
+            getPopulationFrequencyColumn("EXAC", "ALL"),
+            getPopulationFrequencyColumn("EXAC", "AFR"),
+            getPopulationFrequencyColumn("EXAC", "AMR"),
+            getPopulationFrequencyColumn("EXAC", "EAS"),
+            getPopulationFrequencyColumn("EXAC", "FIN"),
+            getPopulationFrequencyColumn("EXAC", "NFE"),
+            getPopulationFrequencyColumn("EXAC", "OTH"),
+            getPopulationFrequencyColumn("EXAC", "SAS"),
+
+            getPopulationFrequencyColumn("GONL", "ALL"),
+
+            getPopulationFrequencyColumn("UK10K_ALSPAC", "ALL"),
+            getPopulationFrequencyColumn("UK10K_TWINSUK", "ALL")
+    ));
+
+    public static List<Column> getHumanPopulationFrequenciesColumns() {
+        return HUMAN_POPULATION_FREQUENCIES_COLUMNS;
+    }
 
     public VariantPhoenixHelper(GenomeHelper genomeHelper) {
         this.genomeHelper = genomeHelper;
@@ -174,12 +232,9 @@ public class VariantPhoenixHelper {
         return phoenixHelper;
     }
 
-    public void updateAnnotationFields(Connection con, String tableName) throws SQLException {
-        VariantColumn[] annotColumns = new VariantColumn[]{GENES, BIOTYPE, SO, POLYPHEN, SIFT, PHYLOP, PHASTCONS, FULL_ANNOTATION};
-        for (VariantColumn column : annotColumns) {
-            String sql = phoenixHelper.buildAlterAddColumn(tableName, column.column(), column.sqlType(), true);
-            phoenixHelper.execute(con, sql);
-        }
+    public void updateAnnotationColumns(Connection con, String tableName) throws SQLException {
+        List<Column> annotColumns = Arrays.asList(VariantColumn.values());
+        phoenixHelper.addMissingColumns(con, tableName, annotColumns, true);
     }
 
     public void updateStatsFields(Connection con, String tableName, StudyConfiguration studyConfiguration) throws SQLException {
@@ -250,6 +305,10 @@ public class VariantPhoenixHelper {
             }
         }
 
+//        for (Column column : VariantPhoenixHelper.HUMAN_POPULATION_FREQUENCIES_COLUMNS) {
+//            sb.append(" \"").append(column).append("\" ").append(column.sqlType()).append(" , ");
+//        }
+
         return sb.append(" ")
                 .append("CONSTRAINT PK PRIMARY KEY (")
                 .append(CHROMOSOME).append(", ")
@@ -313,11 +372,14 @@ public class VariantPhoenixHelper {
     }
 
     public static Column getPopulationFrequencyColumn(String study, String population) {
-        return Column.build(POPULATION_FREQUENCY_PREFIX + study.toUpperCase() + ":" + population.toUpperCase(), PFloatArray.INSTANCE);
+        return Column.build(POPULATION_FREQUENCY_PREFIX + study.toUpperCase() + STUDY_POP_FREQ_SEPARATOR + population.toUpperCase(),
+                PFloatArray.INSTANCE);
     }
 
     public static Column getPopulationFrequencyColumn(String studyPopulation) {
-        return Column.build(POPULATION_FREQUENCY_PREFIX + studyPopulation.toUpperCase(), PFloatArray.INSTANCE);
+        String studyPopFreq = studyPopulation.replace(VariantDBAdaptorUtils.STUDY_POP_FREQ_SEPARATOR, STUDY_POP_FREQ_SEPARATOR)
+                .toUpperCase();
+        return Column.build(POPULATION_FREQUENCY_PREFIX + studyPopFreq, PFloatArray.INSTANCE);
     }
 
     public static Column getConservationScoreColumn(String source)

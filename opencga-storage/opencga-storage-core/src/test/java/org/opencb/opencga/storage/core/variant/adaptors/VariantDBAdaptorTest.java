@@ -66,6 +66,10 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*
 public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtils {
 
     private static final int QUERIES_LIM = 100;
+    //    private static final String GENOMES_PHASE_3 = "1000GENOMES_phase_3";
+    //    private static final String ESP_6500 = "ESP_6500";
+    private static final String GENOMES_PHASE_3 = "1kG_phase3";
+    private static final String ESP_6500 = "ESP6500";
     protected static int NUM_VARIANTS = 998;
     protected static boolean fileIndexed;
     protected static VariantSource source;
@@ -229,9 +233,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         final PopulationFrequency defaultPopulation = new PopulationFrequency(null, null, null, null, 0F, 0F, 0F, 0F, 0F);
         Query query;
         query = new Query()
-                .append(ANNOT_POPULATION_REFERENCE_FREQUENCY.key(), "1000GENOMES_phase_3:AFR<=0.05001");
+                .append(ANNOT_POPULATION_REFERENCE_FREQUENCY.key(), GENOMES_PHASE_3 + ":AFR<=0.05001");
         queryResult = dbAdaptor.get(query, options);
-        assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasPopRefFreq("1000GENOMES_phase_3", "AFR", lte(0.05001)))));
+        assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasPopRefFreq(GENOMES_PHASE_3, "AFR", lte(0.05001)))));
     }
 
     @Test
@@ -240,39 +244,39 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         Query query;
 
         query = new Query()
-                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "ESP_6500:AA>0.05001");
+                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), ESP_6500 + ":AA>0.05001");
         queryResult = dbAdaptor.get(query, options);
-        assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasPopAltFreq("ESP_6500", "AA", gt(0.05001)))));
+        assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasPopAltFreq(ESP_6500, "AA", gt(0.05001)))));
 
-//        filterPopulation(map -> (map.containsKey("ESP_6500:AA") && map.get("ESP_6500:AA").getAltAlleleFreq() > 0.05001), filter);
+//        filterPopulation(map -> (map.containsKey(ESP_6500 + ":AA") && map.get(ESP_6500 + ":AA").getAltAlleleFreq() > 0.05001), filter);
 
         query = new Query()
-                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000GENOMES_phase_3:AFR<=0.05001");
+                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), GENOMES_PHASE_3 + ":AFR<=0.05001");
         queryResult = dbAdaptor.get(query, options);
-        assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasPopAltFreq("1000GENOMES_phase_3", "AFR", lte(0.05001)))));
+        assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasPopAltFreq(GENOMES_PHASE_3, "AFR", lte(0.05001)))));
 
-//        filterPopulation(map -> (!map.containsKey("1000GENOMES_phase_3:AFR") || map.get("1000GENOMES_phase_3:AFR").getAltAlleleFreq() <= 0.05001), filter);
+//        filterPopulation(map -> (!map.containsKey(GENOMES_PHASE_3 + ":AFR") || map.get(GENOMES_PHASE_3 + ":AFR").getAltAlleleFreq() <= 0.05001), filter);
 
         query = new Query()
-                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "ESP_6500:AA>0.05001;1000GENOMES_phase_3:AFR<=0.05001");
+                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), ESP_6500 + ":AA>0.05001;" + GENOMES_PHASE_3 + ":AFR<=0.05001");
         queryResult = dbAdaptor.get(query, options);
         assertThat(queryResult, everyResult(allVariants, hasAnnotation(allOf(
-                        hasPopAltFreq("ESP_6500", "AA", gt(0.05001)),
-                        hasPopAltFreq("1000GENOMES_phase_3", "AFR", lte(0.05001))))));
+                        hasPopAltFreq(ESP_6500, "AA", gt(0.05001)),
+                        hasPopAltFreq(GENOMES_PHASE_3, "AFR", lte(0.05001))))));
 
-//        filterPopulation(map -> (map.containsKey("ESP_6500:AA") && map.get("ESP_6500:AA").getAltAlleleFreq() > 0.05001
-//                        && (!map.containsKey("1000GENOMES_phase_3:AFR") || map.get("1000GENOMES_phase_3:AFR").getAltAlleleFreq() <= 0.05001)), filter);
+//        filterPopulation(map -> (map.containsKey(ESP_6500 + ":AA") && map.get(ESP_6500 + ":AA").getAltAlleleFreq() > 0.05001
+//                        && (!map.containsKey(GENOMES_PHASE_3 + ":AFR") || map.get(GENOMES_PHASE_3 + ":AFR").getAltAlleleFreq() <= 0.05001)), filter);
 
         query = new Query()
-                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "ESP_6500:AA>0.05001,1000GENOMES_phase_3:AFR<=0.05001");
+                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), ESP_6500 + ":AA>0.05001," + GENOMES_PHASE_3 + ":AFR<=0.05001");
         queryResult = dbAdaptor.get(query, options);
 
         assertThat(queryResult, everyResult(allVariants, hasAnnotation(anyOf(
-                hasPopAltFreq("ESP_6500", "AA", gt(0.05001)),
-                hasPopAltFreq("1000GENOMES_phase_3", "AFR", lte(0.05001))))));
+                hasPopAltFreq(ESP_6500, "AA", gt(0.05001)),
+                hasPopAltFreq(GENOMES_PHASE_3, "AFR", lte(0.05001))))));
 
-//        filterPopulation(map -> (map.containsKey("ESP_6500:AA") && map.get("ESP_6500:AA").getAltAlleleFreq() > 0.05001
-//                        || (!map.containsKey("1000GENOMES_phase_3:AFR") || map.get("1000GENOMES_phase_3:AFR").getAltAlleleFreq() <= 0.05001)), filter);
+//        filterPopulation(map -> (map.containsKey(ESP_6500 + ":AA") && map.get(ESP_6500 + ":AA").getAltAlleleFreq() > 0.05001
+//                        || (!map.containsKey(GENOMES_PHASE_3 + ":AFR") || map.get(GENOMES_PHASE_3 + ":AFR").getAltAlleleFreq() <= 0.05001)), filter);
 
     }
 
@@ -282,38 +286,38 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         Query baseQuery = new Query();
 
         Query query = new Query(baseQuery)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1000GENOMES_phase_3:AFR<=0.0501");
+                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), GENOMES_PHASE_3 + ":AFR<=0.0501");
         queryResult = dbAdaptor.get(query, options);
-        filterPopulation(map -> (Math.min(map.getOrDefault("1000GENOMES_phase_3:AFR", defaultPopulation).getRefAlleleFreq(),
-                map.getOrDefault("1000GENOMES_phase_3:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501));
+        filterPopulation(map -> (Math.min(map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getRefAlleleFreq(),
+                map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501));
 
         query = new Query(baseQuery)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"ESP_6500:AA>0.0501");
+                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), ESP_6500 + ":AA>0.0501");
         queryResult = dbAdaptor.get(query, options);
-        filterPopulation(map -> (map.containsKey("ESP_6500:AA") && Math.min(map.get("ESP_6500:AA").getRefAlleleFreq(),
-                map.get("ESP_6500:AA").getAltAlleleFreq()) > 0.0501));
+        filterPopulation(map -> (map.containsKey(ESP_6500 + ":AA") && Math.min(map.get(ESP_6500 + ":AA").getRefAlleleFreq(),
+                map.get(ESP_6500 + ":AA").getAltAlleleFreq()) > 0.0501));
 
         query = new Query(baseQuery)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"1000GENOMES_phase_3:AFR<=0.0501");
+                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),GENOMES_PHASE_3 + ":AFR<=0.0501");
         queryResult = dbAdaptor.get(query, options);
-        filterPopulation(map -> (Math.min(map.getOrDefault("1000GENOMES_phase_3:AFR", defaultPopulation).getRefAlleleFreq(),
-                map.getOrDefault("1000GENOMES_phase_3:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501));
+        filterPopulation(map -> (Math.min(map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getRefAlleleFreq(),
+                map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501));
 
         query = new Query(baseQuery)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"ESP_6500:AA>0.0501;1000GENOMES_phase_3:AFR<=0.0501");
+                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), ESP_6500 + ":AA>0.0501;" + GENOMES_PHASE_3 + ":AFR<=0.0501");
         queryResult = dbAdaptor.get(query, options);
-        filterPopulation(map -> (map.containsKey("ESP_6500:AA") && Math.min(map.get("ESP_6500:AA").getRefAlleleFreq(),
-                map.get("ESP_6500:AA").getAltAlleleFreq()) > 0.0501
-                && Math.min(map.getOrDefault("1000GENOMES_phase_3:AFR", defaultPopulation).getRefAlleleFreq(),
-                map.getOrDefault("1000GENOMES_phase_3:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501));
+        filterPopulation(map -> (map.containsKey(ESP_6500 + ":AA") && Math.min(map.get(ESP_6500 + ":AA").getRefAlleleFreq(),
+                map.get(ESP_6500 + ":AA").getAltAlleleFreq()) > 0.0501
+                && Math.min(map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getRefAlleleFreq(),
+                map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501));
 
         query = new Query(baseQuery)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"ESP_6500:AA>0.0501,1000GENOMES_phase_3:AFR<=0.0501");
+                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), ESP_6500 + ":AA>0.0501," + GENOMES_PHASE_3 + ":AFR<=0.0501");
         queryResult = dbAdaptor.get(query, options);
-        filterPopulation(map -> (map.containsKey("ESP_6500:AA") && Math.min(map.get("ESP_6500:AA").getRefAlleleFreq(),
-                map.get("ESP_6500:AA").getAltAlleleFreq()) > 0.0501
-                || Math.min(map.getOrDefault("1000GENOMES_phase_3:AFR", defaultPopulation).getRefAlleleFreq(),
-                map.getOrDefault("1000GENOMES_phase_3:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501));
+        filterPopulation(map -> (map.containsKey(ESP_6500 + ":AA") && Math.min(map.get(ESP_6500 + ":AA").getRefAlleleFreq(),
+                map.get(ESP_6500 + ":AA").getAltAlleleFreq()) > 0.0501
+                || Math.min(map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getRefAlleleFreq(),
+                map.getOrDefault(GENOMES_PHASE_3 + ":AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501));
 
     }
 

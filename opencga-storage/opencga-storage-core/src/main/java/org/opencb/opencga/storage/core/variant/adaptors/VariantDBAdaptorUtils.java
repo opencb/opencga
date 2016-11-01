@@ -45,6 +45,7 @@ public class VariantDBAdaptorUtils {
     public static final String OR = ",";
     public static final String AND = ";";
     public static final String IS = ":";
+    public static final String STUDY_POP_FREQ_SEPARATOR = ":";
     public static final Map<String, String> PROJECT_FIELD_ALIAS;
 
     public static final String SAMPLES_FIELD = "samples";

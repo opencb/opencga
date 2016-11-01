@@ -615,7 +615,7 @@ public class VariantSqlQueryParser {
         addQueryFilter(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY,
                 (keyOpValue, s) -> {
                     Column column = getPopulationFrequencyColumn(keyOpValue[0]);
-                    dynamicColumns.add(column);
+//                    dynamicColumns.add(column);
                     return column;
                 }, null, null,
                 keyOpValue -> {
@@ -637,7 +637,7 @@ public class VariantSqlQueryParser {
         addQueryFilter(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY,
                 (keyOpValue, s) -> {
                     Column column = getPopulationFrequencyColumn(keyOpValue[0]);
-                    dynamicColumns.add(column);
+//                    dynamicColumns.add(column);
                     return column;
                 }, null, null,
                 keyOpValue -> {
@@ -651,7 +651,7 @@ public class VariantSqlQueryParser {
         addQueryFilter(query, ANNOT_POPULATION_REFERENCE_FREQUENCY,
                 (keyOpValue, s) -> {
                     Column column = getPopulationFrequencyColumn(keyOpValue[0]);
-                    dynamicColumns.add(column);
+//                    dynamicColumns.add(column);
                     return column;
                 }, null, null,
                 keyOpValue -> {
