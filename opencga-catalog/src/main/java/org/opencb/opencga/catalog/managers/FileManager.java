@@ -2577,44 +2577,17 @@ public class FileManager extends AbstractManager implements IFileManager {
         auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
     }
 
-//    private void indexVariants(File file, long outDirId, ObjectMap params) throws CatalogException {
-//
-//        long studyId = fileDBAdaptor.getStudyIdByFileId(file.getId());
-//
-//        if (outDirId > 0) {
-//            // Check that the input file and the output file corresponds to the same study
-//            long studyIdByFileId = fileDBAdaptor.getStudyIdByFileId(outDirId);
-//            if (studyId != studyIdByFileId) {
-//                throw new CatalogException("The study of the file to be indexed is different from the study where the index file will be "
-//                        + "saved.");
-//            }
-//        } else {
-//            // Obtain the id of the directory where the file is stored to store the indexed files
-//            Path parent = Paths.get(file.getPath()).getParent();
-//            String parentPath;
-//            if (parent == null) {
-//                parentPath = "";
-//            } else {
-//                parentPath = parent.toString().endsWith("/") ? parent.toString() : parent.toString() + "/";
-//            }
-//            Query query = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^" + parentPath);
-//            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CatalogFileDBAdaptor.QueryParams.ID.key());
-//            QueryResult<File> outputFileDir = fileDBAdaptor.get(query, queryOptions);
-//
-//            if (outputFileDir.getNumResults() != 1) {
-//                logger.error("Could not obtain the id for the path {} for the file {} with id {}", parentPath, file.getPath(),
-//                        file.getId());
-//                throw new CatalogException("Internal error: Could not obtain the path to store indexed file");
-//            }
-//
-//            outDirId = outputFileDir.first().getId();
-//        }
-//
-//
-//
-//
-//
-//    }
+    @Override
+    public void setUri(long fileId, String uri, String sessionId) throws CatalogException {
+        String userId = userManager.getId(sessionId);
+
+        authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.UPDATE);
+
+        ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.URI.key(), uri);
+        fileDBAdaptor.update(fileId, parameters);
+
+        auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
+    }
 
     @Override
     public QueryResult<FileAclEntry> getAcls(String fileStr, List<String> members, String sessionId) throws CatalogException {
