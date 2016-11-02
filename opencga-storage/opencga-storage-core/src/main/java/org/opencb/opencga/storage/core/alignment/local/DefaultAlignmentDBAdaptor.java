@@ -58,7 +58,7 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
-    public QueryResult get(String fileId, Query query, QueryOptions options) {
+    public QueryResult<ReadAlignment> get(String fileId, Query query, QueryOptions options) {
         try {
             StopWatch watch = new StopWatch();
             watch.start();

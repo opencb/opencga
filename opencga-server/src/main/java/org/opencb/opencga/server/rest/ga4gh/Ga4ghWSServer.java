@@ -14,24 +14,41 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server.rest;
+package org.opencb.opencga.server.rest.ga4gh;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.ga4gh.methods.SearchReadsRequest;
+import org.ga4gh.methods.SearchReadsResponse;
 import org.ga4gh.methods.SearchVariantsRequest;
 import org.ga4gh.methods.SearchVariantsResponse;
+import org.ga4gh.models.ReadAlignment;
 import org.ga4gh.models.Variant;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.server.rest.OpenCGAWSServer;
+import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.List;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
@@ -50,6 +67,8 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
     public Ga4ghWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(uriInfo, httpServletRequest);
     }
+
+    /* =================    VARIANTS     ===================*/
 
     @POST
     @Path("/variants/search")
@@ -113,6 +132,86 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
             List<Variant> variants = variantFetcher.getVariantsPerStudy((int) studyId, queryOptions.getString(REGION.key()), false, null, 0, sessionId, queryOptions).getResult();
             response.setNextPageToken(Integer.toString(++page));
             response.setVariants(variants);
+            return buildResponse(Response.ok(response.toString(), MediaType.APPLICATION_JSON_TYPE));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    /* =================    ALIGNMENTS     ===================*/
+
+    @POST
+    @Path("/reads/search")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Description", position = 1, notes = "Notes")
+    public Response searchAlignments(SearchReadsRequest request) {
+        String method = "ga4gh/reads/search";
+        try {
+            if (request.getReadGroupIds() == null || request.getReadGroupIds().size() == 0) {
+                return createErrorResponse(method, "Required at least one group id.");
+            }
+
+            if (request.getReadGroupIds().size() > 1) {
+                return createErrorResponse(method, "Several read group ids yet not supported.");
+            }
+
+            if (request.getReferenceId() == null || request.getReferenceId().isEmpty()) {
+                return createErrorResponse(method, "Required reference id");
+            }
+
+            if (request.getStart() == null || request.getStart() <= 0)  {
+                return createErrorResponse(method, "Required start position");
+            }
+
+            if (request.getEnd() == null || request.getEnd() <= 0)  {
+                return createErrorResponse(method, "Required end position");
+            }
+
+//            String fileStr = ListUtils.toString(request.getReadGroupIds(), ",");
+            String userId = catalogManager.getUserManager().getId(sessionId);
+            long fileId = catalogManager.getFileManager().getId(userId, request.getReadGroupIds().get(0));
+
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.URI.key());
+            QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(fileId, options, sessionId);
+
+            if (fileQueryResult != null && fileQueryResult.getNumResults() != 1) {
+                // This should never happen
+                throw new CatalogException("Critical error: File " + fileId + " could not be found in catalog.");
+            }
+            String path = fileQueryResult.first().getUri().getRawPath();
+
+
+            Query query = new Query();
+            query.put(AlignmentDBAdaptor.QueryParams.REGION.key(),
+                    request.getReferenceId() + ":" + request.getStart().intValue() + "-" + request.getEnd().intValue());
+
+            this.queryOptions.put(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), true);
+
+            if (request.getPageSize() == null || request.getPageSize() <= 0 || request.getPageSize() > 4000) {
+                this.queryOptions.put(AlignmentDBAdaptor.QueryParams.LIMIT.key(), 1000);
+            } else {
+                this.queryOptions.put(AlignmentDBAdaptor.QueryParams.LIMIT.key(), request.getPageSize());
+            }
+
+            int page = 0;
+            if (request.getPageToken() != null) {
+                try {
+                    page = Integer.parseInt(request.getPageToken().toString());
+                    this.queryOptions.put(AlignmentDBAdaptor.QueryParams.SKIP.key(),
+                            this.queryOptions.getInt(AlignmentDBAdaptor.QueryParams.LIMIT.key()) * page);
+                } catch (Exception e) {
+                    return createErrorResponse(method, "Invalid page token \"" + request.getPageToken() + "\"");
+                }
+            }
+
+            SearchReadsResponse response = new SearchReadsResponse();
+
+            AlignmentStorageManager alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager();
+            QueryResult<ReadAlignment> queryResult = alignmentStorageManager.getDBAdaptor().get(path, query, queryOptions);
+
+            response.setAlignments(queryResult.getResult());
+            response.setNextPageToken(Integer.toString(++page));
+
             return buildResponse(Response.ok(response.toString(), MediaType.APPLICATION_JSON_TYPE));
         } catch (Exception e) {
             return createErrorResponse(e);

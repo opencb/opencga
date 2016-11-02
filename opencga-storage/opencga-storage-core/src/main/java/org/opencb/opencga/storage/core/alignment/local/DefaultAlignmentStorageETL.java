@@ -195,12 +195,13 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
 
                 // Insert all the chunks
 
-                int multiple = MAJOR_CHUNK_SIZE / MINOR_CHUNK_SIZE;
+//                int multiple = MAJOR_CHUNK_SIZE / MINOR_CHUNK_SIZE;
                 String minorChunkSuffix = (MINOR_CHUNK_SIZE / 1000) * 64 + "k";
-                String majorChunkSuffix = (MAJOR_CHUNK_SIZE / 1000) * 64 + "k";
+//                String majorChunkSuffix = (MAJOR_CHUNK_SIZE / 1000) * 64 + "k";
 
                 PreparedStatement insertChunk = connection.prepareStatement("insert into chunk (chunk_id, chromosome, start, end) "
                         + "values (?, ?, ?, ?)");
+                connection.setAutoCommit(false);
 
                 for (SAMSequenceRecord samSequenceRecord : sequenceRecordList) {
                     String chromosome = samSequenceRecord.getSequenceName();
@@ -213,20 +214,24 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
                         insertChunk.setString(2, chromosome);
                         insertChunk.setInt(3, i + 1);
                         insertChunk.setInt(4, i + 64 * MINOR_CHUNK_SIZE);
-                        insertChunk.execute();
+                        insertChunk.addBatch();
+//                        insertChunk.execute();
 
-                        if (cont % multiple == 0) {
-                            chunkId = chromosome + "_" + cont / multiple + "_" + majorChunkSuffix;
-                            insertChunk.setString(1, chunkId);
-                            insertChunk.setString(2, chromosome);
-                            insertChunk.setInt(3, i + 1);
-                            insertChunk.setInt(4, i + 64 * MAJOR_CHUNK_SIZE);
-                            insertChunk.execute();
-                        }
+//                        if (cont % multiple == 0) {
+//                            chunkId = chromosome + "_" + cont / multiple + "_" + majorChunkSuffix;
+//                            insertChunk.setString(1, chunkId);
+//                            insertChunk.setString(2, chromosome);
+//                            insertChunk.setInt(3, i + 1);
+//                            insertChunk.setInt(4, i + 64 * MAJOR_CHUNK_SIZE);
+////                            insertChunk.execute();
+//                            insertChunk.addBatch();
+//                        }
                         cont++;
                     }
+                    insertChunk.executeBatch();
                 }
 
+                connection.commit();
                 stmt.close();
                 connection.close();
             } catch (Exception e) {
