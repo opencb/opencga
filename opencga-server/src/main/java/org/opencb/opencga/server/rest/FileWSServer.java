@@ -998,9 +998,15 @@ public class FileWSServer extends OpenCGAWSServer {
 
             AlignmentDBAdaptor alignmentDBAdaptor = new DefaultAlignmentDBAdaptor();
             if (!stats) {
+//<<<<<<< HEAD
+//                return createOkResponse(alignmentDBAdaptor.get(region, query, queryOptions));
+//            } else {
+//                return createOkResponse(alignmentDBAdaptor.stats(region, query, queryOptions));
+//=======
                 return createOkResponse(alignmentDBAdaptor.get(path.toString(), query, queryOptions));
             } else {
                 return createOkResponse(alignmentDBAdaptor.stats(path.toString(), query, queryOptions));
+//>>>>>>> 5503df383e878e9feaf6f548d859d60df0c4dbd6
             }
         } catch (Exception e) {
             return createErrorResponse(e);
