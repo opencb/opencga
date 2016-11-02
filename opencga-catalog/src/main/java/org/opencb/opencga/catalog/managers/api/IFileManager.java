@@ -322,4 +322,7 @@ public interface IFileManager extends ResourceManager<Long, File> {
     void setDiskUsage(long fileId, long diskUsage, String sessionId) throws CatalogException;
 
     void setModificationDate(long fileId, String date, String sessionId) throws CatalogException;
+
+    void setUri(long fileId, String uri, String sessionId) throws CatalogException;
+
 }

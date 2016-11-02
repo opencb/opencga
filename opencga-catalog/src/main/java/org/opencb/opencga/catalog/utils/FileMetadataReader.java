@@ -218,6 +218,11 @@ public class FileMetadataReader {
                                 sessionId);
                 modifyParams.remove(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key());
             }
+            if (modifyParams.get(FileDBAdaptor.QueryParams.URI.key()) != null) {
+                catalogManager.getFileManager()
+                        .setUri(file.getId(), modifyParams.getString(FileDBAdaptor.QueryParams.URI.key()), sessionId);
+                modifyParams.remove(FileDBAdaptor.QueryParams.URI.key());
+            }
 
             catalogManager.getFileManager().update(file.getId(), modifyParams, new QueryOptions(), sessionId);
 //            logger.trace("modifyFile = " + (System.currentTimeMillis() - start) / 1000.0);

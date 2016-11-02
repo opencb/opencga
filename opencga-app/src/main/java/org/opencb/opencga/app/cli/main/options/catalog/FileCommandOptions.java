@@ -113,7 +113,7 @@ public class FileCommandOptions {
     }
 
     @Deprecated
-    @Parameters(commandNames = {"copy"}, commandDescription = "Copy a file or folder")
+    @Parameters(commandNames = {"copy"}, commandDescription = "(DEPRECATED) Copy a file or folder")
     public class CopyCommandOptions {
 
         @ParametersDelegate
