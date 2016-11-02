@@ -1006,11 +1006,11 @@ public class FileWSServer extends OpenCGAWSServer {
             }
             java.nio.file.Path path = Paths.get(fileQueryResult.first().getUri());
 
-            AlignmentDBAdaptor alignmentDBAdaptor = new DefaultAlignmentDBAdaptor(path);
+            AlignmentDBAdaptor alignmentDBAdaptor = new DefaultAlignmentDBAdaptor();
             if (!stats) {
-                return createOkResponse(alignmentDBAdaptor.get(, query, queryOptions));
+                return createOkResponse(alignmentDBAdaptor.get(region, query, queryOptions));
             } else {
-                return createOkResponse(alignmentDBAdaptor.stats(, query, queryOptions));
+                return createOkResponse(alignmentDBAdaptor.stats(region, query, queryOptions));
             }
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -3,22 +3,21 @@ package org.opencb.opencga.storage.core.alignment.local;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceRecord;
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.AlignmentManager;
 import org.opencb.biodata.tools.alignment.AlignmentUtils;
+import org.opencb.biodata.tools.alignment.tasks.RegionDepth;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageETL;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.Statement;
+import java.sql.*;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -26,10 +25,11 @@ import java.util.List;
  */
 public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
 
-    private static final int MINOR_CHUNK_SIZE = 1000;
-    private static final int MAJOR_CHUNK_SIZE = 10000;
-
     private Path workspace;
+
+    private static final int MINOR_CHUNK_SIZE = 1000;
+    private static final int MAJOR_CHUNK_SIZE = MINOR_CHUNK_SIZE * 10;
+    private static final String COVERAGE_SUFFIX = ".coverage";
 
     @Deprecated
     public DefaultAlignmentStorageETL(AlignmentDBAdaptor dbAdaptor) {
@@ -88,15 +88,33 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
 
         SAMFileHeader fileHeader = AlignmentUtils.getFileHeader(path);
         initDatabase(fileHeader.getSequenceDictionary().getSequences());
-//        Iterator<SAMSequenceRecord> iterator = fileHeader.getSequenceDictionary().getSequences().iterator();
-//        while (iterator.hasNext()) {
-//            SAMSequenceRecord next = iterator.next();
-//            for (int i = 0; i < next.getSequenceLength(); i += MAJOR_CHUNK_SIZE) {
-//                Region region = new Region(next.getSequenceName(), i, i + MAJOR_CHUNK_SIZE);
-//                RegionDepth depth = alignmentManager.depth(region, null, null);
-//            }
+
+//        int fileId = insertFileDB(path.getFileName());
+        Path coveragePath = path.getParent().resolve(path.getFileName() + "." + MINOR_CHUNK_SIZE + COVERAGE_SUFFIX);
+
+        Iterator<SAMSequenceRecord> iterator = fileHeader.getSequenceDictionary().getSequences().iterator();
+        PrintWriter writer = new PrintWriter(coveragePath.toFile());
+        while (iterator.hasNext()) {
+            SAMSequenceRecord next = iterator.next();
+            for (int i = 0; i < next.getSequenceLength(); i += MINOR_CHUNK_SIZE) {
+                Region region = new Region(next.getSequenceName(), i, Math.min(i + MINOR_CHUNK_SIZE, next.getSequenceLength()));
+                //RegionDepth regionDepth = alignmentManager.depth(region, null, null);
+
+                // File columns: chunk   chromosome start   end coverage
+                // chunk format: chrom_id_suffix, where:
+                //      id: int value starting at 0
+                //      suffix: chunkSize + k
+                // eg. 3_4_1k
+
+                int meanDepth = 30; //regionDepth.meanDepth();
+                writer.println(region.getChromosome() + "\t" + i + "\t" + meanDepth);
+            }
 //          System.out.println(iterator.next().);
-//        }
+        }
+        writer.close();
+
+        // save file to db
+        insertCoverageDB(path);
 
         return input;
     }
@@ -116,17 +134,18 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
         return null;
     }
 
+
     private void initDatabase(List<SAMSequenceRecord> sequenceRecordList) {
         Path coverageDBPath = workspace.toAbsolutePath().resolve("coverage.db");
         if (!coverageDBPath.toFile().exists()) {
-            Connection c = null;
-            Statement stmt = null;
+//            Connection connection;
+            Statement stmt;
             try {
                 Class.forName("org.sqlite.JDBC");
-                c = DriverManager.getConnection("jdbc:sqlite:" + coverageDBPath);
+                Connection connection = DriverManager.getConnection("jdbc:sqlite:" + coverageDBPath);
 
                 // Create tables
-                stmt = c.createStatement();
+                stmt = connection.createStatement();
                 String sql = "CREATE TABLE chunk "
                         + "(id INTEGER PRIMARY KEY AUTOINCREMENT,"
                         + "chunk_id VARCHAR NOT NULL,"
@@ -163,7 +182,7 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
                 String minorChunkSuffix = (MINOR_CHUNK_SIZE / 1000) * 64 + "k";
                 String majorChunkSuffix = (MAJOR_CHUNK_SIZE / 1000) * 64 + "k";
 
-                PreparedStatement insertChunk = c.prepareStatement("insert into chunk (chunk_id, chromosome, start, end) "
+                PreparedStatement insertChunk = connection.prepareStatement("insert into chunk (chunk_id, chromosome, start, end) "
                         + "values (?, ?, ?, ?)");
 
                 for (SAMSequenceRecord samSequenceRecord : sequenceRecordList) {
@@ -187,15 +206,12 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
                             insertChunk.setInt(4, i + 64 * MAJOR_CHUNK_SIZE);
                             insertChunk.execute();
                         }
-
                         cont++;
                     }
-
                 }
 
                 stmt.close();
-                c.close();
-
+                connection.close();
             } catch (Exception e) {
                 System.err.println(e.getClass().getName() + ": " + e.getMessage());
                 System.exit(0);
@@ -204,4 +220,50 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
         }
     }
 
+    private void insertCoverageDB(Path bamPath) throws IOException {
+        FileUtils.checkFile(bamPath);
+        String absoluteBamPath = bamPath.toFile().getAbsolutePath();
+        Path coveragePath = Paths.get(absoluteBamPath + COVERAGE_SUFFIX);
+        FileUtils.checkFile(coveragePath);
+
+        String fileName = bamPath.toFile().getName();
+
+        Path coverageDBPath = workspace.toAbsolutePath().resolve("coverage.db");
+        try {
+            // Insert into file table
+            Class.forName("org.sqlite.JDBC");
+            Connection connection = DriverManager.getConnection("jdbc:sqlite:" + coverageDBPath);
+            Statement stmt = connection.createStatement();
+            String insertFileSql = "insert into file (path, name) values ('" + absoluteBamPath + "', '" + fileName + "');";
+            stmt.executeUpdate(insertFileSql);
+            stmt.close();
+
+            ResultSet rs = stmt.executeQuery( "SELECT id FROM file where path = '" + absoluteBamPath + "';");
+            int fileId = -1;
+            while ( rs.next() ) {
+                fileId = rs.getInt("id");
+            }
+
+            // Iterate file
+            if (fileId != -1) {
+                BufferedReader bufferedReader = FileUtils.newBufferedReader(coveragePath);
+                // Checkstyle plugin is not happy with assignations inside while/for
+                String line = bufferedReader.readLine();
+                while (line != null) {
+                    String[] fields = line.split("\t");
+
+                    line = bufferedReader.readLine();
+                }
+                bufferedReader.close();
+            }
+
+            connection.close();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
+    }
 }
