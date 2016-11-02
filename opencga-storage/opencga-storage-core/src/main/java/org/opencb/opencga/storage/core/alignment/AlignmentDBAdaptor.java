@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.alignment;
 
+import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.Query;
@@ -124,7 +125,7 @@ public interface AlignmentDBAdaptor {
 
     QueryResult getAlignmentRegionInfo(Region region, QueryOptions options);
 
-    QueryResult get(String fileId, Query query, QueryOptions options);
+    QueryResult<ReadAlignment> get(String fileId, Query query, QueryOptions options);
 
     AlignmentIterator iterator(String fileId);
 
