@@ -658,7 +658,7 @@ public class FileWSServer extends OpenCGAWSServer {
         knownParams.add("exclude");
 
         // Add other params
-        queryOptions.forEach((key, value) -> {
+        query.forEach((key, value) -> {
             if (!knownParams.contains(key)) {
                 if (value != null) {
                     params.put(key, value.toString());
