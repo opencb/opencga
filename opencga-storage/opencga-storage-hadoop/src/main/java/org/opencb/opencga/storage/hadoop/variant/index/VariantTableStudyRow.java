@@ -659,12 +659,6 @@ public class VariantTableStudyRow {
         if (null == se) {
             throw new IllegalStateException("Study Entry of variant is null: " + variant);
         }
-        // PASS flag should now be populated
-//        if (se.getFiles() != null && !se.getFiles().isEmpty() && se.getFiles().get(0) != null
-//                && se.getFiles().get(0).getAttributes() != null && !se.getFiles().get(0).getAttributes().isEmpty()) {
-//            String passStr = se.getFiles().get(0).getAttributes().getOrDefault(VariantMerger.VCF_FILTER, "0");
-//            setPassCount(Integer.valueOf(passStr));
-//        }
         try {
             Set<String> sampleSet = se.getSamplesName();
             // Create Secondary index
