@@ -156,10 +156,13 @@ public abstract class AbstractParentClient<T, A> {
     }
 
     protected <T> QueryResponse<T> execute(String category1, String id1, String category2, String id2, String action,
-                                           Map<String, Object> params, String method, Class<T> clazz) throws IOException {
+                                           Map<String, Object> paramsMap, String method, Class<T> clazz) throws IOException {
 
-        if (params == null) {
-            params = new HashMap<>();
+        ObjectMap params;
+        if (paramsMap == null) {
+            params = new ObjectMap();
+        } else {
+            params = new ObjectMap(paramsMap);
         }
 
 //        // Remove null or empty params
@@ -195,10 +198,10 @@ public abstract class AbstractParentClient<T, A> {
         // Add the last URL part, the 'action'
         path = path.path(action);
 
-        int numRequiredFeatures = (int) params.getOrDefault(QueryOptions.LIMIT, Integer.MAX_VALUE);
+        int numRequiredFeatures = params.getInt(QueryOptions.LIMIT, Integer.MAX_VALUE);
         int limit = Math.min(numRequiredFeatures, BATCH_SIZE);
 
-        int skip = (int) params.getOrDefault(QueryOptions.SKIP, DEFAULT_SKIP);
+        int skip = params.getInt(QueryOptions.SKIP, DEFAULT_SKIP);
 
         // Session ID is needed almost always, the only exceptions are 'create/user', 'login' and 'changePassword'
         if (this.sessionId != null && !this.sessionId.isEmpty()) {
