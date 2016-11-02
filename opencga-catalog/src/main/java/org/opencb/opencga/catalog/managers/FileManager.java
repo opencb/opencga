@@ -2426,7 +2426,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             }
         }
 
-        String outDirPath = params.get("outdir");
+        String outDirPath = ParamUtils.defaultString(params.get("outdir"), Long.toString(studyId) + ":/");
         if (outDirPath != null && !StringUtils.isNumeric(outDirPath) && outDirPath.contains("/") && !outDirPath.endsWith("/")) {
             outDirPath = outDirPath + "/";
         }
@@ -2436,7 +2436,8 @@ public class FileManager extends AbstractManager implements IFileManager {
             if (fileDBAdaptor.getStudyIdByFileId(outDirId) != studyId) {
                 throw new CatalogException("The output directory does not correspond to the same study of the files");
             }
-        } else if (outDirPath != null) {
+//        } else if (outDirPath != null) {
+        } else {
             ObjectMap parsedSampleStr = parseFeatureId(userId, outDirPath);
             String path = (String) parsedSampleStr.get("featureName");
             logger.info("Outdir {}", path);
@@ -2449,24 +2450,25 @@ public class FileManager extends AbstractManager implements IFileManager {
                 outDirId = getId(userId, path);
                 logger.info("Outdir {} -> {}", outDirId, path);
             }
-        } else {
-            if (fileFolderIdList.size() == 1) {
-                // Leave the output files in the same directory
-                long fileId = fileFolderIdList.get(0);
-                QueryResult<File> file = fileDBAdaptor.get(fileId, new QueryOptions());
-                if (file.getNumResults() == 1) {
-                    if (file.first().getType().equals(File.Type.DIRECTORY)) {
-                        outDirId = fileId;
-                    } else {
-                        outDirId = getParent(fileId, new QueryOptions(), sessionId).first().getId();
-                    }
-                }
-            } else {
-                // Leave the output files in the root directory
-                outDirId = getId(userId, studyId + ":/");
-                logger.info("Getting out dir from {}:/", studyId);
-            }
         }
+//        else {
+//            if (fileFolderIdList.size() == 1) {
+//                // Leave the output files in the same directory
+//                long fileId = fileFolderIdList.get(0);
+//                QueryResult<File> file = fileDBAdaptor.get(fileId, new QueryOptions());
+//                if (file.getNumResults() == 1) {
+//                    if (file.first().getType().equals(File.Type.DIRECTORY)) {
+//                        outDirId = fileId;
+//                    } else {
+//                        outDirId = getParent(fileId, new QueryOptions(), sessionId).first().getId();
+//                    }
+//                }
+//            } else {
+//                // Leave the output files in the root directory
+//                outDirId = getId(userId, studyId + ":/");
+//                logger.info("Getting out dir from {}:/", studyId);
+//            }
+//        }
 
         QueryResult<Job> jobQueryResult = null;
         if (type.equals("VCF")) {
