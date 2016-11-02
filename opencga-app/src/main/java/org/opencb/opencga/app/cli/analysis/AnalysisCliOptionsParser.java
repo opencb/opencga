@@ -82,7 +82,7 @@ public class AnalysisCliOptionsParser {
         alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexAlignmentCommandOptions);
         alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryAlignmentCommandOptions);
         alignmentSubCommands.addCommand("query-grpc", alignmentCommandOptions.queryGRPCAlignmentCommandOptions);
-//        alignmentSubCommands.addCommand("stats", alignmentCommandOptions.statsVariantCommandOptions);
+        alignmentSubCommands.addCommand("stats", alignmentCommandOptions.statsAlignmentCommandOptions);
 //        alignmentSubCommands.addCommand("annotate", alignmentCommandOptions.annotateVariantCommandOptions);
 
         toolsCommandOptions = new ToolsCommandOptions();
@@ -240,7 +240,7 @@ public class AnalysisCliOptionsParser {
         final IndexAlignmentCommandOptions indexAlignmentCommandOptions;
         final QueryAlignmentCommandOptions queryAlignmentCommandOptions;
         final QueryGRPCAlignmentCommandOptions queryGRPCAlignmentCommandOptions;
-//        final StatsVariantCommandOptions statsVariantCommandOptions;
+        final StatsAlignmentCommandOptions statsAlignmentCommandOptions;
 //        final AnnotateVariantCommandOptions annotateVariantCommandOptions;
 //        final DeleteVariantCommandOptions deleteVariantCommandOptions;
 
@@ -250,6 +250,7 @@ public class AnalysisCliOptionsParser {
             this.indexAlignmentCommandOptions = new IndexAlignmentCommandOptions();
             this.queryAlignmentCommandOptions = new QueryAlignmentCommandOptions();
             this.queryGRPCAlignmentCommandOptions = new QueryGRPCAlignmentCommandOptions();
+            this.statsAlignmentCommandOptions = new StatsAlignmentCommandOptions();
         }
     }
 
@@ -869,6 +870,16 @@ public class AnalysisCliOptionsParser {
         @Parameter(names = {"--bin-qualities"}, description = "Compress the nucleotide qualities by using 8 quality levels "
             + "(there will be loss of information)", arity = 0)
         boolean binQualities;
+    }
+
+    @Parameters(commandNames = {"stats"}, commandDescription = "Obtain the global stats of an alignment")
+    public class StatsAlignmentCommandOptions extends QueryCommandOptions {
+
+        @ParametersDelegate
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+
+        @Parameter(names = {"--file-id"}, description = "Id of the alignment file in catalog", required = true, arity = 1)
+        public String fileId;
     }
 
     /*

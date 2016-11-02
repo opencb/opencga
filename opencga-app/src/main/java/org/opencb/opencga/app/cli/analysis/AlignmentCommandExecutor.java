@@ -24,6 +24,7 @@ import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.ga4gh.models.ReadAlignment;
+import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
@@ -355,10 +356,10 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
 
         OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
         QueryResponse<ReadAlignment> alignments =
-                openCGAClient.getFileClient().alignments(alignmentCommandOptions.queryAlignmentCommandOptions.fileId, objectMap);
+                openCGAClient.getFileClient().alignmentQuery(alignmentCommandOptions.queryAlignmentCommandOptions.fileId, objectMap);
 
         for (ReadAlignment readAlignment : alignments.allResults()) {
-//            System.out.println(readAlignment);
+            System.out.println(readAlignment);
         }
     }
 
@@ -499,8 +500,18 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
 //
 //    }
 
-    private void stats() {
-        throw new UnsupportedOperationException();
+    private void stats() throws CatalogException, IOException {
+        ObjectMap objectMap = new ObjectMap();
+        objectMap.putIfNotNull("fileId", alignmentCommandOptions.statsAlignmentCommandOptions.fileId);
+        objectMap.putIfNotNull("sid", alignmentCommandOptions.statsAlignmentCommandOptions.commonOptions.sessionId);
+
+        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
+        QueryResponse<AlignmentGlobalStats> globalStats =
+                openCGAClient.getFileClient().alignmentStats(alignmentCommandOptions.statsAlignmentCommandOptions.fileId, objectMap);
+
+        for (AlignmentGlobalStats alignmentGlobalStats : globalStats.allResults()) {
+            System.out.println(alignmentGlobalStats.toJSON());
+        }
     }
 
     private void delete() {

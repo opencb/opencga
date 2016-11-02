@@ -2,6 +2,8 @@ package org.opencb.opencga.storage.core.alignment.local;
 
 import ga4gh.Reads;
 import org.apache.commons.lang3.time.StopWatch;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.ObjectWriter;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.AlignmentFilters;
@@ -24,7 +26,7 @@ import java.util.List;
  */
 public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
-    public DefaultAlignmentDBAdaptor() {
+    DefaultAlignmentDBAdaptor() {
     }
 
     @Override
@@ -170,32 +172,21 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
     @Override
     public AlignmentGlobalStats stats(String fileId) throws Exception {
         Path path = Paths.get(fileId);
-        FileUtils.checkFile(path);
-        // TODO: This is wrong ! Go to the database or file
-        AlignmentManager alignmentManager = new AlignmentManager(path);
-        return alignmentManager.stats();
-    }
-
-    @Override
-    public AlignmentGlobalStats stats(String fileId, Query query, QueryOptions options) throws Exception {
-        if (options == null) {
-            options = new QueryOptions();
+        Path statsPath = path.getParent().resolve(path.getFileName() + ".stats");
+        AlignmentGlobalStats alignmentGlobalStats;
+        if (statsPath.toFile().exists()) {
+            // Read the file of stats
+            ObjectMapper objectMapper = new ObjectMapper();
+            alignmentGlobalStats = objectMapper.readValue(statsPath.toFile(), AlignmentGlobalStats.class);
+        } else {
+            AlignmentManager alignmentManager = new AlignmentManager(path);
+            alignmentGlobalStats = alignmentManager.stats();
+            ObjectMapper objectMapper = new ObjectMapper();
+            ObjectWriter objectWriter = objectMapper.typedWriter(AlignmentGlobalStats.class);
+            objectWriter.writeValue(statsPath.toFile(), alignmentGlobalStats);
         }
-        if (query == null) {
-            query = new Query();
-        }
 
-        Path path = Paths.get(fileId);
-        FileUtils.checkFile(path);
-
-        AlignmentOptions alignmentOptions = parseQueryOptions(options);
-        AlignmentFilters alignmentFilters = parseQuery(query);
-        Region region = parseRegion(query);
-
-        // TODO: Check if it is already in catalog
-        AlignmentManager alignmentManager = new AlignmentManager(path);
-
-        return alignmentManager.stats(region, alignmentOptions, alignmentFilters);
+        return alignmentGlobalStats;
     }
 
 }

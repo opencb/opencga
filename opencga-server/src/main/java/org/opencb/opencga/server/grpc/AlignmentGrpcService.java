@@ -35,7 +35,7 @@ public class AlignmentGrpcService extends GenericGrpcService implements Alignmen
             QueryOptions queryOptions = createQueryOptions(request);
             Path path = getPath(query);
 
-            AlignmentDBAdaptor alignmentDBAdaptor = new DefaultAlignmentDBAdaptor();
+            AlignmentDBAdaptor alignmentDBAdaptor = storageManagerFactory.getAlignmentStorageManager().getDBAdaptor();
 
             long count = alignmentDBAdaptor.count(path.toString(), query, queryOptions);
             ServiceTypesModel.LongResponse longResponse = ServiceTypesModel.LongResponse.newBuilder().setValue(count).build();
@@ -73,7 +73,7 @@ public class AlignmentGrpcService extends GenericGrpcService implements Alignmen
             }
             Path path = Paths.get(fileQueryResult.first().getUri());
 
-            AlignmentDBAdaptor alignmentDBAdaptor = new DefaultAlignmentDBAdaptor();
+            AlignmentDBAdaptor alignmentDBAdaptor = storageManagerFactory.getAlignmentStorageManager().getDBAdaptor();
 
             queryOptions = createQueryOptions(request);
             try (AlignmentIterator iterator = alignmentDBAdaptor.iterator(path.toString(), query, queryOptions)) {

@@ -968,9 +968,7 @@ public class FileWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "Force SAM MD optional field to be set with the alignments", required = false)
                                       @QueryParam("mdField") Boolean mdField,
                                   @ApiParam(value = "Compress the nucleotide qualities by using 8 quality levels", required = false)
-                                      @QueryParam("binQualities") Boolean binQualities,
-                                  @ApiParam(value = "Obtain the global alignment stats", required = false, defaultValue = "false")
-                                      @QueryParam("stats") boolean stats) {
+                                      @QueryParam("binQualities") Boolean binQualities) {
         try {
             Query query = new Query();
             query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), region);
@@ -996,18 +994,9 @@ public class FileWSServer extends OpenCGAWSServer {
             }
             java.nio.file.Path path = Paths.get(fileQueryResult.first().getUri());
 
-            AlignmentDBAdaptor alignmentDBAdaptor = new DefaultAlignmentDBAdaptor();
-            if (!stats) {
-//<<<<<<< HEAD
-//                return createOkResponse(alignmentDBAdaptor.get(region, query, queryOptions));
-//            } else {
-//                return createOkResponse(alignmentDBAdaptor.stats(region, query, queryOptions));
-//=======
-                return createOkResponse(alignmentDBAdaptor.get(path.toString(), query, queryOptions));
-            } else {
-                return createOkResponse(alignmentDBAdaptor.stats(path.toString(), query, queryOptions));
-//>>>>>>> 5503df383e878e9feaf6f548d859d60df0c4dbd6
-            }
+            AlignmentDBAdaptor alignmentDBAdaptor = storageManagerFactory.getAlignmentStorageManager().getDBAdaptor();
+
+            return createOkResponse(alignmentDBAdaptor.get(path.toString(), query, queryOptions));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

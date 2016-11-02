@@ -2,10 +2,13 @@ package org.opencb.opencga.storage.core.alignment.local;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceRecord;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.ObjectWriter;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.AlignmentManager;
 import org.opencb.biodata.tools.alignment.AlignmentUtils;
+import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageETL;
@@ -38,7 +41,7 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
         super(dbAdaptor);
     }
 
-    public DefaultAlignmentStorageETL(AlignmentDBAdaptor dbAdaptor, Path workspace) {
+    DefaultAlignmentStorageETL(AlignmentDBAdaptor dbAdaptor, Path workspace) {
         super(dbAdaptor);
         this.workspace = workspace;
     }
@@ -78,16 +81,16 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
 
         AlignmentManager alignmentManager = new AlignmentManager(path);
 
-        // 2. Calculate stats and store in di
-//        AlignmentGlobalStats stats = dbAdaptor.stats(input.getRawPath());
-//        // TODO: Store in SQLite
-//        ObjectMapper objectMapper = new ObjectMapper();
-//        ObjectWriter objectWriter = objectMapper.typedWriter(AlignmentGlobalStats.class);
-//        Path statsPath = path.getParent().resolve(path.getFileName() + ".stats");
-//        objectWriter.writeValue(statsPath.toFile(), stats);
+        // 2. Calculate stats and store in a file
+        Path statsPath = path.getParent().resolve(path.getFileName() + ".stats");
+        if (!statsPath.toFile().exists()) {
+            AlignmentGlobalStats stats = alignmentManager.stats();
+            ObjectMapper objectMapper = new ObjectMapper();
+            ObjectWriter objectWriter = objectMapper.typedWriter(AlignmentGlobalStats.class);
+            objectWriter.writeValue(statsPath.toFile(), stats);
+        }
 
         // 3. Calculate coverage and store in SQLite
-
         SAMFileHeader fileHeader = AlignmentUtils.getFileHeader(path);
         initDatabase(fileHeader.getSequenceDictionary().getSequences());
 
@@ -270,7 +273,6 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
 
     }
 }

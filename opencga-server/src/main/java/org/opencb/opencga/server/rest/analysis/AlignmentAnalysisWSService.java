@@ -32,7 +32,6 @@ import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.rest.FileWSServer;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
-import org.opencb.opencga.storage.core.alignment.local.DefaultAlignmentDBAdaptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -110,9 +109,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                                   @ApiParam(value = "Force SAM MD optional field to be set with the alignments", required = false)
                                   @QueryParam("mdField") Boolean mdField,
                                   @ApiParam(value = "Compress the nucleotide qualities by using 8 quality levels", required = false)
-                                  @QueryParam("binQualities") Boolean binQualities,
-                                  @ApiParam(value = "Obtain the global alignment stats", required = false, defaultValue = "false")
-                                  @QueryParam("stats") boolean stats) {
+                                  @QueryParam("binQualities") Boolean binQualities) {
         try {
             Query query = new Query();
             query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), region);
@@ -138,8 +135,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             }
             java.nio.file.Path path = Paths.get(fileQueryResult.first().getUri());
 
-            AlignmentDBAdaptor alignmentDBAdaptor = new DefaultAlignmentDBAdaptor();
-            return createOkResponse(alignmentDBAdaptor.get(path.toString(), query, queryOptions));
+            AlignmentDBAdaptor dbAdaptor = storageManagerFactory.getAlignmentStorageManager().getDBAdaptor();
+            return createOkResponse(dbAdaptor.get(path.toString(), query, queryOptions));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
