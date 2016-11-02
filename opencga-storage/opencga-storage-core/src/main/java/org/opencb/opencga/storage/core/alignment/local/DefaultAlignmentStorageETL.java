@@ -10,15 +10,18 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageETL;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import scala.collection.mutable.StringBuilder;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
@@ -92,15 +95,21 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
         initDatabase(fileHeader.getSequenceDictionary().getSequences());
 
 //        int fileId = insertFileDB(path.getFileName());
-        Path coveragePath = path.getParent().resolve(path.getFileName() + "." + MINOR_CHUNK_SIZE + COVERAGE_SUFFIX);
+
+        Path coveragePath = workspace.toAbsolutePath().resolve(path.getFileName() + COVERAGE_SUFFIX);
+        //Path coveragePath = path.getParent().resolve(path.getFileName() + "." + MINOR_CHUNK_SIZE + COVERAGE_SUFFIX);
+        System.out.println("coveragePath = " + coveragePath);
 
         Iterator<SAMSequenceRecord> iterator = fileHeader.getSequenceDictionary().getSequences().iterator();
         PrintWriter writer = new PrintWriter(coveragePath.toFile());
+        StringBuilder line;
         while (iterator.hasNext()) {
             SAMSequenceRecord next = iterator.next();
             for (int i = 0; i < next.getSequenceLength(); i += MINOR_CHUNK_SIZE) {
-                Region region = new Region(next.getSequenceName(), i, Math.min(i + MINOR_CHUNK_SIZE, next.getSequenceLength()));
+                Region region = new Region(next.getSequenceName(), i + 1,
+                        Math.min(i + MINOR_CHUNK_SIZE, next.getSequenceLength()));
                 //RegionDepth regionDepth = alignmentManager.depth(region, null, null);
+                int meanDepth = 30; //regionDepth.meanDepth();
 
                 // File columns: chunk   chromosome start   end coverage
                 // chunk format: chrom_id_suffix, where:
@@ -108,8 +117,15 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
                 //      suffix: chunkSize + k
                 // eg. 3_4_1k
 
-                int meanDepth = 30; //regionDepth.meanDepth();
-                writer.println(region.getChromosome() + "\t" + i + "\t" + meanDepth);
+                line = new StringBuilder();
+                line.append(region.getChromosome()).append("_");
+                line.append(i / MINOR_CHUNK_SIZE).append("_").append(MINOR_CHUNK_SIZE / 1000).append("k");
+                line.append("\t").append(region.getChromosome());
+                line.append("\t").append(region.getStart());
+                line.append("\t").append(region.getEnd());
+                line.append("\t").append(meanDepth);
+//                System.out.println(line.toString());
+                writer.println(line.toString());
             }
 //          System.out.println(iterator.next().);
         }
@@ -140,7 +156,6 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
     private void initDatabase(List<SAMSequenceRecord> sequenceRecordList) {
         Path coverageDBPath = workspace.toAbsolutePath().resolve("coverage.db");
         if (!coverageDBPath.toFile().exists()) {
-//            Connection connection;
             Statement stmt;
             try {
                 Class.forName("org.sqlite.JDBC");
@@ -225,8 +240,9 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
     private void insertCoverageDB(Path bamPath) throws IOException {
         FileUtils.checkFile(bamPath);
         String absoluteBamPath = bamPath.toFile().getAbsolutePath();
-        Path coveragePath = Paths.get(absoluteBamPath + COVERAGE_SUFFIX);
-        FileUtils.checkFile(coveragePath);
+//        Path coveragePath = Paths.get(absoluteBamPath + COVERAGE_SUFFIX);
+//        FileUtils.checkFile(coveragePath);
+        Path coveragePath = workspace.toAbsolutePath().resolve(bamPath.getFileName() + COVERAGE_SUFFIX);
 
         String fileName = bamPath.toFile().getName();
 
@@ -247,12 +263,43 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
             }
 
             // Iterate file
+            System.out.println("fileId = " + fileId);
             if (fileId != -1) {
                 BufferedReader bufferedReader = FileUtils.newBufferedReader(coveragePath);
                 // Checkstyle plugin is not happy with assignations inside while/for
+                int chunkId = -1;
+
+                byte[] meanCoverages = new byte[8]; // contains 8 coverages
+                long[] packedCoverages = new long[8]; // contains 8 x 8 coverages
+                int counter1 = 0; // counter for 8-byte mean coverages array
+                int counter2 = 0; // counter for 8-long packed coverages array
+
                 String line = bufferedReader.readLine();
                 while (line != null) {
                     String[] fields = line.split("\t");
+
+                    if (chunkId == -1) {
+                        rs = stmt.executeQuery("SELECT id FROM chunk where path = '" + absoluteBamPath + "';");
+                        while (rs.next()) {
+                            chunkId = rs.getInt("id");
+                        }
+                    }
+                    meanCoverages[counter1] = Byte.parseByte(fields[4]);
+                    if (++counter1 == 8) {
+                        // packed mean coverages and save into the packed coverages array
+                        packedCoverages[counter2] = bytesToLong(meanCoverages);
+                        if (++counter2 == 8) {
+                            // write packed coverages array to DB
+
+                            // init packed coverages array and counter2
+                            Arrays.fill(packedCoverages, 0);
+                            counter2 = 0;
+                            chunkId = -1;
+                        }
+                        // init current packed coverage and counter1
+                        counter1 = 0;
+                        Arrays.fill(meanCoverages, (byte) 0);
+                    }
 
                     line = bufferedReader.readLine();
                 }
@@ -265,7 +312,18 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
 
+    private long bytesToLong(byte[] bytes) {
+        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+        buffer.put(bytes);
+        buffer.flip(); // need flip
+        return buffer.getLong();
+    }
 
+    public byte[] longToBytes(long x) {
+        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+        buffer.putLong(x);
+        return buffer.array();
     }
 }
