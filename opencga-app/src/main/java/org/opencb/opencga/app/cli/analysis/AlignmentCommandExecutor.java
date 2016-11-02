@@ -24,7 +24,10 @@ import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.ga4gh.models.ReadAlignment;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
@@ -40,8 +43,9 @@ import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
 import org.opencb.opencga.server.grpc.ServiceTypesModel;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.alignment.AlignmentStorageManagerOld;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageManagerOld;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
@@ -58,7 +62,7 @@ import java.util.stream.Collectors;
  */
 public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
     private final AnalysisCliOptionsParser.AlignmentCommandOptions alignmentCommandOptions;
-    private AlignmentStorageManagerOld alignmentStorageManager;
+    private AlignmentStorageManager alignmentStorageManager;
 
     public AlignmentCommandExecutor(AnalysisCliOptionsParser.AlignmentCommandOptions options) {
         super(options.commonOptions);
@@ -186,7 +190,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         }
     }
 
-    private AlignmentStorageManagerOld initAlignmentStorageManager(DataStore dataStore)
+    private AlignmentStorageManager initAlignmentStorageManager(DataStore dataStore)
             throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException {
 
         String storageEngine = dataStore.getStorageEngine();
@@ -264,7 +268,8 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
 
 
         // 2) Read and validate cli args. Configure options
-        ObjectMap alignmentOptions = alignmentStorageManager.getOptions();
+//        ObjectMap alignmentOptions = alignmentStorageManager.getOptions();
+        ObjectMap alignmentOptions = new ObjectMap();
         if (Integer.parseInt(cliOptions.fileId) != 0) {
             alignmentOptions.put(AlignmentStorageManagerOld.Options.FILE_ID.key(), cliOptions.fileId);
         }

@@ -23,24 +23,26 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
+import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.models.DataStore;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.FileIndex;
+import org.opencb.opencga.catalog.models.FileTree;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.storage.core.alignment.AlignmentStorageManagerOld;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.local.DefaultAlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -674,18 +676,6 @@ public class FileWSServer extends OpenCGAWSServer {
 //        }
     }
 
-    private void addParamIfNotNull(Map<String, String> params, String key, String value) {
-        if (key != null && value != null) {
-            params.put(key, value);
-        }
-    }
-
-    private void addParamIfTrue(Map<String, String> params, String key, boolean value) {
-        if (key != null && value) {
-            params.put(key, Boolean.toString(value));
-        }
-    }
-
     @GET
     @Path("/{folderId}/tree-view")
     @ApiOperation(value = "Obtain a tree view of the files and folders within a folder", position = 15, response = FileTree[].class)
@@ -791,7 +781,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
                     AlignmentDBAdaptor dbAdaptor;
                     try {
-                        AlignmentStorageManagerOld alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
+                        AlignmentStorageManager alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
                         dbAdaptor = alignmentStorageManager.getDBAdaptor(dbName);
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
                         return createErrorResponse(e);
@@ -1008,9 +998,15 @@ public class FileWSServer extends OpenCGAWSServer {
 
             AlignmentDBAdaptor alignmentDBAdaptor = new DefaultAlignmentDBAdaptor();
             if (!stats) {
-                return createOkResponse(alignmentDBAdaptor.get(region, query, queryOptions));
+//<<<<<<< HEAD
+//                return createOkResponse(alignmentDBAdaptor.get(region, query, queryOptions));
+//            } else {
+//                return createOkResponse(alignmentDBAdaptor.stats(region, query, queryOptions));
+//=======
+                return createOkResponse(alignmentDBAdaptor.get(path.toString(), query, queryOptions));
             } else {
-                return createOkResponse(alignmentDBAdaptor.stats(region, query, queryOptions));
+                return createOkResponse(alignmentDBAdaptor.stats(path.toString(), query, queryOptions));
+//>>>>>>> 5503df383e878e9feaf6f548d859d60df0c4dbd6
             }
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1412,7 +1408,7 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
-    private String convertPath(String path, String sessionId) throws CatalogException {
+    public static String convertPath(String path, String sessionId) throws CatalogException {
         return convertPath(path, sessionId, catalogManager);
     }
 
@@ -1469,7 +1465,7 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
-    private List<String> convertPathList(String path, String sessionId) throws CatalogException {
+    public static List<String> convertPathList(String path, String sessionId) throws CatalogException {
         if (path == null) {
             return Collections.emptyList();
         } else if (path.contains(",")) {

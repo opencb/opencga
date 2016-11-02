@@ -6,13 +6,15 @@ import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.AlignmentManager;
 import org.opencb.biodata.tools.alignment.AlignmentUtils;
-import org.opencb.biodata.tools.alignment.tasks.RegionDepth;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageETL;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -238,9 +240,9 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
             stmt.executeUpdate(insertFileSql);
             stmt.close();
 
-            ResultSet rs = stmt.executeQuery( "SELECT id FROM file where path = '" + absoluteBamPath + "';");
+            ResultSet rs = stmt.executeQuery("SELECT id FROM file where path = '" + absoluteBamPath + "';");
             int fileId = -1;
-            while ( rs.next() ) {
+            while (rs.next()) {
                 fileId = rs.getInt("id");
             }
 
