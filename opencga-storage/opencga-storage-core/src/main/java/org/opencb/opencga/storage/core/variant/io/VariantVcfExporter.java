@@ -276,7 +276,9 @@ public class VariantVcfExporter implements DataWriter<Variant> {
         Collection<String> headers = studyConfiguration.getHeaders().values();
         List<String> returnedSamples = null;
         if (options != null) {
-            returnedSamples = options.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key());
+            if (options.get(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key()) != null) {
+                returnedSamples = options.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key());
+            }
         }
         String fileHeader;
         if (headers.isEmpty()) {

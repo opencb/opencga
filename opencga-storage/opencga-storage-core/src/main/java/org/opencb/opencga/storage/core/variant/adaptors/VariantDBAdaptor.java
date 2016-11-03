@@ -21,10 +21,14 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.client.rest.CellBaseClient;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.io.VariantAnnotationDBWriter;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
 import java.io.IOException;
@@ -350,12 +354,13 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
 
     QueryResult deleteStats(String studyName, String cohortName, QueryOptions options);
 
-
-    default void preUpdateAnnotations() throws IOException {}
-
     QueryResult addAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
 
     QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
+
+    default VariantAnnotationDBWriter annotationLoader(QueryOptions options) {
+        return new VariantAnnotationDBWriter(this, options, null);
+    }
 
     /**
      * Update custom annotation for all the variants with in a given region.

@@ -28,7 +28,6 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.utils.ListUtils;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -48,7 +47,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.List;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
@@ -124,7 +122,8 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
                     return createErrorResponse(method, "Invalid page token \"" + request.getPageToken() + "\"");
                 }
             }
-
+            // Get all query options
+            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             queryOptions.add("model", "ga4gh");
             SearchVariantsResponse response = new SearchVariantsResponse();
 

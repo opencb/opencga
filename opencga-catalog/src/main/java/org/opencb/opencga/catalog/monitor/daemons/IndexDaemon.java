@@ -37,7 +37,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by imedina on 18/08/16.
@@ -307,12 +310,24 @@ public class IndexDaemon extends MonitorParentDaemon {
         // we assume job.output equals params.outdir
         job.getParams().put("outdir", path.toString());
         job.getParams().put("path", Long.toString(job.getOutDirId()));
+        Set<String> knownParams = new HashSet<>(Arrays.asList(
+                "aggregated", "aggregation-mapping-file", "annotate", "annotator", "bgzip", "calculate-stats",
+                "exclude-genotypes", "file-id", "gvcf", "h", "help", "include-extra-fields", "load", "log-file",
+                "L", "log-level", "o", "outdir", "overwrite-annotations", "path", "queue", "sid", "session-id",
+                "transform", "transformed-files"));
         for (Map.Entry<String, String> param : job.getParams().entrySet()) {
-            commandLine.append(" ")
-                    .append("--").append(param.getKey());
-                    if (!param.getValue().equalsIgnoreCase("true")) {
-                        commandLine.append(" ").append(param.getValue());
-                    }
+            commandLine.append(' ');
+            if (knownParams.contains(param.getKey())) {
+                commandLine.append("--").append(param.getKey());
+                if (!param.getValue().equalsIgnoreCase("true")) {
+                    commandLine.append(" ").append(param.getValue());
+                }
+            } else {
+                if (!param.getKey().startsWith("-D")) {
+                    commandLine.append("-D");
+                }
+                commandLine.append(param.getKey()).append('=').append(param.getValue());
+            }
         }
 
         logger.info("Updating job CLI '{}' from '{}' to '{}'", commandLine.toString(), Job.JobStatus.PREPARED, Job.JobStatus.QUEUED);

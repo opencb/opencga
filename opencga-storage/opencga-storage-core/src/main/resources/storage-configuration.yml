@@ -33,6 +33,17 @@ server:
   authorizedHosts: ["0.0.0.0"]
   options: {}
 
+## Cache Configuration
+cache:
+  host: "localhost:6379"
+  active: true
+  serialization: "json"
+  slowThreshold: 50
+  allowedTypes: "aln,var"
+  maxResultSize: 5000
+  password: ""
+
+
 benchmark:
   storageEngine: "mongodb"
   numRepetitions: 3

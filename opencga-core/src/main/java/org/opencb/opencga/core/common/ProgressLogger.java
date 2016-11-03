@@ -33,7 +33,7 @@ public class ProgressLogger {
 
     private static final int DEFAULT_BATCH_SIZE = 5000;
     private static final int MIN_BATCH_SIZE = 200;
-    private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.#%");
+    private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0%");
 
     private final String message;
     private final int numLinesLog;

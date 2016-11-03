@@ -23,6 +23,9 @@ import org.opencb.opencga.catalog.models.Job;
 
 import java.io.IOException;
 
+import static org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter.replaceDots;
+import static org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter.restoreDots;
+
 /**
  * Created by pfurio on 19/01/16.
  */
@@ -39,6 +42,7 @@ public class JobConverter extends GenericConverter<Job, Document> {
     public Job convertToDataModelType(Document object) {
         Job job = null;
         try {
+            object = restoreDots(object);
             job = objectReader.readValue(objectWriter.writeValueAsString(object));
         } catch (IOException e) {
             e.printStackTrace();
@@ -52,6 +56,7 @@ public class JobConverter extends GenericConverter<Job, Document> {
         try {
             document = Document.parse(jobWriter.writeValueAsString(object));
             document.put("id", document.getInteger("id").longValue());
+            document = replaceDots(document);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
