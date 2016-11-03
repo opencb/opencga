@@ -18,6 +18,7 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.iterators.ProtoAlignmentIterator;
 
+import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -252,5 +253,11 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
     public DefaultAlignmentDBAdaptor setChunkSize(int chunkSize) {
         this.chunkSize = chunkSize;
         return this;
+    }
+
+    private byte[] longToBytes(long x) {
+        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+        buffer.putLong(x);
+        return buffer.array();
     }
 }

@@ -5,8 +5,10 @@ import htsjdk.samtools.SAMSequenceRecord;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.AlignmentManager;
+import org.opencb.biodata.tools.alignment.AlignmentOptions;
 import org.opencb.biodata.tools.alignment.AlignmentUtils;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.utils.FileUtils;
@@ -23,21 +25,16 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by pfurio on 31/10/16.
  */
 public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
 
-    private Path workspace;
+    protected static final String COVERAGE_SUFFIX = ".coverage";
 
-    @Deprecated
-    private static final int MINOR_CHUNK_SIZE = 1000;
-    private static final int MAJOR_CHUNK_SIZE = MINOR_CHUNK_SIZE * 10;
-    private static final String COVERAGE_SUFFIX = ".coverage";
+    private Path workspace;
 
     @Deprecated
     public DefaultAlignmentStorageETL(AlignmentDBAdaptor dbAdaptor) {
@@ -95,24 +92,27 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
 
         // 3. Calculate coverage and store in SQLite
         SAMFileHeader fileHeader = AlignmentUtils.getFileHeader(path);
+//        long start = System.currentTimeMillis();
         initDatabase(fileHeader.getSequenceDictionary().getSequences());
+//        System.out.println("SQLite database initialization, in " + ((System.currentTimeMillis() - start) / 1000.0f)
+//                + " s.");
 
         Path coveragePath = workspace.toAbsolutePath().resolve(path.getFileName() + COVERAGE_SUFFIX);
-        //Path coveragePath = path.getParent().resolve(path.getFileName() + "." + MINOR_CHUNK_SIZE + COVERAGE_SUFFIX);
-        System.out.println("coveragePath = " + coveragePath);
+
+        AlignmentOptions options = new AlignmentOptions();
+        options.setContained(false);
 
         Iterator<SAMSequenceRecord> iterator = fileHeader.getSequenceDictionary().getSequences().iterator();
         PrintWriter writer = new PrintWriter(coveragePath.toFile());
         StringBuilder line;
+//        start = System.currentTimeMillis();
         while (iterator.hasNext()) {
             SAMSequenceRecord next = iterator.next();
             for (int i = 0; i < next.getSequenceLength(); i += MINOR_CHUNK_SIZE) {
                 Region region = new Region(next.getSequenceName(), i + 1,
                         Math.min(i + MINOR_CHUNK_SIZE, next.getSequenceLength()));
-                //TODO: remove the hardcoded depth, and compute it from biodata (but apparently it doesn't work), JT
-//                RegionDepth regionDepth = alignmentManager.depth(region, null, null);
-//                int meanDepth = regionDepth.meanDepth();
-                int meanDepth = 30; //regionDepth.meanDepth();
+                RegionCoverage regionCoverage = alignmentManager.coverage(region, options, null);
+                int meanDepth = Math.min(regionCoverage.meanCoverage(), 127);
 
                 // File columns: chunk   chromosome start   end coverage
                 // chunk format: chrom_id_suffix, where:
@@ -127,15 +127,16 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
                 line.append("\t").append(region.getStart());
                 line.append("\t").append(region.getEnd());
                 line.append("\t").append(meanDepth);
-//                System.out.println(line.toString());
                 writer.println(line.toString());
             }
-//          System.out.println(iterator.next().);
         }
         writer.close();
+//        System.out.println("Mean coverage file creation, in " + ((System.currentTimeMillis() - start) / 1000.0f) + " s.");
 
         // save file to db
+//        start = System.currentTimeMillis();
         insertCoverageDB(path);
+//        System.out.println("SQLite database population, in " + ((System.currentTimeMillis() - start) / 1000.0f) + " s.");
 
         return input;
     }
@@ -157,7 +158,7 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
 
 
     private void initDatabase(List<SAMSequenceRecord> sequenceRecordList) {
-        Path coverageDBPath = workspace.toAbsolutePath().resolve("coverage.db");
+        Path coverageDBPath = workspace.toAbsolutePath().resolve(COVERAGE_DATABASE_NAME);
         if (!coverageDBPath.toFile().exists()) {
             Statement stmt;
             try {
@@ -197,10 +198,7 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
                 stmt.executeUpdate(sql);
 
                 // Insert all the chunks
-
-//                int multiple = MAJOR_CHUNK_SIZE / MINOR_CHUNK_SIZE;
                 String minorChunkSuffix = (MINOR_CHUNK_SIZE / 1000) * 64 + "k";
-//                String majorChunkSuffix = (MAJOR_CHUNK_SIZE / 1000) * 64 + "k";
 
                 PreparedStatement insertChunk = connection.prepareStatement("insert into chunk (chunk_id, chromosome, start, end) "
                         + "values (?, ?, ?, ?)");
@@ -218,17 +216,6 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
                         insertChunk.setInt(3, i + 1);
                         insertChunk.setInt(4, i + 64 * MINOR_CHUNK_SIZE);
                         insertChunk.addBatch();
-//                        insertChunk.execute();
-
-//                        if (cont % multiple == 0) {
-//                            chunkId = chromosome + "_" + cont / multiple + "_" + majorChunkSuffix;
-//                            insertChunk.setString(1, chunkId);
-//                            insertChunk.setString(2, chromosome);
-//                            insertChunk.setInt(3, i + 1);
-//                            insertChunk.setInt(4, i + 64 * MAJOR_CHUNK_SIZE);
-////                            insertChunk.execute();
-//                            insertChunk.addBatch();
-//                        }
                         cont++;
                     }
                     insertChunk.executeBatch();
@@ -248,8 +235,6 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
     private void insertCoverageDB(Path bamPath) throws IOException {
         FileUtils.checkFile(bamPath);
         String absoluteBamPath = bamPath.toFile().getAbsolutePath();
-//        Path coveragePath = Paths.get(absoluteBamPath + COVERAGE_SUFFIX);
-//        FileUtils.checkFile(coveragePath);
         Path coveragePath = workspace.toAbsolutePath().resolve(bamPath.getFileName() + COVERAGE_SUFFIX);
 
         String fileName = bamPath.toFile().getName();
@@ -271,6 +256,14 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
             }
 
             if (fileId != -1) {
+                Map chunkIdMap = new HashMap<String, Integer>();
+                String sql = "SELECT id, chromosome, start FROM chunk";
+//                        System.out.println(sql);
+                rs = stmt.executeQuery(sql);
+                while (rs.next()) {
+                    chunkIdMap.put(rs.getString("chromosome") + "_" + rs.getInt("start"), rs.getInt("id"));
+                }
+
                 // Iterate file
                 PreparedStatement insertCoverage = connection.prepareStatement("insert into mean_coverage (chunk_id, "
                         + " file_id, v1, v2, v3, v4, v5, v6, v7, v8) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -310,25 +303,19 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
                         chunkId = -1;
                     }
                     if (chunkId == -1) {
-                        String sql = "SELECT id FROM chunk where chromosome = '" + fields[1]
-                                + "' AND start = " + fields[2] + ";";
-//                        System.out.println(sql);
-                        rs = stmt.executeQuery(sql);
-                        while (rs.next()) {
-                            chunkId = rs.getInt("id");
-                            break;
-                        }
-                        if (chunkId == -1) {
+                        String key = fields[1] + "_" + fields[2];
+                        if (chunkIdMap.containsKey(key)) {
+                            chunkId = (int) chunkIdMap.get(key);
+                        } else {
                             throw new SQLException("Internal error: coverage chunk " + fields[1]
                                     + ":" + fields[2] + "-, not found in database");
                         }
                     }
-                    meanCoverages[counter1] = Byte.parseByte(fields[4]);
+                    meanCoverages[counter1] = (byte) Integer.parseInt(fields[4]);
                     if (++counter1 == 8) {
                         // packed mean coverages and save into the packed coverages array
                         packedCoverages[counter2] = bytesToLong(meanCoverages);
                         if (++counter2 == 8) {
-//                            System.out.println("inserting chunk " + fields[1] + ":" + fields[2] + "-");
                             // write packed coverages array to DB
                             insertPackedCoverages(insertCoverage, chunkId, fileId, packedCoverages);
 
@@ -381,11 +368,5 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
         buffer.put(bytes);
         buffer.flip(); // need flip
         return buffer.getLong();
-    }
-
-    public byte[] longToBytes(long x) {
-        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-        buffer.putLong(x);
-        return buffer.array();
     }
 }

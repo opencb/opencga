@@ -7,6 +7,9 @@ import org.opencb.opencga.storage.core.StorageETL;
  */
 public abstract class AlignmentStorageETL implements StorageETL {
 
+    protected static final int MINOR_CHUNK_SIZE = 1000;
+    protected static final String COVERAGE_DATABASE_NAME = "coverage.db";
+
     protected AlignmentDBAdaptor dbAdaptor;
 
     public AlignmentStorageETL(AlignmentDBAdaptor dbAdaptor) {
