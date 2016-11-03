@@ -34,6 +34,7 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
 
     private Path workspace;
 
+    @Deprecated
     private static final int MINOR_CHUNK_SIZE = 1000;
     private static final int MAJOR_CHUNK_SIZE = MINOR_CHUNK_SIZE * 10;
     private static final String COVERAGE_SUFFIX = ".coverage";

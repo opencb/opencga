@@ -19,6 +19,8 @@ public class DefaultAlignmentStorageManager extends AlignmentStorageManager {
 
     private Path workspace;
 
+    private static final int MINOR_CHUNK_SIZE = 1000;
+
     public DefaultAlignmentStorageManager() {
     }
 

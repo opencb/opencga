@@ -27,7 +27,17 @@ import java.util.List;
  */
 public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
+    private int chunkSize;
+
+    private static final int DEFAULT_CHUNK_SIZE = 1000;
+    private static final int DEFAULT_WINDOW_SIZE = 1_000_000;
+
     DefaultAlignmentDBAdaptor() {
+        this(DEFAULT_CHUNK_SIZE);
+    }
+
+    public DefaultAlignmentDBAdaptor(int chunkSize) {
+        this.chunkSize = chunkSize;
     }
 
     @Override
@@ -102,61 +112,32 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
     @Override
     public ProtoAlignmentIterator iterator(String fileId, Query query, QueryOptions options) {
         try {
-            if (options == null) {
-                options = new QueryOptions();
-            }
+            Path path = Paths.get(fileId);
+            FileUtils.checkFile(path);
+
             if (query == null) {
                 query = new Query();
             }
 
-            Path path = Paths.get(fileId);
-            FileUtils.checkFile(path);
+            if (options == null) {
+                options = new QueryOptions();
+            }
+
             AlignmentManager alignmentManager = new AlignmentManager(path);
-
-            AlignmentOptions alignmentOptions = parseQueryOptions(options);
             AlignmentFilters alignmentFilters = parseQuery(query);
-            Region region = parseRegion(query);
+            AlignmentOptions alignmentOptions = parseQueryOptions(options);
 
+            Region region = parseRegion(query);
             if (region != null) {
-                return new ProtoAlignmentIterator(
-                        alignmentManager.iterator(region, alignmentOptions, alignmentFilters, Reads.ReadAlignment.class));
+                return new ProtoAlignmentIterator(alignmentManager.iterator(region, alignmentOptions, alignmentFilters,
+                        Reads.ReadAlignment.class));
             } else {
                 return new ProtoAlignmentIterator(alignmentManager.iterator(alignmentOptions, alignmentFilters, Reads.ReadAlignment.class));
             }
-
-
         } catch (Exception e) {
             e.printStackTrace();
         }
         return null;
-    }
-
-    private Region parseRegion(Query query) {
-        Region region = null;
-        String regionString = query.getString(QueryParams.REGION.key());
-        if (regionString != null && !regionString.isEmpty()) {
-            region = new Region(regionString);
-        }
-        return region;
-    }
-
-    private AlignmentFilters parseQuery(Query query) {
-        AlignmentFilters alignmentFilters = AlignmentFilters.create();
-        int minMapQ = query.getInt(QueryParams.MIN_MAPQ.key());
-        if (minMapQ > 0) {
-            alignmentFilters.addMappingQualityFilter(minMapQ);
-        }
-        return  alignmentFilters;
-    }
-
-    private AlignmentOptions parseQueryOptions(QueryOptions options) {
-        AlignmentOptions alignmentOptions = new AlignmentOptions()
-                .setContained(options.getBoolean(QueryParams.CONTAINED.key()));
-        int limit = options.getInt(QueryParams.LIMIT.key());
-        if (limit > 0) {
-            alignmentOptions.setLimit(limit);
-        }
-        return alignmentOptions;
     }
 
     @Override
@@ -192,12 +173,84 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
     @Override
     public RegionCoverage coverage(String fileId) throws Exception {
-        return coverage(fileId, new Query(), new QueryOptions());
+        return coverage(fileId, new Query(), new QueryOptions("windowSize", DEFAULT_WINDOW_SIZE));
     }
 
     @Override
     public RegionCoverage coverage(String fileId, Query query, QueryOptions options) throws Exception {
+        Path path = Paths.get(fileId);
+        FileUtils.checkFile(path);
+
+        if (query == null) {
+            query = new Query();
+        }
+
+        if (options == null) {
+            options = new QueryOptions();
+        }
+
+
+        int windowSize;
+        if (query.containsKey(QueryParams.REGION.key())) {
+            Region region = Region.parseRegion(query.getString(QueryParams.REGION.key()));
+
+            if (region.getEnd() - region.getStart() > 50 * DEFAULT_CHUNK_SIZE) {
+                // if region is too big then we calculate the mean. We need to protect this code!
+                windowSize = options.getInt("windowSize", DEFAULT_WINDOW_SIZE);
+                // query SQLite
+                // ...
+            } else {
+                // if regon is small enough we calculate all coverage for all positions dynamically
+                windowSize = 1;
+                // call to biodata...
+                // ...
+            }
+
+        } else {
+            // if no region is given we set up the windowSize to default value, we should return a few thousands mean values
+            windowSize = DEFAULT_WINDOW_SIZE;
+            // query SQLite
+            // ...
+        }
 
         return null;
+    }
+
+    private Region parseRegion(Query query) {
+        Region region = null;
+        String regionString = query.getString(QueryParams.REGION.key());
+        if (regionString != null && !regionString.isEmpty()) {
+            region = new Region(regionString);
+        }
+        return region;
+    }
+
+    private AlignmentFilters parseQuery(Query query) {
+        AlignmentFilters alignmentFilters = AlignmentFilters.create();
+        int minMapQ = query.getInt(QueryParams.MIN_MAPQ.key());
+        if (minMapQ > 0) {
+            alignmentFilters.addMappingQualityFilter(minMapQ);
+        }
+        return  alignmentFilters;
+    }
+
+    private AlignmentOptions parseQueryOptions(QueryOptions options) {
+        AlignmentOptions alignmentOptions = new AlignmentOptions()
+                .setContained(options.getBoolean(QueryParams.CONTAINED.key()));
+        int limit = options.getInt(QueryParams.LIMIT.key());
+        if (limit > 0) {
+            alignmentOptions.setLimit(limit);
+        }
+        return alignmentOptions;
+    }
+
+
+    public int getChunkSize() {
+        return chunkSize;
+    }
+
+    public DefaultAlignmentDBAdaptor setChunkSize(int chunkSize) {
+        this.chunkSize = chunkSize;
+        return this;
     }
 }
