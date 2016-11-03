@@ -433,12 +433,14 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
-    public org.opencb.biodata.models.alignment.RegionCoverage coverage(String fileId) throws Exception {
+    public QueryResult<org.opencb.biodata.models.alignment.RegionCoverage> coverage(String fileId) throws Exception {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public org.opencb.biodata.models.alignment.RegionCoverage coverage(String fileId, Query query, QueryOptions options) throws Exception {
+    public QueryResult<org.opencb.biodata.models.alignment.RegionCoverage> coverage(String fileId, Query query,
+                                                                                    QueryOptions options)
+            throws Exception {
         throw new UnsupportedOperationException();
     }
 
@@ -450,7 +452,8 @@ public class IndexedAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
         SAMFileReader inputSam = new SAMFileReader(bamPath.toFile(), baiPath.toFile());
         inputSam.setValidationStringency(SAMFileReader.getDefaultValidationStringency().valueOf("LENIENT"));
-        SAMRecordIterator recordsRegion = inputSam.query(region.getChromosome(), (int) region.getStart(), (int) region.getEnd(), false);
+        SAMRecordIterator recordsRegion = inputSam.query(region.getChromosome(), region.getStart(),
+                region.getEnd(), false);
 
         SAMRecord record;
         while (recordsRegion.hasNext()) {

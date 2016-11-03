@@ -138,7 +138,7 @@ public interface AlignmentDBAdaptor {
 
     AlignmentGlobalStats stats(String fileId, Query query, QueryOptions options) throws Exception;
 
-    RegionCoverage coverage(String fileId) throws Exception;
+    QueryResult<RegionCoverage> coverage(String fileId) throws Exception;
 
-    RegionCoverage coverage(String fileId, Query query, QueryOptions options) throws Exception;
+    QueryResult<RegionCoverage> coverage(String fileId, Query query, QueryOptions options) throws Exception;
 }

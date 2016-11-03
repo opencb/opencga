@@ -33,7 +33,6 @@ import java.util.*;
 public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
 
     protected static final String COVERAGE_SUFFIX = ".coverage";
-
     private Path workspace;
 
     @Deprecated
@@ -173,7 +172,8 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
                         + "chromosome VARCHAR NOT NULL, "
                         + "start INT NOT NULL, "
                         + "end INT NOT NULL); "
-                        + "CREATE UNIQUE INDEX chunk_id_idx ON chunk (chunk_id);";
+                        + "CREATE UNIQUE INDEX chunk_id_idx ON chunk (chunk_id);"
+                        + "CREATE INDEX chrom_start_end_idx ON chunk (chromosome, start, end);";
                 stmt.executeUpdate(sql);
 
                 sql = "CREATE TABLE file "

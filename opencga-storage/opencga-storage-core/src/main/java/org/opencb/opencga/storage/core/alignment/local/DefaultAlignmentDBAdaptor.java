@@ -1,6 +1,8 @@
 package org.opencb.opencga.storage.core.alignment.local;
 
 import ga4gh.Reads;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMSequenceRecord;
 import org.apache.commons.lang3.time.StopWatch;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
@@ -10,6 +12,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.AlignmentFilters;
 import org.opencb.biodata.tools.alignment.AlignmentManager;
 import org.opencb.biodata.tools.alignment.AlignmentOptions;
+import org.opencb.biodata.tools.alignment.AlignmentUtils;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -21,6 +24,8 @@ import org.opencb.opencga.storage.core.alignment.iterators.ProtoAlignmentIterato
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -28,10 +33,18 @@ import java.util.List;
  */
 public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
-    private int chunkSize;
+    protected static final int MINOR_CHUNK_SIZE = 1000;
 
     private static final int DEFAULT_CHUNK_SIZE = 1000;
-    private static final int DEFAULT_WINDOW_SIZE = 1_000_000;
+    private static final int DEFAULT_WINDOW_SIZE = 1000000;
+
+    private int chunkSize = DEFAULT_CHUNK_SIZE;
+    private Path workspace;
+
+
+    DefaultAlignmentDBAdaptor(Path workspace) {
+        this.workspace = workspace;
+    }
 
     DefaultAlignmentDBAdaptor() {
         this(DEFAULT_CHUNK_SIZE);
@@ -198,12 +211,18 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
-    public RegionCoverage coverage(String fileId) throws Exception {
-        return coverage(fileId, new Query(), new QueryOptions("windowSize", DEFAULT_WINDOW_SIZE));
+    public QueryResult<RegionCoverage> coverage(String fileId) throws Exception {
+        QueryOptions options = new QueryOptions();
+        options.put("windowSize", DEFAULT_WINDOW_SIZE);
+        options.put("contained", false);
+        return coverage(fileId, new Query(), options);
     }
 
     @Override
-    public RegionCoverage coverage(String fileId, Query query, QueryOptions options) throws Exception {
+    public QueryResult<RegionCoverage> coverage(String fileId, Query query, QueryOptions options) throws Exception {
+        StopWatch watch = new StopWatch();
+        watch.start();
+
         Path path = Paths.get(fileId);
         FileUtils.checkFile(path);
 
@@ -215,32 +234,47 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
             options = new QueryOptions();
         }
 
+        AlignmentOptions alignmentOptions = parseQueryOptions(options);
+        AlignmentFilters alignmentFilters = parseQuery(query);
+        Region region = parseRegion(query);
 
         int windowSize;
-        if (query.containsKey(QueryParams.REGION.key())) {
-            Region region = Region.parseRegion(query.getString(QueryParams.REGION.key()));
-
-            if (region.getEnd() - region.getStart() > 50 * DEFAULT_CHUNK_SIZE) {
+        RegionCoverage coverage;
+        if (region != null) {
+            if (region.getEnd() - region.getStart() > 50 * MINOR_CHUNK_SIZE) {
                 // if region is too big then we calculate the mean. We need to protect this code!
+                // and query SQLite database
                 windowSize = options.getInt("windowSize", DEFAULT_WINDOW_SIZE);
-                // query SQLite
-                // ...
+                coverage = meanCoverage(fileId, region, windowSize);
             } else {
-                // if regon is small enough we calculate all coverage for all positions dynamically
-                windowSize = 1;
-                // call to biodata...
-                // ...
+                // if region is small enough we calculate all coverage for all positions dynamically
+                // calling the biodata alignment manager
+                AlignmentManager alignmentManager = new AlignmentManager(path);
+                coverage = alignmentManager.coverage(region, alignmentOptions, alignmentFilters);
             }
-
         } else {
-            // if no region is given we set up the windowSize to default value, we should return a few thousands mean values
+            // if no region is given we set up the windowSize to default value,
+            // we should return a few thousands mean values
+            // and query SQLite database
             windowSize = DEFAULT_WINDOW_SIZE;
-            // query SQLite
-            // ...
+            SAMFileHeader fileHeader = AlignmentUtils.getFileHeader(path);
+            SAMSequenceRecord seq = fileHeader.getSequenceDictionary().getSequences().get(0);
+            int arraySize = Math.min(50 * MINOR_CHUNK_SIZE, seq.getSequenceLength());
+//            System.out.println("size = " + size);
+//            System.out.println("seq = " + seq);
+//            System.exit(0);
+
+            region = new Region(seq.getSequenceName(), 1, arraySize * MINOR_CHUNK_SIZE);
+            coverage = meanCoverage(fileId, region, windowSize);
         }
 
-        return null;
+        List<RegionCoverage> results = new ArrayList<RegionCoverage>();
+        results.add(coverage);
+        watch.stop();
+        return new QueryResult("Region coverage", ((int) watch.getTime()), results.size(), results.size(),
+                null, null, results);
     }
+
 
     private Region parseRegion(Query query) {
         Region region = null;
@@ -270,7 +304,6 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
         return alignmentOptions;
     }
 
-
     public int getChunkSize() {
         return chunkSize;
     }
@@ -278,6 +311,81 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
     public DefaultAlignmentDBAdaptor setChunkSize(int chunkSize) {
         this.chunkSize = chunkSize;
         return this;
+    }
+
+    private RegionCoverage meanCoverage(String filename, Region region, int windowSize) {
+        windowSize = Math.max(windowSize / MINOR_CHUNK_SIZE * MINOR_CHUNK_SIZE, MINOR_CHUNK_SIZE);
+        int size = (region.getEnd() - region.getStart() + 1) / windowSize;
+        short[] values = new short[size];
+
+        Path bamPath = Paths.get(filename);
+        String absoluteBamPath = bamPath.toFile().getAbsolutePath();
+        Path coverageDBPath = workspace.toAbsolutePath().resolve("coverage.db");
+
+        try {
+            Class.forName("org.sqlite.JDBC");
+            Connection connection = DriverManager.getConnection("jdbc:sqlite:" + coverageDBPath);
+            Statement stmt = connection.createStatement();
+
+            String sql = "SELECT id FROM file where path = '" + absoluteBamPath + "';";
+            ResultSet rs = stmt.executeQuery(sql);
+            int fileId = -1;
+            while (rs.next()) {
+                fileId = rs.getInt("id");
+                break;
+            }
+
+            // sanity check
+            if (fileId == -1) {
+                throw new SQLException("Internal error: file " + absoluteBamPath + " not found in the coverage DB");
+            }
+
+            sql = "SELECT c.start, c.end, mc.v1, mc.v2, mc.v3, mc.v4, mc.v5, mc.v6, mc.v7, mc.v8"
+                    + " FROM chunk c, mean_coverage mc"
+                    + " WHERE c.id = mc.chunk_id AND mc.file_id = " + fileId
+                    + " AND c.chromosome = '" + region.getChromosome() + "' AND c.start <= " + region.getEnd()
+                    + " AND c.end > " + region.getStart() + " ORDER by c.start ASC;";
+            rs = stmt.executeQuery(sql);
+
+            int chunksPerWindow = windowSize / MINOR_CHUNK_SIZE;
+            int chunkCounter = 0;
+            int coverageAccumulator = 0;
+            int arrayPos = 0;
+
+            int start = 0;
+            long packedCoverages;
+            byte[] meanCoverages;
+
+            boolean first = true;
+            while (rs.next()) {
+                if (first) {
+                    start = rs.getInt("start");
+                    first = false;
+                }
+                for (int i = 0; i < 8; i++) {
+                    packedCoverages = rs.getInt("v" + (i + 1));
+                    meanCoverages = longToBytes(packedCoverages);
+                    for (int j = 0; j < 8; j++) {
+                        if (start <= region.getEnd() && (start + MINOR_CHUNK_SIZE) >= region.getStart()) {
+                            coverageAccumulator += meanCoverages[j];
+                            if (++chunkCounter >= chunksPerWindow) {
+                                values[arrayPos++] = (short) Math.round(1.0f * coverageAccumulator / chunkCounter);
+                                coverageAccumulator = 0;
+                                chunkCounter = 0;
+                            }
+                        }
+                        start += MINOR_CHUNK_SIZE;
+                    }
+                }
+            }
+            if (chunkCounter > 0) {
+                values[arrayPos++] = (short) Math.round(1.0f * coverageAccumulator / chunkCounter);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return new RegionCoverage(region, windowSize, values);
     }
 
     private byte[] longToBytes(long x) {

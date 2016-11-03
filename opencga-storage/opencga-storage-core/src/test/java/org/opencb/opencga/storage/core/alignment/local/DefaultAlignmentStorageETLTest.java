@@ -31,8 +31,8 @@ public class DefaultAlignmentStorageETLTest {
     @Test
     public void postTransform() throws Exception {
 //        String inputPath = getClass().getResource("/HG00096.chrom20.small.bam").toString();
-        String inputPath = "/tmp/kk/ebi.bam";
-//        String inputPath = "/tmp/kk/HG00096.chrom20.small.bam";
+//        String inputPath = "/tmp/kk/ebi.bam";
+        String inputPath = "/tmp/kk/HG00096.chrom20.small.bam";
         System.out.println("inputPath = " + inputPath);
         DefaultAlignmentStorageETL storageETL = new DefaultAlignmentStorageETL(new DefaultAlignmentDBAdaptor(),
                 Paths.get(inputPath).getParent());

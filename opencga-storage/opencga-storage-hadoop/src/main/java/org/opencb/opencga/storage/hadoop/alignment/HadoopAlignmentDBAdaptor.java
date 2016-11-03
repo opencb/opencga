@@ -93,12 +93,12 @@ public class HadoopAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
-    public RegionCoverage coverage(String fileId) throws Exception {
+    public QueryResult<RegionCoverage> coverage(String fileId) throws Exception {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public RegionCoverage coverage(String fileId, Query query, QueryOptions options) throws Exception {
+    public QueryResult<RegionCoverage> coverage(String fileId, Query query, QueryOptions options) throws Exception {
         throw new UnsupportedOperationException();
     }
 
