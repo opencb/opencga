@@ -113,7 +113,7 @@ public class FileCommandOptions {
     }
 
     @Deprecated
-    @Parameters(commandNames = {"copy"}, commandDescription = "Copy a file or folder")
+    @Parameters(commandNames = {"copy"}, commandDescription = "(DEPRECATED) Copy a file or folder")
     public class CopyCommandOptions {
 
         @ParametersDelegate
@@ -690,9 +690,9 @@ public class FileCommandOptions {
                 arity = 1)
         public String missingGenotypes;
 
-        @Parameter(names = {"--annotation-exists"}, description = "Specify if the variant annotation must exists.",
-                arity = 0)
-        public boolean annotationExists;
+//        @Parameter(names = {"--annotation-exists"}, description = "Specify if the variant annotation must exists.",
+//                arity = 0)
+//        public boolean annotationExists;
 
         @Parameter(names = {"--genotype"}, description = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}"
                 + "(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1", arity = 1)

@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.UriUtils;
 
 import java.io.IOException;
@@ -173,8 +174,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
             throw new CatalogException("File " + sourceUri + " does not exist");
         }
 
+        String path = ParamUtils.defaultString(copyCommandOptions.path, "");
         QueryResult<File> file = catalogManager.createFile(studyId, copyCommandOptions.format, copyCommandOptions.bioformat,
-                Paths.get(copyCommandOptions.path, inputFile.getFileName().toString()).toString(), copyCommandOptions.description,
+                Paths.get(path, inputFile.getFileName().toString()).toString(), copyCommandOptions.description,
                 copyCommandOptions.parents, -1, sessionId);
         new CatalogFileUtils(catalogManager).upload(sourceUri, file.first(), null, sessionId, false, false,
                 copyCommandOptions.move, copyCommandOptions.calculateChecksum);
@@ -502,8 +504,8 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
                 filesCommandOptions.variantsCommandOptions.missingAlleles);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.MISSING_GENOTYPES.key(),
                 filesCommandOptions.variantsCommandOptions.missingGenotypes);
-        queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(),
-                filesCommandOptions.variantsCommandOptions.annotationExists);
+//        queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(),
+//                filesCommandOptions.variantsCommandOptions.annotationExists);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.GENOTYPE.key(),
                 filesCommandOptions.variantsCommandOptions.genotype);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(),

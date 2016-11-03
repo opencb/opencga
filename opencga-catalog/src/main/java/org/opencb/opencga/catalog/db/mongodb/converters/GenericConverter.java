@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Created by pfurio on 18/01/16.
  */
+@Deprecated
 public abstract class GenericConverter<M, D> implements ComplexTypeConverter<M, D> {
 
     protected final ObjectMapper objectMapper;
