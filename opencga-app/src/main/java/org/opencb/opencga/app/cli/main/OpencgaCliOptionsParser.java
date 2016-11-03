@@ -396,7 +396,7 @@ public class OpencgaCliOptionsParser {
     public static class OpencgaCommonCommandOptions extends GeneralCliOptions.CommonCommandOptions {
 
         @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
-        Map<String, String> dynamic = new HashMap<>();
+        public Map<String, String> dynamic = new HashMap<>();
 
         @Parameter(names = {"--metadata"}, description = "Include metadata information", required = false, arity = 1)
         public boolean metadata = false;
@@ -405,6 +405,9 @@ public class OpencgaCliOptionsParser {
                 + "PLAIN_JSON}", required = false, arity = 1)
         OutputFormat outputFormat = OutputFormat.PRETTY_JSON;
 
+        QueryOptions getQueryOptions() {
+            return new QueryOptions(dynamic, false);
+        }
     }
 
     @Deprecated
@@ -416,8 +419,9 @@ public class OpencgaCliOptionsParser {
         @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
         public String exclude;
 
+        @Override
         QueryOptions getQueryOptions() {
-            QueryOptions queryOptions = new QueryOptions();
+            QueryOptions queryOptions = super.getQueryOptions();
             queryOptions.putIfNotNull("include", include);
             queryOptions.putIfNotNull("exclude", exclude);
             return queryOptions;

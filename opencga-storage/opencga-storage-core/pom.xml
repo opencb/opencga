@@ -45,12 +45,8 @@
             <artifactId>cellbase-lib</artifactId>
             <exclusions>
                 <exclusion>
-                    <artifactId>saxon</artifactId>
-                    <groupId>net.sf.saxon</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>saxon-xom</artifactId>
-                    <groupId>net.sf.saxon</groupId>
+                    <artifactId>bionetdb-core</artifactId>
+                    <groupId>org.opencb.bionetdb</groupId>
                 </exclusion>
             </exclusions>
         </dependency>

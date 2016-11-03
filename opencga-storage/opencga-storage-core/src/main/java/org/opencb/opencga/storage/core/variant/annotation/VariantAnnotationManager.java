@@ -33,11 +33,13 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.opencga.core.common.ProgressLogger;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantDBReader;
+import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.avro.AvroDataReader;
 import org.opencb.opencga.storage.core.variant.io.avro.AvroDataWriter;
 import org.opencb.opencga.storage.core.variant.io.avro.VariantAnnotationJsonDataReader;
@@ -54,7 +56,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -144,18 +145,10 @@ public class VariantAnnotationManager {
             numThreads = options.getInt(VariantAnnotationManager.NUM_THREADS, numThreads);
         }
 
-        final long[] totalVariantsLong = {-1};
-
-        new Thread(() -> {
-            totalVariantsLong[0] = dbAdaptor.count(query).first();
-        }).start();
-        int logBatchSize = 1000;
-
-        final AtomicLong numAnnotations = new AtomicLong(0);
-
         try {
             DataReader<Variant> variantDataReader = new VariantDBReader(dbAdaptor, query, iteratorQueryOptions);
 
+            ProgressLogger progressLogger = new ProgressLogger("Annotated variants:", () -> dbAdaptor.count(query).first(), 200);
             ParallelTaskRunner.Task<Variant, VariantAnnotation> annotationTask = variantList -> {
                 List<VariantAnnotation> variantAnnotationList;
                 long start = System.currentTimeMillis();
@@ -165,15 +158,8 @@ public class VariantAnnotationManager {
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-                long numAnnotationsPrev = numAnnotations.getAndAdd(variantList.size());
-                if (numAnnotationsPrev / logBatchSize != (numAnnotationsPrev + variantList.size()) / logBatchSize) {
-                    long batchPos = (numAnnotationsPrev + variantList.size()) / logBatchSize * logBatchSize;
-                    String percent = "?";
-                    if (totalVariantsLong[0] > 0) {
-                        percent = String.format("%d, %.2f%%", totalVariantsLong[0], (((float) batchPos) / totalVariantsLong[0]) * 100);
-                    }
-                    logger.info("Annotated variants: {}/{}", batchPos, percent);
-                }
+                progressLogger.increment(variantList.size(),
+                        () -> ", up to position " + variantList.get(variantList.size() - 1).toString());
 
                 logger.debug("Annotated batch of {} genomic variants. Time: {}s", variantList.size(),
                         (System.currentTimeMillis() - start) / 1000.0);
@@ -202,7 +188,7 @@ public class VariantAnnotationManager {
     public void loadAnnotation(URI uri, QueryOptions options) throws IOException, StorageManagerException {
         Path path = Paths.get(uri);
         String fileName = path.getFileName().toString().toLowerCase();
-        if (fileName.endsWith("avro.gz") || fileName.endsWith("avro") || fileName.endsWith("json.gz") || fileName.endsWith("json")) {
+        if (VariantReaderUtils.isAvro(fileName) || VariantReaderUtils.isJson(fileName)) {
             loadVariantAnnotation(uri, options);
         } else {
             loadCustomAnnotation(uri, options);
@@ -222,8 +208,6 @@ public class VariantAnnotationManager {
         final int numConsumers = options.getInt(VariantAnnotationManager.NUM_WRITERS, 6);
         boolean avro = uri.getPath().endsWith("avro") || uri.getPath().endsWith("avro.gz");
 
-        dbAdaptor.preUpdateAnnotations();
-
         ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numConsumers, batchSize, numConsumers * 2, true, false);
         DataReader<VariantAnnotation> reader;
 
@@ -234,12 +218,10 @@ public class VariantAnnotationManager {
             reader = new VariantAnnotationJsonDataReader(Paths.get(uri).toFile());
         }
         try {
-            ParallelTaskRunner<VariantAnnotation, Void> ptr = new ParallelTaskRunner<>(reader, variantAnnotationList -> {
-                dbAdaptor.updateAnnotations(variantAnnotationList, new QueryOptions());
-                return Collections.emptyList();
-            }, null, config);
+            ProgressLogger progressLogger = new ProgressLogger("Loaded annotations: ");
+            ParallelTaskRunner<VariantAnnotation, Object> ptr = new ParallelTaskRunner<>(reader,
+                    () -> dbAdaptor.annotationLoader(options).setProgressLogger(progressLogger), null, config);
             ptr.run();
-
         } catch (Exception e) {
             e.printStackTrace();
         }

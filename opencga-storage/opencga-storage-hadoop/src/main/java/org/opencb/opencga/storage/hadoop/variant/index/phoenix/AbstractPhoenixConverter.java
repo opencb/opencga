@@ -59,12 +59,12 @@ public abstract class AbstractPhoenixConverter {
         if (collection.size() == 0) {
             return;
         }
-        byte[] arrayBytes = VariantPhoenixHelper.toBytes(collection, arrayType);
+        byte[] arrayBytes = PhoenixHelper.toBytes(collection, arrayType);
         put.addColumn(getGenomeHelper().getColumnFamily(), column, arrayBytes);
     }
 
     @SuppressWarnings("unchecked")
-    protected void add(Put put, VariantPhoenixHelper.Column column, Object value) {
+    protected void add(Put put, PhoenixHelper.Column column, Object value) {
         add(put, column.bytes(), value, column.getPDataType());
     }
 
