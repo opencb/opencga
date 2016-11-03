@@ -19,6 +19,7 @@ package org.opencb.opencga.server.rest.analysis;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.ga4gh.models.ReadAlignment;
+import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -41,6 +42,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -147,10 +149,21 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @ApiOperation(value = "Fetch the stats of an alignment file", position = 15, response = AlignmentGlobalStats.class)
     public Response getStats(@ApiParam(value = "Id of the alignment file in catalog", required = true) @QueryParam("fileId")
                                           String fileIdStr,
-                                  @ApiParam(value = "Study id", required = false) @QueryParam("studyId") String studyId) {
+                                  @ApiParam(value = "Study id", required = false) @QueryParam("studyId") String studyId,
+                             @ApiParam(value = "Region 'chr:start-end'", required = false) @QueryParam("region") String region,
+                             @ApiParam(value = "Minimum mapping quality", required = false) @QueryParam("minMapQ") Integer minMapQ,
+                             @ApiParam(value = "Only alignments completely contained within boundaries of region", required = false)
+                                 @QueryParam("contained") Boolean contained) {
         try {
             String userId = catalogManager.getUserManager().getId(sessionId);
             Long fileId = catalogManager.getFileManager().getId(userId, fileIdStr);
+
+            Query query = new Query();
+            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), region);
+            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
+
+            QueryOptions queryOptions = new QueryOptions();
+            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
 
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.URI.key());
             QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(fileId, options, sessionId);
@@ -162,7 +175,9 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             String path = fileQueryResult.first().getUri().getRawPath();
 
             AlignmentStorageManager alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager();
-            return createOkResponse(alignmentStorageManager.getStats(path));
+            AlignmentGlobalStats stats = alignmentStorageManager.getDBAdaptor().stats(path, query, queryOptions);
+            QueryResult<AlignmentGlobalStats> queryResult = new QueryResult<>("get stats", -1, 1, 1, "", "", Arrays.asList(stats));
+            return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -170,17 +185,24 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
     @GET
     @Path("/coverage")
-    @ApiOperation(value = "Fetch the stats of an alignment file", position = 15, response = AlignmentGlobalStats.class)
+    @ApiOperation(value = "Fetch the coverage of an alignment file", position = 15, response = RegionCoverage.class)
     public Response getCoverage(@ApiParam(value = "Id of the alignment file in catalog", required = true) @QueryParam("fileId")
                                      String fileIdStr,
                                 @ApiParam(value = "Study id", required = false) @QueryParam("studyId") String studyId,
-                                @ApiParam(value = "Region 'chr:start-end'", required = false) @QueryParam("region") String region) {
+                                @ApiParam(value = "Region 'chr:start-end'", required = false) @QueryParam("region") String region,
+                                @ApiParam(value = "Minimum mapping quality", required = false) @QueryParam("minMapQ") Integer minMapQ,
+                                @ApiParam(value = "Only alignments completely contained within boundaries of region", required = false)
+                                    @QueryParam("contained") Boolean contained) {
         try {
-            Query query = new Query();
-            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), region);
-
             String userId = catalogManager.getUserManager().getId(sessionId);
             Long fileId = catalogManager.getFileManager().getId(userId, fileIdStr);
+
+            Query query = new Query();
+            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), region);
+            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
+
+            QueryOptions queryOptions = new QueryOptions();
+            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
 
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.URI.key());
             QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(fileId, options, sessionId);
@@ -189,11 +211,10 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                 // This should never happen
                 throw new CatalogException("Critical error: File " + fileId + " could not be found in catalog.");
             }
-            java.nio.file.Path path = Paths.get(fileQueryResult.first().getUri());
+            String path = fileQueryResult.first().getUri().getRawPath();
 
-//            AlignmentDBAdaptor alignmentDBAdaptor = new DefaultAlignmentDBAdaptor();
-            // TODO: Add the call to obtain the coverage
-            return createOkResponse("PENDING");
+           AlignmentStorageManager alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager();
+            return createOkResponse(alignmentStorageManager.getDBAdaptor().coverage(path, query, queryOptions));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

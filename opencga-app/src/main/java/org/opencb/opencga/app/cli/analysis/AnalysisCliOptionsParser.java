@@ -83,6 +83,7 @@ public class AnalysisCliOptionsParser {
         alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryAlignmentCommandOptions);
         alignmentSubCommands.addCommand("query-grpc", alignmentCommandOptions.queryGRPCAlignmentCommandOptions);
         alignmentSubCommands.addCommand("stats", alignmentCommandOptions.statsAlignmentCommandOptions);
+        alignmentSubCommands.addCommand("coverage", alignmentCommandOptions.coverageAlignmentCommandOptions);
 //        alignmentSubCommands.addCommand("annotate", alignmentCommandOptions.annotateVariantCommandOptions);
 
         toolsCommandOptions = new ToolsCommandOptions();
@@ -241,6 +242,7 @@ public class AnalysisCliOptionsParser {
         final QueryAlignmentCommandOptions queryAlignmentCommandOptions;
         final QueryGRPCAlignmentCommandOptions queryGRPCAlignmentCommandOptions;
         final StatsAlignmentCommandOptions statsAlignmentCommandOptions;
+        final CoverageAlignmentCommandOptions coverageAlignmentCommandOptions;
 //        final AnnotateVariantCommandOptions annotateVariantCommandOptions;
 //        final DeleteVariantCommandOptions deleteVariantCommandOptions;
 
@@ -251,6 +253,7 @@ public class AnalysisCliOptionsParser {
             this.queryAlignmentCommandOptions = new QueryAlignmentCommandOptions();
             this.queryGRPCAlignmentCommandOptions = new QueryGRPCAlignmentCommandOptions();
             this.statsAlignmentCommandOptions = new StatsAlignmentCommandOptions();
+            this.coverageAlignmentCommandOptions = new CoverageAlignmentCommandOptions();
         }
     }
 
@@ -880,6 +883,31 @@ public class AnalysisCliOptionsParser {
 
         @Parameter(names = {"--file-id"}, description = "Id of the alignment file in catalog", required = true, arity = 1)
         public String fileId;
+
+        @Parameter(names = {"--min-mapq"}, description = "Minimum mapping quality", arity = 1)
+        public Integer minMappingQuality;
+
+        @Parameter(names = {"--contained"}, description = "Set flag to select just the alignments completely contained within the "
+                + "boundaries of the region", arity = 0)
+        boolean contained;
+    }
+
+    @Parameters(commandNames = {"coverage"}, commandDescription = "Obtain the coverage of an alignment")
+    public class CoverageAlignmentCommandOptions extends QueryCommandOptions {
+
+        @ParametersDelegate
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+
+        @Parameter(names = {"--file-id"}, description = "Id of the alignment file in catalog", required = true, arity = 1)
+        public String fileId;
+
+        @Parameter(names = {"--min-mapq"}, description = "Minimum mapping quality", arity = 1)
+        public Integer minMappingQuality;
+
+        @Parameter(names = {"--contained"}, description = "Set flag to select just the alignments completely contained within the "
+                + "boundaries of the region", arity = 0)
+        boolean contained;
+
     }
 
     /*

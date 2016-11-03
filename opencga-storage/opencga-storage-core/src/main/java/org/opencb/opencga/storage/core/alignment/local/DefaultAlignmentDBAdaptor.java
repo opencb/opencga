@@ -172,6 +172,31 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
+    public AlignmentGlobalStats stats(String fileId, Query query, QueryOptions options) throws Exception {
+        if (options == null) {
+            options = new QueryOptions();
+        }
+        if (query == null) {
+            query = new Query();
+        }
+
+        if (options.size() == 0 && query.size() == 0) {
+            return stats(fileId);
+        }
+
+        Path path = Paths.get(fileId);
+        FileUtils.checkFile(path);
+
+        AlignmentOptions alignmentOptions = parseQueryOptions(options);
+        AlignmentFilters alignmentFilters = parseQuery(query);
+        Region region = parseRegion(query);
+
+        AlignmentManager alignmentManager = new AlignmentManager(path);
+
+        return alignmentManager.stats(region, alignmentOptions, alignmentFilters);
+    }
+
+    @Override
     public RegionCoverage coverage(String fileId) throws Exception {
         return coverage(fileId, new Query(), new QueryOptions("windowSize", DEFAULT_WINDOW_SIZE));
     }

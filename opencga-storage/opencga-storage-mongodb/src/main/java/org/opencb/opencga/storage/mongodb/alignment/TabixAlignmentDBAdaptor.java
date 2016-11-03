@@ -258,6 +258,11 @@ public class TabixAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
+    public AlignmentGlobalStats stats(String fileId, Query query, QueryOptions options) throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public org.opencb.biodata.models.alignment.RegionCoverage coverage(String fileId) throws Exception {
         throw new UnsupportedOperationException();
     }

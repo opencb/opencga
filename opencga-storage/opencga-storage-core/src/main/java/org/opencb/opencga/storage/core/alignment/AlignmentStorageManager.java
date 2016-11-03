@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.core.alignment;
 
-import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.LoggerFactory;
@@ -68,7 +67,4 @@ public abstract class AlignmentStorageManager extends StorageManager<AlignmentDB
         logger = LoggerFactory.getLogger(AlignmentStorageManager.class);
     }
 
-    public AlignmentGlobalStats getStats(String fileId) throws Exception {
-        return getDBAdaptor().stats(fileId);
-    }
 }
