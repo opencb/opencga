@@ -545,27 +545,34 @@ public class VariantVcfExporter implements DataWriter<Variant> {
                         }
                         break;
                     case "phastCons":
-                        List<Double> phastCons = variant.getAnnotation().getConservation().stream()
-                                .filter(t -> t.getSource().equalsIgnoreCase("phastCons"))
-                                .map(Score::getScore)
-                                .collect(Collectors.toList());
-                        if (phastCons.size() > 0) {
-                            stringBuilder.append(df3.format(phastCons.get(0)));
+                        if (variant.getAnnotation().getConservation() != null) {
+                            List<Double> phastCons = variant.getAnnotation().getConservation().stream()
+                                    .filter(t -> t.getSource().equalsIgnoreCase("phastCons"))
+                                    .map(Score::getScore)
+                                    .collect(Collectors.toList());
+                            if (phastCons.size() > 0) {
+                                stringBuilder.append(df3.format(phastCons.get(0)));
+                            }
                         }
                         break;
                     case "phylop":
-                        List<Double> phylop = variant.getAnnotation().getConservation().stream()
-                                .filter(t -> t.getSource().equalsIgnoreCase("phylop"))
-                                .map(Score::getScore)
-                                .collect(Collectors.toList());
-                        if (phylop.size() > 0) {
-                            stringBuilder.append(df3.format(phylop.get(0)));
+                        if (variant.getAnnotation().getConservation() != null) {
+                            List<Double> phylop = variant.getAnnotation().getConservation().stream()
+                                    .filter(t -> t.getSource().equalsIgnoreCase("phylop"))
+                                    .map(Score::getScore)
+                                    .collect(Collectors.toList());
+                            if (phylop.size() > 0) {
+                                stringBuilder.append(df3.format(phylop.get(0)));
+                            }
                         }
                         break;
                     case "populationFrequency":
-                        stringBuilder.append(variant.getAnnotation().getPopulationFrequencies().stream()
-                                .map(t -> t.getPopulation() + ":" + t.getAltAlleleFreq())
-                                .collect(Collectors.joining(",")));
+                        List<PopulationFrequency> populationFrequencies = variant.getAnnotation().getPopulationFrequencies();
+                        if (populationFrequencies != null) {
+                            stringBuilder.append(populationFrequencies.stream()
+                                    .map(t -> t.getPopulation() + ":" + t.getAltAlleleFreq())
+                                    .collect(Collectors.joining(",")));
+                        }
                         break;
                     case "cDnaPosition":
                         stringBuilder.append(consequenceType.getCdnaPosition());
@@ -631,7 +638,7 @@ public class VariantVcfExporter implements DataWriter<Variant> {
                                 .map(GeneDrugInteraction::getDrugName).collect(Collectors.joining(",")));
                         break;
                     default:
-                        System.out.println("this is not possible");
+                        logger.error("Unknown annotation: " + annotations.get(j));
                         break;
                 }
                 if (j < annotations.size() - 1) {

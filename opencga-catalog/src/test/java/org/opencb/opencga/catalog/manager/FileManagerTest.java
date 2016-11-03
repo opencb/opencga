@@ -679,6 +679,10 @@ public class FileManagerTest extends GenericTest {
 
         fileId = catalogManager.getFileId(Long.toString(file.getId()), sessionIdUser);
         assertEquals(file.getId(), fileId);
+
+
+        fileId = catalogManager.getFileManager().getId("user", Long.toString(studyId) + ":/");
+        System.out.println(fileId);
     }
 
     @Test

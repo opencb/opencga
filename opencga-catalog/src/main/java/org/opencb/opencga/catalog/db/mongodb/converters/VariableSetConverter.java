@@ -16,44 +16,23 @@
 
 package org.opencb.opencga.catalog.db.mongodb.converters;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import org.bson.Document;
+import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.opencga.catalog.models.VariableSet;
-
-import java.io.IOException;
 
 /**
  * Created by pfurio on 04/04/16.
  */
-public class VariableSetConverter extends GenericConverter<VariableSet, Document>  {
-    private ObjectWriter variableSetWriter;
+public class VariableSetConverter extends GenericDocumentComplexConverter<VariableSet> {
 
     public VariableSetConverter() {
-        objectReader = objectMapper.reader(VariableSet.class);
-        variableSetWriter = objectMapper.writerFor(VariableSet.class);
-    }
-
-    @Override
-    public VariableSet convertToDataModelType(Document object) {
-        VariableSet variableSet = null;
-        try {
-            variableSet = objectReader.readValue(objectWriter.writeValueAsString(object));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return variableSet;
+        super(VariableSet.class);
     }
 
     @Override
     public Document convertToStorageType(VariableSet object) {
-        Document document = null;
-        try {
-            document = Document.parse(variableSetWriter.writeValueAsString(object));
-            document.put("id", document.getInteger("id").longValue());
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
+        Document document = super.convertToStorageType(object);
+        document.put("id", document.getInteger("id").longValue());
         return document;
     }
 }

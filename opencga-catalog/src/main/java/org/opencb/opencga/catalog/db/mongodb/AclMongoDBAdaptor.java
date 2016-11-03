@@ -28,9 +28,9 @@ import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.auth.authorization.AclDBAdaptor;
-import org.opencb.opencga.catalog.db.mongodb.converters.GenericConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.acls.AbstractAcl;
 import org.opencb.opencga.catalog.models.acls.permissions.AbstractAclEntry;
@@ -49,10 +49,10 @@ import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.PRIVATE_STUDY
 public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdaptor<T> {
 
     private MongoDBCollection collection;
-    private GenericConverter<? extends AbstractAcl, Document> converter;
+    private GenericDocumentComplexConverter<? extends AbstractAcl> converter;
     private Logger logger;
 
-    public AclMongoDBAdaptor(MongoDBCollection collection, GenericConverter<? extends AbstractAcl, Document> converter,
+    public AclMongoDBAdaptor(MongoDBCollection collection, GenericDocumentComplexConverter<? extends AbstractAcl> converter,
                              Logger logger) {
         this.collection = collection;
         this.converter = converter;
