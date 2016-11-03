@@ -49,6 +49,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.storage.core.cache.CacheManager;
 import org.opencb.opencga.storage.core.config.CellBaseConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
@@ -107,6 +108,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private StudyConfigurationManager studyConfigurationManager;
     private final ObjectMap configuration;
     private final CellBaseConfiguration cellbaseConfiguration;
+    private CacheManager cacheManager;
 
     @Deprecated
     private DataWriter dataWriter;
@@ -141,6 +143,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 : this.storageEngineConfiguration.getVariant().getOptions();
         this.utils = new VariantDBAdaptorUtils(this);
         cellBaseClient = new CellBaseClient(cellbaseConfiguration.toClientConfiguration());
+        this.cacheManager = new CacheManager(storageConfiguration);
     }
 
     protected MongoDBCollection getVariantsCollection() {
@@ -240,12 +243,34 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult<Variant> get(Query query, QueryOptions options) {
+
         if (options == null) {
             options = new QueryOptions();
         }
 
-//        parseQueryOptions(options, qb);
+        QueryResult<Variant> queryResult;
+
+        if (options.getBoolean("cache") && cacheManager.isTypeAllowed("var")) {
+            List<Integer> studyIds = utils.getStudyIds(query.getAsList(VariantQueryParams.STUDIES.key()), options);
+            // TODO : ONLY USING ONE STUDY ID ?
+            String key = cacheManager.createKey(studyIds.get(0).toString(), "var", query, options);
+            queryResult = cacheManager.get(key);
+            if (queryResult.getResult() != null && queryResult.getResult().size() != 0) {
+                return queryResult;
+            } else {
+                queryResult = getVariantQueryResult(query, options);
+                cacheManager.set(key, query, queryResult);
+            }
+        } else {
+            return getVariantQueryResult(query, options);
+        }
+        return queryResult;
+    }
+
+    private QueryResult<Variant> getVariantQueryResult(Query query, QueryOptions options) {
+        //        parseQueryOptions(options, qb);
         Document mongoQuery = parseQuery(query);
+
 //        DBObject projection = parseProjectionQueryOptions(options);
         Document projection = createProjection(query, options);
         logger.debug("Query to be executed: '{}'", mongoQuery.toJson(new JsonWriterSettings(JsonMode.SHELL, false)));
@@ -271,10 +296,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //                System.err.println("mongodb.explain = " + explain);
 //            }
 //        }
-        QueryResult<Variant> queryResult = variantsCollection.find(mongoQuery, projection, getDocumentToVariantConverter(query, options),
+        return variantsCollection.find(mongoQuery, projection, getDocumentToVariantConverter(query, options),
                 options);
-        // set query Id?
-        return queryResult;
     }
 
     @Override
@@ -890,12 +913,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             if (query.containsKey(VariantQueryParams.TYPE.key()) && !query.getString(VariantQueryParams.TYPE.key()).isEmpty()) {
                 addQueryFilter(DocumentToVariantConverter.TYPE_FIELD, query.getString(VariantQueryParams.TYPE.key()), builder,
                         QueryOperation.AND, s -> {
-                    Set<VariantType> subTypes = Variant.subTypes(VariantType.valueOf(s));
-                    List<String> types = new ArrayList<>(subTypes.size() + 1);
-                    types.add(s);
-                    subTypes.forEach(subType -> types.add(subType.toString()));
-                    return types;
-                }); //addQueryStringFilter(DBObjectToVariantConverter.TYPE_FIELD,
+                            Set<VariantType> subTypes = Variant.subTypes(VariantType.valueOf(s));
+                            List<String> types = new ArrayList<>(subTypes.size() + 1);
+                            types.add(s);
+                            subTypes.forEach(subType -> types.add(subType.toString()));
+                            return types;
+                        }); //addQueryStringFilter(DBObjectToVariantConverter.TYPE_FIELD,
 //                query.getString(VariantQueryParams.TYPE.key()), builder, QueryOperation.AND);
             }
 
@@ -1479,12 +1502,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * <p>
      * *An interesting idea would be to invert this actions depending on the number of already inserted variants.
      *
-     * @param data Variants to insert
-     * @param fileId File ID
-     * @param variantConverter Variant converter to be used
+     * @param data                        Variants to insert
+     * @param fileId                      File ID
+     * @param variantConverter            Variant converter to be used
      * @param variantSourceEntryConverter Variant source converter to be used
-     * @param studyConfiguration Configuration for the study
-     * @param loadedSampleIds Other loaded sampleIds EXCEPT those that are going to be loaded
+     * @param studyConfiguration          Configuration for the study
+     * @param loadedSampleIds             Other loaded sampleIds EXCEPT those that are going to be loaded
      * @return QueryResult object
      */
     QueryResult<MongoDBVariantWriteResult> insert(List<Variant> data, int fileId, DocumentToVariantConverter variantConverter,
@@ -1674,25 +1697,23 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * Fills the missing genotype values for the new loaded samples.
      * Missing data is which was present in the database but not in the input file.
      * Data present in the file but not in the database is added during the {@link #insert} step.
-     *
-     *          +--------+---------+
-     *          | Loaded | NewFile |
+     * <p>
+     * +--------+---------+
+     * | Loaded | NewFile |
      * +--------+--------+---------+
      * | 10:A:T | DATA   |         |   <- Missing data to be filled
      * +--------+--------+---------+
      * | 20:C:T |        | DATA    |   <- Missing data already filled in the {@link #insert} step.
      * +--------+--------+---------+
      *
-     *
-     *
-     * @param fileId        Loading File ID
-     * @param chromosomes   Chromosomes covered by the current file
-     * @param fileSampleIds FileSampleIds
+     * @param fileId             Loading File ID
+     * @param chromosomes        Chromosomes covered by the current file
+     * @param fileSampleIds      FileSampleIds
      * @param studyConfiguration StudyConfiguration
-     * @return  WriteResult
+     * @return WriteResult
      */
     QueryResult<UpdateResult> fillFileGaps(int fileId, List<String> chromosomes, List<Integer> fileSampleIds,
-                                          StudyConfiguration studyConfiguration) {
+                                           StudyConfiguration studyConfiguration) {
 
         // { "studies.sid" : <studyId>, "studies.files.fid" : { $ne : <fileId> } },
         // { $push : {
@@ -1989,6 +2010,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
         return builder;
     }
+
     private QueryBuilder addStringCompQueryFilter(String key, String value, QueryBuilder builder) {
         String op = getOperator(value);
         String obj = value.replaceFirst(op, "");
@@ -2007,7 +2029,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             case "==":
             default:
                 builder.and(key).is(obj);
-            break;
+                break;
         }
         return builder;
     }
@@ -2024,8 +2046,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     /**
      * Accepts a list of filters separated with "," or ";" with the expression: {SCORE}{OPERATION}{VALUE}.
      *
-     * @param value   Value to parse
-     * @param builder QueryBuilder
+     * @param value        Value to parse
+     * @param builder      QueryBuilder
      * @param conservation
      * @return QueryBuilder
      */
@@ -2036,8 +2058,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     /**
      * Accepts a list of filters separated with "," or ";" with the expression: {SCORE}{OPERATION}{VALUE}.
      *
-     * @param value   Value to parse
-     * @param builder QueryBuilder
+     * @param value        Value to parse
+     * @param builder      QueryBuilder
      * @param conservation
      * @param source
      * @return QueryBuilder
@@ -2117,13 +2139,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     /**
      * Accepts a list of filters separated with "," or ";" with the expression:
-     *      {STUDY}:{POPULATION}{OPERATION}{VALUE}.
+     * {STUDY}:{POPULATION}{OPERATION}{VALUE}.
      *
-     * @param key                   PopulationFrequency schema field
-     * @param value                 Value to parse
-     * @param builder               QueryBuilder
-     * @param addFilter             For complex filter
-     * @return                      QueryBuilder
+     * @param key       PopulationFrequency schema field
+     * @param value     Value to parse
+     * @param builder   QueryBuilder
+     * @param addFilter For complex filter
+     * @return QueryBuilder
      */
     private QueryBuilder addFrequencyFilter(String key, String value, QueryBuilder builder, VariantQueryParams queryParam,
                                             BiConsumer<String, QueryBuilder> addFilter) {
@@ -2306,6 +2328,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     /* Query util methods */
+
     /**
      * Parses the string to integer number.
      * <p>
@@ -2343,41 +2366,40 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     /**
      * Create missing indexes on the given VariantsCollection.
      * Variant indices
-     *   - ChunkID
-     *   - Chromosome + start + end
-     *   - IDs
-     *
+     * - ChunkID
+     * - Chromosome + start + end
+     * - IDs
+     * <p>
      * Study indices
-     *   - StudyId + FileId
-     *
+     * - StudyId + FileId
+     * <p>
      * Stats indices
-     *   - StatsMaf
-     *   - StatsMgf
-     *
+     * - StatsMaf
+     * - StatsMgf
+     * <p>
      * Annotation indices
-     *   - XRef.id
-     *   - ConsequenceType.so
-     *   - PopulationFrequency Study + Population + AlternateFrequency : SPARSE
-     *   - Clinical.Clinvar.clinicalSignificance  : SPARSE
-     *   ConservedRegionScore
-     *     - phastCons.score
-     *     - phylop.score
-     *     - gerp.score
-     *   FunctionalScore
-     *     - cadd_scaled
-     *     - cadd_raw
-     *   - Drugs.name  : SPARSE
-     *   ProteinSubstitution
-     *     - polyphen.score : SPARSE
-     *     - polyphen.description : SPARSE
-     *     - sift.score : SPARSE
-     *     - sift.description : SPARSE
-     *   - ProteinVariantAnnotation.keywords : SPARSE
-     *   - TranscriptAnnotationFlags : SPARSE
+     * - XRef.id
+     * - ConsequenceType.so
+     * - PopulationFrequency Study + Population + AlternateFrequency : SPARSE
+     * - Clinical.Clinvar.clinicalSignificance  : SPARSE
+     * ConservedRegionScore
+     * - phastCons.score
+     * - phylop.score
+     * - gerp.score
+     * FunctionalScore
+     * - cadd_scaled
+     * - cadd_raw
+     * - Drugs.name  : SPARSE
+     * ProteinSubstitution
+     * - polyphen.score : SPARSE
+     * - polyphen.description : SPARSE
+     * - sift.score : SPARSE
+     * - sift.description : SPARSE
+     * - ProteinVariantAnnotation.keywords : SPARSE
+     * - TranscriptAnnotationFlags : SPARSE
      *
-     *
-     * @param options               Unused Options.
-     * @param variantsCollection    MongoDBCollection
+     * @param options            Unused Options.
+     * @param variantsCollection MongoDBCollection
      */
     public static void createIndexes(QueryOptions options, MongoDBCollection variantsCollection) {
         logger.info("Start creating indexes");
@@ -2444,26 +2466,26 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         // Conserved region score (phastCons, phylop, gerp)
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                + "." + DocumentToVariantAnnotationConverter.CONSERVED_REGION_GERP_FIELD
-                + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+                        + "." + DocumentToVariantAnnotationConverter.CONSERVED_REGION_GERP_FIELD
+                        + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
                 onBackground);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                + "." + DocumentToVariantAnnotationConverter.CONSERVED_REGION_PHYLOP_FIELD
-                + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+                        + "." + DocumentToVariantAnnotationConverter.CONSERVED_REGION_PHYLOP_FIELD
+                        + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
                 onBackground);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                + "." + DocumentToVariantAnnotationConverter.CONSERVED_REGION_PHASTCONS_FIELD
-                + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+                        + "." + DocumentToVariantAnnotationConverter.CONSERVED_REGION_PHASTCONS_FIELD
+                        + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
                 onBackground);
 
         // Functional score (cadd_scaled, cadd_raw)
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                + "." + DocumentToVariantAnnotationConverter.FUNCTIONAL_CADD_SCALED_FIELD
-                + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+                        + "." + DocumentToVariantAnnotationConverter.FUNCTIONAL_CADD_SCALED_FIELD
+                        + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
                 onBackground);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                + "." + DocumentToVariantAnnotationConverter.FUNCTIONAL_CADD_RAW_FIELD
-                + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+                        + "." + DocumentToVariantAnnotationConverter.FUNCTIONAL_CADD_RAW_FIELD
+                        + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
                 onBackground);
 
         // Drugs : SPARSE
@@ -2474,26 +2496,26 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 onBackgroundSparse);
         // Protein substitution score (polyphen , sift) : SPARSE
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_POLYPHEN_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
+                        + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_POLYPHEN_FIELD
+                        + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
                 onBackgroundSparse);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_SIFT_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
+                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
+                        + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_SIFT_FIELD
+                        + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, 1),
                 onBackgroundSparse);
 
         // Protein substitution score description (polyphen , sift) : SPARSE
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_POLYPHEN_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.SCORE_DESCRIPTION_FIELD, 1),
+                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
+                        + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_POLYPHEN_FIELD
+                        + "." + DocumentToVariantAnnotationConverter.SCORE_DESCRIPTION_FIELD, 1),
                 onBackgroundSparse);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_SIFT_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.SCORE_DESCRIPTION_FIELD, 1),
+                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
+                        + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_SIFT_FIELD
+                        + "." + DocumentToVariantAnnotationConverter.SCORE_DESCRIPTION_FIELD, 1),
                 onBackgroundSparse);
 
         // Protein Keywords : SPARSE
@@ -2518,7 +2540,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      *
      * @param keyValue The keyvalue parameter to be split
      * @return An array with 2 positions for the key and value
-     *
      * @deprecated use {@link VariantDBAdaptorUtils#splitOperator(String)}
      */
     @Deprecated
