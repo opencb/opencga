@@ -24,6 +24,7 @@ import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.ga4gh.models.ReadAlignment;
+import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -88,6 +89,9 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
                 break;
             case "stats":
                 stats();
+                break;
+            case "coverage":
+                coverage();
                 break;
             case "delete":
                 delete();
@@ -355,8 +359,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.SKIP.key(), alignmentCommandOptions.queryAlignmentCommandOptions.skip);
 
         OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        QueryResponse<ReadAlignment> alignments =
-                openCGAClient.getFileClient().alignmentQuery(alignmentCommandOptions.queryAlignmentCommandOptions.fileId, objectMap);
+        QueryResponse<ReadAlignment> alignments = openCGAClient.getAnalysisClient().alignmentQuery(objectMap);
 
         for (ReadAlignment readAlignment : alignments.allResults()) {
             System.out.println(readAlignment);
@@ -504,13 +507,35 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         ObjectMap objectMap = new ObjectMap();
         objectMap.putIfNotNull("fileId", alignmentCommandOptions.statsAlignmentCommandOptions.fileId);
         objectMap.putIfNotNull("sid", alignmentCommandOptions.statsAlignmentCommandOptions.commonOptions.sessionId);
+        objectMap.putIfNotNull("region", alignmentCommandOptions.statsAlignmentCommandOptions.region);
+        objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.statsAlignmentCommandOptions.minMappingQuality);
+        if (alignmentCommandOptions.statsAlignmentCommandOptions.contained) {
+            objectMap.put("contained", alignmentCommandOptions.statsAlignmentCommandOptions.contained);
+        }
 
         OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        QueryResponse<AlignmentGlobalStats> globalStats =
-                openCGAClient.getFileClient().alignmentStats(alignmentCommandOptions.statsAlignmentCommandOptions.fileId, objectMap);
+        QueryResponse<AlignmentGlobalStats> globalStats = openCGAClient.getAnalysisClient().alignmentStats(objectMap);
 
         for (AlignmentGlobalStats alignmentGlobalStats : globalStats.allResults()) {
             System.out.println(alignmentGlobalStats.toJSON());
+        }
+    }
+
+    private void coverage() throws CatalogException, IOException {
+        ObjectMap objectMap = new ObjectMap();
+        objectMap.putIfNotNull("fileId", alignmentCommandOptions.coverageAlignmentCommandOptions.fileId);
+        objectMap.putIfNotNull("sid", alignmentCommandOptions.coverageAlignmentCommandOptions.commonOptions.sessionId);
+        objectMap.putIfNotNull("region", alignmentCommandOptions.coverageAlignmentCommandOptions.region);
+        objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.coverageAlignmentCommandOptions.minMappingQuality);
+        if (alignmentCommandOptions.statsAlignmentCommandOptions.contained) {
+            objectMap.put("contained", alignmentCommandOptions.statsAlignmentCommandOptions.contained);
+        }
+
+        OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
+        QueryResponse<RegionCoverage> globalStats = openCGAClient.getAnalysisClient().alignmentCoverage(objectMap);
+
+        for (RegionCoverage regionCoverage : globalStats.allResults()) {
+            System.out.println(regionCoverage.toString());
         }
     }
 

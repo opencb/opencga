@@ -279,6 +279,26 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
         hbaseToVariantConverter = new HBaseToVariantConverter(this.helper).setFailOnEmptyVariants(true).setSimpleGenotypes(false);
         variantMerger = new VariantMerger();
 
+        String[] toIdxFileIds = context.getConfiguration().getStrings(AbstractVariantTableDriver.CONFIG_VARIANT_FILE_IDS, new String[0]);
+        if (toIdxFileIds.length == 0) {
+            throw new IllegalStateException(
+                    "File IDs to be indexed not found in configuration: " + AbstractVariantTableDriver.CONFIG_VARIANT_FILE_IDS);
+        }
+
+        Set<String> toIndexSampleNames = new HashSet<>();
+        Set<Integer> toIndexFileIdSet = Arrays.stream(toIdxFileIds).map(id -> Integer.valueOf(id)).collect(Collectors.toSet());
+        BiMap<Integer, String> sampleIdToSampleName = StudyConfiguration.inverseMap(studyConfiguration.getSampleIds());
+        for (BiMap.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
+            if (toIndexFileIdSet.contains(entry.getKey())) {
+                entry.getValue().forEach(sid -> toIndexSampleNames.add(sampleIdToSampleName.get(sid)));
+            }
+        }
+
+        BiMap<String, Integer> loadedSamples = StudyConfiguration.getIndexedSamples(this.studyConfiguration);
+        getVariantMerger().setExpectedSamples(loadedSamples.keySet());
+        // Add all samples which are currently being indexed.
+        getVariantMerger().addExpectedSamples(toIndexSampleNames);
+
         timestamp = context.getConfiguration().getLong(AbstractVariantTableDriver.TIMESTAMP, -1);
         if (timestamp == -1) {
             throw new IllegalArgumentException("Missing TimeStamp");

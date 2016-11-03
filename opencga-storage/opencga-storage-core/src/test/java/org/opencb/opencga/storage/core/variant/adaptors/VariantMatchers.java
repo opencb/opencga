@@ -16,24 +16,17 @@
 
 package org.opencb.opencga.storage.core.variant.adaptors;
 
-import org.hamcrest.Description;
-import org.hamcrest.FeatureMatcher;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeDiagnosingMatcher;
+import org.hamcrest.*;
 import org.hamcrest.core.Every;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.ConsequenceType;
-import org.opencb.biodata.models.variant.avro.PopulationFrequency;
-import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
-import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.QueryResult;
 
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -60,7 +53,8 @@ public class VariantMatchers {
 
     public static <T> Matcher<QueryResult<T>> everyResult(List<T> allValues, Matcher<T> subMatcher) {
         long count = count(allValues, subMatcher);
-        return allOf(everyResult(subMatcher), numResults(is((int) count)));
+        Set<T> expectValues = filter(allValues, subMatcher);
+        return allOf(numResults(expectValues), everyResult(subMatcher));
     }
 
     public static <T> Matcher<QueryResult<T>> everyResult(Matcher<T> subMatcher) {
@@ -80,6 +74,45 @@ public class VariantMatchers {
             @Override
             protected Integer featureValueOf(QueryResult<?> actual) {
                 return actual.getNumResults();
+            }
+        };
+    }
+
+    public static <T> Matcher<QueryResult<T>> numResults(Set<T> expectedValues) {
+        return new TypeSafeDiagnosingMatcher<QueryResult<T>>() {
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText(" a query result with " + expectedValues.size() + " values");
+            }
+
+            @Override
+            protected boolean matchesSafely(QueryResult<T> item, Description mismatchDescription) {
+
+                List<T> missingValues = new ArrayList<T>();
+                List<T> extraValues = new ArrayList<T>();
+                for (T t : item.getResult()) {
+                    if (!expectedValues.contains(t)) {
+                        extraValues.add(t);
+                    }
+                }
+                if (extraValues.isEmpty() && item.getNumResults() == expectedValues.size()) {
+                    // Same size and all no extra values? matches!
+                    return true;
+                }
+                for (T expectedValue : expectedValues) {
+                    if (!item.getResult().contains(expectedValue)) {
+                        missingValues.add(expectedValue);
+                    }
+                }
+                mismatchDescription.appendText(" has " + item.getNumResults() + " values");
+                if (!missingValues.isEmpty()) {
+                    mismatchDescription.appendValueList(" , missing values [", ", ", "] ", missingValues);
+                }
+                if (!extraValues.isEmpty()) {
+                    mismatchDescription.appendValueList(" , extra values [", ", ", "] ", extraValues);
+                }
+                return false;
             }
         };
     }
@@ -176,6 +209,61 @@ public class VariantMatchers {
                     }
                 }
                 return 0F;
+            }
+        };
+    }
+
+    public static Matcher<VariantAnnotation> hasSift(Matcher<? super Iterable<Double>> subMatcher) {
+        return hasProteinSubstitutionScore("sift", subMatcher);
+    }
+
+    public static Matcher<VariantAnnotation> hasAnySift(Matcher<? super Double> subMatcher) {
+        return hasSift(CoreMatchers.<Double>hasItem(subMatcher));
+    }
+
+    public static Matcher<VariantAnnotation> hasAnySiftDesc(Matcher<? super String> subMatcher) {
+        return hasProteinSubstitutionScoreDesc("sift", CoreMatchers.<String>hasItem(subMatcher));
+    }
+
+    public static Matcher<VariantAnnotation> hasPolyphen(Matcher<? super Iterable<Double>> subMatcher) {
+        return hasProteinSubstitutionScore("polyphen", subMatcher);
+    }
+
+    public static Matcher<VariantAnnotation> hasAnyPolyphen(Matcher<? super Double> subMatcher) {
+        return hasPolyphen(CoreMatchers.<Double>hasItem(subMatcher));
+    }
+
+    public static Matcher<VariantAnnotation> hasAnyPolyphenDesc(Matcher<? super String> subMatcher) {
+        return hasProteinSubstitutionScoreDesc("polyphen", CoreMatchers.<String>hasItem(subMatcher));
+    }
+
+    public static Matcher<VariantAnnotation> hasProteinSubstitutionScore(String source, Matcher<? super Iterable<Double>> subMatcher) {
+        return hasProteinSubstitutionScore(source, subMatcher, Score::getScore);
+    }
+
+    public static Matcher<VariantAnnotation> hasProteinSubstitutionScoreDesc(String source, Matcher<? super Iterable<String>> subMatcher) {
+        return hasProteinSubstitutionScore(source, subMatcher, Score::getSource);
+    }
+
+    private static <T> Matcher<VariantAnnotation> hasProteinSubstitutionScore(String source, Matcher<? super Iterable<T>> subMatcher, Function<Score, T> mapper) {
+        return new FeatureMatcher<VariantAnnotation, Iterable<T>>(subMatcher, "with all protein substitution " + source, source) {
+            @Override
+            protected Iterable<T> featureValueOf(VariantAnnotation actual) {
+                if (actual.getConsequenceTypes() != null) {
+                    Set<T> set = new HashSet<>();
+                    for (ConsequenceType ct : actual.getConsequenceTypes()) {
+                        if (ct != null && ct.getProteinVariantAnnotation() != null
+                                && ct.getProteinVariantAnnotation().getSubstitutionScores() != null) {
+                            for (Score score : ct.getProteinVariantAnnotation().getSubstitutionScores()) {
+                                if (score != null && source.equals(score.getSource())) {
+                                    set.add(mapper.apply(score));
+                                }
+                            }
+                        }
+                    }
+                    return set;
+                }
+                return Collections.emptyList();
             }
         };
     }
@@ -309,6 +397,16 @@ public class VariantMatchers {
             }
         }
         return c;
+    }
+
+    public static <T> Set<T> filter(List<T> objects, Matcher<T> matcher) {
+        Set<T> l = new HashSet<>();
+        for (T t: objects) {
+            if (matcher.matches(t)) {
+                l.add(t);
+            }
+        }
+        return l;
     }
 
 //    private static class VariantVariantAnnotationFeatureMatcher extends FeatureMatcher<Variant, VariantAnnotation> {

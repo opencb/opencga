@@ -17,7 +17,6 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
-import org.apache.commons.collections.iterators.ArrayListIterator;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.storage.variant.CatalogVariantDBAdaptor;
@@ -288,6 +287,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         o.putIfNotNull("calculateStats", filesCommandOptions.indexCommandOptions.calculateStats);
         o.putIfNotNull("annotate", filesCommandOptions.indexCommandOptions.annotate);
         o.putIfNotNull("overwrite", filesCommandOptions.indexCommandOptions.overwriteAnnotations);
+        o.putAll(filesCommandOptions.commonCommandOptions.dynamic);
 
         return openCGAClient.getFileClient().index(fileIds, o);
     }
@@ -314,7 +314,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.putIfNotEmpty(QueryOptions.SKIP, filesCommandOptions.alignmentCommandOptions.skip);
             queryOptions.put("count", filesCommandOptions.alignmentCommandOptions.count);
 
-        return openCGAClient.getFileClient().alignmentQuery(filesCommandOptions.alignmentCommandOptions.id, queryOptions);
+        return openCGAClient.getAnalysisClient().alignmentQuery(queryOptions);
     }
 
     private QueryResponse content() throws CatalogException, IOException {

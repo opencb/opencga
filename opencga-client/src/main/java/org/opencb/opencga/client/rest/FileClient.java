@@ -16,9 +16,7 @@
 
 package org.opencb.opencga.client.rest;
 
-import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
@@ -113,14 +111,6 @@ public class FileClient extends AbstractParentClient<File, FileAclEntry> {
     public QueryResponse<File> groupBy(String studyId, String fields, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "studyId", studyId, "fields", fields);
         return execute(FILES_URL, "groupBy", params, GET, File.class);
-    }
-
-    public QueryResponse<ReadAlignment> alignmentQuery(String fieldId, ObjectMap params) throws CatalogException, IOException {
-        return execute(FILES_URL, fieldId, "analysis/alignment/query", params, GET, ReadAlignment.class);
-    }
-
-    public QueryResponse<AlignmentGlobalStats> alignmentStats(String fieldId, ObjectMap params) throws CatalogException, IOException {
-        return execute(FILES_URL, fieldId, "analysis/alignment/stats", params, GET, AlignmentGlobalStats.class);
     }
 
     /**

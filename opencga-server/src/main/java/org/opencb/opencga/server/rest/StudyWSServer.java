@@ -338,6 +338,8 @@ public class StudyWSServer extends OpenCGAWSServer {
             VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
             for (String studyIdStr : studyIds) {
                 long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
+                // Get all query options
+                QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
                 if (count) {
                     queryResults.add(variantFetcher.count(studyId, queryOptions, sessionId));
                 } else {

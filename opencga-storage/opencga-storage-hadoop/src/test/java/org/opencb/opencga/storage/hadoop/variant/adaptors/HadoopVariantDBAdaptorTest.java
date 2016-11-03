@@ -38,9 +38,12 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     @Override
     public void before() throws Exception {
         boolean fileIndexed = VariantDBAdaptorTest.fileIndexed;
-        super.before();
-        if (!fileIndexed) {
-            VariantHbaseTestUtils.printVariantsFromVariantsTable((VariantHadoopDBAdaptor) dbAdaptor);
+        try {
+            super.before();
+        } finally {
+            if (!fileIndexed) {
+                VariantHbaseTestUtils.printVariantsFromVariantsTable((VariantHadoopDBAdaptor) dbAdaptor);
+            }
         }
     }
 

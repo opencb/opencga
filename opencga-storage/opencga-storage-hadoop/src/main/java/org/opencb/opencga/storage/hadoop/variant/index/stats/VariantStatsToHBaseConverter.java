@@ -25,7 +25,7 @@ import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Column;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper.Column;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

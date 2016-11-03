@@ -88,6 +88,11 @@ public class HadoopAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
+    public AlignmentGlobalStats stats(String fileId, Query query, QueryOptions options) throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public RegionCoverage coverage(String fileId) throws Exception {
         throw new UnsupportedOperationException();
     }

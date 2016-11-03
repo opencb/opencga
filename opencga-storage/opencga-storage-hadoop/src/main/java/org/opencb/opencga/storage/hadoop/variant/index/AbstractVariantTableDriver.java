@@ -21,10 +21,12 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionConfiguration;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.client.TableConfiguration;
-import org.apache.hadoop.hbase.filter.*;
+import org.apache.hadoop.hbase.filter.ColumnPrefixFilter;
+import org.apache.hadoop.hbase.filter.ColumnRangeFilter;
+import org.apache.hadoop.hbase.filter.FilterList;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.mapreduce.MultiTableOutputFormat;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
@@ -42,10 +44,12 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -91,8 +95,8 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
     public int run(String[] args) throws Exception {
         Configuration conf = getConf();
         int maxKeyValueSize = conf.getInt(HBASE_KEYVALUE_SIZE_MAX, 10485760); // 10MB
-        getLog().info("HBASE: set " + TableConfiguration.MAX_KEYVALUE_SIZE_KEY + " to " + maxKeyValueSize);
-        conf.setInt(TableConfiguration.MAX_KEYVALUE_SIZE_KEY, maxKeyValueSize); // always overwrite server default (usually 1MB)
+        getLog().info("HBASE: set " + ConnectionConfiguration.MAX_KEYVALUE_SIZE_KEY + " to " + maxKeyValueSize);
+        conf.setInt(ConnectionConfiguration.MAX_KEYVALUE_SIZE_KEY, maxKeyValueSize); // always overwrite server default (usually 1MB)
 
         String inTable = conf.get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, StringUtils.EMPTY);
         String outTable = conf.get(CONFIG_VARIANT_TABLE_NAME, StringUtils.EMPTY);
@@ -302,11 +306,21 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         List<byte[]> splitList = GenomeHelper.generateBootPreSplitsHuman(
                 nsplits,
                 (chr, pos) -> genomeHelper.generateVariantRowKey(chr, pos, "", ""));
-        return HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(),
+        boolean newTable = HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(),
                 splitList, Compression.getCompressionAlgorithmByName(
                         genomeHelper.getConf().get(
                                 CONFIG_VARIANT_TABLE_COMPRESSION,
                                 Compression.Algorithm.SNAPPY.getName())));
+        if (newTable) {
+            VariantPhoenixHelper variantPhoenixHelper = new VariantPhoenixHelper(genomeHelper);
+
+            try (java.sql.Connection jdbcConnection = variantPhoenixHelper.newJdbcConnection()) {
+                variantPhoenixHelper.createTableIfNeeded(jdbcConnection, tableName);
+            } catch (ClassNotFoundException | SQLException e) {
+                throw new IOException(e);
+            }
+        }
+        return newTable;
     }
 
     public static String[] configure(String[] args, Configured configured) throws Exception {

@@ -115,6 +115,13 @@ public class OpenCGAClient {
         clients.putIfAbsent("TOOL", new ToolClient(userId, sessionId, clientConfiguration));
         return (ToolClient) clients.get("TOOL");
     }
+
+    public AnalysisClient getAnalysisClient() {
+        clients.putIfAbsent("ANALYSIS", new AnalysisClient(userId, sessionId, clientConfiguration));
+        return (AnalysisClient) clients.get("ANALYSIS");
+    }
+
+
     /**
      * Logs in the user.
      *

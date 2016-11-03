@@ -23,7 +23,7 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.phoenix.util.QueryUtil;
+import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
@@ -51,7 +51,10 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseResultSetIterator;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.VariantAnnotationPhoenixDBWriter;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.VariantAnnotationToHBaseConverter;
+import org.opencb.opencga.storage.hadoop.variant.index.annotation.VariantAnnotationUpsertExecutor;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
 import org.opencb.opencga.storage.hadoop.variant.index.stats.VariantStatsToHBaseConverter;
@@ -247,6 +250,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         VariantDBIterator iterator = iterator(query, options);
         iterator.forEachRemaining(variants::add);
         long numTotalResults;
+        String warn = "";
+        String error = "";
 
         if (options == null) {
             numTotalResults = variants.size();
@@ -257,13 +262,23 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 } else {
                     numTotalResults = count(query).first();
                 }
+                if (options.getBoolean("explain")) {
+                    String sql = queryParser.parse(query, options);
+                    try {
+                        warn = phoenixHelper.getPhoenixHelper().explain(getJdbcConnection(), sql);
+                        logger.warn("EXPLANATION: \n" + warn);
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
             } else {
                 // There are no limit. Do not count.
                 numTotalResults = variants.size();
             }
         }
 
-        return new QueryResult<>("getVariants", ((int) iterator.getTimeFetching()), variants.size(), numTotalResults, "", "", variants);
+        return new QueryResult<>("getVariants", ((int) iterator.getTimeFetching()), variants.size(), numTotalResults,
+                warn, error, variants);
     }
 
     @Override
@@ -403,12 +418,14 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             logger.debug("Creating {} iterator", VariantHBaseResultSetIterator.class);
             try {
                 if (true) {
-                    System.err.println("---- " + "EXPLAIN " + sql);
-                    try (Statement statement = getJdbcConnection().createStatement()) {
-                        ResultSet resultSet = statement.executeQuery("EXPLAIN " + sql);
-                        String explain = QueryUtil.getExplainPlan(resultSet);
-                        System.err.println("EXPLANATION: \n" + explain);
-                    }
+                    logger.info("---- " + "EXPLAIN " + sql);
+                    String explain = phoenixHelper.getPhoenixHelper().explain(getJdbcConnection(), sql);
+                    logger.info("EXPLANATION: \n" + explain);
+//                    try (Statement statement = getJdbcConnection().createStatement()) {
+//                        ResultSet resultSet = statement.executeQuery("EXPLAIN " + sql);
+//                        String explain = QueryUtil.getExplainPlan(resultSet);
+//                        System.err.println("EXPLANATION: \n" + explain);
+//                    }
                 }
 
                 Statement statement = getJdbcConnection().createStatement();
@@ -518,14 +535,12 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    /**
-     * Ensure that all the annotation fields exist are defined.
-     */
-    public void preUpdateAnnotations() throws IOException {
+    public VariantAnnotationPhoenixDBWriter annotationLoader(QueryOptions options) {
         try {
-            phoenixHelper.updateAnnotationFields(getJdbcConnection(), variantTable);
-        } catch (SQLException e) {
-            throw new IOException(e);
+            return new VariantAnnotationPhoenixDBWriter(this, options, variantTable,
+                    phoenixHelper.newJdbcConnection(this.configuration), true);
+        } catch (SQLException | ClassNotFoundException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -548,12 +563,15 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         long start = System.currentTimeMillis();
 
         VariantAnnotationToHBaseConverter converter = new VariantAnnotationToHBaseConverter(new GenomeHelper(configuration));
-        List<Put> puts = converter.apply(variantAnnotations);
+        Iterable<Map<PhoenixHelper.Column, ?>> records = converter.apply(variantAnnotations);
 
-        try (Table table = getConnection().getTable(TableName.valueOf(variantTable))) {
-            table.put(puts);
-        } catch (IOException e) {
-            e.printStackTrace();
+        try (java.sql.Connection conn = phoenixHelper.newJdbcConnection(this.configuration);
+             VariantAnnotationUpsertExecutor upsertExecutor =
+                     new VariantAnnotationUpsertExecutor(conn, SchemaUtil.getEscapedFullTableName(variantTable))) {
+            upsertExecutor.execute(records);
+            upsertExecutor.close();
+        } catch (SQLException | ClassNotFoundException | IOException e) {
+            throw new RuntimeException(e);
         }
 
         return new QueryResult("Update annotations", (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());

@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>0.9.0-dev</version>
+    <version>1.0.0-rc3</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -36,16 +36,16 @@
     </modules>
 
     <properties>
-        <opencga.version>0.9.0-dev</opencga.version>
+        <opencga.version>1.0.0-rc3</opencga.version>
         <java.version>1.8</java.version>
         <biodata.version>0.9.0-SNAPSHOT</biodata.version>
-        <cellbase.version>4.5.0-rc</cellbase.version>
-        <java-common-libs.version>3.4.0-SNAPSHOT</java-common-libs.version>
+        <cellbase.version>4.5.0-beta.1</cellbase.version>
+        <java-common-libs.version>3.3.2</java-common-libs.version>
         <hpg-bigdata.version>1.0.0-alpha</hpg-bigdata.version>
         <jackson.version>2.6.6</jackson.version>
         <jersey.version>2.23</jersey.version>
         <hadoop.version>2.7.1</hadoop.version>
-        <hbase.version>1.1.2</hbase.version>
+        <hbase.version>1.1.2.2.5.0.0-1245</hbase.version>
         <!--<hbase.version>1.0.0</hbase.version>&lt;!&ndash; -cdh5.7.0 &ndash;&gt;-->
         <!--<phoenix.version>4.7.0-HBase-1.1</phoenix.version>-->
         <phoenix.version>4.7.0.2.5.0.0-1245</phoenix.version>
@@ -138,8 +138,12 @@
 
     <repositories>
         <repository>
-            <id>hortonworks</id>
+            <id>hortonworks-releases</id>
             <url>http://repo.hortonworks.com/content/repositories/releases/</url>
+        </repository>
+        <repository>
+            <id>hortonworks-public</id>
+            <url>http://repo.hortonworks.com/content/groups/public</url>
         </repository>
         <repository>
             <id>cloudera</id>

@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.phoenix.parse.HintNode;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
@@ -45,6 +46,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.*;
 
 /**
@@ -89,6 +91,11 @@ public class VariantSqlQueryParser {
             Set<Column> dynamicColumns = new HashSet<>();
             List<String> regionFilters = getRegionFilters(query);
             List<String> filters = getOtherFilters(query, options, dynamicColumns);
+
+            if (filters.isEmpty()) {
+                // Only region filters. Hint no index usage
+                sb.append("/*+ ").append(HintNode.Hint.NO_INDEX.toString()).append(" */ ");
+            }
 
             appendProjectedColumns(sb, query, options);
             appendFromStatement(sb, dynamicColumns);
@@ -258,6 +265,7 @@ public class VariantSqlQueryParser {
 
 //        addQueryFilter(query, ID, VariantColumn.XREFS, regionFilters);
         if (isValidParam(query, ID)) {
+            List<Variant> variants = new ArrayList<>();
             for (String id : query.getAsStringList(ID.key())) {
                 Variant variant = null;
                 if (id.contains(":")) {
@@ -270,13 +278,17 @@ public class VariantSqlQueryParser {
                 if (variant == null) {
                     regionFilters.add(buildFilter(VariantColumn.XREFS, "=", id));
                 } else {
-                    List<String> subFilters = new ArrayList<>(4);
-                    subFilters.add(buildFilter(VariantColumn.CHROMOSOME, "=", variant.getChromosome()));
-                    subFilters.add(buildFilter(VariantColumn.POSITION, "=", variant.getStart().toString()));
-                    subFilters.add(buildFilter(VariantColumn.REFERENCE, "=", variant.getReference()));
-                    subFilters.add(buildFilter(VariantColumn.ALTERNATE, "=", variant.getAlternate()));
-                    regionFilters.add(appendFilters(subFilters, QueryOperation.AND.toString()));
+                    variants.add(variant);
+//                    List<String> subFilters = new ArrayList<>(4);
+//                    subFilters.add(buildFilter(VariantColumn.CHROMOSOME, "=", variant.getChromosome()));
+//                    subFilters.add(buildFilter(VariantColumn.POSITION, "=", variant.getStart().toString()));
+//                    subFilters.add(buildFilter(VariantColumn.REFERENCE, "=", variant.getReference()));
+//                    subFilters.add(buildFilter(VariantColumn.ALTERNATE, "=", varian   t.getAlternate()));
+//                    regionFilters.add(appendFilters(subFilters, QueryOperation.AND.toString()));
                 }
+            }
+            if (!variants.isEmpty()) {
+                regionFilters.add(getVariantFilter(variants));
             }
         }
 
@@ -299,6 +311,42 @@ public class VariantSqlQueryParser {
         }
         return regionFilters;
     }
+
+    private String getVariantFilter(List<Variant> variants) {
+        StringBuilder sb = new StringBuilder().append("(")
+                .append(VariantColumn.CHROMOSOME).append(", ")
+                .append(VariantColumn.POSITION).append(", ")
+                .append(VariantColumn.REFERENCE).append(", ")
+                .append(VariantColumn.ALTERNATE).append(") IN (");
+        Iterator<Variant> iterator = variants.iterator();
+        while (iterator.hasNext()) {
+            Variant variant = iterator.next();
+            sb.append("('").append(variant.getChromosome()).append("', ")
+                    .append(variant.getStart()).append(", ")
+                    .append("'").append(variant.getReference()).append("', ")
+                    .append("'").append(variant.getAlternate()).append("') ");
+            if (iterator.hasNext()) {
+                sb.append(",");
+            }
+        }
+        sb.append(")");
+        return sb.toString();
+    }
+
+//    private String getRegionFilter(Region region) {
+//        if (region.getStart() == region.getEnd()) {
+//            return String.format("(%s,%s) = ('%s',%s)",
+//                    VariantColumn.CHROMOSOME,
+//                    VariantColumn.POSITION,
+//                    region.getChromosome(), region.getStart());
+//        } else {
+//            return String.format("(%s,%s) BETWEEN ('%s',%s) AND ('%s',%s)",
+//                    VariantColumn.CHROMOSOME,
+//                    VariantColumn.POSITION,
+//                    region.getChromosome(), region.getStart(),
+//                    region.getChromosome(), region.getEnd());
+//        }
+//    }
 
     private String getRegionFilter(Region region) {
         List<String> subFilters = new ArrayList<>(3);
@@ -585,7 +633,7 @@ public class VariantSqlQueryParser {
             } else {
                 return VariantColumn.SIFT_DESC;
             }
-        }, null, filters);
+        }, null, null, null, filters, op -> op.contains(">") ? 2 : op.contains("<") ? 1 : -1);
 
         addQueryFilter(query, ANNOT_POLYPHEN, (keyOpValue, rawValue) -> {
             if (StringUtils.isNotEmpty(keyOpValue[0])) {
@@ -596,7 +644,7 @@ public class VariantSqlQueryParser {
             } else {
                 return VariantColumn.POLYPHEN_DESC;
             }
-        }, null, filters);
+        }, null, null, null, filters, op -> op.contains(">") ? 2 : op.contains("<") ? 1 : -1);
 
         addQueryFilter(query, ANNOT_CONSERVATION,
                 (keyOpValue, rawValue) -> getConservationScoreColumn(keyOpValue[0], rawValue, true), null, filters);
@@ -608,7 +656,7 @@ public class VariantSqlQueryParser {
         addQueryFilter(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY,
                 (keyOpValue, s) -> {
                     Column column = getPopulationFrequencyColumn(keyOpValue[0]);
-                    dynamicColumns.add(column);
+//                    dynamicColumns.add(column);
                     return column;
                 }, null, null,
                 keyOpValue -> {
@@ -618,7 +666,7 @@ public class VariantSqlQueryParser {
                     if (op.startsWith("<")) {
                         // If asking "less than", add "OR FIELD IS NULL" to read NULL values as 0, so accept the filter
                         return " OR \"" + column.column() + "\"[2] " + op + " " + value
-                                + " OR \"" + column.column() + "\" IS NULL";
+                                + " OR \"" + column.column() + "\"[2] IS NULL";
                     } else if (op.startsWith(">")) {
                         return " AND \"" + column.column() + "\"[2] " + op + " " + value;
                     } else {
@@ -630,13 +678,13 @@ public class VariantSqlQueryParser {
         addQueryFilter(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY,
                 (keyOpValue, s) -> {
                     Column column = getPopulationFrequencyColumn(keyOpValue[0]);
-                    dynamicColumns.add(column);
+//                    dynamicColumns.add(column);
                     return column;
                 }, null, null,
                 keyOpValue -> {
                     // If asking "less than", add "OR FIELD IS NULL" to read NULL values as 0, so accept the filter
                     if (keyOpValue[1].startsWith("<")) {
-                        return " OR \"" + getPopulationFrequencyColumn(keyOpValue[0]).column() + "\" IS NULL";
+                        return " OR \"" + getPopulationFrequencyColumn(keyOpValue[0]).column() + "\"[2] IS NULL";
                     }
                     return "";
                 }, filters, 2);
@@ -644,13 +692,13 @@ public class VariantSqlQueryParser {
         addQueryFilter(query, ANNOT_POPULATION_REFERENCE_FREQUENCY,
                 (keyOpValue, s) -> {
                     Column column = getPopulationFrequencyColumn(keyOpValue[0]);
-                    dynamicColumns.add(column);
+//                    dynamicColumns.add(column);
                     return column;
                 }, null, null,
                 keyOpValue -> {
                     // If asking "less than", add "OR FIELD IS NULL" to read NULL values as 0, so accept the filter
                     if (keyOpValue[1].startsWith("<")) {
-                        return " OR \"" + getPopulationFrequencyColumn(keyOpValue[0]).column() + "\" IS NULL";
+                        return " OR \"" + getPopulationFrequencyColumn(keyOpValue[0]).column() + "\"[1] IS NULL";
                     }
                     return "";
                 }, filters, 1);
@@ -699,7 +747,8 @@ public class VariantSqlQueryParser {
 
         addQueryFilter(query, ANNOT_DRUG, VariantColumn.DRUG, filters);
 
-        addQueryFilter(query, ANNOT_FUNCTIONAL_SCORE, (keyOpValue, rawValue) -> getFunctionalScoreColumn(keyOpValue[0]), null, filters);
+        addQueryFilter(query, ANNOT_FUNCTIONAL_SCORE,
+                (keyOpValue, rawValue) -> getFunctionalScoreColumn(keyOpValue[0], rawValue), null, filters);
     }
 
     /**
@@ -816,6 +865,27 @@ public class VariantSqlQueryParser {
                                 Function<String, String> operatorParser,
                                 Function<String, Object> valueParser,
                                 Function<String[], String> extraFilters, List<String> filters, int arrayIdx) {
+        addQueryFilter(query, param, columnParser, operatorParser, valueParser, extraFilters, filters, (o) -> arrayIdx);
+    }
+
+    /**
+     * Transforms a Key-Value from a query into a valid SQL filter.
+     *
+     * @param query             Query with the values
+     * @param param             Param to read from the query
+     * @param columnParser      Column parser. Given the [key, op, value] and the original value, returns a {@link Column}
+     * @param operatorParser    Operator parser. Given the [key, op, value], returns a valid SQL operator
+     * @param valueParser       Value parser. Given the [key, op, value], transforms the value to make the query.
+     *                          If the returned value is a Collection, uses each value for the query.
+     * @param extraFilters      Provides extra filters to be concatenated to the filter.
+     * @param filters           List of filters to be modified.
+     * @param arrayIdxParser    Array accessor index in base-1.
+     */
+    private void addQueryFilter(Query query, VariantQueryParams param,
+                                BiFunction<String[], String, Column> columnParser,
+                                Function<String, String> operatorParser,
+                                Function<String, Object> valueParser,
+                                Function<String[], String> extraFilters, List<String> filters, Function<String, Integer> arrayIdxParser) {
         if (isValidParam(query, param)) {
             List<String> subFilters = new LinkedList<>();
             QueryOperation logicOperation = checkOperator(query.getString(param.key()));
@@ -826,14 +896,17 @@ public class VariantSqlQueryParser {
             for (String rawValue : query.getAsStringList(param.key(), logicOperation.separator())) {
                 String[] keyOpValue = splitOperator(rawValue);
                 Column column = columnParser.apply(keyOpValue, rawValue);
-                if (!column.getPDataType().isArrayType() && arrayIdx >= 0) {
-                    throw new VariantQueryException("Unable to use array indexes with non array columns. "
-                            + column + " " + column.sqlType());
-                }
+
 
                 String op = parseOperator(keyOpValue[1]);
                 if (operatorParser != null) {
                     op = operatorParser.apply(op);
+                }
+                int arrayIdx = arrayIdxParser.apply(op);
+
+                if (!column.getPDataType().isArrayType() && arrayIdx >= 0) {
+                    throw new VariantQueryException("Unable to use array indexes with non array columns. "
+                            + column + " " + column.sqlType());
                 }
 
                 final String negatedStr;

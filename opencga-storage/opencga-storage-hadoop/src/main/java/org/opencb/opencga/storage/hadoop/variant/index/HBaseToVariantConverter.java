@@ -377,6 +377,9 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                 for (String returnedSample : returnedSamples) {
                     if (indexedSamplesId.containsKey(returnedSample)) {
                         samplesPosition.put(returnedSample, index++);
+                    } else if (StringUtils.isNumeric(returnedSample)) {
+                        String sample = indexedSamplesId.inverse().get(Integer.parseInt(returnedSample));
+                        samplesPosition.put(sample, index++);
                     }
                 }
             }
