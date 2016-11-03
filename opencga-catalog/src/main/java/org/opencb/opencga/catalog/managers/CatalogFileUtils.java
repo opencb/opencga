@@ -512,6 +512,11 @@ public class CatalogFileUtils {
                                 .setModificationDate(file.getId(), params.getString(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()),
                                         sessionId);
                     }
+                    if (params.get(FileDBAdaptor.QueryParams.URI.key()) != null) {
+                        catalogManager.getFileManager()
+                                .setUri(file.getId(), params.getString(FileDBAdaptor.QueryParams.URI.key()), sessionId);
+                        params.remove(FileDBAdaptor.QueryParams.URI.key());
+                    }
                     // Update status
                     catalogManager.getFileManager()
                             .setStatus(Long.toString(file.getId()), File.FileStatus.READY, null, sessionId);
@@ -561,6 +566,7 @@ public class CatalogFileUtils {
      * diskUsage
      * modificationDate
      * attributes.checksum
+     * uri
      *
      * @param file              file
      * @param fileUri           If null, calls to getFileUri()
@@ -587,6 +593,7 @@ public class CatalogFileUtils {
      * diskUsage
      * modificationDate
      * attributes.checksum
+     * uri
      *
      * @throws CatalogException CatalogException
      */
@@ -616,6 +623,10 @@ public class CatalogFileUtils {
                             .setModificationDate(file.getId(), parameters.getString(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()),
                                     sessionId);
                 }
+                if (parameters.get(FileDBAdaptor.QueryParams.URI.key()) != null) {
+                    catalogManager.getFileManager()
+                            .setUri(file.getId(), parameters.getString(FileDBAdaptor.QueryParams.URI.key()), sessionId);
+                }
             }
         } catch (CatalogException e) {
             throw new CatalogIOException("Can't update file properties in Catalog.", e);
@@ -627,6 +638,7 @@ public class CatalogFileUtils {
      * diskUsage
      * modificationDate
      * attributes.checksum
+     * uri
      *
      * @throws CatalogException CatalogException
      */
@@ -641,6 +653,10 @@ public class CatalogFileUtils {
             if (file.getAttributes() == null || !Objects.equals(file.getAttributes().get("checksum"), checksum)) {
                 parameters.put(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), new ObjectMap("checksum", checksum));
             }
+        }
+
+        if (file.getUri() == null || !file.getUri().toString().equals(fileUri.toString())) {
+            parameters.put(FileDBAdaptor.QueryParams.URI.key(), fileUri.toString());
         }
 
         try {

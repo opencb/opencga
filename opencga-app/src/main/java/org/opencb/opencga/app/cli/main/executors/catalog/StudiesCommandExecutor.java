@@ -526,8 +526,8 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                 studiesCommandOptions.variantsCommandOptions.missingAlleles);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.MISSING_GENOTYPES.key(),
                     studiesCommandOptions.variantsCommandOptions.missingGenotypes);
-        queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(),
-                studiesCommandOptions.variantsCommandOptions.annotationExists);
+//        queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(),
+//                studiesCommandOptions.variantsCommandOptions.annotationExists);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.GENOTYPE.key(),
                 studiesCommandOptions.variantsCommandOptions.genotype);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(),
