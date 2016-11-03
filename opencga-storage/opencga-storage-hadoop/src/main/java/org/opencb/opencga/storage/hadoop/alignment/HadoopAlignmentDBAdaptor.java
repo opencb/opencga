@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.hadoop.alignment;
 
+import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.Query;
@@ -83,6 +84,16 @@ public class HadoopAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
     @Override
     public AlignmentGlobalStats stats(String fileId) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RegionCoverage coverage(String fileId) throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RegionCoverage coverage(String fileId, Query query, QueryOptions options) throws Exception {
         throw new UnsupportedOperationException();
     }
 

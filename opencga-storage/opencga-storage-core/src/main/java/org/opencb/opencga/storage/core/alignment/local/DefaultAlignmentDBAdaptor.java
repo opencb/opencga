@@ -5,6 +5,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
 import org.ga4gh.models.ReadAlignment;
+import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.AlignmentFilters;
 import org.opencb.biodata.tools.alignment.AlignmentManager;
@@ -189,4 +190,14 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
         return alignmentGlobalStats;
     }
 
+    @Override
+    public RegionCoverage coverage(String fileId) throws Exception {
+        return coverage(fileId, new Query(), new QueryOptions());
+    }
+
+    @Override
+    public RegionCoverage coverage(String fileId, Query query, QueryOptions options) throws Exception {
+
+        return null;
+    }
 }
