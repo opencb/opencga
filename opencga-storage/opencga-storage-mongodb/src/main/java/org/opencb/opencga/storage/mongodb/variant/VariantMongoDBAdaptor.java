@@ -250,9 +250,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         QueryResult<Variant> queryResult;
 
-        if (options.getBoolean("cache")) {
+        if (options.getBoolean("cache") && cacheManager.isTypeAllowed("var")) {
             List<Integer> studyIds = utils.getStudyIds(query.getAsList(VariantQueryParams.STUDIES.key()), options);
-            // TODO : ONLY USING ONE STUDY ID -
+            // TODO : ONLY USING ONE STUDY ID ?
             String key = cacheManager.createKey(studyIds.get(0).toString(), "var", query, options);
             queryResult = cacheManager.get(key);
             if (queryResult.getResult() != null && queryResult.getResult().size() != 0) {

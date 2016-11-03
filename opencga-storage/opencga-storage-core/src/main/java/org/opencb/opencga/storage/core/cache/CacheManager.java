@@ -27,6 +27,7 @@ public class CacheManager {
     private StorageConfiguration storageConfiguration;
 
     private Config redissonConfig;
+    private Set<String> allowedTypesSet;
     private RedissonClient redissonClient;
     private boolean redisState;
 
@@ -43,15 +44,21 @@ public class CacheManager {
         if (configuration != null && configuration.getCache() != null) {
 
             this.storageConfiguration = configuration;
+
             cache = configuration.getCache();
             redissonConfig = new Config();
 
             String host = (StringUtils.isNotEmpty(cache.getHost()))
-                    ? cache.getHost() : CacheConfiguration.DEFAULT_HOST;
+                    ? cache.getHost()
+                    : CacheConfiguration.DEFAULT_HOST;
             redissonConfig.useSingleServer().setAddress(host);
 
             String codec = (StringUtils.isNotEmpty(cache.getSerialization()))
-                    ? cache.getSerialization() : CacheConfiguration.DEFAULT_SERIALIZATION;
+                    ? cache.getSerialization()
+                    : CacheConfiguration.DEFAULT_SERIALIZATION;
+
+            this.allowedTypesSet = new HashSet<>(Arrays.asList(cache.getAllowedTypes().split(",")));
+
 
             if (StringUtils.isNotEmpty(cache.getPassword())) {
                 redissonConfig.useSingleServer().setPassword(cache.getPassword());
@@ -82,8 +89,8 @@ public class CacheManager {
                 Map<Integer, Map<String, Object>> result = map.getAll(new HashSet<>(Collections.singletonList(0)));
 
                 if (result != null && !result.isEmpty()) {
-                    Object resultMap= result.get(0).get("result");
-                    queryResult =(QueryResult<T>) resultMap;
+                    Object resultMap = result.get(0).get("result");
+                    queryResult = (QueryResult<T>) resultMap;
                     queryResult.setDbTime((int) (System.currentTimeMillis() - start));
                 }
             } catch (RedisConnectionException e) {
@@ -98,8 +105,8 @@ public class CacheManager {
     public void set(String key, Query query, QueryResult queryResult) {
 
         if (isActive()) {
-            if (queryResult.getDbTime() >= storageConfiguration.getCache().getSlowThreshold()) {
-             //TODO:   queryResult.getResult().size() >= storageConfiguration.getCache().getMaxFileSize()
+            if (queryResult.getDbTime() >= storageConfiguration.getCache().getSlowThreshold()
+                    && queryResult.getResult().size() >= storageConfiguration.getCache().getMaxResultSize()) {
                 RMap<Integer, Map<String, Object>> map = redissonClient.getMap(key);
                 Map<String, Object> record = new HashMap<>();
                 record.put("query", query);
@@ -140,6 +147,10 @@ public class CacheManager {
 
     public boolean isActive() {
         return storageConfiguration.getCache().isActive() && redisState;
+    }
+
+    public boolean isTypeAllowed(String type) {
+        return allowedTypesSet.contains(type);
     }
 
     public void clear() {

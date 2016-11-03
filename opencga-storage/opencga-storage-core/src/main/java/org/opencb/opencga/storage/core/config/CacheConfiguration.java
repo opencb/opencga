@@ -16,7 +16,7 @@ public class CacheConfiguration {
      */
     private String serialization;
     private int slowThreshold;
-    private int maxFileSize;
+    private int maxResultSize;
     private String password;
 
     /**
@@ -26,13 +26,14 @@ public class CacheConfiguration {
 
     public static final boolean DEFAULT_ACTVE = true;
     public static final String DEFAULT_SERIALIZATION = "json";
-    public static final String DEFAULT_ALLOWED_TYPE = "aln";
+    public static final String DEFAULT_ALLOWED_TYPE = "aln,var";
     public static final String DEFAULT_HOST = "localhost:6379";
     public static final String DEFAULT_PASSWORD = "";
     public static final int DEFAULT_MAX_FILE_SIZE = 500;
 
     public CacheConfiguration() {
-        this(DEFAULT_HOST, DEFAULT_ACTVE, DEFAULT_SERIALIZATION, 50, DEFAULT_MAX_FILE_SIZE, DEFAULT_PASSWORD, DEFAULT_ALLOWED_TYPE);
+        this(DEFAULT_HOST, DEFAULT_ACTVE, DEFAULT_SERIALIZATION, 50, DEFAULT_MAX_FILE_SIZE, DEFAULT_PASSWORD,
+                DEFAULT_ALLOWED_TYPE);
     }
 
     public CacheConfiguration(String host, boolean active, String serialization, int slowThreshold, int maxFileSize,
@@ -41,7 +42,7 @@ public class CacheConfiguration {
         this.active = active;
         this.serialization = serialization;
         this.slowThreshold = slowThreshold;
-        this.maxFileSize = maxFileSize;
+        this.maxResultSize = maxFileSize;
         this.password = password;
         this.allowedTypes = allowedTypes;
     }
@@ -53,8 +54,7 @@ public class CacheConfiguration {
                 + ", active=" + active
                 + ", serialization='" + serialization + '\''
                 + ", slowThreshold=" + slowThreshold
-                + ", maxFileSize=" + maxFileSize
-               // Password should not be in toString
+                + ", maxResultSize=" + maxResultSize
                 + ", allowedTypes='" + allowedTypes + '\''
                 + '}');
         return sb.toString();
@@ -96,12 +96,12 @@ public class CacheConfiguration {
         return this;
     }
 
-    public int getMaxFileSize() {
-        return maxFileSize;
+    public int getMaxResultSize() {
+        return maxResultSize;
     }
 
-    public CacheConfiguration setMaxFileSize(int maxFileSize) {
-        this.maxFileSize = maxFileSize;
+    public CacheConfiguration setMaxResultSize(int maxResultSize) {
+        this.maxResultSize = maxResultSize;
         return this;
     }
 
