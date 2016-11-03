@@ -39,6 +39,10 @@
             <groupId>org.opencb.cellbase</groupId>
             <artifactId>cellbase-client</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-catalog</artifactId>
+        </dependency>
         <!-- cellbase-lib dependency required to enable direct annotation against the database using the adaptors -->
         <dependency>
             <groupId>org.opencb.cellbase</groupId>
