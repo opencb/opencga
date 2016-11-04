@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.alignment.local;
 
 import ga4gh.Reads;
 import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
 import org.apache.commons.lang3.time.StopWatch;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -21,6 +22,7 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.iterators.ProtoAlignmentIterator;
+import org.opencb.opencga.storage.core.alignment.iterators.SamRecordAlignmentIterator;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -142,11 +144,17 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
                 if (Reads.ReadAlignment.class == clazz) {
                     return (AlignmentIterator<T>) new ProtoAlignmentIterator(alignmentManager.iterator(region, alignmentOptions,
                             alignmentFilters, Reads.ReadAlignment.class));
+                } else if (SAMRecord.class == clazz) {
+                    return (AlignmentIterator<T>) new SamRecordAlignmentIterator(alignmentManager.iterator(region, alignmentOptions,
+                            alignmentFilters, SAMRecord.class));
                 }
             } else {
                 if (Reads.ReadAlignment.class == clazz) {
                     return (AlignmentIterator<T>) new ProtoAlignmentIterator(alignmentManager.iterator(alignmentOptions, alignmentFilters,
                             Reads.ReadAlignment.class));
+                } else if (SAMRecord.class == clazz) {
+                    return (AlignmentIterator<T>) new SamRecordAlignmentIterator(alignmentManager.iterator(alignmentOptions,
+                            alignmentFilters, SAMRecord.class));
                 }
             }
         } catch (Exception e) {

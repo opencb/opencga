@@ -1,6 +1,7 @@
 package org.opencb.opencga.server.grpc;
 
 import ga4gh.Reads;
+import htsjdk.samtools.SAMRecord;
 import io.grpc.stub.StreamObserver;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -66,7 +67,7 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
         String sessionId = query.getString("sid");
 
         try (AlignmentIterator<Reads.ReadAlignment> iterator =
-                storageManagerFactory.getAlignmentStorageManager().iterator(studyIdStr, fileIdStr, query, queryOptions, sessionId)) {
+                     storageManagerFactory.getAlignmentStorageManager().iterator(studyIdStr, fileIdStr, query, queryOptions, sessionId)) {
             while (iterator.hasNext()) {
                 responseObserver.onNext(iterator.next());
             }
@@ -74,7 +75,32 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
         } catch (Exception e) {
             e.printStackTrace();
         }
-}
+    }
+
+    @Override
+    public void getAsSam(GenericAlignmentServiceModel.Request request, StreamObserver<ServiceTypesModel.StringResponse> responseObserver) {
+        // Creating the datastore Query and QueryOptions objects from the gRPC request Map of Strings
+        Query query = createQuery(request);
+        QueryOptions queryOptions = createQueryOptions(request);
+
+        String studyIdStr = query.getString("studyId");
+        String fileIdStr = query.getString("fileId");
+        String sessionId = query.getString("sid");
+
+        try (AlignmentIterator<SAMRecord> iterator =
+                     storageManagerFactory.getAlignmentStorageManager().iterator(studyIdStr, fileIdStr, query, queryOptions, sessionId,
+                             SAMRecord.class)) {
+            while (iterator.hasNext()) {
+                ServiceTypesModel.StringResponse response =
+                        ServiceTypesModel.StringResponse.newBuilder().setValue(iterator.next().getSAMString()).build();
+                responseObserver.onNext(response);
+            }
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 
     @Override
     public void groupBy(GenericAlignmentServiceModel.Request request, StreamObserver<ServiceTypesModel.GroupResponse> responseObserver) {

@@ -873,6 +873,9 @@ public class AnalysisCliOptionsParser {
         @Parameter(names = {"--bin-qualities"}, description = "Compress the nucleotide qualities by using 8 quality levels "
             + "(there will be loss of information)", arity = 0)
         boolean binQualities;
+
+        @Parameter(names = {"--text-output"}, description = "Show the output in SAM text output format", arity = 0)
+        boolean textOutput;
     }
 
     @Parameters(commandNames = {"stats"}, commandDescription = "Obtain the global stats of an alignment")

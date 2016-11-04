@@ -17,6 +17,8 @@ service AlignmentService {
 
    rpc get(Request) returns (stream ReadAlignment) {}
 
+   rpc getAsSam(Request) returns (stream StringResponse) {}
+
    rpc groupBy(Request) returns (GroupResponse) {}
 
 }

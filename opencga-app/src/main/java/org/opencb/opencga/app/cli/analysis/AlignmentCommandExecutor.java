@@ -147,30 +147,48 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
 
         // We use a blocking stub to execute the query to gRPC
         AlignmentServiceGrpc.AlignmentServiceBlockingStub serviceBlockingStub = AlignmentServiceGrpc.newBlockingStub(channel);
-        watch.stop();
-        System.out.println("Time: " + watch.getTime());
-        watch.reset();
-        watch.start();
 
         if (alignmentCommandOptions.queryGRPCAlignmentCommandOptions.count) {
             ServiceTypesModel.LongResponse count = serviceBlockingStub.count(request);
             System.out.println("\nThe number of alignments is " + count.getValue() + "\n");
         } else {
-            Iterator<Reads.ReadAlignment> alignmentIterator = serviceBlockingStub.get(request);
-            watch.stop();
-            System.out.println("Time: " + watch.getTime());
-            int limit = alignmentCommandOptions.queryGRPCAlignmentCommandOptions.limit;
-            if (limit > 0) {
-                long cont = 0;
-                while (alignmentIterator.hasNext() && cont < limit) {
-                    Reads.ReadAlignment next = alignmentIterator.next();
-                    cont++;
-                    System.out.println(next.toString());
+            if (alignmentCommandOptions.queryGRPCAlignmentCommandOptions.textOutput) {
+                // Output in SAM format
+                Iterator<ServiceTypesModel.StringResponse> alignmentIterator = serviceBlockingStub.getAsSam(request);
+                watch.stop();
+                System.out.println("Time: " + watch.getTime());
+                int limit = alignmentCommandOptions.queryGRPCAlignmentCommandOptions.limit;
+                if (limit > 0) {
+                    long cont = 0;
+                    while (alignmentIterator.hasNext() && cont < limit) {
+                        ServiceTypesModel.StringResponse next = alignmentIterator.next();
+                        cont++;
+                        System.out.println(next.getValue());
+                    }
+                } else {
+                    while (alignmentIterator.hasNext()) {
+                        ServiceTypesModel.StringResponse next = alignmentIterator.next();
+                        System.out.println(next.getValue());
+                    }
                 }
             } else {
-                while (alignmentIterator.hasNext()) {
-                    Reads.ReadAlignment next = alignmentIterator.next();
-                    System.out.println(next.toString());
+                // Output in proto format
+                Iterator<Reads.ReadAlignment> alignmentIterator = serviceBlockingStub.get(request);
+                watch.stop();
+                System.out.println("Time: " + watch.getTime());
+                int limit = alignmentCommandOptions.queryGRPCAlignmentCommandOptions.limit;
+                if (limit > 0) {
+                    long cont = 0;
+                    while (alignmentIterator.hasNext() && cont < limit) {
+                        Reads.ReadAlignment next = alignmentIterator.next();
+                        cont++;
+                        System.out.println(next.toString());
+                    }
+                } else {
+                    while (alignmentIterator.hasNext()) {
+                        Reads.ReadAlignment next = alignmentIterator.next();
+                        System.out.println(next.toString());
+                    }
                 }
             }
         }
