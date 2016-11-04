@@ -27,10 +27,12 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * Created by pfurio on 31/10/16.
@@ -45,20 +47,6 @@ public class AlignmentStorageManager extends StorageManager<AlignmentDBAdaptor> 
     public AlignmentStorageManager() {
     }
 
-    @Override
-    public AlignmentDBAdaptor getDBAdaptor(String dbName) throws StorageManagerException {
-        return null;
-    }
-
-    @Override
-    public void testConnection() throws StorageManagerException {
-    }
-
-    @Override
-    public StorageETL newStorageETL(boolean connected) throws StorageManagerException {
-        return null;
-    }
-
     public AlignmentStorageManager(CatalogManager catalogManager, StorageConfiguration storageConfiguration) {
         super(catalogManager, storageConfiguration);
         this.logger = LoggerFactory.getLogger(AlignmentStorageManager.class);
@@ -70,11 +58,12 @@ public class AlignmentStorageManager extends StorageManager<AlignmentDBAdaptor> 
         this.alignmentETL = new DefaultAlignmentStorageETL();
     }
 
-    public void index(String studyIdStr, String fileIdStr, ObjectMap options, String sessionId) throws CatalogException, IOException {
+    public void index(String studyIdStr, String fileIdStr, ObjectMap options, String sessionId)
+            throws CatalogException, IOException, StorageManagerException {
         ObjectMap fileInfo = checkAndGetInfoFile(studyIdStr, fileIdStr, sessionId);
-
-        // TODO: Add call to index
-
+        List<URI> fileUris = Arrays.asList(((Path) fileInfo.get("filePath")).toUri());
+        Path workspace = (Path) fileInfo.get("workspace");
+        super.index(fileUris, workspace.toUri(), false, options.getBoolean("transform"), options.getBoolean("load"));
     }
 
     public QueryResult<ReadAlignment> query(String studyIdStr, String fileIdStr, Query query, QueryOptions options, String sessionId)
@@ -112,6 +101,20 @@ public class AlignmentStorageManager extends StorageManager<AlignmentDBAdaptor> 
             throws CatalogException, IOException {
         ObjectMap fileInfo = checkAndGetInfoFile(studyIdStr, fileIdStr, sessionId);
         return alignmentDBAdaptor.count((Path) fileInfo.get("filePath"), query, options);
+    }
+
+    @Override
+    public AlignmentDBAdaptor getDBAdaptor(String dbName) throws StorageManagerException {
+        return null;
+    }
+
+    @Override
+    public void testConnection() throws StorageManagerException {
+    }
+
+    @Override
+    public StorageETL newStorageETL(boolean connected) throws StorageManagerException {
+        return alignmentETL;
     }
 
     /**

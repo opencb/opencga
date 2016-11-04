@@ -34,6 +34,7 @@ import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
@@ -207,48 +208,28 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         return alignmentStorageManager;
     }
 
-    @Deprecated
-    private void index()
-            throws CatalogException, AnalysisExecutionException, JsonProcessingException, IllegalAccessException, InstantiationException,
-            ClassNotFoundException, StorageManagerException {
+    private void index() throws CatalogException, StorageManagerException, IOException {
         AnalysisCliOptionsParser.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
 
-        String sessionId = cliOptions.commonOptions.sessionId;
-        long inputFileId = catalogManager.getFileId(cliOptions.fileId);
+        ObjectMap objectMap = new ObjectMap();
+        objectMap.putIfNotNull("fileId", cliOptions.fileId);
 
-        // 1) Create, if not provided, an indexation job
-        if (StringUtils.isEmpty(cliOptions.job.jobId)) {
-            long outDirId;
-            if (cliOptions.outdirId == null) {
-                outDirId = catalogManager.getFileParent(inputFileId, null, sessionId).first().getId();
-            } else  {
-                outDirId = catalogManager.getFileId(cliOptions.outdirId);
-            }
-
-            AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
-
-            List<String> extraParams = cliOptions.commonOptions.params.entrySet()
-                    .stream()
-                    .map(entry -> "-D" + entry.getKey() + "=" + entry.getValue())
-                    .collect(Collectors.toList());
-
-            QueryOptions options = new QueryOptions()
-                    .append(ExecutorManager.EXECUTE, !cliOptions.job.queue)
-                    .append(ExecutorManager.SIMULATE, false)
-                    .append(AnalysisFileIndexer.TRANSFORM, cliOptions.transform)
-                    .append(AnalysisFileIndexer.LOAD, cliOptions.load)
-                    .append(AnalysisFileIndexer.PARAMETERS, extraParams)
-                    .append(AnalysisFileIndexer.LOG_LEVEL, cliOptions.commonOptions.logLevel);
-
-            QueryResult<Job> result = analysisFileIndexer.index(inputFileId, outDirId, sessionId, options);
-            if (cliOptions.job.queue) {
-                System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result));
-            }
-
+        ObjectMap params = new ObjectMap();
+        if (!cliOptions.load && !cliOptions.transform) {  // if not present --transform nor --load,
+            // do both
+            params.put("extract", true);
+            params.put("load", true);
+            params.put("transform", true);
         } else {
-            long studyId = catalogManager.getStudyIdByFileId(inputFileId);
-            index(getJob(studyId, cliOptions.job.jobId, sessionId));
+            params.put("extract", cliOptions.transform);
+            params.put("load", cliOptions.load);
+            params.put("transform", cliOptions.transform);
         }
+
+        String sessionId = cliOptions.commonOptions.sessionId;
+
+        AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageConfiguration);
+        alignmentStorageManager.index(null, cliOptions.fileId, params, sessionId);
     }
 
     @Deprecated
