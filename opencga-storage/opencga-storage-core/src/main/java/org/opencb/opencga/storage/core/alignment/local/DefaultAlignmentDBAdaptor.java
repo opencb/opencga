@@ -315,7 +315,7 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
     private RegionCoverage meanCoverage(String filename, Region region, int windowSize) {
         windowSize = Math.max(windowSize / MINOR_CHUNK_SIZE * MINOR_CHUNK_SIZE, MINOR_CHUNK_SIZE);
-        int size = (region.getEnd() - region.getStart() + 1) / windowSize;
+        int size = ((region.getEnd() - region.getStart() + 1) / windowSize) + 1;
         short[] values = new short[size];
 
         Path bamPath = Paths.get(filename);
