@@ -99,7 +99,7 @@ public class DefaultAlignmentStorageETL implements StorageETL {
                 Region region = new Region(next.getSequenceName(), i + 1,
                         Math.min(i + MINOR_CHUNK_SIZE, next.getSequenceLength()));
                 RegionCoverage regionCoverage = alignmentManager.coverage(region, options, null);
-                int meanDepth = Math.min(regionCoverage.meanCoverage(), 127);
+                int meanDepth = Math.min(regionCoverage.meanCoverage(), 255);
 
                 // File columns: chunk   chromosome start   end coverage
                 // chunk format: chrom_id_suffix, where:

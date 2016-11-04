@@ -328,7 +328,7 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
     private RegionCoverage meanCoverage(Path bamPath, Path workspace, Region region, int windowSize) {
         windowSize = Math.max(windowSize / MINOR_CHUNK_SIZE * MINOR_CHUNK_SIZE, MINOR_CHUNK_SIZE);
-        int size = (region.getEnd() - region.getStart() + 1) / windowSize;
+        int size = ((region.getEnd() - region.getStart() + 1) / windowSize) + 1;
         short[] values = new short[size];
 
         String absoluteBamPath = bamPath.toFile().getAbsolutePath();
@@ -379,7 +379,9 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
                     meanCoverages = longToBytes(packedCoverages);
                     for (int j = 0; j < 8; j++) {
                         if (start <= region.getEnd() && (start + MINOR_CHUNK_SIZE) >= region.getStart()) {
-                            coverageAccumulator += meanCoverages[j];
+                            // A byte is always signed in Java,
+                            // we can get its unsigned value by binary-anding it with 0xFF
+                            coverageAccumulator += (meanCoverages[j] & 0xFF);
                             if (++chunkCounter >= chunksPerWindow) {
                                 values[arrayPos++] = (short) Math.round(1.0f * coverageAccumulator / chunkCounter);
                                 coverageAccumulator = 0;
