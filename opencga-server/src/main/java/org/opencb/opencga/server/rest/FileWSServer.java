@@ -43,7 +43,6 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
-import org.opencb.opencga.storage.core.alignment.local.DefaultAlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
@@ -982,46 +981,9 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
     public Response getAlignments(@ApiParam(value = "Id of the alignment file in catalog", required = true) @PathParam("fileId")
-                                              String fileIdStr,
-                                  @ApiParam(value = "Region 'chr:start-end'", required = false) @QueryParam("region") String region,
-                                  @ApiParam(value = "Minimum mapping quality", required = false) @QueryParam("minMapQ") Integer minMapQ,
-                                  @ApiParam(value = "Only alignments completely contained within boundaries of region", required = false)
-                                      @QueryParam("contained") Boolean contained,
-                                  @ApiParam(value = "Force SAM MD optional field to be set with the alignments", required = false)
-                                      @QueryParam("mdField") Boolean mdField,
-                                  @ApiParam(value = "Compress the nucleotide qualities by using 8 quality levels", required = false)
-                                      @QueryParam("binQualities") Boolean binQualities) {
-        try {
-            Query query = new Query();
-            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), region);
-            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
+                                              String fileIdStr) {
 
-            QueryOptions queryOptions = new QueryOptions();
-            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.LIMIT.key(), limit);
-            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.SKIP.key(), skip);
-            queryOptions.putIfNotNull("count", count);
-            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
-            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.MD_FIELD.key(), mdField);
-            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.BIN_QUALITIES.key(), binQualities);
-
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            Long fileId = catalogManager.getFileManager().getId(userId, fileIdStr);
-
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.URI.key());
-            QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(fileId, options, sessionId);
-
-            if (fileQueryResult != null && fileQueryResult.getNumResults() != 1) {
-                // This should never happen
-                throw new CatalogException("Critical error: File " + fileId + " could not be found in catalog.");
-            }
-            java.nio.file.Path path = Paths.get(fileQueryResult.first().getUri());
-
-            AlignmentDBAdaptor alignmentDBAdaptor = storageManagerFactory.getAlignmentStorageManager().getDBAdaptor();
-
-            return createOkResponse(alignmentDBAdaptor.get(path.toString(), query, queryOptions));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+        return createOkResponse("PENDING");
     }
 
     private ObjectMap getResumeFileJSON(java.nio.file.Path folderPath) throws IOException {

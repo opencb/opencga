@@ -165,7 +165,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
         try (OutputStream os = new FileOutputStream(conf.resolve("storage-configuration.yml").toFile())) {
             storageConfiguration.serialize(os);
         }
-        storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
+        storageManagerFactory = StorageManagerFactory.get(catalogManagerExternalResource.getCatalogManager(), storageConfiguration);
 
         inputStream = StorageManager.class.getClassLoader().getResourceAsStream("client-configuration-test.yml");
         Files.copy(inputStream, conf.resolve("client-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);

@@ -12,8 +12,7 @@ import org.opencb.biodata.tools.alignment.AlignmentOptions;
 import org.opencb.biodata.tools.alignment.AlignmentUtils;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
-import org.opencb.opencga.storage.core.alignment.AlignmentStorageETL;
+import org.opencb.opencga.storage.core.StorageETL;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
 import java.io.BufferedReader;
@@ -30,19 +29,15 @@ import java.util.*;
 /**
  * Created by pfurio on 31/10/16.
  */
-public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
+public class DefaultAlignmentStorageETL implements StorageETL {
 
-    protected static final String COVERAGE_SUFFIX = ".coverage";
-    private Path workspace;
+    private static final String COVERAGE_SUFFIX = ".coverage";
+    private static final String COVERAGE_DATABASE_NAME = "coverage.db";
 
-    @Deprecated
-    public DefaultAlignmentStorageETL(AlignmentDBAdaptor dbAdaptor) {
-        super(dbAdaptor);
-    }
+    private static final int MINOR_CHUNK_SIZE = 1000;
 
-    DefaultAlignmentStorageETL(AlignmentDBAdaptor dbAdaptor, Path workspace) {
-        super(dbAdaptor);
-        this.workspace = workspace;
+    public DefaultAlignmentStorageETL() {
+        super();
     }
 
     @Override
@@ -64,24 +59,17 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
         Path path = Paths.get(input.getRawPath());
         FileUtils.checkFile(path);
 
-        // Check if the bai exists
+        Path workspace = Paths.get(output.getRawPath());
+        FileUtils.checkDirectory(workspace);
+
+        // 1. Check if the bai does not exist and create it
+        AlignmentManager alignmentManager = new AlignmentManager(path);
         if (!path.getParent().resolve(path.getFileName().toString() + ".bai").toFile().exists()) {
-            AlignmentManager alignmentManager = new AlignmentManager(path);
             alignmentManager.createIndex();
         }
 
-        return input;
-    }
-
-    @Override
-    public URI postTransform(URI input) throws Exception {
-        Path path = Paths.get(input.getRawPath());
-        FileUtils.checkFile(path);
-
-        AlignmentManager alignmentManager = new AlignmentManager(path);
-
         // 2. Calculate stats and store in a file
-        Path statsPath = path.getParent().resolve(path.getFileName() + ".stats");
+        Path statsPath = workspace.resolve(path.getFileName() + ".stats");
         if (!statsPath.toFile().exists()) {
             AlignmentGlobalStats stats = alignmentManager.stats();
             ObjectMapper objectMapper = new ObjectMapper();
@@ -92,7 +80,7 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
         // 3. Calculate coverage and store in SQLite
         SAMFileHeader fileHeader = AlignmentUtils.getFileHeader(path);
 //        long start = System.currentTimeMillis();
-        initDatabase(fileHeader.getSequenceDictionary().getSequences());
+        initDatabase(fileHeader.getSequenceDictionary().getSequences(), workspace);
 //        System.out.println("SQLite database initialization, in " + ((System.currentTimeMillis() - start) / 1000.0f)
 //                + " s.");
 
@@ -134,9 +122,14 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
 
         // save file to db
 //        start = System.currentTimeMillis();
-        insertCoverageDB(path);
+        insertCoverageDB(path, workspace);
 //        System.out.println("SQLite database population, in " + ((System.currentTimeMillis() - start) / 1000.0f) + " s.");
 
+        return input;
+    }
+
+    @Override
+    public URI postTransform(URI input) throws Exception {
         return input;
     }
 
@@ -156,7 +149,7 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
     }
 
 
-    private void initDatabase(List<SAMSequenceRecord> sequenceRecordList) {
+    private void initDatabase(List<SAMSequenceRecord> sequenceRecordList, Path workspace) {
         Path coverageDBPath = workspace.toAbsolutePath().resolve(COVERAGE_DATABASE_NAME);
         if (!coverageDBPath.toFile().exists()) {
             Statement stmt;
@@ -232,7 +225,7 @@ public class DefaultAlignmentStorageETL extends AlignmentStorageETL {
         }
     }
 
-    private void insertCoverageDB(Path bamPath) throws IOException {
+    private void insertCoverageDB(Path bamPath, Path workspace) throws IOException {
         FileUtils.checkFile(bamPath);
         String absoluteBamPath = bamPath.toFile().getAbsolutePath();
         Path coveragePath = workspace.toAbsolutePath().resolve(bamPath.getFileName() + COVERAGE_SUFFIX);

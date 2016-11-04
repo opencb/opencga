@@ -1796,4 +1796,8 @@ public class CatalogManager implements AutoCloseable {
     public SessionManager getSessionManager() {
         return sessionManager;
     }
+
+    public AuthorizationManager getAuthorizationManager() {
+        return authorizationManager;
+    }
 }

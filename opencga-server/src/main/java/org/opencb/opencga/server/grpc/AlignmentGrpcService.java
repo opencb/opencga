@@ -6,17 +6,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
-import org.opencb.opencga.storage.core.alignment.local.DefaultAlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import static org.opencb.opencga.server.grpc.GenericGrpcService.storageManagerFactory;
 
 /**
  * Created by pfurio on 26/10/16.
@@ -26,14 +19,35 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
     private GenericGrpcService genericGrpcService;
 
     public AlignmentGrpcService(CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration) {
-//        super(catalogConfiguration, storageConfiguration);
-
         genericGrpcService = new GenericGrpcService(catalogConfiguration, storageConfiguration);
     }
 
     @Override
     public void count(GenericAlignmentServiceModel.Request request, StreamObserver<ServiceTypesModel.LongResponse> responseObserver) {
+        try {
+            // Creating the datastore Query and QueryOptions objects from the gRPC request Map of Strings
+            Query query = createQuery(request);
+            QueryOptions queryOptions = createQueryOptions(request);
 
+            String studyIdStr = query.getString("studyId");
+            String fileIdStr = query.getString("fileId");
+            String sessionId = query.getString("sid");
+
+            QueryResult<Long> countQueryResult =
+                    storageManagerFactory.getAlignmentStorageManager().count(studyIdStr, fileIdStr, query, queryOptions, sessionId);
+
+            if (countQueryResult.getNumResults() != 1) {
+                throw new Exception(countQueryResult.getErrorMsg());
+            }
+
+            long count = countQueryResult.first();
+            ServiceTypesModel.LongResponse longResponse = ServiceTypesModel.LongResponse.newBuilder().setValue(count).build();
+            responseObserver.onNext(longResponse);
+            responseObserver.onCompleted();
+//            alignmentDBAdaptor.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -43,8 +57,24 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
 
     @Override
     public void get(GenericAlignmentServiceModel.Request request, StreamObserver<Reads.ReadAlignment> responseObserver) {
+        // Creating the datastore Query and QueryOptions objects from the gRPC request Map of Strings
+        Query query = createQuery(request);
+        QueryOptions queryOptions = createQueryOptions(request);
 
-    }
+        String studyIdStr = query.getString("studyId");
+        String fileIdStr = query.getString("fileId");
+        String sessionId = query.getString("sid");
+
+        try (AlignmentIterator<Reads.ReadAlignment> iterator =
+                storageManagerFactory.getAlignmentStorageManager().iterator(studyIdStr, fileIdStr, query, queryOptions, sessionId)) {
+            while (iterator.hasNext()) {
+                responseObserver.onNext(iterator.next());
+            }
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+}
 
     @Override
     public void groupBy(GenericAlignmentServiceModel.Request request, StreamObserver<ServiceTypesModel.GroupResponse> responseObserver) {
@@ -71,6 +101,5 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
         }
         return queryOptions;
     }
-
 
 }

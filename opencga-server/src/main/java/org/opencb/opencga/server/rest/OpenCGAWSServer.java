@@ -62,7 +62,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 
 @ApplicationPath("/")
 @Path("/{version}")
@@ -243,7 +242,7 @@ public class OpenCGAWSServer {
             logger.info("|  * Storage configuration file: '{}'", configDir.toFile().getAbsolutePath() + "/storage-configuration.yml");
             storageConfiguration = StorageConfiguration
                     .load(new FileInputStream(new File(configDir.toFile().getAbsolutePath() + "/storage-configuration.yml")));
-            storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
+            storageManagerFactory = StorageManagerFactory.get(catalogManager, storageConfiguration);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (CatalogException e) {

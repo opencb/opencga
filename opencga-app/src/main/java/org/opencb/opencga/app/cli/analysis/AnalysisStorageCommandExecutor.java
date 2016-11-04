@@ -53,7 +53,7 @@ public abstract class AnalysisStorageCommandExecutor extends AnalysisCommandExec
         catalogManager = new CatalogManager(catalogConfiguration);
 
         // Creating StorageManagerFactory
-        storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
+        storageManagerFactory = StorageManagerFactory.get(catalogManager, storageConfiguration);
 
     }
 

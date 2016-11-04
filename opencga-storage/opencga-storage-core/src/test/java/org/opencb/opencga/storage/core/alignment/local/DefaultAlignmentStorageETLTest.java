@@ -19,10 +19,6 @@ package org.opencb.opencga.storage.core.alignment.local;
 import org.junit.Test;
 
 import java.net.URI;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-
-import static org.junit.Assert.*;
 
 /**
  * Created by imedina on 01/11/16.
@@ -32,10 +28,9 @@ public class DefaultAlignmentStorageETLTest {
     public void postTransform() throws Exception {
 //        String inputPath = getClass().getResource("/HG00096.chrom20.small.bam").toString();
 //        String inputPath = "/tmp/kk/ebi.bam";
-        String inputPath = "/tmp/kk/HG00096.chrom20.small.bam";
-        System.out.println("inputPath = " + inputPath);
-        DefaultAlignmentStorageETL storageETL = new DefaultAlignmentStorageETL(new DefaultAlignmentDBAdaptor(),
-                Paths.get(inputPath).getParent());
-        storageETL.postTransform(new URI(inputPath));
+//        String inputPath = "/tmp/kk/HG00096.chrom20.small.bam";
+//        System.out.println("inputPath = " + inputPath);
+//        DefaultAlignmentStorageETL storageETL = new DefaultAlignmentStorageETL();
+//        storageETL.postTransform(new URI(inputPath));
     }
 }

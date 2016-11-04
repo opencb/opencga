@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.ComplexTypeConverter;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Deprecated
 public class VariantToProtoBinaryConverter implements ComplexTypeConverter<Variant, Binary> {
     //        private final VariantToProtoVcfRecord converter = new VariantToProtoVcfRecord();
     private final VariantToVcfSliceConverter converter = new VariantToVcfSliceConverter();
@@ -37,12 +38,12 @@ public class VariantToProtoBinaryConverter implements ComplexTypeConverter<Varia
 
     @Override
     public Variant convertToDataModelType(Binary object) {
-        throw new UnsupportedOperationException();
 //        try {
 //            return converterBack.convert(VcfSliceProtos.VcfSlice.parseFrom(object.getData())).get(0);
 //        } catch (InvalidProtocolBufferException e) {
 //            throw new UncheckedIOException(e);
 //        }
+        throw new UnsupportedOperationException();
     }
 
     @Override

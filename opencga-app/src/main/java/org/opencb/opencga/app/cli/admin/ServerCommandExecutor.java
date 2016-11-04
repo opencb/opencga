@@ -17,17 +17,13 @@
 package org.opencb.opencga.app.cli.admin;
 
 
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.server.RestServer;
 import org.opencb.opencga.server.grpc.GrpcServer;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
-import java.io.FileInputStream;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 
 /**

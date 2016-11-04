@@ -53,7 +53,7 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
 
     private void init(String storageEngine)
             throws IllegalAccessException, InstantiationException, ClassNotFoundException, StorageManagerException {
-        StorageManagerFactory storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
+        StorageManagerFactory storageManagerFactory = StorageManagerFactory.get(null, storageConfiguration);
         VariantStorageManager variantStorageManager = storageManagerFactory.getVariantStorageManager(storageEngine);
         variantDBAdaptor = variantStorageManager.getDBAdaptor(storageConfiguration.getBenchmark().getDatabaseName());
     }

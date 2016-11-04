@@ -29,13 +29,9 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
-import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -166,20 +162,6 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
                 return createErrorResponse(method, "Required end position");
             }
 
-//            String fileStr = ListUtils.toString(request.getReadGroupIds(), ",");
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            long fileId = catalogManager.getFileManager().getId(userId, request.getReadGroupIds().get(0));
-
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.URI.key());
-            QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(fileId, options, sessionId);
-
-            if (fileQueryResult != null && fileQueryResult.getNumResults() != 1) {
-                // This should never happen
-                throw new CatalogException("Critical error: File " + fileId + " could not be found in catalog.");
-            }
-            String path = fileQueryResult.first().getUri().getRawPath();
-
-
             Query query = new Query();
             query.put(AlignmentDBAdaptor.QueryParams.REGION.key(),
                     request.getReferenceId() + ":" + request.getStart().intValue() + "-" + request.getEnd().intValue());
@@ -205,8 +187,8 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
 
             SearchReadsResponse response = new SearchReadsResponse();
 
-            AlignmentStorageManager alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager();
-            QueryResult<ReadAlignment> queryResult = alignmentStorageManager.getDBAdaptor().get(path, query, queryOptions);
+            QueryResult<ReadAlignment> queryResult = storageManagerFactory.getAlignmentStorageManager()
+                    .query("", request.getReadGroupIds().get(0), query, queryOptions, sessionId);
 
             response.setAlignments(queryResult.getResult());
             response.setNextPageToken(Integer.toString(++page));

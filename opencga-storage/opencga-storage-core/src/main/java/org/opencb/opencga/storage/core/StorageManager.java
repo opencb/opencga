@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core;
 
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.MemoryUsageMonitor;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
@@ -34,21 +35,40 @@ public abstract class StorageManager<DBADAPTOR> {
 
     protected String storageEngineId;
     protected StorageConfiguration configuration;
+    protected CatalogManager catalogManager;
+
     protected Logger logger;
 
     public StorageManager() {
     }
 
+    public StorageManager(CatalogManager catalogManager, StorageConfiguration configuration) {
+        this(catalogManager, configuration, configuration.getDefaultStorageEngineId());
+    }
+
+    @Deprecated
     public StorageManager(StorageConfiguration configuration) {
         this(configuration.getDefaultStorageEngineId(), configuration);
 //        this.configuration = configuration;
     }
 
+    @Deprecated
     public StorageManager(String storageEngineId, StorageConfiguration configuration) {
         setConfiguration(configuration, storageEngineId);
     }
 
+    public StorageManager(CatalogManager catalogManager, StorageConfiguration configuration, String storageEngineId) {
+        setConfiguration(catalogManager, configuration, storageEngineId);
+    }
+
+    @Deprecated
     public void setConfiguration(StorageConfiguration configuration, String storageEngineId) {
+        this.configuration = configuration;
+        this.storageEngineId = storageEngineId;
+    }
+
+    public void setConfiguration(CatalogManager catalogManager, StorageConfiguration configuration, String storageEngineId) {
+        this.catalogManager = catalogManager;
         this.configuration = configuration;
         this.storageEngineId = storageEngineId;
     }
@@ -59,6 +79,10 @@ public abstract class StorageManager<DBADAPTOR> {
 
     public String getStorageEngineId() {
         return storageEngineId;
+    }
+
+    public CatalogManager getCatalogManager() {
+        return catalogManager;
     }
 
     public List<StorageETLResult> index(List<URI> inputFiles, URI outdirUri, boolean doExtract, boolean doTransform, boolean doLoad)

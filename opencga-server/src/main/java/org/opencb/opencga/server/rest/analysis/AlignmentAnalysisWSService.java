@@ -125,20 +125,9 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.MD_FIELD.key(), mdField);
             queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.BIN_QUALITIES.key(), binQualities);
 
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            Long fileId = catalogManager.getFileManager().getId(userId, fileIdStr);
-
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.URI.key());
-            QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(fileId, options, sessionId);
-
-            if (fileQueryResult != null && fileQueryResult.getNumResults() != 1) {
-                // This should never happen
-                throw new CatalogException("Critical error: File " + fileId + " could not be found in catalog.");
-            }
-            java.nio.file.Path path = Paths.get(fileQueryResult.first().getUri());
-
-            AlignmentDBAdaptor dbAdaptor = storageManagerFactory.getAlignmentStorageManager().getDBAdaptor();
-            return createOkResponse(dbAdaptor.get(path.toString(), query, queryOptions));
+            return createOkResponse(
+                    storageManagerFactory.getAlignmentStorageManager().query(studyId, fileIdStr, query, queryOptions, sessionId)
+            );
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -155,9 +144,6 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                              @ApiParam(value = "Only alignments completely contained within boundaries of region", required = false)
                                  @QueryParam("contained") Boolean contained) {
         try {
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            Long fileId = catalogManager.getFileManager().getId(userId, fileIdStr);
-
             Query query = new Query();
             query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), region);
             query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
@@ -165,19 +151,32 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             QueryOptions queryOptions = new QueryOptions();
             queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
 
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.URI.key());
-            QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(fileId, options, sessionId);
-
-            if (fileQueryResult != null && fileQueryResult.getNumResults() != 1) {
-                // This should never happen
-                throw new CatalogException("Critical error: File " + fileId + " could not be found in catalog.");
-            }
-            String path = fileQueryResult.first().getUri().getRawPath();
-
-            AlignmentStorageManager alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager();
-            AlignmentGlobalStats stats = alignmentStorageManager.getDBAdaptor().stats(path, query, queryOptions);
-            QueryResult<AlignmentGlobalStats> queryResult = new QueryResult<>("get stats", -1, 1, 1, "", "", Arrays.asList(stats));
-            return createOkResponse(queryResult);
+            return createOkResponse(
+                    storageManagerFactory.getAlignmentStorageManager().stats(studyId, fileIdStr, query, queryOptions, sessionId));
+//
+//            String userId = catalogManager.getUserManager().getId(sessionId);
+//            Long fileId = catalogManager.getFileManager().getId(userId, fileIdStr);
+//
+//            Query query = new Query();
+//            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), region);
+//            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
+//
+//            QueryOptions queryOptions = new QueryOptions();
+//            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
+//
+//            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.URI.key());
+//            QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(fileId, options, sessionId);
+//
+//            if (fileQueryResult != null && fileQueryResult.getNumResults() != 1) {
+//                // This should never happen
+//                throw new CatalogException("Critical error: File " + fileId + " could not be found in catalog.");
+//            }
+//            String path = fileQueryResult.first().getUri().getRawPath();
+//
+//            AlignmentStorageManager alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager();
+//            AlignmentGlobalStats stats = alignmentStorageManager.getDBAdaptor().stats(path, query, queryOptions);
+//            QueryResult<AlignmentGlobalStats> queryResult = new QueryResult<>("get stats", -1, 1, 1, "", "", Arrays.asList(stats));
+//            return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -204,17 +203,9 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             QueryOptions queryOptions = new QueryOptions();
             queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
 
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.URI.key());
-            QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(fileId, options, sessionId);
-
-            if (fileQueryResult != null && fileQueryResult.getNumResults() != 1) {
-                // This should never happen
-                throw new CatalogException("Critical error: File " + fileId + " could not be found in catalog.");
-            }
-            String path = fileQueryResult.first().getUri().getRawPath();
-
-           AlignmentStorageManager alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager();
-            return createOkResponse(alignmentStorageManager.getDBAdaptor().coverage(path, query, queryOptions));
+            return createOkResponse(
+                    storageManagerFactory.getAlignmentStorageManager().coverage(studyId, fileIdStr, query, queryOptions, sessionId)
+            );
         } catch (Exception e) {
             return createErrorResponse(e);
         }

@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -126,19 +127,21 @@ public interface AlignmentDBAdaptor {
 
     QueryResult getAlignmentRegionInfo(Region region, QueryOptions options);
 
-    QueryResult<ReadAlignment> get(String fileId, Query query, QueryOptions options);
+    QueryResult<ReadAlignment> get(Path path, Query query, QueryOptions options);
 
-    AlignmentIterator iterator(String fileId);
+    AlignmentIterator iterator(Path path);
 
-    AlignmentIterator iterator(String fileId, Query query, QueryOptions options);
+    AlignmentIterator iterator(Path path, Query query, QueryOptions options);
 
-    long count(String fileId, Query query, QueryOptions options);
+    <T> AlignmentIterator<T> iterator(Path path, Query query, QueryOptions options, Class<T> clazz);
 
-    AlignmentGlobalStats stats(String fileId) throws Exception;
+    QueryResult<Long> count(Path path, Query query, QueryOptions options);
 
-    AlignmentGlobalStats stats(String fileId, Query query, QueryOptions options) throws Exception;
+    QueryResult<AlignmentGlobalStats> stats(Path path, Path workspace) throws Exception;
 
-    QueryResult<RegionCoverage> coverage(String fileId) throws Exception;
+    QueryResult<AlignmentGlobalStats> stats(Path path, Path workspace, Query query, QueryOptions options) throws Exception;
 
-    QueryResult<RegionCoverage> coverage(String fileId, Query query, QueryOptions options) throws Exception;
+    QueryResult<RegionCoverage> coverage(Path path, Path workspace) throws Exception;
+
+    QueryResult<RegionCoverage> coverage(Path path, Path workspace, Query query, QueryOptions options) throws Exception;
 }

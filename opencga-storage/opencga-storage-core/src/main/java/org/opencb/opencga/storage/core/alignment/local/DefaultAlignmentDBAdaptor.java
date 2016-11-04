@@ -19,13 +19,13 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.iterators.ProtoAlignmentIterator;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.*;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -33,20 +33,13 @@ import java.util.List;
  */
 public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
-    protected static final int MINOR_CHUNK_SIZE = 1000;
-
+    private static final int MINOR_CHUNK_SIZE = 1000;
     private static final int DEFAULT_CHUNK_SIZE = 1000;
     private static final int DEFAULT_WINDOW_SIZE = 1000000;
 
     private int chunkSize = DEFAULT_CHUNK_SIZE;
-    private Path workspace;
 
-
-    DefaultAlignmentDBAdaptor(Path workspace) {
-        this.workspace = workspace;
-    }
-
-    DefaultAlignmentDBAdaptor() {
+    public DefaultAlignmentDBAdaptor() {
         this(DEFAULT_CHUNK_SIZE);
     }
 
@@ -85,12 +78,11 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
-    public QueryResult<ReadAlignment> get(String fileId, Query query, QueryOptions options) {
+    public QueryResult<ReadAlignment> get(Path path, Query query, QueryOptions options) {
         try {
             StopWatch watch = new StopWatch();
             watch.start();
 
-            Path path = Paths.get(fileId);
             FileUtils.checkFile(path);
             AlignmentManager alignmentManager = new AlignmentManager(path);
 
@@ -119,14 +111,18 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
-    public ProtoAlignmentIterator iterator(String fileId) {
-        return iterator(fileId, new Query(), new QueryOptions());
+    public ProtoAlignmentIterator iterator(Path path) {
+        return iterator(path, new Query(), new QueryOptions());
     }
 
     @Override
-    public ProtoAlignmentIterator iterator(String fileId, Query query, QueryOptions options) {
+    public ProtoAlignmentIterator iterator(Path path, Query query, QueryOptions options) {
+        return (ProtoAlignmentIterator) iterator(path, query, options, Reads.ReadAlignment.class);
+    }
+
+    @Override
+    public <T> AlignmentIterator<T> iterator(Path path, Query query, QueryOptions options, Class<T> clazz) {
         try {
-            Path path = Paths.get(fileId);
             FileUtils.checkFile(path);
 
             if (query == null) {
@@ -143,10 +139,15 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
             Region region = parseRegion(query);
             if (region != null) {
-                return new ProtoAlignmentIterator(alignmentManager.iterator(region, alignmentOptions, alignmentFilters,
-                        Reads.ReadAlignment.class));
+                if (Reads.ReadAlignment.class == clazz) {
+                    return (AlignmentIterator<T>) new ProtoAlignmentIterator(alignmentManager.iterator(region, alignmentOptions,
+                            alignmentFilters, Reads.ReadAlignment.class));
+                }
             } else {
-                return new ProtoAlignmentIterator(alignmentManager.iterator(alignmentOptions, alignmentFilters, Reads.ReadAlignment.class));
+                if (Reads.ReadAlignment.class == clazz) {
+                    return (AlignmentIterator<T>) new ProtoAlignmentIterator(alignmentManager.iterator(alignmentOptions, alignmentFilters,
+                            Reads.ReadAlignment.class));
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -155,21 +156,32 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
     }
 
     @Override
-    public long count(String fileId, Query query, QueryOptions options) {
-        ProtoAlignmentIterator iterator = iterator(fileId, query, options);
+    public QueryResult<Long> count(Path path, Query query, QueryOptions options) {
+        StopWatch watch = new StopWatch();
+        watch.start();
+
+        ProtoAlignmentIterator iterator = iterator(path, query, options);
         long cont = 0;
         while (iterator.hasNext()) {
             iterator.next();
             cont++;
         }
-        return cont;
+
+        watch.stop();
+        return new QueryResult<>("Get count", (int) watch.getTime(), 1, 1, "", "", Arrays.asList(cont));
     }
 
     @Override
-    public AlignmentGlobalStats stats(String fileId) throws Exception {
-        Path path = Paths.get(fileId);
-        Path statsPath = path.getParent().resolve(path.getFileName() + ".stats");
+    public QueryResult<AlignmentGlobalStats> stats(Path path, Path workspace) throws Exception {
+        StopWatch watch = new StopWatch();
+        watch.start();
+
+        FileUtils.checkFile(path);
+        FileUtils.checkDirectory(workspace);
+
+        Path statsPath = workspace.resolve(path.getFileName() + ".stats");
         AlignmentGlobalStats alignmentGlobalStats;
+
         if (statsPath.toFile().exists()) {
             // Read the file of stats
             ObjectMapper objectMapper = new ObjectMapper();
@@ -182,11 +194,15 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
             objectWriter.writeValue(statsPath.toFile(), alignmentGlobalStats);
         }
 
-        return alignmentGlobalStats;
+        watch.stop();
+        return new QueryResult<>("Get stats", (int) watch.getTime(), 1, 1, "", "", Arrays.asList(alignmentGlobalStats));
     }
 
     @Override
-    public AlignmentGlobalStats stats(String fileId, Query query, QueryOptions options) throws Exception {
+    public QueryResult<AlignmentGlobalStats> stats(Path path, Path workspace, Query query, QueryOptions options) throws Exception {
+        StopWatch watch = new StopWatch();
+        watch.start();
+
         if (options == null) {
             options = new QueryOptions();
         }
@@ -195,10 +211,9 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
         }
 
         if (options.size() == 0 && query.size() == 0) {
-            return stats(fileId);
+            return stats(path, workspace);
         }
 
-        Path path = Paths.get(fileId);
         FileUtils.checkFile(path);
 
         AlignmentOptions alignmentOptions = parseQueryOptions(options);
@@ -206,24 +221,25 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
         Region region = parseRegion(query);
 
         AlignmentManager alignmentManager = new AlignmentManager(path);
+        AlignmentGlobalStats alignmentGlobalStats = alignmentManager.stats(region, alignmentOptions, alignmentFilters);
 
-        return alignmentManager.stats(region, alignmentOptions, alignmentFilters);
+        watch.stop();
+        return new QueryResult<>("Get stats", (int) watch.getTime(), 1, 1, "", "", Arrays.asList(alignmentGlobalStats));
     }
 
     @Override
-    public QueryResult<RegionCoverage> coverage(String fileId) throws Exception {
+    public QueryResult<RegionCoverage> coverage(Path path, Path workspace) throws Exception {
         QueryOptions options = new QueryOptions();
         options.put("windowSize", DEFAULT_WINDOW_SIZE);
         options.put("contained", false);
-        return coverage(fileId, new Query(), options);
+        return coverage(path, workspace, new Query(), options);
     }
 
     @Override
-    public QueryResult<RegionCoverage> coverage(String fileId, Query query, QueryOptions options) throws Exception {
+    public QueryResult<RegionCoverage> coverage(Path path, Path workspace, Query query, QueryOptions options) throws Exception {
         StopWatch watch = new StopWatch();
         watch.start();
 
-        Path path = Paths.get(fileId);
         FileUtils.checkFile(path);
 
         if (query == null) {
@@ -245,7 +261,7 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
                 // if region is too big then we calculate the mean. We need to protect this code!
                 // and query SQLite database
                 windowSize = options.getInt("windowSize", DEFAULT_WINDOW_SIZE);
-                coverage = meanCoverage(fileId, region, windowSize);
+                coverage = meanCoverage(path, workspace, region, windowSize);
             } else {
                 // if region is small enough we calculate all coverage for all positions dynamically
                 // calling the biodata alignment manager
@@ -265,14 +281,11 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
 //            System.exit(0);
 
             region = new Region(seq.getSequenceName(), 1, arraySize * MINOR_CHUNK_SIZE);
-            coverage = meanCoverage(fileId, region, windowSize);
+            coverage = meanCoverage(path, workspace, region, windowSize);
         }
 
-        List<RegionCoverage> results = new ArrayList<RegionCoverage>();
-        results.add(coverage);
         watch.stop();
-        return new QueryResult("Region coverage", ((int) watch.getTime()), results.size(), results.size(),
-                null, null, results);
+        return new QueryResult("Region coverage", ((int) watch.getTime()), 1, 1, null, null, Arrays.asList(coverage));
     }
 
 
@@ -313,12 +326,11 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
         return this;
     }
 
-    private RegionCoverage meanCoverage(String filename, Region region, int windowSize) {
+    private RegionCoverage meanCoverage(Path bamPath, Path workspace, Region region, int windowSize) {
         windowSize = Math.max(windowSize / MINOR_CHUNK_SIZE * MINOR_CHUNK_SIZE, MINOR_CHUNK_SIZE);
         int size = (region.getEnd() - region.getStart() + 1) / windowSize;
         short[] values = new short[size];
 
-        Path bamPath = Paths.get(filename);
         String absoluteBamPath = bamPath.toFile().getAbsolutePath();
         Path coverageDBPath = workspace.toAbsolutePath().resolve("coverage.db");
 
