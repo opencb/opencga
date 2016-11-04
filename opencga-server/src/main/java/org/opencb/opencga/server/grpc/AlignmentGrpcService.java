@@ -21,30 +21,19 @@ import java.nio.file.Paths;
 /**
  * Created by pfurio on 26/10/16.
  */
-public class AlignmentGrpcService extends GenericGrpcService implements AlignmentServiceGrpc.AlignmentService {
+public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceImplBase {
+
+    private GenericGrpcService genericGrpcService;
 
     public AlignmentGrpcService(CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration) {
-        super(catalogConfiguration, storageConfiguration);
+//        super(catalogConfiguration, storageConfiguration);
+
+        genericGrpcService = new GenericGrpcService(catalogConfiguration, storageConfiguration);
     }
 
     @Override
     public void count(GenericAlignmentServiceModel.Request request, StreamObserver<ServiceTypesModel.LongResponse> responseObserver) {
-        try {
-            // Creating the datastore Query and QueryOptions objects from the gRPC request Map of Strings
-            Query query = createQuery(request);
-            QueryOptions queryOptions = createQueryOptions(request);
-            Path path = getPath(query);
 
-            AlignmentDBAdaptor alignmentDBAdaptor = storageManagerFactory.getAlignmentStorageManager().getDBAdaptor();
-
-            long count = alignmentDBAdaptor.count(path.toString(), query, queryOptions);
-            ServiceTypesModel.LongResponse longResponse = ServiceTypesModel.LongResponse.newBuilder().setValue(count).build();
-            responseObserver.onNext(longResponse);
-            responseObserver.onCompleted();
-//            alignmentDBAdaptor.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     @Override
@@ -54,38 +43,7 @@ public class AlignmentGrpcService extends GenericGrpcService implements Alignmen
 
     @Override
     public void get(GenericAlignmentServiceModel.Request request, StreamObserver<Reads.ReadAlignment> responseObserver) {
-        try {
-            // Creating the datastore Query and QueryOptions objects from the gRPC request Map of Strings
-            Query query = createQuery(request);
 
-            String fileIdStr = query.getString("fileId");
-            String sessionId = query.getString("sid");
-
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            Long fileId = catalogManager.getFileManager().getId(userId, fileIdStr);
-
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.URI.key());
-            QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(fileId, queryOptions, sessionId);
-
-            if (fileQueryResult != null && fileQueryResult.getNumResults() != 1) {
-                // This should never happen
-                throw new CatalogException("Critical error: File " + fileId + " could not be found in catalog.");
-            }
-            Path path = Paths.get(fileQueryResult.first().getUri());
-
-            AlignmentDBAdaptor alignmentDBAdaptor = storageManagerFactory.getAlignmentStorageManager().getDBAdaptor();
-
-            queryOptions = createQueryOptions(request);
-            try (AlignmentIterator iterator = alignmentDBAdaptor.iterator(path.toString(), query, queryOptions)) {
-                while (iterator.hasNext()) {
-                    responseObserver.onNext((Reads.ReadAlignment) iterator.next());
-                }
-                responseObserver.onCompleted();
-            }
-//            alignmentDBAdaptor.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     @Override
@@ -114,30 +72,5 @@ public class AlignmentGrpcService extends GenericGrpcService implements Alignmen
         return queryOptions;
     }
 
-    /**
-     * Obtain the path corresponding to the file id.
-     *
-     * @param query query.
-     * @return the path corresponding to the file id.
-     * @throws CatalogException
-     * @throws IOException
-     */
-    private Path getPath(Query query) throws CatalogException {
-        String fileIdStr = query.getString("fileId");
-        String sessionId = query.getString("sid");
-
-        String userId = catalogManager.getUserManager().getId(sessionId);
-        Long fileId = catalogManager.getFileManager().getId(userId, fileIdStr);
-
-        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.URI.key());
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(fileId, options, sessionId);
-
-        if (fileQueryResult != null && fileQueryResult.getNumResults() != 1) {
-            // This should never happen
-            throw new CatalogException("Critical error: File " + fileId + " could not be found in catalog.");
-        }
-
-        return Paths.get(fileQueryResult.first().getUri());
-    }
 
 }

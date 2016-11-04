@@ -19,19 +19,18 @@ package org.opencb.opencga.server.grpc;
 import io.grpc.stub.StreamObserver;
 import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
-import org.opencb.opencga.server.grpc.AdminServiceGrpc.AdminService;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
 /**
  * Created by imedina on 02/01/16.
  */
-public class AdminGrpcService extends GenericGrpcService implements AdminService {
+public class AdminGrpcService extends AdminServiceGrpc.AdminServiceImplBase {
 
     private GrpcServer grpcServer;
 
 
     public AdminGrpcService(CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration, GrpcServer grpcServer) {
-        super(catalogConfiguration, storageConfiguration);
+//        super(catalogConfiguration, storageConfiguration);
 
         this.grpcServer = grpcServer;
     }

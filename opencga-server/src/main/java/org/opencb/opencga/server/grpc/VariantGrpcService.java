@@ -32,20 +32,24 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import java.io.IOException;
 import java.util.Iterator;
 
-import static org.opencb.opencga.server.grpc.VariantServiceGrpc.VariantService;
-
 /**
  * Created by imedina on 29/12/15.
  */
-public class VariantGrpcService extends GenericGrpcService implements VariantService {
+public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBase {
+
+    private GenericGrpcService genericGrpcService;
 
     public VariantGrpcService(CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration) {
-        super(catalogConfiguration, storageConfiguration);
+//        super(catalogConfiguration, storageConfiguration);
+
+        genericGrpcService = new GenericGrpcService(catalogConfiguration, storageConfiguration);
     }
 
     @Deprecated
     public VariantGrpcService(CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration, String defaultStorageEngine) {
-        super(catalogConfiguration, storageConfiguration, defaultStorageEngine);
+//        super(catalogConfiguration, storageConfiguration, defaultStorageEngine);
+
+        genericGrpcService = new GenericGrpcService(catalogConfiguration, storageConfiguration);
     }
 
 
@@ -53,7 +57,7 @@ public class VariantGrpcService extends GenericGrpcService implements VariantSer
     public void count(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.LongResponse> responseObserver) {
         try {
             // Creating the datastore Query object from the gRPC request Map of Strings
-            Query query = createQuery(request);
+            Query query = genericGrpcService.createQuery(request);
 
 //            checkAuthorizedHosts(query, request.getIp());
             VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(request);
@@ -80,8 +84,8 @@ public class VariantGrpcService extends GenericGrpcService implements VariantSer
     public void get(GenericServiceModel.Request request, StreamObserver<VariantProto.Variant> responseObserver) {
         try {
             // Creating the datastore Query and QueryOptions objects from the gRPC request Map of Strings
-            Query query = createQuery(request);
-            QueryOptions queryOptions = createQueryOptions(request);
+            Query query = genericGrpcService.createQuery(request);
+            QueryOptions queryOptions = genericGrpcService.createQueryOptions(request);
 
 //            checkAuthorizedHosts(query, request.getIp());
             VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(request);
@@ -128,21 +132,21 @@ public class VariantGrpcService extends GenericGrpcService implements VariantSer
     private VariantDBAdaptor getVariantDBAdaptor(GenericServiceModel.Request request)
             throws IllegalAccessException, InstantiationException, ClassNotFoundException, StorageManagerException {
         // Setting storageEngine and database parameters. If the storageEngine is not provided then the server default is used
-        String storageEngine = defaultStorageEngine;
+        String storageEngine = genericGrpcService.getDefaultStorageEngine();
         if (StringUtils.isNotEmpty(request.getStorageEngine())) {
             storageEngine = request.getStorageEngine();
         }
 
-        String database = storageConfiguration.getStorageEngine(storageEngine).getVariant().getOptions().getString("database.name");
+        String database = genericGrpcService.getStorageConfiguration().getStorageEngine(storageEngine).getVariant().getOptions().getString("database.name");
         if (StringUtils.isNotEmpty(request.getDatabase())) {
             database = request.getDatabase();
         }
 
         // Creating the VariantDBAdaptor to the parsed storageEngine and database
         long start = System.currentTimeMillis();
-        VariantStorageManager variantStorageManager = storageManagerFactory.getVariantStorageManager(storageEngine);
+        VariantStorageManager variantStorageManager = GenericGrpcService.storageManagerFactory.getVariantStorageManager(storageEngine);
         VariantDBAdaptor variantDBAdaptor = variantStorageManager.getDBAdaptor(database);
-        logger.debug("Connection to {}:{} in {}ms", storageEngine, database, System.currentTimeMillis() - start);
+//        logger.debug("Connection to {}:{} in {}ms", storageEngine, database, System.currentTimeMillis() - start);
 
         return variantDBAdaptor;
     }
