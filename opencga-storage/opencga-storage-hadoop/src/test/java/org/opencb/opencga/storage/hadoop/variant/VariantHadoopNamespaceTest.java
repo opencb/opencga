@@ -29,6 +29,8 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 
+import static org.junit.Assert.assertTrue;
+
 /**
  * Created on 19/07/16
  *
@@ -48,13 +50,14 @@ public class VariantHadoopNamespaceTest extends VariantStorageManagerTestUtils i
         HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
         VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor();
         Admin admin = dbAdaptor.getConnection().getAdmin();
-        admin.createNamespace(NamespaceDescriptor.create("opencga").build());
+//        admin.createNamespace(NamespaceDescriptor.create("opencga").build());
 
 
         runDefaultETL(smallInputUri, variantStorageManager, newStudyConfiguration(),
                 new ObjectMap()
                         .append(HadoopVariantStorageManager.OPENCGA_STORAGE_HADOOP_HBASE_NAMESPACE, "opencga")
-                        .append(VariantStorageManager.Options.ANNOTATE.key(), false));
+                        .append(VariantStorageManager.Options.ANNOTATE.key(), true)
+                        .append(VariantStorageManager.Options.CALCULATE_STATS.key(), true));
 
         NamespaceDescriptor[] namespaceDescriptors = admin.listNamespaceDescriptors();
         for (NamespaceDescriptor namespaceDescriptor : namespaceDescriptors) {
@@ -66,6 +69,8 @@ public class VariantHadoopNamespaceTest extends VariantStorageManagerTestUtils i
                 System.out.println("\ttableName = " + tableName);
             }
         }
+
+        assertTrue(variantStorageManager.getDBAdaptor().count(null).first() > 0);
     }
 
     @Test
@@ -73,7 +78,8 @@ public class VariantHadoopNamespaceTest extends VariantStorageManagerTestUtils i
         runDefaultETL(smallInputUri, getVariantStorageManager(), newStudyConfiguration(),
                 new ObjectMap()
                         .append(HadoopVariantStorageManager.OPENCGA_STORAGE_HADOOP_HBASE_NAMESPACE, "")
-                        .append(VariantStorageManager.Options.ANNOTATE.key(), false));
+                        .append(VariantStorageManager.Options.ANNOTATE.key(), true)
+                        .append(VariantStorageManager.Options.CALCULATE_STATS.key(), true));
 
         HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
         Admin admin = variantStorageManager.getDBAdaptor().getConnection().getAdmin();
@@ -81,10 +87,10 @@ public class VariantHadoopNamespaceTest extends VariantStorageManagerTestUtils i
         for (NamespaceDescriptor namespaceDescriptor : admin.listNamespaceDescriptors()) {
             System.out.println("namespaceDescriptor = " + namespaceDescriptor);
             for (TableName tableName : admin.listTableNamesByNamespace(namespaceDescriptor.getName())) {
-                System.out.println("tableName = " + tableName);
+                System.out.println("\ttableName = " + tableName);
             }
         }
-
+        assertTrue(variantStorageManager.getDBAdaptor().count(null).first() > 0);
     }
 
 }

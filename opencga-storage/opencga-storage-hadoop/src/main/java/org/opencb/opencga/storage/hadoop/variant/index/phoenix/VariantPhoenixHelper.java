@@ -20,6 +20,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.PTable;
+import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.schema.types.*;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -267,15 +268,22 @@ public class VariantPhoenixHelper {
         con.commit();
     }
 
+    public void createSchemaIfNeeded(Connection con, String schema) throws SQLException {
+        String sql = "CREATE SCHEMA IF NOT EXISTS \"" + schema + "\"";
+        logger.info(sql);
+        phoenixHelper.execute(con, sql);
+    }
+
     public void createTableIfNeeded(Connection con, String table) throws SQLException {
         String sql = buildCreate(table);
         logger.info(sql);
         phoenixHelper.execute(con, sql);
     }
 
-    private void addColumns(Connection con, String table, Integer studyId, PDataType<?> dataType, String ... columns) throws SQLException {
+    private void addColumns(Connection con, String tableName, Integer studyId, PDataType<?> dataType, String ... columns)
+            throws SQLException {
         for (String col : columns) {
-            String sql = phoenixHelper.buildAlterAddColumn(table,
+            String sql = phoenixHelper.buildAlterAddColumn(tableName,
                     VariantTableStudyRow.buildColumnKey(studyId, col), dataType.getSqlTypeName());
             phoenixHelper.execute(con, sql);
         }
@@ -290,7 +298,7 @@ public class VariantPhoenixHelper {
     }
 
     public static String buildCreateView(String tableName, String columnFamily) {
-        return buildCreate(tableName, columnFamily, "VIEW");
+        return buildCreate(tableName, columnFamily, PTableType.VIEW);
     }
 
     public String buildCreateTable(String tableName) {
@@ -298,11 +306,11 @@ public class VariantPhoenixHelper {
     }
 
     public static String buildCreateTable(String tableName, String columnFamily) {
-        return buildCreate(tableName, columnFamily, "TABLE");
+        return buildCreate(tableName, columnFamily, PTableType.TABLE);
     }
 
-    public static String buildCreate(String tableName, String columnFamily, String table) {
-        StringBuilder sb = new StringBuilder().append("CREATE " + table + " IF NOT EXISTS ")
+    public static String buildCreate(String tableName, String columnFamily, PTableType tableType) {
+        StringBuilder sb = new StringBuilder().append("CREATE ").append(tableType).append(" IF NOT EXISTS ")
                 .append(SchemaUtil.getEscapedFullTableName(tableName)).append(" ").append("(");
         for (VariantColumn variantColumn : VariantColumn.values()) {
             switch (variantColumn) {
