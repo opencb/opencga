@@ -36,6 +36,7 @@ import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
+import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -302,6 +303,18 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
 
     public static boolean createVariantTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con)
             throws IOException {
+        VariantPhoenixHelper variantPhoenixHelper = new VariantPhoenixHelper(genomeHelper);
+
+        String namespace = SchemaUtil.getSchemaNameFromFullName(tableName);
+        if (StringUtils.isNotEmpty(namespace)) {
+//            HBaseManager.createNamespaceIfNeeded(con, namespace);
+            try (java.sql.Connection jdbcConnection = variantPhoenixHelper.newJdbcConnection()) {
+                variantPhoenixHelper.createSchemaIfNeeded(jdbcConnection, namespace);
+            } catch (ClassNotFoundException | SQLException e) {
+                throw new IOException(e);
+            }
+        }
+
         int nsplits = genomeHelper.getConf().getInt(CONFIG_VARIANT_TABLE_PRESPLIT_SIZE, 100);
         List<byte[]> splitList = GenomeHelper.generateBootPreSplitsHuman(
                 nsplits,
@@ -312,8 +325,6 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
                                 CONFIG_VARIANT_TABLE_COMPRESSION,
                                 Compression.Algorithm.SNAPPY.getName())));
         if (newTable) {
-            VariantPhoenixHelper variantPhoenixHelper = new VariantPhoenixHelper(genomeHelper);
-
             try (java.sql.Connection jdbcConnection = variantPhoenixHelper.newJdbcConnection()) {
                 variantPhoenixHelper.createTableIfNeeded(jdbcConnection, tableName);
             } catch (ClassNotFoundException | SQLException e) {
