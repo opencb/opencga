@@ -196,7 +196,7 @@ public class VariantSqlQueryParser {
     }
 
     protected void appendFromStatement(StringBuilder sb, Set<Column> dynamicColumns) {
-        sb.append(" FROM \"").append(variantTable).append('"');
+        sb.append(" FROM ").append(SchemaUtil.getEscapedFullTableName(variantTable));
 
         if (!dynamicColumns.isEmpty()) {
             sb.append(dynamicColumns.stream()

@@ -265,6 +265,30 @@ public class HBaseManager extends Configured implements AutoCloseable {
         }
     }
 
+    public static boolean createNamespaceIfNeeded(Connection con, String namespace) throws IOException {
+        try (Admin admin = con.getAdmin()) {
+            NamespaceDescriptor namespaceDescriptor = NamespaceDescriptor.create(namespace).build();
+            if (!namespaceExists(namespace, admin)) {
+                try {
+                    admin.createNamespace(namespaceDescriptor);
+                } catch (NamespaceExistException e) {
+                    e.printStackTrace();
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    static boolean namespaceExists(String namespace, Admin admin) throws IOException {
+        try {
+            admin.getNamespaceDescriptor(namespace);
+            return true;
+        } catch (NamespaceNotFoundException ignored) {
+            return false;
+        }
+    }
+
     /**
      * Checks if the required table exists.
      *
