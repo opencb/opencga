@@ -20,6 +20,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hbase.*;
+import org.apache.hadoop.hbase.backup.regionserver.LogRollRegionServerProcedureManager;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
@@ -29,19 +30,18 @@ import org.apache.hadoop.hbase.fs.HFileSystem;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.io.hfile.CacheConfig;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
-import org.apache.hadoop.hbase.master.AssignmentManager;
-import org.apache.hadoop.hbase.master.HMaster;
-import org.apache.hadoop.hbase.master.RegionStates;
-import org.apache.hadoop.hbase.master.TableNamespaceManager;
+import org.apache.hadoop.hbase.master.*;
 import org.apache.hadoop.hbase.master.procedure.MasterDDLOperationHelper;
 import org.apache.hadoop.hbase.master.procedure.ModifyTableProcedure;
 import org.apache.hadoop.hbase.procedure.ProcedureManagerHost;
 import org.apache.hadoop.hbase.procedure.ZKProcedureUtil;
+import org.apache.hadoop.hbase.procedure.flush.RegionServerFlushTableProcedureManager;
 import org.apache.hadoop.hbase.procedure2.ProcedureExecutor;
 import org.apache.hadoop.hbase.procedure2.store.wal.WALProcedureStore;
 import org.apache.hadoop.hbase.quotas.RegionServerQuotaManager;
 import org.apache.hadoop.hbase.regionserver.*;
 import org.apache.hadoop.hbase.regionserver.compactions.CompactionConfiguration;
+import org.apache.hadoop.hbase.regionserver.snapshot.RegionServerSnapshotManager;
 import org.apache.hadoop.hbase.regionserver.wal.FSHLog;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.FSTableDescriptors;
@@ -63,6 +63,7 @@ import org.apache.phoenix.hbase.index.covered.data.IndexMemStore;
 import org.apache.phoenix.hbase.index.parallel.BaseTaskRunner;
 import org.apache.phoenix.hbase.index.write.ParallelWriterIndexCommitter;
 import org.apache.phoenix.hbase.index.write.recovery.TrackingParallelWriterIndexCommitter;
+import org.apache.phoenix.query.QueryServices;
 import org.apache.phoenix.schema.MetaDataClient;
 import org.apache.tools.ant.types.Commandline;
 import org.apache.zookeeper.ClientCnxn;
@@ -118,6 +119,14 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
                 org.apache.log4j.Logger.getLogger(HRegionServer.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(HFileSystem.class).setLevel(Level.WARN);
 //                org.apache.log4j.Logger.getLogger(HBaseAdmin.class).setLevel(Level.WARN); // This logger is interesting!
+                org.apache.log4j.Logger.getLogger(ServerManager.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(RegionServerSnapshotManager.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(SplitLogWorker.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(LogRollRegionServerProcedureManager.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(HeapMemoryManager.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(MasterMobCompactionThread.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(RegionServerFlushTableProcedureManager.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(ChoreService.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(RegionServerQuotaManager.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(MetaMigrationConvertingToPB.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(TableNamespaceManager.class).setLevel(Level.WARN);
@@ -204,6 +213,8 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
 //                        org.apache.phoenix.hbase.index.master.IndexMasterObserver.class.getName());
 //                conf.set("hbase.coprocessor.regionserver.classes",
 //                        org.apache.hadoop.hbase.regionserver.LocalIndexMerger.class.getName());
+
+                conf.setBoolean(QueryServices.IS_NAMESPACE_MAPPING_ENABLED, true);
 
                 utility.get().startMiniCluster(1);
 

@@ -4,6 +4,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.PTable;
+import org.apache.phoenix.schema.PTableType;
 import org.apache.phoenix.schema.types.PArrayDataType;
 import org.apache.phoenix.schema.types.PDataType;
 import org.apache.phoenix.schema.types.PhoenixArray;
@@ -15,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
@@ -24,7 +26,7 @@ import java.util.stream.Collectors;
  */
 public class PhoenixHelper {
 
-    public static final String DEFAULT_TABLE_TYPE = "TABLE";
+    public static final PTableType DEFAULT_TABLE_TYPE = PTableType.TABLE;
     private final Configuration conf;
     protected static Logger logger = LoggerFactory.getLogger(VariantPhoenixHelper.class);
 
@@ -37,6 +39,14 @@ public class PhoenixHelper {
         try (Statement statement = con.createStatement()) {
             return statement.execute(sql);
         }
+    }
+
+    public String explain(Connection con, String sql, Consumer<String> logger) throws SQLException {
+        String explain = explain(con, sql);
+        for (String s : explain.split("\n")) {
+            logger.accept(" | " +  s);
+        }
+        return explain;
     }
 
     public String explain(Connection con, String sql) throws SQLException {
@@ -58,21 +68,22 @@ public class PhoenixHelper {
     }
 
     public String buildAlterTableAddColumn(String tableName, String column, String type, boolean ifNotExists) {
-        return buildAlterAddColumn(tableName, column, type, ifNotExists, "TABLE");
+        return buildAlterAddColumn(tableName, column, type, ifNotExists, PTableType.TABLE);
     }
 
     public String buildAlterViewAddColumn(String tableName, String column, String type, boolean ifNotExists) {
-        return buildAlterAddColumn(tableName, column, type, ifNotExists, "View");
+        return buildAlterAddColumn(tableName, column, type, ifNotExists, PTableType.VIEW);
     }
 
-    private String buildAlterAddColumn(String tableName, String column, String type, boolean ifNotExists, String table) {
-        return "ALTER " + table + " \"" + tableName + "\" ADD " + (ifNotExists ? "IF NOT EXISTS " : "") + "\"" + column + "\" " + type;
+    private String buildAlterAddColumn(String tableName, String column, String type, boolean ifNotExists, PTableType tableType) {
+        return "ALTER " + tableType.toString() + " " + SchemaUtil.getEscapedFullTableName(tableName)
+                + " ADD " + (ifNotExists ? "IF NOT EXISTS " : "") + "\"" + column + "\" " + type;
     }
 
     public String buildAlterAddColumns(String tableName, Collection<Column> columns, boolean ifNotExists) {
         StringBuilder sb = new StringBuilder();
-        sb.append("ALTER ").append(DEFAULT_TABLE_TYPE).append(" \"").append(tableName)
-                .append("\" ADD ").append(ifNotExists ? "IF NOT EXISTS " : "");
+        sb.append("ALTER ").append(DEFAULT_TABLE_TYPE).append(" ").append(SchemaUtil.getEscapedFullTableName(tableName))
+                .append(" ADD ").append(ifNotExists ? "IF NOT EXISTS " : "");
         Iterator<Column> iterator = columns.iterator();
         while (iterator.hasNext()) {
             Column column = iterator.next();
@@ -187,8 +198,8 @@ public class PhoenixHelper {
         return sql;
     }
 
-    public List<Column> getColumns(Connection con, String table) throws SQLException {
-        String sql = "SELECT * FROM \"" + table + "\" LIMIT 0";
+    public List<Column> getColumns(Connection con, String tableName) throws SQLException {
+        String sql = "SELECT * FROM " + SchemaUtil.getEscapedFullTableName(tableName) + " LIMIT 0";
         VariantPhoenixHelper.logger.debug(sql);
 
         try (Statement statement = con.createStatement()) {
