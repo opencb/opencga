@@ -25,6 +25,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -35,11 +36,11 @@ import java.util.List;
  */
 public abstract class StorageManager {
 
-    protected String storageEngineId;
-    protected StorageConfiguration configuration;
     protected CatalogManager catalogManager;
-    protected CacheManager cacheManager;
+    protected StorageConfiguration configuration;
+    protected String storageEngineId;
 
+    protected CacheManager cacheManager;
     protected Logger logger;
 
     public StorageManager() {
@@ -50,30 +51,28 @@ public abstract class StorageManager {
     }
 
     public StorageManager(CatalogManager catalogManager, StorageConfiguration configuration, String storageEngineId) {
-        setConfiguration(catalogManager, configuration, storageEngineId);
+        init(catalogManager, configuration, storageEngineId);
     }
 
-    public void setConfiguration(CatalogManager catalogManager, StorageConfiguration configuration, String storageEngineId) {
+    private void init(CatalogManager catalogManager, StorageConfiguration configuration, String storageEngineId) {
         this.catalogManager = catalogManager;
         this.configuration = configuration;
         this.storageEngineId = storageEngineId;
         this.cacheManager = new CacheManager(configuration);
+
+        logger = LoggerFactory.getLogger(this.getClass());
     }
 
-    public StorageConfiguration getConfiguration() {
-        return configuration;
+    public void clearCache(String studyId, String sessionId) {
+
     }
 
-    public String getStorageEngineId() {
-        return storageEngineId;
+    public void clearCache(String studyId, String bioformat, String sessionId) {
+
     }
 
-    public CatalogManager getCatalogManager() {
-        return catalogManager;
-    }
-
-    public List<StorageETLResult> index(List<URI> inputFiles, URI outdirUri, boolean doExtract, boolean doTransform, boolean doLoad)
-            throws StorageManagerException {
+    public List<StorageETLResult> index(String studyId, List<URI> inputFiles, URI outdirUri, boolean doExtract, boolean doTransform,
+                                        boolean doLoad, String sessionId) throws StorageManagerException {
 
         List<StorageETLResult> results = new ArrayList<>(inputFiles.size());
         boolean abortOnFail = true;
@@ -115,35 +114,10 @@ public abstract class StorageManager {
         return results;
     }
 
-    protected void loadFile(StorageETL storageETL, StorageETLResult etlResult, List<StorageETLResult> results,
-                            URI inputFileUri, URI outdirUri) throws StorageETLException {
-        etlResult.setLoadExecuted(true);
-        long millis = System.currentTimeMillis();
-        try {
-            logger.info("PreLoad '{}'", inputFileUri);
-            inputFileUri = storageETL.preLoad(inputFileUri, outdirUri);
-            etlResult.setPreLoadResult(inputFileUri);
-
-            logger.info("Load '{}'", inputFileUri);
-            inputFileUri = storageETL.load(inputFileUri);
-            etlResult.setLoadResult(inputFileUri);
-
-            logger.info("PostLoad '{}'", inputFileUri);
-            inputFileUri = storageETL.postLoad(inputFileUri, outdirUri);
-            etlResult.setPostLoadResult(inputFileUri);
-        } catch (Exception e) {
-            etlResult.setLoadError(e);
-            throw new StorageETLException("Exception executing load: " + e.getMessage(), e, results);
-        } finally {
-            etlResult.setLoadTimeMillis(System.currentTimeMillis() - millis);
-            etlResult.setLoadStats(storageETL.getLoadStats());
-        }
-    }
-
     protected URI transformFile(StorageETL storageETL, StorageETLResult etlResult, List<StorageETLResult> results,
                                 URI inputFileUri, URI outdirUri) throws StorageETLException {
         etlResult.setTransformExecuted(true);
-        long millis = System.currentTimeMillis();
+        long startMillis = System.currentTimeMillis();
         try {
             logger.info("PreTransform '{}'", inputFileUri);
             inputFileUri = storageETL.preTransform(inputFileUri);
@@ -160,10 +134,35 @@ public abstract class StorageManager {
             etlResult.setTransformError(e);
             throw new StorageETLException("Exception executing transform.", e, results);
         } finally {
-            etlResult.setTransformTimeMillis(System.currentTimeMillis() - millis);
+            etlResult.setTransformTimeMillis(System.currentTimeMillis() - startMillis);
             etlResult.setTransformStats(storageETL.getTransformStats());
         }
         return inputFileUri;
+    }
+
+    protected void loadFile(StorageETL storageETL, StorageETLResult etlResult, List<StorageETLResult> results,
+                            URI inputFileUri, URI outdirUri) throws StorageETLException {
+        etlResult.setLoadExecuted(true);
+        long startMillis = System.currentTimeMillis();
+        try {
+            logger.info("PreLoad '{}'", inputFileUri);
+            inputFileUri = storageETL.preLoad(inputFileUri, outdirUri);
+            etlResult.setPreLoadResult(inputFileUri);
+
+            logger.info("Load '{}'", inputFileUri);
+            inputFileUri = storageETL.load(inputFileUri);
+            etlResult.setLoadResult(inputFileUri);
+
+            logger.info("PostLoad '{}'", inputFileUri);
+            inputFileUri = storageETL.postLoad(inputFileUri, outdirUri);
+            etlResult.setPostLoadResult(inputFileUri);
+        } catch (Exception e) {
+            etlResult.setLoadError(e);
+            throw new StorageETLException("Exception executing load: " + e.getMessage(), e, results);
+        } finally {
+            etlResult.setLoadTimeMillis(System.currentTimeMillis() - startMillis);
+            etlResult.setLoadStats(storageETL.getLoadStats());
+        }
     }
 
     public abstract void testConnection() throws StorageManagerException;
@@ -179,4 +178,51 @@ public abstract class StorageManager {
      */
     public abstract StorageETL newStorageETL(boolean connected) throws StorageManagerException;
 
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("StorageManager{");
+        sb.append("catalogManager=").append(catalogManager);
+        sb.append(", configuration=").append(configuration);
+        sb.append(", storageEngineId='").append(storageEngineId).append('\'');
+        sb.append(", cacheManager=").append(cacheManager);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public CatalogManager getCatalogManager() {
+        return catalogManager;
+    }
+
+    public StorageManager setCatalogManager(CatalogManager catalogManager) {
+        this.catalogManager = catalogManager;
+        return this;
+    }
+
+    public StorageConfiguration getConfiguration() {
+        return configuration;
+    }
+
+    public StorageManager setConfiguration(StorageConfiguration configuration) {
+        this.configuration = configuration;
+        return this;
+    }
+
+    public String getStorageEngineId() {
+        return storageEngineId;
+    }
+
+    public StorageManager setStorageEngineId(String storageEngineId) {
+        this.storageEngineId = storageEngineId;
+        return this;
+    }
+
+    public CacheManager getCacheManager() {
+        return cacheManager;
+    }
+
+    public StorageManager setCacheManager(CacheManager cacheManager) {
+        this.cacheManager = cacheManager;
+        return this;
+    }
 }
