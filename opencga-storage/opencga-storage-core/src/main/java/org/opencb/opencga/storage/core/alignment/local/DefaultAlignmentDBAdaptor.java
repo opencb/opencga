@@ -25,8 +25,12 @@ import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.iterators.ProtoAlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.iterators.SamRecordAlignmentIterator;
 
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -34,13 +38,14 @@ import java.util.List;
  */
 public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
+    private static final String COVERAGE_SUFFIX = ".coverage";
+    private static final String COVERAGE_DATABASE_NAME = "coverage.db";
+
     private static final int MINOR_CHUNK_SIZE = 1000;
     private static final int DEFAULT_CHUNK_SIZE = 1000;
     private static final int DEFAULT_WINDOW_SIZE = 1000000;
 
     private int chunkSize = DEFAULT_CHUNK_SIZE;
-
-    private static final String COVERAGE_DATABASE_NAME = "coverage.db";
 
     public DefaultAlignmentDBAdaptor() {
         this(DEFAULT_CHUNK_SIZE);
@@ -267,6 +272,11 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
         RegionCoverage coverage = null;
 
         Path coverageDBPath = workspace.toAbsolutePath().resolve(COVERAGE_DATABASE_NAME);
+        if (!coverageDBPath.toFile().exists()
+                && (region == null || (region.getEnd() - region.getStart() > 50 * MINOR_CHUNK_SIZE))) {
+            createDBCoverage(path, workspace);
+        }
+
         ChunkFrequencyManager chunkFrequencyManager = new ChunkFrequencyManager(coverageDBPath);
         ChunkFrequencyManager.ChunkFrequency chunkFrequency = null;
         if (region != null) {
@@ -330,12 +340,55 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
         return alignmentOptions;
     }
 
-    public int getChunkSize() {
-        return chunkSize;
+    private void createDBCoverage(Path filePath, Path workspace) throws IOException {
+        SAMFileHeader fileHeader = AlignmentUtils.getFileHeader(filePath);
+
+        Path coverageDBPath = workspace.toAbsolutePath().resolve(COVERAGE_DATABASE_NAME);
+        ChunkFrequencyManager chunkFrequencyManager = new ChunkFrequencyManager(coverageDBPath);
+        List<String> chromosomeNames = new ArrayList<>();
+        List<Integer> chromosomeLengths = new ArrayList<>();
+        fileHeader.getSequenceDictionary().getSequences().forEach(
+                seq -> {
+                    chromosomeNames.add(seq.getSequenceName());
+                    chromosomeLengths.add(seq.getSequenceLength());
+                });
+        chunkFrequencyManager.init(chromosomeNames, chromosomeLengths);
+
+        Path coveragePath = workspace.toAbsolutePath().resolve(filePath.getFileName() + COVERAGE_SUFFIX);
+
+        AlignmentOptions options = new AlignmentOptions();
+        options.setContained(false);
+
+        AlignmentManager alignmentManager = new AlignmentManager(filePath);
+        Iterator<SAMSequenceRecord> iterator = fileHeader.getSequenceDictionary().getSequences().iterator();
+        PrintWriter writer = new PrintWriter(coveragePath.toFile());
+        StringBuilder line;
+        while (iterator.hasNext()) {
+            SAMSequenceRecord next = iterator.next();
+            for (int i = 0; i < next.getSequenceLength(); i += MINOR_CHUNK_SIZE) {
+                Region region = new Region(next.getSequenceName(), i + 1,
+                        Math.min(i + MINOR_CHUNK_SIZE, next.getSequenceLength()));
+                RegionCoverage regionCoverage = alignmentManager.coverage(region, options, null);
+                int meanDepth = Math.min(regionCoverage.meanCoverage(), 255);
+
+                // File columns: chunk   chromosome start   end coverage
+                // chunk format: chrom_id_suffix, where:
+                //      id: int value starting at 0
+                //      suffix: chunkSize + k
+                // eg. 3_4_1k
+
+                line = new StringBuilder();
+                line.append(region.getChromosome()).append("_");
+                line.append(i / MINOR_CHUNK_SIZE).append("_").append(MINOR_CHUNK_SIZE / 1000).append("k");
+                line.append("\t").append(region.getChromosome());
+                line.append("\t").append(region.getStart());
+                line.append("\t").append(region.getEnd());
+                line.append("\t").append(meanDepth);
+                writer.println(line.toString());
+            }
+        }
+        writer.close();
+        chunkFrequencyManager.load(coveragePath, filePath);
     }
 
-    public DefaultAlignmentDBAdaptor setChunkSize(int chunkSize) {
-        this.chunkSize = chunkSize;
-        return this;
-    }
 }

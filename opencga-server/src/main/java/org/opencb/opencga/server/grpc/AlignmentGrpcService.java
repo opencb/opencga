@@ -9,8 +9,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-
-import static org.opencb.opencga.server.grpc.GenericGrpcService.storageManagerFactory;
+import org.opencb.opencga.storage.core.local.AlignmentStorageManager;
 
 /**
  * Created by pfurio on 26/10/16.
@@ -18,9 +17,11 @@ import static org.opencb.opencga.server.grpc.GenericGrpcService.storageManagerFa
 public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceImplBase {
 
     private GenericGrpcService genericGrpcService;
+    private AlignmentStorageManager alignmentStorageManager;
 
     public AlignmentGrpcService(CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration) {
         genericGrpcService = new GenericGrpcService(catalogConfiguration, storageConfiguration);
+        alignmentStorageManager = new AlignmentStorageManager(genericGrpcService.catalogManager, storageConfiguration);
     }
 
     @Override
@@ -34,8 +35,7 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
             String fileIdStr = query.getString("fileId");
             String sessionId = query.getString("sid");
 
-            QueryResult<Long> countQueryResult =
-                    storageManagerFactory.getAlignmentStorageManager().count(studyIdStr, fileIdStr, query, queryOptions, sessionId);
+            QueryResult<Long> countQueryResult = alignmentStorageManager.count(studyIdStr, fileIdStr, query, queryOptions, sessionId);
 
             if (countQueryResult.getNumResults() != 1) {
                 throw new Exception(countQueryResult.getErrorMsg());
@@ -67,7 +67,7 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
         String sessionId = query.getString("sid");
 
         try (AlignmentIterator<Reads.ReadAlignment> iterator =
-                     storageManagerFactory.getAlignmentStorageManager().iterator(studyIdStr, fileIdStr, query, queryOptions, sessionId)) {
+                     alignmentStorageManager.iterator(studyIdStr, fileIdStr, query, queryOptions, sessionId)) {
             while (iterator.hasNext()) {
                 responseObserver.onNext(iterator.next());
             }
@@ -88,7 +88,7 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
         String sessionId = query.getString("sid");
 
         try (AlignmentIterator<SAMRecord> iterator =
-                     storageManagerFactory.getAlignmentStorageManager().iterator(studyIdStr, fileIdStr, query, queryOptions, sessionId,
+                     alignmentStorageManager.iterator(studyIdStr, fileIdStr, query, queryOptions, sessionId,
                              SAMRecord.class)) {
             while (iterator.hasNext()) {
                 ServiceTypesModel.StringResponse response =
