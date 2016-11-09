@@ -22,9 +22,8 @@ import org.opencb.biodata.formats.alignment.io.AlignmentRegionDataWriter;
 import org.opencb.biodata.formats.alignment.sam.io.AlignmentBamDataReader;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
-
-import org.opencb.biodata.tools.alignment.AlignmentManager;
-import org.opencb.biodata.tools.alignment.AlignmentUtils;
+import org.opencb.biodata.tools.alignment.BamManager;
+import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.biodata.tools.alignment.tasks.AlignmentRegionCoverageCalculatorTask;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.DataWriter;
@@ -34,13 +33,13 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StorageETL;
 import org.opencb.opencga.storage.core.StorageManager;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataReader;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataWriter;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentJsonDataReader;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentJsonDataWriter;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
@@ -127,7 +126,7 @@ public abstract class AlignmentStorageManagerOld extends StorageManager<Alignmen
     public URI preTransform(URI inputUri) throws IOException, FileFormatException {
         UriUtils.checkUri(inputUri, "input file", "file");
         Path input = Paths.get(inputUri.getPath());
-        AlignmentUtils.checkBamOrCramFile(new FileInputStream(input.toFile()), input.getFileName().toString(), true);
+        BamUtils.checkBamOrCramFile(new FileInputStream(input.toFile()), input.getFileName().toString(), true);
         return inputUri;
     }
 
@@ -166,7 +165,7 @@ public abstract class AlignmentStorageManagerOld extends StorageManager<Alignmen
 
         // Check if a BAM file is passed and it is sorted.
         // Only binaries and sorted BAM files are accepted at this point.
-        AlignmentUtils.checkBamOrCramFile(new FileInputStream(input.toFile()), input.getFileName().toString(), true);
+        BamUtils.checkBamOrCramFile(new FileInputStream(input.toFile()), input.getFileName().toString(), true);
 
         ObjectMap options = storageEtlConfiguration.getOptions();
         boolean plain = options.getBoolean(Options.PLAIN.key, Options.PLAIN.defaultValue());
@@ -185,7 +184,7 @@ public abstract class AlignmentStorageManagerOld extends StorageManager<Alignmen
 
         //2 Index (bai)
         if (createBai) {
-            new AlignmentManager(input).createIndex(output.resolve(input.getFileName().toString() + ".bai"));
+            new BamManager(input).createIndex(output.resolve(input.getFileName().toString() + ".bai"));
 //            Path bamIndexPath = AlignmentFileUtils.createIndex(input, output.resolve(input.getFileName().toString() + ".bai"));
         }
 

@@ -18,8 +18,8 @@ import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.storage.core.StorageETL;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
-import org.opencb.opencga.storage.core.alignment.local.DefaultAlignmentDBAdaptor;
-import org.opencb.opencga.storage.core.alignment.local.DefaultAlignmentStorageETL;
+import org.opencb.opencga.storage.core.alignment.local.LocalAlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.alignment.local.LocalAlignmentStorageETL;
 import org.opencb.opencga.storage.core.cache.CacheManager;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
@@ -54,8 +54,8 @@ public class AlignmentStorageManager extends StorageManager<AlignmentDBAdaptor> 
         this.cacheManager = new CacheManager(storageConfiguration);
 
         // Fixme: Initialize alignmentETL and alignmentDBAdaptor using reflection
-        this.alignmentDBAdaptor = new DefaultAlignmentDBAdaptor();
-        this.alignmentETL = new DefaultAlignmentStorageETL();
+        this.alignmentDBAdaptor = new LocalAlignmentDBAdaptor();
+        this.alignmentETL = new LocalAlignmentStorageETL();
     }
 
     public void index(String studyIdStr, String fileIdStr, ObjectMap options, String sessionId)
