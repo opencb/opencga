@@ -541,8 +541,8 @@ class Individuals(WS):
         """
         return self.general_method(ws_category1="individuals", action="delete", item_id1=individualId, **options)
 
-    def annotate(self, individual_id, variableSetName, annotationSetName, studyId, json_file=None, data=None,
-                 update=True):
+    def annotate(self, individual_id, variableSetName, annotateSetName, studyId, json_file=None, data=None,
+                 update=True, variable = Variables(), **options):
         """
         This annotate a individual using a json file (this is a post method)
 
@@ -559,7 +559,6 @@ class Individuals(WS):
             data = json.load(fd)
             fd.close()
 
-        variable = Variables()
         variableSetId = str(variable.search(studyId=studyId, name=variableSetName)[0]["id"])
 
         if update:
@@ -569,13 +568,11 @@ class Individuals(WS):
 
                     return self.general_method(ws_category1="individuals", action="update",
                                                item_id1=str(individual_id), ws_category2="annotationSets",
-                                               item_id2=annotationSetName, data=data)
-
-        annotationSetName = annotationSetName + "_" + str(datetime.datetime.now()).replace(" ", "_").replace(":", "_")
+                                               item_id2=annotateSetName, data=data, **options)
 
         return self.general_method(ws_category1="individuals", action="create", item_id1=str(individual_id),
                                    ws_category2="annotationSets", variableSetId=variableSetId,
-                                   annotateSetName=annotationSetName, data=data)
+                                   annotateSetName=annotateSetName, data=data, **options)
 
     def search_by_annotation(self, studyId, variableSetName, *queries, **options):
         """
