@@ -11,9 +11,9 @@ import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.tools.alignment.AlignmentFilters;
-import org.opencb.biodata.tools.alignment.AlignmentManager;
 import org.opencb.biodata.tools.alignment.AlignmentOptions;
-import org.opencb.biodata.tools.alignment.AlignmentUtils;
+import org.opencb.biodata.tools.alignment.BamManager;
+import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.biodata.tools.commons.ChunkFrequencyManager;
 import org.opencb.commons.datastore.core.Query;
@@ -32,7 +32,7 @@ import java.util.List;
 /**
  * Created by pfurio on 26/10/16.
  */
-public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
+public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
     private static final int MINOR_CHUNK_SIZE = 1000;
     private static final int DEFAULT_CHUNK_SIZE = 1000;
@@ -42,11 +42,12 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
     private static final String COVERAGE_DATABASE_NAME = "coverage.db";
 
-    public DefaultAlignmentDBAdaptor() {
+    
+    public LocalAlignmentDBAdaptor() {
         this(DEFAULT_CHUNK_SIZE);
     }
 
-    public DefaultAlignmentDBAdaptor(int chunkSize) {
+    public LocalAlignmentDBAdaptor(int chunkSize) {
         this.chunkSize = chunkSize;
     }
 
@@ -87,7 +88,7 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
             watch.start();
 
             FileUtils.checkFile(path);
-            AlignmentManager alignmentManager = new AlignmentManager(path);
+            BamManager alignmentManager = new BamManager(path);
 
             AlignmentOptions alignmentOptions = parseQueryOptions(options);
             AlignmentFilters alignmentFilters = parseQuery(query);
@@ -136,7 +137,7 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
                 options = new QueryOptions();
             }
 
-            AlignmentManager alignmentManager = new AlignmentManager(path);
+            BamManager alignmentManager = new BamManager(path);
             AlignmentFilters alignmentFilters = parseQuery(query);
             AlignmentOptions alignmentOptions = parseQueryOptions(options);
 
@@ -196,7 +197,7 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
             ObjectMapper objectMapper = new ObjectMapper();
             alignmentGlobalStats = objectMapper.readValue(statsPath.toFile(), AlignmentGlobalStats.class);
         } else {
-            AlignmentManager alignmentManager = new AlignmentManager(path);
+            BamManager alignmentManager = new BamManager(path);
             alignmentGlobalStats = alignmentManager.stats();
             ObjectMapper objectMapper = new ObjectMapper();
             ObjectWriter objectWriter = objectMapper.typedWriter(AlignmentGlobalStats.class);
@@ -229,7 +230,7 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
         AlignmentFilters alignmentFilters = parseQuery(query);
         Region region = parseRegion(query);
 
-        AlignmentManager alignmentManager = new AlignmentManager(path);
+        BamManager alignmentManager = new BamManager(path);
         AlignmentGlobalStats alignmentGlobalStats = alignmentManager.stats(region, alignmentOptions, alignmentFilters);
 
         watch.stop();
@@ -278,7 +279,7 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
             } else {
                 // if region is small enough we calculate all coverage for all positions dynamically
                 // calling the biodata alignment manager
-                AlignmentManager alignmentManager = new AlignmentManager(path);
+                BamManager alignmentManager = new BamManager(path);
                 coverage = alignmentManager.coverage(region, alignmentOptions, alignmentFilters);
             }
         } else {
@@ -286,7 +287,7 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
             // we should return a few thousands mean values
             // and query SQLite database
             windowSize = DEFAULT_WINDOW_SIZE;
-            SAMFileHeader fileHeader = AlignmentUtils.getFileHeader(path);
+            SAMFileHeader fileHeader = BamUtils.getFileHeader(path);
             SAMSequenceRecord seq = fileHeader.getSequenceDictionary().getSequences().get(0);
             int arraySize = Math.min(50 * MINOR_CHUNK_SIZE, seq.getSequenceLength());
 
@@ -334,7 +335,7 @@ public class DefaultAlignmentDBAdaptor implements AlignmentDBAdaptor {
         return chunkSize;
     }
 
-    public DefaultAlignmentDBAdaptor setChunkSize(int chunkSize) {
+    public LocalAlignmentDBAdaptor setChunkSize(int chunkSize) {
         this.chunkSize = chunkSize;
         return this;
     }

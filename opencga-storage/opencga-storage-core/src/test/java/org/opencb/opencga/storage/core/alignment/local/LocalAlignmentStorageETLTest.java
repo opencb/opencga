@@ -28,7 +28,7 @@ import java.nio.file.Paths;
 /**
  * Created by imedina on 01/11/16.
  */
-public class DefaultAlignmentStorageETLTest {
+public class LocalAlignmentStorageETLTest {
     @Test
     public void transform() throws Exception {
 ////        String inputPath = getClass().getResource("/HG00096.chrom20.small.bam").toString();
