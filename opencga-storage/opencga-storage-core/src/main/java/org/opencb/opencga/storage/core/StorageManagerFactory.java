@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.core;
 
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
@@ -38,15 +37,13 @@ public final class StorageManagerFactory {
 
     private static StorageManagerFactory storageManagerFactory;
     private static StorageConfiguration storageConfigurationDefault;
-    private CatalogManager catalogManager;
     private StorageConfiguration storageConfiguration;
 
     private Map<String, AlignmentStorageManager> alignmentStorageManagerMap = new HashMap<>();
     private Map<String, VariantStorageManager> variantStorageManagerMap = new HashMap<>();
     protected static Logger logger = LoggerFactory.getLogger(StorageConfiguration.class);
 
-    private StorageManagerFactory(CatalogManager catalogManager, StorageConfiguration storageConfiguration) {
-        this.catalogManager = catalogManager;
+    private StorageManagerFactory(StorageConfiguration storageConfiguration) {
         this.storageConfiguration = storageConfiguration;
     }
 
@@ -64,10 +61,10 @@ public final class StorageManagerFactory {
 //                throw new UncheckedIOException(e);
 //            }
 //        }
-        return get(null, null);
+        return get(null);
     }
 
-    public static StorageManagerFactory get(CatalogManager catalogManager, StorageConfiguration storageConfiguration) {
+    public static StorageManagerFactory get(StorageConfiguration storageConfiguration) {
         if (storageManagerFactory == null) {
             if (storageConfiguration != null) {
                 configure(storageConfiguration);
@@ -77,7 +74,7 @@ public final class StorageManagerFactory {
             Objects.requireNonNull(storageConfiguration, "Storage configuration needed");
             // TODO: Uncomment the line below once variantStorageManager starts needing to know catalog
 //            Objects.requireNonNull(catalogManager, "Catalog manager needed");
-            storageManagerFactory = new StorageManagerFactory(catalogManager, storageConfiguration);
+            storageManagerFactory = new StorageManagerFactory(storageConfiguration);
             return storageManagerFactory;
 
         }
@@ -91,7 +88,6 @@ public final class StorageManagerFactory {
 
     public AlignmentStorageManager getAlignmentStorageManager(String storageEngineName)
             throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-//        return new AlignmentStorageManager(catalogManager, storageConfiguration);
         return getStorageManager("ALIGNMENT", storageEngineName, alignmentStorageManagerMap);
     }
 
@@ -116,19 +112,20 @@ public final class StorageManagerFactory {
             throw new NullPointerException();
         }
         if (!storageManagerMap.containsKey(storageEngineName)) {
-            T storageManager = null;
+            String clazz = null;
             switch (bioformat.toUpperCase()) {
                 case "ALIGNMENT":
-                    storageManager = (T) new AlignmentStorageManager(catalogManager, storageConfiguration);
+                    clazz = this.storageConfiguration.getStorageEngine(storageEngineName).getAlignment().getManager();
                     break;
                 case "VARIANT":
-                    String clazz = this.storageConfiguration.getStorageEngine(storageEngineName).getVariant().getManager();
-                    storageManager = (T) Class.forName(clazz).newInstance();
-                    storageManager.setConfiguration(this.storageConfiguration, storageEngineName);
+                    clazz = this.storageConfiguration.getStorageEngine(storageEngineName).getVariant().getManager();
                     break;
                 default:
                     break;
             }
+
+            T storageManager = (T) Class.forName(clazz).newInstance();
+            storageManager.setConfiguration(this.storageConfiguration, storageEngineName);
 
             storageManagerMap.put(storageEngineName, storageManager);
         }

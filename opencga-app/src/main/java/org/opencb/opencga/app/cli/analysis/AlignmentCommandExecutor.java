@@ -16,8 +16,6 @@
 
 package org.opencb.opencga.app.cli.analysis;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import ga4gh.Reads;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
@@ -27,20 +25,14 @@ import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
-import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
@@ -56,7 +48,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * Created on 09/05/16
@@ -226,7 +217,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         return alignmentStorageManager;
     }
 
-    private void index() throws CatalogException, StorageManagerException, IOException {
+    private void index() throws Exception {
         AnalysisCliOptionsParser.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
 
         ObjectMap objectMap = new ObjectMap();
@@ -246,7 +237,8 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
 
         String sessionId = cliOptions.commonOptions.sessionId;
 
-        AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageConfiguration);
+        org.opencb.opencga.storage.core.local.AlignmentStorageManager alignmentStorageManager =
+                new org.opencb.opencga.storage.core.local.AlignmentStorageManager(catalogManager, storageConfiguration);
         alignmentStorageManager.index(null, cliOptions.fileId, params, sessionId);
     }
 

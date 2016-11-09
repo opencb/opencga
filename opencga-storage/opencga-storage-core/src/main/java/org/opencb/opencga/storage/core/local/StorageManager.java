@@ -1,6 +1,26 @@
-package org.opencb.opencga.storage.core;
+/*
+ * Copyright 2015-2016 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
+package org.opencb.opencga.storage.core.local;
+
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.MemoryUsageMonitor;
+import org.opencb.opencga.storage.core.StorageETL;
+import org.opencb.opencga.storage.core.StorageETLResult;
+import org.opencb.opencga.storage.core.cache.CacheManager;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
@@ -11,30 +31,33 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by pfurio on 07/11/16.
+ * @author imedina
  */
-public abstract class StorageManager<DBADAPTOR> {
+public abstract class StorageManager {
 
     protected String storageEngineId;
     protected StorageConfiguration configuration;
+    protected CatalogManager catalogManager;
+    protected CacheManager cacheManager;
 
     protected Logger logger;
 
     public StorageManager() {
     }
 
-    public StorageManager(StorageConfiguration configuration) {
-        this(configuration.getDefaultStorageEngineId(), configuration);
-//        this.configuration = configuration;
+    public StorageManager(CatalogManager catalogManager, StorageConfiguration configuration) {
+        this(catalogManager, configuration, configuration.getDefaultStorageEngineId());
     }
 
-    public StorageManager(String storageEngineId, StorageConfiguration configuration) {
-        setConfiguration(configuration, storageEngineId);
+    public StorageManager(CatalogManager catalogManager, StorageConfiguration configuration, String storageEngineId) {
+        setConfiguration(catalogManager, configuration, storageEngineId);
     }
 
-    public void setConfiguration(StorageConfiguration configuration, String storageEngineId) {
+    public void setConfiguration(CatalogManager catalogManager, StorageConfiguration configuration, String storageEngineId) {
+        this.catalogManager = catalogManager;
         this.configuration = configuration;
         this.storageEngineId = storageEngineId;
+        this.cacheManager = new CacheManager(configuration);
     }
 
     public StorageConfiguration getConfiguration() {
@@ -45,10 +68,15 @@ public abstract class StorageManager<DBADAPTOR> {
         return storageEngineId;
     }
 
+    public CatalogManager getCatalogManager() {
+        return catalogManager;
+    }
+
     public List<StorageETLResult> index(List<URI> inputFiles, URI outdirUri, boolean doExtract, boolean doTransform, boolean doLoad)
             throws StorageManagerException {
 
         List<StorageETLResult> results = new ArrayList<>(inputFiles.size());
+        boolean abortOnFail = true;
 
         // Check the database connection before we start
         if (doLoad) {
@@ -137,12 +165,6 @@ public abstract class StorageManager<DBADAPTOR> {
         }
         return inputFileUri;
     }
-
-    public DBADAPTOR getDBAdaptor() throws StorageManagerException {
-        return getDBAdaptor("");
-    }
-
-    public abstract DBADAPTOR getDBAdaptor(String dbName) throws StorageManagerException;
 
     public abstract void testConnection() throws StorageManagerException;
 
