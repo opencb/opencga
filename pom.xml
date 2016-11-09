@@ -322,7 +322,7 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>18.0</version>
+                <version>15.0</version>
                 <!--DO NOT UPGRADE! HBase requires this guava version-->
             </dependency>
             <dependency>
