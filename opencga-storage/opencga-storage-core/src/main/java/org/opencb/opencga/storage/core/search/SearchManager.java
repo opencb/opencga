@@ -1,6 +1,8 @@
 package org.opencb.opencga.storage.core.search;
 
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.opencb.biodata.models.variant.Variant;
@@ -27,6 +29,8 @@ public class SearchManager {
 
         if (searchConfiguration.getHost() != null && searchConfiguration.getCollection() != null && solrServer == null) {
             solrServer = new HttpSolrClient(searchConfiguration.getHost() + "/" + searchConfiguration.getCollection());
+            HttpClientUtil.setBasicAuth((DefaultHttpClient) solrServer.getHttpClient(), searchConfiguration.getUser(),
+                    searchConfiguration.getPassword());
         }
 
         if (variantToSolrConverter == null) {

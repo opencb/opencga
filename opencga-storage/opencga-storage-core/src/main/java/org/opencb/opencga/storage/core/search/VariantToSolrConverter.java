@@ -22,7 +22,7 @@ public class VariantToSolrConverter implements ComplexTypeConverter<Variant, Var
 
         VariantSolr variantSolr = new VariantSolr();
 
-        variantSolr.setId(variant.getId());
+        variantSolr.setDbSNP(variant.getId());
         variantSolr.setType(variant.getType().toString());
         variantSolr.setChromosome(variant.getChromosome());
         variantSolr.setStart(variant.getStart());
@@ -31,6 +31,9 @@ public class VariantToSolrConverter implements ComplexTypeConverter<Variant, Var
         VariantAnnotation variantAnnotation = variant.getAnnotation();
 
         if (variantAnnotation != null) {
+
+            variantSolr.setId(variantAnnotation.getChromosome() + "_" + variantAnnotation.getStart() + "_"
+                    + variantAnnotation.getReference() + "_" + variantAnnotation.getAlternate());
 
             List<ConsequenceType> consequenceTypes = variantAnnotation.getConsequenceTypes();
 

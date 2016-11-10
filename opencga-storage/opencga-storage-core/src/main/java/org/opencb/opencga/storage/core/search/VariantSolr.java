@@ -15,6 +15,7 @@ public class VariantSolr {
 
 
     private String id;
+    private String dbSNP;
     private String type;
     private String chromosome;
     private int Start;
@@ -34,6 +35,15 @@ public class VariantSolr {
         this.accessions = new HashSet<String>();
         this.geneNames = new HashSet<String>();
         this.populations = new HashMap<String, Float>();
+    }
+
+    public String getDbSNP() {
+        return dbSNP;
+    }
+    @Field
+    public VariantSolr setDbSNP(String dbSNP) {
+        this.dbSNP = dbSNP;
+        return this;
     }
 
     public double getCaddRaw() {
