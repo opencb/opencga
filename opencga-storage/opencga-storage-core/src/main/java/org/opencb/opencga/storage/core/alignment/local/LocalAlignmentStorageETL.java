@@ -7,9 +7,9 @@ import org.codehaus.jackson.map.ObjectWriter;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.tools.alignment.AlignmentManager;
 import org.opencb.biodata.tools.alignment.AlignmentOptions;
-import org.opencb.biodata.tools.alignment.AlignmentUtils;
+import org.opencb.biodata.tools.alignment.BamManager;
+import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.StorageETL;
@@ -29,14 +29,14 @@ import java.util.*;
 /**
  * Created by pfurio on 31/10/16.
  */
-public class DefaultAlignmentStorageETL implements StorageETL {
+public class LocalAlignmentStorageETL implements StorageETL {
 
     private static final String COVERAGE_SUFFIX = ".coverage";
     private static final String COVERAGE_DATABASE_NAME = "coverage.db";
 
     private static final int MINOR_CHUNK_SIZE = 1000;
 
-    public DefaultAlignmentStorageETL() {
+    public LocalAlignmentStorageETL() {
         super();
     }
 
@@ -50,7 +50,7 @@ public class DefaultAlignmentStorageETL implements StorageETL {
         // Check if a BAM file is passed and it is sorted.
         // Only binaries and sorted BAM files are accepted at this point.
         Path inputPath = Paths.get(input.getRawPath());
-        AlignmentUtils.checkBamOrCramFile(new FileInputStream(inputPath.toFile()), inputPath.getFileName().toString(), true);
+        BamUtils.checkBamOrCramFile(new FileInputStream(inputPath.toFile()), inputPath.getFileName().toString(), true);
         return input;
     }
 
@@ -63,22 +63,22 @@ public class DefaultAlignmentStorageETL implements StorageETL {
         FileUtils.checkDirectory(workspace);
 
         // 1. Check if the bai does not exist and create it
-        AlignmentManager alignmentManager = new AlignmentManager(path);
+        BamManager bamManager = new BamManager(path);
         if (!path.getParent().resolve(path.getFileName().toString() + ".bai").toFile().exists()) {
-            alignmentManager.createIndex();
+            bamManager.createIndex();
         }
 
         // 2. Calculate stats and store in a file
         Path statsPath = workspace.resolve(path.getFileName() + ".stats");
         if (!statsPath.toFile().exists()) {
-            AlignmentGlobalStats stats = alignmentManager.stats();
+            AlignmentGlobalStats stats = bamManager.stats();
             ObjectMapper objectMapper = new ObjectMapper();
             ObjectWriter objectWriter = objectMapper.typedWriter(AlignmentGlobalStats.class);
             objectWriter.writeValue(statsPath.toFile(), stats);
         }
 
         // 3. Calculate coverage and store in SQLite
-        SAMFileHeader fileHeader = AlignmentUtils.getFileHeader(path);
+        SAMFileHeader fileHeader = BamUtils.getFileHeader(path);
 //        long start = System.currentTimeMillis();
         initDatabase(fileHeader.getSequenceDictionary().getSequences(), workspace);
 //        System.out.println("SQLite database initialization, in " + ((System.currentTimeMillis() - start) / 1000.0f)
@@ -98,7 +98,7 @@ public class DefaultAlignmentStorageETL implements StorageETL {
             for (int i = 0; i < next.getSequenceLength(); i += MINOR_CHUNK_SIZE) {
                 Region region = new Region(next.getSequenceName(), i + 1,
                         Math.min(i + MINOR_CHUNK_SIZE, next.getSequenceLength()));
-                RegionCoverage regionCoverage = alignmentManager.coverage(region, options, null);
+                RegionCoverage regionCoverage = bamManager.coverage(region, options, null);
                 int meanDepth = Math.min(regionCoverage.meanCoverage(), 255);
 
                 // File columns: chunk   chromosome start   end coverage

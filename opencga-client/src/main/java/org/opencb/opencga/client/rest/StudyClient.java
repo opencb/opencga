@@ -125,6 +125,14 @@ public class StudyClient extends AbstractParentClient<Study, StudyAclEntry> {
         return execute(STUDY_URL, studyId, "variants", options, GET, Variant.class);
     }
 
+    public QueryResponse<Long> countVariants(String studyId, QueryOptions options) throws CatalogException, IOException {
+        return execute(STUDY_URL, studyId, "variants", options, GET, Long.class);
+    }
+
+    public QueryResponse<ObjectMap> getVariantsGeneric(String studyId, QueryOptions options) throws CatalogException, IOException {
+        return execute(STUDY_URL, studyId, "variants", options, GET, ObjectMap.class);
+    }
+
     public QueryResponse<Alignment> getAlignments(String studyId, String sampleId, String fileId, String region, Query query,
                                                   QueryOptions options) throws CatalogException, IOException {
         ObjectMap params = new ObjectMap(query);

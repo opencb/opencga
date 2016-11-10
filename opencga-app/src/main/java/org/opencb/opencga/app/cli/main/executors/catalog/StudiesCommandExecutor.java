@@ -18,7 +18,6 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -497,18 +496,19 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getStudyClient().getSamples(studiesCommandOptions.samplesCommandOptions.id, queryOptions);
     }
 
-    private QueryResponse<Variant> variants() throws CatalogException, IOException {
+    private QueryResponse variants() throws CatalogException, IOException {
 
         logger.debug("Listing variants of a study.");
 
         QueryOptions queryOptions = new QueryOptions();
+        queryOptions.putAll(studiesCommandOptions.commonCommandOptions.dynamic);
 
-        queryOptions.putIfNotEmpty("ids", studiesCommandOptions.variantsCommandOptions.ids);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ID.key(), studiesCommandOptions.variantsCommandOptions.ids);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.REGION.key(), studiesCommandOptions.variantsCommandOptions.region);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(),
                 studiesCommandOptions.variantsCommandOptions.chromosome);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.GENE.key(), studiesCommandOptions.variantsCommandOptions.gene);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.TYPE.key(), studiesCommandOptions.variantsCommandOptions.type);
+        queryOptions.putIfNotNull(CatalogVariantDBAdaptor.VariantQueryParams.TYPE.key(), studiesCommandOptions.variantsCommandOptions.type);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.REFERENCE.key(),
                 studiesCommandOptions.variantsCommandOptions.reference);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ALTERNATE.key(),
@@ -567,20 +567,27 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                 studiesCommandOptions.variantsCommandOptions.functionalScore);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.UNKNOWN_GENOTYPE.key(),
                     studiesCommandOptions.variantsCommandOptions.unknownGenotype);
-        queryOptions.put("samplesMetadata", studiesCommandOptions.variantsCommandOptions.samplesMetadata);
         queryOptions.put(QueryOptions.SORT, studiesCommandOptions.variantsCommandOptions.sort);
-        queryOptions.putIfNotEmpty("groupBy", studiesCommandOptions.variantsCommandOptions.groupBy);
-        queryOptions.put("histogram", studiesCommandOptions.variantsCommandOptions.histogram);
-        queryOptions.putIfNotEmpty("interval", studiesCommandOptions.variantsCommandOptions.interval);
-        queryOptions.putIfNotEmpty("merge", studiesCommandOptions.variantsCommandOptions.merge);
+//        queryOptions.putIfNotEmpty("merge", studiesCommandOptions.variantsCommandOptions.merge);
+
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.variantsCommandOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.variantsCommandOptions.exclude);
         queryOptions.putIfNotEmpty(QueryOptions.LIMIT, studiesCommandOptions.variantsCommandOptions.limit);
         queryOptions.putIfNotEmpty(QueryOptions.SKIP, studiesCommandOptions.variantsCommandOptions.skip);
 
+        queryOptions.put("samplesMetadata", studiesCommandOptions.variantsCommandOptions.samplesMetadata);
+        queryOptions.putIfNotEmpty("groupBy", studiesCommandOptions.variantsCommandOptions.groupBy);
+        queryOptions.put("histogram", studiesCommandOptions.variantsCommandOptions.histogram);
+        queryOptions.putIfNotEmpty("interval", studiesCommandOptions.variantsCommandOptions.interval);
         queryOptions.put("count", studiesCommandOptions.variantsCommandOptions.count);
 
-        return openCGAClient.getStudyClient().getVariants(studiesCommandOptions.variantsCommandOptions.id, queryOptions);
+        if (studiesCommandOptions.variantsCommandOptions.count) {
+            return openCGAClient.getStudyClient().countVariants(studiesCommandOptions.variantsCommandOptions.id, queryOptions);
+        } else if (studiesCommandOptions.variantsCommandOptions.samplesMetadata || StringUtils.isNoneEmpty(studiesCommandOptions.variantsCommandOptions.groupBy) || studiesCommandOptions.variantsCommandOptions.histogram) {
+            return openCGAClient.getStudyClient().getVariantsGeneric(studiesCommandOptions.variantsCommandOptions.id, queryOptions);
+        } else {
+            return openCGAClient.getStudyClient().getVariants(studiesCommandOptions.variantsCommandOptions.id, queryOptions);
+        }
     }
 
     /************************************************* Groups commands *********************************************************/
