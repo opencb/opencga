@@ -16,8 +16,24 @@
 
 package org.opencb.opencga.app.cli.main.io;
 
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.alignment.Alignment;
+import org.opencb.biodata.models.feature.Genotype;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.GenotypeJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -30,10 +46,24 @@ import java.nio.file.Path;
  */
 public class JsonWriter implements IWriter {
 
+    protected Logger logger = LoggerFactory.getLogger(JsonWriter.class);
+    private final ObjectMapper objectMapper;
+
+    public JsonWriter() {
+        // Same options as in OpenCGAWSServer
+        objectMapper = new ObjectMapper();
+        objectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+        objectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
+        objectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
+        objectMapper.addMixIn(Genotype.class, GenotypeJsonMixin.class);
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+    }
+
     @Override
     public void print(QueryResponse queryResponse, boolean beauty) {
         if (!checkErrors(queryResponse)) {
-            generalPrint(queryResponse, beauty);
+            generalPrint(queryResponse, beauty, System.out);
         }
     }
 
@@ -43,15 +73,14 @@ public class JsonWriter implements IWriter {
             return;
         }
 
-        // Redirect the output
-        try {
-            FileOutputStream fos = new FileOutputStream(filePath.toFile());
+        try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
             PrintStream ps = new PrintStream(fos);
-            System.setOut(ps);
-        } catch (FileNotFoundException e) {
+            generalPrint(queryResponse, beauty, ps);
+//            System.setOut(ps);
+        } catch (IOException e) {
+            // TODO: Throw exception?
             e.printStackTrace();
         }
-        generalPrint(queryResponse, beauty);
     }
 
     /**
@@ -61,29 +90,31 @@ public class JsonWriter implements IWriter {
      * @return true if the query gave an error.
      */
     private boolean checkErrors(QueryResponse queryResponse) {
-        if (!queryResponse.getError().isEmpty()) {
-            System.out.println(queryResponse.getError());
-            return true;
+        boolean errors = false;
+        if (StringUtils.isNotEmpty(queryResponse.getError())) {
+            logger.error(queryResponse.getError());
+            errors = true;
         }
 
         // Print warnings
-        if (!queryResponse.getWarning().isEmpty()) {
-            System.out.println(queryResponse.getWarning());
+        if (StringUtils.isNotEmpty(queryResponse.getWarning())) {
+            logger.warn(queryResponse.getWarning());
         }
 
-        return false;
+        return errors;
     }
 
-    private void generalPrint(QueryResponse queryResponse, boolean beauty) {
+    private void generalPrint(QueryResponse queryResponse, boolean beauty, PrintStream out) {
+        ObjectWriter objectWriter;
         if (beauty) {
-            try {
-                System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().
-                        writeValueAsString(queryResponse.getResponse()));
-            } catch (IOException e) {
-                System.out.println("Error parsing the queryResponse to print as a beautiful JSON");
-            }
+            objectWriter = objectMapper.writerWithDefaultPrettyPrinter();
         } else {
-            System.out.println(queryResponse.getResponse());
+            objectWriter = objectMapper.writer();
+        }
+        try {
+            out.println(objectWriter.writeValueAsString(queryResponse.getResponse()));
+        } catch (IOException e) {
+            logger.error("Error parsing the queryResponse to print as " + (beauty ? "a beautiful" : "") + " JSON", e);
         }
     }
 }

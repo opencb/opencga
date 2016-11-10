@@ -20,6 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
@@ -469,8 +470,8 @@ public class StudyCommandOptions {
         @Parameter(names = {"--gene"}, description = "List of genes", arity = 1)
         public String gene;
 
-        @Parameter(names = {"--type"}, description = "Variant type: [SNV, MNV, INDEL, SV, CNV]", arity = 1)
-        public String type;
+        @Parameter(names = {"--type"}, description = "Variant types: [SNV, MNV, INDEL, SV, CNV]", arity = 1)
+        public VariantType type;
 
         @Parameter(names = {"--reference"}, description = "Reference allele", arity = 1)
         public String reference;
@@ -604,8 +605,8 @@ public class StudyCommandOptions {
         @Parameter(names = {"--interval"}, description = "Histogram interval size. Default:2000", arity = 1)
         public String interval;
 
-        @Parameter(names = {"--merge"}, description = "Merge results", arity = 1)
-        public String merge;
+//        @Parameter(names = {"--merge"}, description = "Merge results", arity = 1)
+//        public String merge;
 
     }
 
