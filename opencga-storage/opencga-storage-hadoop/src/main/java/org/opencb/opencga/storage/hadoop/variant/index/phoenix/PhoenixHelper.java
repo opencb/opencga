@@ -53,8 +53,8 @@ public class PhoenixHelper {
         if (!sql.startsWith("explain") && !sql.startsWith("EXPLAIN")) {
             sql = "EXPLAIN " + sql;
         }
-        try (Statement statement = con.createStatement()) {
-            ResultSet resultSet = statement.executeQuery(sql);
+        try (Statement statement = con.createStatement();
+             ResultSet resultSet = statement.executeQuery(sql)) {
             return QueryUtil.getExplainPlan(resultSet);
         }
     }
@@ -202,8 +202,8 @@ public class PhoenixHelper {
         String sql = "SELECT * FROM " + SchemaUtil.getEscapedFullTableName(tableName) + " LIMIT 0";
         VariantPhoenixHelper.logger.debug(sql);
 
-        try (Statement statement = con.createStatement()) {
-            ResultSet resultSet = statement.executeQuery(sql);
+        try (Statement statement = con.createStatement();
+             ResultSet resultSet = statement.executeQuery(sql)) {
             ResultSetMetaData metaData = resultSet.getMetaData();
             List<Column> columns = new ArrayList<>(metaData.getColumnCount());
             // 1-based
