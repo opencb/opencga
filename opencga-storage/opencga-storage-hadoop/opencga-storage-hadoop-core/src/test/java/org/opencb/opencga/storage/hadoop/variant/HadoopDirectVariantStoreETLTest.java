@@ -91,7 +91,7 @@ public class HadoopDirectVariantStoreETLTest implements HadoopVariantStorageMana
         HadoopDirectVariantStorageETL etl = new HadoopDirectVariantStorageETL(sconfig, "hadoop", dbAdaptor , mrexec, conf, credentials, variantReaderUtils, options);
         URI load = etl.load(uri);
         System.out.println(load);
-        
+
     }
 
     /**

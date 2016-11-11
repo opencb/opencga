@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.*;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
@@ -28,23 +28,23 @@ public class PhoenixHelper {
 
     public static final PTableType DEFAULT_TABLE_TYPE = PTableType.TABLE;
     private final Configuration conf;
-    protected static Logger logger = LoggerFactory.getLogger(VariantPhoenixHelper.class);
+    private static Logger logger = LoggerFactory.getLogger(PhoenixHelper.class);
 
     public PhoenixHelper(Configuration conf) {
         this.conf = conf;
     }
 
     public boolean execute(Connection con, String sql) throws SQLException {
-        VariantPhoenixHelper.logger.debug(sql);
+        logger.debug(sql);
         try (Statement statement = con.createStatement()) {
             return statement.execute(sql);
         }
     }
 
-    public String explain(Connection con, String sql, Consumer<String> logger) throws SQLException {
+    public String explain(Connection con, String sql, BiConsumer<Logger, String> loggerMethod) throws SQLException {
         String explain = explain(con, sql);
         for (String s : explain.split("\n")) {
-            logger.accept(" | " +  s);
+            loggerMethod.accept(logger, " | " +  s);
         }
         return explain;
     }
@@ -105,12 +105,12 @@ public class PhoenixHelper {
             logger.info("Adding missing columns: " + missingColumns);
             if (oneCall) {
                 String sql = buildAlterAddColumns(tableName, missingColumns, true);
-                VariantPhoenixHelper.logger.info(sql);
+                logger.info(sql);
                 execute(con, sql);
             } else {
                 for (Column column : missingColumns) {
                     String sql = buildAlterAddColumn(tableName, column.column(), column.sqlType(), true);
-                    VariantPhoenixHelper.logger.info(sql);
+                    logger.info(sql);
                     execute(con, sql);
                 }
             }
@@ -200,7 +200,7 @@ public class PhoenixHelper {
 
     public List<Column> getColumns(Connection con, String tableName) throws SQLException {
         String sql = "SELECT * FROM " + SchemaUtil.getEscapedFullTableName(tableName) + " LIMIT 0";
-        VariantPhoenixHelper.logger.debug(sql);
+        logger.debug(sql);
 
         try (Statement statement = con.createStatement()) {
             ResultSet resultSet = statement.executeQuery(sql);

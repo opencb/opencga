@@ -265,7 +265,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 if (options.getBoolean("explain")) {
                     String sql = queryParser.parse(query, options);
                     try {
-                        warn = phoenixHelper.getPhoenixHelper().explain(getJdbcConnection(), sql, logger::warn);
+                        warn = phoenixHelper.getPhoenixHelper().explain(getJdbcConnection(), sql, Logger::warn);
 //                        logger.warn("EXPLANATION: \n" + warn);
                     } catch (SQLException e) {
                         throw new RuntimeException(e);
@@ -419,7 +419,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             try {
                 if (true) {
                     logger.info("---- " + "EXPLAIN " + sql);
-                    phoenixHelper.getPhoenixHelper().explain(getJdbcConnection(), sql, logger::info);
+                    phoenixHelper.getPhoenixHelper().explain(getJdbcConnection(), sql, Logger::info);
 //                    logger.info("EXPLANATION: \n" + explain);
 //                    try (Statement statement = getJdbcConnection().createStatement()) {
 //                        ResultSet resultSet = statement.executeQuery("EXPLAIN " + sql);
