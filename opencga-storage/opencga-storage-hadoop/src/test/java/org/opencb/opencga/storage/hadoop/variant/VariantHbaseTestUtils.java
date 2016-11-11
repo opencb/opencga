@@ -120,8 +120,12 @@ public class VariantHbaseTestUtils {
 
     public static void printVariantsFromVariantsTable(VariantHadoopDBAdaptor dbAdaptor, Path dir) throws IOException {
         String tableName = HadoopVariantStorageManager.getVariantTableName(VariantStorageManagerTestUtils.DB_NAME, dbAdaptor.getConfiguration());
-        System.out.println("Query from HBase : " + tableName);
         HBaseManager hm = new HBaseManager(configuration.get());
+        if (!hm.tableExists(tableName)) {
+            System.out.println("Table " + tableName + " does not exist!");
+            return;
+        }
+        System.out.println("Query from HBase : " + tableName);
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
         Path outputFile;
         if (dir.toFile().isDirectory()) {

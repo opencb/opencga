@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.client.rest;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
@@ -33,6 +34,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -220,7 +222,7 @@ public abstract class AbstractParentClient<T, A> {
             } else {
                 queryResponse = (QueryResponse<T>) callUploadRest(path, params, clazz);
             }
-            int numResults = queryResponse.getResponse().get(0).getNumResults();
+            int numResults = queryResponse.getResponse().isEmpty() ? 0 : queryResponse.getResponse().get(0).getNumResults();
 
             if (finalQueryResponse == null) {
                 finalQueryResponse = queryResponse;
@@ -231,7 +233,7 @@ public abstract class AbstractParentClient<T, A> {
                 }
             }
 
-            int numTotalResults = finalQueryResponse.getResponse().get(0).getNumResults();
+            int numTotalResults = queryResponse.getResponse().isEmpty() ? 0 : finalQueryResponse.getResponse().get(0).getNumResults();
             if (numResults < limit || numTotalResults == numRequiredFeatures || numResults == 0) {
                 break;
             }
@@ -341,7 +343,17 @@ public abstract class AbstractParentClient<T, A> {
         if (json != null && !json.isEmpty()) {
             ObjectReader reader = jsonObjectMapper
                     .readerFor(jsonObjectMapper.getTypeFactory().constructParametrizedType(QueryResponse.class, QueryResult.class, clazz));
-            return reader.readValue(json);
+            try {
+                return reader.readValue(json);
+            } catch (JsonParseException e) {
+                if (json.startsWith("<html>")) {
+                    if (json.contains("504 Gateway Time-out")) {
+                        return new QueryResponse<>("", 0, "", "Error 504 Gateway Time-out. The server didn't respond in time.", null,
+                                Collections.emptyList());
+                    }
+                }
+                throw e;
+            }
         } else {
             return new QueryResponse<>();
         }

@@ -249,7 +249,7 @@ public class VariantVcfExporter implements DataWriter<Variant> {
                     writer.add(variantContext);
                 }
             } catch (RuntimeException e) {
-                e.printStackTrace(System.err);
+                logger.error("Error exporting variant " + variant, e);
                 failedVariants++;
             }
         }

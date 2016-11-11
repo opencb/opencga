@@ -41,8 +41,12 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
         try {
             super.before();
         } finally {
-            if (!fileIndexed) {
-                VariantHbaseTestUtils.printVariantsFromVariantsTable((VariantHadoopDBAdaptor) dbAdaptor);
+            try {
+                if (!fileIndexed) {
+                    VariantHbaseTestUtils.printVariantsFromVariantsTable((VariantHadoopDBAdaptor) dbAdaptor);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
