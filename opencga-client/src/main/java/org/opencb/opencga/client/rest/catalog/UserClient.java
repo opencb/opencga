@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.client.rest;
+package org.opencb.opencga.client.rest.catalog;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -30,11 +30,11 @@ import java.io.IOException;
 /**
  * Created by imedina on 04/05/16.
  */
-public class UserClient extends AbstractParentClient<User, User> {
+public class UserClient extends CatalogClient<User, User> {
 
     private static final String USERS_URL = "users";
 
-    UserClient(String userId, String sessionId, ClientConfiguration configuration) {
+    public UserClient(String userId, String sessionId, ClientConfiguration configuration) {
         super(userId, sessionId, configuration);
 
         this.category = USERS_URL;
@@ -87,7 +87,7 @@ public class UserClient extends AbstractParentClient<User, User> {
         }
         return response;
     }*/
-    QueryResponse<ObjectMap> login(String user, String password) {
+    public QueryResponse<ObjectMap> login(String user, String password) {
         QueryResponse<ObjectMap> response = null;
         ObjectMap p = new ObjectMap("password", password);
         ObjectMapper mapper = new ObjectMapper();
@@ -101,7 +101,7 @@ public class UserClient extends AbstractParentClient<User, User> {
         return response;
     }
 
-    QueryResponse<ObjectMap> logout() {
+    public QueryResponse<ObjectMap> logout() {
         QueryResponse<ObjectMap> response = null;
         try {
             response = execute(USERS_URL, getUserId(), "logout", null, GET, ObjectMap.class);

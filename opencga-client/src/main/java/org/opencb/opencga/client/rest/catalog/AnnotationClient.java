@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.client.rest.commons;
+package org.opencb.opencga.client.rest.catalog;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.rest.AbstractParentClient;
 
 import java.io.IOException;
 
 /**
  * Created by pfurio on 28/07/16.
  */
-public abstract class AnnotationClient<T, U> extends AbstractParentClient<T, U> {
+public abstract class AnnotationClient<T, U> extends CatalogClient<T, U> {
 
     protected AnnotationClient(String userId, String sessionId, ClientConfiguration configuration) {
         super(userId, sessionId, configuration);

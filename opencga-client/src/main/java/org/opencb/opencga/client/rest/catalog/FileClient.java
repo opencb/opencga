@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.client.rest;
+package org.opencb.opencga.client.rest.catalog;
 
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -32,11 +32,11 @@ import java.net.URI;
 /**
  * Created by swaathi on 10/05/16.
  */
-public class FileClient extends AbstractParentClient<File, FileAclEntry> {
+public class FileClient extends CatalogClient<File, FileAclEntry> {
 
     private static final String FILES_URL = "files";
 
-    protected FileClient(String userId, String sessionId, ClientConfiguration configuration) {
+    public FileClient(String userId, String sessionId, ClientConfiguration configuration) {
         super(userId, sessionId, configuration);
 
         this.category = FILES_URL;

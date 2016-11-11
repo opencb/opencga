@@ -22,8 +22,10 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
-import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,13 +37,12 @@ import javax.ws.rs.client.WebTarget;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Created by imedina on 04/05/16.
  */
-public abstract class AbstractParentClient<T, A> {
+public abstract class AbstractParentClient {
 
     protected Client client;
 
@@ -49,11 +50,7 @@ public abstract class AbstractParentClient<T, A> {
     private String sessionId;
     private ClientConfiguration configuration;
 
-    protected String category;
-    protected Class<T> clazz;
-    protected Class<A> aclClass;
-
-    protected static ObjectMapper jsonObjectMapper;
+    private static ObjectMapper jsonObjectMapper;
 
     private static final int BATCH_SIZE = 2000;
     private static final int DEFAULT_SKIP = 0;
@@ -70,81 +67,10 @@ public abstract class AbstractParentClient<T, A> {
         init();
     }
 
-    public enum AclParams {
-        ADD_PERMISSIONS("addPermissions"),
-        REMOVE_PERMISSIONS("removePermissions"),
-        SET_PERMISSIONS("setPermissions");
-
-        private String key;
-
-        AclParams(String value) {
-            this.key = value;
-        }
-
-        public String key() {
-            return this.key;
-        }
-    }
-
     private void init() {
         this.logger = LoggerFactory.getLogger(this.getClass().toString());
         this.client = ClientBuilder.newClient();
         jsonObjectMapper = new ObjectMapper();
-    }
-
-
-    public QueryResponse<Long> count(Query query) throws IOException {
-        return execute(category, "count", query, GET, Long.class);
-    }
-
-    public QueryResponse<T> get(String id, QueryOptions options) throws CatalogException, IOException {
-        return execute(category, id, "info", options, GET, clazz);
-    }
-
-    public QueryResponse<T> search(Query query, QueryOptions options) throws IOException {
-        ObjectMap myQuery = new ObjectMap(query);
-        myQuery.putAll(options);
-        return execute(category, "search", myQuery, GET, clazz);
-    }
-
-    public QueryResponse<T> update(String id, ObjectMap params) throws CatalogException, IOException {
-        //TODO REVISAR
-        if (params.containsKey("method") && params.get("method").equals("GET")) {
-            return execute(category, id, "update", params, GET, clazz);
-        }
-        ObjectMapper mapper = new ObjectMapper();
-        String json = mapper.writeValueAsString(params);
-        ObjectMap p = new ObjectMap("body", json);
-        logger.debug("Json in update client: " + json);
-        return execute(category, id, "update", p, POST, clazz);
-    }
-
-    public QueryResponse<T> delete(String id, ObjectMap params) throws CatalogException, IOException {
-        return execute(category, id, "delete", params, GET, clazz);
-    }
-
-    // Acl methods
-
-    public QueryResponse<A> getAcls(String id) throws IOException {
-        return execute(category, id, "acl", new ObjectMap(), GET, aclClass);
-    }
-
-    public QueryResponse<A> getAcl(String id, String memberId) throws CatalogException, IOException {
-        return execute(category, id, "acl", memberId, "info", new ObjectMap(), GET, aclClass);
-    }
-
-    public QueryResponse<A> createAcl(String id, String members, ObjectMap params) throws CatalogException,
-            IOException {
-        params = addParamsToObjectMap(params, "members", members);
-        return execute(category, id, "acl", null, "create", params, GET, aclClass);
-    }
-
-    public QueryResponse<A> deleteAcl(String id, String memberId) throws CatalogException, IOException {
-        return execute(category, id, "acl", memberId, "delete", new ObjectMap(), GET, aclClass);
-    }
-
-    public QueryResponse<A> updateAcl(String id, String memberId, ObjectMap params) throws CatalogException, IOException {
-        return execute(category, id, "acl", memberId, "update", params, GET, aclClass);
     }
 
     protected <T> QueryResponse<T> execute(String category, String action, Map<String, Object> params, String method, Class<T> clazz)
@@ -260,7 +186,7 @@ public abstract class AbstractParentClient<T, A> {
      * @return A queryResponse object containing the results of the query.
      * @throws IOException if the path is wrong and cannot be converted to a proper url.
      */
-    protected QueryResponse<T> callRest(WebTarget path, Map<String, Object> params, Class clazz, String method) throws IOException {
+    private <T> QueryResponse<T> callRest(WebTarget path, Map<String, Object> params, Class clazz, String method) throws IOException {
 
         String jsonString = "{}";
         if (method.equalsIgnoreCase(GET)) {
@@ -314,7 +240,7 @@ public abstract class AbstractParentClient<T, A> {
      * @return A queryResponse object containing the results of the query.
      * @throws IOException if the path is wrong and cannot be converted to a proper url.
      */
-    protected QueryResponse<T> callUploadRest(WebTarget path, Map<String, Object> params, Class clazz) throws IOException {
+    private <T> QueryResponse<T> callUploadRest(WebTarget path, Map<String, Object> params, Class clazz) throws IOException {
 
         String jsonString;
 
@@ -339,7 +265,7 @@ public abstract class AbstractParentClient<T, A> {
         return parseResult(jsonString, clazz);
     }
 
-    public static <T> QueryResponse<T> parseResult(String json, Class<T> clazz) throws IOException {
+    private static <T> QueryResponse<T> parseResult(String json, Class<T> clazz) throws IOException {
         if (json != null && !json.isEmpty()) {
             ObjectReader reader = jsonObjectMapper
                     .readerFor(jsonObjectMapper.getTypeFactory().constructParametrizedType(QueryResponse.class, QueryResult.class, clazz));
@@ -359,14 +285,7 @@ public abstract class AbstractParentClient<T, A> {
         }
     }
 
-    @Deprecated
-    protected Map<String, Object> createParamsMap(String key, Object value) {
-        Map<String, Object> params= new HashMap<>(10);
-        params.put(key, value);
-        return params;
-    }
-
-    protected ObjectMap createIfNull(ObjectMap objectMap) {
+    private ObjectMap createIfNull(ObjectMap objectMap) {
         if (objectMap == null) {
             objectMap = new ObjectMap();
         }
@@ -383,7 +302,6 @@ public abstract class AbstractParentClient<T, A> {
         }
         return objectMap;
     }
-
 
     public String getSessionId() {
         return sessionId;

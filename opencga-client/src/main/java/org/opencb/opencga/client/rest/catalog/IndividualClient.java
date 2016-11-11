@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.client.rest;
+package org.opencb.opencga.client.rest.catalog;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
@@ -22,7 +22,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.rest.commons.AnnotationClient;
 
 import java.io.IOException;
 
@@ -33,7 +32,7 @@ public class IndividualClient extends AnnotationClient<Individual, IndividualAcl
 
     private static final String INDIVIDUALS_URL = "individuals";
 
-    protected IndividualClient(String userId, String sessionId, ClientConfiguration configuration) {
+    public IndividualClient(String userId, String sessionId, ClientConfiguration configuration) {
         super(userId, sessionId, configuration);
 
         this.category = INDIVIDUALS_URL;

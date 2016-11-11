@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.client.rest;
+package org.opencb.opencga.client.rest.catalog;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
@@ -28,11 +28,11 @@ import java.io.IOException;
 /**
  * Created by imedina on 24/05/16.
  */
-public class VariableSetClient extends AbstractParentClient<VariableSet, VariableSet> {
+public class VariableSetClient extends CatalogClient<VariableSet, VariableSet> {
 
     private static final String VARIABLES_URL = "variableSet";
 
-    protected VariableSetClient(String sessionId, ClientConfiguration configuration, String userId) {
+    public VariableSetClient(String sessionId, ClientConfiguration configuration, String userId) {
         super(userId, sessionId, configuration);
 
         this.category = VARIABLES_URL;

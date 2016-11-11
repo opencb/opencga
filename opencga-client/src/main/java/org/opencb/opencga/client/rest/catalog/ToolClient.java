@@ -14,22 +14,22 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.client.rest;
+package org.opencb.opencga.client.rest.catalog;
 
 
 import org.opencb.opencga.catalog.models.Tool;
-import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.catalog.models.acls.permissions.ToolAclEntry;
+import org.opencb.opencga.client.config.ClientConfiguration;
 
 
 /**
  * Created by sgallego on 6/30/16.
  */
-public class ToolClient extends AbstractParentClient<Tool, ToolAclEntry> {
+public class ToolClient extends CatalogClient<Tool, ToolAclEntry> {
 
     private static final String TOOLS_URL = "tools";
 
-    protected ToolClient(String userId, String sessionId, ClientConfiguration configuration) {
+    public ToolClient(String userId, String sessionId, ClientConfiguration configuration) {
         super(userId, sessionId, configuration);
 
         this.category = TOOLS_URL;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.client.rest;
+package org.opencb.opencga.client.rest.catalog;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -29,11 +29,11 @@ import java.io.IOException;
 /**
  * Created by imedina on 09/05/16.
  */
-public class ProjectClient extends AbstractParentClient<Project, Project> {
+public class ProjectClient extends CatalogClient<Project, Project> {
 
     private static final String PROJECTS_URL = "projects";
 
-    protected ProjectClient(String userId, String sessionId, ClientConfiguration configuration) {
+    public ProjectClient(String userId, String sessionId, ClientConfiguration configuration) {
         super(userId, sessionId, configuration);
 
         this.category = PROJECTS_URL;

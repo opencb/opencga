@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.client.rest;
+package org.opencb.opencga.client.rest.catalog;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
@@ -28,10 +28,10 @@ import java.io.IOException;
 /**
  * Created by pfurio on 10/06/16.
  */
-public class PanelClient extends AbstractParentClient<DiseasePanel, DiseasePanelAclEntry> {
+public class PanelClient extends CatalogClient<DiseasePanel, DiseasePanelAclEntry> {
     private static final String PANEL_URL = "panels";
 
-    protected PanelClient(String userId, String sessionId, ClientConfiguration configuration) {
+    public PanelClient(String userId, String sessionId, ClientConfiguration configuration) {
         super(userId, sessionId, configuration);
 
         this.category = PANEL_URL;

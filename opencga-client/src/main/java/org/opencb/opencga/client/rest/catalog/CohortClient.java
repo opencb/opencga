@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.client.rest;
+package org.opencb.opencga.client.rest.catalog;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -25,7 +25,6 @@ import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
 import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.client.rest.commons.AnnotationClient;
 
 import java.io.IOException;
 
@@ -36,7 +35,7 @@ public class CohortClient extends AnnotationClient<Cohort, CohortAclEntry> {
 
     private static final String COHORT_URL = "cohorts";
 
-    protected CohortClient(String userId, String sessionId, ClientConfiguration configuration) {
+    public CohortClient(String userId, String sessionId, ClientConfiguration configuration) {
         super(userId, sessionId, configuration);
 
         this.category = COHORT_URL;

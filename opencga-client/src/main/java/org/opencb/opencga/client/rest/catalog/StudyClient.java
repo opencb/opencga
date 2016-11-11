@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.client.rest;
+package org.opencb.opencga.client.rest.catalog;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.biodata.models.alignment.Alignment;
@@ -37,7 +37,7 @@ import java.io.IOException;
 /**
  * Created by swaathi on 10/05/16.
  */
-public class StudyClient extends AbstractParentClient<Study, StudyAclEntry> {
+public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
 
     private static final String STUDY_URL = "studies";
 
@@ -57,7 +57,7 @@ public class StudyClient extends AbstractParentClient<Study, StudyAclEntry> {
         }
     }
 
-    protected StudyClient(String userId, String sessionId, ClientConfiguration configuration) {
+    public StudyClient(String userId, String sessionId, ClientConfiguration configuration) {
         super(userId, sessionId, configuration);
         this.category = STUDY_URL;
         this.clazz = Study.class;
