@@ -22,6 +22,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
 import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.client.rest.catalog.SampleClient;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.server.RestServer;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;

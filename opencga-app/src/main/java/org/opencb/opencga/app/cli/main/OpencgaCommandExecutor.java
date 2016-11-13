@@ -84,7 +84,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                             logoutSessionFile();
 //                        logoutSession();
                         } else {
-                            logger.warn("Session ok!!");
+                            logger.debug("Session ok!!");
                             this.sessionId = sessionFile.getSessionId();
                             openCGAClient = new OpenCGAClient(sessionFile.getSessionId(), clientConfiguration);
                             openCGAClient.setUserId(sessionFile.getUserId());
@@ -94,11 +94,11 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                         }
                     }
                 } else {
-                    logger.warn("Session already closed");
+                    logger.debug("Session already closed");
                     openCGAClient = new OpenCGAClient(clientConfiguration);
                 }
             } else {
-                logger.warn("No Session file");
+                logger.debug("No Session file");
                 openCGAClient = new OpenCGAClient(clientConfiguration);
             }
         } catch (IOException e) {

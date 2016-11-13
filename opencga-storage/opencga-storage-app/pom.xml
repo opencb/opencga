@@ -218,7 +218,7 @@
             <dependencies>
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
-                    <artifactId>opencga-storage-hadoop</artifactId>
+                    <artifactId>opencga-storage-hadoop-core</artifactId>
                     <version>${opencga.version}</version>
                 </dependency>
             </dependencies>
