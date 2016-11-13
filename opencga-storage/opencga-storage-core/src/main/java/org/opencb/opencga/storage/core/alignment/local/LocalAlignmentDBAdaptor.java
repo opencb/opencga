@@ -10,10 +10,11 @@ import org.codehaus.jackson.map.ObjectWriter;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.tools.alignment.AlignmentFilters;
 import org.opencb.biodata.tools.alignment.AlignmentOptions;
 import org.opencb.biodata.tools.alignment.BamManager;
 import org.opencb.biodata.tools.alignment.BamUtils;
+import org.opencb.biodata.tools.alignment.filters.AlignmentFilters;
+import org.opencb.biodata.tools.alignment.filters.SamRecordFilters;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -89,7 +90,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
             BamManager alignmentManager = new BamManager(path);
 
             AlignmentOptions alignmentOptions = parseQueryOptions(options);
-            AlignmentFilters alignmentFilters = parseQuery(query);
+            AlignmentFilters<SAMRecord> alignmentFilters = parseQuery(query);
             Region region = parseRegion(query);
 
             List<ReadAlignment> readAlignmentList;
@@ -136,7 +137,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
             }
 
             BamManager alignmentManager = new BamManager(path);
-            AlignmentFilters alignmentFilters = parseQuery(query);
+            AlignmentFilters<SAMRecord> alignmentFilters = parseQuery(query);
             AlignmentOptions alignmentOptions = parseQueryOptions(options);
 
             Region region = parseRegion(query);
@@ -306,8 +307,8 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         return region;
     }
 
-    private AlignmentFilters parseQuery(Query query) {
-        AlignmentFilters alignmentFilters = AlignmentFilters.create();
+    private AlignmentFilters<SAMRecord> parseQuery(Query query) {
+        AlignmentFilters<SAMRecord> alignmentFilters = SamRecordFilters.create();
         int minMapQ = query.getInt(QueryParams.MIN_MAPQ.key());
         if (minMapQ > 0) {
             alignmentFilters.addMappingQualityFilter(minMapQ);
