@@ -36,7 +36,7 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-hadoop-deps</artifactId>
-            <version>${opencga.version}</version>
+            <version>${opencga.version}-SNAPSHOT</version>
             <classifier>shaded</classifier>
         </dependency>
 
@@ -106,7 +106,7 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-hadoop-deps</artifactId>
-            <version>${opencga.version}</version>
+            <version>${opencga.version}-SNAPSHOT</version>
             <classifier>tests</classifier>
             <type>test-jar</type>
             <scope>test</scope>

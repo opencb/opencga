@@ -27,8 +27,8 @@
     </parent>
 
     <artifactId>opencga-storage-hadoop</artifactId>
+    <version>1.0.0-rc3</version>
     <packaging>pom</packaging>
-    <version>${opencga.version}</version>
 
     <modules>
         <module>opencga-storage-hadoop-core</module>
