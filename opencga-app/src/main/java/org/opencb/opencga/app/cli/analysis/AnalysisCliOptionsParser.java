@@ -785,7 +785,7 @@ public class AnalysisCliOptionsParser {
                 "\"--calculate-coverage\" is also given. Please specify chunksizes as CSV: --mean-coverage 200,400", required = false)
         public List<String> meanCoverage;
 
-        @Parameter(names = {"-o", "--outdir-id"}, description = "Directory where output files will be saved (optional)", arity = 1, required = false)
+        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1, required = false)
         public String outdirId;
 
         @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")

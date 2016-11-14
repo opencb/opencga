@@ -1925,55 +1925,55 @@ public class FileManager extends AbstractManager implements IFileManager {
                 @Override
                 public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
                     if (exc == null) {
-                            try {
-                                // Only empty folders can be deleted for safety reasons
-                                Query query = new Query()
-                                        .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                                        .append(FileDBAdaptor.QueryParams.URI.key(), "~^" + dir.toUri().toString() + "/*")
-                                        .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), true)
-                                        .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
+                        try {
+                            // Only empty folders can be deleted for safety reasons
+                            Query query = new Query()
+                                    .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                                    .append(FileDBAdaptor.QueryParams.URI.key(), "~^" + dir.toUri().toString() + "/*")
+                                    .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), true)
+                                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
 
-                                QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
+                            QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
 
-                                if (fileQueryResult == null || fileQueryResult.getNumResults() > 1) {
-                                    // The only result should be the current directory
-                                    logger.debug("Cannot unlink " + dir.toString()
-                                            + ". There are files/folders inside the folder that have not been unlinked.");
-                                    return FileVisitResult.CONTINUE;
-                                }
-
-                                // Look for the folder in catalog
-                                query = new Query()
-                                        .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                                        .append(FileDBAdaptor.QueryParams.URI.key(), dir.toUri().toString())
-                                        .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), true)
-                                        .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
-
-                                fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
-
-                                if (fileQueryResult == null || fileQueryResult.getNumResults() == 0) {
-                                    logger.debug("Cannot unlink " + dir.toString() + ". The directory could not be found in catalog.");
-                                    return FileVisitResult.CONTINUE;
-                                }
-
-                                if (fileQueryResult.getNumResults() > 1) {
-                                    logger.error("Internal error: More than one file was found in catalog for uri " + dir.toString());
-                                    return FileVisitResult.CONTINUE;
-                                }
-
-                                File file = fileQueryResult.first();
-
-                                ObjectMap update = new ObjectMap()
-                                        .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED)
-                                        .append(FileDBAdaptor.QueryParams.PATH.key(),
-                                                file.getPath().replaceFirst(basePath, suffixedPath));
-
-                                fileDBAdaptor.delete(file.getId(), update, new QueryOptions());
-
-                                logger.debug("{} unlinked", dir.toString());
-                            } catch (CatalogDBException e) {
-                                e.printStackTrace();
+                            if (fileQueryResult == null || fileQueryResult.getNumResults() > 1) {
+                                // The only result should be the current directory
+                                logger.debug("Cannot unlink " + dir.toString()
+                                        + ". There are files/folders inside the folder that have not been unlinked.");
+                                return FileVisitResult.CONTINUE;
                             }
+
+                            // Look for the folder in catalog
+                            query = new Query()
+                                    .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                                    .append(FileDBAdaptor.QueryParams.URI.key(), dir.toUri().toString())
+                                    .append(FileDBAdaptor.QueryParams.EXTERNAL.key(), true)
+                                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
+
+                            fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
+
+                            if (fileQueryResult == null || fileQueryResult.getNumResults() == 0) {
+                                logger.debug("Cannot unlink " + dir.toString() + ". The directory could not be found in catalog.");
+                                return FileVisitResult.CONTINUE;
+                            }
+
+                            if (fileQueryResult.getNumResults() > 1) {
+                                logger.error("Internal error: More than one file was found in catalog for uri " + dir.toString());
+                                return FileVisitResult.CONTINUE;
+                            }
+
+                            File file = fileQueryResult.first();
+
+                            ObjectMap update = new ObjectMap()
+                                    .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED)
+                                    .append(FileDBAdaptor.QueryParams.PATH.key(),
+                                            file.getPath().replaceFirst(basePath, suffixedPath));
+
+                            fileDBAdaptor.delete(file.getId(), update, new QueryOptions());
+
+                            logger.debug("{} unlinked", dir.toString());
+                        } catch (CatalogDBException e) {
+                            e.printStackTrace();
+                        }
 
                         return FileVisitResult.CONTINUE;
                     } else {
@@ -2411,7 +2411,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         List<Long> fileFolderIdList = getIds(userId, fileIdStr);
 
         long studyId = -1;
-        // Check we can index all of them
+        // Check they all belong to the same study
         for (Long fileId : fileFolderIdList) {
             if (fileId == -1) {
                 throw new CatalogException("Could not find file or folder " + fileIdStr);
@@ -2426,6 +2426,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             }
         }
 
+        // Define the output directory where the indexes will be put
         String outDirPath = ParamUtils.defaultString(params.get("outdir"), Long.toString(studyId) + ":/");
         if (outDirPath != null && !StringUtils.isNumeric(outDirPath) && outDirPath.contains("/") && !outDirPath.endsWith("/")) {
             outDirPath = outDirPath + "/";
@@ -2436,7 +2437,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             if (fileDBAdaptor.getStudyIdByFileId(outDirId) != studyId) {
                 throw new CatalogException("The output directory does not correspond to the same study of the files");
             }
-//        } else if (outDirPath != null) {
+
         } else {
             ObjectMap parsedSampleStr = parseFeatureId(userId, outDirPath);
             String path = (String) parsedSampleStr.get("featureName");
@@ -2451,28 +2452,16 @@ public class FileManager extends AbstractManager implements IFileManager {
                 logger.info("Outdir {} -> {}", outDirId, path);
             }
         }
-//        else {
-//            if (fileFolderIdList.size() == 1) {
-//                // Leave the output files in the same directory
-//                long fileId = fileFolderIdList.get(0);
-//                QueryResult<File> file = fileDBAdaptor.get(fileId, new QueryOptions());
-//                if (file.getNumResults() == 1) {
-//                    if (file.first().getType().equals(File.Type.DIRECTORY)) {
-//                        outDirId = fileId;
-//                    } else {
-//                        outDirId = getParent(fileId, new QueryOptions(), sessionId).first().getId();
-//                    }
-//                }
-//            } else {
-//                // Leave the output files in the root directory
-//                outDirId = getId(userId, studyId + ":/");
-//                logger.info("Getting out dir from {}:/", studyId);
-//            }
-//        }
 
-        QueryResult<Job> jobQueryResult = null;
+        QueryResult<Job> jobQueryResult;
+        List<Long> fileIdList = new ArrayList<>();
+        String indexDaemonType = null;
+        String jobName = null;
+
         if (type.equals("VCF")) {
-            List<Long> fileIdList = new ArrayList<>();
+
+            indexDaemonType = IndexDaemon.VARIANT_TYPE;
+            jobName = "VariantIndex";
 
             for (Long fileId : fileFolderIdList) {
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
@@ -2523,20 +2512,73 @@ public class FileManager extends AbstractManager implements IFileManager {
                 throw new CatalogException("Cannot send to index. No files could be found to be indexed.");
             }
 
-            String fileIds = StringUtils.join(fileIdList, ",");
-            params.put("file-id", fileIds);
             params.put("outdir", Long.toString(outDirId));
-            params.put("sid", sessionId);
-            List<Long> outputList = outDirId > 0 ? Arrays.asList(outDirId) : Collections.emptyList();
-            Map<String, Object> attributes = new HashMap<>();
-            attributes.put(IndexDaemon.INDEX_TYPE, IndexDaemon.VARIANT_TYPE);
-            jobQueryResult = catalogManager.getJobManager().queue(studyId, "VariantIndex", "opencga-analysis.sh",
-                    Job.Type.INDEX, params, fileIdList, outputList, outDirId, userId, attributes);
-            jobQueryResult.first().setToolName("variantIndex");
+
         } else if (type.equals("BAM")) {
-            logger.debug("Index bam files to do");
-            jobQueryResult = new QueryResult<>();
+
+            indexDaemonType = IndexDaemon.ALIGNMENT_TYPE;
+            jobName = "AlignmentIndex";
+
+            for (Long fileId : fileFolderIdList) {
+                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                        FileDBAdaptor.QueryParams.PATH.key(),
+                        FileDBAdaptor.QueryParams.URI.key(),
+                        FileDBAdaptor.QueryParams.TYPE.key(),
+                        FileDBAdaptor.QueryParams.FORMAT.key(),
+                        FileDBAdaptor.QueryParams.INDEX.key())
+                );
+                QueryResult<File> file = fileDBAdaptor.get(fileId, queryOptions);
+
+                if (file.getNumResults() != 1) {
+                    throw new CatalogException("Could not find file or folder " + fileIdStr);
+                }
+
+                if (File.Type.DIRECTORY.equals(file.first().getType())) {
+                    // Retrieve all the BAM files that can be found within the directory
+                    String path = file.first().getPath().endsWith("/") ? file.first().getPath() : file.first().getPath() + "/";
+                    Query query = new Query(FileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.SAM, File.Format.BAM))
+                            .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + path + "*")
+                            .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                    QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, queryOptions);
+
+                    if (fileQueryResult.getNumResults() == 0) {
+                        throw new CatalogException("No SAM/BAM files could be found in directory " + file.first().getPath());
+                    }
+
+                    for (File fileTmp : fileQueryResult.getResult()) {
+                        authorizationManager.checkFilePermission(fileTmp.getId(), userId, FileAclEntry.FilePermissions.VIEW);
+                        authorizationManager.checkFilePermission(fileTmp.getId(), userId, FileAclEntry.FilePermissions.UPDATE);
+
+                        fileIdList.add(fileTmp.getId());
+                    }
+
+                } else {
+                    if (!File.Format.BAM.equals(file.first().getFormat()) && !File.Format.SAM.equals(file.first().getFormat())) {
+                        throw new CatalogException("The file " + file.first().getName() + " is not a SAM/BAM file.");
+                    }
+
+                    authorizationManager.checkFilePermission(file.first().getId(), userId, FileAclEntry.FilePermissions.VIEW);
+                    authorizationManager.checkFilePermission(file.first().getId(), userId, FileAclEntry.FilePermissions.UPDATE);
+
+                    fileIdList.add(file.first().getId());
+                }
+            }
+
         }
+
+        if (fileIdList.size() == 0) {
+            throw new CatalogException("Cannot send to index. No files could be found to be indexed.");
+        }
+
+        String fileIds = StringUtils.join(fileIdList, ",");
+        params.put("file-id", fileIds);
+        params.put("sid", sessionId);
+        List<Long> outputList = outDirId > 0 ? Arrays.asList(outDirId) : Collections.emptyList();
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put(IndexDaemon.INDEX_TYPE, indexDaemonType);
+        jobQueryResult = catalogManager.getJobManager().queue(studyId, jobName, "opencga-analysis.sh",
+                Job.Type.INDEX, params, fileIdList, outputList, outDirId, userId, attributes);
+        jobQueryResult.first().setToolName(jobName);
 
         return jobQueryResult;
     }
@@ -2687,33 +2729,5 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         return fileAclQueryResult;
     }
-
-//    private File.Type getType(URI uri, boolean exists) throws CatalogException {
-//        ParamsUtils.checkObj(uri, "uri");
-//        return uri.getPath().endsWith("/") ? File.Type.DIRECTORY : File.Type.FILE;
-//    }
-
-//    private File.Bioformat setBioformat(File file, String sessionId) throws CatalogException {
-//        ParamsUtils.checkObj(file, "file");
-//
-//
-//        File.Bioformat bioformat = null;
-//        ObjectMap parameters = new ObjectMap();
-//        for (Map.Entry<File.Bioformat, Pattern> entry : bioformatMap.entrySet()) {
-//            if (entry.getValue().matcher(file.getPath()).matches()) {
-//                bioformat = entry.getKey();
-//                break;
-//            }
-//        }
-//
-//        if (bioformat == File.Bioformat.VARIANT) {
-//
-//        }
-//
-//
-//        update(file.getId(), parameters, new QueryOptions(), sessionId);
-//
-//        return File.Bioformat.NONE;
-//    }
 
 }

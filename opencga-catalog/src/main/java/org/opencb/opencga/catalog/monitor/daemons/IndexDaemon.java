@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.monitor.daemons;
 
-import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -55,8 +54,6 @@ public class IndexDaemon extends MonitorParentDaemon {
     private String binHome;
     private Path tempJobFolder;
 
-    private ObjectMapper objectMapper;
-
 //    private VariantIndexOutputRecorder variantIndexOutputRecorder;
 
     public IndexDaemon(int interval, String sessionId, CatalogManager catalogManager, String appHome)
@@ -88,8 +85,6 @@ public class IndexDaemon extends MonitorParentDaemon {
         QueryOptions queryOptions = new QueryOptions()
                 .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key())
                 .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
-
-        objectMapper = new ObjectMapper();
 
         int numRunningJobs = 0;
 
@@ -124,7 +119,7 @@ public class IndexDaemon extends MonitorParentDaemon {
              */
             try {
                 QueryResult<Job> queuedJobs = jobManager.get(queuedJobsQuery, queryOptions, sessionId);
-                logger.debug("Checking queued jobs. {} running jobs found", queuedJobs.getNumResults());
+                logger.debug("Checking queued jobs. {} queued jobs found", queuedJobs.getNumResults());
                 for (Job job : queuedJobs.getResult()) {
                     checkQueuedJob(job);
                 }
@@ -217,7 +212,6 @@ public class IndexDaemon extends MonitorParentDaemon {
     }
 
     private void checkQueuedJob(Job job) {
-        logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.QUEUED, Job.JobStatus.RUNNING);
 
         Path tmpOutdirPath = getJobTemporaryFolder(job.getId());
         if (!tmpOutdirPath.toFile().exists()) {
@@ -230,12 +224,10 @@ public class IndexDaemon extends MonitorParentDaemon {
         } else {
             String status = executorManager.status(tmpOutdirPath, job);
             if (!status.equalsIgnoreCase(Job.JobStatus.UNKNOWN) && !status.equalsIgnoreCase(Job.JobStatus.QUEUED)) {
-                Job.JobStatus jobStatus = new Job.JobStatus(Job.JobStatus.RUNNING, "The job is running");
-                ObjectMap objectMap = new ObjectMap(JobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
                 try {
-//                    catalogManager.getJobManager().update(job.getId(), objectMap, new QueryOptions(), sessionId);
+                    logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.QUEUED, Job.JobStatus.RUNNING);
                     catalogManager.getJobManager()
-                            .setStatus(Long.toString(job.getId()), jobStatus.getName(), jobStatus.getMessage(), sessionId);
+                            .setStatus(Long.toString(job.getId()), Job.JobStatus.RUNNING, "The job is running", sessionId);
                 } catch (CatalogException e) {
                     logger.warn("Could not update job {} to status running", job.getId());
                 }
@@ -301,32 +293,40 @@ public class IndexDaemon extends MonitorParentDaemon {
         // Build the command line.
         StringBuilder commandLine = new StringBuilder(binHome).append(job.getExecutable());
 
-        if (job.getAttributes().get(INDEX_TYPE).toString().equalsIgnoreCase(VARIANT_TYPE)) {
-            commandLine.append(" variant index");
-        } else {
-            commandLine.append(" alignment index");
-        }
-
         // we assume job.output equals params.outdir
         job.getParams().put("outdir", path.toString());
-        job.getParams().put("path", Long.toString(job.getOutDirId()));
-        Set<String> knownParams = new HashSet<>(Arrays.asList(
-                "aggregated", "aggregation-mapping-file", "annotate", "annotator", "bgzip", "calculate-stats",
-                "exclude-genotypes", "file-id", "gvcf", "h", "help", "include-extra-fields", "load", "log-file",
-                "L", "log-level", "o", "outdir", "overwrite-annotations", "path", "queue", "sid", "session-id",
-                "transform", "transformed-files"));
-        for (Map.Entry<String, String> param : job.getParams().entrySet()) {
-            commandLine.append(' ');
-            if (knownParams.contains(param.getKey())) {
+
+        if (job.getAttributes().get(INDEX_TYPE).toString().equalsIgnoreCase(VARIANT_TYPE)) {
+            job.getParams().put("path", Long.toString(job.getOutDirId()));
+
+            commandLine.append(" variant index");
+            Set<String> knownParams = new HashSet<>(Arrays.asList(
+                    "aggregated", "aggregation-mapping-file", "annotate", "annotator", "bgzip", "calculate-stats",
+                    "exclude-genotypes", "file-id", "gvcf", "h", "help", "include-extra-fields", "load", "log-file",
+                    "L", "log-level", "o", "outdir", "overwrite-annotations", "path", "queue", "sid", "session-id",
+                    "transform", "transformed-files"));
+            for (Map.Entry<String, String> param : job.getParams().entrySet()) {
+                commandLine.append(' ');
+                if (knownParams.contains(param.getKey())) {
+                    commandLine.append("--").append(param.getKey());
+                    if (!param.getValue().equalsIgnoreCase("true")) {
+                        commandLine.append(" ").append(param.getValue());
+                    }
+                } else {
+                    if (!param.getKey().startsWith("-D")) {
+                        commandLine.append("-D");
+                    }
+                    commandLine.append(param.getKey()).append('=').append(param.getValue());
+                }
+            }
+        } else {
+            commandLine.append(" alignment index");
+            for (Map.Entry<String, String> param : job.getParams().entrySet()) {
+                commandLine.append(' ');
                 commandLine.append("--").append(param.getKey());
                 if (!param.getValue().equalsIgnoreCase("true")) {
                     commandLine.append(" ").append(param.getValue());
                 }
-            } else {
-                if (!param.getKey().startsWith("-D")) {
-                    commandLine.append("-D");
-                }
-                commandLine.append(param.getKey()).append('=').append(param.getValue());
             }
         }
 
@@ -348,23 +348,9 @@ public class IndexDaemon extends MonitorParentDaemon {
             job.getResourceManagerAttributes().put(AbstractExecutor.OUTDIR, path.toString());
             updateObjectMap.put(JobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key(), job.getResourceManagerAttributes());
 
-//            updateObjectMap.put(CatalogJobDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
-
             QueryResult<Job> update = catalogManager.getJobManager().update(job.getId(), updateObjectMap, new QueryOptions(), sessionId);
             if (update.getNumResults() == 1) {
                 executorManager.execute(update.first());
-//                Runnable runnable = () -> {
-//                    try {
-//                        // TODO: Return job and modify job
-//                        executorManager.execute(update.first());
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    } catch (Exception e) {
-//                        e.printStackTrace();
-//                    }
-//                };
-//                Thread thread = new Thread(runnable);
-//                thread.start();
             } else {
                 logger.error("Could not update nor run job {}" + job.getId());
             }
