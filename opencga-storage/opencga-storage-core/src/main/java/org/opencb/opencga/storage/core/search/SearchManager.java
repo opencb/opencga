@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.search;
 
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -29,8 +30,10 @@ public class SearchManager {
 
         if (searchConfiguration.getHost() != null && searchConfiguration.getCollection() != null && solrServer == null) {
             solrServer = new HttpSolrClient(searchConfiguration.getHost() + "/" + searchConfiguration.getCollection());
+            solrServer.setRequestWriter(new BinaryRequestWriter());
             HttpClientUtil.setBasicAuth((DefaultHttpClient) solrServer.getHttpClient(), searchConfiguration.getUser(),
                     searchConfiguration.getPassword());
+
         }
 
         if (variantToSolrConverter == null) {
