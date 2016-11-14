@@ -25,16 +25,14 @@ import java.util.GregorianCalendar;
 public class TimeUtils {
 
     private static final String yyyyMMddHHmmss = "yyyyMMddHHmmss";
-    private static final SimpleDateFormat sdf = new SimpleDateFormat(yyyyMMddHHmmss);
-
     private static final String yyyyMMddHHmmssSSS = "yyyyMMddHHmmssSSS";
-    private static final SimpleDateFormat sdfMillis = new SimpleDateFormat(yyyyMMddHHmmssSSS);
 
     public static String getTime() {
         return getTime(new Date());
     }
 
     public static String getTime(Date date) {
+        SimpleDateFormat sdf = new SimpleDateFormat(yyyyMMddHHmmss);
         return sdf.format(date);
     }
 
@@ -43,6 +41,7 @@ public class TimeUtils {
     }
 
     public static String getTimeMillis(Date date) {
+        SimpleDateFormat sdfMillis = new SimpleDateFormat(yyyyMMddHHmmssSSS);
         return sdfMillis.format(date);
     }
 
@@ -58,8 +57,10 @@ public class TimeUtils {
         Date date = null;
         try {
             if (dateStr.length() == yyyyMMddHHmmss.length()) {
+                SimpleDateFormat sdf = new SimpleDateFormat(yyyyMMddHHmmss);
                 date = sdf.parse(dateStr);
             } else {
+                SimpleDateFormat sdfMillis = new SimpleDateFormat(yyyyMMddHHmmssSSS);
                 date = sdfMillis.parse(dateStr);
             }
         } catch (ParseException e) {

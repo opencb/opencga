@@ -875,22 +875,34 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (query.get(VariantQueryParams.ID.key()) != null && !query.getString(VariantQueryParams.ID.key()).isEmpty()) {
                 List<String> idsList = query.getAsStringList(VariantQueryParams.ID.key());
+                List<String> otherIds = new ArrayList<>(idsList.size());
+                List<String> mongoIds = new ArrayList<>(idsList.size());
                 for (String id : idsList) {
+                    Variant variant = null;
                     if (id.contains(":")) {
                         try {
-                            Variant variant = new Variant(id);
-                            String mongoId = MongoDBVariantStageLoader.STRING_ID_CONVERTER.buildId(variant);
-                            addQueryStringFilter("_id", mongoId, builder, QueryOperation.OR);
+                            variant = new Variant(id);
                         } catch (IllegalArgumentException ignore) {
+                            variant = null;
                             logger.info("Wrong variant " + id);
                         }
                     }
+                    if (variant != null) {
+                        mongoIds.add(MongoDBVariantStageLoader.STRING_ID_CONVERTER.buildId(variant));
+                    } else {
+                        otherIds.add(id);
+                    }
                 }
-                String ids = query.getString(VariantQueryParams.ID.key());
-                addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.XREFS_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.XREF_ID_FIELD, ids, builder, QueryOperation.OR);
-                addQueryStringFilter(DocumentToVariantConverter.IDS_FIELD, ids, builder, QueryOperation.OR);
+                if (!otherIds.isEmpty()) {
+                    String ids = otherIds.stream().collect(Collectors.joining(","));
+                    addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
+                            + "." + DocumentToVariantAnnotationConverter.XREFS_FIELD
+                            + "." + DocumentToVariantAnnotationConverter.XREF_ID_FIELD, ids, builder, QueryOperation.OR);
+                    addQueryStringFilter(DocumentToVariantConverter.IDS_FIELD, ids, builder, QueryOperation.OR);
+                }
+                if (!mongoIds.isEmpty()) {
+                    builder.or(new QueryBuilder().and("_id").in(mongoIds).get());
+                }
             }
 
             if (query.containsKey(VariantQueryParams.GENE.key())) {
@@ -1560,7 +1572,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     continue;
                 }
                 int studyId = studyConfiguration.getStudyId();
-                Document study = variantSourceEntryConverter.convertToStorageType(studyEntry);
+                Document study = variantSourceEntryConverter.convertToStorageType(variant, studyEntry);
                 Document genotypes = study.get(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, Document.class);
                 if (genotypes != null) {        //If genotypes is null, genotypes are not suppose to be loaded
                     genotypes.putAll(missingSamples);   //Add missing samples
@@ -1641,7 +1653,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     continue;
                 }
 
-                Document studyObject = variantSourceEntryConverter.convertToStorageType(studyEntry);
+                Document studyObject = variantSourceEntryConverter.convertToStorageType(variant, studyEntry);
                 Document genotypes = studyObject.get(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, Document.class);
                 Document push = new Document();
 

@@ -18,10 +18,10 @@ package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import org.bson.Document;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
@@ -34,7 +34,7 @@ import java.util.logging.Logger;
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class DocumentToStudyVariantEntryConverter implements ComplexTypeConverter<StudyEntry, Document> {
+public class DocumentToStudyVariantEntryConverter {
 
     public static final String FILEID_FIELD = "fid";
     public static final String STUDYID_FIELD = "sid";
@@ -118,7 +118,6 @@ public class DocumentToStudyVariantEntryConverter implements ComplexTypeConverte
         this.studyIds.put(studyId, studyName);
     }
 
-    @Override
     public StudyEntry convertToDataModelType(Document document) {
         int studyId = ((Number) document.get(STUDYID_FIELD)).intValue();
 //        String fileId = this.fileId == null? null : String.valueOf(this.fileId);
@@ -234,18 +233,17 @@ public class DocumentToStudyVariantEntryConverter implements ComplexTypeConverte
         return studyIds.get(studyId);
     }
 
-    @Override
-    public Document convertToStorageType(StudyEntry object) {
+    public Document convertToStorageType(Variant variant, StudyEntry object) {
 
         if (object.getFiles().size() != 1) {
             throw new IllegalArgumentException("Expected just one file in the study to convert");
         }
         FileEntry file = object.getFiles().get(0);
 
-        return convertToStorageType(object, file, object.getSamplesName());
+        return convertToStorageType(variant, object, file, object.getSamplesName());
     }
 
-    public Document convertToStorageType(StudyEntry studyEntry, FileEntry file, Set<String> sampleNames) {
+    public Document convertToStorageType(Variant variant, StudyEntry studyEntry, FileEntry file, Set<String> sampleNames) {
 
         int studyId = Integer.parseInt(studyEntry.getStudyId());
         int fileId = Integer.parseInt(file.getFileId());
@@ -258,22 +256,12 @@ public class DocumentToStudyVariantEntryConverter implements ComplexTypeConverte
 //            fileObject.append(ALTERNATES_FIELD, studyEntry.getSecondaryAlternatesAlleles());
             for (AlternateCoordinate coordinate : studyEntry.getSecondaryAlternates()) {
                 Document alt = new Document();
-                if (coordinate.getChromosome() != null) {
-                    alt.put(ALTERNATES_CHR, coordinate.getChromosome());
-                }
-                if (coordinate.getReference() != null) {
-                    alt.put(ALTERNATES_REF, coordinate.getReference());
-                }
+                alt.put(ALTERNATES_CHR, coordinate.getChromosome() != null ? coordinate.getChromosome() : variant.getChromosome());
+                alt.put(ALTERNATES_REF, coordinate.getReference() != null ? coordinate.getReference() : variant.getReference());
                 alt.put(ALTERNATES_ALT, coordinate.getAlternate());
-                if (coordinate.getStart() != null) {
-                    alt.put(ALTERNATES_START, coordinate.getStart());
-                }
-                if (coordinate.getStart() != null) {
-                    alt.put(ALTERNATES_END, coordinate.getEnd());
-                }
-                if (coordinate.getType() != null) {
-                    alt.put(ALTERNATES_TYPE, coordinate.getType().toString());
-                }
+                alt.put(ALTERNATES_START, coordinate.getStart() != null ? coordinate.getStart() : variant.getStart());
+                alt.put(ALTERNATES_END, coordinate.getEnd() != null ? coordinate.getEnd() : variant.getEnd());
+                alt.put(ALTERNATES_TYPE, coordinate.getType() != null ? coordinate.getType().toString() : variant.getType().toString());
                 alternates.add(alt);
             }
         }

@@ -293,7 +293,7 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
         if (variantStudyEntryConverter != null) {
             List<Document> mongoFiles = new LinkedList<>();
             for (StudyEntry archiveFile : variant.getStudies()) {
-                mongoFiles.add(variantStudyEntryConverter.convertToStorageType(archiveFile));
+                mongoFiles.add(variantStudyEntryConverter.convertToStorageType(variant, archiveFile));
             }
             mongoVariant.append(STUDIES_FIELD, mongoFiles);
         }
