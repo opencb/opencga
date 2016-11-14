@@ -852,22 +852,34 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (query.get(VariantQueryParams.ID.key()) != null && !query.getString(VariantQueryParams.ID.key()).isEmpty()) {
                 List<String> idsList = query.getAsStringList(VariantQueryParams.ID.key());
+                List<String> otherIds = new ArrayList<>(idsList.size());
+                List<String> mongoIds = new ArrayList<>(idsList.size());
                 for (String id : idsList) {
+                    Variant variant = null;
                     if (id.contains(":")) {
                         try {
-                            Variant variant = new Variant(id);
-                            String mongoId = MongoDBVariantStageLoader.STRING_ID_CONVERTER.buildId(variant);
-                            addQueryStringFilter("_id", mongoId, builder, QueryOperation.OR);
+                            variant = new Variant(id);
                         } catch (IllegalArgumentException ignore) {
+                            variant = null;
                             logger.info("Wrong variant " + id);
                         }
                     }
+                    if (variant != null) {
+                        mongoIds.add(MongoDBVariantStageLoader.STRING_ID_CONVERTER.buildId(variant));
+                    } else {
+                        otherIds.add(id);
+                    }
                 }
-                String ids = query.getString(VariantQueryParams.ID.key());
-                addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.XREFS_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.XREF_ID_FIELD, ids, builder, QueryOperation.OR);
-                addQueryStringFilter(DocumentToVariantConverter.IDS_FIELD, ids, builder, QueryOperation.OR);
+                if (!otherIds.isEmpty()) {
+                    String ids = otherIds.stream().collect(Collectors.joining(","));
+                    addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
+                            + "." + DocumentToVariantAnnotationConverter.XREFS_FIELD
+                            + "." + DocumentToVariantAnnotationConverter.XREF_ID_FIELD, ids, builder, QueryOperation.OR);
+                    addQueryStringFilter(DocumentToVariantConverter.IDS_FIELD, ids, builder, QueryOperation.OR);
+                }
+                if (!mongoIds.isEmpty()) {
+                    builder.or(new QueryBuilder().and("_id").in(mongoIds).get());
+                }
             }
 
             if (query.containsKey(VariantQueryParams.GENE.key())) {
