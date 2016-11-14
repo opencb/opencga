@@ -1537,7 +1537,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     continue;
                 }
                 int studyId = studyConfiguration.getStudyId();
-                Document study = variantSourceEntryConverter.convertToStorageType(studyEntry);
+                Document study = variantSourceEntryConverter.convertToStorageType(variant, studyEntry);
                 Document genotypes = study.get(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, Document.class);
                 if (genotypes != null) {        //If genotypes is null, genotypes are not suppose to be loaded
                     genotypes.putAll(missingSamples);   //Add missing samples
@@ -1618,7 +1618,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     continue;
                 }
 
-                Document studyObject = variantSourceEntryConverter.convertToStorageType(studyEntry);
+                Document studyObject = variantSourceEntryConverter.convertToStorageType(variant, studyEntry);
                 Document genotypes = studyObject.get(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD, Document.class);
                 Document push = new Document();
 
