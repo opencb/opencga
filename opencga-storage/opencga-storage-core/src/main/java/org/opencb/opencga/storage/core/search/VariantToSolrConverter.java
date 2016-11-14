@@ -64,7 +64,7 @@ public class VariantToSolrConverter implements ComplexTypeConverter<Variant, Var
             // conservations
             if (variantAnnotation.getConservation() != null) {
                 for (Score score : variantAnnotation.getConservation()) {
-                    if ("grep".equals(score.getSource())) {
+                    if ("gerp".equals(score.getSource())) {
                         variantSolr.setGerp((Double) score.getScore());
                     } else if ("phastCons".equals(score.getSource())) {
                         variantSolr.setPhastCons(score.getScore());

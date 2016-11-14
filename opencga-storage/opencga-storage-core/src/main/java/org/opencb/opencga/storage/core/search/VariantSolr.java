@@ -18,8 +18,8 @@ public class VariantSolr {
     private String dbSNP;
     private String type;
     private String chromosome;
-    private int Start;
-    private int End;
+    private int start;
+    private int end;
     private double gerp;
     private double caddRaw;
     private double caddScaled;
@@ -138,21 +138,21 @@ public class VariantSolr {
     }
 
     public int getStart() {
-        return Start;
+        return start;
     }
 
     @Field
     public void setStart(int start) {
-        Start = start;
+        this.start = start;
     }
 
     public int getEnd() {
-        return End;
+        return end;
     }
 
     @Field
     public void setEnd(int end) {
-        End = end;
+        this.end = end;
     }
 
     public Set<String> getGeneNames() {
