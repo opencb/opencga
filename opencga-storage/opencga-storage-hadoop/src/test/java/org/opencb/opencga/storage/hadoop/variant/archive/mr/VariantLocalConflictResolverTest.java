@@ -53,6 +53,21 @@ public class VariantLocalConflictResolverTest {
 //    }
 
     @Test
+    public void checkTreeSetOutOfRange() throws Exception {
+        Variant c = addGT(addAttribute(getVariantFilter("2:10048154:-:AATATATATATATATAATAAAT", "PASS"),QUAL,"."), "0/1");
+        c.getStudies().get(0).getSecondaryAlternates().add(new AlternateCoordinate("2",10048155,10048154,"","ATATTATATAATATTAAT", INDEL));
+        Variant a = addGT(addAttribute(getVariantFilter("2:10048155:A:A", "PASS"),QUAL,"."), "0/0");
+        a.setReference("A");
+        a.setAlternate("");
+        a.setEnd(10048155);
+        a.setType(NO_VARIATION);
+        Variant b = addGT(addAttribute(getVariantFilter("2:10048155:-:AT", "PASS"),QUAL,"."), "0/1");
+        b.getStudies().get(0).getSecondaryAlternates().add(new AlternateCoordinate("2",10048155,10048158,"ATAT","", INDEL));
+        List<Variant> resolved = new VariantLocalConflictResolver().resolveConflicts(Arrays.asList(a, b, c));
+        assertEquals(4,resolved.size());
+    }
+
+    @Test
     public void resolveConflicts() throws Exception {
         Variant a = addGT(addAttribute(getVariantFilter("2:10048155:TCTTTTTTTT:AC", "SiteConflict"),QUAL,"220"), "0/1");
         Variant b = addGT(addAttribute(getVariantFilter("2:10048156:T:T", "PASS"),QUAL,"."), "0/1");

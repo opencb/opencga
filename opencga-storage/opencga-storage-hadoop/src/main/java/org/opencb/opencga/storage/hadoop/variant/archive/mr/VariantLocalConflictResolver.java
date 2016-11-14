@@ -165,10 +165,13 @@ public class VariantLocalConflictResolver {
         List<Variant> altQueryLst = varToAlt.get(varQuery);
         Collections.sort(altQueryLst, variantPositionRefAltComparator);
 
-        altSorted.headSet(altQueryLst.get(altQueryLst.size() - 1), true);
+        SortedSet<Variant> altConflicts = new TreeSet<>(variantPositionRefAltComparator);
+//        altConflicts.addAll(altSorted.headSet(altQueryLst.get(altQueryLst.size() - 1), true)); // get last entry
 
-        NavigableSet<Variant> altConflicts = new TreeSet<>(variantPositionRefAltComparator);
-        altConflicts.addAll(altSorted.headSet(altQueryLst.get(altQueryLst.size() - 1), true));
+        altSorted.headSet(altQueryLst.get(altQueryLst.size() - 1), true).forEach(a -> {
+            // Get all ALTs from variant of ALT
+            altConflicts.addAll(varToAlt.get(altToVar.get(new AlternateWrapper(a))));
+        });
 
         // While there are items in the sorted ALT list
         // OR there are no overlaps anymore
