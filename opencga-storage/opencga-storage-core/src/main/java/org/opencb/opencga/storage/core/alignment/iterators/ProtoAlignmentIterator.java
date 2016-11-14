@@ -1,15 +1,16 @@
 package org.opencb.opencga.storage.core.alignment.iterators;
 
 import ga4gh.Reads;
+import org.opencb.biodata.tools.alignment.iterators.BamIterator;
 
 /**
  * Created by pfurio on 26/10/16.
  */
 public class ProtoAlignmentIterator extends AlignmentIterator<Reads.ReadAlignment> {
 
-    private org.opencb.biodata.tools.alignment.iterators.AlignmentIterator<Reads.ReadAlignment> protoIterator;
+    private BamIterator<Reads.ReadAlignment> protoIterator;
 
-    public ProtoAlignmentIterator(org.opencb.biodata.tools.alignment.iterators.AlignmentIterator<Reads.ReadAlignment> protoIterator) {
+    public ProtoAlignmentIterator(BamIterator<Reads.ReadAlignment> protoIterator) {
         this.protoIterator = protoIterator;
     }
 
