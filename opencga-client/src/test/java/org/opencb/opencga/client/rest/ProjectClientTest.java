@@ -25,6 +25,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.client.rest.catalog.ProjectClient;
 
 import java.io.IOException;
 

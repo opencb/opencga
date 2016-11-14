@@ -1,0 +1,662 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2015-2016 OpenCB
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<!--
+  ~
+  ~ Dependencies in this pom are divided in these categories:
+  ~  -1 Dependencies we want. Will be included in the uber-jar and marked as "optional" to avoid transitivity
+  ~      * main
+  ~          * hadoop
+  ~          * hbase
+  ~          * phoenix
+  ~      * test
+  ~          * hadoop-minicluster
+  ~          * hbase-testing-util
+  ~  -2 Transitive dependencies of the dependencies that we want
+  ~      * main
+  ~          * ...
+  ~      * test
+  ~          * ...
+  ~  -3 Dependencies we DON'T want (will be shaded)
+  ~      * jersey 1.9
+  ~      * org.mortbay.jetty:servlet-api
+  ~      * proto 2.5.0
+  ~      * guava 11
+  ~
+  ~  Dependencies of the first and second type have to be divided in:
+  ~      * Those that use the dependencies we don't want (to be included in the uber-jar)
+  ~      * Those dependencies that don't use any dependency that we don't want (will be transitive dependencies)
+  ~
+  -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.opencb.opencga</groupId>
+        <artifactId>opencga-storage-hadoop</artifactId>
+        <version>1.0.0-rc3</version>
+        <!--<relativePath>../pom.xml</relativePath>-->
+    </parent>
+
+    <!--<groupId>org.opencb.opencga</groupId>-->
+    <artifactId>opencga-storage-hadoop-deps</artifactId>
+    <version>1.0.0-rc3-SNAPSHOT</version>
+
+    <properties>
+        <checkstyle.skip>true</checkstyle.skip>
+        <protobuf2.version>2.5.0</protobuf2.version>
+        <guava.version>15.0</guava.version>
+
+        <!--Read from main phoenix pom.xml-->
+        <commons-configuration.version>1.6</commons-configuration.version>
+        <commons-io.version>2.1</commons-io.version>
+        <commons-lang.version>2.5</commons-lang.version>
+        <commons-logging.version>1.2</commons-logging.version>
+        <commons-csv.version>1.0</commons-csv.version>
+        <commons-codec.version>1.7</commons-codec.version>
+        <collections.version>3.2.1</collections.version>
+        <sqlline.version>1.1.9</sqlline.version>
+        <jline.version>2.11</jline.version>
+        <antlr.version>3.5</antlr.version>
+        <tephra.version>0.7.0</tephra.version>
+        <snappy.version>0.3</snappy.version>
+
+    </properties>
+
+    <dependencies>
+        <!-- =================================================== -->
+        <!-- Dependencies that we DON't want. To be shaded       -->
+        <!-- =================================================== -->
+
+        <dependency>
+            <groupId>com.google.protobuf</groupId>
+            <artifactId>protobuf-java</artifactId>
+            <version>${protobuf2.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- =================================================== -->
+        <!-- Dependencies that we WANT. Included in the uber-jar -->
+        <!-- =================================================== -->
+
+        <!--Hadoop dependencies-->
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-common</artifactId>
+            <version>${hadoop.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-client</artifactId>
+            <version>${hadoop.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-server</artifactId>
+            <version>${hbase.version}</version>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.mortbay.jetty</groupId>
+                    <artifactId>jetty</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.mortbay.jetty</groupId>
+                    <artifactId>jetty-util</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.mortbay.jetty</groupId>
+                    <artifactId>jsp-2.1</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.mortbay.jetty</groupId>
+                    <artifactId>jsp-api-2.1</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.mortbay.jetty</groupId>
+                    <artifactId>servlet-api-2.5</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.mortbay.jetty</groupId>
+                    <artifactId>jetty-sslengine</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun.jersey</groupId>
+                    <artifactId>jersey-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun.jersey</groupId>
+                    <artifactId>jersey-json</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun.jersey</groupId>
+                    <artifactId>jersey-server</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-log4j12</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+
+        <!-- Phoenix-core dependencies. Coprocessors uses grpc services-->
+        <dependency>
+            <groupId>org.apache.phoenix</groupId>
+            <artifactId>phoenix-core</artifactId>
+            <version>${phoenix.version}</version>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-common</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-client</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-mapreduce-client-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hadoop</groupId>
+                    <artifactId>hadoop-annotations</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-server</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-client</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-compact</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-hadoop-compat</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-common</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-protocol</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-annotations</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+
+        <!-- ============================================= -->
+        <!-- TRANSITIVE dependencies. Not to be included   -->
+        <!-- Needed by some dependencies.                  -->
+        <!-- Dependency broken due to including parent     -->
+        <!-- ============================================= -->
+        <dependency>
+            <groupId>org.apache.htrace</groupId>
+            <artifactId>htrace-core</artifactId>
+            <version>3.1.0-incubating</version>
+        </dependency>
+
+        <!-- Exclude mortbay from avro -->
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro-ipc</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.mortbay.jetty</groupId>
+                    <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jetty</artifactId>
+                    <groupId>org.mortbay.jetty</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jetty-util</artifactId>
+                    <groupId>org.mortbay.jetty</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro-mapred</artifactId>
+            <classifier>hadoop2</classifier>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.mortbay.jetty</groupId>
+                    <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jetty</artifactId>
+                    <groupId>org.mortbay.jetty</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>jetty-util</artifactId>
+                    <groupId>org.mortbay.jetty</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <!--Needed by hadoop-common -->
+        <dependency>
+            <groupId>commons-configuration</groupId>
+            <artifactId>commons-configuration</artifactId>
+            <version>1.6</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>2.6</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+            <version>1.1.3</version>
+        </dependency>
+
+        <!--Needed by hadoop-hdfs -->
+        <dependency>
+            <groupId>org.fusesource.leveldbjni</groupId>
+            <artifactId>leveldbjni-all</artifactId>
+            <version>1.8</version>
+        </dependency>
+
+        <!--Needed by hbase-server -->
+        <dependency>
+            <groupId>com.lmax</groupId>
+            <artifactId>disruptor</artifactId>
+            <version>3.3.0</version>
+        </dependency>
+
+        <!-- Needed by phoenix -->
+        <!-- Make sure we have all the antlr dependencies -->
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr-runtime</artifactId>
+            <version>${antlr.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>jline</groupId>
+            <artifactId>jline</artifactId>
+            <version>${jline.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>sqlline</groupId>
+            <artifactId>sqlline</artifactId>
+            <version>${sqlline.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>co.cask.tephra</groupId>
+            <artifactId>tephra-api</artifactId>
+            <version>${tephra.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>co.cask.tephra</groupId>
+            <artifactId>tephra-core</artifactId>
+            <version>${tephra.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>logback-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>logback-classic</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>co.cask.tephra</groupId>
+            <artifactId>tephra-hbase-compat-1.1</artifactId>
+            <version>${tephra.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.iq80.snappy</groupId>
+            <artifactId>snappy</artifactId>
+            <version>${snappy.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>${commons-codec.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-collections</groupId>
+            <artifactId>commons-collections</artifactId>
+            <version>${collections.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+            <version>${commons-csv.version}</version>
+        </dependency>
+
+        <!-- ================================== -->
+        <!-- Test dependencies                             -->
+        <!-- ============================================= -->
+        <!--Specify Hadoop minicluster version-->
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-minicluster</artifactId>
+            <version>${hadoop.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-testing-util</artifactId>
+            <version>${hbase.version}</version>
+            <type>test-jar</type>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-it</artifactId>
+            <version>${hbase.version}</version>
+            <type>test-jar</type>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <artifactId>hbase-server</artifactId>
+                    <groupId>org.apache.hbase</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.4.3</version>
+                <executions>
+                    <execution>
+                        <id>shade-main-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <!--<shadedClassifierName>jar-with-dependencies</shadedClassifierName>-->
+                            <!--<shadedClassifierName>shaded</shadedClassifierName>-->
+                            <createSourcesJar>true</createSourcesJar>
+
+                            <filters>
+                                <filter>
+                                    <artifact>com.sun.jersey:jersey-server</artifact>
+                                    <excludes>
+                                        <exclude>com/sun/jersey/server/impl/provider/RuntimeDelegateImpl*</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <artifact>com.sun.jersey:jersey-client</artifact>
+                                    <excludes>
+                                        <exclude>com/sun/ws/rs/ext/RuntimeDelegateImpl*</exclude>
+                                    </excludes>
+                                </filter>
+                                <filter>
+                                    <!--Include and relocate only the problematic class. Very isolated problem-->
+                                    <artifact>com.google.guava:guava</artifact>
+                                    <includes>
+                                        <include>com/google/common/io/Closeables*</include>
+                                    </includes>
+                                </filter>
+                            </filters>
+
+                            <relocations>
+                                <relocation>
+                                    <pattern>javax.servlet</pattern>
+                                    <shadedPattern>shaded.javax.servlet</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>javax.ws.rs</pattern>
+                                    <shadedPattern>shaded.javax.ws.rs</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.google.protobuf</pattern>
+                                    <shadedPattern>shaded.com.google.protobuf</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <!--Include and relocate only the problematic class. Very isolated problem-->
+                                    <pattern>com.google.common</pattern>
+                                    <shadedPattern>shaded.com.google.common</shadedPattern>
+                                    <includes>
+                                        <include>com.google.common.io.Closeables</include>
+                                    </includes>
+                                    <!--<excludes>-->
+                                    <!--<exclude>com.google.common.base.**</exclude>-->
+                                    <!--</excludes>-->
+                                </relocation>
+                            </relocations>
+
+                            <artifactSet>
+                                <includes>
+                                    <!-- Include old servlet-api, which is relocated.
+                                        This line won't include new servlet-api.
+                                        Artifact name in 3.x is "javax.servlet-api", and in 2.x "servlet-api" -->
+                                    <include>javax.servlet:servlet-api</include>
+                                    <!-- Include jersey1, which is relocated. -->
+                                    <include>com.sun.jersey</include>
+
+                                    <!-- Uses jersey, proto2 and guava. -->
+                                    <include>org.apache.hadoop</include>
+                                    <!-- Uses jersey and hadoop. -->
+                                    <include>org.apache.hbase</include>
+
+                                    <!--Spark uses jersey 2. Should not be included-->
+                                    <!--<include>org.apache.spark</include>-->
+
+                                    <!-- Does not use jersey -->
+                                    <!--<include>org.apache.zookeeper</include>-->
+
+                                    <!-- Not needed. Does not use jersey. Do not include, or include all antlr dependencies. -->
+                                    <!-- Needed. Uses proto2 through hbase interfaces-->
+                                    <include>org.apache.phoenix</include>
+
+                                    <!-- Not needed. -->
+                                    <!--<include>org.apache.htrace</include>-->
+
+                                    <include>com.google.guava</include>
+                                    <include>com.google.protobuf</include>
+                                </includes>
+                                <!--Exclude all test dependencies.-->
+                                <excludes>
+                                    <exclude>org.apache.hbase:**:tests</exclude>
+                                    <exclude>org.apache.hadoop:hadoop-minicluster</exclude>
+                                    <exclude>org.apache.hadoop:**:tests</exclude>
+                                    <exclude>org.mortbay.jetty:**</exclude>
+                                </excludes>
+                            </artifactSet>
+
+                            <!--VERY IMPORTANT!! Merge matching files in META-INF/services -->
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>shade-test-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <shadedClassifierName>tests</shadedClassifierName>
+                            <createSourcesJar>true</createSourcesJar>
+
+                            <relocations>
+                                <relocation>
+                                    <pattern>javax.servlet</pattern>
+                                    <shadedPattern>shaded.javax.servlet</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>javax.ws.rs</pattern>
+                                    <shadedPattern>shaded.javax.ws.rs</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>com.google.protobuf</pattern>
+                                    <shadedPattern>shaded.com.google.protobuf</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <!--Include and relocate only the problematic class. Very isolated problem-->
+                                    <pattern>com.google.common</pattern>
+                                    <shadedPattern>shaded.com.google.common</shadedPattern>
+                                    <includes>
+                                        <include>com.google.common.io.Closeables</include>
+                                    </includes>
+                                </relocation>
+                            </relocations>
+
+                            <artifactSet>
+                                <!--Include test dependencies that may be affected by the relocation-->
+                                <!--Add mortbay jetty version to run tests-->
+                                <includes>
+                                    <!--<include>org.apache.hbase:hbase-it:tests</include>-->
+                                    <!--<include>org.apache.hbase:hbase-testing-utility:tests</include>-->
+                                    <!--<include>org.apache.hadoop:hadoop-minicluster</include>-->
+                                    <include>org.apache.hbase:**:tests</include>
+                                    <include>org.apache.hadoop:hadoop-minicluster</include>
+                                    <include>org.apache.hadoop:**:tests</include>
+                                    <include>org.mortbay.jetty:servlet-api</include>
+                                    <include>org.mortbay.jetty:jetty</include>
+                                    <include>org.mortbay.jetty:jetty-util</include>
+                                </includes>
+                            </artifactSet>
+
+                            <!--VERY IMPORTANT!! Merge matching files in META-INF/services -->
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
+
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <profile>
+            <id>deploy</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>3.0.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <version>2.10.4</version>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <additionalparam>-Xdoclint:none</additionalparam>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.6</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>deploy</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>1.6.5</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <serverId>ossrh</serverId>
+                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
+</project>

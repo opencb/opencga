@@ -105,7 +105,7 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
-            <artifactId>opencga-storage-hadoop</artifactId>
+            <artifactId>opencga-storage-hadoop-core</artifactId>
             <version>${opencga.version}</version>
             <type>test-jar</type>
             <scope>test</scope>
@@ -335,7 +335,7 @@
             <dependencies>
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
-                    <artifactId>opencga-storage-hadoop</artifactId>
+                    <artifactId>opencga-storage-hadoop-core</artifactId>
                 </dependency>
             </dependencies>
             <build>
@@ -351,7 +351,7 @@
                                     <target>
                                         <echo>Copying hadoop jar with dependencies to ${build.dir}</echo>
                                         <exec executable="cp">
-                                            <arg value="${project.basedir}/../opencga-storage/opencga-storage-hadoop/target/opencga-storage-hadoop-${opencga.version}-jar-with-dependencies.jar"/>
+                                            <arg value="${project.basedir}/../opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-core/target/opencga-storage-hadoop-${opencga.version}-jar-with-dependencies.jar"/>
                                             <arg value="${build.dir}"/>
                                         </exec>
                                     </target>

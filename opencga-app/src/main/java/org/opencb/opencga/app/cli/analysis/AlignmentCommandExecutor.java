@@ -19,7 +19,6 @@ package org.opencb.opencga.app.cli.analysis;
 import ga4gh.Reads;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
@@ -37,16 +36,14 @@ import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
 import org.opencb.opencga.server.grpc.ServiceTypesModel;
-import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
-import org.opencb.opencga.storage.core.alignment.AlignmentStorageManagerOld;
-import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
 import java.io.IOException;
-import java.net.URI;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -56,7 +53,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
     private final AnalysisCliOptionsParser.AlignmentCommandOptions alignmentCommandOptions;
-    private AlignmentStorageManager alignmentStorageManager;
+//    private AlignmentStorageManager alignmentStorageManager;
 
     public AlignmentCommandExecutor(AnalysisCliOptionsParser.AlignmentCommandOptions options) {
         super(options.commonOptions);
@@ -187,35 +184,17 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         channel.shutdown().awaitTermination(2, TimeUnit.SECONDS);
     }
 
-    private void addParam(Map<String, String> map, String key, Object value) {
-        if (value == null) {
-            return;
-        }
-
-        if (value instanceof String) {
-            if (!((String) value).isEmpty()) {
-                map.put(key, (String) value);
-            }
-        } else if (value instanceof Integer) {
-            map.put(key, Integer.toString((int) value));
-        } else if (value instanceof Boolean) {
-            map.put(key, Boolean.toString((boolean) value));
-        } else {
-            throw new UnsupportedOperationException();
-        }
-    }
-
-    private AlignmentStorageManager initAlignmentStorageManager(DataStore dataStore)
-            throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException {
-
-        String storageEngine = dataStore.getStorageEngine();
-        if (StringUtils.isEmpty(storageEngine)) {
-            this.alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager();
-        } else {
-            this.alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
-        }
-        return alignmentStorageManager;
-    }
+//    private AlignmentStorageManager initAlignmentStorageManager(DataStore dataStore)
+//            throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException {
+//
+//        String storageEngine = dataStore.getStorageEngine();
+//        if (StringUtils.isEmpty(storageEngine)) {
+//            this.alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager();
+//        } else {
+//            this.alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
+//        }
+//        return alignmentStorageManager;
+//    }
 
     private void index() throws Exception {
         AnalysisCliOptionsParser.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
@@ -242,95 +221,95 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         alignmentStorageManager.index(null, cliOptions.fileId, params, sessionId);
     }
 
-    @Deprecated
-    private void index(Job job) throws CatalogException, IllegalAccessException, ClassNotFoundException, InstantiationException, StorageManagerException {
-
-        AnalysisCliOptionsParser.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
-
-
-        String sessionId = cliOptions.commonOptions.sessionId;
-        long inputFileId = catalogManager.getFileId(cliOptions.fileId);
-
-        // 1) Initialize VariantStorageManager
-        long studyId = catalogManager.getStudyIdByFileId(inputFileId);
-        Study study = catalogManager.getStudy(studyId, sessionId).first();
-
-        /*
-         * Getting VariantStorageManager
-         * We need to find out the Storage Engine Id to be used from Catalog
-         */
-        DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.ALIGNMENT, sessionId);
-        initAlignmentStorageManager(dataStore);
-
-
-        // 2) Read and validate cli args. Configure options
-//        ObjectMap alignmentOptions = alignmentStorageManager.getOptions();
-        ObjectMap alignmentOptions = new ObjectMap();
-        if (Integer.parseInt(cliOptions.fileId) != 0) {
-            alignmentOptions.put(AlignmentStorageManagerOld.Options.FILE_ID.key(), cliOptions.fileId);
-        }
-
-        alignmentOptions.put(AlignmentStorageManagerOld.Options.DB_NAME.key(), dataStore.getDbName());
-
-        if (cliOptions.commonOptions.params != null) {
-            alignmentOptions.putAll(cliOptions.commonOptions.params);
-        }
-
-        alignmentOptions.put(AlignmentStorageManagerOld.Options.PLAIN.key(), false);
-        alignmentOptions.put(AlignmentStorageManagerOld.Options.INCLUDE_COVERAGE.key(), cliOptions.calculateCoverage);
-        if (cliOptions.meanCoverage != null && !cliOptions.meanCoverage.isEmpty()) {
-            alignmentOptions.put(AlignmentStorageManagerOld.Options.MEAN_COVERAGE_SIZE_LIST.key(), cliOptions.meanCoverage);
-        }
-        alignmentOptions.put(AlignmentStorageManagerOld.Options.COPY_FILE.key(), false);
-        alignmentOptions.put(AlignmentStorageManagerOld.Options.ENCRYPT.key(), "null");
-        logger.debug("Configuration options: {}", alignmentOptions.toJson());
-
-
-        final boolean doExtract;
-        final boolean doTransform;
-        final boolean doLoad;
-        StorageETLResult storageETLResult = null;
-        Exception exception = null;
-
-        File file = catalogManager.getFile(inputFileId, sessionId).first();
-        URI inputUri = catalogManager.getFileUri(file);
-//        FileUtils.checkFile(Paths.get(inputUri.getPath()));
-
-//        URI outdirUri = job.getTmpOutDirUri();
-        URI outdirUri = IndexDaemon.getJobTemporaryFolder(job.getId(), catalogConfiguration.getTempJobsDir()).toUri();
-//        FileUtils.checkDirectory(Paths.get(outdirUri.getPath()));
-
-
-        if (!cliOptions.load && !cliOptions.transform) {  // if not present --transform nor --load,
-            // do both
-            doExtract = true;
-            doTransform = true;
-            doLoad = true;
-        } else {
-            doExtract = cliOptions.transform;
-            doTransform = cliOptions.transform;
-            doLoad = cliOptions.load;
-        }
-
-        // 3) Execute indexation
-        try {
-            storageETLResult = alignmentStorageManager.index(Collections.singletonList(inputUri), outdirUri, doExtract, doTransform, doLoad).get(0);
-
-        } catch (StorageETLException e) {
-            storageETLResult = e.getResults().get(0);
-            exception = e;
-            e.printStackTrace();
-            throw e;
-        } catch (Exception e) {
-            exception = e;
-            e.printStackTrace();
-            throw e;
-        } finally {
-            // 4) Save indexation result.
-            // TODO: Uncomment this line
-//            new ExecutionOutputRecorder(catalogManager, sessionId).saveStorageResult(job, storageETLResult);
-        }
-    }
+//    @Deprecated
+//    private void index(Job job) throws CatalogException, IllegalAccessException, ClassNotFoundException, InstantiationException, StorageManagerException {
+//
+//        AnalysisCliOptionsParser.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
+//
+//
+//        String sessionId = cliOptions.commonOptions.sessionId;
+//        long inputFileId = catalogManager.getFileId(cliOptions.fileId);
+//
+//        // 1) Initialize VariantStorageManager
+//        long studyId = catalogManager.getStudyIdByFileId(inputFileId);
+//        Study study = catalogManager.getStudy(studyId, sessionId).first();
+//
+//        /*
+//         * Getting VariantStorageManager
+//         * We need to find out the Storage Engine Id to be used from Catalog
+//         */
+//        DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.ALIGNMENT, sessionId);
+//        initAlignmentStorageManager(dataStore);
+//
+//
+//        // 2) Read and validate cli args. Configure options
+////        ObjectMap alignmentOptions = alignmentStorageManager.getOptions();
+//        ObjectMap alignmentOptions = new ObjectMap();
+//        if (Integer.parseInt(cliOptions.fileId) != 0) {
+//            alignmentOptions.put(AlignmentStorageManagerOld.Options.FILE_ID.key(), cliOptions.fileId);
+//        }
+//
+//        alignmentOptions.put(AlignmentStorageManagerOld.Options.DB_NAME.key(), dataStore.getDbName());
+//
+//        if (cliOptions.commonOptions.params != null) {
+//            alignmentOptions.putAll(cliOptions.commonOptions.params);
+//        }
+//
+//        alignmentOptions.put(AlignmentStorageManagerOld.Options.PLAIN.key(), false);
+//        alignmentOptions.put(AlignmentStorageManagerOld.Options.INCLUDE_COVERAGE.key(), cliOptions.calculateCoverage);
+//        if (cliOptions.meanCoverage != null && !cliOptions.meanCoverage.isEmpty()) {
+//            alignmentOptions.put(AlignmentStorageManagerOld.Options.MEAN_COVERAGE_SIZE_LIST.key(), cliOptions.meanCoverage);
+//        }
+//        alignmentOptions.put(AlignmentStorageManagerOld.Options.COPY_FILE.key(), false);
+//        alignmentOptions.put(AlignmentStorageManagerOld.Options.ENCRYPT.key(), "null");
+//        logger.debug("Configuration options: {}", alignmentOptions.toJson());
+//
+//
+//        final boolean doExtract;
+//        final boolean doTransform;
+//        final boolean doLoad;
+//        StorageETLResult storageETLResult = null;
+//        Exception exception = null;
+//
+//        File file = catalogManager.getFile(inputFileId, sessionId).first();
+//        URI inputUri = catalogManager.getFileUri(file);
+////        FileUtils.checkFile(Paths.get(inputUri.getPath()));
+//
+////        URI outdirUri = job.getTmpOutDirUri();
+//        URI outdirUri = IndexDaemon.getJobTemporaryFolder(job.getId(), catalogConfiguration.getTempJobsDir()).toUri();
+////        FileUtils.checkDirectory(Paths.get(outdirUri.getPath()));
+//
+//
+//        if (!cliOptions.load && !cliOptions.transform) {  // if not present --transform nor --load,
+//            // do both
+//            doExtract = true;
+//            doTransform = true;
+//            doLoad = true;
+//        } else {
+//            doExtract = cliOptions.transform;
+//            doTransform = cliOptions.transform;
+//            doLoad = cliOptions.load;
+//        }
+//
+//        // 3) Execute indexation
+//        try {
+//            storageETLResult = alignmentStorageManager.index(Collections.singletonList(inputUri), outdirUri, doExtract, doTransform, doLoad).get(0);
+//
+//        } catch (StorageETLException e) {
+//            storageETLResult = e.getResults().get(0);
+//            exception = e;
+//            e.printStackTrace();
+//            throw e;
+//        } catch (Exception e) {
+//            exception = e;
+//            e.printStackTrace();
+//            throw e;
+//        } finally {
+//            // 4) Save indexation result.
+//            // TODO: Uncomment this line
+////            new ExecutionOutputRecorder(catalogManager, sessionId).saveStorageResult(job, storageETLResult);
+//        }
+//    }
 
     private void query() throws InterruptedException, CatalogException, IOException {
         ObjectMap objectMap = new ObjectMap();
@@ -350,7 +329,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.SKIP.key(), alignmentCommandOptions.queryAlignmentCommandOptions.skip);
 
         OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        QueryResponse<ReadAlignment> alignments = openCGAClient.getAnalysisClient().alignmentQuery(objectMap);
+        QueryResponse<ReadAlignment> alignments = openCGAClient.getAlignmentClient().query(objectMap);
 
         for (ReadAlignment readAlignment : alignments.allResults()) {
             System.out.println(readAlignment);
@@ -505,7 +484,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         }
 
         OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        QueryResponse<AlignmentGlobalStats> globalStats = openCGAClient.getAnalysisClient().alignmentStats(objectMap);
+        QueryResponse<AlignmentGlobalStats> globalStats = openCGAClient.getAlignmentClient().stats(objectMap);
 
         for (AlignmentGlobalStats alignmentGlobalStats : globalStats.allResults()) {
             System.out.println(alignmentGlobalStats.toJSON());
@@ -523,7 +502,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         }
 
         OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        QueryResponse<RegionCoverage> globalStats = openCGAClient.getAnalysisClient().alignmentCoverage(objectMap);
+        QueryResponse<RegionCoverage> globalStats = openCGAClient.getAlignmentClient().coverage(objectMap);
 
         for (RegionCoverage regionCoverage : globalStats.allResults()) {
             System.out.println(regionCoverage.toString());
@@ -534,5 +513,22 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         throw new UnsupportedOperationException();
     }
 
+    private void addParam(Map<String, String> map, String key, Object value) {
+        if (value == null) {
+            return;
+        }
+
+        if (value instanceof String) {
+            if (!((String) value).isEmpty()) {
+                map.put(key, (String) value);
+            }
+        } else if (value instanceof Integer) {
+            map.put(key, Integer.toString((int) value));
+        } else if (value instanceof Boolean) {
+            map.put(key, Boolean.toString((boolean) value));
+        } else {
+            throw new UnsupportedOperationException();
+        }
+    }
 
 }
