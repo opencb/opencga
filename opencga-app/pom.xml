@@ -351,7 +351,7 @@
                                     <target>
                                         <echo>Copying hadoop jar with dependencies to ${build.dir}</echo>
                                         <exec executable="cp">
-                                            <arg value="${project.basedir}/../opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-core/target/opencga-storage-hadoop-${opencga.version}-jar-with-dependencies.jar"/>
+                                            <arg value="${project.basedir}/../opencga-storage/opencga-storage-hadoop/opencga-storage-hadoop-core/target/opencga-storage-hadoop-core-${opencga.version}-jar-with-dependencies.jar"/>
                                             <arg value="${build.dir}"/>
                                         </exec>
                                     </target>

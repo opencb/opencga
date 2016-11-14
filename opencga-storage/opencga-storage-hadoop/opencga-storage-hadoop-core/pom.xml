@@ -14,12 +14,6 @@
     <packaging>jar</packaging>
     <version>${opencga.version}</version>
 
-    <properties>
-        <!--Warning! If score is 'provided', hadoop dependencies won't be transitive even for test-jar. See opencga-app pom-->
-        <hadoop.scope>system</hadoop.scope>
-        <hbase.scope>system</hbase.scope>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
