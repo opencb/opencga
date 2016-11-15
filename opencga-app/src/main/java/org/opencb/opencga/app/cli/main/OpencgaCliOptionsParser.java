@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
+import org.opencb.opencga.app.cli.main.options.analysis.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.main.options.catalog.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
@@ -42,6 +43,7 @@ public class OpencgaCliOptionsParser {
 
     protected final UserAndPasswordOptions userAndPasswordOptions;
 
+    // Catalog
     private UserCommandOptions usersCommandOptions;
     private ProjectCommandOptions projectCommandOptions;
     private StudyCommandOptions studyCommandOptions;
@@ -53,6 +55,9 @@ public class OpencgaCliOptionsParser {
     private CohortCommandOptions cohortCommandOptions;
     private PanelCommandOptions panelCommandOptions;
     private ToolCommandOptions toolCommandOptions;
+
+    // Analysis
+    private AlignmentCommandOptions alignmentCommandOptions;
 
 
 //    public final CommandShareResource commandShareResource;
@@ -269,6 +274,10 @@ public class OpencgaCliOptionsParser {
         panelSubCommands.addCommand("acl-member-info", panelCommandOptions.aclsMemberInfoCommandOptions);
         panelSubCommands.addCommand("acl-member-update", panelCommandOptions.aclsMemberUpdateCommandOptions);
 
+        alignmentCommandOptions = new AlignmentCommandOptions(this.commonCommandOptions, jCommander);
+        jCommander.addCommand("alignments", alignmentCommandOptions);
+        JCommander alignmentSubCommands = jCommander.getCommands().get("alignments");
+        alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexCommandOptions);
 
         if (interactive) { //Add interactive commands
 //            jCommander.addCommand(new HelpCommands());
@@ -598,6 +607,10 @@ public class OpencgaCliOptionsParser {
 
     public ToolCommandOptions getToolCommands() {
         return toolCommandOptions;
+    }
+
+    public AlignmentCommandOptions getAlignmentCommands() {
+        return alignmentCommandOptions;
     }
 
 }

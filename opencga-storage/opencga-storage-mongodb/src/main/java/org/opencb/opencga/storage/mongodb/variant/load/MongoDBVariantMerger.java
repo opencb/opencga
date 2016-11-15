@@ -485,8 +485,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 }
                 emptyVar.setType(variant.getType());
                 variant.getStudies().get(0).setSamplesPosition(getSamplesPosition(fileId));
-                Document newDocument = studyConverter.convertToStorageType(variant.getStudies().get(0));
-
+                Document newDocument = studyConverter.convertToStorageType(variant, variant.getStudies().get(0));
                 fileDocuments.add((Document) getListFromDocument(newDocument, FILES_FIELD).get(0));
                 alternateDocuments = getListFromDocument(newDocument, ALTERNATES_FIELD);
 
@@ -630,7 +629,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             for (Integer fileId : fileIds) {
                 FileEntry file = studyEntry.getFile(fileId.toString());
                 if (file != null) {
-                    Document studyDocument = studyConverter.convertToStorageType(studyEntry, file, getSampleNamesInFile(fileId));
+                    Document studyDocument = studyConverter.convertToStorageType(variant, studyEntry, file, getSampleNamesInFile(fileId));
                     if (studyDocument.containsKey(GENOTYPES_FIELD)) {
                         studyDocument.get(GENOTYPES_FIELD, Document.class)
                                 .forEach((gt, sampleIds) -> addSampleIdsGenotypes(gts, gt, (Collection<Integer>) sampleIds));
@@ -648,7 +647,8 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 for (Integer fileId : indexedFiles) {
                     FileEntry file = studyEntry.getFile(fileId.toString());
                     if (file != null) {
-                        Document studyDocument = studyConverter.convertToStorageType(studyEntry, file, getSampleNamesInFile(fileId));
+                        Document studyDocument = studyConverter.convertToStorageType(variant, studyEntry, file,
+                                getSampleNamesInFile(fileId));
                         if (studyDocument.containsKey(GENOTYPES_FIELD)) {
                             studyDocument.get(GENOTYPES_FIELD, Document.class)
                                     .forEach((gt, sampleIds) -> addSampleIdsGenotypes(gts, gt, (Collection<Integer>) sampleIds));
