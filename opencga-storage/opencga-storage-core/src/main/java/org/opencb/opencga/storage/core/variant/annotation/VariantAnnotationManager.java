@@ -38,12 +38,12 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.io.VariantDBReader;
+import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.opencb.opencga.storage.core.variant.io.avro.AvroDataReader;
-import org.opencb.opencga.storage.core.variant.io.avro.AvroDataWriter;
-import org.opencb.opencga.storage.core.variant.io.avro.VariantAnnotationJsonDataReader;
-import org.opencb.opencga.storage.core.variant.io.avro.VariantAnnotationJsonDataWriter;
+import org.opencb.opencga.storage.core.io.avro.AvroDataReader;
+import org.opencb.opencga.storage.core.io.avro.AvroDataWriter;
+import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationJsonDataReader;
+import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationJsonDataWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -173,7 +173,11 @@ public class VariantAnnotationManager {
                 variantAnnotationDataWriter = new VariantAnnotationJsonDataWriter(path, gzip);
             }
 
-            ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numThreads, batchSize, numThreads * 2, true, false);
+            ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
+                    .setNumTasks(numThreads)
+                    .setBatchSize(batchSize)
+                    .setAbortOnFail(true)
+                    .setSorted(false).build();
             ParallelTaskRunner<Variant, VariantAnnotation> parallelTaskRunner =
                     new ParallelTaskRunner<>(variantDataReader, annotationTask, variantAnnotationDataWriter, config);
             parallelTaskRunner.run();
@@ -208,7 +212,11 @@ public class VariantAnnotationManager {
         final int numConsumers = options.getInt(VariantAnnotationManager.NUM_WRITERS, 6);
         boolean avro = uri.getPath().endsWith("avro") || uri.getPath().endsWith("avro.gz");
 
-        ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numConsumers, batchSize, numConsumers * 2, true, false);
+        ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
+                .setNumTasks(numConsumers)
+                .setBatchSize(batchSize)
+                .setAbortOnFail(true)
+                .setSorted(false).build();
         DataReader<VariantAnnotation> reader;
 
         //TODO: Read from VEP file

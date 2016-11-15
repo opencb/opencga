@@ -31,8 +31,7 @@ import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantWriteResult;
-import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdComplexTypeConverter;
+import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.stage.VariantToAvroBinaryConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +44,7 @@ import java.util.stream.Stream;
 
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.*;
-import static org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdComplexTypeConverter.*;
+import static org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter.*;
 
 /**
  * Created on 07/04/16.
@@ -75,7 +74,7 @@ public class MongoDBVariantStageLoader implements DataWriter<Variant> {
 
     public static final ComplexTypeConverter<Variant, Binary> VARIANT_CONVERTER_DEFAULT = new VariantToAvroBinaryConverter();
 
-    public static final VariantStringIdComplexTypeConverter STRING_ID_CONVERTER = new VariantStringIdComplexTypeConverter();
+    public static final VariantStringIdConverter STRING_ID_CONVERTER = new VariantStringIdConverter();
 
     public MongoDBVariantStageLoader(MongoDBCollection collection, int studyId, int fileId, int numTotalVariants, boolean resumeStageLoad) {
         this.collection = collection;

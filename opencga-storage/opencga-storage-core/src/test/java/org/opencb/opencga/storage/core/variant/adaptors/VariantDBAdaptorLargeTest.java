@@ -31,7 +31,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -49,7 +49,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Ignore
-public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTestUtils {
+public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
 
     protected static final Integer file1 = 1;
     protected static final Integer file2 = 2;

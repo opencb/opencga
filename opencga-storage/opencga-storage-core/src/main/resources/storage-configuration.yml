@@ -131,7 +131,7 @@ storageEngines:
 #      - "HADOOP_USER_CLASSPATH_FIRST=true"
 #      - "HADOOP_CLASSPATH=$HADOOP_CLASSPATH:${OPENCGA.INSTALLATION.DIR}/libs/protobuf-java-${google.protobuf}.jar"
 #      - ....
-      opencga.storage.hadoop.jar-with-dependencies: "opencga-storage-hadoop-${opencga.version}-jar-with-dependencies.jar"
+      opencga.storage.hadoop.jar-with-dependencies: "opencga-storage-hadoop-core-${opencga.version}-jar-with-dependencies.jar"
       opencga.archive.chunk_size: 1000
       opencga.archive.table.compression: "snappy"
       opencga.variant.table.compression: "snappy"

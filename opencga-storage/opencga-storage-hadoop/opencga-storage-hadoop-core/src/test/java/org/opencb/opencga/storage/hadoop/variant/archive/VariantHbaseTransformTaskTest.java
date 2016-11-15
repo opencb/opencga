@@ -25,13 +25,12 @@ import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.opencga.storage.core.runner.VcfVariantReader;
-import org.opencb.opencga.storage.core.runner.VcfVariantReaderTest;
+import org.opencb.opencga.storage.core.io.VcfVariantReader;
+import org.opencb.opencga.storage.core.io.VcfVariantReaderTest;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Supplier;
 
 import static org.junit.Assert.*;
 
@@ -51,7 +50,11 @@ public class VariantHbaseTransformTaskTest {
         VcfMeta vs = new VcfMeta(source);
         ArchiveHelper helper = new ArchiveHelper(conf, vs);
         ParallelTaskRunner.Task<Variant, VcfSliceProtos.VcfSlice> task = new VariantHbaseTransformTask(helper, null);
-        ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(1,10,2,false);
+        ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
+                .setNumTasks(1)
+                .setBatchSize(10)
+                .setAbortOnFail(true)
+                .setSorted(false).build();
         return new ParallelTaskRunner<>(
                 reader,
                 () -> task,

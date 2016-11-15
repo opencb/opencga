@@ -31,12 +31,13 @@ import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager.MongoDBVariantOptions;
+import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageManagerException;
 import org.slf4j.Logger;
@@ -62,7 +63,7 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSt
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class MongoVariantStorageManagerTest extends VariantStorageManagerTest implements MongoVariantStorageManagerTestUtils {
+public class MongoVariantStorageManagerTest extends VariantStorageManagerTest implements MongoDBVariantStorageTest {
 
     @Test
     public void stageResumeFromErrorTest() throws Exception {
@@ -352,7 +353,7 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
 
     @Test
     public void mergeResumeFirstFileTest() throws Exception {
-        mergeResume(VariantStorageManagerTestUtils.inputUri, createStudyConfiguration(), o -> {});
+        mergeResume(VariantStorageBaseTest.inputUri, createStudyConfiguration(), o -> {});
     }
 
     @Test

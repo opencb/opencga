@@ -22,6 +22,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.tools.variant.VariantFileUtils;
+import org.opencb.opencga.storage.core.io.avro.AvroDataReader;
 import org.xerial.snappy.SnappyInputStream;
 
 import java.io.File;

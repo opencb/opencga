@@ -25,7 +25,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.rest.FileWSServer;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
@@ -190,9 +189,6 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                                 @ApiParam(value = "Only alignments completely contained within boundaries of region", required = false)
                                     @QueryParam("contained") Boolean contained) {
         try {
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            Long fileId = catalogManager.getFileManager().getId(userId, fileIdStr);
-
             Query query = new Query();
             query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), region);
             query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
@@ -205,20 +201,6 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             return createOkResponse(
                     alignmentStorageManager.coverage(studyId, fileIdStr, query, queryOptions, sessionId)
             );
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/call")
-    @ApiOperation(value = "Obtain a tree view of the files and folders within a folder", position = 15, response = Job.class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
-    })
-    public Response call(@ApiParam(value = "File id or path") @QueryParam("studyId") String studyId) {
-        try {
-            return createOkResponse("[PENDING]");
         } catch (Exception e) {
             return createErrorResponse(e);
         }

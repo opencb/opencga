@@ -38,12 +38,11 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantWriteResult;
-import org.opencb.opencga.storage.mongodb.variant.VariantMongoDBAdaptor;
+import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
-import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdComplexTypeConverter;
+import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -486,8 +485,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 }
                 emptyVar.setType(variant.getType());
                 variant.getStudies().get(0).setSamplesPosition(getSamplesPosition(fileId));
-                Document newDocument = studyConverter.convertToStorageType(variant.getStudies().get(0));
-
+                Document newDocument = studyConverter.convertToStorageType(variant, variant.getStudies().get(0));
                 fileDocuments.add((Document) getListFromDocument(newDocument, FILES_FIELD).get(0));
                 alternateDocuments = getListFromDocument(newDocument, ALTERNATES_FIELD);
 
@@ -631,7 +629,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             for (Integer fileId : fileIds) {
                 FileEntry file = studyEntry.getFile(fileId.toString());
                 if (file != null) {
-                    Document studyDocument = studyConverter.convertToStorageType(studyEntry, file, getSampleNamesInFile(fileId));
+                    Document studyDocument = studyConverter.convertToStorageType(variant, studyEntry, file, getSampleNamesInFile(fileId));
                     if (studyDocument.containsKey(GENOTYPES_FIELD)) {
                         studyDocument.get(GENOTYPES_FIELD, Document.class)
                                 .forEach((gt, sampleIds) -> addSampleIdsGenotypes(gts, gt, (Collection<Integer>) sampleIds));
@@ -649,7 +647,8 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 for (Integer fileId : indexedFiles) {
                     FileEntry file = studyEntry.getFile(fileId.toString());
                     if (file != null) {
-                        Document studyDocument = studyConverter.convertToStorageType(studyEntry, file, getSampleNamesInFile(fileId));
+                        Document studyDocument = studyConverter.convertToStorageType(variant, studyEntry, file,
+                                getSampleNamesInFile(fileId));
                         if (studyDocument.containsKey(GENOTYPES_FIELD)) {
                             studyDocument.get(GENOTYPES_FIELD, Document.class)
                                     .forEach((gt, sampleIds) -> addSampleIdsGenotypes(gts, gt, (Collection<Integer>) sampleIds));
@@ -1122,10 +1121,10 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         // If the document has only the study, _id, end, ref and alt fields.
         if (!newStudy || document.size() != 5) {
             for (Map.Entry<String, Object> entry : document.entrySet()) {
-                if (!entry.getKey().equals(VariantStringIdComplexTypeConverter.ID_FIELD)
-                        && !entry.getKey().equals(VariantStringIdComplexTypeConverter.END_FIELD)
-                        && !entry.getKey().equals(VariantStringIdComplexTypeConverter.REF_FIELD)
-                        && !entry.getKey().equals(VariantStringIdComplexTypeConverter.ALT_FIELD)) {
+                if (!entry.getKey().equals(VariantStringIdConverter.ID_FIELD)
+                        && !entry.getKey().equals(VariantStringIdConverter.END_FIELD)
+                        && !entry.getKey().equals(VariantStringIdConverter.REF_FIELD)
+                        && !entry.getKey().equals(VariantStringIdConverter.ALT_FIELD)) {
                     if (!isNewStudy((Document) entry.getValue())) {
                         return false;
                     }

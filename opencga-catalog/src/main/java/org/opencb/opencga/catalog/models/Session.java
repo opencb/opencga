@@ -31,7 +31,7 @@ public class Session {
     private String logout;  //Empty string if still login
 
     public Session() {
-        this(StringUtils.randomString(20), "", TimeUtils.getTime(), "");
+        this("", "", "", "");
     }
 
     public Session(String ip, int length) {
