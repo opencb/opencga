@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
-import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.getResourceUri;
+import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 /**
  * Created by hpccoll1 on 08/07/15.
  */

@@ -23,8 +23,8 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -38,7 +38,7 @@ import static org.junit.Assert.assertTrue;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseLockTest extends VariantStorageManagerTestUtils implements HadoopVariantStorageManagerTestUtils {
+public class HBaseLockTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();

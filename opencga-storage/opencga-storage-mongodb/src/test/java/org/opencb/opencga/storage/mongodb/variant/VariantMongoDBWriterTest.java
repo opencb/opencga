@@ -24,27 +24,30 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.formats.variant.io.VariantReader;
-import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.biodata.tools.variant.tasks.VariantRunner;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.io.DataWriter;
+import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
+import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBWriter;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantMerger;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageLoader;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageReader;
+import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 
 import java.io.IOException;
 import java.util.*;
@@ -60,7 +63,7 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSa
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestUtils {
+public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
 
     private static String inputFile;
     private static MongoDBVariantStorageManager variantStorageManager;
@@ -83,9 +86,9 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         ConsoleAppender stderr = (ConsoleAppender) LogManager.getRootLogger().getAppender("stderr");
         stderr.setThreshold(Level.toLevel("debug"));
 
-        inputFile = VariantStorageManagerTestUtils.getResourceUri("variant-test-file.vcf.gz").getPath();
+        inputFile = VariantStorageBaseTest.getResourceUri("variant-test-file.vcf.gz").getPath();
 
-        clearDB(VariantStorageManagerTestUtils.DB_NAME);
+        clearDB(VariantStorageBaseTest.DB_NAME);
         variantStorageManager = getVariantStorageManager();
 
         source1 = new VariantSource(getFileName(fileId1), fileId1.toString(), studyId1.toString(), studyName1);
@@ -117,7 +120,7 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         studyConfiguration2.getFileIds().put(source3.getFileName(), fileId3);
         studyConfiguration2.getSamplesInFiles().put(fileId3, file3SampleIds);
 
-        dbAdaptor = variantStorageManager.getDBAdaptor(VariantStorageManagerTestUtils.DB_NAME);
+        dbAdaptor = variantStorageManager.getDBAdaptor(VariantStorageBaseTest.DB_NAME);
     }
 
 
@@ -132,7 +135,7 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         VariantReader reader = new VariantVcfReader(source1, inputFile);
 
         List<Task<Variant>> taskList = new SortedList<>();
-        List<VariantWriter> writers = new ArrayList<>();
+        List<DataWriter<Variant>> writers = new ArrayList<>();
 
 
         writers.add(new VariantMongoDBWriter(fileId1, studyConfiguration, dbAdaptor, true, false));
@@ -144,7 +147,7 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
 //        }
 //        taskList.add(new VariantStatsTask(reader, study1));
 
-        VariantRunner vr = new VariantRunner(source1, reader, null, writers, taskList, 200);
+        Runner<Variant> vr = new Runner<>(reader, writers, taskList, 200);
         vr.run();
 
     }
@@ -465,7 +468,7 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
     }
 
     public MongoDBVariantWriteResult stageVariants(StudyConfiguration studyConfiguration, List<Variant> variants, int fileId) {
-        MongoDBCollection stage = dbAdaptor.getDB().getCollection("stage");
+        MongoDBCollection stage = dbAdaptor.getStageCollection();
         MongoDBVariantStageLoader variantStageLoader = new MongoDBVariantStageLoader(stage, studyConfiguration.getStudyId(), fileId, variants.size(), false);
 
         variantStageLoader.insert(variants);
@@ -480,8 +483,8 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
     }
     public MongoDBVariantWriteResult mergeVariants(StudyConfiguration studyConfiguration, List<Integer> fileIds,
                                                    MongoDBVariantWriteResult stageWriteResult, List<String> chromosomes) {
-        MongoDBCollection stage = dbAdaptor.getDB().getCollection("stage");
-        MongoDBCollection variantsCollection = dbAdaptor.getDB().getCollection("variants");
+        MongoDBCollection stage = dbAdaptor.getStageCollection();
+        MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
         MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stage, studyConfiguration.getStudyId(), chromosomes);
         MongoDBVariantMerger dbMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds,
                 variantsCollection, reader.countAproxNumVariants(), studyConfiguration.getIndexedFiles(), false);

@@ -35,7 +35,7 @@ import static org.opencb.opencga.storage.core.variant.io.VariantReaderUtils.MALF
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HadoopVariantStorageManagerTransformTest extends VariantStorageManagerTransformTest implements HadoopVariantStorageManagerTestUtils {
+public class HadoopVariantStorageManagerTransformTest extends VariantStorageManagerTransformTest implements HadoopVariantStorageTest {
 
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();

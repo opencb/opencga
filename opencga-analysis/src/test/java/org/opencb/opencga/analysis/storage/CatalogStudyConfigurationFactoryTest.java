@@ -19,7 +19,6 @@ package org.opencb.opencga.analysis.storage;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.variant.CatalogStudyConfigurationFactory;
@@ -30,7 +29,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,8 +40,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
-import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.DB_NAME;
-import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.getResourceUri;
+import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.DB_NAME;
+import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 /**
  * Created by hpccoll1 on 16/07/15.

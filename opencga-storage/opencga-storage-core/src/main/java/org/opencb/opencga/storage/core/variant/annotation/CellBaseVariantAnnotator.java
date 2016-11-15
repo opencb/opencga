@@ -34,7 +34,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationMixin;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

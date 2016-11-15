@@ -20,13 +20,13 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.StorageManager;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.LoggerFactory;
-
-import java.nio.file.Path;
 
 /**
  * Created by imedina on 13/08/14.
@@ -187,21 +187,6 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
      */
     protected StudyConfigurationManager buildStudyConfigurationManager(ObjectMap options) throws StorageManagerException {
         return new FileStudyConfigurationManager(options);
-    }
-
-    /**
-     *
-     * @deprecated Use {@link VariantReaderUtils#readVariantSource(Path, VariantSource)} instead
-     * @param input Input variant file (avro, json, vcf)
-     * @param source VariantSource to fill. Can be null
-     * @return Read VariantSource
-     * @throws StorageManagerException if the format is not valid or there is an error reading
-     *
-     * @deprecated use {@link VariantReaderUtils#readVariantSource(java.net.URI)}
-     */
-    @Deprecated
-    public static VariantSource readVariantSource(Path input, VariantSource source) throws StorageManagerException {
-        return VariantReaderUtils.readVariantSource(input, source);
     }
 
     public static String buildFilename(String studyName, int fileId) {

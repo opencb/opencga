@@ -24,14 +24,14 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 
 /**
  * Created on 13/05/16
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public abstract class VariantDBAdaptorPhasedTest extends VariantStorageManagerTestUtils {
+public abstract class VariantDBAdaptorPhasedTest extends VariantStorageBaseTest {
 
 
     @Before

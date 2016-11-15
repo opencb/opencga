@@ -38,12 +38,11 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantWriteResult;
-import org.opencb.opencga.storage.mongodb.variant.VariantMongoDBAdaptor;
+import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
-import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdComplexTypeConverter;
+import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1122,10 +1121,10 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         // If the document has only the study, _id, end, ref and alt fields.
         if (!newStudy || document.size() != 5) {
             for (Map.Entry<String, Object> entry : document.entrySet()) {
-                if (!entry.getKey().equals(VariantStringIdComplexTypeConverter.ID_FIELD)
-                        && !entry.getKey().equals(VariantStringIdComplexTypeConverter.END_FIELD)
-                        && !entry.getKey().equals(VariantStringIdComplexTypeConverter.REF_FIELD)
-                        && !entry.getKey().equals(VariantStringIdComplexTypeConverter.ALT_FIELD)) {
+                if (!entry.getKey().equals(VariantStringIdConverter.ID_FIELD)
+                        && !entry.getKey().equals(VariantStringIdConverter.END_FIELD)
+                        && !entry.getKey().equals(VariantStringIdConverter.REF_FIELD)
+                        && !entry.getKey().equals(VariantStringIdConverter.ALT_FIELD)) {
                     if (!isNewStudy((Document) entry.getValue())) {
                         return false;
                     }

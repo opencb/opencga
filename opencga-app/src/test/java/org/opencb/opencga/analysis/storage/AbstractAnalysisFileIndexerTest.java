@@ -41,8 +41,8 @@ import java.nio.file.Paths;
 import java.util.Collections;
 
 import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
-import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.DB_NAME;
-import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.getResourceUri;
+import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.DB_NAME;
+import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 /**
  * Created on 05/05/16

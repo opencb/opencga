@@ -31,7 +31,7 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.variant.io.json.*;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.*;
 import org.opencb.opencga.storage.server.common.AuthManager;
 import org.opencb.opencga.storage.server.common.DefaultAuthManager;
 import org.opencb.opencga.storage.server.common.exceptions.NotAuthorizedHostException;

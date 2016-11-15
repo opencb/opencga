@@ -43,10 +43,10 @@ import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.variant.io.json.GenericRecordAvroJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.GenotypeJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
