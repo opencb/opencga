@@ -32,7 +32,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.VariantFileUtils;
-import org.opencb.biodata.tools.variant.converter.VariantFileMetadataToVCFHeaderConverter;
+import org.opencb.biodata.tools.variant.converters.avro.VariantFileMetadataToVCFHeaderConverter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
