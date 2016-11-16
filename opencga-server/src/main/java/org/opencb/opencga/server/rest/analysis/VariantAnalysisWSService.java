@@ -177,7 +177,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
     @GET
     @Path("/ibs")
-    @ApiOperation(value = "Obtain a tree view of the files and folders within a folder", position = 15, response = Job.class)
+    @ApiOperation(value = "[PENDING]", position = 15, response = Job.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "limit", value = "[TO BE IMPLEMENTED] Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
     })
