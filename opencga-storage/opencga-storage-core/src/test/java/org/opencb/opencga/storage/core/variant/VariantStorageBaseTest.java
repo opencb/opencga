@@ -166,7 +166,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         int c = 0;
         URI outputUri = VariantStorageBaseTest.outputUri.resolve("test_" + testName + "/");
         while (Paths.get(outputUri).toFile().exists()) {
-            outputUri = VariantStorageBaseTest.outputUri.resolve("test_" + testName + " (" + c++ + ")/");
+            outputUri = VariantStorageBaseTest.outputUri.resolve("test_" + testName + "-" + ++c + "/");
         }
         Files.createDirectory(Paths.get(outputUri));
         return outputUri;

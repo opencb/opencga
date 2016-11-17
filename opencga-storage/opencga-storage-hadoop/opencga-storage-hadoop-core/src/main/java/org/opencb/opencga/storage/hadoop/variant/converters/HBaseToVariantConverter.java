@@ -364,27 +364,8 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
      */
     private LinkedHashMap<String, Integer> getReturnedSamplesPosition(StudyConfiguration studyConfiguration) {
         if (!returnedSamplesPositionMap.containsKey(studyConfiguration.getStudyId())) {
-            LinkedHashMap<String, Integer> samplesPosition;
-            if (returnedSamples.isEmpty()) {
-                BiMap<Integer, String> unorderedSamplesPosition =
-                        StudyConfiguration.getIndexedSamplesPosition(studyConfiguration).inverse();
-                samplesPosition = new LinkedHashMap<>(unorderedSamplesPosition.size());
-                for (int i = 0; i < unorderedSamplesPosition.size(); i++) {
-                    samplesPosition.put(unorderedSamplesPosition.get(i), i);
-                }
-            } else {
-                samplesPosition = new LinkedHashMap<>(returnedSamples.size());
-                int index = 0;
-                BiMap<String, Integer> indexedSamplesId = StudyConfiguration.getIndexedSamples(studyConfiguration);
-                for (String returnedSample : returnedSamples) {
-                    if (indexedSamplesId.containsKey(returnedSample)) {
-                        samplesPosition.put(returnedSample, index++);
-                    } else if (StringUtils.isNumeric(returnedSample)) {
-                        String sample = indexedSamplesId.inverse().get(Integer.parseInt(returnedSample));
-                        samplesPosition.put(sample, index++);
-                    }
-                }
-            }
+            LinkedHashMap<String, Integer> samplesPosition = StudyConfiguration.getReturnedSamplesPosition(studyConfiguration,
+                    new LinkedHashSet<>(this.returnedSamples), StudyConfiguration::getIndexedSamples);
             returnedSamplesPositionMap.put(studyConfiguration.getStudyId(), samplesPosition);
         }
         return returnedSamplesPositionMap.get(studyConfiguration.getStudyId());
