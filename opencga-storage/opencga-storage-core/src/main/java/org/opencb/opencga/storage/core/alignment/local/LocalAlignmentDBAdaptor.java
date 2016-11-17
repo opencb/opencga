@@ -93,11 +93,14 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
             AlignmentFilters<SAMRecord> alignmentFilters = parseQuery(query);
             Region region = parseRegion(query);
 
+            String queryResultId;
             List<ReadAlignment> readAlignmentList;
             if (region != null) {
                 readAlignmentList = alignmentManager.query(region, alignmentOptions, alignmentFilters, ReadAlignment.class);
+                queryResultId = region.toString();
             } else {
                 readAlignmentList = alignmentManager.query(alignmentOptions, alignmentFilters, ReadAlignment.class);
+                queryResultId = "Get alignments";
             }
 //            List<String> stringFormatList = new ArrayList<>(readAlignmentList.size());
 //            for (Reads.ReadAlignment readAlignment : readAlignmentList) {
@@ -105,8 +108,8 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
 //            }
 //            List<JsonFormat> list = alignmentManager.query(region, alignmentOptions, alignmentFilters, Reads.ReadAlignment.class);
             watch.stop();
-            return new QueryResult("Get alignments", ((int) watch.getTime()), readAlignmentList.size(), readAlignmentList.size(),
-                    null, null, readAlignmentList);
+            return new QueryResult(queryResultId , ((int) watch.getTime()), readAlignmentList.size(), readAlignmentList.size(), null, null,
+                    readAlignmentList);
         } catch (Exception e) {
             e.printStackTrace();
             return new QueryResult<>();
@@ -263,6 +266,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         AlignmentFilters alignmentFilters = parseQuery(query);
         Region region = parseRegion(query);
 
+        String queryResultId;
         int windowSize;
         RegionCoverage coverage;
         if (region != null) {
@@ -277,6 +281,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
                 BamManager alignmentManager = new BamManager(path);
                 coverage = alignmentManager.coverage(region, alignmentOptions, alignmentFilters);
             }
+            queryResultId = region.toString();
         } else {
             // if no region is given we set up the windowSize to default value,
             // we should return a few thousands mean values
@@ -291,10 +296,11 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
             region = new Region(seq.getSequenceName(), 1, arraySize * MINOR_CHUNK_SIZE);
             coverage = meanCoverage(path, workspace, region, windowSize);
+            queryResultId = "Get coverage";
         }
 
         watch.stop();
-        return new QueryResult("Region coverage", ((int) watch.getTime()), 1, 1, null, null, Arrays.asList(coverage));
+        return new QueryResult(queryResultId, ((int) watch.getTime()), 1, 1, null, null, Arrays.asList(coverage));
     }
 
 
