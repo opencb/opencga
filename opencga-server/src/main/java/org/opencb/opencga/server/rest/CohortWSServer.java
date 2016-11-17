@@ -74,9 +74,11 @@ public class CohortWSServer extends OpenCGAWSServer {
 
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
             if (sampleIdsStr != null && !sampleIdsStr.isEmpty()) {
-                QueryOptions samplesQOptions = new QueryOptions("include", "projects.studies.samples.id");
-                Query samplesQuery = new Query("id", sampleIdsStr);
-                cohorts.add(createCohort(studyId, cohortName, type, cohortDescription, samplesQuery, samplesQOptions));
+                String userId = catalogManager.getUserManager().getId(sessionId);
+                List<Long> sampleIds = catalogManager.getSampleManager().getIds(userId, sampleIdsStr);
+                QueryResult<Cohort> cohortQueryResult =
+                        catalogManager.createCohort(studyId, cohortName, type, cohortDescription, sampleIds, null, sessionId);
+                cohorts.add(cohortQueryResult);
             } else if (variableSetId > 0) {
                 VariableSet variableSet = catalogManager.getVariableSet(variableSetId, null, sessionId).first();
                 Variable variable = null;
@@ -96,6 +98,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                     QueryOptions samplesQOptions = new QueryOptions("include", "projects.studies.samples.id");
                     Query samplesQuery = new Query(SampleDBAdaptor.QueryParams.ANNOTATION.key() + "." + variableName, s)
                             .append("variableSetId", variableSetId);
+
                     cohorts.add(createCohort(studyId, s, type, cohortDescription, samplesQuery, samplesQOptions));
                 }
             } else {

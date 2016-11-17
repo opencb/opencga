@@ -108,7 +108,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
 //            }
 //            List<JsonFormat> list = alignmentManager.query(region, alignmentOptions, alignmentFilters, Reads.ReadAlignment.class);
             watch.stop();
-            return new QueryResult(queryResultId , ((int) watch.getTime()), readAlignmentList.size(), readAlignmentList.size(), null, null,
+            return new QueryResult(queryResultId, ((int) watch.getTime()), readAlignmentList.size(), readAlignmentList.size(), null, null,
                     readAlignmentList);
         } catch (Exception e) {
             e.printStackTrace();
