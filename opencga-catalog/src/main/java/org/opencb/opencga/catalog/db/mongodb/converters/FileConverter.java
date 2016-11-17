@@ -33,10 +33,11 @@ public class FileConverter extends GenericDocumentComplexConverter<File> {
 
     @Override
     public File convertToDataModelType(Document document) {
-        if (document.get("job") != null && document.get("job") instanceof List) {
+        if (document.get("job") != null && document.get("job") instanceof List && ((List) document.get("job")).size() > 0) {
             document.put("job", ((List) document.get("job")).get(0));
         }
-        if (document.get("experiment") != null && document.get("experiment") instanceof List) {
+        if (document.get("experiment") != null && document.get("experiment") instanceof List
+                && ((List) document.get("experiment")).size() > 0) {
             document.put("experiment", ((List) document.get("experiment")).get(0));
         }
         return super.convertToDataModelType(document);
