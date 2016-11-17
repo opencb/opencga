@@ -35,10 +35,14 @@ public class FileConverter extends GenericDocumentComplexConverter<File> {
     public File convertToDataModelType(Document document) {
         if (document.get("job") != null && document.get("job") instanceof List && ((List) document.get("job")).size() > 0) {
             document.put("job", ((List) document.get("job")).get(0));
+        } else {
+            document.put("job", new Document("id", -1));
         }
         if (document.get("experiment") != null && document.get("experiment") instanceof List
                 && ((List) document.get("experiment")).size() > 0) {
             document.put("experiment", ((List) document.get("experiment")).get(0));
+        } else {
+            document.put("experiment", new Document("id", -1));
         }
         return super.convertToDataModelType(document);
     }

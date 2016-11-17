@@ -35,6 +35,8 @@ public class SampleConverter extends GenericDocumentComplexConverter<Sample> {
     public Sample convertToDataModelType(Document object) {
         if (object.get("individual") != null && object.get("individual") instanceof List && ((List) object.get("individual")).size() > 0) {
             object.put("individual", ((List) object.get("individual")).get(0));
+        } else {
+            object.put("individual", new Document("id", -1));
         }
         return super.convertToDataModelType(object);
     }
