@@ -329,7 +329,7 @@ public class CatalogMongoSampleDBAdaptorTest {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         QueryOptions queryOptions = new QueryOptions();
 
-        // We create a job
+        // We create an individual
         String individualName = "individualName";
         String individualFamily = "Smith";
         Individual individual = new Individual().setName(individualName).setFamily(individualFamily);
@@ -348,6 +348,26 @@ public class CatalogMongoSampleDBAdaptorTest {
         QueryResult<Sample> individualInfoQueryResult = catalogSampleDBAdaptor.get(sampleQR.first().getId(), queryOptions);
         assertEquals(individualName, individualInfoQueryResult.first().getIndividual().getName());
         assertEquals(individualFamily, individualInfoQueryResult.first().getIndividual().getFamily());
+    }
+
+    // Test if the lookup operation still behaves well when no individual is associated to the sample
+    @Test
+    public void getSampleWithNoIndividual() throws CatalogDBException {
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        QueryOptions queryOptions = new QueryOptions();
+
+        Sample sample = new Sample().setName("sample1");
+        QueryResult<Sample> sampleQR = catalogSampleDBAdaptor.insert(sample, studyId, queryOptions);
+
+        // Get the sample
+        QueryResult<Sample> noIndividualInfoQueryResult = catalogSampleDBAdaptor.get(sampleQR.first().getId(), queryOptions);
+        assertNull(noIndividualInfoQueryResult.first().getIndividual().getName());
+        assertNull(noIndividualInfoQueryResult.first().getIndividual().getFamily());
+
+        queryOptions.put("lazy", false);
+        QueryResult<Sample> individualInfoQueryResult = catalogSampleDBAdaptor.get(sampleQR.first().getId(), queryOptions);
+        assertNull(individualInfoQueryResult.first().getIndividual().getName());
+        assertNull(individualInfoQueryResult.first().getIndividual().getFamily());
     }
 
 
