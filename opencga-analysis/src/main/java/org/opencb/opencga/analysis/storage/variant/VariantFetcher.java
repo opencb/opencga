@@ -98,9 +98,8 @@ public class VariantFetcher implements AutoCloseable {
 
     public StudyConfiguration getStudyConfiguration(long studyId, QueryOptions options, String sessionId)
             throws CatalogException, StorageManagerException, IOException {
-        try (VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(studyId, sessionId)) {
-            return variantDBAdaptor.getStudyConfigurationManager().getStudyConfiguration((int) studyId, options).first();
-        }
+        VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(studyId, sessionId); // DB con closed by VariantFetcher
+        return variantDBAdaptor.getStudyConfigurationManager().getStudyConfiguration((int) studyId, options).first();
     }
 
     public QueryResult getVariantsPerFile(String region, boolean histogram, String groupBy, int interval, String fileId, String sessionId, QueryOptions queryOptions)
