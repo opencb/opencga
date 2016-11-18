@@ -60,7 +60,6 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryPa
 import org.opencb.opencga.storage.hadoop.variant.converters.stats.VariantStatsToHBaseConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.sql.ResultSet;
@@ -202,7 +201,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     private void close(java.sql.Connection connection) throws SQLException {
         if (connection != null) {
-            logger.info("Close Phoenix connection " + connection);
+            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            logger.info("Close Phoenix connection {} called from {}", connection, Arrays.toString(stackTrace));
             connection.close();
         }
     }
