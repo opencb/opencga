@@ -91,9 +91,8 @@ public class VariantFetcher implements AutoCloseable {
 
     public Map<Long, List<Sample>> getSamplesMetadata(long studyId, Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageManagerException, IOException {
-        try (VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(studyId, sessionId)) {
-            return checkSamplesPermissions(query, queryOptions, variantDBAdaptor, sessionId);
-        }
+        VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(studyId, sessionId);
+        return checkSamplesPermissions(query, queryOptions, variantDBAdaptor, sessionId);
     }
 
     public StudyConfiguration getStudyConfiguration(long studyId, QueryOptions options, String sessionId)
@@ -224,12 +223,10 @@ public class VariantFetcher implements AutoCloseable {
 
         long studyId = getMainStudyId(query, sessionId);
 
-        try (VariantDBAdaptor dbAdaptor = getVariantDBAdaptor(studyId, sessionId)) {
-
+        // Closed by Variant Fetcher
+        VariantDBAdaptor dbAdaptor = getVariantDBAdaptor(studyId, sessionId);
             // TODO: Check permissions?
-
-            return dbAdaptor.count(query);
-        }
+        return dbAdaptor.count(query);
     }
 
     protected int addDefaultLimit(QueryOptions queryOptions) {
