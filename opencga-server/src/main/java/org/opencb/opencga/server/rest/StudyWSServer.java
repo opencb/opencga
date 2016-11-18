@@ -332,10 +332,10 @@ public class StudyWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Histogram interval size", required = false) @DefaultValue("2000") @QueryParam("interval") int interval,
                                 @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge) {
 
-        try {
+        try ( VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory) ) {
             String[] studyIds = studyIdStrCvs.split(",");
             List<QueryResult> queryResults = new LinkedList<>();
-            VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
+
             for (String studyIdStr : studyIds) {
                 long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
                 // Get all query options

@@ -175,133 +175,137 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studyIds);
         QueryOptions queryOptions = VariantQueryCommandUtils.parseQueryOptions(cliOptions);
 
-        VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
+        try ( VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory) ) {
+            if (cliOptions.count) {
+                QueryResult<Long> result = variantFetcher.count(query, sessionId);
+                System.out.println("Num. results\t" + result.getResult().get(0));
+            } else if (StringUtils.isNotEmpty(cliOptions.groupBy)) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                QueryResult groupBy = variantFetcher.groupBy(query, queryOptions, cliOptions.groupBy, sessionId);
+                System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(groupBy));
 
-        if (cliOptions.count) {
-            QueryResult<Long> result = variantFetcher.count(query, sessionId);
-            System.out.println("Num. results\t" + result.getResult().get(0));
-        } else if (StringUtils.isNotEmpty(cliOptions.groupBy)) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            QueryResult groupBy = variantFetcher.groupBy(query, queryOptions, cliOptions.groupBy, sessionId);
-            System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(groupBy));
-        } else if (StringUtils.isNotEmpty(cliOptions.rank)) {
-            ObjectMapper objectMapper = new ObjectMapper();
-            QueryResult rank = variantFetcher.rank(query, queryOptions, cliOptions.rank, sessionId);
-            System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rank));
-        } else {
-            final String outputFormat;
-            if (StringUtils.isNotEmpty(cliOptions.outputFormat)) {
-                outputFormat = cliOptions.outputFormat.toLowerCase();
+            } else if (StringUtils.isNotEmpty(cliOptions.rank)) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                QueryResult rank = variantFetcher.rank(query, queryOptions, cliOptions.rank, sessionId);
+                System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rank));
             } else {
-                outputFormat = "vcf";
-            }
+                final String outputFormat;
+                if (StringUtils.isNotEmpty(cliOptions.outputFormat)) {
+                    outputFormat = cliOptions.outputFormat.toLowerCase();
+                } else {
+                    outputFormat = "vcf";
+                }
 
-            try (OutputStream outputStream = VariantQueryCommandUtils.getOutputStream(cliOptions);
-                 VariantDBIterator iterator = variantFetcher.iterator(query, queryOptions, sessionId)) {
+                try ( OutputStream outputStream = VariantQueryCommandUtils.getOutputStream(cliOptions);
+                      VariantDBIterator iterator = variantFetcher.iterator(query, queryOptions, sessionId) ) {
 
-                StudyConfiguration studyConfiguration;
-                final DataWriter<Variant> exporter;
-                switch (VariantQueryCommandUtils.VariantOutputFormat.safeValueOf(outputFormat)) {
-                    case VCF:
+                    StudyConfiguration studyConfiguration;
+                    final DataWriter<Variant> exporter;
+                    switch (VariantQueryCommandUtils.VariantOutputFormat.safeValueOf(outputFormat)) {
+                        case VCF:
 //                StudyConfigurationManager studyConfigurationManager = variantDBAdaptor.getStudyConfigurationManager();
 //                Map<Long, List<Sample>> samplesMetadata = variantFetcher.getSamplesMetadata(studyId, query, queryOptions, sessionId);
 //                QueryResult<StudyConfiguration> studyConfigurationResult = studyConfigurationManager.getStudyConfiguration(
 //                        query.getAsStringList(RETURNED_STUDIES.key()).get(0), null);
-                        studyConfiguration = variantFetcher
-                                .getStudyConfiguration(query.getAsIntegerList(RETURNED_STUDIES.key()).get(0), null, sessionId);
-                        if (studyConfiguration != null) {
-                            // Samples to be returned
-                            if (query.containsKey(RETURNED_SAMPLES.key())) {
-                                queryOptions.put(RETURNED_SAMPLES.key(), query.get(RETURNED_SAMPLES.key()));
-                            }
+                            studyConfiguration = variantFetcher
+                                    .getStudyConfiguration(query.getAsIntegerList(RETURNED_STUDIES.key()).get(0), null, sessionId);
+                            if (studyConfiguration != null) {
+                                // Samples to be returned
+                                if (query.containsKey(RETURNED_SAMPLES.key())) {
+                                    queryOptions.put(RETURNED_SAMPLES.key(), query.get(RETURNED_SAMPLES.key()));
+                                }
 
 //                        options.add("includeAnnotations", queryVariantsCommandOptions.includeAnnotations);
-                            if (cliOptions.annotations != null) {
-                                queryOptions.add("annotations", cliOptions.annotations);
-                            }
-//                            VariantVcfExporter.htsExport(iterator, studyConfiguration, outputStream, queryOptions);
-                            long studyId = variantFetcher.getMainStudyId(query, sessionId);
-                            VariantSourceDBAdaptor sourceDBAdaptor = variantFetcher.getSourceDBAdaptor((int) studyId, sessionId);
-                            exporter = new VariantVcfExporter(studyConfiguration, sourceDBAdaptor, outputStream, queryOptions);
-                        } else {
-                            throw new IllegalArgumentException("No study found named " + query.getAsStringList(RETURNED_STUDIES.key()).get(0));
-                        }
-                        break;
-                    case JSON:
-                        // we know that it is JSON, otherwise we have not reached this point
-                        exporter = batch -> {
-                            batch.forEach(variant -> {
-                                try {
-                                    outputStream.write(variant.toJson().getBytes());
-                                    outputStream.write('\n');
-                                } catch (IOException e) {
-                                    throw new UncheckedIOException(e);
+                                if (cliOptions.annotations != null) {
+                                    queryOptions.add("annotations", cliOptions.annotations);
                                 }
-                            });
-                            return true;
-                        };
+//                            VariantVcfExporter.htsExport(iterator, studyConfiguration, outputStream, queryOptions);
+                                long studyId = variantFetcher.getMainStudyId(query, sessionId);
+                                VariantSourceDBAdaptor sourceDBAdaptor = variantFetcher.getSourceDBAdaptor((int) studyId, sessionId);
+                                exporter = new VariantVcfExporter(studyConfiguration, sourceDBAdaptor, outputStream,
+                                        queryOptions);
+                            } else {
+                                throw new IllegalArgumentException("No study found named " + query.getAsStringList(RETURNED_STUDIES.key()).get(0));
+                            }
+                            break;
+                        case JSON:
+                            // we know that it is JSON, otherwise we have not reached this point
+                            exporter = batch -> {
+                                batch.forEach(variant -> {
+                                    try {
+                                        outputStream.write(variant.toJson().getBytes());
+                                        outputStream.write('\n');
+                                    } catch (IOException e) {
+                                        throw new UncheckedIOException(e);
+                                    }
+                                });
+                                return true;
+                            };
 
-                        break;
-                    case AVRO:
-                        String codecName = "";
-                        if (VariantQueryCommandUtils.VariantOutputFormat.isGzip(outputFormat)) {
-                            codecName = "gzip";
-                        }
-                        if (outputFormat.endsWith("snappy")) {
-                            codecName = "snappy";
-                        }
-                        exporter = new VariantAvroWriter(VariantAvro.getClassSchema(), codecName, outputStream);
+                            break;
+                        case AVRO:
+                            String codecName = "";
+                            if (VariantQueryCommandUtils.VariantOutputFormat.isGzip(outputFormat)) {
+                                codecName = "gzip";
+                            }
+                            if (outputFormat.endsWith("snappy")) {
+                                codecName = "snappy";
+                            }
+                            exporter = new VariantAvroWriter(VariantAvro.getClassSchema(), codecName, outputStream);
 
-                        break;
-                    case STATS:
-                        studyConfiguration = variantFetcher
-                                .getStudyConfiguration(query.getAsIntegerList(RETURNED_STUDIES.key()).get(0), null, sessionId);
-                        List<String> cohorts = new ArrayList<>(studyConfiguration.getCohortIds().keySet());
-                        cohorts.sort(String::compareTo);
+                            break;
+                        case STATS:
+                            studyConfiguration = variantFetcher
+                                    .getStudyConfiguration(query.getAsIntegerList(RETURNED_STUDIES.key()).get(0), null, sessionId);
+                            List<String> cohorts = new ArrayList<>(studyConfiguration.getCohortIds().keySet());
+                            cohorts.sort(String::compareTo);
 
-                        exporter = new VariantStatsTsvExporter(outputStream, studyConfiguration.getStudyName(), cohorts);
+                            exporter = new VariantStatsTsvExporter(outputStream, studyConfiguration.getStudyName(),
+                                    cohorts);
 
-                        break;
-                    case CELLBASE:
-                        exporter = new VariantStatsPopulationFrequencyExporter(outputStream);
-                        break;
-                    default:
-                        throw new ParameterException("Unknown output format " + outputFormat);
-                }
-
-                ParallelTaskRunner.Task<Variant, Variant> progressTask;
-                if (VariantQueryCommandUtils.isStandardOutput(cliOptions)) {
-                    progressTask = batch -> batch;
-                } else {
-                    ProgressLogger progressLogger = new ProgressLogger("Export variants", () -> {
-                        Long count = variantFetcher.count(query, sessionId).first();
-                        long limit = queryOptions.getLong(QueryOptions.LIMIT, Long.MAX_VALUE);
-                        long skip = queryOptions.getLong(QueryOptions.SKIP, 0);
-                        count = Math.min(limit, count - skip);
-                        return count;
-                    }, 200);
-                    progressTask = batch -> {
-                        progressLogger.increment(batch.size());
-                        return batch;
-                    };
-                }
-                ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
-                        .setNumTasks(1)
-                        .setBatchSize(10)
-                        .setAbortOnFail(true)
-                        .build();
-                ParallelTaskRunner<Variant, Variant> ptr = new ParallelTaskRunner<>(batchSize -> {
-                    List<Variant> variants = new ArrayList<>(batchSize);
-                    while (iterator.hasNext() && variants.size() < batchSize) {
-                        variants.add(iterator.next());
+                            break;
+                        case CELLBASE:
+                            exporter = new VariantStatsPopulationFrequencyExporter(outputStream);
+                            break;
+                        default:
+                            throw new ParameterException("Unknown output format " + outputFormat);
                     }
-                    return variants;
-                }, progressTask, exporter, config);
 
-                ptr.run();
+                    ParallelTaskRunner.Task<Variant, Variant> progressTask;
+                    if (VariantQueryCommandUtils.isStandardOutput(cliOptions)) {
+                        progressTask = batch -> batch;
+                    } else {
+                        ProgressLogger progressLogger = new ProgressLogger("Export variants", () -> {
+                            Long count = variantFetcher.count(query, sessionId).first();
+                            long limit = queryOptions.getLong(QueryOptions.LIMIT, Long.MAX_VALUE);
+                            long skip = queryOptions.getLong(QueryOptions.SKIP, 0);
+                            count = Math.min(limit, count - skip);
+                            return count;
+                        }, 200);
+                        progressTask = batch -> {
+                            progressLogger.increment(batch.size());
+                            return batch;
+                        };
+                    }
+                    ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
+                            .setNumTasks(1)
+                            .setBatchSize(10)
+                            .setAbortOnFail(true)
+                            .build();
+                    ParallelTaskRunner<Variant, Variant> ptr = new ParallelTaskRunner<>(batchSize -> {
+                        List<Variant> variants = new ArrayList<>(batchSize);
+                        while (iterator.hasNext() && variants.size() < batchSize) {
+                            variants.add(iterator.next());
+                        }
+                        return variants;
+                    }, progressTask, exporter, config);
 
-                logger.info("Time fetching data: " + iterator.getTimeFetching(TimeUnit.MILLISECONDS) / 1000.0 + "s");
-                logger.info("Time converting data: " + iterator.getTimeConverting(TimeUnit.MILLISECONDS) / 1000.0 + "s");
+                    ptr.run();
+
+                    logger.info("Time fetching data: " + iterator.getTimeFetching(TimeUnit.MILLISECONDS) / 1000.0 + "s");
+                    logger.info("Time converting data: " + iterator.getTimeConverting(TimeUnit.MILLISECONDS) / 1000.0 + "s");
+
+                }
 
             }
         }

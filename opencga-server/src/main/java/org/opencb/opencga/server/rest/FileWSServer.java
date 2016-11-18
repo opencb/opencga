@@ -950,8 +950,7 @@ public class FileWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge) {
 
         List<QueryResult> results = new LinkedList<>();
-        try {
-            VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
+        try ( VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory) ) {
             List<String> fileIds = convertPathList(fileIdCsv, sessionId);
 //            String[] splitFileId = fileIdCsv.split(",");
             for (String fileIdStr : fileIds) {

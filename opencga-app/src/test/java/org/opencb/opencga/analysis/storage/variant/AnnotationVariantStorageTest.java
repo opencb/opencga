@@ -159,26 +159,30 @@ public class AnnotationVariantStorageTest {
     }
 
     public Set<String> checkAnnotation(Function<Variant, Boolean> contains) throws CatalogException, StorageManagerException {
-        VariantFetcher variantFetcher = new VariantFetcher(catalogManager, opencga.getStorageManagerFactory());
-        VariantDBIterator iterator = variantFetcher.iterator(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId),
-                new QueryOptions(QueryOptions.SORT, true), sessionId);
+        try(VariantFetcher variantFetcher = new VariantFetcher(catalogManager, opencga.getStorageManagerFactory())) {
+            VariantDBIterator iterator = variantFetcher.iterator(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId),
 
-        Set<String> customAnnotationKeySet = new LinkedHashSet<>();
-        int c = 0;
-        while (iterator.hasNext()) {
-            c++;
-            Variant next = iterator.next();
-            if (contains.apply(next)) {
-                Assert.assertNotNull(next.getAnnotation());
-                if (next.getAnnotation().getAdditionalAttributes() != null) {
-                    customAnnotationKeySet.addAll(next.getAnnotation().getAdditionalAttributes().keySet());
+                    new QueryOptions(QueryOptions.SORT, true), sessionId);
+
+            Set<String> customAnnotationKeySet = new LinkedHashSet<>();
+            int c = 0;
+            while (iterator.hasNext()) {
+                c++;
+                Variant next = iterator.next();
+                if (contains.apply(next)) {
+                    Assert.assertNotNull(next.getAnnotation());
+                    if (next.getAnnotation().getAdditionalAttributes() != null) {
+                        customAnnotationKeySet.addAll(next.getAnnotation().getAdditionalAttributes().keySet());
+                    }
+                } else {
+                    Assert.assertNull(next.getAnnotation());
                 }
-            } else {
-                Assert.assertNull(next.getAnnotation());
             }
+            Assert.assertTrue(c > 0);
+            return customAnnotationKeySet;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-        Assert.assertTrue(c > 0);
-        return customAnnotationKeySet;
     }
 
 }

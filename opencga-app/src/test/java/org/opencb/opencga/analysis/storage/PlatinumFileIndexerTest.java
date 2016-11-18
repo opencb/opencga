@@ -84,10 +84,10 @@ public class PlatinumFileIndexerTest extends AbstractAnalysisFileIndexerTest {
             loadFile(transformFile, new QueryOptions());
         }
 
-        VariantFetcher fetcher = new VariantFetcher(catalogManager, StorageManagerFactory.get());
-        fetcher.iterator(new Query(VariantQueryParams.STUDIES.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
-            System.out.println("variant = " + variant);
-        });
+        try(VariantFetcher fetcher = new VariantFetcher(catalogManager, StorageManagerFactory.get())) {
+            fetcher.iterator(new Query(VariantQueryParams.STUDIES.key(), studyId), new QueryOptions(), sessionId)
+                    .forEachRemaining(variant -> System.out.println("variant = " + variant));
+        }
     }
 
     @Test
@@ -101,10 +101,10 @@ public class PlatinumFileIndexerTest extends AbstractAnalysisFileIndexerTest {
         }
         loadFiles(files, new QueryOptions());
 
-        VariantFetcher fetcher = new VariantFetcher(catalogManager, StorageManagerFactory.get());
-        fetcher.iterator(new Query(VariantQueryParams.STUDIES.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
-            System.out.println("variant = " + variant);
-        });
+        try(VariantFetcher fetcher = new VariantFetcher(catalogManager, StorageManagerFactory.get())) {
+            fetcher.iterator(new Query(VariantQueryParams.STUDIES.key(), studyId), new QueryOptions(), sessionId)
+                    .forEachRemaining(variant -> System.out.println("variant = " + variant));
+        }
     }
 
     public File transformFile(File inputFile, QueryOptions queryOptions) throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException, StorageManagerException, URISyntaxException, InstantiationException, IllegalAccessException {

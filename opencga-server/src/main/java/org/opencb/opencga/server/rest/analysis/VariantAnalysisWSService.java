@@ -21,7 +21,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.rest.FileWSServer;
@@ -156,8 +155,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                                 @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge) {
 
         List<QueryResult> results = new LinkedList<>();
-        try {
-            VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
+        try ( VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory) ) {
             List<String> fileIds = FileWSServer.convertPathList(fileIdCsv, sessionId);
             for (String fileIdStr : fileIds) {
                 QueryResult result;

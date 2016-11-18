@@ -123,11 +123,13 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
             queryOptions.add("model", "ga4gh");
             SearchVariantsResponse response = new SearchVariantsResponse();
 
-            VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
-            List<Variant> variants = variantFetcher.getVariantsPerStudy((int) studyId, queryOptions.getString(REGION.key()), false, null, 0, sessionId, queryOptions).getResult();
-            response.setNextPageToken(Integer.toString(++page));
-            response.setVariants(variants);
-            return buildResponse(Response.ok(response.toString(), MediaType.APPLICATION_JSON_TYPE));
+            try ( VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory) ) {
+                List<Variant> variants = variantFetcher.getVariantsPerStudy((int) studyId,
+                        queryOptions.getString(REGION.key()), false, null, 0, sessionId, queryOptions).getResult();
+                response.setNextPageToken(Integer.toString(++page));
+                response.setVariants(variants);
+                return buildResponse(Response.ok(response.toString(), MediaType.APPLICATION_JSON_TYPE));
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }

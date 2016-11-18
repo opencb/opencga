@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -49,7 +50,7 @@ import java.util.stream.Collectors;
  *
  * Created on 18/08/15.
  */
-public class VariantFetcher {
+public class VariantFetcher implements AutoCloseable {
 
     public static final String SAMPLES_METADATA = "samplesMetadata";
     private final CatalogManager catalogManager;
@@ -58,6 +59,7 @@ public class VariantFetcher {
 
     public static final int LIMIT_DEFAULT = 1000;
     public static final int LIMIT_MAX = 5000;
+    private final ConcurrentHashMap<String, VariantDBAdaptor> variantDBAdaptor = new ConcurrentHashMap<>();
 
     public VariantFetcher(CatalogManager catalogManager, StorageManagerFactory storageManagerFactory) {
         this.catalogManager = catalogManager;
@@ -195,7 +197,6 @@ public class VariantFetcher {
         long studyId = getMainStudyId(query, sessionId);
 
         VariantDBAdaptor dbAdaptor = getVariantDBAdaptor(studyId, sessionId);
-
         checkSamplesPermissions(query, queryOptions, dbAdaptor, sessionId);
         // TODO: Check returned files
 
@@ -323,18 +324,41 @@ public class VariantFetcher {
         return samplesMap;
     }
 
-    protected VariantDBAdaptor getVariantDBAdaptor(long studyId, String sessionId) throws CatalogException, StorageManagerException {
-        DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
-
-        String storageEngine = dataStore.getStorageEngine();
-        String dbName = dataStore.getDbName();
-
-//        dbAdaptor.setStudyConfigurationManager(new CatalogStudyConfigurationManager(catalogManager, sessionId));
-        try {
-            return storageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            throw new StorageManagerException("Unable to get VariantDBAdaptor", e);
+    @Override
+    public void close() throws Exception {
+        while (!this.variantDBAdaptor.isEmpty()) {
+            String key = this.variantDBAdaptor.keys().nextElement();
+            VariantDBAdaptor adaptor = this.variantDBAdaptor.remove(key);
+            if (adaptor != null) {
+                try{
+                    adaptor.close();
+                } catch (Exception e) {
+                    logger.error("Issue closing VariantDBadaptor", e);
+                }
+            }
         }
+    }
+
+    protected VariantDBAdaptor getVariantDBAdaptor(long studyId, String sessionId) throws CatalogException, StorageManagerException {
+        String key = studyId + "_" + sessionId;
+        if (!this.variantDBAdaptor.containsKey(key)) {
+            // Set new key
+            DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
+            String storageEngine = dataStore.getStorageEngine();
+            String dbName = dataStore.getDbName();
+            try {
+                this.variantDBAdaptor.computeIfAbsent(key, (str) -> {
+                    try {
+                        return storageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
+                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
+                        throw new IllegalStateException("Unable to get VariantDBAdaptor", e);
+                    }
+                });
+            } catch (IllegalStateException e) {
+                throw new StorageManagerException("Problems creating VariantDBAdaptor", e);
+            }
+        }
+        return variantDBAdaptor.get(key);
     }
 
     protected QueryResult<org.ga4gh.models.Variant> convertToGA4GH(QueryResult<Variant> result) {
