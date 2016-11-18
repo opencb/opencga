@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Collections;
 import java.util.List;
 
@@ -37,6 +38,7 @@ import java.util.List;
  */
 public class VariantHBaseResultSetIterator extends VariantDBIterator {
 
+    private final Statement statement;
     private final ResultSet resultSet;
     private final GenomeHelper genomeHelper;
     private final StudyConfigurationManager scm;
@@ -45,13 +47,16 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
 
     private boolean hasNext = false;
 
-    public VariantHBaseResultSetIterator(ResultSet resultSet, GenomeHelper genomeHelper, StudyConfigurationManager scm,
-                                         QueryOptions options) throws SQLException {
-        this(resultSet, genomeHelper, scm, options, Collections.emptyList());
+    public VariantHBaseResultSetIterator(
+            Statement statement, ResultSet resultSet, GenomeHelper genomeHelper, StudyConfigurationManager scm,
+            QueryOptions options) throws SQLException {
+        this(statement, resultSet, genomeHelper, scm, options, Collections.emptyList());
     }
 
-    public VariantHBaseResultSetIterator(ResultSet resultSet, GenomeHelper genomeHelper, StudyConfigurationManager scm,
-                                         QueryOptions options, List<String> returnedSamples) throws SQLException {
+    public VariantHBaseResultSetIterator(
+            Statement statement, ResultSet resultSet, GenomeHelper genomeHelper, StudyConfigurationManager scm,
+            QueryOptions options, List<String> returnedSamples) throws SQLException {
+        this.statement = statement;
         this.resultSet = resultSet;
         this.genomeHelper = genomeHelper;
         this.scm = scm;
@@ -76,6 +81,7 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
         logger.debug("Close variant iterator. Fetch = {}ms, Convert = {}ms",
                 getTimeFetching() / 1000000.0, getTimeConverting() / 1000000.0);
         resultSet.close();
+        statement.close();
     }
 
     @Override

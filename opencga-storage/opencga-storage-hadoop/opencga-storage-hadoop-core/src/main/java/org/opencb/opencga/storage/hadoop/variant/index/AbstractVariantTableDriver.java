@@ -64,7 +64,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageMana
  *
  */
 public abstract class AbstractVariantTableDriver extends Configured implements Tool {
-    protected final Logger LOG = LoggerFactory.getLogger(this.getClass());
+    protected static final Logger LOG = LoggerFactory.getLogger(AbstractVariantTableDriver.class);
 
     public static final String CONFIG_VARIANT_FILE_IDS          = "opencga.variant.input.file_ids";
     public static final String CONFIG_VARIANT_TABLE_NAME        = "opencga.variant.table.name";
@@ -310,6 +310,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
 //            HBaseManager.createNamespaceIfNeeded(con, namespace);
             try (java.sql.Connection jdbcConnection = variantPhoenixHelper.newJdbcConnection()) {
                 variantPhoenixHelper.createSchemaIfNeeded(jdbcConnection, namespace);
+                LOG.info("Phoenix connection is autoclosed ... " + jdbcConnection);
             } catch (ClassNotFoundException | SQLException e) {
                 throw new IOException(e);
             }
@@ -327,6 +328,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         if (newTable) {
             try (java.sql.Connection jdbcConnection = variantPhoenixHelper.newJdbcConnection()) {
                 variantPhoenixHelper.createTableIfNeeded(jdbcConnection, tableName);
+                LOG.info("Phoenix connection is autoclosed ... " + jdbcConnection);
             } catch (ClassNotFoundException | SQLException e) {
                 throw new IOException(e);
             }
