@@ -2,37 +2,49 @@ package org.opencb.opencga.storage.core.search;
 
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
-import org.opencb.commons.datastore.core.ComplexTypeConverter;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
- * Created by wasim on 09/11/16.
+ * Created by wasim on 14/11/16.
  */
-public class VariantToSolrConverter implements ComplexTypeConverter<Variant, VariantSolr> {
+public class VariantSearchFactory {
 
-    @Override
-    public Variant convertToDataModelType(VariantSolr variantSolr) {
-        // not supported
-        return null;
+
+    public VariantSearch create(Variant variant) {
+        return variantToSolrConverter(variant);
     }
 
-    @Override
-    public VariantSolr convertToStorageType(Variant variant) {
+    public List<VariantSearch> create(List<Variant> variants) {
+        List<VariantSearch> variantSearches = new ArrayList<VariantSearch>();
+        for (Variant variant : variants) {
+            VariantSearch variantSearch = variantToSolrConverter(variant);
+            if (variantSearch.getId() != null) {
+                variantSearches.add(variantSearch);
+            }
+        }
+        return variantSearches;
+    }
 
-        VariantSolr variantSolr = new VariantSolr();
+    private VariantSearch variantToSolrConverter(Variant variant) {
 
-        variantSolr.setDbSNP(variant.getId());
-        variantSolr.setType(variant.getType().toString());
-        variantSolr.setChromosome(variant.getChromosome());
-        variantSolr.setStart(variant.getStart());
-        variantSolr.setEnd(variant.getEnd());
+        VariantSearch variantSearch = new VariantSearch();
+//        variant.getStudies().get(0).getStats()
+
+        variantSearch.setDbSNP(variant.getId());
+        variantSearch.setType(variant.getType().toString());
+        variantSearch.setChromosome(variant.getChromosome());
+        variantSearch.setStart(variant.getStart());
+        variantSearch.setEnd(variant.getEnd());
 
         VariantAnnotation variantAnnotation = variant.getAnnotation();
 
         if (variantAnnotation != null) {
 
-            variantSolr.setId(variantAnnotation.getChromosome() + "_" + variantAnnotation.getStart() + "_"
+            variantSearch.setId(variantAnnotation.getChromosome() + "_" + variantAnnotation.getStart() + "_"
                     + variantAnnotation.getReference() + "_" + variantAnnotation.getAlternate());
 
             List<ConsequenceType> consequenceTypes = variantAnnotation.getConsequenceTypes();
@@ -40,14 +52,14 @@ public class VariantToSolrConverter implements ComplexTypeConverter<Variant, Var
             if (consequenceTypes != null) {
                 for (ConsequenceType consequenceType : consequenceTypes) {
 
-                    variantSolr.setGeneNames(consequenceType.getGeneName());
+                    variantSearch.setGeneNames(consequenceType.getGeneName());
                     //substitutionScores
                     List<Double> proteinScores = getsubstitutionScores(consequenceType);
-                    variantSolr.setSift(proteinScores.get(0));
-                    variantSolr.setPolyphen(proteinScores.get(1));
+                    variantSearch.setSift(proteinScores.get(0));
+                    variantSearch.setPolyphen(proteinScores.get(1));
                     // Accession
                     for (SequenceOntologyTerm sequenceOntologyTerm : consequenceType.getSequenceOntologyTerms()) {
-                        variantSolr.setAccessions(sequenceOntologyTerm.getAccession());
+                        variantSearch.setAccessions(sequenceOntologyTerm.getAccession());
                     }
                 }
             }
@@ -56,7 +68,7 @@ public class VariantToSolrConverter implements ComplexTypeConverter<Variant, Var
                     Map<String, Float> population = new HashMap<String, Float>();
                     population.put("study_" + populationFrequency.getStudy() + "_" + populationFrequency.getPopulation(),
                             populationFrequency.getAltAlleleFreq());
-                    variantSolr.setPopulations(population);
+                    variantSearch.setPopulations(population);
 
                 }
             }
@@ -65,11 +77,11 @@ public class VariantToSolrConverter implements ComplexTypeConverter<Variant, Var
             if (variantAnnotation.getConservation() != null) {
                 for (Score score : variantAnnotation.getConservation()) {
                     if ("gerp".equals(score.getSource())) {
-                        variantSolr.setGerp((Double) score.getScore());
+                        variantSearch.setGerp(score.getScore());
                     } else if ("phastCons".equals(score.getSource())) {
-                        variantSolr.setPhastCons(score.getScore());
+                        variantSearch.setPhastCons(score.getScore());
                     } else if ("phylop".equals(score.getSource())) {
-                        variantSolr.setPhylop(score.getScore());
+                        variantSearch.setPhylop(score.getScore());
                     }
                 }
             }
@@ -78,14 +90,14 @@ public class VariantToSolrConverter implements ComplexTypeConverter<Variant, Var
             if (variantAnnotation.getFunctionalScore() != null) {
                 for (Score score : variantAnnotation.getFunctionalScore()) {
                     if ("cadd_raw".equals(score.getSource())) {
-                        variantSolr.setCaddRaw(score.getScore());
+                        variantSearch.setCaddRaw(score.getScore());
                     } else if ("cadd_scaled".equals(score.getSource())) {
-                        variantSolr.setCaddScaled(score.getScore());
+                        variantSearch.setCaddScaled(score.getScore());
                     }
                 }
             }
         }
-        return variantSolr;
+        return variantSearch;
     }
 
     private List<Double> getsubstitutionScores(ConsequenceType consequenceType) {

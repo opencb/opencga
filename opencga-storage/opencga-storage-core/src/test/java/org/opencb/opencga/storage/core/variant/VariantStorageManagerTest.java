@@ -20,6 +20,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.collections.IteratorUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.formats.variant.io.VariantReader;
@@ -30,11 +31,15 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.StorageETLResult;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.search.SearchManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.io.VariantDBReader;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
@@ -56,6 +61,58 @@ import static org.junit.Assert.*;
  */
 @Ignore
 public abstract class VariantStorageManagerTest extends VariantStorageManagerTestUtils {
+
+
+    @Test
+    public void testSolr() throws Exception {
+        clearDB(DB_NAME);
+        ObjectMap params = new ObjectMap();
+        StudyConfiguration studyConfiguration = newStudyConfiguration();
+
+        params.put(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
+        params.put(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
+        params.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json");
+        params.put(VariantStorageManager.Options.FILE_ID.key(), 6);
+        params.put(VariantStorageManager.Options.COMPRESS_METHOD.key(), "gZiP");
+        params.put(VariantStorageManager.Options.TRANSFORM_THREADS.key(), 1);
+        params.put(VariantStorageManager.Options.LOAD_THREADS.key(), 1);
+        params.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
+        params.put(VariantStorageManager.Options.ANNOTATE.key(), true);
+        runETL(variantStorageManager, params, true, true, true);
+
+        VariantDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+
+
+        SearchManager searchManager = new SearchManager(variantStorageManager.getConfiguration());
+
+
+/*
+        for (Variant variant:dbAdaptor) {
+            searchManager.insert(variant);
+        }
+*/
+
+
+        VariantDBReader reader = new VariantDBReader(dbAdaptor, new Query(), new QueryOptions());
+
+        reader.open();
+        reader.pre();
+
+
+        List<Variant> read = reader.read(2000);
+
+        searchManager.insert(read);
+        /*
+        reader.post();
+        reader.close();
+*/
+
+       /* ParallelTaskRunner<Variant, Void> ptr = new ParallelTaskRunner<Variant, Void>(reader, list -> {
+            searchManager.insert(list);
+            return null;
+        }, null, ParallelTaskRunner.Config.builder().setNumTasks(1).setBatchSize(200).build());
+        ptr.run();*/
+    }
 
     @Test
     public void basicIndex() throws Exception {

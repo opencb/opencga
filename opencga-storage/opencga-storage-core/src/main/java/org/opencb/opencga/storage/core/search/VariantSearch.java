@@ -11,7 +11,7 @@ import java.util.Set;
  * Created by wasim on 09/11/16.
  */
 
-public class VariantSolr {
+public class VariantSearch {
 
 
     private String id;
@@ -31,7 +31,8 @@ public class VariantSolr {
     private Set<String> accessions;
     private Map<String, Float> populations;
 
-    public VariantSolr() {
+
+    public VariantSearch() {
         this.accessions = new HashSet<String>();
         this.geneNames = new HashSet<String>();
         this.populations = new HashMap<String, Float>();
@@ -41,7 +42,7 @@ public class VariantSolr {
         return dbSNP;
     }
     @Field
-    public VariantSolr setDbSNP(String dbSNP) {
+    public VariantSearch setDbSNP(String dbSNP) {
         this.dbSNP = dbSNP;
         return this;
     }
@@ -190,6 +191,28 @@ public class VariantSolr {
     @Field("*")
     public void setPopulations(Map<String, Float> populations) {
         this.populations.putAll(populations);
+    }
+
+    @Override
+    public String toString() {
+        return "VariantSearch{"
+                + "id='" + id + '\''
+                + ", dbSNP='" + dbSNP + '\''
+                + ", type='" + type + '\''
+                + ", chromosome='" + chromosome + '\''
+                + ", start=" + start
+                + ", end=" + end
+                + ", gerp=" + gerp
+                + ", caddRaw=" + caddRaw
+                + ", caddScaled=" + caddScaled
+                + ", phastCons=" + phastCons
+                + ", phylop=" + phylop
+                + ", sift=" + sift
+                + ", polyphen=" + polyphen
+                + ", geneNames=" + geneNames
+                + ", accessions=" + accessions
+                + ", populations=" + populations
+                + '}';
     }
 }
 

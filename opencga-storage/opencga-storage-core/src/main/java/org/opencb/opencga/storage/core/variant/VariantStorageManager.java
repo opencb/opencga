@@ -20,9 +20,11 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.StorageManager;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.search.SearchManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.LoggerFactory;
 
@@ -35,12 +37,12 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
 
     public enum Options {
         INCLUDE_STATS("include.stats", true),              //Include existing stats on the original file.
-//        @Deprecated
+        //        @Deprecated
 //        INCLUDE_GENOTYPES("include.genotypes", true),      //Include sample information (genotypes)
         EXTRA_GENOTYPE_FIELDS("include.extra-fields", ""),  //Include other sample information (like DP, GQ, ...)
         EXTRA_GENOTYPE_FIELDS_TYPE("include.extra-fields-format", ""),  //Other sample information format (String, Integer, Float)
         EXTRA_GENOTYPE_FIELDS_COMPRESS("extra-fields.compress", true),    //Compress with gzip other sample information
-//        @Deprecated
+        //        @Deprecated
 //        INCLUDE_SRC("include.src", false),                  //Include original source file on the transformed file and the final db
 //        COMPRESS_GENOTYPES ("compressGenotypes", true),    //Stores sample information as compressed genotypes
         EXCLUDE_GENOTYPES("exclude.genotypes", false),              //Do not store genotypes from samples
@@ -117,8 +119,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
     /**
      * Drops a file from the Variant Storage.
      *
-     * @param study   StudyName or StudyId
-     * @param fileId  FileId
+     * @param study  StudyName or StudyId
+     * @param fileId FileId
      * @throws StorageManagerException If the file can not be deleted or there was some problem deleting it.
      */
     public abstract void dropFile(String study, int fileId) throws StorageManagerException;
@@ -174,6 +176,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
         if (studyConfigurationManager == null) {
             studyConfigurationManager = buildStudyConfigurationManager(options);
         }
+
         return studyConfigurationManager;
     }
 
@@ -190,13 +193,10 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
     }
 
     /**
-     *
-     * @deprecated Use {@link VariantReaderUtils#readVariantSource(Path, VariantSource)} instead
-     * @param input Input variant file (avro, json, vcf)
+     * @param input  Input variant file (avro, json, vcf)
      * @param source VariantSource to fill. Can be null
      * @return Read VariantSource
      * @throws StorageManagerException if the format is not valid or there is an error reading
-     *
      * @deprecated use {@link VariantReaderUtils#readVariantSource(java.net.URI)}
      */
     @Deprecated
@@ -206,6 +206,16 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
 
     public static String buildFilename(String studyName, int fileId) {
         return VariantStorageETL.buildFilename(studyName, fileId);
+    }
+
+    public void insertVariantIntoSolr(SearchManager searchManager) throws StorageManagerException {
+
+        VariantDBAdaptor dbAdaptor = getDBAdaptor();
+        VariantDBIterator variantDBIterator = dbAdaptor.iterator();
+
+        while (variantDBIterator.hasNext()) {
+            searchManager.insert(variantDBIterator.next());
+        }
     }
 
 }
