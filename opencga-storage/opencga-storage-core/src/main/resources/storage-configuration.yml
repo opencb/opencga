@@ -133,6 +133,10 @@ storageEngines:
 #      - ....
       opencga.storage.hadoop.jar-with-dependencies: "opencga-storage-hadoop-core-${opencga.version}-jar-with-dependencies.jar"
       opencga.archive.chunk_size: 1000
+      hadoop.load.archive.batch.size: 3
+      hadoop.load.variant.batch.size: 1000
+      opencga.archive.table.presplit.size: 500
+      opencga.variant.table.presplit.size: 500
       opencga.archive.table.compression: "snappy"
       opencga.variant.table.compression: "snappy"
       opencga.storage.hadoop.hbase.namespace: "${OPENCGA.STORAGE.HADOOP.HBASE.NAMESPACE}"
