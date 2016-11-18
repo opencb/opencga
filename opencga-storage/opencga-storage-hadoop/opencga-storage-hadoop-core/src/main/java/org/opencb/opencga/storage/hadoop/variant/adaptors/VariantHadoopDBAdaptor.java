@@ -417,7 +417,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                     phoenixHelper.getPhoenixHelper().explain(getJdbcConnection(), sql, Logger::info);
                 }
 
-                Statement statement = getJdbcConnection().createStatement();// Statemnet closed by iterator
+                Statement statement = getJdbcConnection().createStatement(); // Statemnet closed by iterator
                 statement.setFetchSize(options.getInt("batchSize", -1));
                 ResultSet resultSet = statement.executeQuery(sql); // RS closed by iterator
                 List<String> returnedSamples = getDBAdaptorUtils().getReturnedSamples(query, options);
