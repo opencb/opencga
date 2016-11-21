@@ -59,35 +59,6 @@ import static org.junit.Assert.*;
 @Ignore
 public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
 
-
-    @Test
-    public void testSolr() throws Exception {
-        clearDB(DB_NAME);
-        ObjectMap params = new ObjectMap();
-        StudyConfiguration studyConfiguration = newStudyConfiguration();
-
-        params.put(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
-        params.put(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
-        params.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json");
-        params.put(VariantStorageManager.Options.FILE_ID.key(), 6);
-        params.put(VariantStorageManager.Options.COMPRESS_METHOD.key(), "gZiP");
-        params.put(VariantStorageManager.Options.TRANSFORM_THREADS.key(), 1);
-        params.put(VariantStorageManager.Options.LOAD_THREADS.key(), 1);
-        params.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
-        params.put(VariantStorageManager.Options.ANNOTATE.key(), true);
-        runETL(variantStorageManager, params, true, true, true);
-
-        VariantDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
-
-
-        SearchManager searchManager = new SearchManager(variantStorageManager.getConfiguration());
-
-        for (Variant variant:dbAdaptor) {
-            searchManager.insert(variant);
-        }
-
-    }
-
     @Test
     public void basicIndex() throws Exception {
         clearDB(DB_NAME);
@@ -855,5 +826,33 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         logger.info("checkLoadedVariants time : " + (System.currentTimeMillis() - start) / 1000.0 + "s");
     }
 
+
+    @Test
+    public void insertVariantIntoSolr() throws Exception {
+        clearDB(DB_NAME);
+        ObjectMap params = new ObjectMap();
+        StudyConfiguration studyConfiguration = newStudyConfiguration();
+
+        params.put(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
+        params.put(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
+        params.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json");
+        params.put(VariantStorageManager.Options.FILE_ID.key(), 6);
+        params.put(VariantStorageManager.Options.COMPRESS_METHOD.key(), "gZiP");
+        params.put(VariantStorageManager.Options.TRANSFORM_THREADS.key(), 1);
+        params.put(VariantStorageManager.Options.LOAD_THREADS.key(), 1);
+        params.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
+        params.put(VariantStorageManager.Options.ANNOTATE.key(), true);
+        runETL(variantStorageManager, params, true, true, true);
+
+        VariantDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+
+
+        SearchManager searchManager = new SearchManager(variantStorageManager.getConfiguration());
+
+        for (Variant variant:dbAdaptor) {
+            searchManager.insert(variant);
+        }
+
+    }
 
 }
