@@ -39,15 +39,12 @@ import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBWriter;
-import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantMerger;
-import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageLoader;
-import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageReader;
-import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
+import org.opencb.opencga.storage.mongodb.variant.load.*;
 
 import java.io.IOException;
 import java.util.*;
@@ -469,9 +466,10 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
 
     public MongoDBVariantWriteResult stageVariants(StudyConfiguration studyConfiguration, List<Variant> variants, int fileId) {
         MongoDBCollection stage = dbAdaptor.getStageCollection();
-        MongoDBVariantStageLoader variantStageLoader = new MongoDBVariantStageLoader(stage, studyConfiguration.getStudyId(), fileId, variants.size(), false);
+        MongoDBVariantStageLoader variantStageLoader = new MongoDBVariantStageLoader(stage, studyConfiguration.getStudyId(), fileId, false);
+        MongoDBVariantStageConverterTask converterTask = new MongoDBVariantStageConverterTask(null);
 
-        variantStageLoader.insert(variants);
+        variantStageLoader.write(converterTask.apply(variants));
 
         return variantStageLoader.getWriteResult();
     }

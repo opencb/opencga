@@ -20,6 +20,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
 import org.bson.Document;
+import org.bson.types.Binary;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -30,6 +31,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.opencga.core.common.ProgressLogger;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
@@ -43,10 +45,7 @@ import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBWriter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageManagerException;
-import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantMerger;
-import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageLoader;
-import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageReader;
-import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
+import org.opencb.opencga.storage.mongodb.variant.load.*;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -228,24 +227,42 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
             //Runner
             logger.info("Multi thread stage load... [{} readerThreads, {} writerThreads]", numReaders, numWriters);
 
-            ParallelTaskRunner<Variant, Variant> ptr;
+            ProgressLogger progressLogger = new ProgressLogger("Write variants in STAGE collection:", numRecords, 200);
+            MongoDBVariantStageConverterTask converterTask = new MongoDBVariantStageConverterTask(progressLogger);
             MongoDBVariantStageLoader stageLoader =
-                    new MongoDBVariantStageLoader(stageCollection, studyConfiguration.getStudyId(), fileId, numRecords,
+                    new MongoDBVariantStageLoader(stageCollection, studyConfiguration.getStudyId(), fileId,
                             options.getBoolean(STAGE_RESUME.key()));
 
-            ptr = new ParallelTaskRunner<>(
-                    variantReader,
-                    batch -> {
-                        remapIdsTask.apply(batch);
-                        stageLoader.insert(batch);
-                        return batch;
-                    },
-                    null,
-                    ParallelTaskRunner.Config.builder()
-                            .setNumTasks(loadThreads)
-                            .setBatchSize(batchSize)
-                            .setAbortOnFail(true).build()
-            );
+            ParallelTaskRunner<Variant, ?> ptr;
+            ParallelTaskRunner.Config build = ParallelTaskRunner.Config.builder()
+                    .setNumTasks(loadThreads)
+                    .setBatchSize(batchSize)
+                    .setAbortOnFail(true).build();
+            if (options.getBoolean(STAGE_PARALLEL_WRITE.key(), STAGE_PARALLEL_WRITE.defaultValue())) {
+                ptr = new ParallelTaskRunner<>(
+                        variantReader,
+                        batch -> { // Parallel loading
+                            List<Variant> remappedVariants = remapIdsTask.apply(batch);
+                            List<ListMultimap<Document, Binary>> mongoObjects = converterTask.apply(remappedVariants);
+                            stageLoader.write(mongoObjects);
+                            return null;
+                        },
+//                        remapIdsTask.then(converterTask).then(stageLoader),
+                        null,
+                        build
+                );
+            } else {
+                ptr = new ParallelTaskRunner<>(
+                        variantReader,
+                        batch -> {
+                            List<Variant> remappedVariants = remapIdsTask.apply(batch);
+                            return converterTask.apply(remappedVariants);
+                        },
+//                        remapIdsTask.then(converterTask),
+                        stageLoader,
+                        build
+                );
+            }
 
             Thread hook = new Thread(() -> {
                 try {

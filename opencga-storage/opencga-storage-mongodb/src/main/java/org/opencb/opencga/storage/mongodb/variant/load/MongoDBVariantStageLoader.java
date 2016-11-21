@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.mongodb.variant.load;
 
-import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.mongodb.ErrorCategory;
 import com.mongodb.MongoBulkWriteException;
@@ -26,7 +25,6 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
@@ -37,10 +35,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.*;
@@ -51,7 +47,7 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.VariantStrin
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class MongoDBVariantStageLoader implements DataWriter<Variant> {
+public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Document, Binary>> {
 
     public static final String NEW_STUDY_FIELD = "new";
     public static final boolean NEW_STUDY_DEFAULT = true;
@@ -60,61 +56,32 @@ public class MongoDBVariantStageLoader implements DataWriter<Variant> {
     public static final Pattern DUP_KEY_WRITE_RESULT_ERROR_PATTERN = Pattern.compile("^.*dup key: \\{ : \"([^\"]*)\" \\}$");
 
     private final MongoDBCollection collection;
-    private final int studyId;
-    private final int fileId;
-    private final int numTotalVariants;
     private final String fieldName;
     private final boolean resumeStageLoad;
     private final Logger logger = LoggerFactory.getLogger(MongoDBVariantStageLoader.class);
 
-    private final AtomicInteger variantsCount;
-    public static final int DEFAULT_LOGING_BATCH_SIZE = 5000;
-    private final int loggingBatchSize;
     private final MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult();
 
     public static final ComplexTypeConverter<Variant, Binary> VARIANT_CONVERTER_DEFAULT = new VariantToAvroBinaryConverter();
 
     public static final VariantStringIdConverter STRING_ID_CONVERTER = new VariantStringIdConverter();
 
-    public MongoDBVariantStageLoader(MongoDBCollection collection, int studyId, int fileId, int numTotalVariants, boolean resumeStageLoad) {
+    public MongoDBVariantStageLoader(MongoDBCollection collection, int studyId, int fileId, boolean resumeStageLoad) {
         this.collection = collection;
-        this.studyId = studyId;
-        this.fileId = fileId;
-        this.numTotalVariants = numTotalVariants;
         fieldName = studyId + "." + fileId;
-        variantsCount = new AtomicInteger(0);
-        loggingBatchSize = Math.max(numTotalVariants / 200, DEFAULT_LOGING_BATCH_SIZE);
         this.resumeStageLoad = resumeStageLoad;
     }
 
     @Override
-    public boolean write(List<Variant> batch) {
-        insert(batch);
+    public boolean write(List<ListMultimap<Document, Binary>> batch) {
+        for (ListMultimap<Document, Binary> map : batch) {
+            insert(map);
+        }
         return true;
     }
 
-    public MongoDBVariantWriteResult insert(List<Variant> variants) {
-        return insert(variants.stream());
-    }
-
-    public MongoDBVariantWriteResult insert(Stream<Variant> stream) {
+    public MongoDBVariantWriteResult insert(ListMultimap<Document, Binary> ids) {
         final long start = System.nanoTime();
-        final int[] variantsLocalCount = {0};
-        final int[] skippedVariants = {0};
-
-        ListMultimap<Document, Binary> ids = LinkedListMultimap.create();
-
-        stream.forEach(variant -> {
-            variantsLocalCount[0]++;
-            if (variant.getType().equals(VariantType.NO_VARIATION) || variant.getType().equals(VariantType.SYMBOLIC)) {
-                skippedVariants[0]++;
-                return;
-            }
-            Binary binary = VARIANT_CONVERTER_DEFAULT.convertToStorageType(variant);
-            Document id = STRING_ID_CONVERTER.convertToStorageType(variant);
-
-            ids.put(id, binary);
-        });
 
         MongoDBVariantWriteResult result = new MongoDBVariantWriteResult();
         Set<String> retryKeys = updateMongo(ids, result, null);
@@ -122,19 +89,12 @@ public class MongoDBVariantStageLoader implements DataWriter<Variant> {
             updateMongo(ids, result, retryKeys);
         }
 
-        int previousCount = variantsCount.getAndAdd(variantsLocalCount[0]);
-        if ((previousCount + variantsLocalCount[0]) / loggingBatchSize != previousCount / loggingBatchSize) {
-            logger.info("Write variants in STAGE collection " + (previousCount + variantsLocalCount[0]) + "/" + numTotalVariants + " "
-                    + String.format("%.2f%%", ((float) (previousCount + variantsLocalCount[0])) / numTotalVariants * 100.0));
-        }
-
-        result.setNewVariantsNanoTime(System.nanoTime() - start)
-                .setSkippedVariants(skippedVariants[0]);
+        result.setNewVariantsNanoTime(System.nanoTime() - start);
+//        result.setSkippedVariants(skippedVariants);
 
         synchronized (writeResult) {
             writeResult.merge(result);
         }
-
         return result;
     }
 
