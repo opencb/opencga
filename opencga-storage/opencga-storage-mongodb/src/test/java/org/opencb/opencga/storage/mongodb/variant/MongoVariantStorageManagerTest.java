@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Sorts;
 import org.bson.Document;
+import org.junit.After;
 import org.junit.Test;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -64,6 +65,11 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSt
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
 public class MongoVariantStorageManagerTest extends VariantStorageManagerTest implements MongoDBVariantStorageTest {
+
+    @After
+    public void tearDown() throws Exception {
+        closeConnections();
+    }
 
     @Test
     public void stageResumeFromErrorTest() throws Exception {

@@ -27,6 +27,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -36,6 +40,7 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
 
     Logger logger = LoggerFactory.getLogger(MongoDBVariantStorageTest.class);
     AtomicReference<MongoDBVariantStorageManager> manager = new AtomicReference<>(null);
+    List<MongoDBVariantStorageManager> managers = Collections.synchronizedList(new ArrayList<>());
 
     default MongoDBVariantStorageManager getVariantStorageManager() throws Exception {
         synchronized (manager) {
@@ -52,13 +57,23 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
     }
 
     default MongoDBVariantStorageManager newVariantStorageManager() throws Exception {
-        synchronized (manager) {
+        synchronized (managers) {
             MongoDBVariantStorageManager storageManager = new MongoDBVariantStorageManager();
             InputStream is = MongoDBVariantStorageTest.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
             StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
             storageManager.setConfiguration(storageConfiguration, MongoDBVariantStorageManager.STORAGE_ENGINE_ID);
+            managers.add(storageManager);
             return storageManager;
         }
+    }
+
+    default void closeConnections() {
+        System.out.println("Closing MongoDBVariantStorageManager");
+        for (MongoDBVariantStorageManager manager : managers) {
+            System.out.println("closing manager = " + manager);
+            manager.close();
+        }
+        managers.clear();
     }
 
     default void clearDB(String dbName) throws Exception {
