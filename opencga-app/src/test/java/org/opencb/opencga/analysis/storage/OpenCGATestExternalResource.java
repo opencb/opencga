@@ -31,7 +31,7 @@ import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.common.Config;
-import org.opencb.opencga.storage.core.StorageManager;
+import org.opencb.opencga.storage.core.local.StorageManager;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -165,7 +165,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
         try (OutputStream os = new FileOutputStream(conf.resolve("storage-configuration.yml").toFile())) {
             storageConfiguration.serialize(os);
         }
-        storageManagerFactory = StorageManagerFactory.get(catalogManagerExternalResource.getCatalogManager(), storageConfiguration);
+        storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
 
         inputStream = StorageManager.class.getClassLoader().getResourceAsStream("client-configuration-test.yml");
         Files.copy(inputStream, conf.resolve("client-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
