@@ -46,6 +46,12 @@ import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBWriter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageManagerException;
 import org.opencb.opencga.storage.mongodb.variant.load.*;
+import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageConverterTask;
+import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
+import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageReader;
+import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBOperations;
+import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBVariantMergeLoader;
+import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBVariantMerger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -199,7 +205,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         int bulkSize = options.getInt(BULK_SIZE.key(), batchSize);
         int loadThreads = options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue());
         final int numReaders = 1;
-        final int numWriters = loadThreads == 1 ? 1 : loadThreads - numReaders; //Subtract the reader thread
+//        final int numTasks = loadThreads == 1 ? 1 : loadThreads - numReaders; //Subtract the reader thread
 
         MongoDBCollection stageCollection = dbAdaptor.getStageCollection();
 
@@ -225,7 +231,6 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
 
 
             //Runner
-            logger.info("Multi thread stage load... [{} readerThreads, {} writerThreads]", numReaders, numWriters);
 
             ProgressLogger progressLogger = new ProgressLogger("Write variants in STAGE collection:", numRecords, 200);
             MongoDBVariantStageConverterTask converterTask = new MongoDBVariantStageConverterTask(progressLogger);
@@ -239,6 +244,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                     .setBatchSize(batchSize)
                     .setAbortOnFail(true).build();
             if (options.getBoolean(STAGE_PARALLEL_WRITE.key(), STAGE_PARALLEL_WRITE.defaultValue())) {
+                logger.info("Multi thread stage load... [{} readerThreads, {} writerThreads]", numReaders, loadThreads);
                 ptr = new ParallelTaskRunner<>(
                         variantReader,
                         batch -> { // Parallel loading
@@ -252,6 +258,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                         build
                 );
             } else {
+                logger.info("Multi thread stage load... [{} readerThreads, {} tasks, {} writerThreads]", numReaders, loadThreads, 1);
                 ptr = new ParallelTaskRunner<>(
                         variantReader,
                         batch -> {
@@ -285,7 +292,8 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                 Runtime.getRuntime().removeShutdownHook(hook);
             }
 
-            long skippedVariants = stageLoader.getWriteResult().getSkippedVariants();
+            long skippedVariants = converterTask.getSkippedVariants();
+            stageLoader.getWriteResult().setSkippedVariants(skippedVariants);
             loadStats.append(MERGE.key(), false);
             loadStats.append("stageWriteResult", stageLoader.getWriteResult());
             options.put("skippedVariants", skippedVariants);
@@ -646,16 +654,29 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stageCollection, studyConfiguration.getStudyId(),
                 chromosomeToLoad == null ? Collections.emptyList() : Collections.singletonList(chromosomeToLoad));
         boolean resume = options.getBoolean(MERGE_RESUME.key(), false);
-        MongoDBVariantMerger variantWriter = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds,
-                dbAdaptor.getVariantsCollection(), reader.countNumVariants(), reader.countAproxNumVariants(), indexedFiles, resume);
+        ProgressLogger progressLogger = new ProgressLogger("Write variants in VARIANTS collection:", reader.countNumVariants());
+        //reader.countAproxNumVariants()
 
-        ParallelTaskRunner<Document, MongoDBVariantWriteResult> ptrMerge;
+        MongoDBVariantMerger variantMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds,
+                dbAdaptor.getVariantsCollection(), indexedFiles, resume);
+        MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(dbAdaptor.getVariantsCollection(), fileIds, resume,
+                progressLogger);
+
+        ParallelTaskRunner<Document, MongoDBOperations> ptrMerge;
+        ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
+                .setNumTasks(loadThreads)
+                .setBatchSize(batchSize)
+                .setAbortOnFail(true).build();
         try {
-            ptrMerge = new ParallelTaskRunner<>(reader, variantWriter, null,
-                    ParallelTaskRunner.Config.builder()
-                            .setNumTasks(loadThreads)
-                            .setBatchSize(batchSize)
-                            .setAbortOnFail(true).build());
+            if (options.getBoolean(MERGE_PARALLEL_WRITE.key(), MERGE_PARALLEL_WRITE.defaultValue())) {
+                ptrMerge = new ParallelTaskRunner<>(reader, batch -> {
+                    List<MongoDBOperations> apply = variantMerger.apply(batch);
+                    variantLoader.write(apply);     // Load in each thread
+                    return apply;
+                }, null, config);
+            } else {
+                ptrMerge = new ParallelTaskRunner<>(reader, variantMerger, variantLoader, config);
+            }
         } catch (RuntimeException e) {
             throw new StorageManagerException("Error while creating ParallelTaskRunner", e);
         }
@@ -671,7 +692,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         } catch (ExecutionException e) {
             throw new StorageManagerException("Error while executing LoadVariants in ParallelTaskRunner", e);
         }
-        return variantWriter.getResult();
+        return variantLoader.getResult();
     }
 
     @Override

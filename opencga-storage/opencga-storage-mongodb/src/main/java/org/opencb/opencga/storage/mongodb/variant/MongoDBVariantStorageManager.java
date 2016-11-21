@@ -66,8 +66,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         STAGE_PARALLEL_WRITE("stage.parallel.write", false),
         MERGE("merge", false),
         MERGE_SKIP("merge.skip", false), // Internal use only
-        MERGE_RESUME("merge.resume", false);
-//        MERGE_PARALLEL_WRITE("merge.parallel.write", false);
+        MERGE_RESUME("merge.resume", false),
+        MERGE_PARALLEL_WRITE("merge.parallel.write", false);
 
         private final String key;
         private final Object value;

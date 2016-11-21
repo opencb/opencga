@@ -45,6 +45,12 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBWriter;
 import org.opencb.opencga.storage.mongodb.variant.load.*;
+import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageConverterTask;
+import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
+import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageReader;
+import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBOperations;
+import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBVariantMergeLoader;
+import org.opencb.opencga.storage.mongodb.variant.load.variants.MongoDBVariantMerger;
 
 import java.io.IOException;
 import java.util.*;
@@ -485,14 +491,16 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
         MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stage, studyConfiguration.getStudyId(), chromosomes);
         MongoDBVariantMerger dbMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds,
-                variantsCollection, reader.countAproxNumVariants(), studyConfiguration.getIndexedFiles(), false);
+                variantsCollection, studyConfiguration.getIndexedFiles(), false);
+        MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(variantsCollection, fileIds, false, null);
 
         reader.open();
         reader.pre();
 
         List<Document> batch = reader.read(100);
         while (batch != null && !batch.isEmpty()) {
-            dbMerger.apply(batch);
+            List<MongoDBOperations> apply = dbMerger.apply(batch);
+            variantLoader.write(apply);
             batch = reader.read(100);
         }
 
@@ -502,7 +510,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         MongoDBVariantStageLoader.cleanStageCollection(stage, studyConfiguration.getStudyId(), fileIds);
         studyConfiguration.getIndexedFiles().addAll(fileIds);
         dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
-        return dbMerger.getResult().setSkippedVariants(stageWriteResult.getSkippedVariants());
+        return variantLoader.getResult().setSkippedVariants(stageWriteResult.getSkippedVariants());
     }
 
     public List<Variant> createFile1Variants() {

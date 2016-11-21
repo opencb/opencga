@@ -66,7 +66,7 @@ import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
-import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageLoader;
+import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

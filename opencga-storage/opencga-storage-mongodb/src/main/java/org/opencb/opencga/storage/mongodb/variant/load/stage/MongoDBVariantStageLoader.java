@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.mongodb.variant.load;
+package org.opencb.opencga.storage.mongodb.variant.load.stage;
 
 import com.google.common.collect.ListMultimap;
 import com.mongodb.ErrorCategory;
@@ -31,6 +31,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.stage.VariantToAvroBinaryConverter;
+import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

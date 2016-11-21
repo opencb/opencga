@@ -28,6 +28,9 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter;
+import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageConverterTask;
+import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
+import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageReader;
 
 import java.util.Collections;
 import java.util.List;

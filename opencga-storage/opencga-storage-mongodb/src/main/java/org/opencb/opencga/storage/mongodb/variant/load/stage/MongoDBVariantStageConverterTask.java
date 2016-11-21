@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.mongodb.variant.load;
+package org.opencb.opencga.storage.mongodb.variant.load.stage;
 
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
@@ -13,8 +13,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageLoader.STRING_ID_CONVERTER;
-import static org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageLoader.VARIANT_CONVERTER_DEFAULT;
+import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader.STRING_ID_CONVERTER;
+import static org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader.VARIANT_CONVERTER_DEFAULT;
 
 /**
  * Created on 18/11/16.
@@ -61,4 +61,7 @@ public class MongoDBVariantStageConverterTask implements ParallelTaskRunner.Task
         return Collections.singletonList(ids);
     }
 
+    public long getSkippedVariants() {
+        return skippedVariants.get();
+    }
 }
