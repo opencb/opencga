@@ -40,9 +40,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -64,12 +64,13 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Map;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.getTmpRootDir;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManagerTestUtils.configuration;
+import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getTmpRootDir;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest.configuration;
 
 /**
- * @author Matthias Haimel mh719+git@cam.ac.uk
+ *  Utility class for VariantStorage hadoop tests
  *
+ *  @author Matthias Haimel mh719+git@cam.ac.uk
  */
 public class VariantHbaseTestUtils {
 
@@ -119,7 +120,7 @@ public class VariantHbaseTestUtils {
     }
 
     public static void printVariantsFromVariantsTable(VariantHadoopDBAdaptor dbAdaptor, Path dir) throws IOException {
-        String tableName = HadoopVariantStorageManager.getVariantTableName(VariantStorageManagerTestUtils.DB_NAME, dbAdaptor.getConfiguration());
+        String tableName = HadoopVariantStorageManager.getVariantTableName(VariantStorageBaseTest.DB_NAME, dbAdaptor.getConfiguration());
         HBaseManager hm = new HBaseManager(configuration.get());
         if (!hm.tableExists(tableName)) {
             System.out.println("Table " + tableName + " does not exist!");
@@ -275,7 +276,7 @@ public class VariantHbaseTestUtils {
 
     public static VariantSource loadFile(HadoopVariantStorageManager variantStorageManager, String dbName, URI outputUri,
                                          String resourceName, int fileId, StudyConfiguration studyConfiguration, Map<? extends String, ?> otherParams, boolean doTransform, boolean loadArchive, boolean loadVariant) throws Exception {
-        URI fileInputUri = VariantStorageManagerTestUtils.getResourceUri(resourceName);
+        URI fileInputUri = VariantStorageBaseTest.getResourceUri(resourceName);
 
         ObjectMap params = new ObjectMap(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "proto")
                 .append(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration)
@@ -294,7 +295,7 @@ public class VariantHbaseTestUtils {
         if (fileId > 0) {
             params.append(VariantStorageManager.Options.FILE_ID.key(), fileId);
         }
-        StorageETLResult etlResult = VariantStorageManagerTestUtils.runETL(variantStorageManager, fileInputUri, outputUri, params, doTransform, doTransform, true);
+        StorageETLResult etlResult = VariantStorageBaseTest.runETL(variantStorageManager, fileInputUri, outputUri, params, doTransform, doTransform, true);
         StudyConfiguration updatedStudyConfiguration = variantStorageManager.getDBAdaptor().getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         studyConfiguration.copy(updatedStudyConfiguration);
 

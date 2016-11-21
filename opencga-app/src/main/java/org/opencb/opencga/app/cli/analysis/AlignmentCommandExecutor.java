@@ -306,7 +306,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
 
     private void query() throws InterruptedException, CatalogException, IOException {
         ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotNull("fileId", alignmentCommandOptions.queryAlignmentCommandOptions.fileId);
+//        objectMap.putIfNotNull("fileId", alignmentCommandOptions.queryAlignmentCommandOptions.fileId);
         objectMap.putIfNotNull("sid", alignmentCommandOptions.queryAlignmentCommandOptions.commonOptions.sessionId);
         objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), alignmentCommandOptions.queryAlignmentCommandOptions.region);
         objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(),
@@ -322,7 +322,8 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.SKIP.key(), alignmentCommandOptions.queryAlignmentCommandOptions.skip);
 
         OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        QueryResponse<ReadAlignment> alignments = openCGAClient.getAlignmentClient().query(objectMap);
+        QueryResponse<ReadAlignment> alignments = openCGAClient.getAlignmentClient()
+                .query(alignmentCommandOptions.queryAlignmentCommandOptions.fileId, objectMap);
 
         for (ReadAlignment readAlignment : alignments.allResults()) {
             System.out.println(readAlignment);
@@ -468,7 +469,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
 
     private void stats() throws CatalogException, IOException {
         ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotNull("fileId", alignmentCommandOptions.statsAlignmentCommandOptions.fileId);
+//        objectMap.putIfNotNull("fileId", alignmentCommandOptions.statsAlignmentCommandOptions.fileId);
         objectMap.putIfNotNull("sid", alignmentCommandOptions.statsAlignmentCommandOptions.commonOptions.sessionId);
         objectMap.putIfNotNull("region", alignmentCommandOptions.statsAlignmentCommandOptions.region);
         objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.statsAlignmentCommandOptions.minMappingQuality);
@@ -477,7 +478,8 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         }
 
         OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        QueryResponse<AlignmentGlobalStats> globalStats = openCGAClient.getAlignmentClient().stats(objectMap);
+        QueryResponse<AlignmentGlobalStats> globalStats = openCGAClient.getAlignmentClient()
+                .stats(alignmentCommandOptions.statsAlignmentCommandOptions.fileId, objectMap);
 
         for (AlignmentGlobalStats alignmentGlobalStats : globalStats.allResults()) {
             System.out.println(alignmentGlobalStats.toJSON());
@@ -486,7 +488,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
 
     private void coverage() throws CatalogException, IOException {
         ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotNull("fileId", alignmentCommandOptions.coverageAlignmentCommandOptions.fileId);
+//        objectMap.putIfNotNull("fileId", alignmentCommandOptions.coverageAlignmentCommandOptions.fileId);
         objectMap.putIfNotNull("sid", alignmentCommandOptions.coverageAlignmentCommandOptions.commonOptions.sessionId);
         objectMap.putIfNotNull("region", alignmentCommandOptions.coverageAlignmentCommandOptions.region);
         objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.coverageAlignmentCommandOptions.minMappingQuality);
@@ -495,7 +497,8 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         }
 
         OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
-        QueryResponse<RegionCoverage> globalStats = openCGAClient.getAlignmentClient().coverage(objectMap);
+        QueryResponse<RegionCoverage> globalStats = openCGAClient.getAlignmentClient()
+                .coverage(alignmentCommandOptions.coverageAlignmentCommandOptions.fileId, objectMap);
 
         for (RegionCoverage regionCoverage : globalStats.allResults()) {
             System.out.println(regionCoverage.toString());

@@ -63,9 +63,27 @@
         <protobuf2.version>2.5.0</protobuf2.version>
         <guava.version>15.0</guava.version>
 
+        <!--Read from main hadoop pom.xml . Versions not as a property in that pom-->
+        <commons-httpclient.version>3.1</commons-httpclient.version>
+        <commons-compress.version>1.4.1</commons-compress.version>
+        <commons-io.version>2.4</commons-io.version>
+        <commons-net.version>3.1</commons-net.version>
+        <curator.version>2.7.1</curator.version>
+        <apacheds-kerberos-codec.version>2.0.0-M15</apacheds-kerberos-codec.version>
+        <leveldbjni-all.version>1.8</leveldbjni-all.version>
+        <zookeeper.version>3.4.6</zookeeper.version>
+
+        <!--Read from main hbase pom.xml-->
+        <metrics-core.version>2.2.0</metrics-core.version>
+        <disruptor.version>3.3.0</disruptor.version>
+        <commons-math.version>2.2</commons-math.version>
+        <netty.version>4.0.23.Final</netty.version>
+        <jamon-runtime.version>2.4.1</jamon-runtime.version>
+        <jackson.version>1.9.13</jackson.version>
+
         <!--Read from main phoenix pom.xml-->
         <commons-configuration.version>1.6</commons-configuration.version>
-        <commons-io.version>2.1</commons-io.version>
+        <!--<commons-io.version>2.1</commons-io.version>-->
         <commons-lang.version>2.5</commons-lang.version>
         <commons-logging.version>1.2</commons-logging.version>
         <commons-csv.version>1.0</commons-csv.version>
@@ -166,7 +184,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-
 
         <!-- Phoenix-core dependencies. Coprocessors uses grpc services-->
         <dependency>
@@ -293,19 +310,148 @@
             <artifactId>commons-logging</artifactId>
             <version>1.1.3</version>
         </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${commons-io.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-net</groupId>
+            <artifactId>commons-net</artifactId>
+            <version>${commons-net.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-httpclient</groupId>
+            <artifactId>commons-httpclient</artifactId>
+            <version>${commons-httpclient.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-recipes</artifactId>
+            <version>${curator.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-client</artifactId>
+            <version>${curator.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-framework</artifactId>
+            <version>${curator.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.zookeeper</groupId>
+            <artifactId>zookeeper</artifactId>
+            <version>${zookeeper.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>jline</groupId>
+                    <artifactId>jline</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.jboss.netty</groupId>
+                    <artifactId>netty</artifactId>
+                </exclusion>
+                <exclusion>
+                    <!-- otherwise seems to drag in junit 3.8.1 via jline -->
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun.jdmk</groupId>
+                    <artifactId>jmxtools</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.sun.jmx</groupId>
+                    <artifactId>jmxri</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
         <!--Needed by hadoop-hdfs -->
         <dependency>
             <groupId>org.fusesource.leveldbjni</groupId>
             <artifactId>leveldbjni-all</artifactId>
-            <version>1.8</version>
+            <version>${leveldbjni-all.version}</version>
+        </dependency>
+
+        <!--Needed by hadoop-auth -->
+        <dependency>
+            <groupId>org.apache.directory.server</groupId>
+            <artifactId>apacheds-kerberos-codec</artifactId>
+            <scope>compile</scope>
+            <version>${apacheds-kerberos-codec.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.directory.api</groupId>
+                    <artifactId>api-asn1-ber</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.directory.api</groupId>
+                    <artifactId>api-i18n</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.directory.api</groupId>
+                    <artifactId>api-ldap-model</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>net.sf.ehcache</groupId>
+                    <artifactId>ehcache-core</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!--Needed by hbase-server -->
         <dependency>
             <groupId>com.lmax</groupId>
             <artifactId>disruptor</artifactId>
-            <version>3.3.0</version>
+            <version>${disruptor.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.yammer.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
+            <version>${metrics-core.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-math</artifactId>
+            <version>${commons-math.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>${commons-compress.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jamon</groupId>
+            <artifactId>jamon-runtime</artifactId>
+            <version>${jamon-runtime.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-core-asl</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-mapper-asl</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-jaxrs</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.jackson</groupId>
+            <artifactId>jackson-xc</artifactId>
+            <version>${jackson.version}</version>
         </dependency>
 
         <!-- Needed by phoenix -->
@@ -376,7 +522,7 @@
             <version>${commons-csv.version}</version>
         </dependency>
 
-        <!-- ================================== -->
+        <!-- ============================================= -->
         <!-- Test dependencies                             -->
         <!-- ============================================= -->
         <!--Specify Hadoop minicluster version-->
@@ -445,15 +591,17 @@
                                     <artifact>com.google.guava:guava</artifact>
                                     <includes>
                                         <include>com/google/common/io/Closeables*</include>
+                                        <include>com/google/common/base/Stopwatch*</include>
                                     </includes>
                                 </filter>
                             </filters>
 
+                            <!-- This relocation section MUST be exactly the same as the test-->
                             <relocations>
-                                <relocation>
-                                    <pattern>javax.servlet</pattern>
-                                    <shadedPattern>shaded.javax.servlet</shadedPattern>
-                                </relocation>
+                                <!--<relocation>-->
+                                    <!--<pattern>javax.servlet</pattern>-->
+                                    <!--<shadedPattern>shaded.javax.servlet</shadedPattern>-->
+                                <!--</relocation>-->
                                 <relocation>
                                     <pattern>javax.ws.rs</pattern>
                                     <shadedPattern>shaded.javax.ws.rs</shadedPattern>
@@ -468,6 +616,7 @@
                                     <shadedPattern>shaded.com.google.common</shadedPattern>
                                     <includes>
                                         <include>com.google.common.io.Closeables</include>
+                                        <include>com.google.common.base.Stopwatch</include>
                                     </includes>
                                     <!--<excludes>-->
                                     <!--<exclude>com.google.common.base.**</exclude>-->
@@ -480,7 +629,8 @@
                                     <!-- Include old servlet-api, which is relocated.
                                         This line won't include new servlet-api.
                                         Artifact name in 3.x is "javax.servlet-api", and in 2.x "servlet-api" -->
-                                    <include>javax.servlet:servlet-api</include>
+                                    <!--<include>javax.servlet:servlet-api</include>-->
+
                                     <!-- Include jersey1, which is relocated. -->
                                     <include>com.sun.jersey</include>
 
@@ -507,6 +657,7 @@
                                 </includes>
                                 <!--Exclude all test dependencies.-->
                                 <excludes>
+                                    <!--Test dependencies-->
                                     <exclude>org.apache.hbase:**:tests</exclude>
                                     <exclude>org.apache.hadoop:hadoop-minicluster</exclude>
                                     <exclude>org.apache.hadoop:**:tests</exclude>
@@ -534,10 +685,10 @@
                             <createSourcesJar>true</createSourcesJar>
 
                             <relocations>
-                                <relocation>
-                                    <pattern>javax.servlet</pattern>
-                                    <shadedPattern>shaded.javax.servlet</shadedPattern>
-                                </relocation>
+                                <!--<relocation>-->
+                                    <!--<pattern>javax.servlet</pattern>-->
+                                    <!--<shadedPattern>shaded.javax.servlet</shadedPattern>-->
+                                <!--</relocation>-->
                                 <relocation>
                                     <pattern>javax.ws.rs</pattern>
                                     <shadedPattern>shaded.javax.ws.rs</shadedPattern>
@@ -552,6 +703,7 @@
                                     <shadedPattern>shaded.com.google.common</shadedPattern>
                                     <includes>
                                         <include>com.google.common.io.Closeables</include>
+                                        <include>com.google.common.base.Stopwatch</include>
                                     </includes>
                                 </relocation>
                             </relocations>

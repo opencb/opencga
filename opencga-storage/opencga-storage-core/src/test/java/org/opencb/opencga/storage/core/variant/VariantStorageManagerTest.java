@@ -20,7 +20,6 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.commons.collections.IteratorUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.biodata.formats.variant.io.VariantReader;
@@ -31,19 +30,17 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.search.SearchManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.io.VariantDBReader;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.opencb.opencga.storage.core.variant.io.json.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
-import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
 import java.io.File;
@@ -60,7 +57,7 @@ import static org.junit.Assert.*;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Ignore
-public abstract class VariantStorageManagerTest extends VariantStorageManagerTestUtils {
+public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
 
 
     @Test
@@ -85,33 +82,10 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
         SearchManager searchManager = new SearchManager(variantStorageManager.getConfiguration());
 
-
-/*
         for (Variant variant:dbAdaptor) {
             searchManager.insert(variant);
         }
-*/
 
-
-        VariantDBReader reader = new VariantDBReader(dbAdaptor, new Query(), new QueryOptions());
-
-        reader.open();
-        reader.pre();
-
-
-        List<Variant> read = reader.read(2000);
-
-        searchManager.insert(read);
-        /*
-        reader.post();
-        reader.close();
-*/
-
-       /* ParallelTaskRunner<Variant, Void> ptr = new ParallelTaskRunner<Variant, Void>(reader, list -> {
-            searchManager.insert(list);
-            return null;
-        }, null, ParallelTaskRunner.Config.builder().setNumTasks(1).setBatchSize(200).build());
-        ptr.run();*/
     }
 
     @Test
@@ -488,7 +462,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                         .append(VariantStorageManager.Options.ANNOTATE.key(), false)
         );
 
-        VariantSource source = VariantStorageManager.readVariantSource(Paths.get(etlResult.getTransformResult().getPath()), null);
+        VariantSource source = VariantReaderUtils.readVariantSource(Paths.get(etlResult.getTransformResult().getPath()), null);
         checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration, source.getStats().getNumRecords());
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
         checkLoadedVariants(dbAdaptor, studyConfiguration, true, false, getExpectedNumLoadedVariants(source));

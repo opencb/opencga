@@ -27,19 +27,18 @@ public class AlignmentClient extends AbstractParentClient {
         if (params == null) {
             params = new ObjectMap();
         }
-        params.putIfNotNull("fileId", fileIds);
-        return execute(ALIGNMENT_URL, "index", params, GET, Job.class);
+        return execute(ALIGNMENT_URL, fileIds, "index", params, GET, Job.class);
     }
 
-    public QueryResponse<ReadAlignment> query(ObjectMap params) throws CatalogException, IOException {
-        return execute(ALIGNMENT_URL, "query", params, GET, ReadAlignment.class);
+    public QueryResponse<ReadAlignment> query(String fileIds, ObjectMap params) throws CatalogException, IOException {
+        return execute(ALIGNMENT_URL, fileIds, "query", params, GET, ReadAlignment.class);
     }
 
-    public QueryResponse<AlignmentGlobalStats> stats(ObjectMap params) throws CatalogException, IOException {
-        return execute(ALIGNMENT_URL, "stats", params, GET, AlignmentGlobalStats.class);
+    public QueryResponse<AlignmentGlobalStats> stats(String fileIds, ObjectMap params) throws CatalogException, IOException {
+        return execute(ALIGNMENT_URL, fileIds, "stats", params, GET, AlignmentGlobalStats.class);
     }
 
-    public QueryResponse<RegionCoverage> coverage(ObjectMap params) throws CatalogException, IOException {
-        return execute(ALIGNMENT_URL, "coverage", params, GET, RegionCoverage.class);
+    public QueryResponse<RegionCoverage> coverage(String fileIds, ObjectMap params) throws CatalogException, IOException {
+        return execute(ALIGNMENT_URL, fileIds, "coverage", params, GET, RegionCoverage.class);
     }
 }

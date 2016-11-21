@@ -25,7 +25,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.util.Collections;
@@ -41,7 +41,7 @@ import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotati
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public abstract class CustomVariantAnnotationManagerTest extends VariantStorageManagerTestUtils {
+public abstract class CustomVariantAnnotationManagerTest extends VariantStorageBaseTest {
 
 
     @Before

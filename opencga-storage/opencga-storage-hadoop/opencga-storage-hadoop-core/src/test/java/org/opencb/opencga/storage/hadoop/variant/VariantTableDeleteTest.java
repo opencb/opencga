@@ -24,7 +24,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 
 import java.util.Collections;
@@ -39,7 +39,7 @@ import static org.junit.Assert.*;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  *
  */
-public class VariantTableDeleteTest extends VariantStorageManagerTestUtils implements HadoopVariantStorageManagerTestUtils {
+public class VariantTableDeleteTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();
@@ -62,7 +62,7 @@ public class VariantTableDeleteTest extends VariantStorageManagerTestUtils imple
 
     @Test
     public void dropFileTest() throws Exception {
-        StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
+        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         System.out.println("studyConfiguration = " + studyConfiguration);
         String studyName = studyConfiguration.getStudyName();
 
@@ -103,7 +103,7 @@ public class VariantTableDeleteTest extends VariantStorageManagerTestUtils imple
 
     @Test
     public void dropSingleFileTest() throws Exception {
-        StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
+        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         System.out.println("studyConfiguration = " + studyConfiguration);
         String studyName = studyConfiguration.getStudyName();
 

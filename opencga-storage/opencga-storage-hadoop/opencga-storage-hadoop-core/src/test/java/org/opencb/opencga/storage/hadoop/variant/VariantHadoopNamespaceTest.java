@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 
 import static org.junit.Assert.assertTrue;
@@ -36,7 +36,7 @@ import static org.junit.Assert.assertTrue;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantHadoopNamespaceTest extends VariantStorageManagerTestUtils implements HadoopVariantStorageManagerTestUtils{
+public class VariantHadoopNamespaceTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     @Rule
     public ExternalResource externalResource = new HadoopExternalResource();

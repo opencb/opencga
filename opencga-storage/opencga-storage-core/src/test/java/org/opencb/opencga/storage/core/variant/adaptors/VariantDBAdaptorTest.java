@@ -36,7 +36,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.annotation.CellBaseVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
@@ -63,7 +63,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Ignore
-public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtils {
+public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     private static final int QUERIES_LIM = 50;
     //    private static final String GENOMES_PHASE_3 = "1000GENOMES_phase_3";

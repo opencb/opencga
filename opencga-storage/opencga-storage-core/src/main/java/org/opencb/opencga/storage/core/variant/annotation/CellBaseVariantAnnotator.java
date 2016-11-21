@@ -34,7 +34,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationMixin;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -181,56 +181,9 @@ public class CellBaseVariantAnnotator extends VariantAnnotator {
     private List<VariantAnnotation> getVariantAnnotationsREST(List<Variant> variants) throws IOException {
 
         QueryResponse<VariantAnnotation> queryResponse
-                = cellBaseClient.getVariationClient()
-                .getAnnotations(variants.stream().map(variant -> variant.toString()).collect(Collectors.toList()),
+                = cellBaseClient.getVariantClient()
+                .getAnnotations(variants.stream().map(Variant::toString).collect(Collectors.toList()),
                         queryOptions, true);
-//
-//        boolean queryError = false;
-//        try {
-//            queryResponse = cellBaseClient.getAnnotation(
-//                    CellBaseClient.Category.genomic,
-//                    CellBaseClient.SubCategory.variant,
-//                    variants,
-//                    new QueryOptions(queryOptions));
-//            if (queryResponse == null) {
-//                logger.warn("CellBase REST fail. Returned null. {} for variants {}", cellBaseClient.getLastQuery(),
-//                        variants.stream().map(Variant::toString).collect(Collectors.joining(",")));
-//
-//                queryError = true;
-//            }
-//
-//        } catch (JsonProcessingException | javax.ws.rs.ProcessingException e) {
-//            logger.warn("CellBase REST fail. Error parsing " + cellBaseClient.getLastQuery() + " for variants "
-//                    + variants.stream().map(Variant::toString).collect(Collectors.joining(",")), e);
-//            queryError = true;
-//            queryResponse = null;
-//        }
-//
-//        if (queryResponse != null && queryResponse.getResponse().size() != variants.size()) {
-//            logger.warn("QueryResult size (" + queryResponse.getResponse().size() + ") != variants size (" + variants.size() + ").");
-//            //throw new IOException("QueryResult size != " + variants.size() + ". " + queryResponse);
-//            queryError = true;
-//        }
-//
-//        if (queryError) {
-////            logger.warn("CellBase REST error. {}", cellBaseClient.getLastQuery());
-//
-//            if (variants.size() == 1) {
-//                logger.error("CellBase REST error. Skipping variant. {}", variants.get(0));
-//                return Collections.emptyList();
-//            }
-//
-//            List<VariantAnnotation> variantAnnotationList = new LinkedList<>();
-//            List<Variant> variants1 = variants.subList(0, variants.size() / 2);
-//            if (!variants1.isEmpty()) {
-//                variantAnnotationList.addAll(getVariantAnnotationsREST(variants1));
-//            }
-//            List<Variant> variants2 = variants.subList(variants.size() / 2, variants.size());
-//            if (!variants2.isEmpty()) {
-//                variantAnnotationList.addAll(getVariantAnnotationsREST(variants2));
-//            }
-//            return variantAnnotationList;
-//        }
 
         return getVariantAnnotationList(variants, queryResponse.getResponse());
     }

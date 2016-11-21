@@ -50,7 +50,8 @@ public abstract class CommandExecutor {
 
     protected String sessionId;
 
-    protected Configuration configuration;
+    /** Use {@link #getOpenCGAConfiguration()} */
+    private Configuration configuration;
     protected CatalogConfiguration catalogConfiguration;
     protected StorageConfiguration storageConfiguration;
     protected ClientConfiguration clientConfiguration;
@@ -336,6 +337,17 @@ public abstract class CommandExecutor {
         }
     }
 
+    /**
+     * With lazy initialization
+     * @return OpenCGAConfiguration
+     * @throws IOException if an error reading the configuration
+     */
+    public Configuration getOpenCGAConfiguration() throws IOException {
+        if (configuration == null) {
+            loadOpencgaConfiguration();
+        }
+        return configuration;
+    }
 
     public CatalogConfiguration getCatalogConfiguration() {
         return catalogConfiguration;

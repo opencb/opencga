@@ -34,8 +34,8 @@ import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +48,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.getResourceUri;
+import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
 /**
  * Created on 26/08/15
@@ -65,7 +65,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
     private StorageManagerFactory storageManagerFactory;
 
 
-    public HadoopVariantStorageManagerTestUtils.HadoopExternalResource hadoopExternalResource;
+    public HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource;
 
     public OpenCGATestExternalResource() {
         this(false);
@@ -83,7 +83,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
         if (storageHadoop) {
             try {
-                String name = HadoopVariantStorageManagerTestUtils.class.getName();
+                String name = HadoopVariantStorageTest.class.getName();
                 Class.forName(name);
             } catch (ClassNotFoundException e) {
                 logger.error("Missing dependency opencga-storage-hadoop!");
@@ -92,12 +92,12 @@ public class OpenCGATestExternalResource extends ExternalResource {
         }
 
         if (storageHadoop) {
-            hadoopExternalResource = new HadoopVariantStorageManagerTestUtils.HadoopExternalResource();
+            hadoopExternalResource = new HadoopVariantStorageTest.HadoopExternalResource();
             hadoopExternalResource.before();
         }
         opencgaHome = isolateOpenCGA();
         Files.createDirectory(opencgaHome.resolve("storage"));
-        VariantStorageManagerTestUtils.setRootDir(opencgaHome.resolve("storage"));
+        VariantStorageBaseTest.setRootDir(opencgaHome.resolve("storage"));
 
 //        ExecutorManager.LOCAL_EXECUTOR_FACTORY.set((c, s) -> new StorageLocalExecutorManager(s));
     }
@@ -154,7 +154,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
         storageConfiguration = StorageConfiguration.load(inputStream, "yml");
         if (storageHadoop) {
-            HadoopVariantStorageManagerTestUtils.updateStorageConfiguration(storageConfiguration, hadoopExternalResource.getConf());
+            HadoopVariantStorageTest.updateStorageConfiguration(storageConfiguration, hadoopExternalResource.getConf());
             ObjectMap variantHadoopOptions = storageConfiguration.getStorageEngine("hadoop").getVariant().getOptions();
             ObjectMap alignmentHadoopOptions = storageConfiguration.getStorageEngine("hadoop").getAlignment().getOptions();
             for (Map.Entry<String, String> entry : hadoopExternalResource.getConf()) {
