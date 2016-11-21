@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.rest.FileWSServer;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.local.AlignmentStorageManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -118,8 +119,9 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.MD_FIELD.key(), mdField);
             queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.BIN_QUALITIES.key(), binQualities);
 
+            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageConfiguration);
             return createOkResponse(
-                    storageManagerFactory.getAlignmentStorageManager().query(studyId, fileIdStr, query, queryOptions, sessionId)
+                    alignmentStorageManager.query(studyId, fileIdStr, query, queryOptions, sessionId)
             );
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -144,8 +146,9 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             QueryOptions queryOptions = new QueryOptions();
             queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
 
+            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageConfiguration);
             return createOkResponse(
-                    storageManagerFactory.getAlignmentStorageManager().stats(studyId, fileIdStr, query, queryOptions, sessionId));
+                    alignmentStorageManager.stats(studyId, fileIdStr, query, queryOptions, sessionId));
 //
 //            String userId = catalogManager.getUserManager().getId(sessionId);
 //            Long fileId = catalogManager.getFileManager().getId(userId, fileIdStr);
@@ -193,8 +196,10 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             QueryOptions queryOptions = new QueryOptions();
             queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
 
+            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageConfiguration);
+
             return createOkResponse(
-                    storageManagerFactory.getAlignmentStorageManager().coverage(studyId, fileIdStr, query, queryOptions, sessionId)
+                    alignmentStorageManager.coverage(studyId, fileIdStr, query, queryOptions, sessionId)
             );
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -449,6 +449,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
             AlignmentDBAdaptor dbAdaptor;
             try {
+
                 AlignmentStorageManager alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
                 dbAdaptor = alignmentStorageManager.getDBAdaptor(dbName);
             } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {

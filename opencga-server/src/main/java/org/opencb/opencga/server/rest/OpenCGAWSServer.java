@@ -242,7 +242,7 @@ public class OpenCGAWSServer {
             logger.info("|  * Storage configuration file: '{}'", configDir.toFile().getAbsolutePath() + "/storage-configuration.yml");
             storageConfiguration = StorageConfiguration
                     .load(new FileInputStream(new File(configDir.toFile().getAbsolutePath() + "/storage-configuration.yml")));
-            storageManagerFactory = StorageManagerFactory.get(catalogManager, storageConfiguration);
+            storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (CatalogException e) {
