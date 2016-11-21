@@ -7,7 +7,6 @@ import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.response.RangeFacet;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
@@ -17,7 +16,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.search.iterators.SolrVariantSearchIterator;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
 
 /**
  * Created by wasim on 09/11/16.
@@ -25,10 +24,8 @@ import java.util.*;
 public class SearchManager {
 
     private SearchConfiguration searchConfiguration;
-    private Set<String> queryFields;
     private static VariantSearchFactory variantSearchFactory;
     private static HttpSolrClient solrServer;
-
 
     public SearchManager() {
         //TODO remove testing constructor
@@ -39,6 +36,7 @@ public class SearchManager {
     }
 
     public SearchManager(StorageConfiguration storageConfiguration) {
+
         this.searchConfiguration = storageConfiguration.getSearch();
 
         if (searchConfiguration.getHost() != null && searchConfiguration.getCollection() != null && solrServer == null) {
@@ -63,9 +61,7 @@ public class SearchManager {
                 if (0 == updateResponse.getStatus()) {
                     solrServer.commit();
                 }
-            } catch (SolrServerException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
+            } catch (SolrServerException | IOException e) {
                 e.printStackTrace();
             }
         }
@@ -81,9 +77,7 @@ public class SearchManager {
                 if (0 == updateResponse.getStatus()) {
                     solrServer.commit();
                 }
-            } catch (SolrServerException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
+            } catch (SolrServerException | IOException e) {
                 e.printStackTrace();
             }
         }
@@ -96,32 +90,11 @@ public class SearchManager {
 
         try {
             response = solrServer.query(solrQuery);
-        } catch (SolrServerException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+        } catch (SolrServerException | IOException e) {
             e.printStackTrace();
         }
 
-        Iterator it = response.getResults().iterator();
-       //System.out.println(response.getFacetRanges().get(0).getCounts().get(0).);
-
-
-        List<RangeFacet.Count> rangeEntries = response.getFacetRanges().get(0).getCounts();
-        if (rangeEntries != null) {
-            for (RangeFacet.Count fcount : rangeEntries) {
-                System.out.println((fcount.getValue()) + " <===> " + fcount.getCount());
-            }
-        }
-        // System.out.println(response.getFacetFields().get(0).getValueCount());
-        System.out.println(response.getFacetRanges().get(1).getName());
-        System.out.println(response.getFacetRanges().get(0).getStart());
-        System.out.println(response.getFacetRanges().get(0).getEnd());
-
-
-        System.out.println("\n\n\n" + solrQuery.toString());
-       /* Iterator<VariantSearch> varIterator = response.getBeans(VariantSearch.class).iterator();
-        return new SolrVariantSearchIterator(varIterator);*/
-        return null;
+        return new SolrVariantSearchIterator(response.getBeans(VariantSearch.class).iterator());
     }
 
     public VariantSearchFacet facet(Query query, QueryOptions queryOptions) {
@@ -131,9 +104,7 @@ public class SearchManager {
 
         try {
             response = solrServer.query(solrQuery);
-        } catch (SolrServerException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+        } catch (SolrServerException | IOException e) {
             e.printStackTrace();
         }
 
@@ -155,50 +126,5 @@ public class SearchManager {
         }
 
         return variantSearchFacet;
-    }
-
-
-    public static void main(String[] args) {
-        String fileName = "/home/wasim/Downloads/variation_chr1.full.json.gz";
-        SearchManager searchManager = new SearchManager();
-        double startTime = System.currentTimeMillis();
-        System.out.println("Start Time Min : " + startTime / 60000.0 % 60.0);
-
-        Query query = new Query();
-        // query.append("ids", "*");
-        query.append("start", "16050699");
-        query.append("chromosome", 22);
-        query.append("fl", "start,end,type");
-        query.append("fq", "start:[0 TO 16050654]");
-
-        query.append("facet.fields", "type,sift");
-        query.append("facet.field", "chromosome");
-
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.add(QueryOptions.SORT, "end");
-        queryOptions.add(QueryOptions.ORDER, QueryOptions.DESCENDING);
-        queryOptions.add(QueryOptions.LIMIT, 1000);
-
-        Map<String, Map<String, Double>> rangeFields = new HashMap<>();
-
-        Map<String, Double> polyRField = new HashMap<>();
-        polyRField.put("facet.range.start", 0.0);
-        polyRField.put("facet.range.end", 10.1);
-        polyRField.put("facet.range.gap", 0.1);
-        rangeFields.put("polyphen", polyRField);
-
-        Map<String, Double> sift = new HashMap<>();
-        sift.put("facet.range.start", 0.0);
-        sift.put("facet.range.end", 10.1);
-        sift.put("facet.range.gap", 0.1);
-        rangeFields.put("sift", sift);
-
-        query.append("facet.range", rangeFields);
-
-        searchManager.iterator(query, queryOptions);
-
-        double endTime = System.currentTimeMillis();
-        System.out.println("End Time : " + endTime / 60000.0 % 60.0);
-        System.out.println("Total Time : " + (endTime - startTime) / 60000.0 % 60.0);
     }
 }

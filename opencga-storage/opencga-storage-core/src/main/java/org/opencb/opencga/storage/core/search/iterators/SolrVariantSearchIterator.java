@@ -17,7 +17,6 @@ public class SolrVariantSearchIterator extends VariantSearchIterator {
 
     @Override
     public void close() throws Exception {
-        //solrIterator
     }
 
     @Override

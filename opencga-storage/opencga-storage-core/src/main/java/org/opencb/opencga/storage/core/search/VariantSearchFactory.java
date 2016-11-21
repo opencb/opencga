@@ -32,13 +32,15 @@ public class VariantSearchFactory {
     private VariantSearch variantToSolrConverter(Variant variant) {
 
         VariantSearch variantSearch = new VariantSearch();
-//        variant.getStudies().get(0).getStats()
 
         variantSearch.setDbSNP(variant.getId());
         variantSearch.setType(variant.getType().toString());
         variantSearch.setChromosome(variant.getChromosome());
         variantSearch.setStart(variant.getStart());
         variantSearch.setEnd(variant.getEnd());
+
+        //TODO get clear with Nacho what to put in studies
+//        variantSearch.setStudies(variant.getStudies());
 
         VariantAnnotation variantAnnotation = variant.getAnnotation();
 
@@ -52,7 +54,7 @@ public class VariantSearchFactory {
             if (consequenceTypes != null) {
                 for (ConsequenceType consequenceType : consequenceTypes) {
 
-                    variantSearch.setGeneNames(consequenceType.getGeneName());
+                    variantSearch.setGenes(consequenceType.getGeneName());
                     //substitutionScores
                     List<Double> proteinScores = getsubstitutionScores(consequenceType);
                     variantSearch.setSift(proteinScores.get(0));

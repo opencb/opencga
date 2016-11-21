@@ -2,10 +2,10 @@ package org.opencb.opencga.storage.core.search;
 
 import org.apache.solr.client.solrj.beans.Field;
 
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by wasim on 09/11/16.
@@ -13,34 +13,52 @@ import java.util.Set;
 
 public class VariantSearch {
 
-
+    @Field
     private String id;
+    @Field
     private String dbSNP;
+    @Field
     private String type;
+    @Field
     private String chromosome;
+    @Field
     private int start;
+    @Field
     private int end;
+    @Field
     private double gerp;
+    @Field
     private double caddRaw;
+    @Field
     private double caddScaled;
+    @Field
     private double phastCons;
+    @Field
     private double phylop;
+    @Field
     private double sift;
+    @Field
     private double polyphen;
-    private Set<String> geneNames;
-    private Set<String> accessions;
+    @Field
+    private String[] studies;
+    @Field
+    private List<String> genes;
+    @Field
+    private List<String> accessions;
+    @Field("study_*")
     private Map<String, Float> populations;
 
 
     public VariantSearch() {
-        this.accessions = new HashSet<String>();
-        this.geneNames = new HashSet<String>();
+        this.accessions = new ArrayList<>();
+        this.genes = new ArrayList<>();
         this.populations = new HashMap<String, Float>();
     }
 
     public String getDbSNP() {
         return dbSNP;
     }
+
     @Field
     public VariantSearch setDbSNP(String dbSNP) {
         this.dbSNP = dbSNP;
@@ -51,7 +69,6 @@ public class VariantSearch {
         return caddRaw;
     }
 
-    @Field
     public void setCaddRaw(double caddRaw) {
         this.caddRaw = caddRaw;
     }
@@ -60,7 +77,6 @@ public class VariantSearch {
         return caddScaled;
     }
 
-    @Field
     public void setCaddScaled(double caddScaled) {
         this.caddScaled = caddScaled;
     }
@@ -69,8 +85,7 @@ public class VariantSearch {
         return gerp;
     }
 
-    @Field
-    public void setGerp(Double gerp) {
+    public void setGerp(double gerp) {
         this.gerp = gerp;
     }
 
@@ -78,8 +93,7 @@ public class VariantSearch {
         return phastCons;
     }
 
-    @Field
-    public void setPhastCons(Double phastCons) {
+    public void setPhastCons(double phastCons) {
         this.phastCons = phastCons;
     }
 
@@ -87,17 +101,14 @@ public class VariantSearch {
         return phylop;
     }
 
-    @Field
     public void setPhylop(double phylop) {
         this.phylop = phylop;
     }
-
 
     public double getSift() {
         return sift;
     }
 
-    @Field
     public void setSift(double sift) {
         this.sift = sift;
     }
@@ -106,7 +117,6 @@ public class VariantSearch {
         return polyphen;
     }
 
-    @Field
     public void setPolyphen(double polyphen) {
         this.polyphen = polyphen;
     }
@@ -115,7 +125,6 @@ public class VariantSearch {
         return id;
     }
 
-    @Field
     public void setId(String id) {
         this.id = id;
     }
@@ -124,7 +133,6 @@ public class VariantSearch {
         return type;
     }
 
-    @Field
     public void setType(String type) {
         this.type = type;
     }
@@ -133,7 +141,6 @@ public class VariantSearch {
         return chromosome;
     }
 
-    @Field
     public void setChromosome(String chromosome) {
         this.chromosome = chromosome;
     }
@@ -142,7 +149,6 @@ public class VariantSearch {
         return start;
     }
 
-    @Field
     public void setStart(int start) {
         this.start = start;
     }
@@ -151,36 +157,31 @@ public class VariantSearch {
         return end;
     }
 
-    @Field
     public void setEnd(int end) {
         this.end = end;
     }
 
-    public Set<String> getGeneNames() {
-        return geneNames;
+    public List<String> getGenes() {
+        return genes;
     }
 
-    @Field
-    public void setGeneNames(String geneName) {
-        this.geneNames.add(geneName);
+    public void setGenes(String geneName) {
+        this.genes.add(geneName);
     }
 
-    @Field
-    public void setGeneNames(Set<String> geneNames) {
-        this.geneNames.addAll(geneNames);
+    public void setGenes(List<String> geneNames) {
+        this.genes.addAll(geneNames);
     }
 
-    public Set<String> getAccessions() {
+    public List<String> getAccessions() {
         return accessions;
     }
 
-    @Field
     public void setAccessions(String accession) {
         this.accessions.add(accession);
     }
 
-    @Field
-    public void setAccessions(Set<String> accessions) {
+    public void setAccessions(List<String> accessions) {
         this.accessions.addAll(accessions);
     }
 
@@ -188,9 +189,16 @@ public class VariantSearch {
         return populations;
     }
 
-    @Field("*")
     public void setPopulations(Map<String, Float> populations) {
         this.populations.putAll(populations);
+    }
+
+    public String[] getStudies() {
+        return studies;
+    }
+
+    public void setStudies(String[] studies) {
+        this.studies = studies;
     }
 
     @Override
@@ -209,7 +217,8 @@ public class VariantSearch {
                 + ", phylop=" + phylop
                 + ", sift=" + sift
                 + ", polyphen=" + polyphen
-                + ", geneNames=" + geneNames
+                + ", studies=" + studies
+                + ", genes=" + genes
                 + ", accessions=" + accessions
                 + ", populations=" + populations
                 + '}';
