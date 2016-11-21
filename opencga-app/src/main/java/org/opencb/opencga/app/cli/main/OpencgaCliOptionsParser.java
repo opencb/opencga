@@ -23,13 +23,11 @@ import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.app.cli.main.options.analysis.AlignmentCommandOptions;
+import org.opencb.opencga.app.cli.main.options.analysis.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.options.catalog.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by imedina on AdminMain.
@@ -58,6 +56,7 @@ public class OpencgaCliOptionsParser {
 
     // Analysis
     private AlignmentCommandOptions alignmentCommandOptions;
+    private VariantCommandOptions variantCommandOptions;
 
 
 //    public final CommandShareResource commandShareResource;
@@ -278,6 +277,11 @@ public class OpencgaCliOptionsParser {
         jCommander.addCommand("alignments", alignmentCommandOptions);
         JCommander alignmentSubCommands = jCommander.getCommands().get("alignments");
         alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexCommandOptions);
+
+        variantCommandOptions = new VariantCommandOptions(this.commonCommandOptions, jCommander);
+        jCommander.addCommand("variant", variantCommandOptions);
+        JCommander variantSubCommands = jCommander.getCommands().get("variant");
+        variantSubCommands.addCommand("index", variantCommandOptions.indexCommandOptions);
 
         if (interactive) { //Add interactive commands
 //            jCommander.addCommand(new HelpCommands());
@@ -517,7 +521,7 @@ public class OpencgaCliOptionsParser {
             System.err.println("");
             System.err.println("Usage:       opencga.sh [-h|--help] [--version] <command> [options]");
             System.err.println("");
-            System.err.println("Commands:");
+//            System.err.println("Commands:");
             printMainUsage();
             System.err.println("");
         } else {
@@ -542,8 +546,20 @@ public class OpencgaCliOptionsParser {
 
 
     private void printMainUsage() {
+        Set<String> analysisCommands = new HashSet<>(Arrays.asList("alignments", "variant"));
+        System.err.println("Catalog commands:");
         for (String s : jCommander.getCommands().keySet()) {
-            System.err.printf("%14s  %s\n", s, jCommander.getCommandDescription(s));
+            if (!analysisCommands.contains(s)) {
+                System.err.printf("%14s  %s\n", s, jCommander.getCommandDescription(s));
+            }
+        }
+
+        System.err.println("");
+        System.err.println("Analysis commands:");
+        for (String s : jCommander.getCommands().keySet()) {
+            if (analysisCommands.contains(s)) {
+                System.err.printf("%14s  %s\n", s, jCommander.getCommandDescription(s));
+            }
         }
     }
 

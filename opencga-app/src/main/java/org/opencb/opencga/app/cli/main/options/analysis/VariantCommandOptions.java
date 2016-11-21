@@ -26,6 +26,7 @@ import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 /**
  * Created by pfurio on 15/08/16.
  */
+@Parameters(commandNames = {"variant"}, commandDescription = "Variant commands")
 public class VariantCommandOptions {
 
     public JCommander jCommander;
