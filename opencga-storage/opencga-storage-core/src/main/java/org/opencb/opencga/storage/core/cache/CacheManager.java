@@ -72,7 +72,8 @@ public class CacheManager {
 
             redisState = true;
 
-            redissonClient = Redisson.create(redissonConfig);
+//            redissonClient = Redisson.create(redissonConfig);
+            redissonClient = getRedissonClient();
         }
     }
 
@@ -82,7 +83,7 @@ public class CacheManager {
         QueryResult<T> queryResult = new QueryResult<>();
         if (isActive()) {
             long start = System.currentTimeMillis();
-            RMap<Integer, Map<String, Object>> map = redissonClient.getMap(key);
+            RMap<Integer, Map<String, Object>> map = getRedissonClient().getMap(key);
 
             try {
                 // We only retrieve the first field of the HASH, which is the only one that exist.
@@ -107,7 +108,7 @@ public class CacheManager {
         if (isActive()) {
             if (queryResult.getDbTime() >= storageConfiguration.getCache().getSlowThreshold()
                     && queryResult.getResult().size() >= storageConfiguration.getCache().getMaxResultSize()) {
-                RMap<Integer, Map<String, Object>> map = redissonClient.getMap(key);
+                RMap<Integer, Map<String, Object>> map = getRedissonClient().getMap(key);
                 Map<String, Object> record = new HashMap<>();
                 record.put("query", query);
                 record.put("result", queryResult);
@@ -154,17 +155,27 @@ public class CacheManager {
     }
 
     public void clear() {
-        RKeys redisKeys = redissonClient.getKeys();
+        RKeys redisKeys = getRedissonClient().getKeys();
         redisKeys.deleteByPattern(PREFIX_DATABASE_KEY + "*");
     }
 
     public void clear(Pattern pattern) {
-        RKeys redisKeys = redissonClient.getKeys();
+        RKeys redisKeys = getRedissonClient().getKeys();
         redisKeys.deleteByPattern(pattern.toString());
     }
 
     public void close() {
-        redissonClient.shutdown();
+        if (redissonClient != null) {
+            redissonClient.shutdown();
+            redissonClient = null;
+        }
+    }
+
+    private synchronized RedissonClient getRedissonClient() {
+        if (redissonClient == null) {
+            redissonClient = Redisson.create(redissonConfig);
+        }
+        return redissonClient;
     }
 
 }
