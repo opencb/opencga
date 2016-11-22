@@ -41,6 +41,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.executors.ExternalMRExecutor;
@@ -92,6 +93,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     protected Configuration conf = null;
     protected MRExecutor mrExecutor;
     private HdfsVariantReaderUtils variantReaderUtils;
+    private HBaseManager hBaseManager;
 
 
     public HadoopVariantStorageManager() {
@@ -415,10 +417,24 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             StorageEngineConfiguration storageEngine = this.configuration.getStorageEngine(STORAGE_ENGINE_ID);
             Configuration configuration = getHadoopConfiguration(storageEngine.getVariant().getOptions());
             configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(configuration, credentials);
-
-            return new VariantHadoopDBAdaptor(credentials, this.configuration, configuration);
+            return new VariantHadoopDBAdaptor(getHBaseManager(configuration).getConnection(), credentials,
+                    this.configuration, configuration);
         } catch (IOException e) {
             throw new StorageManagerException("Problems creating DB Adapter", e);
+        }
+    }
+
+    private synchronized HBaseManager getHBaseManager(Configuration configuration) {
+        if (hBaseManager == null) {
+            hBaseManager = new HBaseManager(configuration);
+        }
+        return hBaseManager;
+    }
+
+    public void close() throws IOException {
+        if (hBaseManager != null) {
+            hBaseManager.close();
+            hBaseManager = null;
         }
     }
 

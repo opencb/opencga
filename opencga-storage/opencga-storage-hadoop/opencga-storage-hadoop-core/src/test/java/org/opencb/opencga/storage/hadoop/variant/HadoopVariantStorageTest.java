@@ -45,7 +45,6 @@ import org.apache.hadoop.hbase.regionserver.snapshot.RegionServerSnapshotManager
 import org.apache.hadoop.hbase.regionserver.wal.FSHLog;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.FSTableDescriptors;
-import org.apache.hadoop.hbase.zookeeper.RecoverableZooKeeper;
 import org.apache.hadoop.hbase.zookeeper.ZKTableStateManager;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.common.Storage;
@@ -84,6 +83,8 @@ import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -103,9 +104,12 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
     AtomicReference<HBaseTestingUtility> utility = new AtomicReference<>(null);
     AtomicReference<Configuration> configuration = new AtomicReference<>(null);
+//    Set<HadoopVariantStorageManager> managers = new ConcurrentHashSet<>();
+    AtomicReference<HadoopVariantStorageManager> manager = new AtomicReference<>();
 
     class HadoopExternalResource extends ExternalResource implements HadoopVariantStorageTest {
 
+        Logger logger = LoggerFactory.getLogger(this.getClass());
         @Override
         public void before() throws Throwable {
             if (utility.get() == null) {
@@ -174,7 +178,8 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 org.apache.log4j.Logger.getLogger(NIOServerCnxn.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(NIOServerCnxnFactory.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(PrepRequestProcessor.class).setLevel(Level.WARN);
-                org.apache.log4j.Logger.getLogger(RecoverableZooKeeper.class).setLevel(Level.WARN);
+                // Interesting class for logging new Zookeeper connections
+//                org.apache.log4j.Logger.getLogger(RecoverableZooKeeper.class).setLevel(Level.WARN);
 
                 // HDFS loggers
                 org.apache.log4j.Logger.getLogger(FSNamesystem.class.getName() + ".audit").setLevel(Level.WARN);
@@ -216,6 +221,9 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
                 conf.setBoolean(QueryServices.IS_NAMESPACE_MAPPING_ENABLED, true);
 
+                // Zookeeper always with the same clientPort.
+//                conf.setInt("test.hbase.zookeeper.property.clientPort", 55419);
+
                 utility.get().startMiniCluster(1);
 
     //            MiniMRCluster miniMRCluster = utility.startMiniMapReduceCluster();
@@ -223,13 +231,26 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
     //            miniMRClientCluster.start();
 
 //                checkHBaseMiniCluster();
-
             }
         }
 
         @Override
         public void after() {
             try {
+                logger.info("Closing HBaseTestingUtility");
+//                for (HadoopVariantStorageManager manager : managers) {
+//                    manager.close();
+//                }
+                if (manager.get() != null) {
+                    manager.get().close();
+                    manager.set(null);
+                }
+//                for (Connection connection : HBaseManager.CONNECTIONS) {
+//                    connection.close();
+//                }
+                System.out.println("HBaseManager.getOpenConnections() = " + HBaseManager.getOpenConnections());
+
+                configuration.set(null);
                 try {
                     if (utility.get() != null) {
                         utility.get().shutdownMiniCluster();
@@ -240,6 +261,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
             } catch (Exception e) {
                 Assert.fail(e.getMessage());
             }
+            System.out.println("##### HBaseMiniCluster down ###################");
         }
 
         public Configuration getConf() {
@@ -282,8 +304,12 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
     @Override
     default HadoopVariantStorageManager getVariantStorageManager() throws Exception {
-
-        HadoopVariantStorageManager manager = new HadoopVariantStorageManager();
+        synchronized (manager) {
+            if (manager.get() == null) {
+                manager.set(new HadoopVariantStorageManager());
+            }
+        }
+        HadoopVariantStorageManager manager = HadoopVariantStorageTest.manager.get();
 
         //Make a copy of the configuration
         Configuration conf = new Configuration(false);
