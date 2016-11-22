@@ -45,7 +45,7 @@ import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
  */
 @Ignore
 @Deprecated
-public class HadoopDirectVariantStoreETLTest implements HadoopVariantStorageManagerTestUtils {
+public class HadoopDirectVariantStoreETLTest implements HadoopVariantStorageTest {
 
 //    @ClassRule
 //    public static ExternalResource externalResource = new HadoopExternalResource();

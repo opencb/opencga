@@ -33,7 +33,7 @@ import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.DB_NAME;
+import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.DB_NAME;
 
 /**
  * Created by hpccoll1 on 21/07/15.

@@ -31,9 +31,9 @@ import org.opencb.biodata.models.variant.exceptions.NotAVariantException;
 import org.opencb.biodata.tools.variant.converter.VariantContextToVariantConverter;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.opencga.storage.core.runner.StringDataWriter;
-import org.opencb.opencga.storage.core.variant.io.json.GenericRecordAvroJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
+import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

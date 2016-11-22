@@ -11,23 +11,26 @@ public class SearchConfiguration {
     private String user;
     private String password;
     private boolean active;
+    private int rows;
 
     public static final boolean DEFAULT_ACTVE = true;
     public static final String DEFAULT_HOST = "localhost:8983/solr/";
     public static final String DEFAULT_COLLECTION = "variants";
     public static final String DEFAULT_PASSWORD = "";
     public static final String DEFAULT_USER = "";
+    public static final int DEFAULT_ROWS = 100000;
 
     public SearchConfiguration() {
-        this(DEFAULT_HOST, DEFAULT_COLLECTION, DEFAULT_USER, DEFAULT_PASSWORD, DEFAULT_ACTVE);
+        this(DEFAULT_HOST, DEFAULT_COLLECTION, DEFAULT_USER, DEFAULT_PASSWORD, DEFAULT_ACTVE, DEFAULT_ROWS);
     }
 
-    public SearchConfiguration(String host, String collection, String user, String password, boolean active) {
+    public SearchConfiguration(String host, String collection, String user, String password, boolean active, int rows) {
         this.host = host;
         this.collection = collection;
         this.user = user;
         this.password = password;
         this.active = active;
+        this.rows = rows;
     }
 
     public String getHost() {
@@ -75,6 +78,15 @@ public class SearchConfiguration {
         return this;
     }
 
+    public int getRows() {
+        return rows;
+    }
+
+    public SearchConfiguration setRows(int rows) {
+        this.rows = rows;
+        return this;
+    }
+
     @Override
     public String toString() {
         return "SearchConfiguration{"
@@ -82,6 +94,7 @@ public class SearchConfiguration {
                 + ", collection='" + collection + '\''
                 + ", user='" + user + '\''
                 + ", active='" + active + '\''
+                + ", rows='" + rows + '\''
                 + '}';
     }
 

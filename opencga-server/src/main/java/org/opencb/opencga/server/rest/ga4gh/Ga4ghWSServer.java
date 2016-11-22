@@ -32,6 +32,7 @@ import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.local.AlignmentStorageManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -187,7 +188,9 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
 
             SearchReadsResponse response = new SearchReadsResponse();
 
-            QueryResult<ReadAlignment> queryResult = storageManagerFactory.getAlignmentStorageManager()
+            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageConfiguration);
+
+            QueryResult<ReadAlignment> queryResult = alignmentStorageManager
                     .query("", request.getReadGroupIds().get(0), query, queryOptions, sessionId);
 
             response.setAlignments(queryResult.getResult());

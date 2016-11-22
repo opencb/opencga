@@ -34,16 +34,19 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageETL;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
+import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBWriter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageManagerException;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantMerger;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageLoader;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageReader;
+import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -196,12 +199,10 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue());
         int bulkSize = options.getInt(BULK_SIZE.key(), batchSize);
         int loadThreads = options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue());
-        int capacity = options.getInt("blockingQueueCapacity", loadThreads * 2);
         final int numReaders = 1;
         final int numWriters = loadThreads == 1 ? 1 : loadThreads - numReaders; //Subtract the reader thread
 
-        MongoDBCollection stageCollection = dbAdaptor.getDB().getCollection(
-                options.getString(COLLECTION_STAGE.key(), COLLECTION_STAGE.defaultValue()));
+        MongoDBCollection stageCollection = dbAdaptor.getStageCollection();
 
         logger.info("Loading variants...");
         long start = System.currentTimeMillis();
@@ -240,7 +241,10 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                         return batch;
                     },
                     null,
-                    new ParallelTaskRunner.Config(loadThreads, batchSize, capacity, false)
+                    ParallelTaskRunner.Config.builder()
+                            .setNumTasks(loadThreads)
+                            .setBatchSize(batchSize)
+                            .setAbortOnFail(true).build()
             );
 
             Thread hook = new Thread(() -> {
@@ -274,7 +278,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
 
         long skippedVariants = options.getLong("skippedVariants");
         if (doMerge) {
-            MongoDBVariantWriteResult writeResult = merge(Collections.singletonList(fileId), batchSize, loadThreads, capacity,
+            MongoDBVariantWriteResult writeResult = merge(Collections.singletonList(fileId), batchSize, loadThreads,
                     numRecords, skippedVariants, stageCollection);
         }
         long end = System.currentTimeMillis();
@@ -420,10 +424,9 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue());
         int loadThreads = options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue());
         int capacity = options.getInt("blockingQueueCapacity", loadThreads * 2);
-        MongoDBCollection collection = dbAdaptor.getDB().getCollection(
-                options.getString(COLLECTION_STAGE.key(), COLLECTION_STAGE.defaultValue()));
+        MongoDBCollection collection = dbAdaptor.getStageCollection();
 
-        return merge(fileIds, batchSize, loadThreads, capacity, 0, options.getInt("skippedVariants", 0), collection);
+        return merge(fileIds, batchSize, loadThreads, 0, options.getInt("skippedVariants", 0), collection);
     }
 
     /**
@@ -437,15 +440,14 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
      * @param fileIds           FileIDs of the files to be merged
      * @param batchSize         Batch size
      * @param loadThreads       Number of load threads
-     * @param capacity          Capacity of the intermedial queue
      * @param numRecords        Number of variant records in the intermediate file
      * @param skippedVariants   Number of skipped variants into the Stage
      * @param stageCollection   Stage collection where files are loaded.
      * @return                  Write Result with times and count
      * @throws StorageManagerException  If there is a problem executing the {@link ParallelTaskRunner}
      */
-    protected MongoDBVariantWriteResult merge(List<Integer> fileIds, int batchSize, int loadThreads, int capacity,
-                                           int numRecords, long skippedVariants, MongoDBCollection stageCollection)
+    protected MongoDBVariantWriteResult merge(List<Integer> fileIds, int batchSize, int loadThreads,
+                                              int numRecords, long skippedVariants, MongoDBCollection stageCollection)
             throws StorageManagerException {
 
         long start = System.currentTimeMillis();
@@ -508,14 +510,14 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                 }
 
                 if (chromosomesToLoad.isEmpty()) {
-                    writeResult = mergeByChromosome(fileIds, batchSize, loadThreads, capacity, stageCollection,
+                    writeResult = mergeByChromosome(fileIds, batchSize, loadThreads, stageCollection,
                             studyConfiguration, null, studyConfiguration.getIndexedFiles());
                 } else {
                     writeResult = new MongoDBVariantWriteResult();
                     for (String chromosome : chromosomesToLoad) {
                         List<Integer> filesToLoad = chromosomeInFilesToLoad.get(chromosome);
                         Set<Integer> indexedFiles = new HashSet<>(chromosomeInLoadedFiles.get(chromosome));
-                        MongoDBVariantWriteResult aux = mergeByChromosome(filesToLoad, batchSize, loadThreads, capacity, stageCollection,
+                        MongoDBVariantWriteResult aux = mergeByChromosome(filesToLoad, batchSize, loadThreads, stageCollection,
                                 studyConfiguration, chromosome, indexedFiles);
                         writeResult.merge(aux);
                     }
@@ -620,7 +622,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
     }
 
     private MongoDBVariantWriteResult mergeByChromosome(
-            List<Integer> fileIds, int batchSize, int loadThreads, int capacity, MongoDBCollection stageCollection,
+            List<Integer> fileIds, int batchSize, int loadThreads, MongoDBCollection stageCollection,
             StudyConfiguration studyConfiguration, String chromosomeToLoad, Set<Integer> indexedFiles)
             throws StorageManagerException {
 
@@ -633,7 +635,10 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         ParallelTaskRunner<Document, MongoDBVariantWriteResult> ptrMerge;
         try {
             ptrMerge = new ParallelTaskRunner<>(reader, variantWriter, null,
-                    new ParallelTaskRunner.Config(loadThreads, batchSize, capacity, false));
+                    ParallelTaskRunner.Config.builder()
+                            .setNumTasks(loadThreads)
+                            .setBatchSize(batchSize)
+                            .setAbortOnFail(true).build());
         } catch (RuntimeException e) {
             throw new StorageManagerException("Error while creating ParallelTaskRunner", e);
         }

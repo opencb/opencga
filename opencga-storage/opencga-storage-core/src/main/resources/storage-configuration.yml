@@ -45,11 +45,12 @@ cache:
 
 ## Search Configuration
 search:
-  host: "localhost:8983/solr/"
+  host: "http://localhost:8983/solr/"
   active: true
   collection: "variants"
   user: ""
   password: ""
+  rows: 100000
 
 benchmark:
   storageEngine: "mongodb"
@@ -138,7 +139,7 @@ storageEngines:
 #      - "HADOOP_USER_CLASSPATH_FIRST=true"
 #      - "HADOOP_CLASSPATH=$HADOOP_CLASSPATH:${OPENCGA.INSTALLATION.DIR}/libs/protobuf-java-${google.protobuf}.jar"
 #      - ....
-      opencga.storage.hadoop.jar-with-dependencies: "opencga-storage-hadoop-${opencga.version}-jar-with-dependencies.jar"
+      opencga.storage.hadoop.jar-with-dependencies: "opencga-storage-hadoop-core-${opencga.version}-jar-with-dependencies.jar"
       opencga.archive.chunk_size: 1000
       opencga.archive.table.compression: "snappy"
       opencga.variant.table.compression: "snappy"

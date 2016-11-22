@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoPersistentCursor;
 import org.opencb.commons.io.DataReader;
-import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdComplexTypeConverter;
+import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,10 +115,10 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
         if (chromosome == null || chromosome.isEmpty()) {
             return;
         }
-        chromosome = VariantStringIdComplexTypeConverter.convertChromosome(chromosome);
+        chromosome = VariantStringIdConverter.convertChromosome(chromosome);
         chrFilters.add(and(
-                gte("_id", chromosome + VariantStringIdComplexTypeConverter.SEPARATOR_CHAR),
-                lt("_id", chromosome + (char) (VariantStringIdComplexTypeConverter.SEPARATOR_CHAR + 1))));
+                gte("_id", chromosome + VariantStringIdConverter.SEPARATOR_CHAR),
+                lt("_id", chromosome + (char) (VariantStringIdConverter.SEPARATOR_CHAR + 1))));
     }
 
     @Override

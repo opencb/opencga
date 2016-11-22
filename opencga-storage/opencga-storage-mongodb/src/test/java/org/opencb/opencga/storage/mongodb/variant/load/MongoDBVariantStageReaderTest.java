@@ -26,21 +26,21 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.storage.mongodb.variant.MongoVariantStorageManagerTestUtils;
-import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdComplexTypeConverter;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
+import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter;
 
 import java.util.Collections;
 import java.util.List;
 
 import static java.util.Arrays.asList;
-import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.DB_NAME;
+import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.DB_NAME;
 
 /**
  * Created on 14/06/16
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class MongoDBVariantStageReaderTest implements MongoVariantStorageManagerTestUtils{
+public class MongoDBVariantStageReaderTest implements MongoDBVariantStorageTest {
 
 
     private MongoDBCollection collection;
@@ -97,7 +97,7 @@ public class MongoDBVariantStageReaderTest implements MongoVariantStorageManager
             for (Document document : read) {
                 boolean contains = false;
                 for (String chr : chrs) {
-                    contains |= document.getString("_id").startsWith(VariantStringIdComplexTypeConverter.convertChromosome(chr));
+                    contains |= document.getString("_id").startsWith(VariantStringIdConverter.convertChromosome(chr));
                 }
                 Assert.assertTrue(contains);
             }

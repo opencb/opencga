@@ -40,17 +40,18 @@ import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantVcfExporter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableMapReduce;
-import org.opencb.opencga.storage.hadoop.variant.index.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
 import java.io.File;
@@ -72,7 +73,7 @@ import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.pr
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils implements HadoopVariantStorageManagerTestUtils {
+public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();
@@ -113,7 +114,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
     @Test
     public void testTwoFiles() throws Exception {
 
-        StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
+        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
         VariantSource source1 = loadFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
         checkArchiveTableTimeStamp(dbAdaptor);
@@ -131,7 +132,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
     @Test
     public void testTwoFilesConcurrent() throws Exception {
 
-        StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
+        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
         ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
         options.put(HadoopVariantStorageManager.HADOOP_LOAD_DIRECT, true);
@@ -169,7 +170,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
 
         List<URI> protoFiles = new LinkedList<>();
 
-        StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
+        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
         ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
         options.put(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, false);
@@ -217,7 +218,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
 
     public void testMultipleFilesConcurrent(boolean specificput) throws Exception {
 
-        StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
+        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
         VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
 
@@ -278,7 +279,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
     @Test
     public void testTwoFilesFailOne() throws Exception {
 
-        StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
+        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
         try {
             VariantSource source1 = loadFile("s1.genome.vcf", studyConfiguration,
@@ -391,7 +392,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
     @Test
     public void testPlatinumFilesOneByOne() throws Exception {
 
-        StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
+        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         List<VariantSource> sources = new LinkedList<>();
         Set<String> expectedVariants = new HashSet<>();
 
@@ -430,7 +431,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
     @Test
     public void testPlatinumFilesBatchLoad() throws Exception {
 
-        StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
+        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         List<VariantSource> sources = new LinkedList<>();
         Set<String> expectedVariants = new HashSet<>();
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);

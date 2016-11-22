@@ -23,5 +23,5 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManagerTransformTes
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class MongoVariantStorageManagerTransformTest extends VariantStorageManagerTransformTest implements MongoVariantStorageManagerTestUtils {
+public class MongoVariantStorageManagerTransformTest extends VariantStorageManagerTransformTest implements MongoDBVariantStorageTest {
 }

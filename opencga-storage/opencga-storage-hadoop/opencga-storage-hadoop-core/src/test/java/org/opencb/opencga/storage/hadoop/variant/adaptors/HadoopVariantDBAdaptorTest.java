@@ -22,7 +22,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 
 
@@ -31,7 +31,7 @@ import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements HadoopVariantStorageManagerTestUtils {
+public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements HadoopVariantStorageTest {
 
 
     @Before

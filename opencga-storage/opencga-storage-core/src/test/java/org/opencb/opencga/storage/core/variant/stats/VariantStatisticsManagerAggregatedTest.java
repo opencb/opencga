@@ -27,7 +27,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.io.IOException;
@@ -48,7 +48,7 @@ import static org.junit.Assert.assertTrue;
  * Created by hpccoll1 on 01/06/15.
  */
 @Ignore
-public abstract class VariantStatisticsManagerAggregatedTest extends VariantStorageManagerTestUtils {
+public abstract class VariantStatisticsManagerAggregatedTest extends VariantStorageBaseTest {
 
     public static final String VCF_TEST_FILE_NAME = "variant-test-aggregated-file.vcf.gz";
     private StudyConfiguration studyConfiguration;

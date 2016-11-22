@@ -49,8 +49,9 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.runner.StringDataReader;
-import org.opencb.opencga.storage.core.runner.StringDataWriter;
+import org.opencb.opencga.storage.core.io.plain.StringDataReader;
+import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -309,7 +310,7 @@ public abstract class VariantStorageETL implements StorageETL {
 
         } else if ("avro".equals(format)) {
             //Read VariantSource
-            source = VariantStorageManager.readVariantSource(input, source);
+            source = VariantReaderUtils.readVariantSource(input, source);
 
             //Reader
             StringDataReader dataReader = new StringDataReader(input);
@@ -366,7 +367,7 @@ public abstract class VariantStorageETL implements StorageETL {
             end = System.currentTimeMillis();
         } else if ("json".equals(format)) {
             //Read VariantSource
-            source = VariantStorageManager.readVariantSource(input, source);
+            source = VariantReaderUtils.readVariantSource(input, source);
 
             //Reader
             StringDataReader dataReader = new StringDataReader(input);
@@ -417,7 +418,7 @@ public abstract class VariantStorageETL implements StorageETL {
             end = System.currentTimeMillis();
         } else if ("proto".equals(format)) {
             //Read VariantSource
-            source = VariantStorageManager.readVariantSource(input, source);
+            source = VariantReaderUtils.readVariantSource(input, source);
             Pair<Long, Long> times = processProto(input, fileName, output, source, outputVariantsFile, outputMetaFile,
                     includeSrc, parser, generateReferenceBlocks, batchSize, extension, compression, malformedHandler, failOnError);
             start = times.getKey();

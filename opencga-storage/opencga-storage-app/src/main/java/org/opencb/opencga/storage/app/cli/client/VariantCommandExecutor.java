@@ -39,8 +39,8 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.benchmark.BenchmarkManager;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
-import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
@@ -98,7 +98,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         this.storageConfiguration = configuration.getStorageEngine(storageEngine);
 
         // TODO: Start passing catalogManager
-        StorageManagerFactory storageManagerFactory = StorageManagerFactory.get(null, configuration);
+        StorageManagerFactory storageManagerFactory = StorageManagerFactory.get(configuration);
         if (storageEngine == null || storageEngine.isEmpty()) {
             this.variantStorageManager = storageManagerFactory.getVariantStorageManager();
         } else {

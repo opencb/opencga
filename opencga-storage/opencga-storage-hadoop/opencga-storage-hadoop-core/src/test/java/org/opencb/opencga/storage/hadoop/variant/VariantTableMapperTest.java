@@ -31,12 +31,13 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.index.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationManager;
 
-public class VariantTableMapperTest extends VariantStorageManagerTestUtils implements HadoopVariantStorageManagerTestUtils {
+public class VariantTableMapperTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();
@@ -70,7 +71,7 @@ public class VariantTableMapperTest extends VariantStorageManagerTestUtils imple
     
     @Test
     public void testMap() throws Exception {
-        StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
+        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         VariantSource source1 = loadFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
         System.out.println("Query from HBase : " + DB_NAME);
         Configuration conf = configuration.get();
@@ -94,7 +95,7 @@ public class VariantTableMapperTest extends VariantStorageManagerTestUtils imple
 
     @Test
     public void testFilterMap() throws Exception {
-        StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
+        StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         VariantSource source1 = loadFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
         VariantSource source2 = loadFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());
         System.out.println("Query from HBase : " + DB_NAME);

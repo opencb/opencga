@@ -39,7 +39,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
@@ -60,7 +60,7 @@ import static org.junit.Assert.fail;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils implements HadoopVariantStorageManagerTestUtils {
+public class VariantHadoopManagerTest extends VariantStorageBaseTest implements HadoopVariantStorageTest {
 
     private VariantHadoopDBAdaptor dbAdaptor;
     private static StudyConfiguration studyConfiguration;
@@ -78,11 +78,11 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
             clearDB(variantStorageManager.getVariantTableName(DB_NAME));
             clearDB(variantStorageManager.getArchiveTableName(STUDY_ID));
 
-            URI inputUri = VariantStorageManagerTestUtils.getResourceUri("sample1.genome.vcf");
+            URI inputUri = VariantStorageBaseTest.getResourceUri("sample1.genome.vcf");
 //            URI inputUri = VariantStorageManagerTestUtils.getResourceUri("variant-test-file.vcf.gz");
 
-            studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
-            etlResult = VariantStorageManagerTestUtils.runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
+            studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
+            etlResult = VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
                     new ObjectMap(Options.TRANSFORM_FORMAT.key(), "avro")
                             .append(Options.FILE_ID.key(), FILE_ID)
                             .append(Options.ANNOTATE.key(), true)

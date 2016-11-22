@@ -34,11 +34,11 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.core.common.ProgressLogger;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.runner.StringDataWriter;
+import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.io.VariantDBReader;
-import org.opencb.opencga.storage.core.variant.io.json.GenericRecordAvroJsonMixin;
-import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
