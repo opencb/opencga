@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.main;
 import com.beust.jcommander.JCommander;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.CommandExecutor;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.io.IWriter;
 import org.opencb.opencga.app.cli.main.io.JsonWriter;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -44,11 +45,11 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 //    protected ClientConfiguration clientConfiguration;
     protected IWriter writer;
 
-    public OpencgaCommandExecutor(OpencgaCliOptionsParser.OpencgaCommonCommandOptions options) {
+    public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
         this(options, false);
     }
 
-    public OpencgaCommandExecutor(OpencgaCliOptionsParser.OpencgaCommonCommandOptions options, boolean skipDuration) {
+    public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) {
         super(options);
         init(skipDuration);
     }

@@ -16,7 +16,11 @@
 
 package org.opencb.opencga.app.cli;
 
+import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created on 03/05/16
@@ -55,5 +59,16 @@ public class GeneralCliOptions {
         @Parameter(names = {"-v", "--verbose"}, description = "Increase the verbosity of logs")
         public boolean verbose = false;
 
+
+
+        @Parameter(names = {"--sid", "--session-id"}, description = "Token session id", arity = 1)
+        public String sessionId;
+
+//        @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
+//        public Map<String, String> dynamic = new HashMap<>();
+
+        @DynamicParameter(names = "-D", description = "Storage engine specific parameters go here comma separated, ie. -Dmongodb" +
+                ".compression=snappy", hidden = false)
+        public Map<String, String> params = new HashMap<>(); //Dynamic parameters must be initialized
     }
 }
