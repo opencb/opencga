@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.app.cli;
 
+import com.beust.jcommander.JCommander;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.*;
@@ -131,7 +132,7 @@ public abstract class CommandExecutor {
 //        loadConfigurations();
     }
 
-    protected String getSessionId(AnalysisCliOptionsParser.AnalysisCommonCommandOptions commonOptions) {
+    protected String getSessionId(GeneralCliOptions.CommonCommandOptions commonOptions) {
         if (StringUtils.isBlank(commonOptions.sessionId)) {
             return sessionId;
         } else {
@@ -348,6 +349,17 @@ public abstract class CommandExecutor {
         }
         return configuration;
     }
+
+    public static String getParsedSubCommand(JCommander jCommander) {
+        String parsedCommand = jCommander.getParsedCommand();
+        if (jCommander.getCommands().containsKey(parsedCommand)) {
+            String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
+            return subCommand != null ? subCommand: "";
+        } else {
+            return "";
+        }
+    }
+
 
     public CatalogConfiguration getCatalogConfiguration() {
         return catalogConfiguration;

@@ -189,7 +189,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 //            }
 
         } else {
-            String sessionId = usersCommandOptions.loginCommandOptions.sessionId;
+            String sessionId = usersCommandOptions.commonCommandOptions.sessionId;
             if (StringUtils.isNotEmpty(sessionId)) {
                 openCGAClient.setSessionId(sessionId);
                 System.out.println("You have been logged correctly. This is your new session id " + sessionId);

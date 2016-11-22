@@ -25,20 +25,13 @@ import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
+import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.DataStore;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
 import org.opencb.opencga.server.grpc.ServiceTypesModel;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
-import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -52,11 +45,12 @@ import java.util.concurrent.TimeUnit;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
-    private final AnalysisCliOptionsParser.AlignmentCommandOptions alignmentCommandOptions;
+
+    private final AlignmentCommandOptions alignmentCommandOptions;
 //    private AlignmentStorageManager alignmentStorageManager;
 
-    public AlignmentCommandExecutor(AnalysisCliOptionsParser.AlignmentCommandOptions options) {
-        super(options.commonOptions);
+    public AlignmentCommandExecutor(AlignmentCommandOptions options) {
+        super(options.analysisCommonOptions);
         alignmentCommandOptions = options;
     }
 
@@ -64,7 +58,8 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
     public void execute() throws Exception {
         logger.debug("Executing variant command line");
 
-        String subCommandString = alignmentCommandOptions.getParsedSubCommand();
+//        String subCommandString = alignmentCommandOptions.getParsedSubCommand();
+        String subCommandString = getParsedSubCommand(alignmentCommandOptions.jCommander);
         configure();
         switch (subCommandString) {
             case "index":
@@ -197,7 +192,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
 //    }
 
     private void index() throws Exception {
-        AnalysisCliOptionsParser.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
+        AlignmentCommandOptions.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
 
         ObjectMap objectMap = new ObjectMap();
         objectMap.putIfNotNull("fileId", cliOptions.fileId);
@@ -499,8 +494,8 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         objectMap.putIfNotNull("sid", alignmentCommandOptions.coverageAlignmentCommandOptions.commonOptions.sessionId);
         objectMap.putIfNotNull("region", alignmentCommandOptions.coverageAlignmentCommandOptions.region);
         objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.coverageAlignmentCommandOptions.minMappingQuality);
-        if (alignmentCommandOptions.statsAlignmentCommandOptions.contained) {
-            objectMap.put("contained", alignmentCommandOptions.statsAlignmentCommandOptions.contained);
+        if (alignmentCommandOptions.coverageAlignmentCommandOptions.contained) {
+            objectMap.put("contained", alignmentCommandOptions.coverageAlignmentCommandOptions.contained);
         }
 
         OpenCGAClient openCGAClient = new OpenCGAClient(clientConfiguration);
