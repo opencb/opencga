@@ -70,7 +70,6 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
     @Before
     public void setUp() throws Exception {
         System.out.println("VariantMongoDBAdaptor.NUMBER_INSTANCES on setUp() " + VariantMongoDBAdaptor.NUMBER_INSTANCES.get());
-        printActiveThreadsNumber();
     }
 
     @After

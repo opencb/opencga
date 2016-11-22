@@ -64,7 +64,9 @@ public class OpenCGAWSServerTest {
 
         //Drop default user mongoDB database.
         String databaseName = WSServerTestUtils.DATABASE_PREFIX + TEST_SERVER_USER + "_" + ProjectWSServerTest.PROJECT_ALIAS;
-        new MongoDataStoreManager("localhost", 27017).drop(databaseName);
+        MongoDataStoreManager dataStoreManager = new MongoDataStoreManager("localhost", 27017);
+        dataStoreManager.get(databaseName);
+        dataStoreManager.drop(databaseName);
 
 //        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();

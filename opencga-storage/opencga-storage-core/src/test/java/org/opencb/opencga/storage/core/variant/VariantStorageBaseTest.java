@@ -198,6 +198,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
 
     @Before
     public final void _before() throws Exception {
+        printActiveThreadsNumber();
         variantStorageManager = getVariantStorageManager();
     }
 
@@ -341,7 +342,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
                 .filter(t -> t.getThreadGroup() == null || !t.getThreadGroup().getName().equals("system"))
                 .filter(t -> t.getState() != Thread.State.TERMINATED)
                 .map(Thread::toString).collect(Collectors.toList());
-        System.out.println("ActiveThreads: = " + threads.size());
+        System.out.println("ActiveThreads: " + threads.size());
 //        threads.forEach(s -> System.out.println("\t" + s));
     }
 

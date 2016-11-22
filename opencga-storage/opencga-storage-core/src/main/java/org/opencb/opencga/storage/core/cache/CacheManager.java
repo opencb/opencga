@@ -73,7 +73,7 @@ public class CacheManager {
             redisState = true;
 
 //            redissonClient = Redisson.create(redissonConfig);
-            redissonClient = getRedissonClient();
+            redissonClient = null;
         }
     }
 
