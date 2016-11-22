@@ -24,14 +24,18 @@ import java.util.List;
 public class SearchManager {
 
     private SearchConfiguration searchConfiguration;
-    private static VariantSearchFactory variantSearchFactory;
     private static HttpSolrClient solrServer;
+    private static VariantSearchFactory variantSearchFactory;
+
 
     public SearchManager() {
         //TODO remove testing constructor
         if (this.solrServer == null) {
             this.solrServer = new HttpSolrClient("http://localhost:8983/solr/variants");
             solrServer.setRequestWriter(new BinaryRequestWriter());
+        }
+        if (variantSearchFactory == null) {
+            variantSearchFactory = new VariantSearchFactory();
         }
     }
 
@@ -97,7 +101,7 @@ public class SearchManager {
         return new SolrVariantSearchIterator(response.getBeans(VariantSearch.class).iterator());
     }
 
-    public VariantSearchFacet facet(Query query, QueryOptions queryOptions) {
+    public VariantSearchFacet getFacet(Query query, QueryOptions queryOptions) {
 
         SolrQuery solrQuery = SearchUtil.createSolrQuery(query, queryOptions);
         QueryResponse response = null;
@@ -117,14 +121,21 @@ public class SearchManager {
 
         if (response.getFacetFields() != null) {
             variantSearchFacet.setFacetFields(response.getFacetFields());
-        } else if (response.getFacetQuery() != null) {
+        }
+        if (response.getFacetQuery() != null) {
             variantSearchFacet.setFacetQueries(response.getFacetQuery());
-        } else if (response.getFacetRanges() != null) {
+        }
+        if (response.getFacetRanges() != null) {
             variantSearchFacet.setFacetRanges(response.getFacetRanges());
-        } else if (response.getIntervalFacets() != null) {
+        }
+        if (response.getIntervalFacets() != null) {
             variantSearchFacet.setFacetIntervales(response.getIntervalFacets());
         }
 
         return variantSearchFacet;
+    }
+
+    public static VariantSearchFactory getVariantSearchFactory() {
+        return variantSearchFactory;
     }
 }

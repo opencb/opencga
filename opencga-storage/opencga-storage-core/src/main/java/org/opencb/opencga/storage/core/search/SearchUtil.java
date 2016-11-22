@@ -12,35 +12,42 @@ import java.util.Map;
  */
 public class SearchUtil {
 
+    public enum VariantSolrFields {
+        dbSNP,
+        type,
+        chromosome,
+        start,
+        end,
+        gerp,
+        caddRaw,
+        caddScaled,
+        phastCons,
+        phylop,
+        sift,
+        polyphen,
+        studies,
+        genes,
+        accessions
+    }
+
     public static SolrQuery createSolrQuery(Query query, QueryOptions queryOptions) {
+
 
         StringBuilder queryString = new StringBuilder();
         SolrQuery solrQuery = new SolrQuery();
 
+        for (VariantSolrFields value : VariantSolrFields.values()) {
+            if (query.containsKey(value.name())) {
+                queryString.append(value + ":" + query.get(value.name()));
+            }
+        }
 
         if (query.containsKey(VariantDBAdaptor.VariantQueryParams.ID.key())) {
             queryString.append("id:" + query.get(VariantDBAdaptor.VariantQueryParams.ID.key()));
         }
 
-        if (query.containsKey(VariantDBAdaptor.VariantQueryParams.TYPE.key())) {
-            queryString.append("type" + query.get(VariantDBAdaptor.VariantQueryParams.TYPE.key()));
-        }
-
-        if (query.containsKey(VariantDBAdaptor.VariantQueryParams.ANNOT_POLYPHEN.key())) {
-            queryString.append("polyphen=" + query.get(VariantDBAdaptor.VariantQueryParams.ANNOT_POLYPHEN.key()));
-        }
-
-        if (query.containsKey(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key())) {
-            queryString.append("chromosome=" + query.get(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key()));
-        }
-
-        if (query.containsKey("start")) {
-            queryString.append("start=" + query.get("start"));
-        }
-
-
-        if (query.containsKey("start")) {
-            queryString.append("start=" + query.get("start"));
+        if (query.containsKey("populations")) {
+            queryString.append("study_populations:" + query.get("populations"));
 
         }
 
@@ -55,20 +62,17 @@ public class SearchUtil {
         // QueryOptions
         if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
             solrQuery.setFields(queryOptions.getAsStringList(QueryOptions.INCLUDE).toString());
-        }
+         }
 
         if (queryOptions.containsKey(QueryOptions.LIMIT)) {
             solrQuery.setRows(queryOptions.getInt(QueryOptions.LIMIT));
-        }
-
-        if (queryOptions.containsKey(QueryOptions.EXCLUDE)) {
-            queryString.append(" NOT ").append(queryOptions.getAsStringList(QueryOptions.EXCLUDE));
         }
 
         if (queryOptions.containsKey(QueryOptions.SORT)) {
             solrQuery.addSort(queryOptions.getString(QueryOptions.SORT), getSortOrder(queryOptions));
         }
 
+        //facet
         if (query.containsKey("facet.field")) {
             solrQuery.addFacetField((query.get("facet.field").toString()));
         }
@@ -85,6 +89,7 @@ public class SearchUtil {
             solrQuery.setFacetPrefix(query.get("facet.prefix").toString());
         }
 
+        //Facet Ranges
         if (query.containsKey("facet.range")) {
 
             Map<String, Map<String, Number>> rangeFields = (Map<String, Map<String, Number>>) query.get("facet.range");
