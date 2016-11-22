@@ -304,6 +304,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
     public synchronized void close() {
         if (mongoDataStoreManager != null) {
             mongoDataStoreManager.close();
+            mongoDataStoreManager = null;
         }
     }
 

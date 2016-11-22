@@ -74,6 +74,9 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
             manager.close();
         }
         managers.clear();
+        if (manager.get() != null) {
+            manager.get().close();
+        }
     }
 
     default void clearDB(String dbName) throws Exception {

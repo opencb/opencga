@@ -120,7 +120,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     protected static Logger logger = LoggerFactory.getLogger(VariantMongoDBAdaptor.class);
 
     // Number of opened dbAdaptors
-    public static AtomicInteger NUMBER_INSTANCES = new AtomicInteger(0);
+    public static final AtomicInteger NUMBER_INSTANCES = new AtomicInteger(0);
 
     public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName,
                                  StudyConfigurationManager studyConfigurationManager, StorageConfiguration storageConfiguration)

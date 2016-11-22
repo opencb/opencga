@@ -42,6 +42,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 31/05/15.
@@ -333,5 +334,37 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
             }
         }
     }
+    public void printActiveThreadsNumber() {
+        List<String> threads = Thread.getAllStackTraces()
+                .keySet()
+                .stream()
+                .filter(t -> t.getThreadGroup() == null || !t.getThreadGroup().getName().equals("system"))
+                .filter(t -> t.getState() != Thread.State.TERMINATED)
+                .map(Thread::toString).collect(Collectors.toList());
+        System.out.println("ActiveThreads: = " + threads.size());
+//        threads.forEach(s -> System.out.println("\t" + s));
+    }
 
+    public void printActiveThreads() {
+        System.out.println("=========================================");
+        System.out.println("Thread.activeCount() = " + Thread.activeCount());
+
+        Map<Thread, StackTraceElement[]> allStackTraces = Thread.getAllStackTraces();
+        Set<String> groups = allStackTraces.keySet()
+                .stream()
+                .filter(t -> t.getThreadGroup() == null || !t.getThreadGroup().getName().equals("system"))
+                .map(t -> String.valueOf(t.getThreadGroup()))
+                .collect(Collectors.toSet());
+
+        for (String group : groups) {
+            System.out.println("group = " + group);
+            for (Map.Entry<Thread, StackTraceElement[]> entry : allStackTraces.entrySet()) {
+                Thread thread = entry.getKey();
+                if (String.valueOf(thread.getThreadGroup()).equals(group)) {
+                    System.out.println("\t[" + thread.getId() + "] " + thread.toString() + ":" + thread.getState());
+                }
+            }
+        }
+        System.out.println("=========================================");
+    }
 }

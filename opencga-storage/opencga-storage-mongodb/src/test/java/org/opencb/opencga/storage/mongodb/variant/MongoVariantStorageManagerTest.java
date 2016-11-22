@@ -20,6 +20,7 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Sorts;
 import org.bson.Document;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -66,9 +67,16 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSt
  */
 public class MongoVariantStorageManagerTest extends VariantStorageManagerTest implements MongoDBVariantStorageTest {
 
+    @Before
+    public void setUp() throws Exception {
+        System.out.println("VariantMongoDBAdaptor.NUMBER_INSTANCES on setUp() " + VariantMongoDBAdaptor.NUMBER_INSTANCES.get());
+        printActiveThreadsNumber();
+    }
+
     @After
     public void tearDown() throws Exception {
         closeConnections();
+        System.out.println("VariantMongoDBAdaptor.NUMBER_INSTANCES on tearDown() " + VariantMongoDBAdaptor.NUMBER_INSTANCES.get());
     }
 
     @Test
