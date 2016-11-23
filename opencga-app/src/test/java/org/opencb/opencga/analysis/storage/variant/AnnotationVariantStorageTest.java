@@ -36,7 +36,7 @@ import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -143,7 +143,7 @@ public class AnnotationVariantStorageTest {
         File file = opencga.createFile(studyId, "custom_annotation/myannot.gff", sessionId);
         Job job = variantStorage.annotateVariants(studyId, outputId, sessionId, new QueryOptions()
                 .append(AnalysisFileIndexer.LOAD, file.getId())
-                .append(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, "myAnnot")
+                .append(DefaultVariantAnnotationManager.CUSTOM_ANNOTATION_KEY, "myAnnot")
                 .append(ExecutorManager.EXECUTE, true)).first();
         System.out.println("job = " + job);
 
@@ -152,7 +152,7 @@ public class AnnotationVariantStorageTest {
         file = opencga.createFile(studyId, "custom_annotation/myannot.bed", sessionId);
         variantStorage.annotateVariants(studyId, outputId, sessionId, new QueryOptions()
                 .append(AnalysisFileIndexer.LOAD, file.getId())
-                .append(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, "myAnnot2")
+                .append(DefaultVariantAnnotationManager.CUSTOM_ANNOTATION_KEY, "myAnnot2")
                 .append(ExecutorManager.EXECUTE, true));
 
         Assert.assertEquals(new HashSet<>(Arrays.asList("myAnnot", "myAnnot2")), checkAnnotation(v -> true));

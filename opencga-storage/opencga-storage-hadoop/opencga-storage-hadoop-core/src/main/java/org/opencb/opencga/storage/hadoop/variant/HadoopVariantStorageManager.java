@@ -39,9 +39,13 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageETL;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.annotation.HadoopDefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.executors.ExternalMRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
@@ -92,6 +96,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     protected Configuration conf = null;
     protected MRExecutor mrExecutor;
     private HdfsVariantReaderUtils variantReaderUtils;
+    private HBaseManager hBaseManager;
 
 
     public HadoopVariantStorageManager() {
@@ -269,6 +274,11 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         return newStorageETL(connected, null);
     }
 
+    @Override
+    protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator, VariantDBAdaptor dbAdaptor) {
+        return new HadoopDefaultVariantAnnotationManager(annotator, dbAdaptor);
+    }
+
     public AbstractHadoopVariantStorageETL newStorageETL(boolean connected, Map<? extends String, ?> extraOptions)
             throws StorageManagerException {
         ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
@@ -415,10 +425,24 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             StorageEngineConfiguration storageEngine = this.configuration.getStorageEngine(STORAGE_ENGINE_ID);
             Configuration configuration = getHadoopConfiguration(storageEngine.getVariant().getOptions());
             configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(configuration, credentials);
-
-            return new VariantHadoopDBAdaptor(credentials, this.configuration, configuration);
+            return new VariantHadoopDBAdaptor(getHBaseManager(configuration).getConnection(), credentials,
+                    this.configuration, configuration);
         } catch (IOException e) {
             throw new StorageManagerException("Problems creating DB Adapter", e);
+        }
+    }
+
+    private synchronized HBaseManager getHBaseManager(Configuration configuration) {
+        if (hBaseManager == null) {
+            hBaseManager = new HBaseManager(configuration);
+        }
+        return hBaseManager;
+    }
+
+    public void close() throws IOException {
+        if (hBaseManager != null) {
+            hBaseManager.close();
+            hBaseManager = null;
         }
     }
 

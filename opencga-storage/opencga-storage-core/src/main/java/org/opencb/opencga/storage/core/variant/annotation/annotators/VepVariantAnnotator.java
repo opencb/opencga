@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.variant.annotation;
+package org.opencb.opencga.storage.core.variant.annotation.annotators;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,6 +23,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,7 +43,7 @@ public class VepVariantAnnotator extends VariantAnnotator {
     private final JsonFactory factory;
     private ObjectMapper jsonObjectMapper;
 
-    protected static Logger logger = LoggerFactory.getLogger(CellBaseVariantAnnotator.class);
+    protected static Logger logger = LoggerFactory.getLogger(AbstractCellBaseVariantAnnotator.class);
 
     public VepVariantAnnotator() throws VariantAnnotatorException {
         super(null, null);
@@ -67,7 +69,7 @@ public class VepVariantAnnotator extends VariantAnnotator {
     /////// CREATE ANNOTATION: empty. Vep annotation must be created beforehand by using VEP's cli and stored in a vep format file
 
     @Override
-    public List<VariantAnnotation> annotate(List<Variant> variants) throws IOException {
+    public List<VariantAnnotation> annotate(List<Variant> variants) throws VariantAnnotatorException {
         return null;
     }
 
@@ -76,8 +78,8 @@ public class VepVariantAnnotator extends VariantAnnotator {
 
     public void loadAnnotation(final VariantDBAdaptor variantDBAdaptor, final URI uri, QueryOptions options) throws IOException {
 
-        final int batchSize = options.getInt(VariantAnnotationManager.BATCH_SIZE, 100);
-        final int numConsumers = options.getInt(VariantAnnotationManager.NUM_WRITERS, 6);
+        final int batchSize = options.getInt(DefaultVariantAnnotationManager.BATCH_SIZE, 100);
+        final int numConsumers = options.getInt(DefaultVariantAnnotationManager.NUM_WRITERS, 6);
         final int numProducers = 1;
         ExecutorService executor = Executors.newFixedThreadPool(numConsumers + numProducers);
         final BlockingQueue<VariantAnnotation> queue = new ArrayBlockingQueue<>(batchSize * numConsumers * 2);

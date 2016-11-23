@@ -24,6 +24,7 @@ import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.main.options.analysis.RestVariantCommandOptions;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -419,7 +420,7 @@ public class AnalysisCliOptionsParser {
         public boolean annotate = false;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
-        public org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource annotator = null;
+        public VariantAnnotatorFactory.AnnotationSource annotator = null;
 
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         public boolean overwriteAnnotations;
@@ -515,7 +516,7 @@ public class AnalysisCliOptionsParser {
         public String customAnnotationKey = null;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
-        public org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource annotator;
+        public VariantAnnotatorFactory.AnnotationSource annotator;
 
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         public boolean overwriteAnnotations = false;

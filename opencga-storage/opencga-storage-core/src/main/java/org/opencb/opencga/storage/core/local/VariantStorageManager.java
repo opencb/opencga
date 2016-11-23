@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
@@ -109,7 +110,17 @@ public class VariantStorageManager extends StorageManager {
 //        return null;
 //    }
 
-    public QueryResult rank(Query query, String field, int limt, boolean asc, String sessionId) {
+    public QueryResult rank(Query query, String field, int limt, boolean asc, String sessionId) throws StorageManagerException {
+        try {
+            Long id = catalogManager.getStudyManager().getId("", "");
+            Study first = catalogManager.getStudyManager().get(id, null, sessionId).first();
+            String variant = first.getDataStores().get("VARIANT").getDbName();
+            QueryResult rank = variantStorageManager.getDBAdaptor(variant).rank(query, field, limt, asc);
+
+
+        } catch (CatalogException e) {
+            e.printStackTrace();
+        }
         return null;
     }
 

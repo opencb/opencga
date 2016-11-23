@@ -34,11 +34,12 @@ import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.search.SearchManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
@@ -466,6 +467,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
             assertEquals("\n" + variant.toJson() + "\n" + loadedVariant.toJson(), variant.toJson(), loadedVariant.toJson());
 
         }
+        dbAdaptor.close();
         reader.post();
         reader.close();
 
@@ -825,5 +827,33 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         logger.info("checkLoadedVariants time : " + (System.currentTimeMillis() - start) / 1000.0 + "s");
     }
 
+
+    @Test
+    public void insertVariantIntoSolr() throws Exception {
+        clearDB(DB_NAME);
+        ObjectMap params = new ObjectMap();
+        StudyConfiguration studyConfiguration = newStudyConfiguration();
+
+        params.put(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
+        params.put(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
+        params.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json");
+        params.put(VariantStorageManager.Options.FILE_ID.key(), 6);
+        params.put(VariantStorageManager.Options.COMPRESS_METHOD.key(), "gZiP");
+        params.put(VariantStorageManager.Options.TRANSFORM_THREADS.key(), 1);
+        params.put(VariantStorageManager.Options.LOAD_THREADS.key(), 1);
+        params.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
+        params.put(VariantStorageManager.Options.ANNOTATE.key(), true);
+        runETL(variantStorageManager, params, true, true, true);
+
+        VariantDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+
+
+        SearchManager searchManager = new SearchManager(variantStorageManager.getConfiguration());
+
+        for (Variant variant:dbAdaptor) {
+            searchManager.insert(variant);
+        }
+
+    }
 
 }
