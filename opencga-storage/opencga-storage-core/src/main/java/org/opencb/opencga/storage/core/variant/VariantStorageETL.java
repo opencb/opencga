@@ -54,9 +54,11 @@ import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
@@ -779,14 +781,14 @@ public abstract class VariantStorageETL implements StorageETL {
 
             VariantAnnotator annotator;
             try {
-                annotator = VariantAnnotationManager.buildVariantAnnotator(configuration, storageEngineId);
+                annotator = VariantAnnotatorFactory.buildVariantAnnotator(configuration, storageEngineId);
             } catch (VariantAnnotatorException e) {
                 e.printStackTrace();
                 logger.error("Can't annotate variants.", e);
                 return input;
             }
 
-            VariantAnnotationManager variantAnnotationManager = new VariantAnnotationManager(annotator, dbAdaptor);
+            DefaultVariantAnnotationManager variantAnnotationManager = new DefaultVariantAnnotationManager(annotator, dbAdaptor);
 
             QueryOptions annotationOptions = new QueryOptions();
             Query annotationQuery = new Query();
@@ -798,11 +800,11 @@ public abstract class VariantStorageETL implements StorageETL {
             // annotate just the indexed variants
             annotationQuery.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileIds);
 
-            annotationOptions.add(VariantAnnotationManager.OUT_DIR, output.getPath());
-            annotationOptions.add(VariantAnnotationManager.FILE_NAME, dbName + "." + TimeUtils.getTime());
+            annotationOptions.add(DefaultVariantAnnotationManager.OUT_DIR, output.getPath());
+            annotationOptions.add(DefaultVariantAnnotationManager.FILE_NAME, dbName + "." + TimeUtils.getTime());
             try {
                 variantAnnotationManager.annotate(annotationQuery, annotationOptions);
-            } catch (IOException e) {
+            } catch (VariantAnnotatorException | IOException e) {
                 throw new StorageManagerException("Error annotating", e);
             }
 //            URI annotationFile = variantAnnotationManager

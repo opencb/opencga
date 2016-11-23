@@ -28,7 +28,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
 import java.io.IOException;
@@ -354,13 +353,10 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
 
     QueryResult deleteStats(String studyName, String cohortName, QueryOptions options);
 
+    @Deprecated
     QueryResult addAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
 
     QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
-
-    default VariantAnnotationDBWriter annotationLoader(QueryOptions options) {
-        return new VariantAnnotationDBWriter(this, options, null);
-    }
 
     /**
      * Update custom annotation for all the variants with in a given region.
@@ -371,14 +367,14 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
      * @param options     Other options
      * @return            Result of the insertion
      */
+    @Deprecated
     QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, QueryOptions options);
 
+    @Deprecated
     QueryResult deleteAnnotation(String annotationId, Query query, QueryOptions queryOptions);
 
 
-    default VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
-        throw new UnsupportedOperationException();
-    }
+    VariantSourceDBAdaptor getVariantSourceDBAdaptor();
 
     StudyConfigurationManager getStudyConfigurationManager();
 

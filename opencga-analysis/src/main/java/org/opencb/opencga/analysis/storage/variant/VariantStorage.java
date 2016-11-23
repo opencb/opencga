@@ -44,6 +44,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.slf4j.LoggerFactory;
@@ -498,7 +499,7 @@ public class VariantStorage extends AbstractFileIndexer {
      *      {@link VariantDBAdaptor.VariantQueryParams#CHROMOSOME}
      *      {@link VariantDBAdaptor.VariantQueryParams#ANNOT_CONSEQUENCE_TYPE}
      *      {@link VariantAnnotationManager#OVERWRITE_ANNOTATIONS}
-     *      {@link VariantAnnotationManager#FILE_NAME}
+     *      {@link DefaultVariantAnnotationManager#FILE_NAME}
      *      {@link VariantAnnotationManager#ANNOTATION_SOURCE}
      *      {@link VariantAnnotationManager#SPECIES}
      *      {@link VariantAnnotationManager#ASSEMBLY}
@@ -574,12 +575,12 @@ public class VariantStorage extends AbstractFileIndexer {
             sb.append(" --assembly ").append(options.getString(VariantAnnotationManager.ASSEMBLY));
         }
 
-        if (isNotEmpty(options.getString(VariantAnnotationManager.FILE_NAME))) {
-            sb.append(" --output-filename ").append(options.getString(VariantAnnotationManager.FILE_NAME));
+        if (isNotEmpty(options.getString(DefaultVariantAnnotationManager.FILE_NAME))) {
+            sb.append(" --output-filename ").append(options.getString(DefaultVariantAnnotationManager.FILE_NAME));
         }
 
-        if (isNotEmpty(options.getString(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY))) {
-            sb.append(" --custom-name ").append(options.getString(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY));
+        if (isNotEmpty(options.getString(DefaultVariantAnnotationManager.CUSTOM_ANNOTATION_KEY))) {
+            sb.append(" --custom-name ").append(options.getString(DefaultVariantAnnotationManager.CUSTOM_ANNOTATION_KEY));
         }
 
         if (isNotEmpty(options.getString(VariantAnnotationManager.ANNOTATION_SOURCE))) {

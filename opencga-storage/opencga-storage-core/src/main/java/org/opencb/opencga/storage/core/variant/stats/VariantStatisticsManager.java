@@ -35,6 +35,7 @@ import org.opencb.opencga.core.common.ProgressLogger;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
@@ -101,6 +102,17 @@ public class VariantStatisticsManager {
         return variantDBAdaptor.iterator(iteratorQuery, iteratorQueryOptions);
     }
 
+    public URI createStats(VariantDBAdaptor variantDBAdaptor, URI output, String study, List<String> cohorts,
+                           QueryOptions options) throws IOException, StorageManagerException {
+
+        StudyConfigurationManager studyConfigurationManager = variantDBAdaptor.getStudyConfigurationManager();
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, options).first();
+        Map<String, Set<String>> cohortsMap = new HashMap<>(cohorts.size());
+        for (String cohort : cohorts) {
+            cohortsMap.put(cohort, Collections.emptySet());
+        }
+        return createStats(variantDBAdaptor, output, cohortsMap, null, studyConfiguration, options);
+    }
     /**
      * retrieves batches of Variants, delegates to obtain VariantStatsWrappers from those Variants, and writes them to the output URI.
      * <p>
@@ -300,6 +312,13 @@ public class VariantStatisticsManager {
         }
     }
 
+    public void loadStats(VariantDBAdaptor variantDBAdaptor, URI uri, String study, QueryOptions options) throws
+            IOException, StorageManagerException {
+        StudyConfigurationManager studyConfigurationManager = variantDBAdaptor.getStudyConfigurationManager();
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, options).first();
+        loadStats(variantDBAdaptor, uri, studyConfiguration, options);
+    }
+
     public void loadStats(VariantDBAdaptor variantDBAdaptor, URI uri, StudyConfiguration studyConfiguration, QueryOptions options) throws
             IOException, StorageManagerException {
 
@@ -378,6 +397,13 @@ public class VariantStatisticsManager {
             logger.info("note: maybe those variants didn't had the proper study? maybe the new and the old stats were the same?");
         }
 
+    }
+
+    public void loadSourceStats(VariantDBAdaptor variantDBAdaptor, URI uri, String study, QueryOptions options)
+            throws IOException {
+        StudyConfigurationManager studyConfigurationManager = variantDBAdaptor.getStudyConfigurationManager();
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, options).first();
+        loadSourceStats(variantDBAdaptor, uri, studyConfiguration, options);
     }
 
     public void loadSourceStats(VariantDBAdaptor variantDBAdaptor, URI uri, StudyConfiguration studyConfiguration, QueryOptions options)
