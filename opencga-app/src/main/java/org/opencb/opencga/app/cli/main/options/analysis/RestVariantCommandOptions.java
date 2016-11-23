@@ -28,13 +28,13 @@ import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
  */
 @Parameters(commandNames = {"variant"}, commandDescription = "Variant commands")
 @Deprecated
-public class VariantCommandOptions {
+public class RestVariantCommandOptions {
 
     public JCommander jCommander;
     public OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonCommandOptions;
     public IndexCommandOptions indexCommandOptions;
 
-    public VariantCommandOptions(OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public RestVariantCommandOptions(OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
         this.commonCommandOptions = commonCommandOptions;
         this.jCommander = jCommander;
         this.indexCommandOptions = new IndexCommandOptions();

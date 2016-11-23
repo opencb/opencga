@@ -51,15 +51,16 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
     public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) {
         super(options);
-        init(skipDuration);
+        init(options, skipDuration);
     }
 
-    public OpencgaCommandExecutor(String logLevel, boolean verbose, String conf, boolean skipDuration) {
-        super(logLevel, verbose, conf);
-        init(skipDuration);
-    }
+//    @Deprecated
+//    public OpencgaCommandExecutor(String logLevel, boolean verbose, String conf, boolean skipDuration) {
+//        super(logLevel, verbose, conf);
+//        init(skipDuration);
+//    }
 
-    private void init(boolean skipDuration) {
+    private void init(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) {
         try {
             this.writer = new JsonWriter();
 
@@ -73,6 +74,9 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                     if (skipDuration) {
                         openCGAClient = new OpenCGAClient(sessionFile.getSessionId(), clientConfiguration);
                         openCGAClient.setUserId(sessionFile.getUserId());
+                        if (options.sessionId == null) {
+                            options.sessionId = sessionFile.getSessionId();
+                        }
                     } else {
                         int sessionDuration = clientConfiguration.getSessionDuration() * 1000;
                         long timestamp = sessionFile.getTimestamp();
@@ -90,6 +94,9 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                             openCGAClient = new OpenCGAClient(sessionFile.getSessionId(), clientConfiguration);
                             openCGAClient.setUserId(sessionFile.getUserId());
 
+                            if (options.sessionId == null) {
+                                options.sessionId = sessionFile.getSessionId();
+                            }
                             // Some operations such as copy and link are run in the server side and need Catalog Manager
                             catalogManager = new CatalogManager(catalogConfiguration);
                         }

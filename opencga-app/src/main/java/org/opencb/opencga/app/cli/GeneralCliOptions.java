@@ -18,6 +18,7 @@ package org.opencb.opencga.app.cli;
 
 import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
+import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -52,14 +53,16 @@ public class GeneralCliOptions {
         @Parameter(names = {"--log-file"}, description = "Set the file to write the log")
         public String logFile;
 
-        @Parameter(names = {"-C", "--conf"}, description = "Configuration folder that contains opencga.yml, catalog-configuration.yaml, storage-configuration.yml and client-configuration.yaml files.")
+        @Parameter(names = {"-C", "--conf"}, description = "Configuration folder that contains opencga.yml, catalog-configuration.yaml, "
+                + "storage-configuration.yml and client-configuration.yaml files.")
         public String conf;
 
         @Deprecated
         @Parameter(names = {"-v", "--verbose"}, description = "Increase the verbosity of logs")
         public boolean verbose = false;
 
-
+        @Parameter(names = {"--output-format"}, description = "Output format. one of {JSON, TEXT, EXTENDED_TEXT}", arity = 1)
+        public String outputFormat = "JSON";
 
         @Parameter(names = {"--sid", "--session-id"}, description = "Token session id", arity = 1)
         public String sessionId;

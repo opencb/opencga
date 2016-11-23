@@ -79,7 +79,6 @@ public class AnalysisCliOptionsParser {
         JCommander alignmentSubCommands = jCommander.getCommands().get("alignment");
         alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexAlignmentCommandOptions);
         alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryAlignmentCommandOptions);
-        alignmentSubCommands.addCommand("query-grpc", alignmentCommandOptions.queryGRPCAlignmentCommandOptions);
         alignmentSubCommands.addCommand("stats", alignmentCommandOptions.statsAlignmentCommandOptions);
         alignmentSubCommands.addCommand("coverage", alignmentCommandOptions.coverageAlignmentCommandOptions);
 //        alignmentSubCommands.addCommand("annotate", alignmentCommandOptions.annotateVariantCommandOptions);

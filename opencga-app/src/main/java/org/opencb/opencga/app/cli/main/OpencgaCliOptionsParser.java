@@ -23,7 +23,7 @@ import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
-import org.opencb.opencga.app.cli.main.options.analysis.VariantCommandOptions;
+import org.opencb.opencga.app.cli.main.options.analysis.RestVariantCommandOptions;
 import org.opencb.opencga.app.cli.main.options.catalog.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
@@ -57,7 +57,7 @@ public class OpencgaCliOptionsParser {
 
     // Analysis
     private AlignmentCommandOptions alignmentCommandOptions;
-    private VariantCommandOptions variantCommandOptions;
+    private RestVariantCommandOptions variantCommandOptions;
 
 
 //    public final CommandShareResource commandShareResource;
@@ -281,11 +281,10 @@ public class OpencgaCliOptionsParser {
         JCommander alignmentSubCommands = jCommander.getCommands().get("alignments");
         alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexAlignmentCommandOptions);
         alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryAlignmentCommandOptions);
-        alignmentSubCommands.addCommand("query-grpc", alignmentCommandOptions.queryGRPCAlignmentCommandOptions);
         alignmentSubCommands.addCommand("stats", alignmentCommandOptions.statsAlignmentCommandOptions);
         alignmentSubCommands.addCommand("coverage", alignmentCommandOptions.coverageAlignmentCommandOptions);
 
-        variantCommandOptions = new VariantCommandOptions(this.commonCommandOptions, jCommander);
+        variantCommandOptions = new RestVariantCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("variant", variantCommandOptions);
         JCommander variantSubCommands = jCommander.getCommands().get("variant");
         variantSubCommands.addCommand("index", variantCommandOptions.indexCommandOptions);
@@ -324,7 +323,7 @@ public class OpencgaCliOptionsParser {
                 return ((AdminCliOptionsParser.AdminCommonCommandOptions) objects.get(0)).help;
             }
         }
-        return commonCommandOptions.help;
+        return analysisCommonCommandOptions.help;
     }
 
 
@@ -391,9 +390,9 @@ public class OpencgaCliOptionsParser {
         @Parameter(names = {"--metadata"}, description = "Include metadata information", required = false, arity = 1)
         public boolean metadata = false;
 
-        @Parameter(names = {"--output-format"}, description = "Output format. one of {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, "
-                + "PLAIN_JSON}", required = false, arity = 1)
-        OutputFormat outputFormat = OutputFormat.PRETTY_JSON;
+//        @Parameter(names = {"--output-format"}, description = "Output format. one of {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, "
+//                + "PLAIN_JSON}", required = false, arity = 1)
+//        OutputFormat outputFormat = OutputFormat.PRETTY_JSON;
 
         QueryOptions getQueryOptions() {
             return new QueryOptions(dynamic, false);
