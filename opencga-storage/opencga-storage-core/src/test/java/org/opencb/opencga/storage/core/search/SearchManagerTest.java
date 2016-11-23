@@ -187,7 +187,7 @@ public class SearchManagerTest extends GenericTest {
         Map<String, Double> sift = new HashMap<>();
         sift.put("facet.range.start", 0.0);
         sift.put("facet.range.end", 11.0);
-        sift.put("facet.range.gap", 1.0);
+        sift.put("facet.range.gap", 2.0);
         rangeFields.put("sift", sift);
 
         query.append("facet.range", rangeFields);
@@ -203,12 +203,7 @@ public class SearchManagerTest extends GenericTest {
         Assert.assertEquals(0, rangeEntries.get(2).getCount());
         Assert.assertEquals(0, rangeEntries.get(3).getCount());
         Assert.assertEquals(0, rangeEntries.get(4).getCount());
-        Assert.assertEquals(0, rangeEntries.get(5).getCount());
-        Assert.assertEquals(0, rangeEntries.get(6).getCount());
-        Assert.assertEquals(0, rangeEntries.get(7).getCount());
-        Assert.assertEquals(0, rangeEntries.get(8).getCount());
-        Assert.assertEquals(0, rangeEntries.get(9).getCount());
-        Assert.assertEquals(97, rangeEntries.get(10).getCount());
+        Assert.assertEquals(97, rangeEntries.get(5).getCount());
     }
 
     @Test
