@@ -73,7 +73,7 @@ public class HadoopDirectVariantStoreETLTest implements HadoopVariantStorageTest
 //        variant.setOptions(options);
 //        List<StorageEngineConfiguration> asList = Arrays.asList(new StorageEngineConfiguration("hadoop", null, variant, options));
 //        config.setStorageEngines(asList);
-//        manager.setConfiguration(config, storageEngineId);
+//        manager.init(config, storageEngineId);
 //        manager.index(inputFiles, outdirUri, false, false, true);
 
         Configuration conf = new Configuration();
