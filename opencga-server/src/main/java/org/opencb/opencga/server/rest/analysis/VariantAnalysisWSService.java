@@ -18,6 +18,8 @@ package org.opencb.opencga.server.rest.analysis;
 
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
@@ -97,7 +99,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
     @GET
     @Path("/query")
-    @ApiOperation(value = "Fetch variants from a VCF/gVCF file", position = 15, response = QueryResponse.class)
+    @ApiOperation(value = "Fetch variants from a VCF/gVCF file", position = 15, response = Variant[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
@@ -105,15 +107,14 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
 //            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
-    public Response getVariants(@ApiParam(value = "", required = true) @QueryParam("fileId") String fileIdCsv,
-                                @ApiParam(value = "List of variant ids") @QueryParam("ids") String ids,
+    public Response getVariants(@ApiParam(value = "List of variant ids") @QueryParam("ids") String ids,
                                 @ApiParam(value = "List of regions: {chr}:{start}-{end}") @QueryParam("region") String region,
                                 @ApiParam(value = "List of chromosomes") @QueryParam("chromosome") String chromosome,
                                 @ApiParam(value = "List of genes") @QueryParam("gene") String gene,
                                 @ApiParam(value = "Variant type: [SNV, MNV, INDEL, SV, CNV]") @QueryParam("type") String type,
                                 @ApiParam(value = "Reference allele") @QueryParam("reference") String reference,
                                 @ApiParam(value = "Main alternate allele") @QueryParam("alternate") String alternate,
-//                                @ApiParam(value = "") @QueryParam("studies") String studies,
+                                @ApiParam(value = "", required = true) @QueryParam("studies") String studies,
                                 @ApiParam(value = "List of studies to be returned") @QueryParam("returnedStudies") String returnedStudies,
                                 @ApiParam(value = "List of samples to be returned") @QueryParam("returnedSamples") String returnedSamples,
                                 @ApiParam(value = "List of files to be returned.") @QueryParam("returnedFiles") String returnedFiles,
@@ -155,24 +156,43 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                                 @ApiParam(value = "Histogram interval size", required = false) @DefaultValue("2000") @QueryParam("interval") int interval,
                                 @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge) {
 
-        List<QueryResult> results = new LinkedList<>();
         try {
+            String[] studyIds = studies.split(",");
+            List<QueryResult> queryResults = new LinkedList<>();
             VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
-            List<String> fileIds = FileWSServer.convertPathList(fileIdCsv, sessionId);
-            for (String fileIdStr : fileIds) {
-                QueryResult result;
+            for (String studyIdStr : studyIds) {
+                long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
+                // Get all query options
+                QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
                 if (count) {
-                    long fileId = catalogManager.getFileId(fileIdStr, sessionId);
-                    result = variantFetcher.countByFile(fileId, queryOptions, sessionId);
+                    queryResults.add(variantFetcher.count(studyId, queryOptions, sessionId));
                 } else {
-                    result = variantFetcher.getVariantsPerFile(region, histogram, groupBy, interval, fileIdStr, sessionId, queryOptions);
+                    queryResults.add(variantFetcher.getVariantsPerStudy(studyId, region, histogram, groupBy, interval, sessionId, queryOptions));
                 }
-                results.add(result);
             }
+            return createOkResponse(queryResults);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-        return createOkResponse(results);
+//        }
+//        List<QueryResult> results = new LinkedList<>();
+//        try {
+//            VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
+//            List<String> fileIds = FileWSServer.convertPathList(fileIdCsv, sessionId);
+//            for (String fileIdStr : fileIds) {
+//                QueryResult result;
+//                if (count) {
+//                    long fileId = catalogManager.getFileId(fileIdStr, sessionId);
+//                    result = variantFetcher.countByFile(fileId, queryOptions, sessionId);
+//                } else {
+//                    result = variantFetcher.getVariantsPerFile(region, histogram, groupBy, interval, fileIdStr, sessionId, queryOptions);
+//                }
+//                results.add(result);
+//            }
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//        return createOkResponse(results);
     }
 
     @GET
