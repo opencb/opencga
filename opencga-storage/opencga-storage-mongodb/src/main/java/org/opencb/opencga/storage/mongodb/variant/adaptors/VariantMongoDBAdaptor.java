@@ -66,13 +66,14 @@ import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
-import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageLoader;
+import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -118,6 +119,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     protected static Logger logger = LoggerFactory.getLogger(VariantMongoDBAdaptor.class);
 
+    // Number of opened dbAdaptors
+    public static final AtomicInteger NUMBER_INSTANCES = new AtomicInteger(0);
+
     public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName,
                                  StudyConfigurationManager studyConfigurationManager, StorageConfiguration storageConfiguration)
             throws UnknownHostException {
@@ -147,6 +151,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         this.utils = new VariantDBAdaptorUtils(this);
         cellBaseClient = new CellBaseClient(cellbaseConfiguration.toClientConfiguration());
         this.cacheManager = new CacheManager(storageConfiguration);
+        NUMBER_INSTANCES.incrementAndGet();
     }
 
     public MongoDBCollection getVariantsCollection() {
@@ -853,6 +858,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             mongoManager.close();
         }
         studyConfigurationManager.close();
+        cacheManager.close();
+        NUMBER_INSTANCES.decrementAndGet();
     }
 
     private Document parseQuery(Query query) {

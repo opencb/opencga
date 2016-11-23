@@ -28,6 +28,9 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdConverter;
+import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageConverterTask;
+import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
+import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageReader;
 
 import java.util.Collections;
 import java.util.List;
@@ -53,31 +56,30 @@ public class MongoDBVariantStageReaderTest implements MongoDBVariantStorageTest 
         MongoDataStoreManager mongoDataStoreManager = getMongoDataStoreManager(DB_NAME);
 
         collection = mongoDataStoreManager.get(DB_NAME).getCollection("stage");
-        MongoDBVariantStageLoader loader = new MongoDBVariantStageLoader(collection, 1, 1, 100, false);
-
-
+        MongoDBVariantStageLoader loader = new MongoDBVariantStageLoader(collection, 1, 1, false);
+        MongoDBVariantStageConverterTask converterTask = new MongoDBVariantStageConverterTask(null);
 
         loader.open();
         loader.pre();
-        writeVariant(loader, "10:100:A:T");
-        writeVariant(loader, "11:100:A:T");
-        writeVariant(loader, "1:100:A:T");
-        writeVariant(loader, "2:100:A:T");
-        writeVariant(loader, "22:100:A:T");
-        writeVariant(loader, "X:100:A:T");
+        writeVariant(converterTask, loader, "10:100:A:T");
+        writeVariant(converterTask, loader, "11:100:A:T");
+        writeVariant(converterTask, loader, "1:100:A:T");
+        writeVariant(converterTask, loader, "2:100:A:T");
+        writeVariant(converterTask, loader, "22:100:A:T");
+        writeVariant(converterTask, loader, "X:100:A:T");
         loader.post();
         loader.close();
 
     }
 
-    public void writeVariant(MongoDBVariantStageLoader loader, String variantStr) {
+    public void writeVariant(MongoDBVariantStageConverterTask converterTask, MongoDBVariantStageLoader loader, String variantStr) {
         Variant variant = new Variant(variantStr);
         variant.setNames(Collections.emptyList());
         StudyEntry studyEntry = new StudyEntry("1", "1");
         studyEntry.setFormat(Collections.emptyList());
         variant.addStudyEntry(studyEntry);
         variantMap.put(variant.getChromosome(), variant);
-        loader.write(variant);
+        loader.write(converterTask.apply(Collections.singletonList(variant)));
     }
 
 

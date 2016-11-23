@@ -115,13 +115,12 @@ public class ProgressLogger {
     }
 
     private void increment(long delta, String message, Supplier<String> supplier) {
-        long previousCount = count.addAndGet(delta);
+        long previousCount = count.getAndAdd(delta);
         long count = previousCount + delta;
 
-        if (previousCount / batchSize != count / batchSize) {
+        if (previousCount / batchSize != count / batchSize || count == totalCount && delta > 0) {
             log(count, supplier == null ? message : supplier.get());
         }
-
     }
 
     protected void log(long count, String extraMessage) {
