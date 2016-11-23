@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.core.local;
 
 import ga4gh.Reads;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectReader;
@@ -20,14 +19,12 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.storage.core.StorageETL;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.local.LocalAlignmentStorageManager;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -51,12 +48,13 @@ public class AlignmentStorageManager extends StorageManager {
 
     public AlignmentStorageManager(CatalogManager catalogManager, StorageConfiguration storageConfiguration) {
         super(catalogManager, storageConfiguration);
-        this.logger = LoggerFactory.getLogger(AlignmentStorageManager.class);
 
         // TODO: Create this storageManager by reflection
         this.storageManager = new LocalAlignmentStorageManager();
 
+        this.logger = LoggerFactory.getLogger(AlignmentStorageManager.class);
     }
+
 
     public void index(String studyIdStr, String fileIdStr, ObjectMap options, String sessionId) throws Exception {
         options = ParamUtils.defaultObject(options, ObjectMap::new);
@@ -201,50 +199,13 @@ public class AlignmentStorageManager extends StorageManager {
         Path filePath = getFilePath(fileId, sessionId);
 
         return storageManager.getDBAdaptor().count(filePath, query, options);
-//        return alignmentDBAdaptor.count((Path) fileInfo.get("filePath"), query, options);
     }
 
     @Override
     public void testConnection() throws StorageManagerException {
     }
 
-    @Override
-    public StorageETL newStorageETL(boolean connected) throws StorageManagerException {
-        return null;
-    }
 
-    /**
-     * Given the file and study string, retrieve the corresponding long ids.
-     *
-     * @param studyIdStr study string.
-     * @param fileIdStr file string.
-     * @param sessionId session id.
-     * @return an objectMap containing the keys "fileId" and "studyId"
-     * @throws CatalogException catalog exception.
-     */
-    private ObjectMap getFileAndStudyId(@Nullable String studyIdStr, String fileIdStr, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
-        long studyId = 0;
-        if (StringUtils.isNotEmpty(studyIdStr)) {
-            studyId = catalogManager.getStudyManager().getId(userId, studyIdStr);
-        }
-
-        long fileId;
-        if (studyId > 0) {
-            fileId = catalogManager.getFileManager().getId(userId, studyId, fileIdStr);
-            if (fileId <= 0) {
-                throw new CatalogException("The id of file " + fileIdStr + " could not be found under study " + studyIdStr);
-            }
-        } else {
-            fileId = catalogManager.getFileManager().getId(userId, fileIdStr);
-            if (fileId <= 0) {
-                throw new CatalogException("The id of file " + fileIdStr + " could not be found");
-            }
-            studyId = catalogManager.getFileManager().getStudyId(fileId);
-        }
-
-        return new ObjectMap("fileId", fileId).append("studyId", studyId);
-    }
 
     private Path getFilePath(long fileId, String sessionId) throws CatalogException, IOException {
         QueryOptions fileOptions = new QueryOptions(QueryOptions.INCLUDE,
