@@ -176,6 +176,20 @@ public class SearchManagerTest extends GenericTest {
     }
 
     @Test
+    public void variantFacetQueryTest() {
+
+        Query query = new Query();
+        QueryOptions queryOptions = new QueryOptions();
+        query.append("ids", "*");
+        query.append("facet.query", "type:SNV");
+        searchManager.insert(variantList);
+
+        VariantSearchFacet variantSearchFacet = searchManager.getFacet(query, queryOptions);
+
+        Assert.assertTrue(TOTAL_VARIANTS == variantSearchFacet.getFacetQueries().entrySet().iterator().next().getValue());
+    }
+
+    @Test
     public void variantFacetRangeTest() {
 
         Query query = new Query();
@@ -203,7 +217,7 @@ public class SearchManagerTest extends GenericTest {
         Assert.assertEquals(0, rangeEntries.get(2).getCount());
         Assert.assertEquals(0, rangeEntries.get(3).getCount());
         Assert.assertEquals(0, rangeEntries.get(4).getCount());
-        Assert.assertEquals(97, rangeEntries.get(5).getCount());
+        Assert.assertEquals(TOTAL_VARIANTS, rangeEntries.get(5).getCount());
     }
 
     @Test
@@ -239,7 +253,7 @@ public class SearchManagerTest extends GenericTest {
 
         iterator.forEachRemaining(results::add);
 
-        Assert.assertTrue(results.get(0).getStart() > results.get(14).getStart()) ;
+        Assert.assertTrue(results.get(0).getStart() > results.get(14).getStart());
     }
 
     private String getVariantSolrID(Variant variant) {
