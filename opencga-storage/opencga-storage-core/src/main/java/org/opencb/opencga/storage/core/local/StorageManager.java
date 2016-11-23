@@ -67,6 +67,18 @@ public abstract class StorageManager {
     }
 
 
+    public void clearCache(String sessionId) throws CatalogException {
+        String userId = catalogManager.getUserManager().getId(sessionId);
+
+    }
+
+
+    public void clearCache(String studyId, String sessionId) throws CatalogException {
+        String userId = catalogManager.getUserManager().getId(sessionId);
+
+    }
+
+
     public abstract void testConnection() throws StorageManagerException;
 
     /**
