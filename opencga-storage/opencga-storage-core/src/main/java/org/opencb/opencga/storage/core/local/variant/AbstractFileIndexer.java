@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.variant;
+package org.opencb.opencga.storage.core.local.variant;
 
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -58,7 +57,7 @@ public abstract class AbstractFileIndexer {
         this.logger = logger;
     }
 
-    protected void outdirMustBeEmpty(Path outdir) throws CatalogIOException, AnalysisExecutionException {
+    protected void outdirMustBeEmpty(Path outdir) throws CatalogIOException, StorageManagerException {
         List<URI> uris = catalogManager.getCatalogIOManagerFactory().get(outdir.toUri()).listFiles(outdir.toUri());
         if (!uris.isEmpty()) {
             // Only allow stdout and stderr files
@@ -66,27 +65,27 @@ public abstract class AbstractFileIndexer {
                 // Obtain the extension
                 int i = uri.toString().lastIndexOf(".");
                 if (i <= 0) {
-                    throw new AnalysisExecutionException("Unable to execute index. Outdir '" + outdir + "' must be empty!");
+                    throw new StorageManagerException("Unable to execute index. Outdir '" + outdir + "' must be empty!");
                 }
                 String extension = uri.toString().substring(i);
                 // If the extension is not one of the ones created by the daemons, throw the exception.
                 if (!ERR_LOG_EXTENSION.equalsIgnoreCase(extension) && !OUT_LOG_EXTENSION.equalsIgnoreCase(extension)) {
-                    throw new AnalysisExecutionException("Unable to execute index. Outdir '" + outdir + "' must be empty!");
+                    throw new StorageManagerException("Unable to execute index. Outdir '" + outdir + "' must be empty!");
                 }
             }
         }
     }
 
     public StudyConfiguration updateStudyConfiguration(String sessionId, long studyId, DataStore dataStore)
-            throws IOException, CatalogException, AnalysisExecutionException {
+            throws IOException, CatalogException, StorageManagerException {
         try (VariantDBAdaptor dbAdaptor = StorageManagerFactory.get().getVariantStorageManager(dataStore.getStorageEngine())
                 .getDBAdaptor(dataStore.getDbName());
-             StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager()){
+             StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager()) {
             new CatalogStudyConfigurationFactory(catalogManager)
                     .updateStudyConfigurationFromCatalog(studyId, studyConfigurationManager, sessionId);
             return studyConfigurationManager.getStudyConfiguration((int) studyId, null).first();
         } catch (StorageManagerException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-            throw new AnalysisExecutionException("Unable to update StudyConfiguration", e);
+            throw new StorageManagerException("Unable to update StudyConfiguration", e);
         }
     }
 

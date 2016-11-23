@@ -23,7 +23,6 @@ import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.local.LocalAlignmentStorageManager;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -43,16 +42,12 @@ public class AlignmentStorageManager extends StorageManager {
 
     private static final String GLOBAL_STATS = "globalStats";
 
-    public AlignmentStorageManager() {
-    }
 
     public AlignmentStorageManager(CatalogManager catalogManager, StorageConfiguration storageConfiguration) {
         super(catalogManager, storageConfiguration);
 
         // TODO: Create this alignmentStorageManager by reflection
         this.alignmentStorageManager = new LocalAlignmentStorageManager();
-
-        this.logger = LoggerFactory.getLogger(AlignmentStorageManager.class);
     }
 
 

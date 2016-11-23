@@ -35,8 +35,8 @@ import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
-import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
-import org.opencb.opencga.analysis.variant.VariantFileIndexer;
+import org.opencb.opencga.storage.core.local.variant.AbstractFileIndexer;
+import org.opencb.opencga.storage.core.local.variant.VariantFileIndexer;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -73,8 +73,8 @@ import java.util.stream.Collectors;
 
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
-import static org.opencb.opencga.analysis.variant.VariantFileIndexer.LOAD;
-import static org.opencb.opencga.analysis.variant.VariantFileIndexer.TRANSFORM;
+import static org.opencb.opencga.storage.core.local.variant.VariantFileIndexer.LOAD;
+import static org.opencb.opencga.storage.core.local.variant.VariantFileIndexer.TRANSFORM;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES;
 

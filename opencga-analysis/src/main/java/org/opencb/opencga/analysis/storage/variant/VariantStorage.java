@@ -27,8 +27,8 @@ import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.JobFactory;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
-import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
-import org.opencb.opencga.analysis.variant.CatalogStudyConfigurationFactory;
+import org.opencb.opencga.storage.core.local.variant.AbstractFileIndexer;
+import org.opencb.opencga.storage.core.local.variant.CatalogStudyConfigurationFactory;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -73,7 +73,7 @@ public class VariantStorage extends AbstractFileIndexer {
     }
 
     public void calculateStats(long studyId, List<Long> cohortIds, String catalogOutDirIdStr, String outdirStr, String sessionId, QueryOptions options)
-            throws AnalysisExecutionException, CatalogException, IOException, URISyntaxException {
+            throws AnalysisExecutionException, CatalogException, IOException, URISyntaxException, StorageManagerException {
         Job.Type step = Job.Type.COHORT_STATS;
         String fileIdStr = options.getString(Options.FILE_ID.key(), null);
         boolean overwriteStats = options.getBoolean(Options.OVERWRITE_STATS.key(), false);
@@ -200,7 +200,7 @@ public class VariantStorage extends AbstractFileIndexer {
      */
     @Deprecated
     public QueryResult<Job> calculateStats(Long outDirId, List<Long> cohortIds, String sessionId, QueryOptions options)
-            throws AnalysisExecutionException, CatalogException, IOException {
+            throws AnalysisExecutionException, CatalogException, IOException, StorageManagerException {
         if (options == null) {
             options = new QueryOptions();
         }

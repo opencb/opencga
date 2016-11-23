@@ -20,7 +20,7 @@ import org.junit.Test;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.storage.AbstractAnalysisFileIndexerTest;
-import org.opencb.opencga.analysis.variant.VariantFileIndexer;
+import org.opencb.opencga.storage.core.local.variant.VariantFileIndexer;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.FileIndex;
 
@@ -28,7 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.Assert.*;
-import static org.opencb.opencga.analysis.variant.VariantFileIndexer.*;
+import static org.opencb.opencga.storage.core.local.variant.VariantFileIndexer.*;
 
 /**
  * Created on 19/09/16

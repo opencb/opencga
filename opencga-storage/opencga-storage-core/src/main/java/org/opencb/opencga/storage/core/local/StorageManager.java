@@ -20,50 +20,58 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.cache.CacheManager;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
 
 public abstract class StorageManager {
 
-    protected CatalogManager catalogManager;
-    protected CacheManager cacheManager;
-    protected StorageConfiguration storageConfiguration;
+    protected final CatalogManager catalogManager;
+    protected final CacheManager cacheManager;
+    protected final StorageConfiguration storageConfiguration;
+    protected final StorageManagerFactory storageManagerFactory;
 
     @Deprecated
-    protected String storageEngineId;
+    protected final String storageEngineId;
 
-    protected Logger logger;
-
-
-    public StorageManager() {
-    }
+    protected final Logger logger;
 
     public StorageManager(CatalogManager catalogManager, StorageConfiguration storageConfiguration) {
-        this.init(catalogManager, new CacheManager(storageConfiguration), storageConfiguration,
-                storageConfiguration.getDefaultStorageEngineId());
+        this(catalogManager, new CacheManager(storageConfiguration), storageConfiguration,
+                storageConfiguration.getDefaultStorageEngineId(), null);
+    }
+
+    public StorageManager(CatalogManager catalogManager, StorageManagerFactory storageManagerFactory) {
+        this(catalogManager, null, storageManagerFactory.getStorageConfiguration(),
+                storageManagerFactory.getStorageConfiguration().getDefaultStorageEngineId(), storageManagerFactory);
     }
 
     public StorageManager(CatalogManager catalogManager, CacheManager cacheManager, StorageConfiguration storageConfiguration) {
-        this.init(catalogManager, cacheManager, storageConfiguration, storageConfiguration.getDefaultStorageEngineId());
+        this(catalogManager, cacheManager, storageConfiguration, storageConfiguration.getDefaultStorageEngineId(), null);
     }
 
     @Deprecated
     public StorageManager(CatalogManager catalogManager, StorageConfiguration storageConfiguration, String storageEngineId) {
-        this.init(catalogManager, new CacheManager(storageConfiguration), storageConfiguration, storageEngineId);
+        this(catalogManager, null, storageConfiguration, storageEngineId, null);
     }
 
 
-    protected void init(CatalogManager catalogManager, CacheManager cacheManager, StorageConfiguration storageConfiguration,
-                        String storageEngineId) {
+    protected StorageManager(CatalogManager catalogManager, CacheManager cacheManager, StorageConfiguration storageConfiguration,
+                        String storageEngineId, StorageManagerFactory storageManagerFactory) {
         this.catalogManager = catalogManager;
-        this.cacheManager = cacheManager;
+        this.cacheManager = cacheManager == null ? new CacheManager(storageConfiguration) : cacheManager;
         this.storageConfiguration = storageConfiguration;
         this.storageEngineId = storageEngineId;
+        this.storageManagerFactory = storageManagerFactory == null
+                ? StorageManagerFactory.get(storageConfiguration)
+                : storageManagerFactory;
+        logger = LoggerFactory.getLogger(getClass());
     }
 
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.variant;
+package org.opencb.opencga.storage.core.local.variant;
 
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -24,7 +24,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -88,7 +87,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
     }
 
     public List<StorageETLResult> index(String fileIds, String outdirString, String sessionId, QueryOptions options)
-            throws CatalogException, AnalysisExecutionException, IOException, IllegalAccessException, InstantiationException,
+            throws CatalogException, IOException, IllegalAccessException, InstantiationException,
             ClassNotFoundException, StorageManagerException, URISyntaxException {
 
         // Query catalog for user data
@@ -98,7 +97,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
     }
 
     public List<StorageETLResult> index(List<Long> fileIds, String outdirString, String sessionId, QueryOptions options)
-            throws CatalogException, AnalysisExecutionException, IOException, IllegalAccessException, InstantiationException,
+            throws CatalogException, IOException, IllegalAccessException, InstantiationException,
             ClassNotFoundException, StorageManagerException, URISyntaxException {
 
         URI outdirUri = UriUtils.createDirectoryUri(outdirString);
@@ -434,6 +433,8 @@ public class VariantFileIndexer extends AbstractFileIndexer {
                             index.getStatus().setName(FileIndex.IndexStatus.READY);
                         }
                         break;
+                    default:
+                        throw new IllegalStateException("Unknown Index Status " + index.getStatus().getName());
                 }
             } else {
                 logger.error("The execution should never get into this condition. Critical error.");
@@ -465,7 +466,8 @@ public class VariantFileIndexer extends AbstractFileIndexer {
                 if (queryResult.getNumResults() != 0) {
                     logger.debug("Default cohort status set to READY");
                     Cohort defaultCohort = queryResult.first();
-                    catalogManager.getCohortManager().setStatus(Long.toString(defaultCohort.getId()), Cohort.CohortStatus.READY, null, sessionId);
+                    catalogManager.getCohortManager().setStatus(Long.toString(defaultCohort.getId()), Cohort.CohortStatus.READY, null,
+                            sessionId);
 //                    params = new ObjectMap(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.READY);
 //                    catalogManager.getCohortManager().update(defaultCohort.getId(), params, new QueryOptions(), sessionId);
                 }
@@ -554,7 +556,8 @@ public class VariantFileIndexer extends AbstractFileIndexer {
 
         if (options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key())) {
 //            updateParams.append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.CALCULATING);
-            catalogManager.getCohortManager().setStatus(Long.toString(defaultCohort.getId()), Cohort.CohortStatus.CALCULATING, null, sessionId);
+            catalogManager.getCohortManager().setStatus(Long.toString(defaultCohort.getId()), Cohort.CohortStatus.CALCULATING, null,
+                    sessionId);
         }
 
         //Samples are the already indexed plus those that are going to be indexed
@@ -643,8 +646,8 @@ public class VariantFileIndexer extends AbstractFileIndexer {
                         // We will attempt to use the avro file registered in catalog
                         long avroId = file.getIndex().getTransformedFile().getId();
                         if (avroId == -1) {
-                            logger.error("This code should never be executed. Every vcf file containing the transformed status should have a "
-                                    + "registered avro file");
+                            logger.error("This code should never be executed. Every vcf file containing the transformed status should have"
+                                    + " a registered avro file");
                             throw new CatalogException("Internal error. No avro file could be found for file " + file.getId());
                         }
                         QueryResult<File> avroQueryResult = fileManager.get(avroId, new QueryOptions(), sessionId);
@@ -763,7 +766,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
     }
 
     /**
-     * Look for the related avro or vcf file in catalog using one of the pairs as a starting point
+     * Look for the related avro or vcf file in catalog using one of the pairs as a starting point.
      *
      * @param studyId study id of the files.
      * @param sourceFile avro or vcf file used to look for the vcf or avro file respectively.

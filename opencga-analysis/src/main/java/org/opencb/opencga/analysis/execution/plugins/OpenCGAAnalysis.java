@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
+import org.opencb.opencga.storage.core.local.variant.AbstractFileIndexer;
 import org.opencb.opencga.catalog.models.tool.Manifest;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;

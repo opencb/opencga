@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.variant;
+package org.opencb.opencga.storage.core.local.variant;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -55,14 +55,16 @@ public class CatalogStudyConfigurationFactory {
     public static final Query INDEXED_FILES_QUERY = new Query()
             .append(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
 
-    public static final QueryOptions SAMPLES_QUERY_OPTIONS = new QueryOptions("include", Arrays.asList("projects.studies.samples.id", "projects.studies.samples.name"));
+    public static final QueryOptions SAMPLES_QUERY_OPTIONS = new QueryOptions("include",
+            Arrays.asList("projects.studies.samples.id", "projects.studies.samples.name"));
 
     public static final Query COHORTS_QUERY = new Query();
     public static final QueryOptions COHORTS_QUERY_OPTIONS = new QueryOptions();
 
     public static final QueryOptions INVALID_COHORTS_QUERY_OPTIONS = new QueryOptions()
             .append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.INVALID)
-            .append("include", Arrays.asList("projects.studies.cohorts.name", "projects.studies.cohorts.id", "projects.studies.cohorts.status"));
+            .append("include",
+                    Arrays.asList("projects.studies.cohorts.name", "projects.studies.cohorts.id", "projects.studies.cohorts.status"));
     protected static Logger logger = LoggerFactory.getLogger(CatalogStudyConfigurationFactory.class);
 
     private final CatalogManager catalogManager;
@@ -101,7 +103,8 @@ public class CatalogStudyConfigurationFactory {
         return studyConfiguration;
     }
 
-    private StudyConfiguration fillStudyConfiguration(StudyConfiguration studyConfiguration, Study study, String sessionId) throws CatalogException {
+    private StudyConfiguration fillStudyConfiguration(StudyConfiguration studyConfiguration, Study study, String sessionId)
+            throws CatalogException {
         long studyId = study.getId();
         boolean newStudyConfiguration = false;
         if (studyConfiguration == null) {
@@ -128,9 +131,10 @@ public class CatalogStudyConfigurationFactory {
 //        studyConfiguration.getCohorts().clear();
 
         if (study.getAttributes().containsKey(VariantStorageManager.Options.AGGREGATED_TYPE.key())) {
-            logger.debug("setting study aggregation to {}", study.getAttributes().get(VariantStorageManager.Options.AGGREGATED_TYPE.key()).toString());
+            String aggregatedType = study.getAttributes().get(VariantStorageManager.Options.AGGREGATED_TYPE.key()).toString();
+            logger.debug("setting study aggregation to {}", aggregatedType);
             studyConfiguration.setAggregation(VariantSource.Aggregation.valueOf(
-                    study.getAttributes().get(VariantStorageManager.Options.AGGREGATED_TYPE.key()).toString()));
+                    aggregatedType));
         } else {
             studyConfiguration.setAggregation(VariantSource.Aggregation.NONE);
         }
@@ -232,12 +236,14 @@ public class CatalogStudyConfigurationFactory {
     public void updateStudyConfigurationFromCatalog(long studyId, StudyConfigurationManager studyConfigurationManager, String sessionId)
             throws CatalogException, StorageManagerException {
         try (StudyConfigurationManager.LockCloseable lock = studyConfigurationManager.closableLockStudy((int) studyId)) {
-            StudyConfiguration studyConfiguration = getStudyConfiguration(studyId, studyConfigurationManager, new QueryOptions(), sessionId);
+            StudyConfiguration studyConfiguration = getStudyConfiguration(studyId, studyConfigurationManager, new QueryOptions(),
+                    sessionId);
             studyConfigurationManager.updateStudyConfiguration(studyConfiguration, new QueryOptions());
         }
     }
 
-    public void updateCatalogFromStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options, String sessionId) throws CatalogException {
+    public void updateCatalogFromStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options, String sessionId)
+            throws CatalogException {
         if (options == null) {
             options = this.options;
         }
@@ -249,8 +255,10 @@ public class CatalogStudyConfigurationFactory {
                     new Query(CohortDBAdaptor.QueryParams.ID.key(), new ArrayList<>(studyConfiguration.getCalculatedStats())),
                     new QueryOptions(), sessionId).getResult()) {
                 if (cohort.getStatus() == null || !cohort.getStatus().getName().equals(Cohort.CohortStatus.READY)) {
-                    logger.debug("Cohort \"{}\":{} change status from {} to {}", cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.CohortStatus.READY);
-                    catalogManager.modifyCohort(cohort.getId(), new ObjectMap("status.name", Cohort.CohortStatus.READY), new QueryOptions(), sessionId);
+                    logger.debug("Cohort \"{}\":{} change status from {} to {}",
+                            cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.CohortStatus.READY);
+                    ObjectMap updateParams = new ObjectMap("status.name", Cohort.CohortStatus.READY);
+                    catalogManager.modifyCohort(cohort.getId(), updateParams, new QueryOptions(), sessionId);
                 }
             }
         }
@@ -261,8 +269,10 @@ public class CatalogStudyConfigurationFactory {
                     new Query(CohortDBAdaptor.QueryParams.ID.key(), new ArrayList<>(studyConfiguration.getInvalidStats())),
                     new QueryOptions(), sessionId).getResult()) {
                 if (cohort.getStatus() == null || !cohort.getStatus().getName().equals(Cohort.CohortStatus.INVALID)) {
-                    logger.debug("Cohort \"{}\":{} change status from {} to {}", cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.CohortStatus.INVALID);
-                    catalogManager.modifyCohort(cohort.getId(), new ObjectMap("status.name", Cohort.CohortStatus.INVALID), new QueryOptions(), sessionId);
+                    logger.debug("Cohort \"{}\":{} change status from {} to {}",
+                            cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.CohortStatus.INVALID);
+                    ObjectMap updateParams = new ObjectMap("status.name", Cohort.CohortStatus.INVALID);
+                    catalogManager.modifyCohort(cohort.getId(), updateParams, new QueryOptions(), sessionId);
                 }
             }
         }
