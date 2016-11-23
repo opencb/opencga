@@ -49,6 +49,7 @@ public class FileClient extends CatalogClient<File, FileAclEntry> {
         return execute(FILES_URL, "create-folder", params, GET, File.class);
     }
 
+    @Deprecated
     public QueryResponse<Job> index(String fileId, ObjectMap params) throws CatalogException, IOException {
         return execute(FILES_URL, fileId, "index", params, GET, Job.class);
     }
@@ -127,6 +128,7 @@ public class FileClient extends CatalogClient<File, FileAclEntry> {
         return uri;
     }
 
+    @Deprecated
     public QueryResponse<Variant> getVariants(String fileId, QueryOptions options) throws CatalogException, IOException {
         return execute(FILES_URL, fileId, "variants", options, GET, Variant.class);
     }
