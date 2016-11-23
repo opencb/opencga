@@ -22,7 +22,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
+import org.opencb.opencga.app.cli.analysis.AnalysisCliOptionsParser;
 import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
+import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.options.analysis.RestVariantCommandOptions;
 import org.opencb.opencga.app.cli.main.options.catalog.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -57,7 +59,8 @@ public class OpencgaCliOptionsParser {
 
     // Analysis
     private AlignmentCommandOptions alignmentCommandOptions;
-    private RestVariantCommandOptions variantCommandOptions;
+    private VariantCommandOptions variantCommandOptions;
+//    private RestVariantCommandOptions variantCommandOptions;
 
 
 //    public final CommandShareResource commandShareResource;
@@ -284,10 +287,11 @@ public class OpencgaCliOptionsParser {
         alignmentSubCommands.addCommand("stats", alignmentCommandOptions.statsAlignmentCommandOptions);
         alignmentSubCommands.addCommand("coverage", alignmentCommandOptions.coverageAlignmentCommandOptions);
 
-        variantCommandOptions = new RestVariantCommandOptions(this.commonCommandOptions, jCommander);
+        variantCommandOptions = new VariantCommandOptions(this.analysisCommonCommandOptions, jCommander);
         jCommander.addCommand("variant", variantCommandOptions);
         JCommander variantSubCommands = jCommander.getCommands().get("variant");
         variantSubCommands.addCommand("index", variantCommandOptions.indexCommandOptions);
+        variantSubCommands.addCommand("query", variantCommandOptions.queryCommandOptions);
 
         if (interactive) { //Add interactive commands
 //            jCommander.addCommand(new HelpCommands());
@@ -603,6 +607,10 @@ public class OpencgaCliOptionsParser {
 
     public AlignmentCommandOptions getAlignmentCommands() {
         return alignmentCommandOptions;
+    }
+
+    public VariantCommandOptions getVariantCommands() {
+        return variantCommandOptions;
     }
 
 }

@@ -151,7 +151,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         AnalysisCliOptionsParser.ExportVariantStatsCommandOptions exportCliOptions = variantCommandOptions.exportVariantStatsCommandOptions;
         AnalysisCliOptionsParser.QueryVariantCommandOptions queryCliOptions = variantCommandOptions.queryVariantCommandOptions;
 
-        queryCliOptions.outputFormat = exportCliOptions.outputFormat.toLowerCase().replace("tsv", "stats");
+        queryCliOptions.commonOptions.outputFormat = exportCliOptions.commonOptions.outputFormat.toLowerCase().replace("tsv", "stats");
         queryCliOptions.study = exportCliOptions.studies;
         queryCliOptions.returnStudy = exportCliOptions.studies;
         queryCliOptions.limit = exportCliOptions.queryOptions.limit;
@@ -190,8 +190,8 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rank));
         } else {
             final String outputFormat;
-            if (StringUtils.isNotEmpty(cliOptions.outputFormat)) {
-                outputFormat = cliOptions.outputFormat.toLowerCase();
+            if (StringUtils.isNotEmpty(cliOptions.commonOptions.outputFormat)) {
+                outputFormat = cliOptions.commonOptions.outputFormat.toLowerCase();
             } else {
                 outputFormat = "vcf";
             }

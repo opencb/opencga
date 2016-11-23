@@ -211,10 +211,10 @@ public class VariantQueryCommandUtils {
 
 
         VariantOutputFormat of = VCF;
-        if (StringUtils.isNotEmpty(queryVariantsOptions.outputFormat)) {
-            of = VariantOutputFormat.safeValueOf(queryVariantsOptions.outputFormat);
+        if (StringUtils.isNotEmpty(queryVariantsOptions.commonOptions.outputFormat)) {
+            of = VariantOutputFormat.safeValueOf(queryVariantsOptions.commonOptions.outputFormat);
             if (of == null) {
-                throw variantFormatNotSupported(queryVariantsOptions.outputFormat);
+                throw variantFormatNotSupported(queryVariantsOptions.commonOptions.outputFormat);
             }
         }
 
@@ -275,12 +275,12 @@ public class VariantQueryCommandUtils {
          */
         boolean gzip = true;
         VariantOutputFormat outputFormat;
-        if (StringUtils.isNotEmpty(queryVariantsOptions.outputFormat)) {
-            outputFormat = VariantOutputFormat.safeValueOf(queryVariantsOptions.outputFormat);
+        if (StringUtils.isNotEmpty(queryVariantsOptions.commonOptions.outputFormat)) {
+            outputFormat = VariantOutputFormat.safeValueOf(queryVariantsOptions.commonOptions.outputFormat);
             if (outputFormat == null) {
-                throw variantFormatNotSupported(queryVariantsOptions.outputFormat);
+                throw variantFormatNotSupported(queryVariantsOptions.commonOptions.outputFormat);
             } else {
-                gzip = VariantOutputFormat.isGzip(queryVariantsOptions.outputFormat);
+                gzip = VariantOutputFormat.isGzip(queryVariantsOptions.commonOptions.outputFormat);
             }
         } else {
             outputFormat = VCF;

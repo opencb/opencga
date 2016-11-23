@@ -22,6 +22,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
+import org.opencb.opencga.app.cli.main.options.analysis.RestVariantCommandOptions;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.List;
@@ -682,8 +683,8 @@ public class AnalysisCliOptionsParser {
         @Parameter(names = {"--unknown-genotype"}, description = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]", required = false)
         public String unknownGenotype = "./.";
 
-        @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, json or json.gz", required = false, arity = 1)
-        public String outputFormat = "vcf";
+//        @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, json or json.gz", required = false, arity = 1)
+//        public String outputFormat = "vcf";
 
     }
 
@@ -731,8 +732,8 @@ public class AnalysisCliOptionsParser {
         @ParametersDelegate
         public QueryCommandOptions queryOptions = new QueryCommandOptions();
 
-        @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, tsv, tsv.gz, cellbase, cellbase.gz, json or json.gz", required = false, arity = 1)
-        public String outputFormat = "tsv";
+//        @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, tsv, tsv.gz, cellbase, cellbase.gz, json or json.gz", required = false, arity = 1)
+//        public String outputFormat = "tsv";
 
         @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be returned", required = false)
         public String studies;
