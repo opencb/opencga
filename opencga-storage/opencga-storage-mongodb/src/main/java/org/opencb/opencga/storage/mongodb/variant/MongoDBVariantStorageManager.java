@@ -177,6 +177,8 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
                 // Files to merge
                 List<Integer> filesToMerge = new ArrayList<>(batchLoad);
                 List<StorageETLResult> resultsToMerge = new ArrayList<>(batchLoad);
+                List<Integer> mergedFiles = new ArrayList<>();
+                String study = null;
 
                 Iterator<Map.Entry<URI, MongoDBVariantStorageETL>> iterator = storageETLMap.entrySet().iterator();
                 while (iterator.hasNext()) {
@@ -195,6 +197,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
                     if (doMerge) {
                         filesToMerge.add(storageETL.getOptions().getInt(Options.FILE_ID.key()));
+                        study = storageETL.getStudyConfiguration().getStudyName();
                         resultsToMerge.add(etlResult);
                         if (filesToMerge.size() == batchLoad || !iterator.hasNext()) {
                             long millis = System.currentTimeMillis();
@@ -217,12 +220,14 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
                                     }
                                     storageETLResult.setLoadExecuted(true);
                                 }
+                                mergedFiles.addAll(filesToMerge);
                                 filesToMerge.clear();
                                 resultsToMerge.clear();
                             }
                         }
                     }
                 }
+                annotateLoadedFiles(outdirUri, inputFiles, results, getOptions());
             }
 
         } finally {

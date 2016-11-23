@@ -250,14 +250,18 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
                         filesToMerge.clear();
                     }
                 }
+
+                annotateLoadedFiles(outdirUri, inputFiles, concurrResult, getOptions());
+
             }
         } catch (InterruptedException e) {
+            Thread.interrupted();
             throw new StorageETLException("Interrupted!", e, concurrResult);
         } catch (ExecutionException e) {
             throw new StorageETLException("Execution exception!", e, concurrResult);
         } catch (TimeoutException e) {
             throw new StorageETLException("Timeout Exception", e, concurrResult);
-        }  finally {
+        } finally {
             if (!executorService.isShutdown()) {
                 try {
                     executorService.shutdownNow();

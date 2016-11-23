@@ -21,10 +21,14 @@ import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
@@ -37,7 +41,11 @@ import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Created by imedina on 13/08/14.
@@ -123,8 +131,28 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
     }
 
     @Override
+    public List<StorageETLResult> index(List<URI> inputFiles, URI outdirUri, boolean doExtract, boolean doTransform, boolean doLoad)
+            throws StorageManagerException {
+        List<StorageETLResult> results = super.index(inputFiles, outdirUri, doExtract, doTransform, doLoad);
+        if (doLoad) {
+            annotateLoadedFiles(outdirUri, inputFiles, results, getOptions());
+        }
+        return results;
+    }
+
+    @Override
     public abstract VariantStorageETL newStorageETL(boolean connected) throws StorageManagerException;
 
+    /**
+     * Given a dbName, calculates the annotation for all the variants that matches with a given query, and loads them into the database.
+     *
+     * @param dbName    database name to annotate.
+     * @param query     Query to select variants to annotate
+     * @param options   Other options
+     * @throws VariantAnnotatorException    If the annotation goes wrong
+     * @throws StorageManagerException      If there is any problem related with the StorageManager
+     * @throws IOException                  If there is any IO problem
+     */
     public void annotate(String dbName, Query query, QueryOptions options)
             throws VariantAnnotatorException, StorageManagerException, IOException {
 
@@ -135,6 +163,59 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
         }
     }
 
+    /**
+     * Annotate loaded files. Used only to annotate recently loaded files, after the {@link #index}.
+     *
+     * @param outdirUri     Index output directory
+     * @param files         Indexed files
+     * @param results       StorageETLResults
+     * @param options       Other options
+     * @throws StorageETLException  If there is any problem related with the StorageManager
+     */
+    protected void annotateLoadedFiles(URI outdirUri, List<URI> files, List<StorageETLResult> results, ObjectMap options)
+            throws StorageETLException {
+
+        if (!files.isEmpty() && options.getBoolean(Options.ANNOTATE.key(), Options.ANNOTATE.defaultValue())) {
+            try (VariantDBAdaptor dbAdaptor = getDBAdaptor()) {
+
+                int studyId = options.getInt(Options.STUDY_ID.key());
+                StudyConfiguration studyConfiguration = dbAdaptor.getStudyConfigurationManager()
+                        .getStudyConfiguration(studyId, new QueryOptions(options)).first();
+
+                List<Integer> fileIds = new ArrayList<>();
+                for (URI uri : files) {
+                    String fileName = VariantReaderUtils.getOriginalFromTransformedFile(uri);
+                    fileIds.add(studyConfiguration.getFileIds().get(fileName));
+                }
+
+                Query annotationQuery = new Query();
+                if (!options.getBoolean(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, false)) {
+                    annotationQuery.put(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
+                }
+                annotationQuery.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(),
+                        Collections.singletonList(studyId));    // annotate just the indexed variants
+                // annotate just the indexed variants
+                annotationQuery.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileIds);
+
+                String dbName = options.getString(Options.DB_NAME.key());
+                QueryOptions annotationOptions = new QueryOptions()
+                        .append(DefaultVariantAnnotationManager.OUT_DIR, outdirUri.getPath())
+                        .append(DefaultVariantAnnotationManager.FILE_NAME, dbName + "." + TimeUtils.getTime());
+
+                annotate(dbName, annotationQuery, annotationOptions);
+            } catch (RuntimeException | StorageManagerException | VariantAnnotatorException | IOException e) {
+                throw new StorageETLException("Error annotating.", e, results);
+            }
+        }
+    }
+
+    /**
+     * Provide a new VariantAnnotationManager for creating and loading annotations.
+     *
+     * @param annotator     VariantAnnotator to use for creating the new annotations
+     * @param dbAdaptor     VariantDBAdaptor
+     * @return              A new instance of VariantAnnotationManager
+     */
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator, VariantDBAdaptor dbAdaptor) {
         return new DefaultVariantAnnotationManager(annotator, dbAdaptor);
     }
