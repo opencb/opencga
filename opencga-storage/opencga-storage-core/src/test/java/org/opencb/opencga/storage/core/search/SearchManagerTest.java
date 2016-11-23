@@ -62,11 +62,10 @@ public class SearchManagerTest extends GenericTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.append(QueryOptions.LIMIT, 500);
 
-        SolrVariantSearchIterator iterable = searchManager.iterator(query, queryOptions);
+        SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
         List<VariantSearch> results = new ArrayList<>();
-        while (iterable.hasNext()) {
-            results.add(iterable.next());
-        }
+
+        iterator.forEachRemaining(results::add);
 
         Assert.assertEquals(1, results.size());
     }
@@ -83,11 +82,10 @@ public class SearchManagerTest extends GenericTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.append(QueryOptions.LIMIT, 500);
 
-        SolrVariantSearchIterator iterable = searchManager.iterator(query, queryOptions);
+        SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
         List<VariantSearch> results = new ArrayList<>();
-        while (iterable.hasNext()) {
-            results.add(iterable.next());
-        }
+
+        iterator.forEachRemaining(results::add);
 
         Assert.assertEquals(variants.size(), results.size());
     }
@@ -104,11 +102,10 @@ public class SearchManagerTest extends GenericTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.append(QueryOptions.LIMIT, 500);
 
-        SolrVariantSearchIterator iterable = searchManager.iterator(query, queryOptions);
+        SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
         List<VariantSearch> results = new ArrayList<>();
-        while (iterable.hasNext()) {
-            results.add(iterable.next());
-        }
+
+        iterator.forEachRemaining(results::add);
 
         Assert.assertEquals(1, results.size());
         Assert.assertTrue(variants.get(0).getStart() == results.get(0).getStart());
@@ -124,11 +121,10 @@ public class SearchManagerTest extends GenericTest {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.append(QueryOptions.LIMIT, 500);
 
-        SolrVariantSearchIterator iterable = searchManager.iterator(query, queryOptions);
+        SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
         List<VariantSearch> results = new ArrayList<>();
-        while (iterable.hasNext()) {
-            results.add(iterable.next());
-        }
+
+        iterator.forEachRemaining(results::add);
 
         Assert.assertEquals(0, results.size());
     }
@@ -224,11 +220,10 @@ public class SearchManagerTest extends GenericTest {
         queryOptions.append(QueryOptions.LIMIT, 15);
         searchManager.insert(variantList);
 
-        SolrVariantSearchIterator iterable = searchManager.iterator(query, queryOptions);
+        SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
         List<VariantSearch> results = new ArrayList<>();
-        while (iterable.hasNext()) {
-            results.add(iterable.next());
-        }
+
+        iterator.forEachRemaining(results::add);
 
         Assert.assertEquals(15, results.size());
     }
@@ -244,12 +239,10 @@ public class SearchManagerTest extends GenericTest {
         queryOptions.add(QueryOptions.ORDER, QueryOptions.DESCENDING);
         searchManager.insert(variantList);
 
-        SolrVariantSearchIterator iterable = searchManager.iterator(query, queryOptions);
+        SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
         List<VariantSearch> results = new ArrayList<>();
 
-        while (iterable.hasNext()) {
-            results.add(iterable.next());
-        }
+        iterator.forEachRemaining(results::add);
 
         Assert.assertTrue(results.get(0).getStart() > results.get(14).getStart()) ;
     }
