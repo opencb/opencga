@@ -13,7 +13,6 @@ import org.opencb.biodata.tools.alignment.converters.SAMRecordToAvroReadAlignmen
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -24,7 +23,9 @@ import org.opencb.opencga.server.grpc.ServiceTypesModel;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -88,7 +89,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
             rpc = "auto";
         }
 
-        QueryResponse queryResponse = null;
+        QueryResponse<ReadAlignment> queryResponse = null;
 
         if (rpc.toLowerCase().equals("rest")) {
             queryResponse = queryRest(alignmentCommandOptions.queryAlignmentCommandOptions);
@@ -105,25 +106,27 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
 
         // It will only enter this if when the query has been done via REST
         if (queryResponse != null) {
-
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-            objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-            ObjectWriter objectWriter = objectMapper.writerWithDefaultPrettyPrinter();
-            try {
-//            SAMRecordToAvroReadAlignmentConverter samRecordToAvroReadAlignmentConverter = new SAMRecordToAvroReadAlignmentConverter();
-//            for (ReadAlignment readAlignment : queryResponse.allResults()) {
-//                System.out.println(samRecordToAvroReadAlignmentConverter.from(readAlignment));
-//            }
-                System.out.println(objectWriter.writeValueAsString(queryResponse.getResponse()));
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (alignmentCommandOptions.queryAlignmentCommandOptions.commonOptions.outputFormat.toLowerCase().contains("text")) {
+                SAMRecordToAvroReadAlignmentConverter converter = new SAMRecordToAvroReadAlignmentConverter();
+                for (ReadAlignment readAlignment : queryResponse.allResults()) {
+                    System.out.print(converter.from(readAlignment).getSAMString());
+                }
+            } else {
+                ObjectMapper objectMapper = new ObjectMapper();
+                objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+                objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+                ObjectWriter objectWriter = objectMapper.writerWithDefaultPrettyPrinter();
+                try {
+                    System.out.println(objectWriter.writeValueAsString(queryResponse.getResponse()));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
 
     }
 
-    private QueryResponse queryRest(AlignmentCommandOptions.QueryAlignmentCommandOptions commandOptions)
+    private QueryResponse<ReadAlignment> queryRest(AlignmentCommandOptions.QueryAlignmentCommandOptions commandOptions)
             throws CatalogException, IOException {
 
         String fileIds = commandOptions.fileId;
@@ -135,18 +138,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         o.putIfNotNull("limit", commandOptions.limit);
 
         QueryResponse<ReadAlignment> query = openCGAClient.getAlignmentClient().query(fileIds, o);
-        QueryResponse retResponse = query;
-
-        if (commandOptions.commonOptions.outputFormat.toLowerCase().contains("text")) {
-            SAMRecordToAvroReadAlignmentConverter converter = new SAMRecordToAvroReadAlignmentConverter();
-            List<String> samRecords = new ArrayList<>(query.allResults().size());
-            for (ReadAlignment readAlignment : query.allResults()) {
-                samRecords.add(converter.from(readAlignment).getSAMString());
-            }
-            retResponse.setResponse(Arrays.asList(new QueryResult<>("", -1, samRecords.size(), samRecords.size(), "", "", samRecords)));
-        }
-
-        return retResponse;
+        return query;
     }
 
     private void queryGRPC(AlignmentCommandOptions.QueryAlignmentCommandOptions commandOptions) throws InterruptedException {
