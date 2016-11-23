@@ -44,9 +44,11 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantVcfExporter;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.server.grpc.GenericServiceModel;
@@ -395,7 +397,7 @@ public class VariantCommandExecutor extends CommandExecutor {
             options.put(VariantAnnotationManager.ANNOTATION_SOURCE, annotateVariantsCommandOptions.annotator);
         }
         if (annotateVariantsCommandOptions.customAnnotationKey != null) {
-            options.put(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, annotateVariantsCommandOptions.customAnnotationKey);
+            options.put(DefaultVariantAnnotationManager.CUSTOM_ANNOTATION_KEY, annotateVariantsCommandOptions.customAnnotationKey);
         }
         if (annotateVariantsCommandOptions.species != null) {
             options.put(VariantAnnotationManager.SPECIES, annotateVariantsCommandOptions.species);
@@ -405,10 +407,10 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
         options.putAll(annotateVariantsCommandOptions.commonOptions.params);
 
-        VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(configuration, storageEngine, options);
+        VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(configuration, storageEngine, options);
 //            VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(annotatorSource, annotatorProperties,
 // annotateVariantsCommandOptions.species, annotateVariantsCommandOptions.assembly);
-        VariantAnnotationManager variantAnnotationManager = new VariantAnnotationManager(annotator, dbAdaptor);
+        DefaultVariantAnnotationManager variantAnnotationManager = new DefaultVariantAnnotationManager(annotator, dbAdaptor);
 
         /*
          * Annotation options

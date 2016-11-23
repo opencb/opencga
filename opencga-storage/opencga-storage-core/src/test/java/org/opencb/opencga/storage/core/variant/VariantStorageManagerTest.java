@@ -467,6 +467,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
             assertEquals("\n" + variant.toJson() + "\n" + loadedVariant.toJson(), variant.toJson(), loadedVariant.toJson());
 
         }
+        dbAdaptor.close();
         reader.post();
         reader.close();
 

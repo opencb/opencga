@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.variant.annotation;
+package org.opencb.opencga.storage.core.variant.annotation.annotators;
 
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 
-import java.io.IOException;
 import java.util.List;
 
 /**
@@ -37,8 +37,8 @@ public abstract class VariantAnnotator {
      *
      * @param variants Variants to annotate
      * @return VariantAnnotations
-     * @throws IOException IOException thrown
+     * @throws VariantAnnotatorException IOException thrown
      */
-    public abstract List<VariantAnnotation> annotate(List<Variant> variants) throws IOException;
+    public abstract List<VariantAnnotation> annotate(List<Variant> variants) throws VariantAnnotatorException;
 
 }

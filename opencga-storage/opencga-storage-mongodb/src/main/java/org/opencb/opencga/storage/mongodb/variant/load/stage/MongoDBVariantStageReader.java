@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.mongodb.variant.load;
+package org.opencb.opencga.storage.mongodb.variant.load.stage;
 
 import com.mongodb.client.model.Sorts;
 import org.bson.Document;
