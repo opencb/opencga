@@ -31,11 +31,13 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,7 +60,6 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
 
     private VariantTableHelper helper;
     protected StudyConfiguration studyConfiguration = null;
-    private Connection dbConnection = null;
 
     protected ArchiveResultToVariantConverter resultConverter;
 
@@ -80,10 +81,6 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
 
     protected void setHelper(VariantTableHelper helper) {
         this.helper = helper;
-    }
-
-    protected Connection getDbConnection() {
-        return dbConnection;
     }
 
     protected ArchiveResultToVariantConverter getResultConverter() {
@@ -115,12 +112,12 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
         Map<Integer, VcfMeta> vcfMetaMap = new HashMap<Integer, VcfMeta>();
         String tableName = Bytes.toString(getHelper().getIntputTable());
         getLog().debug("Load VcfMETA from {}", tableName);
-        try (HadoopVariantSourceDBAdaptor metadataManager = new HadoopVariantSourceDBAdaptor(conf)) {
-            Iterator<VariantSource> iterator = metadataManager.iterator(studyConfiguration.getStudyId(), null);
-            while (iterator.hasNext()) {
-                VariantSource variantSource = iterator.next();
-                vcfMetaMap.put(Integer.parseInt(variantSource.getFileId()), new VcfMeta(variantSource));
-            }
+        // don't close connection!!!!
+        HadoopVariantSourceDBAdaptor metadataManager = new HadoopVariantSourceDBAdaptor(this.getHelper());
+        Iterator<VariantSource> iterator = metadataManager.iterator(studyConfiguration.getStudyId(), null);
+        while (iterator.hasNext()) {
+            VariantSource variantSource = iterator.next();
+            vcfMetaMap.put(Integer.parseInt(variantSource.getFileId()), new VcfMeta(variantSource));
         }
         getLog().info("Loaded {} VcfMETA data!!!", vcfMetaMap.size());
         return vcfMetaMap;
@@ -264,11 +261,7 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
         Thread.currentThread().setName(context.getTaskAttemptID().toString());
         getLog().debug("Setup configuration");
 
-        // Open DB connection
-        dbConnection = ConnectionFactory.createConnection(context.getConfiguration());
-
-        // Setup configuration
-        helper = new VariantTableHelper(context.getConfiguration(), dbConnection);
+        // Setup configurationHBaseToVariantConverter
         this.studyConfiguration = getHelper().loadMeta(); // Variant meta
 
         // Load VCF meta data for columns
@@ -277,7 +270,9 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
                 "Loaded Meta Map: File id idx {}; FileId: {} Study {};",
                 k, v.getVariantSource().getFileId(), v.getVariantSource().getStudyId()));
         resultConverter = new ArchiveResultToVariantConverter(vcfMetaMap, helper.getColumnFamily());
-        hbaseToVariantConverter = new HBaseToVariantConverter(this.helper).setFailOnEmptyVariants(true).setSimpleGenotypes(false);
+        hbaseToVariantConverter = new HBaseToVariantConverter(this.helper,
+                new HBaseStudyConfigurationManager(this.helper, this.helper.getOutputTableAsString(),
+                        this.helper.getConf(), new ObjectMap())).setFailOnEmptyVariants(true).setSimpleGenotypes(false);
         variantMerger = new VariantMerger();
 
         String[] toIdxFileIds = context.getConfiguration().getStrings(AbstractVariantTableDriver.CONFIG_VARIANT_FILE_IDS, new String[0]);
@@ -311,8 +306,8 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
     @Override
     protected void cleanup(Context context) throws IOException,
             InterruptedException {
-        if (null != this.dbConnection) {
-            dbConnection.close();
+        if (null != this.getHelper()) {
+            this.getHelper().close();
         }
     }
 
