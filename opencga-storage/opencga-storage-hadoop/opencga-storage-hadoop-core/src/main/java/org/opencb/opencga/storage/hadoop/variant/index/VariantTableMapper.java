@@ -420,7 +420,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         Get get = new Get(rowKey);
         byte[] cf = getHelper().getColumnFamily();
         archiveFileIds.forEach(e -> get.addColumn(cf, Bytes.toBytes(e)));
-        Result res = getHelper().getHBaseManager().act(getDbConnection(), getHelper().getIntputTable(), table -> {
+        Result res = getHelper().getHBaseManager().act(getHelper().getIntputTable(), table -> {
             return table.get(get);
         });
         if (res.isEmpty()) {
