@@ -68,9 +68,6 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
             case "query":
                 query();
                 break;
-            case "query-grpc":
-                queryGrpc();
-                break;
             case "stats":
                 stats();
                 break;
@@ -86,110 +83,6 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
 
         }
     }
-
-    private void queryGrpc() throws InterruptedException {
-        StopWatch watch = new StopWatch();
-        watch.start();
-        // We create the OpenCGA gRPC request object with the query, queryOptions, storageEngine and database
-        Map<String, String> query = new HashMap<>();
-        addParam(query, "fileId", alignmentCommandOptions.queryGRPCAlignmentCommandOptions.fileId);
-        addParam(query, "sid", alignmentCommandOptions.queryGRPCAlignmentCommandOptions.commonOptions.sessionId);
-        addParam(query, AlignmentDBAdaptor.QueryParams.REGION.key(), alignmentCommandOptions.queryGRPCAlignmentCommandOptions.region);
-        addParam(query, AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(),
-                alignmentCommandOptions.queryGRPCAlignmentCommandOptions.minMappingQuality);
-
-        Map<String, String> queryOptions = new HashMap<>();
-        addParam(queryOptions, AlignmentDBAdaptor.QueryParams.CONTAINED.key(),
-                alignmentCommandOptions.queryGRPCAlignmentCommandOptions.contained);
-        addParam(queryOptions, AlignmentDBAdaptor.QueryParams.MD_FIELD.key(),
-                alignmentCommandOptions.queryGRPCAlignmentCommandOptions.mdField);
-        addParam(queryOptions, AlignmentDBAdaptor.QueryParams.BIN_QUALITIES.key(),
-                alignmentCommandOptions.queryGRPCAlignmentCommandOptions.binQualities);
-        addParam(queryOptions, AlignmentDBAdaptor.QueryParams.LIMIT.key(), alignmentCommandOptions.queryGRPCAlignmentCommandOptions.limit);
-        addParam(queryOptions, AlignmentDBAdaptor.QueryParams.SKIP.key(), alignmentCommandOptions.queryGRPCAlignmentCommandOptions.skip);
-
-        GenericAlignmentServiceModel.Request request = GenericAlignmentServiceModel.Request.newBuilder()
-                .putAllQuery(query)
-                .putAllOptions(queryOptions)
-                .build();
-
-        // Connecting to the server host and port
-        String[] split = clientConfiguration.getGrpc().getHost().split(":");
-        String grpcServerHost = split[0];
-        int grpcServerPort = 9091;
-        if (split.length == 2) {
-            grpcServerPort = Integer.parseInt(split[1]);
-        }
-
-        logger.debug("Connecting to gRPC server at {}:{}", grpcServerHost, grpcServerPort);
-
-        // We create the gRPC channel to the specified server host and port
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(grpcServerHost, grpcServerPort)
-                .usePlaintext(true)
-                .build();
-
-        // We use a blocking stub to execute the query to gRPC
-        AlignmentServiceGrpc.AlignmentServiceBlockingStub serviceBlockingStub = AlignmentServiceGrpc.newBlockingStub(channel);
-
-        if (alignmentCommandOptions.queryGRPCAlignmentCommandOptions.count) {
-            ServiceTypesModel.LongResponse count = serviceBlockingStub.count(request);
-            System.out.println("\nThe number of alignments is " + count.getValue() + "\n");
-        } else {
-            if (alignmentCommandOptions.queryGRPCAlignmentCommandOptions.textOutput) {
-                // Output in SAM format
-                Iterator<ServiceTypesModel.StringResponse> alignmentIterator = serviceBlockingStub.getAsSam(request);
-                watch.stop();
-                System.out.println("Time: " + watch.getTime());
-                int limit = alignmentCommandOptions.queryGRPCAlignmentCommandOptions.limit;
-                if (limit > 0) {
-                    long cont = 0;
-                    while (alignmentIterator.hasNext() && cont < limit) {
-                        ServiceTypesModel.StringResponse next = alignmentIterator.next();
-                        cont++;
-                        System.out.println(next.getValue());
-                    }
-                } else {
-                    while (alignmentIterator.hasNext()) {
-                        ServiceTypesModel.StringResponse next = alignmentIterator.next();
-                        System.out.println(next.getValue());
-                    }
-                }
-            } else {
-                // Output in proto format
-                Iterator<Reads.ReadAlignment> alignmentIterator = serviceBlockingStub.get(request);
-                watch.stop();
-                System.out.println("Time: " + watch.getTime());
-                int limit = alignmentCommandOptions.queryGRPCAlignmentCommandOptions.limit;
-                if (limit > 0) {
-                    long cont = 0;
-                    while (alignmentIterator.hasNext() && cont < limit) {
-                        Reads.ReadAlignment next = alignmentIterator.next();
-                        cont++;
-                        System.out.println(next.toString());
-                    }
-                } else {
-                    while (alignmentIterator.hasNext()) {
-                        Reads.ReadAlignment next = alignmentIterator.next();
-                        System.out.println(next.toString());
-                    }
-                }
-            }
-        }
-
-        channel.shutdown().awaitTermination(2, TimeUnit.SECONDS);
-    }
-
-//    private AlignmentStorageManager initAlignmentStorageManager(DataStore dataStore)
-//            throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException {
-//
-//        String storageEngine = dataStore.getStorageEngine();
-//        if (StringUtils.isEmpty(storageEngine)) {
-//            this.alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager();
-//        } else {
-//            this.alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
-//        }
-//        return alignmentStorageManager;
-//    }
 
     private void index() throws Exception {
         AlignmentCommandOptions.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;

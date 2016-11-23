@@ -32,7 +32,6 @@ public class AlignmentCommandOptions {
 
     public IndexAlignmentCommandOptions indexAlignmentCommandOptions;
     public QueryAlignmentCommandOptions queryAlignmentCommandOptions;
-    public QueryGRPCAlignmentCommandOptions queryGRPCAlignmentCommandOptions;
     public StatsAlignmentCommandOptions statsAlignmentCommandOptions;
     public CoverageAlignmentCommandOptions coverageAlignmentCommandOptions;
 
@@ -45,7 +44,6 @@ public class AlignmentCommandOptions {
 
         this.indexAlignmentCommandOptions = new IndexAlignmentCommandOptions();
         this.queryAlignmentCommandOptions = new QueryAlignmentCommandOptions();
-        this.queryGRPCAlignmentCommandOptions = new QueryGRPCAlignmentCommandOptions();
         this.statsAlignmentCommandOptions = new StatsAlignmentCommandOptions();
         this.coverageAlignmentCommandOptions = new CoverageAlignmentCommandOptions();
     }
@@ -87,6 +85,9 @@ public class AlignmentCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
+        @Parameter(names = {"--rpc"}, description = "RPC method used: {auto, GRPC, REST}. When auto, it will first try with GRPC and if "
+                + "that does not work, it will try with REST", required = false, arity = 1)
+        public String rpc;
 
         @Parameter(names = {"--file-id"}, description = "Id of the alignment file in catalog", required = true, arity = 1)
         public String fileId;
@@ -113,77 +114,6 @@ public class AlignmentCommandOptions {
 
         @Parameter(names = {"--limit"}, description = "Limit the number of returned elements.", required = false, arity = 1)
         public int limit;
-
-        @Parameter(names = {"--count"}, description = "Count results. Do not return elements.", required = false, arity = 0)
-        public boolean count;
-    }
-
-//    @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed alignments")
-//    public class QueryAlignmentCommandOptions extends QueryCommandOptions {
-//
-//        @ParametersDelegate
-//        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
-//
-//        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter", required = false)
-//        public String study;
-//
-//        @Parameter(names = {"--file-id"}, description = "File unique ID.", required = false, arity = 1)
-//        public String fileId;
-////
-////        @Parameter(names = {"--file-path"}, description = "", required = false, arity = 1)
-////        public String filePath;
-//
-//        @Parameter(names = {"--include-coverage"}, description = " [CSV]", required = false)
-//        public boolean coverage = false;
-//
-//        @Parameter(names = {"-H", "--histogram"}, description = " ", required = false, arity = 1)
-//        public boolean histogram = false;
-//
-//        @Parameter(names = {"--view-as-pairs"}, description = " ", required = false)
-//        public boolean asPairs;
-//
-//        @Parameter(names = {"--process-differences"}, description = " ", required = false)
-//        public boolean processDifferences;
-//
-//        @Parameter(names = {"-S", "--stats-filter"}, description = " [CSV]", required = false)
-//        public List<String> stats = new LinkedList<>();
-//    }
-
-    @Parameters(commandNames = {"query-grpc"}, commandDescription = "Search over indexed alignments")
-    public class QueryGRPCAlignmentCommandOptions {
-
-        @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
-
-
-        @Parameter(names = {"--file-id"}, description = "Id of the alignment file in catalog", required = true, arity = 1)
-        public String fileId;
-
-        @Parameter(names = {"--min-mapq"}, description = "Minimum mapping quality", arity = 1)
-        public int minMappingQuality;
-
-        @Parameter(names = {"--contained"}, description = "Set flag to select just the alignments completely contained within the "
-                + "boundaries of the region", arity = 0)
-        public boolean contained;
-
-        @Parameter(names = {"--md-field"}, description = "Force SAM MD optional field to be set with the alignments", arity = 0)
-        public boolean mdField;
-
-        @Parameter(names = {"--bin-qualities"}, description = "Compress the nucleotide qualities by using 8 quality levels "
-                + "(there will be loss of information)", arity = 0)
-        public boolean binQualities;
-
-        @Parameter(names = {"--text-output"}, description = "Show the output in SAM text output format", arity = 0)
-        public boolean textOutput;
-
-        @Parameter(names = {"--skip"}, description = "Skip some number of elements.", required = false, arity = 1)
-        public int skip;
-
-        @Parameter(names = {"--limit"}, description = "Limit the number of returned elements.", required = false, arity = 1)
-        public int limit;
-        @Parameter(names = {"-r", "--region"}, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000",
-                required = false)
-        public String region;
 
         @Parameter(names = {"--count"}, description = "Count results. Do not return elements.", required = false, arity = 0)
         public boolean count;

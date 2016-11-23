@@ -19,7 +19,7 @@ package org.opencb.opencga.app.cli.main.executors.analysis;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.analysis.VariantCommandOptions;
+import org.opencb.opencga.app.cli.main.options.analysis.RestVariantCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
 import java.io.IOException;
@@ -29,9 +29,9 @@ import java.io.IOException;
  */
 public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
-    private VariantCommandOptions variantCommandOptions;
+    private RestVariantCommandOptions variantCommandOptions;
 
-    public VariantCommandExecutor(VariantCommandOptions variantCommandOptions) {
+    public VariantCommandExecutor(RestVariantCommandOptions variantCommandOptions) {
         super(variantCommandOptions.commonCommandOptions);
         this.variantCommandOptions = variantCommandOptions;
     }
