@@ -22,7 +22,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.search.SearchManager;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -210,7 +209,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
         return VariantStorageETL.buildFilename(studyName, fileId);
     }
 
-    public void insertVariantIntoSolr(SearchManager searchManager) throws StorageManagerException {
+    public void insertVariantIntoSolr() throws StorageManagerException {
 
         VariantDBAdaptor dbAdaptor = getDBAdaptor();
         VariantDBIterator variantDBIterator = dbAdaptor.iterator();
