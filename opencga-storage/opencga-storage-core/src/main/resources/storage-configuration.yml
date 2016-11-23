@@ -43,6 +43,14 @@ cache:
   maxResultSize: 5000
   password: ""
 
+## Search Configuration
+search:
+  host: "http://localhost:8983/solr/"
+  active: true
+  collection: "variants"
+  user: ""
+  password: ""
+  rows: 100000
 
 benchmark:
   storageEngine: "mongodb"
