@@ -45,7 +45,7 @@ public class GenomeVariantTransformMapperTest {
 //            @Override
 //            protected VariantTableHelper loadHelper(
 //                    Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put>.Context context) {
-//                return new TestHelper(context.getConfiguration());
+//                return new TestHelper(context.getStorageConfiguration());
 //            }
 //
 //            @Override
@@ -60,7 +60,7 @@ public class GenomeVariantTransformMapperTest {
 //
 //        };
 //        mapDriver = MapDriver.newMapDriver(mapper);
-//        Configuration config = mapDriver.getConfiguration();
+//        Configuration config = mapDriver.getStorageConfiguration();
 //        setUpConfig(config);
 //
 //    }

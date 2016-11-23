@@ -16,167 +16,124 @@
 
 package org.opencb.opencga.storage.core.local;
 
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.core.common.MemoryUsageMonitor;
-import org.opencb.opencga.storage.core.StorageETL;
-import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.cache.CacheManager;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.slf4j.Logger;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
+import javax.annotation.Nullable;
 
-/**
- * @author imedina
- */
+
 public abstract class StorageManager {
 
-    protected String storageEngineId;
-    protected StorageConfiguration configuration;
     protected CatalogManager catalogManager;
     protected CacheManager cacheManager;
+    protected StorageConfiguration storageConfiguration;
+
+    @Deprecated
+    protected String storageEngineId;
 
     protected Logger logger;
+
 
     public StorageManager() {
     }
 
-    public StorageManager(CatalogManager catalogManager, StorageConfiguration configuration) {
-        this(catalogManager, configuration, configuration.getDefaultStorageEngineId());
+    public StorageManager(CatalogManager catalogManager, StorageConfiguration storageConfiguration) {
+        this.init(catalogManager, new CacheManager(storageConfiguration), storageConfiguration,
+                storageConfiguration.getDefaultStorageEngineId());
     }
 
-    public StorageManager(CatalogManager catalogManager, StorageConfiguration configuration, String storageEngineId) {
-        setConfiguration(catalogManager, configuration, storageEngineId);
+    public StorageManager(CatalogManager catalogManager, CacheManager cacheManager, StorageConfiguration storageConfiguration) {
+        this.init(catalogManager, cacheManager, storageConfiguration, storageConfiguration.getDefaultStorageEngineId());
     }
 
-    public void setConfiguration(CatalogManager catalogManager, StorageConfiguration configuration, String storageEngineId) {
+    @Deprecated
+    public StorageManager(CatalogManager catalogManager, StorageConfiguration storageConfiguration, String storageEngineId) {
+        this.init(catalogManager, new CacheManager(storageConfiguration), storageConfiguration, storageEngineId);
+    }
+
+
+    protected void init(CatalogManager catalogManager, CacheManager cacheManager, StorageConfiguration storageConfiguration,
+                        String storageEngineId) {
         this.catalogManager = catalogManager;
-        this.configuration = configuration;
+        this.cacheManager = cacheManager;
+        this.storageConfiguration = storageConfiguration;
         this.storageEngineId = storageEngineId;
-        this.cacheManager = new CacheManager(configuration);
     }
 
-    public StorageConfiguration getConfiguration() {
-        return configuration;
+
+    public void clearCache(String sessionId) throws CatalogException {
+        String userId = catalogManager.getUserManager().getId(sessionId);
+
     }
 
-    public String getStorageEngineId() {
-        return storageEngineId;
+
+    public void clearCache(String studyId, String sessionId) throws CatalogException {
+        String userId = catalogManager.getUserManager().getId(sessionId);
+
+    }
+
+
+    public abstract void testConnection() throws StorageManagerException;
+
+    /**
+     * Given the file and study string, retrieve the corresponding long ids.
+     *
+     * @param studyIdStr study string.
+     * @param fileIdStr file string.
+     * @param sessionId session id.
+     * @return an objectMap containing the keys "fileId" and "studyId"
+     * @throws CatalogException catalog exception.
+     */
+    protected ObjectMap getFileAndStudyId(@Nullable String studyIdStr, String fileIdStr, String sessionId) throws CatalogException {
+        String userId = catalogManager.getUserManager().getId(sessionId);
+        long studyId = 0;
+        if (StringUtils.isNotEmpty(studyIdStr)) {
+            studyId = catalogManager.getStudyManager().getId(userId, studyIdStr);
+        }
+
+        long fileId;
+        if (studyId > 0) {
+            fileId = catalogManager.getFileManager().getId(userId, studyId, fileIdStr);
+            if (fileId <= 0) {
+                throw new CatalogException("The id of file " + fileIdStr + " could not be found under study " + studyIdStr);
+            }
+        } else {
+            fileId = catalogManager.getFileManager().getId(userId, fileIdStr);
+            if (fileId <= 0) {
+                throw new CatalogException("The id of file " + fileIdStr + " could not be found");
+            }
+            studyId = catalogManager.getFileManager().getStudyId(fileId);
+        }
+
+        return new ObjectMap("fileId", fileId).append("studyId", studyId);
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("StorageManager{");
+        sb.append("catalogManager=").append(catalogManager);
+        sb.append(", cacheManager=").append(cacheManager);
+        sb.append(", storageConfiguration=").append(storageConfiguration);
+        sb.append(", storageEngineId='").append(storageEngineId).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 
     public CatalogManager getCatalogManager() {
         return catalogManager;
     }
 
-    public List<StorageETLResult> index(List<URI> inputFiles, URI outdirUri, boolean doExtract, boolean doTransform, boolean doLoad)
-            throws StorageManagerException {
-
-        List<StorageETLResult> results = new ArrayList<>(inputFiles.size());
-        boolean abortOnFail = true;
-
-        // Check the database connection before we start
-        if (doLoad) {
-            testConnection();
-        }
-
-        for (URI inputFile : inputFiles) {
-            //Provide a connected storageETL if load is required.
-            StorageETL storageETL = newStorageETL(doLoad);
-
-            StorageETLResult etlResult = new StorageETLResult(inputFile);
-            results.add(etlResult);
-
-            URI nextFileUri = inputFile;
-            etlResult.setInput(inputFile);
-
-            if (doExtract) {
-                logger.info("Extract '{}'", inputFile);
-                nextFileUri = storageETL.extract(inputFile, outdirUri);
-                etlResult.setExtractResult(nextFileUri);
-            }
-
-            if (doTransform) {
-                nextFileUri = transformFile(storageETL, etlResult, results, nextFileUri, outdirUri);
-            }
-
-            if (doLoad) {
-                loadFile(storageETL, etlResult, results, nextFileUri, outdirUri);
-            }
-
-            storageETL.close();
-
-            MemoryUsageMonitor.logMemory(logger);
-        }
-
-        return results;
+    public CacheManager getCacheManager() {
+        return cacheManager;
     }
 
-    protected void loadFile(StorageETL storageETL, StorageETLResult etlResult, List<StorageETLResult> results,
-                            URI inputFileUri, URI outdirUri) throws StorageETLException {
-        etlResult.setLoadExecuted(true);
-        long millis = System.currentTimeMillis();
-        try {
-            logger.info("PreLoad '{}'", inputFileUri);
-            inputFileUri = storageETL.preLoad(inputFileUri, outdirUri);
-            etlResult.setPreLoadResult(inputFileUri);
-
-            logger.info("Load '{}'", inputFileUri);
-            inputFileUri = storageETL.load(inputFileUri);
-            etlResult.setLoadResult(inputFileUri);
-
-            logger.info("PostLoad '{}'", inputFileUri);
-            inputFileUri = storageETL.postLoad(inputFileUri, outdirUri);
-            etlResult.setPostLoadResult(inputFileUri);
-        } catch (Exception e) {
-            etlResult.setLoadError(e);
-            throw new StorageETLException("Exception executing load: " + e.getMessage(), e, results);
-        } finally {
-            etlResult.setLoadTimeMillis(System.currentTimeMillis() - millis);
-            etlResult.setLoadStats(storageETL.getLoadStats());
-        }
+    public StorageConfiguration getStorageConfiguration() {
+        return storageConfiguration;
     }
-
-    protected URI transformFile(StorageETL storageETL, StorageETLResult etlResult, List<StorageETLResult> results,
-                                URI inputFileUri, URI outdirUri) throws StorageETLException {
-        etlResult.setTransformExecuted(true);
-        long millis = System.currentTimeMillis();
-        try {
-            logger.info("PreTransform '{}'", inputFileUri);
-            inputFileUri = storageETL.preTransform(inputFileUri);
-            etlResult.setPreTransformResult(inputFileUri);
-
-            logger.info("Transform '{}'", inputFileUri);
-            inputFileUri = storageETL.transform(inputFileUri, null, outdirUri);
-            etlResult.setTransformResult(inputFileUri);
-
-            logger.info("PostTransform '{}'", inputFileUri);
-            inputFileUri = storageETL.postTransform(inputFileUri);
-            etlResult.setPostTransformResult(inputFileUri);
-        } catch (Exception e) {
-            etlResult.setTransformError(e);
-            throw new StorageETLException("Exception executing transform.", e, results);
-        } finally {
-            etlResult.setTransformTimeMillis(System.currentTimeMillis() - millis);
-            etlResult.setTransformStats(storageETL.getTransformStats());
-        }
-        return inputFileUri;
-    }
-
-    public abstract void testConnection() throws StorageManagerException;
-
-    /**
-     * Creates a new {@link StorageETL} object.
-     *
-     * Each {@link StorageETL} should be used to index one single file.
-     *
-     * @param connected Specify if the provided object must be connected to the underlying database.
-     * @return Created {@link StorageETL}
-     * @throws StorageManagerException If there is any problem while creation
-     */
-    public abstract StorageETL newStorageETL(boolean connected) throws StorageManagerException;
-
 }

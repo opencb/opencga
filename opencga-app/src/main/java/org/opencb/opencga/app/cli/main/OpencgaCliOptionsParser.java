@@ -22,14 +22,12 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
-import org.opencb.opencga.app.cli.main.options.analysis.AlignmentCommandOptions;
+import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
+import org.opencb.opencga.app.cli.main.options.analysis.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.options.catalog.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by imedina on AdminMain.
@@ -40,6 +38,7 @@ public class OpencgaCliOptionsParser {
 
     private final GeneralOptions generalOptions;
     private final OpencgaCommonCommandOptions commonCommandOptions;
+    private final GeneralCliOptions.CommonCommandOptions analysisCommonCommandOptions;
 
     protected final UserAndPasswordOptions userAndPasswordOptions;
 
@@ -58,6 +57,7 @@ public class OpencgaCliOptionsParser {
 
     // Analysis
     private AlignmentCommandOptions alignmentCommandOptions;
+    private VariantCommandOptions variantCommandOptions;
 
 
 //    public final CommandShareResource commandShareResource;
@@ -72,6 +72,8 @@ public class OpencgaCliOptionsParser {
         jCommander = new JCommander(generalOptions);
 
         commonCommandOptions = new OpencgaCommonCommandOptions();
+        analysisCommonCommandOptions = new GeneralCliOptions.CommonCommandOptions();
+
         userAndPasswordOptions = new UserAndPasswordOptions();
 //        commandShareResource = new CommandShareResource();
 
@@ -274,10 +276,19 @@ public class OpencgaCliOptionsParser {
         panelSubCommands.addCommand("acl-member-info", panelCommandOptions.aclsMemberInfoCommandOptions);
         panelSubCommands.addCommand("acl-member-update", panelCommandOptions.aclsMemberUpdateCommandOptions);
 
-        alignmentCommandOptions = new AlignmentCommandOptions(this.commonCommandOptions, jCommander);
+        alignmentCommandOptions = new AlignmentCommandOptions(this.analysisCommonCommandOptions, jCommander);
         jCommander.addCommand("alignments", alignmentCommandOptions);
         JCommander alignmentSubCommands = jCommander.getCommands().get("alignments");
-        alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexCommandOptions);
+        alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexAlignmentCommandOptions);
+        alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryAlignmentCommandOptions);
+        alignmentSubCommands.addCommand("query-grpc", alignmentCommandOptions.queryGRPCAlignmentCommandOptions);
+        alignmentSubCommands.addCommand("stats", alignmentCommandOptions.statsAlignmentCommandOptions);
+        alignmentSubCommands.addCommand("coverage", alignmentCommandOptions.coverageAlignmentCommandOptions);
+
+        variantCommandOptions = new VariantCommandOptions(this.commonCommandOptions, jCommander);
+        jCommander.addCommand("variant", variantCommandOptions);
+        JCommander variantSubCommands = jCommander.getCommands().get("variant");
+        variantSubCommands.addCommand("index", variantCommandOptions.indexCommandOptions);
 
         if (interactive) { //Add interactive commands
 //            jCommander.addCommand(new HelpCommands());
@@ -285,37 +296,6 @@ public class OpencgaCliOptionsParser {
         }
     }
 
-
-//    public void printUsage(){
-//        if(!getCommand().isEmpty()) {
-//            if(!getSubCommand().isEmpty()){
-////                usage(getCommand(), getSubcommand());
-//                jCommander.getCommands().get(getCommand()).usage(getSubCommand());
-//            } else {
-////                jCommander.usage(getCommand());
-//                new JCommander(jCommander.getCommands().get(getCommand()).getObjects().get(0)).usage();
-//                System.err.println("Available commands");
-//                printUsage(jCommander.getCommands().get(getCommand()));
-//            }
-//        } else {
-//            new JCommander(generalOptions).usage();
-//            System.err.println("Available commands");
-//            printUsage(jCommander);
-//        }
-//    }
-
-//    private void printUsage(JCommander commander) {
-//        int gap = 10;
-//        int leftGap = 1;
-//        for (String s : commander.getCommands().keySet()) {
-//            if (gap < s.length() + leftGap) {
-//                gap = s.length() + leftGap;
-//            }
-//        }
-//        for (Map.Entry<String, JCommander> entry : commander.getCommands().entrySet()) {
-//            System.err.printf("%" + gap + "s    %s\n", entry.getKey(), commander.getCommandDescription(entry.getKey()));
-//        }
-//    }
 
     public void parse(String[] args) throws ParameterException {
         jCommander.parse(args);
@@ -402,6 +382,7 @@ public class OpencgaCliOptionsParser {
 
     enum OutputFormat {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}
 
+    @Deprecated
     public static class OpencgaCommonCommandOptions extends GeneralCliOptions.CommonCommandOptions {
 
         @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
@@ -517,7 +498,7 @@ public class OpencgaCliOptionsParser {
             System.err.println("");
             System.err.println("Usage:       opencga.sh [-h|--help] [--version] <command> [options]");
             System.err.println("");
-            System.err.println("Commands:");
+//            System.err.println("Commands:");
             printMainUsage();
             System.err.println("");
         } else {
@@ -542,8 +523,20 @@ public class OpencgaCliOptionsParser {
 
 
     private void printMainUsage() {
+        Set<String> analysisCommands = new HashSet<>(Arrays.asList("alignments", "variant"));
+        System.err.println("Catalog commands:");
         for (String s : jCommander.getCommands().keySet()) {
-            System.err.printf("%14s  %s\n", s, jCommander.getCommandDescription(s));
+            if (!analysisCommands.contains(s)) {
+                System.err.printf("%14s  %s\n", s, jCommander.getCommandDescription(s));
+            }
+        }
+
+        System.err.println("");
+        System.err.println("Analysis commands:");
+        for (String s : jCommander.getCommands().keySet()) {
+            if (analysisCommands.contains(s)) {
+                System.err.printf("%14s  %s\n", s, jCommander.getCommandDescription(s));
+            }
         }
     }
 

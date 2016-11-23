@@ -195,7 +195,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
 
 //                // Change port to avoid port collisions
-//                utility.get().getConfiguration().setInt(HConstants.MASTER_INFO_PORT, HConstants.DEFAULT_MASTER_INFOPORT + 1);
+//                utility.get().getStorageConfiguration().setInt(HConstants.MASTER_INFO_PORT, HConstants.DEFAULT_MASTER_INFOPORT + 1);
 
                 // Enable phoenix secundary indexes
                 conf.set("hbase.regionserver.wal.codec",

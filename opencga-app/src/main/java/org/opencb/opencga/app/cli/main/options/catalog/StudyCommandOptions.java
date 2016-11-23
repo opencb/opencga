@@ -21,12 +21,8 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
-import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
-
-import java.util.Map;
+import org.opencb.opencga.app.cli.main.options.catalog.commons.AclCommandOptions;
 
 /**
  * Created by pfurio on 13/06/16.

@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.main.executors.commons;
+package org.opencb.opencga.app.cli.main.executors.catalog.commons;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
+import org.opencb.opencga.app.cli.main.options.catalog.commons.AnnotationCommandOptions;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.client.rest.catalog.AnnotationClient;
 

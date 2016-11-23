@@ -9,14 +9,15 @@ import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 /**
  * Created by pfurio on 11/11/16.
  */
-@Parameters(commandNames = {"alignments"}, commandDescription = "Alignment commands")
-public class AlignmentCommandOptions {
+@Parameters(commandNames = {"alignment"}, commandDescription = "Alignment commands")
+@Deprecated
+public class RestAlignmentCommandOptions {
 
     public JCommander jCommander;
     public OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonCommandOptions;
     public IndexCommandOptions indexCommandOptions;
 
-    public AlignmentCommandOptions(OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public RestAlignmentCommandOptions(OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
         this.commonCommandOptions = commonCommandOptions;
         this.jCommander = jCommander;
         this.indexCommandOptions = new IndexCommandOptions();

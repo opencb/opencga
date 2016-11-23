@@ -184,8 +184,8 @@ public class UserCommandOptions {
         @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, required = true, password = true)
         public String password;
 
-        @Parameter(names = {"-S","--session-id"}, description = "SessionId", arity = 1, required = false, hidden = true)
-        public String sessionId;
+//        @Parameter(names = {"-S","--session-id"}, description = "SessionId", arity = 1, required = false, hidden = true)
+//        public String sessionId;
 
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = UserCommandOptions.this.commonCommandOptions;
