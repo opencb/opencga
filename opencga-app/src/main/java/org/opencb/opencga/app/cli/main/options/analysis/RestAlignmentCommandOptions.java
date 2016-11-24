@@ -4,6 +4,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 
 /**
@@ -14,10 +15,10 @@ import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 public class RestAlignmentCommandOptions {
 
     public JCommander jCommander;
-    public OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonCommandOptions;
+    public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
     public IndexCommandOptions indexCommandOptions;
 
-    public RestAlignmentCommandOptions(OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public RestAlignmentCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, JCommander jCommander) {
         this.commonCommandOptions = commonCommandOptions;
         this.jCommander = jCommander;
         this.indexCommandOptions = new IndexCommandOptions();
@@ -27,7 +28,7 @@ public class RestAlignmentCommandOptions {
     public class IndexCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--file-id"}, description = "Comma separated list of file ids (files or directories)", required = true, arity = 1)
         public String fileIds;
