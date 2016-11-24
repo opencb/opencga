@@ -501,7 +501,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Listing variants of a study.");
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putAll(studiesCommandOptions.commonCommandOptions.dynamic);
+        queryOptions.putAll(studiesCommandOptions.commonCommandOptions.params);
 
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ID.key(), studiesCommandOptions.variantsCommandOptions.ids);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.REGION.key(), studiesCommandOptions.variantsCommandOptions.region);

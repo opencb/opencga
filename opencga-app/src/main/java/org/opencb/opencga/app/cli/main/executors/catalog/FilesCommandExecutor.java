@@ -289,7 +289,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         o.putIfNotNull("calculateStats", filesCommandOptions.indexCommandOptions.calculateStats);
         o.putIfNotNull("annotate", filesCommandOptions.indexCommandOptions.annotate);
         o.putIfNotNull("overwrite", filesCommandOptions.indexCommandOptions.overwriteAnnotations);
-        o.putAll(filesCommandOptions.commonCommandOptions.dynamic);
+        o.putAll(filesCommandOptions.commonCommandOptions.params);
 
         return openCGAClient.getFileClient().index(fileIds, o);
     }

@@ -22,10 +22,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
-import org.opencb.opencga.app.cli.analysis.AnalysisCliOptionsParser;
 import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
-import org.opencb.opencga.app.cli.main.options.analysis.RestVariantCommandOptions;
 import org.opencb.opencga.app.cli.main.options.catalog.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
@@ -388,8 +386,8 @@ public class OpencgaCliOptionsParser {
     @Deprecated
     public static class OpencgaCommonCommandOptions extends GeneralCliOptions.CommonCommandOptions {
 
-        @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
-        public Map<String, String> dynamic = new HashMap<>();
+//        @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
+//        public Map<String, String> params = new HashMap<>();
 
         @Parameter(names = {"--metadata"}, description = "Include metadata information", required = false, arity = 1)
         public boolean metadata = false;
@@ -399,7 +397,7 @@ public class OpencgaCliOptionsParser {
 //        OutputFormat outputFormat = OutputFormat.PRETTY_JSON;
 
         QueryOptions getQueryOptions() {
-            return new QueryOptions(dynamic, false);
+            return new QueryOptions(params, false);
         }
     }
 
