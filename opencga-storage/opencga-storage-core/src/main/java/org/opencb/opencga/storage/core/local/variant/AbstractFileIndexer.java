@@ -24,6 +24,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
@@ -76,6 +77,19 @@ public abstract class AbstractFileIndexer {
         }
     }
 
+    protected Long getCatalogOutdirId(long studyId, String catalogOutDirIdStr, String sessionId) throws CatalogException {
+        Long catalogOutDirId;
+        if (catalogOutDirIdStr != null) {
+            catalogOutDirId = catalogManager.getFileManager().getId(catalogOutDirIdStr, studyId, sessionId);
+            if (catalogOutDirId <= 0) {
+                throw new CatalogException("Output directory " + catalogOutDirIdStr + " could not be found within catalog.");
+            }
+        } else {
+            catalogOutDirId = null;
+        }
+        return catalogOutDirId;
+    }
+
     public StudyConfiguration updateStudyConfiguration(String sessionId, long studyId, DataStore dataStore)
             throws IOException, CatalogException, StorageManagerException {
         try (VariantDBAdaptor dbAdaptor = StorageManagerFactory.get().getVariantStorageManager(dataStore.getStorageEngine())
@@ -87,6 +101,27 @@ public abstract class AbstractFileIndexer {
         } catch (StorageManagerException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
             throw new StorageManagerException("Unable to update StudyConfiguration", e);
         }
+    }
+
+    protected Thread buildHook(Path outdir) {
+        return buildHook(outdir, null);
+    }
+
+    protected Thread buildHook(Path outdir, Runnable onError) {
+        return new Thread(() -> {
+                try {
+                    // If the status has not been changed by the method and is still running, we assume that the execution failed.
+                    Job.JobStatus status = readJobStatus(outdir);
+                    if (status.getName().equalsIgnoreCase(Job.JobStatus.RUNNING)) {
+                        writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.ERROR, "Job finished with an error."));
+                        if (onError != null) {
+                            onError.run();
+                        }
+                    }
+                } catch (IOException e) {
+                    logger.error("Error modifying " + AbstractExecutor.JOB_STATUS_FILE, e);
+                }
+            });
     }
 
     protected List<File> copyResults(Path tmpOutdirPath, long catalogPathOutDir, String sessionId) throws CatalogException, IOException {

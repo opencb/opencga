@@ -78,6 +78,13 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         INDEX
     }
 
+    public VariantFileIndexer(CatalogManager catalogManager, StorageConfiguration storageConfiguration) {
+        super(catalogManager, LoggerFactory.getLogger(VariantFileIndexer.class));
+        this.catalogConfiguration = catalogManager.getCatalogConfiguration();
+        this.storageConfiguration = storageConfiguration;
+        this.fileManager = catalogManager.getFileManager();
+    }
+
     public VariantFileIndexer(CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration)
             throws CatalogException {
         super(new CatalogManager(catalogConfiguration), LoggerFactory.getLogger(VariantFileIndexer.class));
@@ -97,8 +104,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
     }
 
     public List<StorageETLResult> index(List<Long> fileIds, String outdirString, String sessionId, QueryOptions options)
-            throws CatalogException, IOException, IllegalAccessException, InstantiationException,
-            ClassNotFoundException, StorageManagerException, URISyntaxException {
+            throws CatalogException, IOException, StorageManagerException, URISyntaxException {
 
         URI outdirUri = UriUtils.createDirectoryUri(outdirString);
         Path outdir = Paths.get(outdirUri);
@@ -118,17 +124,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
 
         // TODO: This hook should #updateFileInfo
-        Thread hook = new Thread(() -> {
-            try {
-                // If the status has not been changed by the method and is still running, we assume that the execution failed.
-                Job.JobStatus status = readJobStatus(outdir);
-                if (status.getName().equalsIgnoreCase(Job.JobStatus.RUNNING)) {
-                    writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.ERROR, "Job finished with an error."));
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
+        Thread hook = buildHook(outdir);
         Runtime.getRuntime().addShutdownHook(hook);
 
         if (options == null) {
@@ -189,13 +185,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         }
 
         // Check catalog path
-        long catalogPathId = -1;
-        if (options.get(CATALOG_PATH) != null) {
-            catalogPathId = fileManager.getId(options.getString(CATALOG_PATH), studyIdByInputFileId, sessionId);
-            if (catalogPathId <= 0) {
-                throw new CatalogException("Output directory could not be found within catalog.");
-            }
-        }
+        Long catalogOutDirId = getCatalogOutdirId(studyIdByInputFileId, options.getString(CATALOG_PATH), sessionId);
 
         logger.debug("Index - Number of files to be indexed: {}, list of files: {}", inputFiles.size(),
                 inputFiles.stream().map(File::getName).collect(Collectors.toList()));
@@ -208,7 +198,12 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         options.put(VariantStorageManager.Options.DB_NAME.key(), dataStore.getDbName());
         options.put(VariantStorageManager.Options.STUDY_ID.key(), studyIdByInputFileId);
 
-        VariantStorageManager variantStorageManager = StorageManagerFactory.get().getVariantStorageManager(dataStore.getStorageEngine());
+        VariantStorageManager variantStorageManager = null;
+        try {
+            variantStorageManager = StorageManagerFactory.get(storageConfiguration).getVariantStorageManager(dataStore.getStorageEngine());
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+            throw new StorageManagerException("Unable to create StorageManager", e);
+        }
         variantStorageManager.getOptions().putAll(options);
 
         String fileStatus;
@@ -238,7 +233,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
 
         // Only if we are not transforming or if a path has been passed, we will update catalog information
         List<String> previousFileStatus = new ArrayList<>(filesToIndex.size());
-        if (!step.equals(Type.TRANSFORM) || options.get(CATALOG_PATH) != null) {
+        if (!step.equals(Type.TRANSFORM) || catalogOutDirId != null) {
             for (File file : filesToIndex) {
                 previousFileStatus.add(file.getIndex().getStatus().getName());
                 QueryResult<FileIndex> fileIndexQueryResult = fileManager.updateFileIndexStatus(file, fileStatus, sessionId);
@@ -287,10 +282,10 @@ public class VariantFileIndexer extends AbstractFileIndexer {
 //        objectMapper.writer().writeValue(outdir.resolve("storageETLresults").toFile(), storageETLResults);
 
         // Only if we are not transforming or if a path has been passed, we will update catalog information
-        if (!step.equals(Type.TRANSFORM) || options.get(CATALOG_PATH) != null) {
-            if (!step.equals(Type.LOAD) && options.get(CATALOG_PATH) != null) {
+        if (!step.equals(Type.TRANSFORM) || catalogOutDirId != null) {
+            if (!step.equals(Type.LOAD) && catalogOutDirId != null) {
                 // Copy results to catalog
-                copyResults(outdir, catalogPathId, sessionId);
+                copyResults(outdir, catalogOutDirId, sessionId);
             }
             updateFileInfo(study, filesToIndex, storageETLResults, outdir, options, sessionId);
         }
