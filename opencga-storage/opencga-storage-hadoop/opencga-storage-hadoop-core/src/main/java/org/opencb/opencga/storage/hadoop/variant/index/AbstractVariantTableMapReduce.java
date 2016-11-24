@@ -261,7 +261,8 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
         Thread.currentThread().setName(context.getTaskAttemptID().toString());
         getLog().debug("Setup configuration");
 
-        // Setup configurationHBaseToVariantConverter
+        // Setup configurationHBaseToVariantConverter// Setup configuration
+        helper = new VariantTableHelper(context.getConfiguration());
         this.studyConfiguration = getHelper().loadMeta(); // Variant meta
 
         // Load VCF meta data for columns
