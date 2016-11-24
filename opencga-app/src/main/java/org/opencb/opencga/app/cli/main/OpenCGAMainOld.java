@@ -43,7 +43,6 @@ import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
-import org.opencb.opencga.analysis.storage.variant.VariantStorage;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.local.variant;
+package org.opencb.opencga.storage.core.local.variant.operations;
 
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.local.variant.CatalogStudyConfigurationFactory;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -40,21 +41,21 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
 
-import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.ERR_LOG_EXTENSION;
-import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.JOB_STATUS_FILE;
-import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.OUT_LOG_EXTENSION;
+import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.*;
 
 /**
  * Created by pfurio on 23/08/16.
  */
-public abstract class AbstractFileIndexer {
+public abstract class StorageOperation {
 
     protected final CatalogManager catalogManager;
+    protected final StorageManagerFactory storageManagerFactory;
     protected final Logger logger;
     private ObjectMapper objectMapper = new ObjectMapper();
 
-    public AbstractFileIndexer(CatalogManager catalogManager, Logger logger) {
+    public StorageOperation(CatalogManager catalogManager, StorageManagerFactory storageManagerFactory, Logger logger) {
         this.catalogManager = catalogManager;
+        this.storageManagerFactory = storageManagerFactory;
         this.logger = logger;
     }
 

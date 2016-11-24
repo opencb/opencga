@@ -33,7 +33,9 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.local.variant.operations.VariantStatsStorageOperation;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
@@ -55,6 +57,7 @@ public class AnnotationVariantStorageTest {
     public OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
 
     protected CatalogManager catalogManager;
+    protected StorageConfiguration storageConfiguration;
     protected String sessionId;
     protected long studyId;
     protected long outputId;
@@ -66,6 +69,7 @@ public class AnnotationVariantStorageTest {
     @Before
     public void setUp() throws Exception {
         catalogManager = opencga.getCatalogManager();
+        storageConfiguration = opencga.getStorageConfiguration();
         opencga.clearStorageDB(dbName);
 
         catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null, null).first();
@@ -80,13 +84,12 @@ public class AnnotationVariantStorageTest {
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
         Job job = analysisFileIndexer.index(file.getId(), outputId, sessionId, new QueryOptions(ExecutorManager.EXECUTE, true)).first();
         System.out.println("job = " + job);
-
     }
 
     @Test
     public void testAnnotateDefault() throws Exception {
 
-        VariantStorage variantStorage = new VariantStorage(catalogManager);
+        VariantStatsStorageOperation variantStorage = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
 
         variantStorage.annotateVariants(studyId, outputId, sessionId, new QueryOptions(ExecutorManager.EXECUTE, true));
 
@@ -96,7 +99,7 @@ public class AnnotationVariantStorageTest {
     @Test
     public void testAnnotateRegion() throws Exception {
 
-        VariantStorage variantStorage = new VariantStorage(catalogManager);
+        VariantStatsStorageOperation variantStorage = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
 
         variantStorage.annotateVariants(studyId, outputId, sessionId, new QueryOptions(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), "22")
                 .append(ExecutorManager.EXECUTE, true));
@@ -112,7 +115,7 @@ public class AnnotationVariantStorageTest {
     @Test
     public void testAnnotateCreateAndLoad() throws Exception {
 
-        VariantStorage variantStorage = new VariantStorage(catalogManager);
+        VariantStatsStorageOperation variantStorage = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
 
         Job job = variantStorage.annotateVariants(studyId, outputId, sessionId, new QueryOptions(AnalysisFileIndexer.CREATE, true)
                 .append(ExecutorManager.EXECUTE, true)).first();
@@ -134,7 +137,7 @@ public class AnnotationVariantStorageTest {
     @Test
     public void testCustomAnnotation() throws Exception {
 
-        VariantStorage variantStorage = new VariantStorage(catalogManager);
+        VariantStatsStorageOperation variantStorage = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
 
         variantStorage.annotateVariants(studyId, outputId, sessionId, new QueryOptions(ExecutorManager.EXECUTE, true));
 

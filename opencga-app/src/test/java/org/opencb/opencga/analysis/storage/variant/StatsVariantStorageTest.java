@@ -32,12 +32,14 @@ import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.storage.OpenCGATestExternalResource;
-import org.opencb.opencga.storage.core.local.variant.VariantFileIndexer;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.local.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.local.variant.operations.VariantStatsStorageOperation;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.Logger;
@@ -78,9 +80,11 @@ public class StatsVariantStorageTest {
 
     private final String userId = "user";
     private final String dbName = "opencga_variants_test";
+    private StorageConfiguration storageConfiguration;
 
     public void before () throws Exception {
         catalogManager = opencga.getCatalogManager();
+        storageConfiguration = opencga.getStorageConfiguration();
         clearDB(dbName);
 
         User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null, null).first();
@@ -101,8 +105,8 @@ public class StatsVariantStorageTest {
         coh4 = catalogManager.createCohort(studyId, "coh4", Study.Type.CONTROL_SET, "", file4.getSampleIds(), null, sessionId).first().getId();
         coh5 = catalogManager.createCohort(studyId, "coh5", Study.Type.CONTROL_SET, "", file5.getSampleIds(), null, sessionId).first().getId();
 
-        VariantFileIndexer fileIndexer = new VariantFileIndexer(catalogManager.getCatalogConfiguration(), opencga.getStorageConfiguration());
-        QueryOptions queryOptions = new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false).append(VariantFileIndexer.CATALOG_PATH, outputId);
+        VariantFileIndexerStorageOperation fileIndexer = new VariantFileIndexerStorageOperation(catalogManager.getCatalogConfiguration(), opencga.getStorageConfiguration());
+        QueryOptions queryOptions = new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false).append(VariantFileIndexerStorageOperation.CATALOG_PATH, outputId);
         fileIndexer.index("" + file1.getId(), createTmpOutdir(file1), sessionId, queryOptions);
         fileIndexer.index("" + file2.getId(), createTmpOutdir(file2), sessionId, queryOptions);
         fileIndexer.index("" + file3.getId(), createTmpOutdir(file3), sessionId, queryOptions);
@@ -139,7 +143,7 @@ public class StatsVariantStorageTest {
 
 //        coh1 = catalogManager.createCohort(studyId, "coh1", Cohort.Type.CONTROL_SET, "", file1.getSampleIds(), null, sessionId).first().getId();
 
-        VariantFileIndexer fileIndexer = new VariantFileIndexer(catalogManager.getCatalogConfiguration(), opencga.getStorageConfiguration());
+        VariantFileIndexerStorageOperation fileIndexer = new VariantFileIndexerStorageOperation(catalogManager.getCatalogConfiguration(), opencga.getStorageConfiguration());
         QueryOptions queryOptions = new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false);
         fileIndexer.index("" + file1.getId(), createTmpOutdir(file1), sessionId, queryOptions);
         return file1;
@@ -188,7 +192,7 @@ public class StatsVariantStorageTest {
     public void testCalculateStatsOneByOne() throws Exception {
         before();
         
-        VariantStorage variantStorage = new VariantStorage(catalogManager);
+        VariantStatsStorageOperation variantStorage = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
         Map<String, Cohort> cohorts = new HashMap<>();
 
         calculateStats(variantStorage, coh1);
@@ -215,26 +219,26 @@ public class StatsVariantStorageTest {
         checkCalculatedStats(cohorts);
     }
 
-    public void calculateStats(VariantStorage variantStorage, long cohortId) throws Exception {
+    public void calculateStats(VariantStatsStorageOperation variantStorage, long cohortId) throws Exception {
         calculateStats(variantStorage, cohortId, new QueryOptions());
     }
 
-    public void calculateStats(VariantStorage variantStorage, long cohortId, QueryOptions options) throws Exception {
+    public void calculateStats(VariantStatsStorageOperation variantStorage, long cohortId, QueryOptions options) throws Exception {
         String tmpOutdir = createTmpOutdir("_STATS_" + cohortId);
         List<Long> cohortIds = Collections.singletonList(cohortId);
-        variantStorage.calculateStats(catalogManager.getStudyIdByCohortId(cohortId), cohortIds, String.valueOf(outputId), tmpOutdir, sessionId, options);
+        variantStorage.calculateStats(catalogManager.getStudyIdByCohortId(cohortId), cohortIds, tmpOutdir, String.valueOf(outputId), sessionId, options);
     }
 
-    public void calculateStats(VariantStorage variantStorage, List<Long> cohortIds, QueryOptions options) throws Exception {
+    public void calculateStats(VariantStatsStorageOperation variantStorage, List<Long> cohortIds, QueryOptions options) throws Exception {
         String tmpOutdir = createTmpOutdir("_STATS_" + cohortIds.stream().map(Object::toString).collect(Collectors.joining("_")));
-        variantStorage.calculateStats(studyId, cohortIds, String.valueOf(outputId), tmpOutdir, sessionId, options);
+        variantStorage.calculateStats(studyId, cohortIds, tmpOutdir, String.valueOf(outputId), sessionId, options);
     }
 
     @Test
     public void testCalculateStatsGroups() throws Exception {
         before();
         
-        VariantStorage variantStorage = new VariantStorage(catalogManager);
+        VariantStatsStorageOperation variantStorage = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
         Map<String, Cohort> cohorts = new HashMap<>();
 
         calculateStats(variantStorage, Arrays.asList(coh1, coh2, coh3), new QueryOptions());
@@ -264,7 +268,7 @@ public class StatsVariantStorageTest {
     public void testCalculateStats() throws Exception {
         before();
         
-        VariantStorage variantStorage = new VariantStorage(catalogManager);
+        VariantStatsStorageOperation variantStorage = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
 
         assertEquals(Cohort.CohortStatus.NONE, catalogManager.getCohort(coh1, null, sessionId).first().getStatus().getName());
 
@@ -315,7 +319,7 @@ public class StatsVariantStorageTest {
     public void calculateAggregatedStats(QueryOptions options) throws Exception {
 //        coh1 = catalogManager.createCohort(studyId, "ALL", Cohort.Type.COLLECTION, "", file.getSampleIds(), null, sessionId).first().getId();
 
-        VariantStorage variantStorage = new VariantStorage(catalogManager);
+        VariantStatsStorageOperation variantStorage = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
         Map<String, Cohort> cohorts = new HashMap<>();
 
         long cohId = catalogManager.getAllCohorts(studyId, null, null, sessionId).first().getId();
@@ -336,7 +340,7 @@ public class StatsVariantStorageTest {
                 .stream().map(Cohort::getId).collect(Collectors.toList());
 
 
-        VariantStorage variantStorage = new VariantStorage(catalogManager);
+        VariantStatsStorageOperation variantStorage = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
 
         QueryOptions options = new QueryOptions(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
         calculateStats(variantStorage, cohorIds, options);
@@ -355,7 +359,7 @@ public class StatsVariantStorageTest {
         String tagMap = getResourceUri("exac-tag-mapping.properties").getPath();
 
         try {
-            VariantStorage variantStorage = new VariantStorage(catalogManager);
+            VariantStatsStorageOperation variantStorage = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
 
             QueryOptions options = new QueryOptions(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
             calculateStats(variantStorage, Collections.emptyList(), options);

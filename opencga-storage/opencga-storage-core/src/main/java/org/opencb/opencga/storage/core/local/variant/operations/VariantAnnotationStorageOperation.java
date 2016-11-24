@@ -1,6 +1,7 @@
-package org.opencb.opencga.analysis.storage.variant;
+package org.opencb.opencga.storage.core.local.variant.operations;
 
 import org.opencb.biodata.models.core.Region;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -12,8 +13,8 @@ import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.local.variant.AbstractFileIndexer;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
@@ -26,7 +27,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -34,20 +34,17 @@ import java.util.List;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantAnnotationJob extends AbstractFileIndexer {
+public class VariantAnnotationStorageOperation extends StorageOperation {
 
-
-    private final StorageManagerFactory storageManagerFactory;
-
-    public VariantAnnotationJob(CatalogManager catalogManager, StorageManagerFactory storageManagerFactory) {
-        super(catalogManager, LoggerFactory.getLogger(VariantAnnotationJob.class));
-        this.storageManagerFactory = storageManagerFactory;
+    public VariantAnnotationStorageOperation(CatalogManager catalogManager, StorageConfiguration storageConfiguration) {
+        super(catalogManager, StorageManagerFactory.get(storageConfiguration),
+                LoggerFactory.getLogger(VariantAnnotationStorageOperation.class));
     }
 
-    public void annotateVariants(long studyId, String catalogOutDirIdStr, String outdirStr, String sessionId, QueryOptions options)
+    public void annotateVariants(long studyId, Query query, String outdirStr, String catalogOutDir, String sessionId, ObjectMap options)
             throws CatalogException, StorageManagerException, URISyntaxException, IOException {
         if (options == null) {
-            options = new QueryOptions();
+            options = new ObjectMap();
         }
 
         // Outdir must be empty
@@ -62,25 +59,24 @@ public class VariantAnnotationJob extends AbstractFileIndexer {
         try {
 
             Study study = catalogManager.getStudy(studyId, sessionId).first();
-            List<Region> regions = Region.parseRegions(options.getString(VariantQueryParams.REGION.key()));
+            List<Region> regions = Region.parseRegions(query.getString(VariantQueryParams.REGION.key()));
             String outputFileName = buildOutputFileName(study.getAlias(), regions);
 
-            Long catalogOutDirId = getCatalogOutdirId(studyId, catalogOutDirIdStr, sessionId);
+            Long catalogOutDirId = getCatalogOutdirId(studyId, catalogOutDir, sessionId);
 
-            Query annotationQuery = new Query();
+            Query annotationQuery = new Query(query);
             if (!options.getBoolean(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, false)) {
                 annotationQuery.put(VariantQueryParams.ANNOTATION_EXISTS.key(), false);
             }
-            annotationQuery.put(VariantQueryParams.STUDIES.key(),
-                    Collections.singletonList(studyId));    // annotate just the indexed variants
-            annotationQuery.put(VariantQueryParams.REGION.key(), regions);
+//            annotationQuery.put(VariantQueryParams.STUDIES.key(),
+//                    Collections.singletonList(studyId));
 
             QueryOptions annotationOptions = new QueryOptions(options)
                     .append(DefaultVariantAnnotationManager.OUT_DIR, outdirUri.getPath())
                     .append(DefaultVariantAnnotationManager.FILE_NAME, outputFileName);
 
 
-            DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
+            DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
             // TODO: Needed?
             StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyId, dataStore);
 

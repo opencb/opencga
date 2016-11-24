@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
-import org.opencb.opencga.storage.core.local.variant.VariantFileIndexer;
+import org.opencb.opencga.storage.core.local.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
@@ -55,7 +55,7 @@ import static org.junit.Assert.assertNotNull;
  */
 public class PlatinumFileIndexerTest extends AbstractAnalysisFileIndexerTest {
 
-    private VariantFileIndexer fileIndexer;
+    private VariantFileIndexerStorageOperation fileIndexer;
     private Logger logger = LoggerFactory.getLogger(AbstractAnalysisFileIndexerTest.class);
 
     @Override
@@ -70,7 +70,7 @@ public class PlatinumFileIndexerTest extends AbstractAnalysisFileIndexerTest {
 
     @Before
     public void before() throws CatalogException {
-        fileIndexer = new VariantFileIndexer(catalogManager.getCatalogConfiguration(), opencga.getStorageConfiguration());
+        fileIndexer = new VariantFileIndexerStorageOperation(catalogManager.getCatalogConfiguration(), opencga.getStorageConfiguration());
     }
 
     @Test
@@ -108,9 +108,9 @@ public class PlatinumFileIndexerTest extends AbstractAnalysisFileIndexerTest {
     }
 
     public File transformFile(File inputFile, QueryOptions queryOptions) throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException, StorageManagerException, URISyntaxException, InstantiationException, IllegalAccessException {
-        queryOptions.append(VariantFileIndexer.TRANSFORM, true);
-        queryOptions.append(VariantFileIndexer.LOAD, false);
-        queryOptions.append(VariantFileIndexer.CATALOG_PATH, outputId);
+        queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, true);
+        queryOptions.append(VariantFileIndexerStorageOperation.LOAD, false);
+        queryOptions.append(VariantFileIndexerStorageOperation.CATALOG_PATH, outputId);
         boolean calculateStats = queryOptions.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key());
 
         long studyId = catalogManager.getStudyIdByFileId(inputFile.getId());
@@ -142,9 +142,9 @@ public class PlatinumFileIndexerTest extends AbstractAnalysisFileIndexerTest {
     }
 
     public List<StorageETLResult> loadFiles(List<File> inputFiles, QueryOptions queryOptions) throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException, StorageManagerException, URISyntaxException, InstantiationException, IllegalAccessException {
-        queryOptions.append(VariantFileIndexer.TRANSFORM, false);
-        queryOptions.append(VariantFileIndexer.LOAD, true);
-        queryOptions.append(VariantFileIndexer.CATALOG_PATH, outputId);
+        queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, false);
+        queryOptions.append(VariantFileIndexerStorageOperation.LOAD, true);
+        queryOptions.append(VariantFileIndexerStorageOperation.CATALOG_PATH, outputId);
         boolean calculateStats = queryOptions.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key());
 
         List<Long> ids = inputFiles.stream().map(File::getId).collect(Collectors.toList());
