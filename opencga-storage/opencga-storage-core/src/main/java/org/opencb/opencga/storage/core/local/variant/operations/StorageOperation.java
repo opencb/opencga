@@ -93,12 +93,18 @@ public abstract class StorageOperation {
 
     public StudyConfiguration updateStudyConfiguration(String sessionId, long studyId, DataStore dataStore)
             throws IOException, CatalogException, StorageManagerException {
+
+        CatalogStudyConfigurationFactory studyConfigurationFactory = new CatalogStudyConfigurationFactory(catalogManager);
         try (VariantDBAdaptor dbAdaptor = StorageManagerFactory.get().getVariantStorageManager(dataStore.getStorageEngine())
                 .getDBAdaptor(dataStore.getDbName());
              StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager()) {
-            new CatalogStudyConfigurationFactory(catalogManager)
-                    .updateStudyConfigurationFromCatalog(studyId, studyConfigurationManager, sessionId);
-            return studyConfigurationManager.getStudyConfiguration((int) studyId, null).first();
+
+            // Update StudyConfiguration. Add new elements and so
+            studyConfigurationFactory.updateStudyConfigurationFromCatalog(studyId, studyConfigurationManager, sessionId);
+            StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration((int) studyId, null).first();
+            // Update Catalog file and cohort status.
+            studyConfigurationFactory.updateCatalogFromStudyConfiguration(studyConfiguration, null, sessionId);
+            return studyConfiguration;
         } catch (StorageManagerException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
             throw new StorageManagerException("Unable to update StudyConfiguration", e);
         }

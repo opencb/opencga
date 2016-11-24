@@ -32,9 +32,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import static com.mongodb.client.model.Filters.*;
 
@@ -68,12 +65,8 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
         this.chromosomes = chromosomes == null ? Collections.emptyList() : chromosomes;
     }
 
-    public Future<Long> countNumVariants() {
-        ExecutorService threadPool = Executors.newFixedThreadPool(1);
-        Future<Long> future = threadPool.submit(() -> stageCollection.nativeQuery().count(getQuery()));
-
-        threadPool.shutdown();
-        return future;
+    public long countNumVariants() {
+        return stageCollection.nativeQuery().count(getQuery());
     }
 
     public long countAproxNumVariants() {
