@@ -21,7 +21,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.catalog.commons.AclCommandOptions;
 
 /**
@@ -59,11 +59,11 @@ public class StudyCommandOptions {
     public AclCommandOptions.AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
 
     public JCommander jCommander;
-    public OpencgaCommonCommandOptions commonCommandOptions;
+    public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
 
     private AclCommandOptions aclCommandOptions;
 
-    public StudyCommandOptions(OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public StudyCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, JCommander jCommander) {
 
         this.commonCommandOptions = commonCommandOptions;
         this.jCommander = jCommander;
@@ -101,7 +101,7 @@ public class StudyCommandOptions {
     public abstract class BaseStudyCommand {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "Study identifier", required = true, arity = 1)
         public String id;
@@ -111,7 +111,7 @@ public class StudyCommandOptions {
     public class CreateCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--project-id"}, description = "Project identifier", required = true, arity = 1)
         public String projectId;
@@ -144,7 +144,7 @@ public class StudyCommandOptions {
     public class SearchCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
         public String include;
@@ -614,7 +614,7 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"help"}, commandDescription = "Help [PENDING]")
     public class HelpCommandOptions {
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
     }
 
     @Parameters(commandNames = {"groups-create"}, commandDescription = "Create a group")

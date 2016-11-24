@@ -20,7 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.catalog.commons.AclCommandOptions;
 
 /**
@@ -43,11 +43,11 @@ public class JobCommandOptions {
     public AclCommandOptions.AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
 
     public JCommander jCommander;
-    public OpencgaCommonCommandOptions commonCommandOptions;
+    public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
 
     private AclCommandOptions aclCommandOptions;
 
-    public JobCommandOptions(OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public JobCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, JCommander jCommander) {
 
         this.commonCommandOptions = commonCommandOptions;
         this.jCommander = jCommander;
@@ -70,7 +70,7 @@ public class JobCommandOptions {
     public class BaseJobCommand {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "Job id", required = true, arity = 1)
         public String id;
@@ -80,7 +80,7 @@ public class JobCommandOptions {
     public class CreateCommandOptions {
 
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-s","--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
@@ -113,7 +113,7 @@ public class JobCommandOptions {
     public class SearchCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--ids"}, description = "Comma separated list of job ids", arity = 1)
         public String id;
@@ -175,7 +175,7 @@ public class JobCommandOptions {
     public class GroupByCommandOptions {
 
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
         public String fields;

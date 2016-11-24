@@ -20,8 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.catalog.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.models.File;
 
@@ -62,11 +61,11 @@ public class FileCommandOptions {
     public AclCommandOptions.AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
 
     public JCommander jCommander;
-    public OpencgaCommonCommandOptions commonCommandOptions;
+    public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
 
     private AclCommandOptions aclCommandOptions;
 
-    public FileCommandOptions(OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public FileCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, JCommander jCommander) {
 
         this.commonCommandOptions = commonCommandOptions;
         this.jCommander = jCommander;
@@ -104,7 +103,7 @@ public class FileCommandOptions {
     public class BaseFileCommand {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "File id", required = true, arity = 1)
         public String id;
@@ -115,7 +114,7 @@ public class FileCommandOptions {
     public class CopyCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--path"}, description = "Directory where to create the file", required = false, arity = 1)
         public String path;
@@ -197,7 +196,7 @@ public class FileCommandOptions {
     public class SearchCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "Comma separated list of ids", arity = 1)
         public String id;
@@ -296,7 +295,7 @@ public class FileCommandOptions {
     public class IndexCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "Comma separated list of file ids (files or directories)", required = true, arity = 1)
         public String fileIds;
@@ -514,7 +513,7 @@ public class FileCommandOptions {
     public class LinkCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
          @Parameter(names = {"-i", "--input"}, description = "File or folder location", required = true, variableArity = true)
          public List<String> inputs;
@@ -538,7 +537,7 @@ public class FileCommandOptions {
     public class UploadCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-s", "--study-id"}, description = "Study where the file will be associated to", required = true, arity = 1)
         public String studyId;
@@ -576,7 +575,7 @@ public class FileCommandOptions {
     public class GroupByCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
         public String fields;

@@ -20,7 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
 
 /**
  * Created by pfurio on 13/06/16.
@@ -39,9 +39,9 @@ public class UserCommandOptions {
     public ResetPasswordCommandOptions resetPasswordCommandOptions;
     public JCommander jCommander;
 
-    public OpencgaCommonCommandOptions commonCommandOptions;
+    public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
 
-    public UserCommandOptions(OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public UserCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, JCommander jCommander) {
         this.commonCommandOptions = commonCommandOptions;
         this.jCommander = jCommander;
 
@@ -62,7 +62,7 @@ public class UserCommandOptions {
 
     public class BaseUserCommand {
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "User id",  required = true, arity = 1)
         public String user;
@@ -188,7 +188,7 @@ public class UserCommandOptions {
 //        public String sessionId;
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = UserCommandOptions.this.commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = UserCommandOptions.this.commonCommandOptions;
     }
 
     @Parameters(commandNames = {"logout"}, commandDescription = "End user session")

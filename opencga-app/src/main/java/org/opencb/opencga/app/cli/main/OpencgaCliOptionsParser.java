@@ -37,8 +37,7 @@ public class OpencgaCliOptionsParser {
     private final JCommander jCommander;
 
     private final GeneralOptions generalOptions;
-    private final OpencgaCommonCommandOptions commonCommandOptions;
-    private final GeneralCliOptions.CommonCommandOptions analysisCommonCommandOptions;
+    private final GeneralCliOptions.CommonCommandOptions commonCommandOptions;
 
     protected final UserAndPasswordOptions userAndPasswordOptions;
 
@@ -72,8 +71,7 @@ public class OpencgaCliOptionsParser {
 
         jCommander = new JCommander(generalOptions);
 
-        commonCommandOptions = new OpencgaCommonCommandOptions();
-        analysisCommonCommandOptions = new GeneralCliOptions.CommonCommandOptions();
+        commonCommandOptions = new GeneralCliOptions.CommonCommandOptions();
 
         userAndPasswordOptions = new UserAndPasswordOptions();
 //        commandShareResource = new CommandShareResource();
@@ -277,7 +275,7 @@ public class OpencgaCliOptionsParser {
         panelSubCommands.addCommand("acl-member-info", panelCommandOptions.aclsMemberInfoCommandOptions);
         panelSubCommands.addCommand("acl-member-update", panelCommandOptions.aclsMemberUpdateCommandOptions);
 
-        alignmentCommandOptions = new AlignmentCommandOptions(this.analysisCommonCommandOptions, jCommander);
+        alignmentCommandOptions = new AlignmentCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("alignments", alignmentCommandOptions);
         JCommander alignmentSubCommands = jCommander.getCommands().get("alignments");
         alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexAlignmentCommandOptions);
@@ -285,7 +283,7 @@ public class OpencgaCliOptionsParser {
         alignmentSubCommands.addCommand("stats", alignmentCommandOptions.statsAlignmentCommandOptions);
         alignmentSubCommands.addCommand("coverage", alignmentCommandOptions.coverageAlignmentCommandOptions);
 
-        variantCommandOptions = new VariantCommandOptions(this.analysisCommonCommandOptions, jCommander);
+        variantCommandOptions = new VariantCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("variant", variantCommandOptions);
         JCommander variantSubCommands = jCommander.getCommands().get("variant");
         variantSubCommands.addCommand("index", variantCommandOptions.indexCommandOptions);
@@ -325,7 +323,7 @@ public class OpencgaCliOptionsParser {
                 return ((AdminCliOptionsParser.AdminCommonCommandOptions) objects.get(0)).help;
             }
         }
-        return analysisCommonCommandOptions.help;
+        return commonCommandOptions.help;
     }
 
 
@@ -467,7 +465,7 @@ public class OpencgaCliOptionsParser {
         UserAndPasswordOptions up = userAndPasswordOptions;
 
         @ParametersDelegate
-        OpencgaCommonCommandOptions cOpt = commonCommandOptions;
+        GeneralCliOptions.CommonCommandOptions cOpt = commonCommandOptions;
 
         @Parameter(names = {"-id"}, description = "Unique identifier", required = true, arity = 1)
         public String id;
@@ -551,7 +549,7 @@ public class OpencgaCliOptionsParser {
         return generalOptions;
     }
 
-    public OpencgaCommonCommandOptions getCommonCommandOptions() {
+    public GeneralCliOptions.CommonCommandOptions getCommonCommandOptions() {
         return commonCommandOptions;
     }
 

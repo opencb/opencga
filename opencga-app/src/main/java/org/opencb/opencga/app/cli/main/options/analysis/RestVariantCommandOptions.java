@@ -21,7 +21,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
 
 /**
  * Created by pfurio on 15/08/16.
@@ -31,10 +31,10 @@ import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 public class RestVariantCommandOptions {
 
     public JCommander jCommander;
-    public OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonCommandOptions;
+    public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
     public IndexCommandOptions indexCommandOptions;
 
-    public RestVariantCommandOptions(OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public RestVariantCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, JCommander jCommander) {
         this.commonCommandOptions = commonCommandOptions;
         this.jCommander = jCommander;
         this.indexCommandOptions = new IndexCommandOptions();
@@ -44,7 +44,7 @@ public class RestVariantCommandOptions {
     public class IndexCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--file-id"}, description = "Comma separated list of file ids (files or directories)", required = true, arity = 1)
         public String fileIds;

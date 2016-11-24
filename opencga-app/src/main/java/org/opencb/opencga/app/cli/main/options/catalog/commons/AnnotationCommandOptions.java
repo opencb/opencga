@@ -19,14 +19,14 @@ package org.opencb.opencga.app.cli.main.options.catalog.commons;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
 
 /**
  * Created by pfurio on 27/07/16.
  */
 public class AnnotationCommandOptions {
 
-    private OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonCommandOptions;
+    private GeneralCliOptions.CommonCommandOptions commonCommandOptions;
 
     private AnnotationSetsCreateCommandOptions createCommandOptions;
     private AnnotationSetsAllInfoCommandOptions allInfoCommandOptions;
@@ -35,13 +35,13 @@ public class AnnotationCommandOptions {
     private AnnotationSetsInfoCommandOptions infoCommandOptions;
     private AnnotationSetsUpdateCommandOptions updateCommandOptions;
 
-    public AnnotationCommandOptions(OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonCommandOptions) {
+    public AnnotationCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions) {
         this.commonCommandOptions = commonCommandOptions;
     }
 
     public class BaseCommandOptions {
         @ParametersDelegate
-        public OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "Id of the resource", required = true, arity = 1)
         public String id;
