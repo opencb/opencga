@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.local.variant;
+package org.opencb.opencga.storage.core.local.variant.operations;
 
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -56,10 +56,8 @@ import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_STATS;
 /**
  * Created by imedina on 17/08/16.
  */
-public class VariantFileIndexer extends AbstractFileIndexer {
+public class VariantFileIndexerStorageOperation extends StorageOperation {
 
-    private final CatalogConfiguration catalogConfiguration;
-    private final StorageConfiguration storageConfiguration;
     private final IFileManager fileManager;
 
 
@@ -78,11 +76,16 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         INDEX
     }
 
-    public VariantFileIndexer(CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration)
+    public VariantFileIndexerStorageOperation(CatalogManager catalogManager, StorageConfiguration storageConfiguration) {
+        super(catalogManager, StorageManagerFactory.get(storageConfiguration),
+                LoggerFactory.getLogger(VariantFileIndexerStorageOperation.class));
+        this.fileManager = catalogManager.getFileManager();
+    }
+
+    public VariantFileIndexerStorageOperation(CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration)
             throws CatalogException {
-        super(new CatalogManager(catalogConfiguration), LoggerFactory.getLogger(VariantFileIndexer.class));
-        this.catalogConfiguration = catalogConfiguration;
-        this.storageConfiguration = storageConfiguration;
+        super(new CatalogManager(catalogConfiguration), StorageManagerFactory.get(storageConfiguration),
+                LoggerFactory.getLogger(VariantFileIndexerStorageOperation.class));
         this.fileManager = catalogManager.getFileManager();
     }
 
@@ -97,8 +100,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
     }
 
     public List<StorageETLResult> index(List<Long> fileIds, String outdirString, String sessionId, QueryOptions options)
-            throws CatalogException, IOException, IllegalAccessException, InstantiationException,
-            ClassNotFoundException, StorageManagerException, URISyntaxException {
+            throws CatalogException, IOException, StorageManagerException, URISyntaxException {
 
         URI outdirUri = UriUtils.createDirectoryUri(outdirString);
         Path outdir = Paths.get(outdirUri);
@@ -118,17 +120,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
 
         // TODO: This hook should #updateFileInfo
-        Thread hook = new Thread(() -> {
-            try {
-                // If the status has not been changed by the method and is still running, we assume that the execution failed.
-                Job.JobStatus status = readJobStatus(outdir);
-                if (status.getName().equalsIgnoreCase(Job.JobStatus.RUNNING)) {
-                    writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.ERROR, "Job finished with an error."));
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        });
+        Thread hook = buildHook(outdir);
         Runtime.getRuntime().addShutdownHook(hook);
 
         if (options == null) {
@@ -189,13 +181,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         }
 
         // Check catalog path
-        long catalogPathId = -1;
-        if (options.get(CATALOG_PATH) != null) {
-            catalogPathId = fileManager.getId(options.getString(CATALOG_PATH), studyIdByInputFileId, sessionId);
-            if (catalogPathId <= 0) {
-                throw new CatalogException("Output directory could not be found within catalog.");
-            }
-        }
+        Long catalogOutDirId = getCatalogOutdirId(studyIdByInputFileId, options.getString(CATALOG_PATH), sessionId);
 
         logger.debug("Index - Number of files to be indexed: {}, list of files: {}", inputFiles.size(),
                 inputFiles.stream().map(File::getName).collect(Collectors.toList()));
@@ -208,7 +194,12 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         options.put(VariantStorageManager.Options.DB_NAME.key(), dataStore.getDbName());
         options.put(VariantStorageManager.Options.STUDY_ID.key(), studyIdByInputFileId);
 
-        VariantStorageManager variantStorageManager = StorageManagerFactory.get().getVariantStorageManager(dataStore.getStorageEngine());
+        VariantStorageManager variantStorageManager = null;
+        try {
+            variantStorageManager = storageManagerFactory.getVariantStorageManager(dataStore.getStorageEngine());
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+            throw new StorageManagerException("Unable to create StorageManager", e);
+        }
         variantStorageManager.getOptions().putAll(options);
 
         String fileStatus;
@@ -238,7 +229,7 @@ public class VariantFileIndexer extends AbstractFileIndexer {
 
         // Only if we are not transforming or if a path has been passed, we will update catalog information
         List<String> previousFileStatus = new ArrayList<>(filesToIndex.size());
-        if (!step.equals(Type.TRANSFORM) || options.get(CATALOG_PATH) != null) {
+        if (!step.equals(Type.TRANSFORM) || catalogOutDirId != null) {
             for (File file : filesToIndex) {
                 previousFileStatus.add(file.getIndex().getStatus().getName());
                 QueryResult<FileIndex> fileIndexQueryResult = fileManager.updateFileIndexStatus(file, fileStatus, sessionId);
@@ -287,10 +278,10 @@ public class VariantFileIndexer extends AbstractFileIndexer {
 //        objectMapper.writer().writeValue(outdir.resolve("storageETLresults").toFile(), storageETLResults);
 
         // Only if we are not transforming or if a path has been passed, we will update catalog information
-        if (!step.equals(Type.TRANSFORM) || options.get(CATALOG_PATH) != null) {
-            if (!step.equals(Type.LOAD) && options.get(CATALOG_PATH) != null) {
+        if (!step.equals(Type.TRANSFORM) || catalogOutDirId != null) {
+            if (!step.equals(Type.LOAD) && catalogOutDirId != null) {
                 // Copy results to catalog
-                copyResults(outdir, catalogPathId, sessionId);
+                copyResults(outdir, catalogOutDirId, sessionId);
             }
             updateFileInfo(study, filesToIndex, storageETLResults, outdir, options, sessionId);
         }
@@ -720,92 +711,5 @@ public class VariantFileIndexer extends AbstractFileIndexer {
         return filteredFiles;
     }
 
-    @Deprecated
-    private List<File> filterLoadFiles(List<File> fileList, long studyId, String sessionId) throws CatalogException {
-        if (fileList == null || fileList.isEmpty()) {
-            return new ArrayList<>();
-        }
-
-        File vcf;
-        File avro;
-        List<File> filteredFiles = new ArrayList<>(fileList.size());
-        for (File file : fileList) {
-
-            // This should use relatedFile in the future
-            if (file.getFormat().equals(File.Format.VCF) || file.getFormat().equals(File.Format.GVCF)) {
-                vcf = file;
-                avro = search(studyId, file, VCF_EXTENSION, AVRO_EXTENSION, sessionId);
-            } else {
-                avro = file;
-                vcf = search(studyId, file, AVRO_EXTENSION, VCF_EXTENSION, sessionId);
-            }
-
-            if (vcf == null || avro == null) {
-                logger.warn("");
-                continue;
-            }
-
-            if (vcf.getStatus().getName().equals(File.FileStatus.READY) && avro.getStatus().getName().equals(File.FileStatus.READY)) {
-                if (vcf.getIndex() != null) {
-                    if (vcf.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.TRANSFORMED)) {
-                        filteredFiles.add(avro);
-                    } else {
-                        logger.warn("We can only transform VCF files not transformed, the status is {}",
-                                file.getIndex().getStatus().getName());
-                    }
-                } else {
-                    // This block should not happen ever
-                    filteredFiles.add(file);
-                    logger.warn("This block should not happen ever");
-                }
-            } else {
-                logger.warn("");
-            }
-        }
-        return filteredFiles;
-    }
-
-    /**
-     * Look for the related avro or vcf file in catalog using one of the pairs as a starting point.
-     *
-     * @param studyId study id of the files.
-     * @param sourceFile avro or vcf file used to look for the vcf or avro file respectively.
-     * @param sourceExtension Extension of the file being passed.
-     * @param destinyExtension Extension of the file being looked for.
-     * @param sessionId session id of the user that should have permissions for the file being looked for.
-     * @return the obtained file or null otherwise.
-     */
-    @Deprecated
-    private File search(long studyId, File sourceFile, String sourceExtension, String destinyExtension, String sessionId)
-            throws CatalogException {
-        // Look for the destiny file in the same folder where the source file is located
-        Path sourcePath = Paths.get(sourceFile.getPath());
-
-        Path parent = sourcePath.getParent();
-        String destinyFileName = sourcePath.getFileName().toString().replace(sourceExtension, destinyExtension);
-
-        // TODO: Use relatedFiles to look for the files
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.NAME.key(), destinyFileName)
-                .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-
-        QueryResult<File> fileQueryResult = fileManager.get(parent.toString(), true, query, new QueryOptions(), sessionId);
-        if (fileQueryResult.getNumResults() == 1) {
-            return fileQueryResult.first();
-        }
-
-        // Look for the file in the same path
-        String destinyPath = parent.resolve(destinyFileName).toString();
-
-        for (File file : fileQueryResult.getResult()) {
-            if (destinyPath.equals(file.getPath())) {
-                return file;
-            }
-        }
-
-        logger.error("{} files have been found as possible pairs of {} with id {}", fileQueryResult.getNumResults(), sourceFile.getName(),
-                sourceFile.getId());
-        return null;
-    }
 
 }

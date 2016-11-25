@@ -26,7 +26,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.JobFactory;
-import org.opencb.opencga.storage.core.local.variant.AbstractFileIndexer;
+import org.opencb.opencga.storage.core.local.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.local.variant.CatalogStudyConfigurationFactory;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
@@ -226,7 +226,7 @@ public class AnalysisFileIndexer {
             originalFile = inputFile;
         }
 
-        final DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, catalogManager.getStudyIdByFileId(originalFile.getId()), originalFile.getBioformat(), sessionId);
+        final DataStore dataStore = StorageOperation.getDataStore(catalogManager, catalogManager.getStudyIdByFileId(originalFile.getId()), originalFile.getBioformat(), sessionId);
 
         /** Check if file can be indexed **/
         if (originalFile.getIndex() != null) {

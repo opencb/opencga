@@ -35,13 +35,20 @@ import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.local.StorageManager;
+import org.opencb.opencga.storage.core.local.variant.operations.VariantAnnotationStorageOperation;
+import org.opencb.opencga.storage.core.local.variant.operations.VariantStatsStorageOperation;
+import org.opencb.opencga.storage.core.local.variant.operations.StorageOperation;
+import org.opencb.opencga.storage.core.local.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.function.Function;
 
@@ -61,50 +68,83 @@ public class VariantStorageManager extends StorageManager {
 
     }
 
+    // -------------------------//
+    //   Import/Export methods  //
+    // -------------------------//
+
 
     public void importData(String fileId, String studyId, String sessionId) {
-
+        throw new UnsupportedOperationException();
     }
 
     public void exportData(String outputFile, String studyId, String sessionId) {
-
+        throw new UnsupportedOperationException();
     }
+
     public void exportData(String outputFile, String studyId, Query query, QueryOptions queryOptions, String sessionId) {
-
+        throw new UnsupportedOperationException();
     }
 
+    // --------------------------//
+    //   Data Operation methods  //
+    // --------------------------//
 
-
-    public void index(String fileId, String studyId, ObjectMap config, String sessionId) {
-
+    public List<StorageETLResult> index(String fileId, String outDir, String catalogOutDir, String studyId,
+                                        ObjectMap config, String sessionId)
+            throws CatalogException, StorageManagerException, IOException, URISyntaxException {
+        return index(Collections.singletonList(fileId), outDir, catalogOutDir, studyId, config, sessionId);
     }
 
-    public void index(List<String> fileId, String studyId, ObjectMap config, String sessionId) {
+    public List<StorageETLResult> index(List<String> files, String outDir, String catalogOutDir, String studyId,
+                                        ObjectMap config, String sessionId)
+            throws CatalogException, StorageManagerException, IOException, URISyntaxException {
+        VariantFileIndexerStorageOperation indexOperation = new VariantFileIndexerStorageOperation(catalogManager, storageConfiguration);
 
+        List<Long> fileIds = new ArrayList<>(files.size());
+        for (String file : files) {
+            long fileId = catalogManager.getFileId(file, sessionId);
+            fileIds.add(fileId);
+        }
+        QueryOptions options = new QueryOptions(config);
+        options.putIfNotNull(VariantFileIndexerStorageOperation.CATALOG_PATH, catalogOutDir);
+        return indexOperation.index(fileIds, outDir, sessionId, options);
     }
 
     public void deleteStudy(String studyId, String sessionId) {
-
+        throw new UnsupportedOperationException();
     }
 
     public void deleteFile(String fileId, String studyId, String sessionId) {
-
+        throw new UnsupportedOperationException();
     }
 
-    public void addAnnotation(String annotationId, String studyId, Query query, String sessionId) {
+    public void annotate(String study, Query query, String outDir, String catalogOutDir, ObjectMap config, String sessionId)
+            throws CatalogException, StorageManagerException, IOException, URISyntaxException {
+        VariantAnnotationStorageOperation annotOperation = new VariantAnnotationStorageOperation(catalogManager, storageConfiguration);
 
+        long studyId = catalogManager.getStudyId(study, sessionId);
+        annotOperation.annotateVariants(studyId, query, outDir, catalogOutDir, sessionId, config);
     }
 
     public void deleteAnnotation(String annotationId, String studyId, String sessionId) {
-
+        throw new UnsupportedOperationException();
     }
 
-    public void stats(String studyId, List<String> cohorts, Query query, String sessionId) {
+    public void stats(String study, List<String> cohorts, String outDir, String catalogOutDir, ObjectMap config, String sessionId)
+            throws CatalogException, StorageManagerException, IOException, URISyntaxException {
+        VariantStatsStorageOperation statsOperation = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
 
+        List<Long> cohortIds = new ArrayList<>(cohorts.size());
+        for (String cohort : cohorts) {
+            long cohortId = catalogManager.getCohortId(cohort, sessionId);
+            cohortIds.add(cohortId);
+        }
+        long studyId = catalogManager.getStudyId(study, sessionId);
+        statsOperation.calculateStats(studyId, cohortIds, outDir, catalogOutDir, sessionId, new QueryOptions(config));
     }
 
     public void deleteStats(List<String> cohorts, String studyId, String sessionId) {
-
+        throw new UnsupportedOperationException();
     }
 
     // ---------------------//
@@ -163,8 +203,9 @@ public class VariantStorageManager extends StorageManager {
         return secure(query, sessionId, dbAdaptor -> dbAdaptor.count(query));
     }
 
-    public QueryResult<String> distinct(Query query, String field, String sessionId) {
-        throw new UnsupportedOperationException();
+    public QueryResult distinct(Query query, String field, String sessionId)
+            throws CatalogException, IOException, StorageManagerException {
+        return (QueryResult) secure(query, sessionId, dbAdaptor -> dbAdaptor.distinct(query, field));
     }
 
     public void facet() {
@@ -205,17 +246,24 @@ public class VariantStorageManager extends StorageManager {
 //        return null;
 //    }
 
-    public void intersect(Query query, QueryOptions queryOptions, List<String> studyIds, String sessionId) {
-        throw new UnsupportedOperationException();
+    public QueryResult<Variant> intersect(Query query, QueryOptions queryOptions, List<String> studyIds, String sessionId)
+            throws CatalogException, IOException, StorageManagerException {
+        Query intersectQuery = new Query(query);
+        intersectQuery.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), String.join(VariantDBAdaptorUtils.AND, studyIds));
+        return get(intersectQuery, queryOptions, sessionId);
     }
 
 
-    Map<Long, List<Sample>> getSamplesMetadata(Query query, QueryOptions queryOptions, String sessionId)  {
-        return null;
+    public Map<Long, List<Sample>> getSamplesMetadata(Query query, QueryOptions queryOptions, String sessionId)
+            throws CatalogException, StorageManagerException, IOException {
+        long mainStudyId = getMainStudyId(query, sessionId);
+        try (VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(mainStudyId, sessionId)) {
+            return checkSamplesPermissions(query, queryOptions, variantDBAdaptor, sessionId);
+        }
     }
 
     protected VariantDBAdaptor getVariantDBAdaptor(long studyId, String sessionId) throws CatalogException, StorageManagerException {
-        DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
+        DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
 
         String storageEngine = dataStore.getStorageEngine();
         String dbName = dataStore.getDbName();

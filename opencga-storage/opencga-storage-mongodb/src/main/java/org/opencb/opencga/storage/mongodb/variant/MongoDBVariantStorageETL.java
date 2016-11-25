@@ -654,8 +654,8 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stageCollection, studyConfiguration.getStudyId(),
                 chromosomeToLoad == null ? Collections.emptyList() : Collections.singletonList(chromosomeToLoad));
         boolean resume = options.getBoolean(MERGE_RESUME.key(), false);
-        ProgressLogger progressLogger = new ProgressLogger("Write variants in VARIANTS collection:", reader.countNumVariants());
-        //reader.countAproxNumVariants()
+        ProgressLogger progressLogger = new ProgressLogger("Write variants in VARIANTS collection:", reader::countNumVariants, 200);
+        progressLogger.setApproximateTotalCount(reader.countAproxNumVariants());
 
         MongoDBVariantMerger variantMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds,
                 dbAdaptor.getVariantsCollection(), indexedFiles, resume);

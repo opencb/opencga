@@ -21,9 +21,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
-import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
-import org.opencb.opencga.analysis.storage.variant.VariantStorage;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -209,7 +206,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @Path("/{cohortId}/stats")
     @ApiOperation(value = "Cohort stats", position = 2)
     public Response stats(@ApiParam(value = "Comma separated list of cohort names or ids", required = true) @PathParam("cohortId") String cohortIdsCsv,
-                          @ApiParam(value = "Calculate cohort stats", required = false) @QueryParam("calculate") boolean calculate,
+                          @ApiParam(value = "Calculate cohort stats [PENDING]", required = false) @QueryParam("calculate") boolean calculate,
                           @ApiParam(value = "Delete stats [PENDING]", required = false) @QueryParam("delete") boolean delete,
                           @ApiParam(value = "Log level", required = false) @QueryParam("log") String logLevel,
                           @ApiParam(value = "Output directory", required = false) @QueryParam("outdirId") String outdirIdStr
@@ -217,13 +214,14 @@ public class CohortWSServer extends OpenCGAWSServer {
         try {
             List<Long> cohortIds = catalogManager.getCohortIds(cohortIdsCsv, sessionId);
             if (calculate) {
-                VariantStorage variantStorage = new VariantStorage(catalogManager);
-                Long outdirId = outdirIdStr == null ? null : catalogManager.getFileId(outdirIdStr, sessionId);
-                queryOptions.put(ExecutorManager.EXECUTE, false);
-                queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
-                QueryResult<Job> jobQueryResult =
-                        variantStorage.calculateStats(outdirId, cohortIds, sessionId, new QueryOptions(queryOptions));
-                return createOkResponse(jobQueryResult);
+//                VariantStorage variantStorage = new VariantStorage(catalogManager);
+//                Long outdirId = outdirIdStr == null ? null : catalogManager.getFileId(outdirIdStr, sessionId);
+//                queryOptions.put(ExecutorManager.EXECUTE, false);
+//                queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
+//                QueryResult<Job> jobQueryResult =
+//                        variantStorage.calculateStats(outdirId, cohortIds, sessionId, new QueryOptions(queryOptions));
+//                return createOkResponse(jobQueryResult);
+                throw new UnsupportedOperationException("[PENDING]. Use opencga-analysis.sh instead.");
             } else if (delete) {
                 List<QueryResult<Cohort>> results = catalogManager.getCohortManager().delete(cohortIdsCsv, queryOptions, sessionId);
                 return createOkResponse(results);

@@ -20,7 +20,7 @@ import org.junit.Test;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.storage.AbstractAnalysisFileIndexerTest;
-import org.opencb.opencga.storage.core.local.variant.VariantFileIndexer;
+import org.opencb.opencga.storage.core.local.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.FileIndex;
 
@@ -28,7 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.Assert.*;
-import static org.opencb.opencga.storage.core.local.variant.VariantFileIndexer.*;
+import static org.opencb.opencga.storage.core.local.variant.operations.VariantFileIndexerStorageOperation.*;
 
 /**
  * Created on 19/09/16
@@ -40,7 +40,7 @@ public class VariantFileIndexerTest extends AbstractAnalysisFileIndexerTest {
     @Test
     public void testIndex() throws Exception {
 
-        VariantFileIndexer variantFileIndexer = new VariantFileIndexer(opencga.getCatalogManager().getCatalogConfiguration(),
+        VariantFileIndexerStorageOperation variantFileIndexer = new VariantFileIndexerStorageOperation(opencga.getCatalogManager().getCatalogConfiguration(),
                 opencga.getStorageConfiguration());
 
         File file = create("variant-test-file.vcf.gz");

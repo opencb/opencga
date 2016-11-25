@@ -34,9 +34,9 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
-import org.opencb.opencga.analysis.storage.variant.VariantStorage;
-import org.opencb.opencga.storage.core.local.variant.AbstractFileIndexer;
-import org.opencb.opencga.storage.core.local.variant.VariantFileIndexer;
+import org.opencb.opencga.storage.core.local.variant.operations.VariantStatsStorageOperation;
+import org.opencb.opencga.storage.core.local.variant.operations.StorageOperation;
+import org.opencb.opencga.storage.core.local.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -73,8 +73,8 @@ import java.util.stream.Collectors;
 
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
-import static org.opencb.opencga.storage.core.local.variant.VariantFileIndexer.LOAD;
-import static org.opencb.opencga.storage.core.local.variant.VariantFileIndexer.TRANSFORM;
+import static org.opencb.opencga.storage.core.local.variant.operations.VariantFileIndexerStorageOperation.LOAD;
+import static org.opencb.opencga.storage.core.local.variant.operations.VariantFileIndexerStorageOperation.TRANSFORM;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES;
 
@@ -326,8 +326,8 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         queryOptions.put(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), cliOptions.excludeGenotype);
         queryOptions.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), cliOptions.aggregated);
 
-        queryOptions.putIfNotNull(VariantFileIndexer.CATALOG_PATH, cliOptions.catalogPath);
-        queryOptions.putIfNotNull(VariantFileIndexer.TRANSFORMED_FILES, cliOptions.transformedPaths);
+        queryOptions.putIfNotNull(VariantFileIndexerStorageOperation.CATALOG_PATH, cliOptions.catalogPath);
+        queryOptions.putIfNotNull(VariantFileIndexerStorageOperation.TRANSFORMED_FILES, cliOptions.transformedPaths);
 
         queryOptions.put(VariantStorageManager.Options.ANNOTATE.key(), cliOptions.annotate);
         if (cliOptions.annotator != null) {
@@ -354,7 +354,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         options.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, cliOptions.overwriteAnnotations);
         * */
 
-        VariantFileIndexer variantFileIndexer = new VariantFileIndexer(catalogConfiguration, storageConfiguration);
+        VariantFileIndexerStorageOperation variantFileIndexer = new VariantFileIndexerStorageOperation(catalogConfiguration, storageConfiguration);
         variantFileIndexer.index(cliOptions.fileId, cliOptions.outdir, sessionId, queryOptions);
 
 //        long inputFileId = catalogManager.getFileId(cliOptions.fileId);
@@ -508,7 +508,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         AnalysisCliOptionsParser.StatsVariantCommandOptions cliOptions = variantCommandOptions.statsVariantCommandOptions;
 
         long studyId = catalogManager.getStudyId(cliOptions.studyId, sessionId);
-        VariantStorage variantStorage = new VariantStorage(catalogManager);
+        VariantStatsStorageOperation variantStorage = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
 
         QueryOptions options = new QueryOptions()
                 .append(VariantStatisticsManager.OUTPUT_FILE_NAME, cliOptions.fileName)
@@ -538,7 +538,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                 }
             }
         }
-        variantStorage.calculateStats(studyId, cohortIds, cliOptions.catalogPath, cliOptions.outdir, sessionId, options);
+        variantStorage.calculateStats(studyId, cohortIds, cliOptions.outdir, cliOptions.catalogPath, sessionId, options);
 //        QueryResult<Job> result = variantStorage.calculateStats(outDirId, cohortIds, sessionId, options);
 //        if (cliOptions.job.queue) {
 //            System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result));
@@ -561,7 +561,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
          * Getting VariantStorageManager
          * We need to find out the Storage Engine Id to be used from Catalog
          */
-        DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
+        DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
         initVariantStorageManager(dataStore);
 
 
@@ -701,7 +701,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                 outDirId = catalogManager.getFileId(cliOptions.outdirId, sessionId);
             }
 
-            VariantStorage variantStorage = new VariantStorage(catalogManager);
+            VariantStatsStorageOperation variantStorage = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
 
             List<String> extraParams = cliOptions.commonOptions.params.entrySet()
                     .stream()
@@ -753,7 +753,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
          * Getting VariantStorageManager
          * We need to find out the Storage Engine Id to be used from Catalog
          */
-        DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
+        DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
         initVariantStorageManager(dataStore);
 
         /*

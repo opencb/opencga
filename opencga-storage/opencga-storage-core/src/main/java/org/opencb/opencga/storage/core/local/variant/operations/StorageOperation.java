@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core.local.variant;
+package org.opencb.opencga.storage.core.local.variant.operations;
 
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -24,9 +24,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.local.variant.CatalogStudyConfigurationFactory;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -39,21 +41,21 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
 
-import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.ERR_LOG_EXTENSION;
-import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.JOB_STATUS_FILE;
-import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.OUT_LOG_EXTENSION;
+import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.*;
 
 /**
  * Created by pfurio on 23/08/16.
  */
-public abstract class AbstractFileIndexer {
+public abstract class StorageOperation {
 
     protected final CatalogManager catalogManager;
+    protected final StorageManagerFactory storageManagerFactory;
     protected final Logger logger;
     private ObjectMapper objectMapper = new ObjectMapper();
 
-    public AbstractFileIndexer(CatalogManager catalogManager, Logger logger) {
+    public StorageOperation(CatalogManager catalogManager, StorageManagerFactory storageManagerFactory, Logger logger) {
         this.catalogManager = catalogManager;
+        this.storageManagerFactory = storageManagerFactory;
         this.logger = logger;
     }
 
@@ -76,17 +78,57 @@ public abstract class AbstractFileIndexer {
         }
     }
 
+    protected Long getCatalogOutdirId(long studyId, String catalogOutDirIdStr, String sessionId) throws CatalogException {
+        Long catalogOutDirId;
+        if (catalogOutDirIdStr != null) {
+            catalogOutDirId = catalogManager.getFileManager().getId(catalogOutDirIdStr, studyId, sessionId);
+            if (catalogOutDirId <= 0) {
+                throw new CatalogException("Output directory " + catalogOutDirIdStr + " could not be found within catalog.");
+            }
+        } else {
+            catalogOutDirId = null;
+        }
+        return catalogOutDirId;
+    }
+
     public StudyConfiguration updateStudyConfiguration(String sessionId, long studyId, DataStore dataStore)
             throws IOException, CatalogException, StorageManagerException {
+
+        CatalogStudyConfigurationFactory studyConfigurationFactory = new CatalogStudyConfigurationFactory(catalogManager);
         try (VariantDBAdaptor dbAdaptor = StorageManagerFactory.get().getVariantStorageManager(dataStore.getStorageEngine())
                 .getDBAdaptor(dataStore.getDbName());
              StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager()) {
-            new CatalogStudyConfigurationFactory(catalogManager)
-                    .updateStudyConfigurationFromCatalog(studyId, studyConfigurationManager, sessionId);
-            return studyConfigurationManager.getStudyConfiguration((int) studyId, null).first();
+
+            // Update StudyConfiguration. Add new elements and so
+            studyConfigurationFactory.updateStudyConfigurationFromCatalog(studyId, studyConfigurationManager, sessionId);
+            StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration((int) studyId, null).first();
+            // Update Catalog file and cohort status.
+            studyConfigurationFactory.updateCatalogFromStudyConfiguration(studyConfiguration, null, sessionId);
+            return studyConfiguration;
         } catch (StorageManagerException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
             throw new StorageManagerException("Unable to update StudyConfiguration", e);
         }
+    }
+
+    protected Thread buildHook(Path outdir) {
+        return buildHook(outdir, null);
+    }
+
+    protected Thread buildHook(Path outdir, Runnable onError) {
+        return new Thread(() -> {
+                try {
+                    // If the status has not been changed by the method and is still running, we assume that the execution failed.
+                    Job.JobStatus status = readJobStatus(outdir);
+                    if (status.getName().equalsIgnoreCase(Job.JobStatus.RUNNING)) {
+                        writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.ERROR, "Job finished with an error."));
+                        if (onError != null) {
+                            onError.run();
+                        }
+                    }
+                } catch (IOException e) {
+                    logger.error("Error modifying " + AbstractExecutor.JOB_STATUS_FILE, e);
+                }
+            });
     }
 
     protected List<File> copyResults(Path tmpOutdirPath, long catalogPathOutDir, String sessionId) throws CatalogException, IOException {
