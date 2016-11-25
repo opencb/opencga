@@ -29,17 +29,17 @@ public interface IWriter {
      * Prints the queryResponse to stdout.
      *
      * @param queryResponse queryResponse object to be printed.
-     * @param beauty boolean indicating whether to print with a beauty format.
+     * @param pretty boolean indicating whether to print with a pretty format.
      */
-    void print(QueryResponse queryResponse, boolean beauty);
+    void print(QueryResponse queryResponse, boolean pretty);
 
     /**
      * Writes the output from queryResponse to the file.
      *
      * @param queryResponse queryResponse object to be written.
      * @param filePath file where the output will be written.
-     * @param beauty boolean indicating whether to print with a beauty format.
+     * @param pretty boolean indicating whether to print with a pretty format.
      */
-    void writeToFile(QueryResponse queryResponse, Path filePath, boolean beauty);
+    void writeToFile(QueryResponse queryResponse, Path filePath, boolean pretty);
 
 }

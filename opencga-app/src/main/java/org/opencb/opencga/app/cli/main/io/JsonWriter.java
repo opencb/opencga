@@ -58,21 +58,21 @@ public class JsonWriter implements IWriter {
     }
 
     @Override
-    public void print(QueryResponse queryResponse, boolean beauty) {
+    public void print(QueryResponse queryResponse, boolean pretty) {
         if (!checkErrors(queryResponse)) {
-            generalPrint(queryResponse, beauty, System.out);
+            generalPrint(queryResponse, pretty, System.out);
         }
     }
 
     @Override
-    public void writeToFile(QueryResponse queryResponse, Path filePath, boolean beauty) {
+    public void writeToFile(QueryResponse queryResponse, Path filePath, boolean pretty) {
         if (checkErrors(queryResponse)) {
             return;
         }
 
         try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
             PrintStream ps = new PrintStream(fos);
-            generalPrint(queryResponse, beauty, ps);
+            generalPrint(queryResponse, pretty, ps);
 //            System.setOut(ps);
         } catch (IOException e) {
             // TODO: Throw exception?
@@ -101,9 +101,9 @@ public class JsonWriter implements IWriter {
         return errors;
     }
 
-    private void generalPrint(QueryResponse queryResponse, boolean beauty, PrintStream out) {
+    private void generalPrint(QueryResponse queryResponse, boolean pretty, PrintStream out) {
         ObjectWriter objectWriter;
-        if (beauty) {
+        if (pretty) {
             objectWriter = objectMapper.writerWithDefaultPrettyPrinter();
         } else {
             objectWriter = objectMapper.writer();
@@ -111,7 +111,7 @@ public class JsonWriter implements IWriter {
         try {
             out.println(objectWriter.writeValueAsString(queryResponse.getResponse()));
         } catch (IOException e) {
-            logger.error("Error parsing the queryResponse to print as " + (beauty ? "a beautiful" : "") + " JSON", e);
+            logger.error("Error parsing the queryResponse to print as " + (pretty ? "a beautiful" : "") + " JSON", e);
         }
     }
 }
