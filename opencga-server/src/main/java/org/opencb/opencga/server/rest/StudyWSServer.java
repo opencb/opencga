@@ -342,6 +342,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                 // Get all query options
                 QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
                 Query query = VariantStorageManager.getVariantQuery(queryOptions);
+                query.putIfAbsent(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
                 if (count) {
                     queryResult = variantManager.count(query, sessionId);
                 } else if (histogram) {

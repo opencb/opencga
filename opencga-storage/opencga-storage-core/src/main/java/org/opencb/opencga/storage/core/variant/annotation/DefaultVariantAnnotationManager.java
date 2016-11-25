@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant.annotation;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.feature.bed.Bed;
 import org.opencb.biodata.formats.feature.bed.io.BedReader;
 import org.opencb.biodata.formats.feature.gff.Gff;
@@ -88,16 +89,23 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
     @Override
     public void annotate(Query query, QueryOptions options) throws VariantAnnotatorException, IOException, StorageManagerException {
 
-        long start = System.currentTimeMillis();
-        logger.info("Starting annotation creation ");
-        URI annotationFile = createAnnotation(
-                Paths.get(options.getString(OUT_DIR, "/tmp")),
-                options.getString(FILE_NAME, "annotation_" + TimeUtils.getTime()),
-                query, options);
-        logger.info("Finished annotation creation {}ms, generated file {}", System.currentTimeMillis() - start, annotationFile);
+        String annotationFileStr = options.getString(LOAD_FILE);
+        URI annotationFile;
+        if (StringUtils.isEmpty(annotationFileStr)) {
+            long start = System.currentTimeMillis();
+            logger.info("Starting annotation creation");
+            logger.info("Query : {} ", query.toJson());
+            annotationFile = createAnnotation(
+                    Paths.get(options.getString(OUT_DIR, "/tmp")),
+                    options.getString(FILE_NAME, "annotation_" + TimeUtils.getTime()),
+                    query, options);
+            logger.info("Finished annotation creation {}ms, generated file {}", System.currentTimeMillis() - start, annotationFile);
+        } else {
+            annotationFile = URI.create(annotationFileStr);
+        }
 
-        start = System.currentTimeMillis();
-        logger.info("Starting annotation creation ");
+        long start = System.currentTimeMillis();
+        logger.info("Starting annotation load");
         loadAnnotation(annotationFile, options);
         logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
     }

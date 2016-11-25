@@ -80,7 +80,6 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
             StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyId, dataStore);
 
             VariantStorageManager variantStorageManager = storageManagerFactory.getVariantStorageManager(dataStore.getStorageEngine());
-
             variantStorageManager.annotate(dataStore.getDbName(), annotationQuery, annotationOptions);
 
             if (catalogOutDirId != null) {

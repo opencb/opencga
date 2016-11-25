@@ -870,14 +870,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         QueryBuilder builder = new QueryBuilder();
         if (query != null) {
             /** VARIANT PARAMS **/
-            if (query.get(VariantQueryParams.CHROMOSOME.key()) != null && !query.getString(VariantQueryParams.CHROMOSOME.key()).isEmpty()) {
+            if (isValidParam(query, VariantQueryParams.CHROMOSOME)) {
                 List<String> chromosomes = query.getAsStringList(VariantQueryParams.CHROMOSOME.key());
                 LinkedList<String> regions = new LinkedList<>(query.getAsStringList(VariantQueryParams.REGION.key()));
                 regions.addAll(chromosomes);
                 query.put(VariantQueryParams.REGION.key(), regions);
             }
 
-            if (query.get(VariantQueryParams.REGION.key()) != null && !query.getString(VariantQueryParams.REGION.key()).isEmpty()) {
+            if (isValidParam(query, VariantQueryParams.REGION)) {
                 List<String> stringList = query.getAsStringList(VariantQueryParams.REGION.key());
                 List<Region> regions = new ArrayList<>(stringList.size());
                 for (String reg : stringList) {
@@ -887,7 +887,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 getRegionFilter(regions, builder);
             }
 
-            if (query.get(VariantQueryParams.ID.key()) != null && !query.getString(VariantQueryParams.ID.key()).isEmpty()) {
+            if (isValidParam(query, VariantQueryParams.ID)) {
                 List<String> idsList = query.getAsStringList(VariantQueryParams.ID.key());
                 List<String> otherIds = new ArrayList<>(idsList.size());
                 List<String> mongoIds = new ArrayList<>(idsList.size());
@@ -919,24 +919,24 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 }
             }
 
-            if (query.containsKey(VariantQueryParams.GENE.key())) {
+            if (isValidParam(query, VariantQueryParams.GENE)) {
                 String xrefs = query.getString(VariantQueryParams.GENE.key());
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.XREFS_FIELD
                         + "." + DocumentToVariantAnnotationConverter.XREF_ID_FIELD, xrefs, builder, QueryOperation.OR);
             }
 
-            if (query.containsKey(VariantQueryParams.REFERENCE.key()) && query.getString(VariantQueryParams.REFERENCE.key()) != null) {
+            if (isValidParam(query, VariantQueryParams.REFERENCE)) {
                 addQueryStringFilter(DocumentToVariantConverter.REFERENCE_FIELD, query.getString(VariantQueryParams.REFERENCE.key()),
                         builder, QueryOperation.AND);
             }
 
-            if (query.containsKey(VariantQueryParams.ALTERNATE.key()) && query.getString(VariantQueryParams.ALTERNATE.key()) != null) {
+            if (isValidParam(query, VariantQueryParams.ALTERNATE)) {
                 addQueryStringFilter(DocumentToVariantConverter.ALTERNATE_FIELD, query.getString(VariantQueryParams.ALTERNATE.key()),
                         builder, QueryOperation.AND);
             }
 
-            if (query.containsKey(VariantQueryParams.TYPE.key()) && !query.getString(VariantQueryParams.TYPE.key()).isEmpty()) {
+            if (isValidParam(query, VariantQueryParams.TYPE)) {
                 addQueryFilter(DocumentToVariantConverter.TYPE_FIELD, query.getString(VariantQueryParams.TYPE.key()), builder,
                         QueryOperation.AND, s -> {
                             Set<VariantType> subTypes = Variant.subTypes(VariantType.valueOf(s));
@@ -964,19 +964,19 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     private void parseAnnotationQueryParams(Query query, QueryBuilder builder) {
         if (query != null) {
-            if (query.containsKey(VariantQueryParams.ANNOTATION_EXISTS.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOTATION_EXISTS)) {
                 builder.and(DocumentToVariantConverter.ANNOTATION_FIELD + "." + DocumentToVariantAnnotationConverter.ANNOT_ID_FIELD);
                 builder.exists(query.getBoolean(VariantQueryParams.ANNOTATION_EXISTS.key()));
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_XREF.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_XREF)) {
                 String xrefs = query.getString(VariantQueryParams.ANNOT_XREF.key());
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.XREFS_FIELD
                         + "." + DocumentToVariantAnnotationConverter.XREF_ID_FIELD, xrefs, builder, QueryOperation.AND);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_CONSEQUENCE_TYPE)) {
                 String value = query.getString(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key());
                 value = value.replace("SO:", "");
                 addQueryIntegerFilter(DocumentToVariantConverter.ANNOTATION_FIELD
@@ -984,14 +984,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         + "." + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD, value, builder, QueryOperation.AND);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_BIOTYPE.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_BIOTYPE)) {
                 String biotypes = query.getString(VariantQueryParams.ANNOT_BIOTYPE.key());
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CT_BIOTYPE_FIELD, biotypes, builder, QueryOperation.AND);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_POLYPHEN.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_POLYPHEN)) {
                 String value = query.getString(VariantQueryParams.ANNOT_POLYPHEN.key());
 //                addCompListQueryFilter(DocumentToVariantConverter.ANNOTATION_FIELD
 //                                + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
@@ -1001,7 +1001,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 addScoreFilter(value, builder, VariantQueryParams.ANNOT_POLYPHEN, DocumentToVariantAnnotationConverter.POLYPHEN);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_SIFT.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_SIFT)) {
                 String value = query.getString(VariantQueryParams.ANNOT_SIFT.key());
 //                addCompListQueryFilter(DocumentToVariantConverter.ANNOTATION_FIELD
 //                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
@@ -1010,17 +1010,17 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 addScoreFilter(value, builder, VariantQueryParams.ANNOT_SIFT, DocumentToVariantAnnotationConverter.SIFT);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION)) {
                 String value = query.getString(VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key());
                 addScoreFilter(value, builder, VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_CONSERVATION.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_CONSERVATION)) {
                 String value = query.getString(VariantQueryParams.ANNOT_CONSERVATION.key());
                 addScoreFilter(value, builder, VariantQueryParams.ANNOT_CONSERVATION);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_TRANSCRIPTION_FLAGS.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_TRANSCRIPTION_FLAGS)) {
                 String value = query.getString(VariantQueryParams.ANNOT_TRANSCRIPTION_FLAGS.key());
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
@@ -1028,23 +1028,23 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
 
             QueryBuilder geneTraitBuilder = QueryBuilder.start();
-            if (query.containsKey(VariantQueryParams.ANNOT_GENE_TRAITS_ID.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_GENE_TRAITS_ID)) {
                 String value = query.getString(VariantQueryParams.ANNOT_GENE_TRAITS_ID.key());
                 addQueryStringFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_ID_FIELD, value, geneTraitBuilder, QueryOperation.AND);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_GENE_TRAITS_NAME.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_GENE_TRAITS_NAME)) {
                 String value = query.getString(VariantQueryParams.ANNOT_GENE_TRAITS_NAME.key());
                 addCompQueryFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_NAME_FIELD, value, geneTraitBuilder, false);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_HPO.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_HPO)) {
                 String value = query.getString(VariantQueryParams.ANNOT_HPO.key());
                 addQueryStringFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_HPO_FIELD, value, geneTraitBuilder,
                         QueryOperation.AND);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_GO.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_GO)) {
                 String value = query.getString(VariantQueryParams.ANNOT_GO.key());
 
                 // Check if comma separated of semi colon separated (AND or OR)
@@ -1064,7 +1064,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_EXPRESSION.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_EXPRESSION)) {
                 String value = query.getString(VariantQueryParams.ANNOT_EXPRESSION.key());
 
                 // Check if comma separated of semi colon separated (AND or OR)
@@ -1090,31 +1090,31 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         + "." + DocumentToVariantAnnotationConverter.GENE_TRAIT_FIELD).elemMatch(geneTraitQuery);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_PROTEIN_KEYWORDS.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_PROTEIN_KEYWORDS)) {
                 String value = query.getString(VariantQueryParams.ANNOT_PROTEIN_KEYWORDS.key());
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_KEYWORDS, value, builder, QueryOperation.AND);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_DRUG.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_DRUG)) {
                 String value = query.getString(VariantQueryParams.ANNOT_DRUG.key());
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.DRUG_FIELD
                         + "." + DocumentToVariantAnnotationConverter.DRUG_NAME_FIELD, value, builder, QueryOperation.AND);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_FUNCTIONAL_SCORE)) {
                 String value = query.getString(VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key());
                 addScoreFilter(value, builder, VariantQueryParams.ANNOT_FUNCTIONAL_SCORE);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_CUSTOM.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_CUSTOM)) {
                 String value = query.getString(VariantQueryParams.ANNOT_CUSTOM.key());
                 addCompListQueryFilter(DocumentToVariantConverter.CUSTOM_ANNOTATION_FIELD, value, builder, true);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY)) {
                 String value = query.getString(VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key());
                 addFrequencyFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
@@ -1124,7 +1124,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 // (reference/alternate) where to check the frequency
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_POPULATION_REFERENCE_FREQUENCY.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_POPULATION_REFERENCE_FREQUENCY)) {
                 String value = query.getString(VariantQueryParams.ANNOT_POPULATION_REFERENCE_FREQUENCY.key());
                 addFrequencyFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
@@ -1134,7 +1134,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 // (reference/alternate) where to check the frequency
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY)) {
                 String value = query.getString(VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key());
                 addFrequencyFilter(DocumentToVariantConverter.ANNOTATION_FIELD + "."
                                 + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
@@ -1190,7 +1190,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             QueryBuilder studyBuilder = QueryBuilder.start();
             final StudyConfiguration defaultStudyConfiguration;
 
-            if (query.containsKey(VariantQueryParams.STUDIES.key())) { // && !options.getList("studies").isEmpty() && !options.getListAs
+            if (isValidParam(query, VariantQueryParams.STUDIES)) { // && !options.getList("studies").isEmpty() && !options.getListAs
                 String sidKey = STUDIES_FIELD + "." + DocumentToStudyVariantEntryConverter.STUDYID_FIELD;
                 // ("studies", String.class).get(0).isEmpty()) {
                 String value = objectToString(query.get(VariantQueryParams.STUDIES.key()));
@@ -1238,7 +1238,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 }
             }
 
-            if (query.containsKey(VariantQueryParams.FILES.key())) { // && !options.getList("files").isEmpty() && !options.getListAs
+            if (isValidParam(query, VariantQueryParams.FILES)) { // && !options.getList("files").isEmpty() && !options.getListAs
                 // ("files", String.class).get(0).isEmpty()) {
                 String fid = studyQueryPrefix
                         + DocumentToStudyVariantEntryConverter.FILES_FIELD + "."
@@ -1270,7 +1270,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         });
             }
 
-            if (query.containsKey(VariantQueryParams.GENOTYPE.key())) {
+            if (isValidParam(query, VariantQueryParams.GENOTYPE)) {
                 String sampleGenotypesCSV = query.getString(VariantQueryParams.GENOTYPE.key());
                 // we may need to know the study type
 //                studyConfigurationManager.getStudyConfiguration(1, null).getResult().get(0).

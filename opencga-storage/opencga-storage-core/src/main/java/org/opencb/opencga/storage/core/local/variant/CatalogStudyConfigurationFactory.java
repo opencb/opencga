@@ -257,8 +257,8 @@ public class CatalogStudyConfigurationFactory {
                 if (cohort.getStatus() == null || !cohort.getStatus().getName().equals(Cohort.CohortStatus.READY)) {
                     logger.debug("Cohort \"{}\":{} change status from {} to {}",
                             cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.CohortStatus.READY);
-                    ObjectMap updateParams = new ObjectMap("status.name", Cohort.CohortStatus.READY);
-                    catalogManager.modifyCohort(cohort.getId(), updateParams, new QueryOptions(), sessionId);
+                    catalogManager.getCohortManager().setStatus(String.valueOf(cohort.getId()), Cohort.CohortStatus.READY,
+                            "Update status from Storage", sessionId);
                 }
             }
         }
@@ -271,8 +271,8 @@ public class CatalogStudyConfigurationFactory {
                 if (cohort.getStatus() == null || !cohort.getStatus().getName().equals(Cohort.CohortStatus.INVALID)) {
                     logger.debug("Cohort \"{}\":{} change status from {} to {}",
                             cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.CohortStatus.INVALID);
-                    ObjectMap updateParams = new ObjectMap("status.name", Cohort.CohortStatus.INVALID);
-                    catalogManager.modifyCohort(cohort.getId(), updateParams, new QueryOptions(), sessionId);
+                    catalogManager.getCohortManager().setStatus(String.valueOf(cohort.getId()), Cohort.CohortStatus.INVALID,
+                            "Update status from Storage", sessionId);
                 }
             }
         }
