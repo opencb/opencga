@@ -18,11 +18,14 @@ package org.opencb.opencga.client.rest;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.client.rest.catalog.UserClient;
+
+import java.io.IOException;
 
 import static org.junit.Assert.*;
 
@@ -70,6 +73,19 @@ public class UserClientTest extends WorkEnvironmentTest {
     public void getProjects() throws Exception {
         QueryResponse<Project> projects = userClient.getProjects(null);
         assertEquals(1, projects.allResultsSize());
+    }
+
+
+    @Test
+    public void getProjectsLogout() throws IOException, CatalogException {
+        openCGAClient.logout();
+
+        QueryResponse<Project> projects = userClient.getProjects(new QueryOptions("userId", "user1"));
+        assertTrue(projects.getError().contains("session id"));
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Missing user id");
+        userClient.getProjects(null);
     }
 
     @Test
