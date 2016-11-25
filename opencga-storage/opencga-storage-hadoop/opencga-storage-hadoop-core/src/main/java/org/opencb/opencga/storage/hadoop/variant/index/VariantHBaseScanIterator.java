@@ -83,7 +83,8 @@ public class VariantHBaseScanIterator extends VariantDBIterator {
     }
 
     @Override
-    public void close() {
+    public void close() throws Exception {
+        super.close();
         logger.debug("Close variant iterator. Fetch = {}ms, Convert = {}ms",
                 getTimeFetching() / 1000000.0, getTimeConverting() / 1000000.0);
         resultScanner.close();

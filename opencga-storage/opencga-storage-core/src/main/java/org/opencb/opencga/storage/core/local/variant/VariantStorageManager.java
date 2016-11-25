@@ -235,10 +235,12 @@ public class VariantStorageManager extends StorageManager {
     public VariantDBIterator iterator(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageManagerException {
         long mainStudyId = getMainStudyId(query, sessionId);
-        // TODO: CLOSE THIS DBADAPTOR!!!!
+
         VariantDBAdaptor dbAdaptor = getVariantDBAdaptor(mainStudyId, sessionId);
         checkSamplesPermissions(query, queryOptions, dbAdaptor, sessionId);
-        return dbAdaptor.iterator();
+        VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
+        iterator.addCloseable(dbAdaptor);
+        return iterator;
     }
 
 //    public <T> VariantDBIterator<T> iterator(Query query, QueryOptions queryOptions, Class<T> clazz, String sessionId) {
