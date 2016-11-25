@@ -58,8 +58,8 @@ public class VariantStatsStorageOperation extends StorageOperation {
         super(catalogManager, StorageManagerFactory.get(storageConfiguration), LoggerFactory.getLogger(VariantStatsStorageOperation.class));
     }
 
-    public void calculateStats(long studyId, List<Long> cohortIds, String outdirStr, String catalogOutDirIdStr, String sessionId,
-                               QueryOptions options)
+    public void calculateStats(long studyId, List<Long> cohortIds, String outdirStr, String catalogOutDirIdStr,
+                               QueryOptions options, String sessionId)
             throws CatalogException, IOException, URISyntaxException, StorageManagerException {
         Job.Type step = Job.Type.COHORT_STATS;
         String fileIdStr = options.getString(Options.FILE_ID.key(), null);
@@ -331,38 +331,6 @@ public class VariantStatsStorageOperation extends StorageOperation {
         for (Long cohortId : cohortIds) {
             catalogManager.modifyCohort(cohortId, new ObjectMap("status.name", status), new QueryOptions(), sessionId);
         }
-    }
-
-//    /**
-//     * Accepts options:
-//     *      {@link ExecutorManager#EXECUTE}
-//     *      {@link ExecutorManager#SIMULATE}
-//     *      {@link AnalysisFileIndexer#LOG_LEVEL}
-//     *      {@link AnalysisFileIndexer#PARAMETERS}
-//     *      {@link AnalysisFileIndexer#CREATE}
-//     *      {@link AnalysisFileIndexer#LOAD}
-//     *      {@link VariantDBAdaptor.VariantQueryParams#REGION}
-//     *      {@link VariantDBAdaptor.VariantQueryParams#GENE}
-//     *      {@link VariantDBAdaptor.VariantQueryParams#CHROMOSOME}
-//     *      {@link VariantDBAdaptor.VariantQueryParams#ANNOT_CONSEQUENCE_TYPE}
-//     *      {@link VariantAnnotationManager#OVERWRITE_ANNOTATIONS}
-//     *      {@link DefaultVariantAnnotationManager#FILE_NAME}
-//     *      {@link VariantAnnotationManager#ANNOTATION_SOURCE}
-//     *      {@link VariantAnnotationManager#SPECIES}
-//     *      {@link VariantAnnotationManager#ASSEMBLY}
-//     *
-//     *
-//     * @param studyId
-//     * @param outDirId
-//     * @param sessionId
-//     * @param options
-//     * @return
-//     * @throws CatalogException
-//     * @throws AnalysisExecutionException
-//     */
-    @Deprecated
-    public QueryResult<Job> annotateVariants(long studyId, long outDirId, String sessionId, QueryOptions options) {
-        throw new UnsupportedOperationException();
     }
 
 

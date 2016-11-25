@@ -96,10 +96,10 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         // Query catalog for user data
         String userId = catalogManager.getUserManager().getId(sessionId);
         List<Long> fileIdsLong = fileManager.getIds(userId, fileIds);
-        return index(fileIdsLong, outdirString, sessionId, options);
+        return index(fileIdsLong, outdirString, options, sessionId);
     }
 
-    public List<StorageETLResult> index(List<Long> fileIds, String outdirString, String sessionId, QueryOptions options)
+    public List<StorageETLResult> index(List<Long> fileIds, String outdirString, QueryOptions options, String sessionId)
             throws CatalogException, IOException, StorageManagerException, URISyntaxException {
 
         URI outdirUri = UriUtils.createDirectoryUri(outdirString);

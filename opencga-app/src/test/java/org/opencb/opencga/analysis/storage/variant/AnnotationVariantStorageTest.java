@@ -35,10 +35,11 @@ import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.local.variant.operations.VariantAnnotationStorageOperation;
 import org.opencb.opencga.storage.core.local.variant.operations.VariantStatsStorageOperation;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,7 +92,8 @@ public class AnnotationVariantStorageTest {
 
         VariantStatsStorageOperation variantStorage = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
 
-        variantStorage.annotateVariants(studyId, outputId, sessionId, new QueryOptions(ExecutorManager.EXECUTE, true));
+        VariantAnnotationStorageOperation annotOp = new VariantAnnotationStorageOperation(catalogManager, storageConfiguration);
+        annotOp.annotateVariants(studyId, new Query(), null, String.valueOf(outputId), sessionId, new QueryOptions(ExecutorManager.EXECUTE, true));
 
         checkAnnotation(v -> true);
     }
@@ -101,12 +103,14 @@ public class AnnotationVariantStorageTest {
 
         VariantStatsStorageOperation variantStorage = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
 
-        variantStorage.annotateVariants(studyId, outputId, sessionId, new QueryOptions(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), "22")
+        VariantAnnotationStorageOperation annotOp1 = new VariantAnnotationStorageOperation(catalogManager, storageConfiguration);
+        annotOp1.annotateVariants(studyId, new Query(), null, String.valueOf(outputId), sessionId, new QueryOptions(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), "22")
                 .append(ExecutorManager.EXECUTE, true));
 
         checkAnnotation(v -> v.getChromosome().equals("22"));
 
-        variantStorage.annotateVariants(studyId, outputId, sessionId, new QueryOptions(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), "1")
+        VariantAnnotationStorageOperation annotOp = new VariantAnnotationStorageOperation(catalogManager, storageConfiguration);
+        annotOp.annotateVariants(studyId, new Query(), null, String.valueOf(outputId), sessionId, new QueryOptions(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), "1")
                 .append(ExecutorManager.EXECUTE, true));
 
         checkAnnotation(v -> v.getChromosome().equals("22") || v.getChromosome().equals("1"));
@@ -115,10 +119,10 @@ public class AnnotationVariantStorageTest {
     @Test
     public void testAnnotateCreateAndLoad() throws Exception {
 
-        VariantStatsStorageOperation variantStorage = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
-
-        Job job = variantStorage.annotateVariants(studyId, outputId, sessionId, new QueryOptions(AnalysisFileIndexer.CREATE, true)
-                .append(ExecutorManager.EXECUTE, true)).first();
+        VariantAnnotationStorageOperation annotOp = new VariantAnnotationStorageOperation(catalogManager, storageConfiguration);
+        annotOp.annotateVariants(studyId, new Query(), null, String.valueOf(outputId), sessionId, new QueryOptions(AnalysisFileIndexer.CREATE, true)
+                .append(ExecutorManager.EXECUTE, true));
+        Job job = null;
 
         System.out.println("job = " + job);
         File annotFile = catalogManager.searchFile(studyId,
@@ -127,8 +131,9 @@ public class AnnotationVariantStorageTest {
 
         checkAnnotation(v -> false);
 
-        job = variantStorage.annotateVariants(studyId, outputId, sessionId, new QueryOptions(AnalysisFileIndexer.LOAD, annotFile.getId())
-                .append(ExecutorManager.EXECUTE, true)).first();
+        annotOp.annotateVariants(studyId, new Query(), null, String.valueOf(outputId), sessionId, new QueryOptions(AnalysisFileIndexer.LOAD, annotFile.getId())
+                .append(ExecutorManager.EXECUTE, true));
+        job = null;
         System.out.println("job = " + job);
 
         checkAnnotation(v -> true);
@@ -139,23 +144,23 @@ public class AnnotationVariantStorageTest {
 
         VariantStatsStorageOperation variantStorage = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
 
-        variantStorage.annotateVariants(studyId, outputId, sessionId, new QueryOptions(ExecutorManager.EXECUTE, true));
+        VariantAnnotationStorageOperation annotOp = new VariantAnnotationStorageOperation(catalogManager, storageConfiguration);
+        annotOp.annotateVariants(studyId, new Query(), null, String.valueOf(outputId), sessionId, new QueryOptions(ExecutorManager.EXECUTE, true));
 
         checkAnnotation(v -> true);
 
         File file = opencga.createFile(studyId, "custom_annotation/myannot.gff", sessionId);
-        Job job = variantStorage.annotateVariants(studyId, outputId, sessionId, new QueryOptions()
+        annotOp.annotateVariants(studyId, new Query(), null, String.valueOf(outputId), sessionId, new QueryOptions()
                 .append(AnalysisFileIndexer.LOAD, file.getId())
-                .append(DefaultVariantAnnotationManager.CUSTOM_ANNOTATION_KEY, "myAnnot")
-                .append(ExecutorManager.EXECUTE, true)).first();
-        System.out.println("job = " + job);
+                .append(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, "myAnnot")
+                .append(ExecutorManager.EXECUTE, true));
 
         Assert.assertEquals(Collections.singleton("myAnnot"), checkAnnotation(v -> true));
 
         file = opencga.createFile(studyId, "custom_annotation/myannot.bed", sessionId);
-        variantStorage.annotateVariants(studyId, outputId, sessionId, new QueryOptions()
+        annotOp.annotateVariants(studyId, new Query(), null, String.valueOf(outputId), sessionId, new QueryOptions()
                 .append(AnalysisFileIndexer.LOAD, file.getId())
-                .append(DefaultVariantAnnotationManager.CUSTOM_ANNOTATION_KEY, "myAnnot2")
+                .append(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, "myAnnot2")
                 .append(ExecutorManager.EXECUTE, true));
 
         Assert.assertEquals(new HashSet<>(Arrays.asList("myAnnot", "myAnnot2")), checkAnnotation(v -> true));

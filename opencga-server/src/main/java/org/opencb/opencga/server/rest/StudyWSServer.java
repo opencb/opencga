@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
@@ -24,8 +25,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
-import org.opencb.opencga.storage.core.local.variant.operations.StorageOperation;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -36,6 +35,8 @@ import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.local.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.local.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import javax.servlet.http.HttpServletRequest;
@@ -335,16 +336,22 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             String[] studyIds = studyIdStrCvs.split(",");
             List<QueryResult> queryResults = new LinkedList<>();
-            VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
             for (String studyIdStr : studyIds) {
                 long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
+                QueryResult queryResult;
                 // Get all query options
                 QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+                Query query = VariantStorageManager.getVariantQuery(queryOptions);
                 if (count) {
-                    queryResults.add(variantFetcher.count(studyId, queryOptions, sessionId));
+                    queryResult = variantManager.count(query, sessionId);
+                } else if (histogram) {
+                    queryResult = variantManager.getFrequency(query, interval, sessionId);
+                } else if (StringUtils.isNotEmpty(groupBy)) {
+                    queryResult = variantManager.groupBy(groupBy, query, queryOptions, sessionId);
                 } else {
-                    queryResults.add(variantFetcher.getVariantsPerStudy(studyId, region, histogram, groupBy, interval, sessionId, queryOptions));
+                    queryResult = variantManager.get(query, queryOptions, sessionId);
                 }
+                queryResults.add(queryResult);
             }
             return createOkResponse(queryResults);
         } catch (Exception e) {

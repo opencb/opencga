@@ -72,7 +72,6 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
     public static final String BATCH_SIZE = "batchSize";
     public static final String NUM_WRITERS = "numWriters";
     public static final String NUM_THREADS = "numThreads";
-    public static final String CUSTOM_ANNOTATION_KEY = "custom_annotation_key";
 
     private VariantDBAdaptor dbAdaptor;
     private VariantAnnotator variantAnnotator;

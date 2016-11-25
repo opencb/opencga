@@ -118,7 +118,7 @@ public class PlatinumFileIndexerTest extends AbstractAnalysisFileIndexerTest {
         //Create transform index job
 //        Job job = fileIndexer.index(inputFile.getId(), outputId, sessionId, queryOptions).first();
         String tmpOutdir = opencga.createTmpOutdir(studyId, "_TRANSFORM_" + inputFile.getId(), sessionId);
-        List<StorageETLResult> results = fileIndexer.index(Collections.singletonList(inputFile.getId()), tmpOutdir, sessionId, queryOptions);
+        List<StorageETLResult> results = fileIndexer.index(Collections.singletonList(inputFile.getId()), tmpOutdir, queryOptions, sessionId);
         // TODO: Check TRANSFORMING status!
 //        assertEquals(FileIndex.IndexStatus.TRANSFORMING, catalogManager.getFile(inputFile.getId(), sessionId).first().getIndex().getStatus().getName());
 
@@ -151,7 +151,7 @@ public class PlatinumFileIndexerTest extends AbstractAnalysisFileIndexerTest {
         String idsStr = inputFiles.stream().map((file) -> String.valueOf(file.getId())).collect(Collectors.joining("_"));
         //Create transform index job
         String tmpOutdir = opencga.createTmpOutdir(studyId, "_LOAD_" + idsStr, sessionId);
-        List<StorageETLResult> results = fileIndexer.index(ids, tmpOutdir, sessionId, queryOptions);
+        List<StorageETLResult> results = fileIndexer.index(ids, tmpOutdir, queryOptions, sessionId);
 
         //TODO: Check loading status!
 //        long indexedFileId = ((Number) job.getAttributes().get(Job.INDEXED_FILE_ID)).longValue();

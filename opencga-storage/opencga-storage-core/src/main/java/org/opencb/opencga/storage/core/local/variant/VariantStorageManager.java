@@ -89,14 +89,12 @@ public class VariantStorageManager extends StorageManager {
     //   Data Operation methods  //
     // --------------------------//
 
-    public List<StorageETLResult> index(String fileId, String outDir, String catalogOutDir, String studyId,
-                                        ObjectMap config, String sessionId)
+    public List<StorageETLResult> index(String fileId, String outDir, String catalogOutDir, ObjectMap config, String sessionId)
             throws CatalogException, StorageManagerException, IOException, URISyntaxException {
-        return index(Collections.singletonList(fileId), outDir, catalogOutDir, studyId, config, sessionId);
+        return index(Arrays.asList(fileId.split(",")), outDir, catalogOutDir, config, sessionId);
     }
 
-    public List<StorageETLResult> index(List<String> files, String outDir, String catalogOutDir, String studyId,
-                                        ObjectMap config, String sessionId)
+    public List<StorageETLResult> index(List<String> files, String outDir, String catalogOutDir, ObjectMap config, String sessionId)
             throws CatalogException, StorageManagerException, IOException, URISyntaxException {
         VariantFileIndexerStorageOperation indexOperation = new VariantFileIndexerStorageOperation(catalogManager, storageConfiguration);
 
@@ -107,7 +105,7 @@ public class VariantStorageManager extends StorageManager {
         }
         QueryOptions options = new QueryOptions(config);
         options.putIfNotNull(VariantFileIndexerStorageOperation.CATALOG_PATH, catalogOutDir);
-        return indexOperation.index(fileIds, outDir, sessionId, options);
+        return indexOperation.index(fileIds, outDir, options, sessionId);
     }
 
     public void deleteStudy(String studyId, String sessionId) {
@@ -140,7 +138,7 @@ public class VariantStorageManager extends StorageManager {
             cohortIds.add(cohortId);
         }
         long studyId = catalogManager.getStudyId(study, sessionId);
-        statsOperation.calculateStats(studyId, cohortIds, outDir, catalogOutDir, sessionId, new QueryOptions(config));
+        statsOperation.calculateStats(studyId, cohortIds, outDir, catalogOutDir, new QueryOptions(config), sessionId);
     }
 
     public void deleteStats(List<String> cohorts, String studyId, String sessionId) {
@@ -194,9 +192,10 @@ public class VariantStorageManager extends StorageManager {
         return (QueryResult) secure(query, sessionId, dbAdaptor -> dbAdaptor.groupBy(query, field, queryOptions));
     }
 
-    public QueryResult rank(Query query, String field, int limt, boolean asc, String sessionId)
+    public QueryResult rank(Query query, String field, int limit, boolean asc, String sessionId)
             throws StorageManagerException, CatalogException, IOException {
-        return (QueryResult) secure(query, sessionId, dbAdaptor -> dbAdaptor.rank(query, field, limt, asc));
+        getDefaultLimit(limit, 30, 10);
+        return (QueryResult) secure(query, sessionId, dbAdaptor -> dbAdaptor.rank(query, field, limit, asc));
     }
 
     public QueryResult<Long> count(Query query, String sessionId) throws CatalogException, StorageManagerException, IOException {
@@ -363,12 +362,16 @@ public class VariantStorageManager extends StorageManager {
 
     private int addDefaultLimit(QueryOptions queryOptions, int limitMax, int limitDefault) {
         // Add default limit
-        int limit = queryOptions.getInt("limit", -1);
+        int limit = getDefaultLimit(queryOptions.getInt(QueryOptions.LIMIT, -1), limitMax, limitDefault);
+        queryOptions.put(QueryOptions.LIMIT,  limit);
+        return limit;
+    }
+
+    private int getDefaultLimit(int limit, int limitMax, int limitDefault) {
         if (limit > limitMax) {
             logger.info("Unable to return more than {} variants. Change limit from {} to {}", limitMax, limit, limitMax);
         }
         limit = (limit > 0) ? Math.min(limit, limitMax) : limitDefault;
-        queryOptions.put("limit",  limit);
         return limit;
     }
 

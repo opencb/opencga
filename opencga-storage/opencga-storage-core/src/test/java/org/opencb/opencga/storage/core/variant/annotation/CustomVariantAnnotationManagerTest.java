@@ -36,7 +36,7 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.ANNOT_CUSTOM;
-import static org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager.CUSTOM_ANNOTATION_KEY;
+import static org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.CUSTOM_ANNOTATION_KEY;
 
 /**
  * Created on 16/05/16
