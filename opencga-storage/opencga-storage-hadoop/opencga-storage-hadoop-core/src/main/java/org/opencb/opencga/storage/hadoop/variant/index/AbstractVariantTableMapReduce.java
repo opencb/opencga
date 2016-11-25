@@ -266,11 +266,8 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
         this.studyConfiguration = getHelper().loadMeta(); // Variant meta
 
         // Load VCF meta data for columns
-        Map<Integer, VcfMeta> vcfMetaMap = loadVcfMetaMap(context.getConfiguration()); // Archive meta
-        vcfMetaMap.forEach((k, v) -> LOG.info(
-                "Loaded Meta Map: File id idx {}; FileId: {} Study {};",
-                k, v.getVariantSource().getFileId(), v.getVariantSource().getStudyId()));
-        resultConverter = new ArchiveResultToVariantConverter(vcfMetaMap, helper.getColumnFamily());
+        resultConverter = new ArchiveResultToVariantConverter(
+                studyConfiguration.getStudyId(), helper.getColumnFamily(), this.studyConfiguration);
         hbaseToVariantConverter = new HBaseToVariantConverter(this.helper,
                 new HBaseStudyConfigurationManager(this.helper, this.helper.getOutputTableAsString(),
                         this.helper.getConf(), new ObjectMap())).setFailOnEmptyVariants(true).setSimpleGenotypes(false);
@@ -281,7 +278,6 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
             throw new IllegalStateException(
                     "File IDs to be indexed not found in configuration: " + AbstractVariantTableDriver.CONFIG_VARIANT_FILE_IDS);
         }
-
         Set<String> toIndexSampleNames = new HashSet<>();
         Set<Integer> toIndexFileIdSet = Arrays.stream(toIdxFileIds).map(id -> Integer.valueOf(id)).collect(Collectors.toSet());
         BiMap<Integer, String> sampleIdToSampleName = StudyConfiguration.inverseMap(studyConfiguration.getSampleIds());

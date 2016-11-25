@@ -414,20 +414,20 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
             }
             return Collections.emptyList();
         }
+        getLog().info("Search archive for " + archiveFileIds.size() + " files ... ");
         if (getLog().isDebugEnabled()) {
             getLog().debug("Add files to search in archive: " + StringUtils.join(archiveFileIds, ','));
         }
         Get get = new Get(rowKey);
         byte[] cf = getHelper().getColumnFamily();
         archiveFileIds.forEach(e -> get.addColumn(cf, Bytes.toBytes(e)));
-        Result res = getHelper().getHBaseManager().act(getHelper().getIntputTable(), table -> {
-            return table.get(get);
-        });
+        Result res = getHelper().getHBaseManager().act(getHelper().getIntputTable(), table -> table.get(get));
         if (res.isEmpty()) {
             getLog().warn("No data found in archive table!!!");
             return Collections.emptyList();
         }
         List<Variant> var = getResultConverter().convert(res, true);
+        getLog().info("Loaded " + var.size() + " variants ... ");
         return var;
     }
 

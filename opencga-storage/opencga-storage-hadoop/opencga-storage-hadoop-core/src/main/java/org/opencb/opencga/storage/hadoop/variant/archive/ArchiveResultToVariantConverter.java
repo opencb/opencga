@@ -24,9 +24,9 @@ import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.tools.variant.converter.VcfSliceToVariantListConverter;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VariantLocalConflictResolver;
 import org.slf4j.Logger;
@@ -41,13 +41,15 @@ import java.util.stream.Collectors;
  */
 public class ArchiveResultToVariantConverter {
     private final Logger LOG = LoggerFactory.getLogger(ArchiveResultToVariantConverter.class);
+    private final int studyId;
+    private final StudyConfiguration sc;
     private byte[] columnFamily;
-    private HashMap<Integer, VcfMeta> metaIdx;
     private Map<Integer, VcfSliceToVariantListConverter> fileidToConverter = new HashMap<Integer, VcfSliceToVariantListConverter>();
 
-    public ArchiveResultToVariantConverter(Map<Integer, VcfMeta> metaIdx, byte[] columnFamily) {
+    public ArchiveResultToVariantConverter(int studyId, byte[] columnFamily, StudyConfiguration sc) {
+        this.studyId = studyId;
         this.columnFamily = columnFamily;
-        this.metaIdx = new HashMap<>(metaIdx);
+        this.sc = sc;
     }
 
     public List<Variant> convert(Result value, Long start, Long end, boolean resolveConflict) throws InvalidProtocolBufferException {
@@ -103,7 +105,13 @@ public class ArchiveResultToVariantConverter {
     private VcfSliceToVariantListConverter loadConverter(int fileId) {
         VcfSliceToVariantListConverter converter = fileidToConverter.get(fileId);
         if (converter == null) {
-            converter = new VcfSliceToVariantListConverter(this.metaIdx.get(fileId));
+            LinkedHashSet<Integer> sampleIds = sc.getSamplesInFiles().get(fileId);
+            Map<String, Integer> thisFileSamplePositions = new LinkedHashMap<>();
+            for (Integer sampleId : sampleIds) {
+                String sampleName = sc.getSampleIds().inverse().get(sampleId);
+                thisFileSamplePositions.put(sampleName, thisFileSamplePositions.size());
+            }
+            converter = new VcfSliceToVariantListConverter(thisFileSamplePositions, Integer.toString(fileId), Integer.toString(studyId));
             fileidToConverter.put(fileId, converter);
         }
         return converter;
