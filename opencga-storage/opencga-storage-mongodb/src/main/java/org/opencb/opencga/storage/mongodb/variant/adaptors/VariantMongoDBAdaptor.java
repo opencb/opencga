@@ -259,13 +259,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (options == null) {
             options = new QueryOptions();
         }
-
+/*
         QueryResult<Variant> queryResult;
 
         if (options.getBoolean("cache") && cacheManager.isTypeAllowed("var")) {
             List<Integer> studyIds = utils.getStudyIds(query.getAsList(VariantQueryParams.STUDIES.key()), options);
             // TODO : ONLY USING ONE STUDY ID ?
-            String key = cacheManager.createKey(studyIds.get(0).toString(), "var", query, options);
+            String key = cacheManager.createKey(studyIds.get(0).toString(), "","", "var", query, options);
             queryResult = cacheManager.get(key);
             if (queryResult.getResult() != null && queryResult.getResult().size() != 0) {
                 return queryResult;
@@ -274,9 +274,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 cacheManager.set(key, query, queryResult);
             }
         } else {
+*/
             return getVariantQueryResult(query, options);
-        }
-        return queryResult;
+        /*}
+        return queryResult;*/
     }
 
     private QueryResult<Variant> getVariantQueryResult(Query query, QueryOptions options) {

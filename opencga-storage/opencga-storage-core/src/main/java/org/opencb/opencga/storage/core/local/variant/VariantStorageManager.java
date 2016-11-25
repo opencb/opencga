@@ -276,15 +276,37 @@ public class VariantStorageManager extends StorageManager {
 
     // Permission related methods
 
-    private <R> R secure(Query query, String sessionId, Function<VariantDBAdaptor, R> supplier)
+    private <R> QueryResult<R> secure(Query query, String sessionId, Function<VariantDBAdaptor, QueryResult<R>> supplier)
             throws CatalogException, StorageManagerException, IOException {
         long studyId = getMainStudyId(query, sessionId);
 
         try (VariantDBAdaptor dbAdaptor = getVariantDBAdaptor(studyId, sessionId)) {
             checkSamplesPermissions(query, null, dbAdaptor, sessionId);
-
-            return supplier.apply(dbAdaptor);
+            return getCacheOrDB(query, new QueryOptions(), studyId, sessionId, dbAdaptor, supplier);
         }
+    }
+
+    private <R> QueryResult<R> getCacheOrDB(Query query, QueryOptions options, Long studyId, String sessionId,
+             VariantDBAdaptor dbAdaptor, Function<VariantDBAdaptor, QueryResult<R>> supplier) throws CatalogException {
+
+        QueryResult<R> queryResult;
+
+        if (isCacheEnabled(options)) {
+            String redisKey = cacheManager.createKey(studyId, catalogManager.getUserIdBySessionId(sessionId), "var", query, options);
+            queryResult = cacheManager.get(redisKey);
+            if (queryResult.getResult() != null && queryResult.getResult().size() != 0) {
+                return queryResult;
+            } else {
+                queryResult = supplier.apply(dbAdaptor);
+                cacheManager.set(redisKey, query, (QueryResult) queryResult);
+                return queryResult;
+            }
+        }
+        return supplier.apply(dbAdaptor);
+    }
+
+    private boolean isCacheEnabled(QueryOptions options) {
+        return options.getBoolean("cache") && cacheManager.isTypeAllowed("var");
     }
 
     private Map<Long, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, VariantDBAdaptor dbAdaptor,
@@ -368,7 +390,7 @@ public class VariantStorageManager extends StorageManager {
             logger.info("Unable to return more than {} variants. Change limit from {} to {}", limitMax, limit, limitMax);
         }
         limit = (limit > 0) ? Math.min(limit, limitMax) : limitDefault;
-        queryOptions.put("limit",  limit);
+        queryOptions.put("limit", limit);
         return limit;
     }
 

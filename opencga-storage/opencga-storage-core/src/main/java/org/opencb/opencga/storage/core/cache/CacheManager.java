@@ -71,7 +71,6 @@ public class CacheManager {
             }
 
             redisState = true;
-
 //            redissonClient = Redisson.create(redissonConfig);
             redissonClient = null;
         }
@@ -122,13 +121,13 @@ public class CacheManager {
         }
     }
 
-    public String createKey(String studyId, String allowedType, Query query, QueryOptions queryOptions) {
+    public String createKey(Long studyId, String userId, String allowedType, Query query, QueryOptions queryOptions) {
 
         queryOptions.remove("cache");
         queryOptions.remove("sId");
 
         StringBuilder key = new StringBuilder(PREFIX_DATABASE_KEY);
-        key.append(studyId).append(":").append(allowedType);
+        key.append(studyId).append(":").append(userId).append(":").append(allowedType);
         SortedMap<String, SortedSet<Object>> map = new TreeMap<>();
 
         for (String item : query.keySet()) {
