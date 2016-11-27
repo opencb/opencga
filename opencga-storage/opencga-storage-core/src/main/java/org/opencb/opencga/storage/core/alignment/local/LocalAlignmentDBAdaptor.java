@@ -96,10 +96,10 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
             String queryResultId;
             List<ReadAlignment> readAlignmentList;
             if (region != null) {
-                readAlignmentList = alignmentManager.query(region, alignmentOptions, alignmentFilters, ReadAlignment.class);
+                readAlignmentList = alignmentManager.query(region, alignmentFilters, alignmentOptions, ReadAlignment.class);
                 queryResultId = region.toString();
             } else {
-                readAlignmentList = alignmentManager.query(alignmentOptions, alignmentFilters, ReadAlignment.class);
+                readAlignmentList = alignmentManager.query(alignmentFilters, alignmentOptions, ReadAlignment.class);
                 queryResultId = "Get alignments";
             }
 //            List<String> stringFormatList = new ArrayList<>(readAlignmentList.size());
@@ -107,6 +107,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
 //                stringFormatList.add(readAlignment());
 //            }
 //            List<JsonFormat> list = alignmentManager.query(region, alignmentOptions, alignmentFilters, Reads.ReadAlignment.class);
+            alignmentManager.close();
             watch.stop();
             return new QueryResult(queryResultId, ((int) watch.getTime()), readAlignmentList.size(), readAlignmentList.size(), null, null,
                     readAlignmentList);
