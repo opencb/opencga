@@ -478,7 +478,8 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<FileIndex> updateFileIndexStatus(File file, String newStatus, String sessionId) throws CatalogException {
+    public QueryResult<FileIndex> updateFileIndexStatus(File file, String newStatus, String message, String sessionId)
+            throws CatalogException {
         String userId = catalogManager.getUserManager().getId(sessionId);
         authorizationManager.checkFilePermission(file.getId(), userId, FileAclEntry.FilePermissions.UPDATE);
 
@@ -486,18 +487,17 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (index != null) {
             if (!FileIndex.IndexStatus.isValid(newStatus)) {
                 throw new CatalogException("The status " + newStatus + " is not a valid status.");
-            }
-
-//                index.setStatus(newStatus);
-            if (FileIndex.IndexStatus.isValid(newStatus)) {
+            } else {
                 index.getStatus().setName(newStatus);
                 index.getStatus().setCurrentDate();
+                index.getStatus().setMessage(message);
             }
         } else {
             index = new FileIndex(userId, TimeUtils.getTime(), new FileIndex.IndexStatus(newStatus), -1, new ObjectMap());
         }
         ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.INDEX.key(), index);
         fileDBAdaptor.update(file.getId(), params);
+        auditManager.recordUpdate(AuditRecord.Resource.file, file.getId(), userId, params, null, null);
 
         return new QueryResult<>("Update file index", 0, 1, 1, "", "", Arrays.asList(index));
     }
