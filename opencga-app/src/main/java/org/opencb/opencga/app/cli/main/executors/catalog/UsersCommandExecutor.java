@@ -154,6 +154,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, usersCommandOptions.infoCommandOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, usersCommandOptions.infoCommandOptions.exclude);
         queryOptions.putIfNotEmpty(UserDBAdaptor.QueryParams.LAST_MODIFIED.key(), usersCommandOptions.infoCommandOptions.lastModified);
+        queryOptions.putIfNotNull("userId", usersCommandOptions.infoCommandOptions.user);
 
         return openCGAClient.getUserClient().get(queryOptions);
     }
@@ -166,6 +167,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, usersCommandOptions.projectsCommandOptions.exclude);
         queryOptions.putIfNotEmpty(QueryOptions.LIMIT, usersCommandOptions.projectsCommandOptions.limit);
         queryOptions.putIfNotEmpty(QueryOptions.SKIP, usersCommandOptions.projectsCommandOptions.skip);
+        queryOptions.putIfNotEmpty("userId", usersCommandOptions.projectsCommandOptions.user);
 
         return openCGAClient.getUserClient().getProjects(queryOptions);
     }
@@ -210,7 +212,9 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
     private void resetPasword() throws CatalogException, IOException {
         logger.debug("Resetting the user password and sending a new one to the e-mail stored in catalog.");
-        openCGAClient.getUserClient().resetPassword(new ObjectMap());
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull("userId", usersCommandOptions.resetPasswordCommandOptions.user);
+        openCGAClient.getUserClient().resetPassword(params);
     }
 
     private void delete() throws CatalogException, IOException {
