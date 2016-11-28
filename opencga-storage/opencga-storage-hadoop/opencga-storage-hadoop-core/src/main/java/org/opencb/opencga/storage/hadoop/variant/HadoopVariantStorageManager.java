@@ -347,7 +347,8 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             }
             boolean resume = conf.getBoolean(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT_RESUME, false);
             BatchFileOperation operation =
-                    etl.addBatchOperation(studyConfiguration, VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList, resume);
+                    etl.addBatchOperation(studyConfiguration, VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList, resume,
+                            BatchFileOperation.Type.REMOVE);
             options.put(AbstractVariantTableDriver.TIMESTAMP, operation.getTimestamp());
             scm.updateStudyConfiguration(studyConfiguration, null);
         } finally {

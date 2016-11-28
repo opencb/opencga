@@ -392,7 +392,8 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                         throw new IllegalStateException("Unknown status: " + operation.currentStatus());
                 }
             } else {
-                operation = new BatchFileOperation(STAGE.key(), Collections.singletonList(fileId), System.currentTimeMillis());
+                operation = new BatchFileOperation(STAGE.key(), Collections.singletonList(fileId), System.currentTimeMillis(),
+                        BatchFileOperation.Type.OTHER);
                 studyConfiguration.getBatches().add(operation);
             }
             if (stage) {
@@ -634,7 +635,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
             }
 
             if (operation == null) {
-                operation = new BatchFileOperation(MERGE.key(), fileIds, System.currentTimeMillis());
+                operation = new BatchFileOperation(MERGE.key(), fileIds, System.currentTimeMillis(), BatchFileOperation.Type.LOAD);
                 studyConfiguration.getBatches().add(operation);
                 operation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
             } else if (operation.currentStatus() == BatchFileOperation.Status.ERROR) {

@@ -82,7 +82,7 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
     public void stageResumeFromErrorTest() throws Exception {
         StudyConfiguration studyConfiguration = createStudyConfiguration();
         BatchFileOperation operation = new BatchFileOperation(MongoDBVariantOptions.STAGE.key(),
-                Collections.singletonList(FILE_ID), System.currentTimeMillis());
+                Collections.singletonList(FILE_ID), System.currentTimeMillis(), BatchFileOperation.Type.OTHER);
         operation.addStatus(new Date(System.currentTimeMillis() - 100), BatchFileOperation.Status.RUNNING);
         operation.addStatus(new Date(System.currentTimeMillis() - 50), BatchFileOperation.Status.ERROR);
         // Last status is ERROR
@@ -106,7 +106,7 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
     public void stageForceResumeTest() throws Exception {
         StudyConfiguration studyConfiguration = createStudyConfiguration();
         BatchFileOperation operation = new BatchFileOperation(MongoDBVariantOptions.STAGE.key(),
-                Collections.singletonList(FILE_ID), System.currentTimeMillis());
+                Collections.singletonList(FILE_ID), System.currentTimeMillis(), BatchFileOperation.Type.OTHER);
         operation.addStatus(new Date(System.currentTimeMillis() - 100), BatchFileOperation.Status.RUNNING);
         operation.addStatus(new Date(System.currentTimeMillis() - 50), BatchFileOperation.Status.ERROR);
         operation.addStatus(new Date(System.currentTimeMillis()), BatchFileOperation.Status.RUNNING);
@@ -292,7 +292,7 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
             thread.start();
             Thread.sleep(200);
 
-            BatchFileOperation opInProgress = new BatchFileOperation(MongoDBVariantOptions.MERGE.key(), Collections.singletonList(FILE_ID), 0);
+            BatchFileOperation opInProgress = new BatchFileOperation(MongoDBVariantOptions.MERGE.key(), Collections.singletonList(FILE_ID), 0, BatchFileOperation.Type.OTHER);
             opInProgress.addStatus(BatchFileOperation.Status.RUNNING);
             MongoVariantStorageManagerException expected = MongoVariantStorageManagerException.operationInProgressException(opInProgress);
             thrown.expect(StorageETLException.class);
@@ -340,7 +340,7 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
             thread.start();
             Thread.sleep(200);
 
-            BatchFileOperation opInProgress = new BatchFileOperation(MongoDBVariantOptions.MERGE.key(), Collections.singletonList(FILE_ID), 0);
+            BatchFileOperation opInProgress = new BatchFileOperation(MongoDBVariantOptions.MERGE.key(), Collections.singletonList(FILE_ID), 0, BatchFileOperation.Type.OTHER);
             opInProgress.addStatus(BatchFileOperation.Status.RUNNING);
             MongoVariantStorageManagerException expected = MongoVariantStorageManagerException.operationInProgressException(opInProgress);
             thrown.expect(StorageETLException.class);
