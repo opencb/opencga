@@ -133,6 +133,9 @@ public class VariantStorageManager extends StorageManager {
 
         List<Long> cohortIds = new ArrayList<>(cohorts.size());
         for (String cohort : cohorts) {
+            if (!cohort.contains(":")) {
+                cohort = study + ":" + cohort;
+            }
             long cohortId = catalogManager.getCohortId(cohort, sessionId);
             cohortIds.add(cohortId);
         }
