@@ -72,16 +72,14 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
 //                    Collections.singletonList(studyId));
 
             QueryOptions annotationOptions = new QueryOptions(options)
-                    .append(DefaultVariantAnnotationManager.OUT_DIR, outdirUri.getPath())
-                    .append(DefaultVariantAnnotationManager.FILE_NAME, outputFileName);
-
+                    .append(DefaultVariantAnnotationManager.OUT_DIR, outdirUri.getPath());
+            options.putIfAbsent(DefaultVariantAnnotationManager.FILE_NAME, outputFileName);
 
             DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
             // TODO: Needed?
             StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyId, dataStore);
 
             VariantStorageManager variantStorageManager = storageManagerFactory.getVariantStorageManager(dataStore.getStorageEngine());
-
             variantStorageManager.annotate(dataStore.getDbName(), annotationQuery, annotationOptions);
 
             if (catalogOutDirId != null) {
@@ -98,7 +96,6 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
             // Remove hook
             Runtime.getRuntime().removeShutdownHook(hook);
         }
-
     }
 
     private String buildOutputFileName(String studyName, List<Region> regions) {

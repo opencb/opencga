@@ -226,12 +226,12 @@ public class StatsVariantStorageTest {
     public void calculateStats(VariantStatsStorageOperation variantStorage, long cohortId, QueryOptions options) throws Exception {
         String tmpOutdir = createTmpOutdir("_STATS_" + cohortId);
         List<Long> cohortIds = Collections.singletonList(cohortId);
-        variantStorage.calculateStats(catalogManager.getStudyIdByCohortId(cohortId), cohortIds, tmpOutdir, String.valueOf(outputId), sessionId, options);
+        variantStorage.calculateStats(catalogManager.getStudyIdByCohortId(cohortId), cohortIds, tmpOutdir, String.valueOf(outputId), options, sessionId);
     }
 
     public void calculateStats(VariantStatsStorageOperation variantStorage, List<Long> cohortIds, QueryOptions options) throws Exception {
         String tmpOutdir = createTmpOutdir("_STATS_" + cohortIds.stream().map(Object::toString).collect(Collectors.joining("_")));
-        variantStorage.calculateStats(studyId, cohortIds, tmpOutdir, String.valueOf(outputId), sessionId, options);
+        variantStorage.calculateStats(studyId, cohortIds, tmpOutdir, String.valueOf(outputId), options, sessionId);
     }
 
     @Test

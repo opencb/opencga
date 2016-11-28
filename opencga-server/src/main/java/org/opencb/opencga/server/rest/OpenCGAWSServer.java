@@ -43,6 +43,7 @@ import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.local.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceJsonMixin;
@@ -129,6 +130,7 @@ public class OpenCGAWSServer {
 
     protected static StorageConfiguration storageConfiguration;
     protected static StorageManagerFactory storageManagerFactory;
+    protected static VariantStorageManager variantManager;
 
     private static final int DEFAULT_LIMIT = 2000;
     private static final int MAX_LIMIT = 5000;
@@ -243,6 +245,7 @@ public class OpenCGAWSServer {
             storageConfiguration = StorageConfiguration
                     .load(new FileInputStream(new File(configDir.toFile().getAbsolutePath() + "/storage-configuration.yml")));
             storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
+            variantManager = new VariantStorageManager(catalogManager, storageConfiguration);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (CatalogException e) {

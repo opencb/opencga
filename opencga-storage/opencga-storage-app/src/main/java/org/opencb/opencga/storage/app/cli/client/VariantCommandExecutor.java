@@ -397,7 +397,7 @@ public class VariantCommandExecutor extends CommandExecutor {
             options.put(VariantAnnotationManager.ANNOTATION_SOURCE, annotateVariantsCommandOptions.annotator);
         }
         if (annotateVariantsCommandOptions.customAnnotationKey != null) {
-            options.put(DefaultVariantAnnotationManager.CUSTOM_ANNOTATION_KEY, annotateVariantsCommandOptions.customAnnotationKey);
+            options.put(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, annotateVariantsCommandOptions.customAnnotationKey);
         }
         if (annotateVariantsCommandOptions.species != null) {
             options.put(VariantAnnotationManager.SPECIES, annotateVariantsCommandOptions.species);

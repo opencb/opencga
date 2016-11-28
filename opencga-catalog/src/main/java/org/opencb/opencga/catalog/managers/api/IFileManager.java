@@ -106,7 +106,7 @@ public interface IFileManager extends ResourceManager<Long, File> {
 
     boolean isExternal(File file) throws CatalogException;
 
-    QueryResult<FileIndex>  updateFileIndexStatus(File file, String newStatus, String sessionId) throws CatalogException;
+    QueryResult<FileIndex>  updateFileIndexStatus(File file, String newStatus, String message, String sessionId) throws CatalogException;
 
 
     /*--------------*/

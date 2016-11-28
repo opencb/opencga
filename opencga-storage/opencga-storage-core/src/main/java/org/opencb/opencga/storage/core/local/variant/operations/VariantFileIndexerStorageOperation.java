@@ -67,9 +67,6 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
     public static final String CATALOG_PATH = "catalogPath";
     public static final String TRANSFORMED_FILES = "transformedFiles";
 
-    private final String VCF_EXTENSION = ".vcf";
-    private final String AVRO_EXTENSION = ".avro";
-
     private enum Type {
         TRANSFORM,
         LOAD,
@@ -96,10 +93,10 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         // Query catalog for user data
         String userId = catalogManager.getUserManager().getId(sessionId);
         List<Long> fileIdsLong = fileManager.getIds(userId, fileIds);
-        return index(fileIdsLong, outdirString, sessionId, options);
+        return index(fileIdsLong, outdirString, options, sessionId);
     }
 
-    public List<StorageETLResult> index(List<Long> fileIds, String outdirString, String sessionId, QueryOptions options)
+    public List<StorageETLResult> index(List<Long> fileIds, String outdirString, QueryOptions options, String sessionId)
             throws CatalogException, IOException, StorageManagerException, URISyntaxException {
 
         URI outdirUri = UriUtils.createDirectoryUri(outdirString);
@@ -160,7 +157,17 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             } else if (studyId != studyIdByInputFileId) {
                 throw new CatalogException("Cannot index files coming from different studies.");
             }
+        }
 
+        Study study = catalogManager.getStudyManager().get(studyIdByInputFileId, new QueryOptions(), sessionId).getResult().get(0);
+
+        // We get the credentials of the Datastore to insert the variants
+        DataStore dataStore = getDataStore(catalogManager, studyIdByInputFileId, File.Bioformat.VARIANT, sessionId);
+
+        // Update study configuration BEFORE executing the index and fetching files from Catalog
+        updateStudyConfiguration(sessionId, studyIdByInputFileId, dataStore);
+
+        for (Long fileIdLong : fileIds) {
             File inputFile = fileManager.get(fileIdLong, new QueryOptions(), sessionId).first();
 
             if (inputFile.getType() == File.Type.FILE) {
@@ -186,11 +193,6 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         logger.debug("Index - Number of files to be indexed: {}, list of files: {}", inputFiles.size(),
                 inputFiles.stream().map(File::getName).collect(Collectors.toList()));
 
-        Study study = catalogManager.getStudyManager().get(studyIdByInputFileId, new QueryOptions(), sessionId).getResult().get(0);
-
-        // We get the credentials of the Datastore to insert the variants
-        DataStore dataStore = getDataStore(catalogManager, studyIdByInputFileId, File.Bioformat.VARIANT, sessionId);
-
         options.put(VariantStorageManager.Options.DB_NAME.key(), dataStore.getDbName());
         options.put(VariantStorageManager.Options.STUDY_ID.key(), studyIdByInputFileId);
 
@@ -203,16 +205,19 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         variantStorageManager.getOptions().putAll(options);
 
         String fileStatus;
+        String fileStatusMessage;
         List<File> filesToIndex;
         List<URI> fileUris = new ArrayList<>(inputFiles.size());
         if (step.equals(Type.INDEX)) {
             fileStatus = FileIndex.IndexStatus.INDEXING;
+            fileStatusMessage = "Start indexing file";
             filesToIndex = filterTransformFiles(inputFiles);
             for (File file : filesToIndex) {
                 fileUris.add(file.getUri());
             }
         } else if (step.equals(Type.TRANSFORM)) {
             fileStatus = FileIndex.IndexStatus.TRANSFORMING;
+            fileStatusMessage = "Start transforming file";
             filesToIndex = filterTransformFiles(inputFiles);
             for (File file : filesToIndex) {
                 fileUris.add(file.getUri());
@@ -220,6 +225,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         } else {
             filesToIndex = filterLoadFiles(inputFiles, options, fileUris, sessionId);
             fileStatus = FileIndex.IndexStatus.LOADING;
+            fileStatusMessage = "Start loading file";
         }
 
         if (filesToIndex.size() == 0) {
@@ -232,13 +238,12 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         if (!step.equals(Type.TRANSFORM) || catalogOutDirId != null) {
             for (File file : filesToIndex) {
                 previousFileStatus.add(file.getIndex().getStatus().getName());
-                QueryResult<FileIndex> fileIndexQueryResult = fileManager.updateFileIndexStatus(file, fileStatus, sessionId);
+                QueryResult<FileIndex> fileIndexQueryResult = fileManager.updateFileIndexStatus(file, fileStatus,
+                        fileStatusMessage, sessionId);
                 file.setIndex(fileIndexQueryResult.first());
             }
         }
 
-        // Update study configuration BEFORE executing the index
-        updateStudyConfiguration(sessionId, studyIdByInputFileId, dataStore);
 
         logger.info("Starting to {}", step);
         List<StorageETLResult> storageETLResults;
@@ -279,7 +284,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         // Only if we are not transforming or if a path has been passed, we will update catalog information
         if (!step.equals(Type.TRANSFORM) || catalogOutDirId != null) {
-            if (!step.equals(Type.LOAD) && catalogOutDirId != null) {
+            if (catalogOutDirId != null) {
                 // Copy results to catalog
                 copyResults(outdir, catalogOutDirId, sessionId);
             }
@@ -379,49 +384,57 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             boolean loadedSuccess = storageETLResult != null && storageETLResult.isLoadExecuted()
                     && storageETLResult.getLoadError() == null;
 
-            FileIndex index;
+            String indexStatusName;
+            String indexStatusMessage = null;
 
             if (indexedFile.getIndex() != null) {
-                index = indexedFile.getIndex();
+                FileIndex index = indexedFile.getIndex();
                 switch (index.getStatus().getName()) {
                     case FileIndex.IndexStatus.NONE:
                     case FileIndex.IndexStatus.TRANSFORMED:
-                        logger.warn("Unexpected index status. Expected " + FileIndex.IndexStatus.TRANSFORMING + ", "
+                        indexStatusMessage = "Unexpected index status. Expected " + FileIndex.IndexStatus.TRANSFORMING + ", "
                                 + FileIndex.IndexStatus.LOADING + " or " + FileIndex.IndexStatus.INDEXING + " and got "
-                                + index.getStatus());
+                                + index.getStatus();
+                        logger.warn(indexStatusMessage);
                     case FileIndex.IndexStatus.READY: //Do not show warn message when index status is READY.
+                        indexStatusName = index.getStatus().getName();
                         break;
                     case FileIndex.IndexStatus.TRANSFORMING:
                         if (jobFailed) {
-                            logger.warn("Job failed. Restoring status from " + FileIndex.IndexStatus.TRANSFORMING + " to "
-                                    + FileIndex.IndexStatus.NONE);
-                            index.getStatus().setName(FileIndex.IndexStatus.NONE);
+                            indexStatusMessage = "Job failed. Restoring status from " + FileIndex.IndexStatus.TRANSFORMING + " to "
+                                    + FileIndex.IndexStatus.NONE;
+                            logger.warn(indexStatusMessage);
+                            indexStatusName = FileIndex.IndexStatus.NONE;
                         } else {
-                            index.getStatus().setName(FileIndex.IndexStatus.TRANSFORMED);
+                            indexStatusMessage = "Job finished. File transformed";
+                            indexStatusName = FileIndex.IndexStatus.TRANSFORMED;
                         }
                         break;
                     case FileIndex.IndexStatus.LOADING:
                         if (jobFailed) {
-                            logger.warn("Job failed. Restoring status from " + FileIndex.IndexStatus.LOADING + " to "
-                                    + FileIndex.IndexStatus.TRANSFORMED);
-                            index.getStatus().setName(FileIndex.IndexStatus.TRANSFORMED);
+                            indexStatusMessage = "Job failed. Restoring status from " + FileIndex.IndexStatus.LOADING + " to "
+                                    + FileIndex.IndexStatus.TRANSFORMED;
+                            logger.warn(indexStatusMessage);
+                            indexStatusName = FileIndex.IndexStatus.TRANSFORMED;
                         } else {
-                            index.getStatus().setName(FileIndex.IndexStatus.READY);
+                            indexStatusMessage = "Job finished. File index ready";
+                            indexStatusName = FileIndex.IndexStatus.READY;
                         }
                         break;
                     case FileIndex.IndexStatus.INDEXING:
                         if (jobFailed) {
-                            String newStatus;
                             // If transform was executed, restore status to Transformed.
                             if (transformedSuccess) {
-                                newStatus = FileIndex.IndexStatus.TRANSFORMED;
+                                indexStatusName = FileIndex.IndexStatus.TRANSFORMED;
                             } else {
-                                newStatus = FileIndex.IndexStatus.NONE;
+                                indexStatusName = FileIndex.IndexStatus.NONE;
                             }
-                            logger.warn("Job failed. Restoring status from " + FileIndex.IndexStatus.INDEXING + " to " + newStatus);
-                            index.getStatus().setName(newStatus);
+                            indexStatusName = "Job failed. Restoring status from " + FileIndex.IndexStatus.INDEXING
+                                    + " to " + indexStatusName;
+                            logger.warn(indexStatusName);
                         } else {
-                            index.getStatus().setName(FileIndex.IndexStatus.READY);
+                            indexStatusName = FileIndex.IndexStatus.READY;
+                            indexStatusMessage = "Job finished. File index ready";
                         }
                         break;
                     default:
@@ -447,10 +460,10 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             fileManager.update(indexedFile.getId(), params, new QueryOptions(), sessionId);
 
             // Update index status
-            fileManager.updateFileIndexStatus(indexedFile, index.getStatus().getName(), sessionId);
+            fileManager.updateFileIndexStatus(indexedFile, indexStatusName, indexStatusMessage, sessionId);
 
             boolean calculateStats = options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key());
-            if (index.getStatus().getName().equals(FileIndex.IndexStatus.READY) && calculateStats) {
+            if (indexStatusName.equals(FileIndex.IndexStatus.READY) && calculateStats) {
                 Query query = new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT);
                 QueryResult<Cohort> queryResult = catalogManager.getCohortManager().get(study.getId(), query, new QueryOptions(),
                         sessionId);
@@ -659,14 +672,14 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                         fileUris.add(avroQueryResult.first().getUri());
                         break;
                     case FileIndex.IndexStatus.TRANSFORMING:
-                        logger.warn("We can only load files previously transformed. Skipping file ", file.getName());
+                        logger.warn("We can only load files previously transformed. Skipping file {}", file.getName());
                         break;
                     case FileIndex.IndexStatus.LOADING:
                     case FileIndex.IndexStatus.INDEXING:
-                        logger.warn("Unable to load this file. Already being loaded. Skipping file ", file.getName());
+                        logger.warn("Unable to load this file. Already being loaded. Skipping file {}", file.getName());
                         break;
                     case FileIndex.IndexStatus.READY:
-                        logger.warn("Already loaded file. Skipping file ", file.getName());
+                        logger.warn("Already loaded file. Skipping file {}", file.getName());
                         break;
                     default:
                         logger.warn("We can only load files previously transformed, File {} with status is {}", file.getName(), status);
