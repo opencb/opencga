@@ -115,7 +115,7 @@ public class GenericRestWebService {
         if (storageManagerFactory == null) {
             privLogger.debug("Creating the StorageManagerFactory object");
             // TODO: We will need to pass catalog manager once storage starts doing things over catalog
-            storageManagerFactory = StorageManagerFactory.get(null, storageConfiguration);
+            storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
         }
 
         if (authorizedHosts == null) {

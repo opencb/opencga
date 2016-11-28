@@ -39,10 +39,10 @@ import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.local.StorageManager;
-import org.opencb.opencga.storage.core.local.variant.operations.VariantAnnotationStorageOperation;
-import org.opencb.opencga.storage.core.local.variant.operations.VariantStatsStorageOperation;
 import org.opencb.opencga.storage.core.local.variant.operations.StorageOperation;
+import org.opencb.opencga.storage.core.local.variant.operations.VariantAnnotationStorageOperation;
 import org.opencb.opencga.storage.core.local.variant.operations.VariantFileIndexerStorageOperation;
+import org.opencb.opencga.storage.core.local.variant.operations.VariantStatsStorageOperation;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
@@ -71,7 +71,6 @@ public class VariantStorageManager extends StorageManager {
     // -------------------------//
     //   Import/Export methods  //
     // -------------------------//
-
 
     public void importData(String fileId, String studyId, String sessionId) {
         throw new UnsupportedOperationException();
