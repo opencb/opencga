@@ -181,9 +181,15 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query")
     })
-    public Response getAllProjects(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId) {
+    public Response getAllProjects(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+                                   @ApiParam(value = "shared", required = false, defaultValue = "false") @QueryParam("shared") boolean shared) {
         try {
-            QueryResult queryResult = catalogManager.getAllProjects(userId, queryOptions, sessionId);
+            QueryResult queryResult;
+            if (!shared) {
+                queryResult = catalogManager.getAllProjects(userId, queryOptions, sessionId);
+            } else {
+                queryResult = catalogManager.getProjectManager().getSharedProjects(userId, queryOptions, sessionId);
+            }
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
