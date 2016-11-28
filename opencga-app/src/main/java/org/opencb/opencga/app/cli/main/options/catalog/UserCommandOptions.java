@@ -146,7 +146,7 @@ public class UserCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"projects"}, commandDescription = "List all projects and studies from a selected user")
+    @Parameters(commandNames = {"projects"}, commandDescription = "List all projects and studies belonging to the selected user")
     public class ProjectsCommandOptions extends BaseUserCommand {
 
         @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
@@ -161,6 +161,8 @@ public class UserCommandOptions {
         @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
         public String limit;
 
+        @Parameter(names = {"--shared"}, description = "Show only the projects and studies shared with the user.", arity = 0)
+        public boolean shared;
 //        @ParametersDelegate
 //        public OpencgaCommonCommandOptions commonOptions = UserCommandOptions.this.commonCommandOptions;
 //
