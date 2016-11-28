@@ -103,10 +103,10 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
             String queryResultId;
             List<ReadAlignment> readAlignmentList;
             if (region != null) {
-                readAlignmentList = alignmentManager.query(region, alignmentOptions, alignmentFilters, ReadAlignment.class);
+                readAlignmentList = alignmentManager.query(region, alignmentFilters, alignmentOptions, ReadAlignment.class);
                 queryResultId = region.toString();
             } else {
-                readAlignmentList = alignmentManager.query(alignmentOptions, alignmentFilters, ReadAlignment.class);
+                readAlignmentList = alignmentManager.query(alignmentFilters, alignmentOptions, ReadAlignment.class);
                 queryResultId = "Get alignments";
             }
 //            List<String> stringFormatList = new ArrayList<>(readAlignmentList.size());
