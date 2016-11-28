@@ -647,14 +647,14 @@ public class FileWSServer extends OpenCGAWSServer {
         addParamIfTrue(params, "overwrite-annotations", overwriteAnnotations);
 
         Set<String> knownParams = new HashSet<>();
-        knownParams.add("outdir");
+        knownParams.add("outDir");
         knownParams.add("transform");
         knownParams.add("load");
-        knownParams.add("include-extra-fields");
+        knownParams.add("includeExtraFields");
         knownParams.add("aggregated");
-        knownParams.add("calculate-stats");
+        knownParams.add("calculateStats");
         knownParams.add("annotate");
-        knownParams.add("overwrite-annotations");
+        knownParams.add("overwrite");
         knownParams.add("sid");
         knownParams.add("include");
         knownParams.add("exclude");

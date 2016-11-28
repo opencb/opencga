@@ -36,8 +36,10 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by imedina on 04/05/16.
@@ -193,7 +195,13 @@ public abstract class AbstractParentClient {
             // TODO we still have to check the limit of the query, and keep querying while there are more results
             if (params != null) {
                 for (String s : params.keySet()) {
-                    path = path.queryParam(s, params.get(s));
+                    Object o = params.get(s);
+                    if (o instanceof Collection) {
+                        String value = ((Collection<?>) o).stream().map(Object::toString).collect(Collectors.joining(","));
+                        path = path.queryParam(s, value);
+                    } else {
+                        path = path.queryParam(s, o);
+                    }
                 }
             }
 
