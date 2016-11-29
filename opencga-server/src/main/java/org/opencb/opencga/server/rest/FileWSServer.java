@@ -706,9 +706,12 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "limit", value = "[TO BE IMPLEMENTED] Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
     })
     public Response treeView(@ApiParam(value = "Folder id or path") @PathParam("folderId") String folderId,
+                             @ApiParam(value = "Study id (Can be user@projectAlias:studyAlias)") @QueryParam("studyId") String studyStr,
                              @ApiParam(value = "Maximum depth to get files from") @DefaultValue("5") @QueryParam("maxDepth") int maxDepth) {
         try {
-            QueryResult result = catalogManager.getFileManager().getTree(convertPath(folderId, sessionId), query, queryOptions, maxDepth, sessionId);
+            query.remove("maxDepth");
+            QueryResult result = catalogManager.getFileManager()
+                    .getTree(folderId.replace(":", "/"), studyStr, query, queryOptions, maxDepth, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

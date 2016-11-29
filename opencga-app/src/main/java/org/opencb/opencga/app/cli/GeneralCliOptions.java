@@ -73,5 +73,8 @@ public class GeneralCliOptions {
         @DynamicParameter(names = "-D", description = "Storage engine specific parameters go here comma separated, ie. -Dmongodb" +
                 ".compression=snappy", hidden = false)
         public Map<String, String> params = new HashMap<>(); //Dynamic parameters must be initialized
+
+        @Parameter(names = {"--metadata"}, description = "Include metadata information", required = false, arity = 0)
+        public boolean metadata = false;
     }
 }

@@ -478,8 +478,14 @@ public class FileCommandOptions {
     @Parameters(commandNames = {"tree-view"}, commandDescription = "Obtain a tree view of the files and folders within a folder")
     public class TreeViewCommandOptions {
 
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
         @Parameter(names = {"--folder-id"}, description = "Folder id", required = true, arity = 1)
         public String folderId;
+
+        @Parameter(names = {"--study-id"}, description = "Study id or [[user@]projectAlias:]studyAlias", arity = 1, required = false)
+        public String studyStr;
 
         @Parameter(names = {"--max-Depth"}, description = "Maximum depth to get files from. Default: 5", required = false, arity = 1)
         public Integer maxDepth = 5;

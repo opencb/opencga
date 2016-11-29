@@ -54,6 +54,7 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -782,8 +783,8 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<FileTree> getTree(String fileIdStr, Query query, QueryOptions queryOptions, int maxDepth, String sessionId)
-            throws CatalogException {
+    public QueryResult<FileTree> getTree(String fileIdStr, @Nullable String studyStr, Query query, QueryOptions queryOptions, int maxDepth,
+                                         String sessionId) throws CatalogException {
         long startTime = System.currentTimeMillis();
 
         queryOptions = ParamUtils.defaultObject(queryOptions, QueryOptions::new);
@@ -822,14 +823,15 @@ public class FileManager extends AbstractManager implements IFileManager {
         String userId = catalogManager.getUserManager().getId(sessionId);
 
         // Check 1. No comma-separated values are valid, only one single File or Directory can be deleted.
-        Long fileId = getId(userId, fileIdStr);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+        Long fileId = getId(fileIdStr, studyId, sessionId);
         fileDBAdaptor.checkId(fileId);
-        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
+//        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
         query.put(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
         // Check if we can obtain the file from the dbAdaptor properly.
         QueryOptions qOptions = new QueryOptions()
-                .append(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.PATH.key(),
+                .append(QueryOptions.INCLUDE, Arrays.asList(FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.NAME.key(),
                         FileDBAdaptor.QueryParams.ID.key(), FileDBAdaptor.QueryParams.TYPE.key()));
         QueryResult<File> fileQueryResult = fileDBAdaptor.get(fileId, qOptions);
         if (fileQueryResult == null || fileQueryResult.getNumResults() != 1) {

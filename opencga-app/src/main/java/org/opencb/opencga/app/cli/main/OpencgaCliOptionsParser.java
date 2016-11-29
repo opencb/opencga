@@ -138,6 +138,7 @@ public class OpencgaCliOptionsParser {
         fileSubCommands.addCommand("grep", fileCommandOptions.grepCommandOptions);
         fileSubCommands.addCommand("search", fileCommandOptions.searchCommandOptions);
         fileSubCommands.addCommand("list", fileCommandOptions.listCommandOptions);
+        fileSubCommands.addCommand("tree-view", fileCommandOptions.treeViewCommandOptions);
         fileSubCommands.addCommand("index", fileCommandOptions.indexCommandOptions);
         fileSubCommands.addCommand("alignment", fileCommandOptions.alignmentCommandOptions);
         fileSubCommands.addCommand("content", fileCommandOptions.contentCommandOptions);
