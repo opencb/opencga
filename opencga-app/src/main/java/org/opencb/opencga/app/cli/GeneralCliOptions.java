@@ -62,7 +62,7 @@ public class GeneralCliOptions {
         public boolean verbose = false;
 
         @Parameter(names = {"--output-format"}, description = "Output format. one of {JSON, TEXT, EXTENDED_TEXT}", arity = 1)
-        public String outputFormat = "JSON";
+        public String outputFormat = "TEXT";
 
         @Parameter(names = {"--sid", "--session-id"}, description = "Token session id", arity = 1)
         public String sessionId;

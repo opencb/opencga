@@ -272,6 +272,9 @@ public class FileCommandOptions {
     @Parameters(commandNames = {"list"}, commandDescription = "List files in folder")
     public class ListCommandOptions {
 
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
         @Parameter(names = {"--folder-id"}, description = "Folder Id", arity = 1, required = true)
         public String folderId;
 
