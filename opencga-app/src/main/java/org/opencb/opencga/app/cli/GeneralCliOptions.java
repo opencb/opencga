@@ -62,7 +62,7 @@ public class GeneralCliOptions {
         public boolean verbose = false;
 
         @Parameter(names = {"--output-format"}, description = "Output format. one of {JSON, TEXT, EXTENDED_TEXT}", arity = 1)
-        public String outputFormat = "JSON";
+        public String outputFormat = "TEXT";
 
         @Parameter(names = {"--sid", "--session-id"}, description = "Token session id", arity = 1)
         public String sessionId;
@@ -73,5 +73,8 @@ public class GeneralCliOptions {
         @DynamicParameter(names = "-D", description = "Storage engine specific parameters go here comma separated, ie. -Dmongodb" +
                 ".compression=snappy", hidden = false)
         public Map<String, String> params = new HashMap<>(); //Dynamic parameters must be initialized
+
+        @Parameter(names = {"--metadata"}, description = "Include metadata information", required = false, arity = 0)
+        public boolean metadata = false;
     }
 }

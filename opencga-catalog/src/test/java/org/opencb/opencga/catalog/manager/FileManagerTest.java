@@ -71,6 +71,7 @@ public class FileManagerTest extends GenericTest {
     protected String sessionIdUser2;
     protected String sessionIdUser3;
     private File testFolder;
+    private long projectId;
     private long studyId;
     private long studyId2;
     private long s_1;
@@ -127,14 +128,13 @@ public class FileManagerTest extends GenericTest {
         sessionIdUser2 = catalogManager.login("user2", PASSWORD, "127.0.0.1").first().getString("sessionId");
         sessionIdUser3 = catalogManager.login("user3", PASSWORD, "127.0.0.1").first().getString("sessionId");
 
-        Project project1 = catalogManager.createProject("Project about some genomes", "1000G", "", "ACME", null, sessionIdUser)
-                .first();
+        projectId = catalogManager.createProject("Project about some genomes", "1000G", "", "ACME", null, sessionIdUser).first().getId();
         Project project2 = catalogManager.createProject("Project Management Project", "pmp", "life art intelligent system",
                 "myorg", null, sessionIdUser2).first();
         Project project3 = catalogManager.createProject("project 1", "p1", "", "", null, sessionIdUser3).first();
 
-        studyId = catalogManager.createStudy(project1.getId(), "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser).first().getId();
-        studyId2 = catalogManager.createStudy(project1.getId(), "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser).first().getId();
+        studyId = catalogManager.createStudy(projectId, "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser).first().getId();
+        studyId2 = catalogManager.createStudy(projectId, "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser).first().getId();
         catalogManager.createStudy(project2.getId(), "Study 1", "s1", Study.Type.CONTROL_SET, "", sessionIdUser2).first().getId();
 
         catalogManager.createFolder(studyId2, Paths.get("data/test/folder/"), true, null, sessionIdUser);
@@ -635,9 +635,24 @@ public class FileManagerTest extends GenericTest {
 
     @Test
     public void testGetTreeView() throws CatalogException {
-        QueryResult<FileTree> fileTree = catalogManager.getFileManager().getTree("user@1000G:phase1:", new Query(), new QueryOptions(),
+        QueryResult<FileTree> fileTree = catalogManager.getFileManager().getTree("/", "user@1000G:phase1", new Query(), new QueryOptions(),
                 5, sessionIdUser);
         assertEquals(7, fileTree.getNumResults());
+    }
+
+    @Test
+    public void testGetTreeViewMoreThanOneFile() throws CatalogException {
+
+        // Create a new study so more than one file will be found under the root /. However, it should be able to consider the study given
+        // properly
+        catalogManager.createStudy(projectId, "Phase 2", "phase2", Study.Type.TRIO, "Done", sessionIdUser).first().getId();
+
+        QueryResult<FileTree> fileTree = catalogManager.getFileManager().getTree("/", "user@1000G:phase1", new Query(), new QueryOptions(),
+                5, sessionIdUser);
+        assertEquals(7, fileTree.getNumResults());
+
+        fileTree = catalogManager.getFileManager().getTree(".", "user@1000G:phase2", new Query(), new QueryOptions(), 5, sessionIdUser);
+        assertEquals(1, fileTree.getNumResults());
     }
 
     @Test

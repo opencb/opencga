@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.FileTree;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.client.config.ClientConfiguration;
@@ -83,7 +84,7 @@ public class FileClient extends CatalogClient<File, FileAclEntry> {
         return execute(FILES_URL, fileId, "grep", params, GET, File.class);
     }
 
-    public QueryResponse<File> list(String folderId, QueryOptions options) throws CatalogException, IOException {
+    public QueryResponse<File> list(String folderId, ObjectMap options) throws CatalogException, IOException {
         folderId = folderId.replace('/', ':');
         return execute(FILES_URL, folderId, "list", options, GET, File.class);
     }
@@ -96,8 +97,8 @@ public class FileClient extends CatalogClient<File, FileAclEntry> {
         return execute(FILES_URL, fileId, "delete", params, GET, File.class);
     }
 
-    public QueryResponse<File> treeView(String folderId, ObjectMap params) throws CatalogException, IOException {
-        return execute(FILES_URL, folderId, "tree-view", params, GET, File.class);
+    public QueryResponse<FileTree> treeView(String folderId, ObjectMap params) throws CatalogException, IOException {
+        return execute(FILES_URL, folderId, "tree-view", params, GET, FileTree.class);
     }
 
     public QueryResponse<File> refresh(String fileId, QueryOptions options) throws CatalogException, IOException {
