@@ -165,12 +165,15 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         // with all other gVCF files of same region
         if (!analysisNew.isEmpty()) {
             List<Variant> archiveOther = loadFromArchive(ctx.context, ctx.getCurrRowKey(), ctx.fileIds);
+            getLog().info("Loaded " + archiveOther.size() + " variants ... ");
             endTime("8 Load archive slice from hbase");
             if (!archiveOther.isEmpty()) {
                 overlap = 0;
                 merge = 0;
                 completeAlternateCoordinates(archiveOther);
+                getLog().info("Complete Alternate coordinates ... ");
                 NavigableMap<Integer, List<Variant>> varPosSortedOther = indexAlts(archiveOther, (int)ctx.startPos, (int)ctx.nextStartPos);
+                getLog().info("Create alts index of size " + varPosSortedOther.size() + " ... ");
                 ctx.context.getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE").increment(archiveOther.size());
                 ctx.context.getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE_NUM_QUERIES").increment(1);
                 for (Variant var : analysisNew) {
@@ -427,7 +430,6 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
             return Collections.emptyList();
         }
         List<Variant> var = getResultConverter().convert(res, true);
-        getLog().info("Loaded " + var.size() + " variants ... ");
         return var;
     }
 
