@@ -158,22 +158,22 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     }
 
     public URI newOutputUri() throws IOException {
-        return newOutputUri(1);
+        return newOutputUri(1, outputUri);
     }
 
-    public URI newOutputUri(int extraCalls) throws IOException {
+    public static URI newOutputUri(int extraCalls, URI outputUri) throws IOException {
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
         // stackTrace[0] = "Thread.currentThread"
         // stackTrace[1] = "newOutputUri"
         // stackTrace[2] =  caller method
         String testName = stackTrace[2 + extraCalls].getMethodName();
         int c = 0;
-        URI outputUri = VariantStorageBaseTest.outputUri.resolve("test_" + testName + "/");
-        while (Paths.get(outputUri).toFile().exists()) {
-            outputUri = VariantStorageBaseTest.outputUri.resolve("test_" + testName + "-" + ++c + "/");
+        URI finalOutputUri = outputUri.resolve("test_" + testName + "/");
+        while (Paths.get(finalOutputUri).toFile().exists()) {
+            finalOutputUri = outputUri.resolve("test_" + testName + "-" + ++c + "/");
         }
-        Files.createDirectory(Paths.get(outputUri));
-        return outputUri;
+        Files.createDirectory(Paths.get(finalOutputUri));
+        return finalOutputUri;
     }
 
 //    private static File tempFile = null;

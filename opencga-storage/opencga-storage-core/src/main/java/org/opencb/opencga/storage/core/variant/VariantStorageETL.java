@@ -133,7 +133,8 @@ public abstract class VariantStorageETL implements StorageETL {
         int fileId = options.getInt(Options.FILE_ID.key(), Options.FILE_ID.defaultValue());
         int studyId = options.getInt(Options.STUDY_ID.key(), Options.STUDY_ID.defaultValue());
 
-        boolean isolate = options.getBoolean(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), false);
+        boolean isolate = options.getBoolean(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(),
+                Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.defaultValue());
         StudyConfiguration studyConfiguration;
         if (studyId < 0 && fileId < 0 || isolate) {
             logger.debug("Isolated study configuration");
@@ -151,7 +152,12 @@ public abstract class VariantStorageETL implements StorageETL {
                     logger.info("Creating a new StudyConfiguration");
                     checkStudyId(studyId);
                     studyConfiguration = new StudyConfiguration(studyId, options.getString(Options.STUDY_NAME.key()));
-                    studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class));
+                    studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(),
+                            VariantSource.Aggregation.class, Options.AGGREGATED_TYPE.defaultValue()));
+                }
+                if (studyConfiguration.getAggregation() == null) {
+                    studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(),
+                            VariantSource.Aggregation.class, Options.AGGREGATED_TYPE.defaultValue()));
                 }
                 fileId = checkNewFile(studyConfiguration, fileId, fileName);
                 options.put(Options.FILE_ID.key(), fileId);
@@ -540,7 +546,8 @@ public abstract class VariantStorageETL implements StorageETL {
             // First indexed file
             // Use the EXCLUDE_GENOTYPES value from CLI. Write in StudyConfiguration.attributes
             boolean excludeGenotypes = options.getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
-            studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class));
+            studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class,
+                    Options.AGGREGATED_TYPE.defaultValue()));
             studyConfiguration.getAttributes().put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
         } else {
             // Not first indexed file
@@ -931,7 +938,8 @@ public abstract class VariantStorageETL implements StorageETL {
         if (studyConfiguration.getFileIds().containsKey(fileName)) {
             if (studyConfiguration.getFileIds().get(fileName) != fileId) {
                 throw new StorageManagerException("File " + fileName + " (" + fileId + ") "
-                        + "has a different fileId in the StudyConfiguration: "
+                        + "has a different fileId in the study "
+                        + studyConfiguration.getStudyName() + " (" + studyConfiguration.getStudyId() + ") : "
                         + fileName + " (" + studyConfiguration.getFileIds().get(fileName) + ")");
             }
         }

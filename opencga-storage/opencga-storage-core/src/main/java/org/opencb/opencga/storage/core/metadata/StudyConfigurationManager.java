@@ -158,9 +158,7 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
         return new ArrayList<>(getStudies(options).values());
     }
 
-    public Map<String, Integer> getStudies(QueryOptions options) {
-        return Collections.emptyMap();
-    }
+    public abstract Map<String, Integer> getStudies(QueryOptions options);
 
     public final QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         studyConfiguration.setTimeStamp(System.currentTimeMillis());

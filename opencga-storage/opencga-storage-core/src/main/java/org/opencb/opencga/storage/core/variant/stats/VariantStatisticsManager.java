@@ -528,7 +528,8 @@ public class VariantStatisticsManager {
                 }
                 if (studyConfiguration.getCohorts().get(cohortId) != null
                         && !sampleIds.equals(studyConfiguration.getCohorts().get(cohortId))) {
-                    if (!studyConfiguration.getInvalidStats().contains(cohortId)) {
+                    if (!studyConfiguration.getInvalidStats().contains(cohortId)
+                            && studyConfiguration.getCalculatedStats().contains(cohortId)) {
                         //If provided samples are different than the stored in the StudyConfiguration, and the cohort was not invalid.
                         throw new StorageManagerException("Different samples in cohort " + cohortName + ":" + cohortId + ". "
                                 + "Samples in the StudyConfiguration: " + studyConfiguration.getCohorts().get(cohortId).size() + ". "

@@ -168,7 +168,7 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
      * @param dataWriter Deprecated param
      */
     @Deprecated
-    void setDataWriter(DataWriter dataWriter);
+    default void setDataWriter(DataWriter dataWriter) {}
 
     /**
      * This method inserts Variants into the given Study. If the Study already exists then it just adds the new Sample

@@ -65,6 +65,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
     public static final String LOAD = "load";
 
     public static final String CATALOG_PATH = "catalogPath";
+    // FIXME : Needed?
     public static final String TRANSFORMED_FILES = "transformedFiles";
 
     private enum Type {
@@ -196,7 +197,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         options.put(VariantStorageManager.Options.DB_NAME.key(), dataStore.getDbName());
         options.put(VariantStorageManager.Options.STUDY_ID.key(), studyIdByInputFileId);
 
-        VariantStorageManager variantStorageManager = null;
+        VariantStorageManager variantStorageManager;
         try {
             variantStorageManager = storageManagerFactory.getVariantStorageManager(dataStore.getStorageEngine());
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
@@ -241,6 +242,14 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                 QueryResult<FileIndex> fileIndexQueryResult = fileManager.updateFileIndexStatus(file, fileStatus,
                         fileStatusMessage, sessionId);
                 file.setIndex(fileIndexQueryResult.first());
+            }
+        }
+        if (step.equals(Type.INDEX) || step.equals(Type.LOAD)) {
+            for (File file : filesToIndex) {
+                updateDefaultCohorts(file, study, options, sessionId);
+            }
+            if (options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key())) {
+                calculatingDefaultCohort(study, sessionId);
             }
         }
 
@@ -449,9 +458,9 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                 updateVariantFileStats(indexedFile, outdir, sessionId);
             }
 
-            if (loadedSuccess) {
-                updateDefaultCohorts(indexedFile, study, options, sessionId);
-            }
+//            if (loadedSuccess) {
+//                updateDefaultCohorts(indexedFile, study, options, sessionId);
+//            }
 
             // Update storageETLResult
             Map<String, Object> attributes = indexedFile.getAttributes();
@@ -558,12 +567,6 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             defaultCohort = cohorts.first();
         }
 
-        if (options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key())) {
-//            updateParams.append(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.CALCULATING);
-            catalogManager.getCohortManager().setStatus(Long.toString(defaultCohort.getId()), Cohort.CohortStatus.CALCULATING, null,
-                    sessionId);
-        }
-
         //Samples are the already indexed plus those that are going to be indexed
         ObjectMap updateParams = new ObjectMap();
         Set<Long> samples = new HashSet<>(defaultCohort.getSamples());
@@ -577,8 +580,13 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         }
     }
 
-    private void updateCohorts() {
+    private void calculatingDefaultCohort(Study study, String sessionId) throws CatalogException {
 
+        Query query = new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT);
+        Cohort defaultCohort = catalogManager.getAllCohorts(study.getId(), query, new QueryOptions(), sessionId).first();
+
+        catalogManager.getCohortManager().setStatus(Long.toString(defaultCohort.getId()), Cohort.CohortStatus.CALCULATING, null,
+                sessionId);
     }
 
     private List<File> filterTransformFiles(List<File> fileList) throws CatalogException {
@@ -699,6 +707,10 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                 }
                 // Look for the vcf file
                 long vcfId = -1;
+                // Matchup variant files, if missing
+                if (file.getRelatedFiles() == null || file.getRelatedFiles().isEmpty()) {
+                    catalogManager.getFileManager().matchUpVariantFiles(Collections.singletonList(file), sessionId);
+                }
                 for (File.RelatedFile relatedFile : file.getRelatedFiles()) {
                     if (File.RelatedFile.Relation.PRODUCED_FROM.equals(relatedFile.getRelation())) {
                         vcfId = relatedFile.getFileId();
