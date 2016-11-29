@@ -125,7 +125,7 @@ public abstract class StorageManager {
             FileInfo fileInfo = new FileInfo();
             long fileId;
             if (studyId > 0) {
-                fileId = catalogManager.getFileManager().getId(userId, studyId, fileIdStr);
+                fileId = catalogManager.getFileManager().getId(fileIdStr, studyId, sessionId);
                 if (fileId <= 0) {
                     throw new CatalogException("The id of file " + fileIdStr + " could not be found under study " + studyIdStr);
                 }

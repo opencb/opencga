@@ -114,7 +114,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
             updateCohorts(cohortIds, sessionId, Cohort.CohortStatus.CALCULATING, "");
 
             VariantStorageManager variantStorageManager
-                    = StorageManagerFactory.get().getVariantStorageManager(dataStore.getStorageEngine());
+                    = storageManagerFactory.getVariantStorageManager(dataStore.getStorageEngine());
             VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
 
             VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(dataStore.getDbName());

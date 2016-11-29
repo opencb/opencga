@@ -7,6 +7,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
+import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.biodata.models.variant.stats.VariantStats;
@@ -22,6 +23,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
@@ -37,6 +40,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
 
     private final String dbName;
     private boolean closed = false;
+    private Logger logger = LoggerFactory.getLogger(DummyVariantDBAdaptor.class);
 
     public DummyVariantDBAdaptor(String dbName) {
         this.dbName = dbName;
@@ -75,8 +79,8 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
         List<String> templates = Arrays.asList(
-//                "1:1000:A:C",
-//                "1:2000:A:C",
+                "1:1000:A:C",
+                "1:2000:A:C",
                 "1:3000:A:C");
         List<Variant> variants = new ArrayList<>(templates.size());
         for (String template : templates) {
@@ -97,9 +101,14 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
                 variant.addStudyEntry(st);
                 for (Integer cid : sc.getCalculatedStats()) {
                     VariantStats stats = new VariantStats();
-                    stats.addGenotype(new Genotype("0/0"), samples.size());
+                    stats.addGenotype(new Genotype("0/0"), sc.getCohorts().get(cid).size());
                     st.setStats(sc.getCohortIds().inverse().get(cid), stats);
                 }
+                List<FileEntry> files = new ArrayList<>();
+                for (Integer id : sc.getIndexedFiles()) {
+                    files.add(new FileEntry(id.toString(), "", Collections.emptyMap()));
+                }
+                st.setFiles(files);
             });
             variants.add(variant);
         }
@@ -157,7 +166,11 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration, QueryOptions options) {
-        return new QueryResult();
+        QueryResult queryResult = new QueryResult();
+        logger.info("Writing " + variantStatsWrappers.size() + " statistics");
+        queryResult.setNumResults(variantStatsWrappers.size());
+        queryResult.setNumTotalResults(variantStatsWrappers.size());
+        return queryResult;
     }
     @Override
     public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {

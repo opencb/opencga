@@ -70,8 +70,6 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
     @Test
     public void testAnnotateDefault() throws Exception {
 
-        VariantStatsStorageOperation variantStorage = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
-
         VariantAnnotationStorageOperation annotOp = new VariantAnnotationStorageOperation(catalogManager, storageConfiguration);
         annotOp.annotateVariants(studyId, new Query(), null, String.valueOf(outputId), sessionId, new QueryOptions(ExecutorManager.EXECUTE, true));
 
@@ -80,8 +78,6 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
 
     @Test
     public void testAnnotateRegion() throws Exception {
-
-        VariantStatsStorageOperation variantStorage = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
 
         VariantAnnotationStorageOperation annotOp1 = new VariantAnnotationStorageOperation(catalogManager, storageConfiguration);
         annotOp1.annotateVariants(studyId, new Query(), null, String.valueOf(outputId), sessionId, new QueryOptions(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), "22")

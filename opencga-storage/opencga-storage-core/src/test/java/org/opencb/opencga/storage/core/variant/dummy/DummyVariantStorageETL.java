@@ -42,9 +42,11 @@ public class DummyVariantStorageETL extends VariantStorageETL {
     @Override
     public URI load(URI input) throws IOException, StorageManagerException {
         logger.info("Loading file " + input);
+        List<Integer> fileIds = getOptions().getAsIntegerList(VariantStorageManager.Options.FILE_ID.key());
         if (getOptions().getBoolean(MOCK_VARIANTS_LOAD_FAIL)) {
-            List<Integer> fileIds = getOptions().getAsIntegerList(VariantStorageManager.Options.FILE_ID.key());
             setStatus(BatchFileOperation.Status.ERROR, "load", fileIds);
+        } else {
+            setStatus(BatchFileOperation.Status.DONE, "load", fileIds);
         }
         return input;
     }

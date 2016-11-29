@@ -183,6 +183,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             throw new StorageManagerException("Unable to create StorageManager", e);
         }
         variantStorageManager.getOptions().putAll(options);
+        boolean calculateStats = options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key())
+                && (step.equals(Type.LOAD) || step.equals(Type.INDEX));
 
         String fileStatus;
         String fileStatusMessage;
@@ -213,6 +215,19 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             return Collections.emptyList();
         }
 
+        if (step.equals(Type.INDEX) || step.equals(Type.LOAD)) {
+            boolean modified = false;
+            for (File file : filesToIndex) {
+                modified |= updateDefaultCohort(file, study, options, sessionId);
+            }
+            if (calculateStats) {
+                updateDefaultCohortStatus(study, Cohort.CohortStatus.CALCULATING, sessionId);
+            }
+            if (modified) {
+                // Update again the StudyConfiguration.
+                updateStudyConfiguration(sessionId, study.getId(), dataStore);
+            }
+        }
         // Only if we are not transforming or if a path has been passed, we will update catalog information
         List<String> previousFileStatus = new ArrayList<>(filesToIndex.size());
         if (!step.equals(Type.TRANSFORM) || catalogOutDirId != null) {
@@ -221,14 +236,6 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                 QueryResult<FileIndex> fileIndexQueryResult = fileManager.updateFileIndexStatus(file, fileStatus,
                         fileStatusMessage, sessionId);
                 file.setIndex(fileIndexQueryResult.first());
-            }
-        }
-        if (step.equals(Type.INDEX) || step.equals(Type.LOAD)) {
-            for (File file : filesToIndex) {
-                updateDefaultCohorts(file, study, options, sessionId);
-            }
-            if (options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key())) {
-                calculatingDefaultCohort(study, sessionId);
             }
         }
 
@@ -277,6 +284,9 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                 copyResults(outdir, catalogOutDirId, sessionId);
             }
             updateFileInfo(study, filesToIndex, storageETLResults, outdir, options, sessionId);
+            if (calculateStats) {
+                updateDefaultCohortStatus(sessionId, study, exception);
+            }
         }
 
         if (exception == null) {
@@ -371,14 +381,19 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
     private void updateFileInfo(Study study, List<File> filesToIndex, List<StorageETLResult> storageETLResults, Path outdir,
                                 QueryOptions options, String sessionId) throws CatalogException, IOException {
 
-        Map<String, StorageETLResult> map = storageETLResults
-                .stream()
-                .collect(Collectors.toMap(s -> {
-                    String input = s.getInput().getPath();
-                    String inputFileName = Paths.get(input).getFileName().toString();
-                    // Input file may be the transformed one. Convert into original file.
-                    return VariantReaderUtils.getOriginalFromTransformedFile(inputFileName);
-                }, i -> i));
+        Map<String, StorageETLResult> map;
+        try {
+            map = storageETLResults
+                    .stream()
+                    .collect(Collectors.toMap(s -> {
+                        String input = s.getInput().getPath();
+                        String inputFileName = Paths.get(input).getFileName().toString();
+                        // Input file may be the transformed one. Convert into original file.
+                        return VariantReaderUtils.getOriginalFromTransformedFile(inputFileName);
+                    }, i -> i));
+        } catch (IllegalStateException e) {
+            throw e;
+        }
 
         for (File indexedFile : filesToIndex) {
             // Fetch from catalog. {@link #copyResult} may modify the content
@@ -458,10 +473,6 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             if (transformedSuccess) {
                 updateVariantFileStats(indexedFile, outdir, sessionId);
             }
-
-//            if (loadedSuccess) {
-//                updateDefaultCohorts(indexedFile, study, options, sessionId);
-//            }
 
             // Update storageETLResult
             Map<String, Object> attributes = indexedFile.getAttributes();
@@ -544,8 +555,9 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 //        }
     }
 
-    private void updateDefaultCohorts(File file, Study study, QueryOptions options, String sessionId) throws CatalogException {
+    private boolean updateDefaultCohort(File file, Study study, QueryOptions options, String sessionId) throws CatalogException {
         /* Get file samples */
+        boolean modified = false;
         List<Sample> sampleList;
         if (file.getSampleIds() == null || file.getSampleIds().isEmpty()) {
             final ObjectMap fileModifyParams = new ObjectMap(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), new ObjectMap());
@@ -564,6 +576,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         if (cohorts.getResult().isEmpty()) {
             defaultCohort = catalogManager.getCohortManager().create(study.getId(), StudyEntry.DEFAULT_COHORT, Study.Type.COLLECTION,
                     "Default cohort with almost all indexed samples", Collections.emptyList(), null, sessionId).first();
+            modified = true;
         } else {
             defaultCohort = cohorts.first();
         }
@@ -578,15 +591,25 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         }
         if (!updateParams.isEmpty()) {
             catalogManager.getCohortManager().update(defaultCohort.getId(), updateParams, new QueryOptions(), sessionId);
+            modified = true;
+        }
+        return modified;
+    }
+
+    private void updateDefaultCohortStatus(String sessionId, Study study, StorageManagerException exception) throws CatalogException {
+        if (exception == null) {
+            updateDefaultCohortStatus(study, Cohort.CohortStatus.READY, sessionId);
+        } else {
+            updateDefaultCohortStatus(study, Cohort.CohortStatus.INVALID, sessionId);
         }
     }
 
-    private void calculatingDefaultCohort(Study study, String sessionId) throws CatalogException {
+    private void updateDefaultCohortStatus(Study study, String status, String sessionId) throws CatalogException {
 
         Query query = new Query(CohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT);
         Cohort defaultCohort = catalogManager.getAllCohorts(study.getId(), query, new QueryOptions(), sessionId).first();
 
-        catalogManager.getCohortManager().setStatus(Long.toString(defaultCohort.getId()), Cohort.CohortStatus.CALCULATING, null,
+        catalogManager.getCohortManager().setStatus(Long.toString(defaultCohort.getId()), status, null,
                 sessionId);
     }
 

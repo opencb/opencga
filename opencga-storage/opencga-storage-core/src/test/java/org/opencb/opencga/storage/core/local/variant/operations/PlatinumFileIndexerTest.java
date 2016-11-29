@@ -21,29 +21,15 @@ import org.junit.Test;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.FileIndex;
-import org.opencb.opencga.catalog.utils.FileMetadataReader;
-import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.local.variant.AbstractVariantStorageOperationTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 /**
  * Created on 15/07/16
@@ -71,7 +57,7 @@ public class PlatinumFileIndexerTest extends AbstractVariantStorageOperationTest
         for (int i = 77; i <= 93; i++) {
             inputFile = create("platinum/1K.end.platinum-genomes-vcf-NA128" + i + "_S1.genome.vcf.gz");
             transformFile = transformFile(inputFile, new QueryOptions());
-            loadFile(transformFile, new QueryOptions());
+            loadFile(transformFile, new QueryOptions(), outputId);
         }
 
 
@@ -89,69 +75,11 @@ public class PlatinumFileIndexerTest extends AbstractVariantStorageOperationTest
             inputFile = create("platinum/1K.end.platinum-genomes-vcf-NA128" + i + "_S1.genome.vcf.gz");
             files.add(transformFile(inputFile, new QueryOptions()));
         }
-        loadFiles(files, new QueryOptions());
+        loadFiles(files, new QueryOptions(), outputId);
 
         variantManager.iterator(new Query(VariantQueryParams.STUDIES.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
             System.out.println("variant = " + variant);
         });
-    }
-
-    public File transformFile(File inputFile, QueryOptions queryOptions) throws CatalogException, IOException, ClassNotFoundException, StorageManagerException, URISyntaxException, InstantiationException, IllegalAccessException {
-        queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, true);
-        queryOptions.append(VariantFileIndexerStorageOperation.LOAD, false);
-        boolean calculateStats = queryOptions.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key());
-
-        long studyId = catalogManager.getStudyIdByFileId(inputFile.getId());
-
-        //Create transform index job
-//        Job job = fileIndexer.index(inputFile.getId(), outputId, sessionId, queryOptions).first();
-        String tmpOutdir = opencga.createTmpOutdir(studyId, "_TRANSFORM_" + inputFile.getId(), sessionId);
-        List<StorageETLResult> results = variantManager.index(inputFile.getPath(), tmpOutdir, String.valueOf(outputId), queryOptions, sessionId);
-        // TODO: Check TRANSFORMING status!
-//        assertEquals(FileIndex.IndexStatus.TRANSFORMING, catalogManager.getFile(inputFile.getId(), sessionId).first().getIndex().getStatus().getName());
-
-//        //Run transform index job
-//        job = runStorageJob(catalogManager, job, logger, sessionId);
-//        assertEquals(Status.READY, job.getStatus().getName());
-        assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFile(inputFile.getId(), sessionId).first().getIndex().getStatus().getName());
-
-        //Get transformed file
-        String transformFileName = Paths.get(results.get(0).getTransformResult().getPath()).getFileName().toString();
-        Query searchQuery = new Query(FileDBAdaptor.QueryParams.NAME.key(), transformFileName);
-        File transformedFile = catalogManager.getAllFiles(studyId, searchQuery, new QueryOptions(), sessionId).first();
-//        assertEquals(job.getId(), transformedFile.getJobId());
-        inputFile = catalogManager.getFile(inputFile.getId(), sessionId).first();
-        assertNotNull(inputFile.getStats().get(FileMetadataReader.VARIANT_STATS));
-        return transformedFile;
-    }
-
-    public StorageETLResult loadFile(File inputFile, QueryOptions queryOptions) throws CatalogException, IOException, ClassNotFoundException, StorageManagerException, URISyntaxException, InstantiationException, IllegalAccessException {
-        return loadFiles(Collections.singletonList(inputFile), queryOptions).get(0);
-    }
-
-    public List<StorageETLResult> loadFiles(List<File> inputFiles, QueryOptions queryOptions) throws CatalogException, IOException, ClassNotFoundException, StorageManagerException, URISyntaxException, InstantiationException, IllegalAccessException {
-        queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, false);
-        queryOptions.append(VariantFileIndexerStorageOperation.LOAD, true);
-        boolean calculateStats = queryOptions.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key());
-
-        List<String> ids = inputFiles.stream().map(File::getId).map(Object::toString).collect(Collectors.toList());
-        String idsStr = inputFiles.stream().map((file) -> String.valueOf(file.getId())).collect(Collectors.joining("_"));
-        //Create transform index job
-        String tmpOutdir = opencga.createTmpOutdir(studyId, "_LOAD_" + idsStr, sessionId);
-        List<StorageETLResult> results = variantManager.index(ids, tmpOutdir, String.valueOf(outputId), queryOptions, sessionId);
-
-        //TODO: Check loading status!
-//        long indexedFileId = ((Number) job.getAttributes().get(Job.INDEXED_FILE_ID)).longValue();
-//        assertEquals(FileIndex.IndexStatus.LOADING, catalogManager.getFile(indexedFileId, sessionId).first().getIndex().getStatus().getName());
-//        assertEquals(job.getAttributes().get(Job.TYPE), Job.Type.INDEX.toString());
-
-//        //Run transform index job
-//        job = runStorageJob(catalogManager, job, logger, sessionId);
-//        assertEquals(Status.READY, job.getStatus().getName());
-
-//        assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFile(indexedFileId, sessionId).first().getIndex().getStatus().getName());
-
-        return results;
     }
 
 }

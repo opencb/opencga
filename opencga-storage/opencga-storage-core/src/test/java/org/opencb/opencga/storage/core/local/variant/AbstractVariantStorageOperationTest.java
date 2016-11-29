@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.local.variant;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -24,19 +25,24 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.config.Policies;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
+import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.local.OpenCGATestExternalResource;
+import org.opencb.opencga.storage.core.local.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageManager;
@@ -45,10 +51,17 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
+import static org.opencb.opencga.storage.core.local.variant.operations.StatsVariantStorageTest.checkCalculatedStats;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.DB_NAME;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
@@ -57,7 +70,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.get
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public abstract class AbstractVariantStorageOperationTest {
+public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     protected CatalogManager catalogManager;
 
     protected String sessionId;
@@ -66,8 +79,8 @@ public abstract class AbstractVariantStorageOperationTest {
 
     protected long projectId;
     protected long studyId;
-    protected long studyId2;
     protected long outputId;
+    protected long studyId2;
     protected long outputId2;
 
     protected FileMetadataReader fileMetadataReader;
@@ -124,6 +137,11 @@ public abstract class AbstractVariantStorageOperationTest {
 
     }
 
+    @After
+    public void tearDown() throws Exception {
+        DummyStudyConfigurationManager.writeAndClear(opencga.getOpencgaHome());
+    }
+
     protected String getStorageEngine() {
         return STORAGE_ENGINE_MOCKUP;
     }
@@ -154,5 +172,97 @@ public abstract class AbstractVariantStorageOperationTest {
     protected Cohort getDefaultCohort(long studyId) throws CatalogException {
         return catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), DEFAULT_COHORT),
                 new QueryOptions(), sessionId).first();
+    }
+
+
+    protected File transformFile(File inputFile, QueryOptions queryOptions) throws CatalogException, IOException, StorageManagerException, URISyntaxException {
+
+        queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, true);
+        queryOptions.append(VariantFileIndexerStorageOperation.LOAD, false);
+        boolean calculateStats = queryOptions.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key());
+
+        long studyId = catalogManager.getStudyIdByFileId(inputFile.getId());
+
+        //Default cohort should not be modified
+        Cohort defaultCohort = getDefaultCohort(studyId);
+        String outdir = opencga.createTmpOutdir(studyId, "_TRANSFORM_", sessionId);
+        variantManager.index(String.valueOf(inputFile.getId()), outdir, "data/index/", queryOptions, sessionId);
+        inputFile = catalogManager.getFile(inputFile.getId(), sessionId).first();
+        assertEquals(FileIndex.IndexStatus.TRANSFORMED, inputFile.getIndex().getStatus().getName());
+
+        // Default cohort should not be modified
+        assertEquals(defaultCohort, getDefaultCohort(studyId));
+
+        //Get transformed file
+        Query searchQuery = new Query(FileDBAdaptor.QueryParams.DIRECTORY.key(), "data/index/")
+                .append(FileDBAdaptor.QueryParams.NAME.key(), "~" + inputFile.getName() + ".variants.(json|avro)");
+        File transformedFile = catalogManager.getAllFiles(studyId, searchQuery, new QueryOptions(), sessionId).first();
+        assertNotNull(inputFile.getStats().get(FileMetadataReader.VARIANT_STATS));
+        return transformedFile;
+    }
+
+    protected List<StorageETLResult> loadFile(File file, QueryOptions queryOptions, long outputId) throws Exception {
+        return loadFiles(Collections.singletonList(file), queryOptions, outputId);
+    }
+
+    protected List<StorageETLResult> loadFiles(List<File> files, QueryOptions queryOptions, long outputId) throws Exception {
+
+        queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, false);
+        queryOptions.append(VariantFileIndexerStorageOperation.LOAD, true);
+        boolean calculateStats = queryOptions.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key());
+
+        long studyId = catalogManager.getStudyIdByFileId(files.get(0).getId());
+
+        List<String> fileIds = files.stream().map(File::getId).map(Object::toString).collect(Collectors.toList());
+        String outdir = opencga.createTmpOutdir(studyId, "_LOAD_", sessionId);
+        List<StorageETLResult> etlResults = variantManager.index(fileIds, outdir, String.valueOf(outputId), queryOptions, sessionId);
+
+        assertEquals(1, etlResults.size());
+        checkEtlResults(studyId, etlResults, FileIndex.IndexStatus.READY);
+
+        Cohort defaultCohort = getDefaultCohort(studyId);
+        for (File file : files) {
+            assertTrue(defaultCohort.getSamples().containsAll(file.getSampleIds()));
+        }
+        if (calculateStats) {
+            assertEquals(Cohort.CohortStatus.READY, defaultCohort.getStatus().getName());
+            checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, defaultCohort), catalogManager, dbName, sessionId);
+        }
+        return etlResults;
+    }
+
+    protected void indexFile(File file, QueryOptions queryOptions, long outputId) throws Exception {
+        queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, true);
+        queryOptions.append(VariantFileIndexerStorageOperation.LOAD, true);
+        boolean calculateStats = queryOptions.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key());
+
+        long studyId = catalogManager.getStudyIdByFileId(file.getId());
+
+        String outdir = opencga.createTmpOutdir(studyId, "_INDEX_", sessionId);
+        List<StorageETLResult> etlResults = variantManager.index(file.getPath(), outdir, String.valueOf(outputId), queryOptions, sessionId);
+
+        assertEquals(1, etlResults.size());
+        checkEtlResults(studyId, etlResults, FileIndex.IndexStatus.READY);
+
+        Cohort defaultCohort = getDefaultCohort(studyId);
+        assertTrue(defaultCohort.getSamples().containsAll(file.getSampleIds()));
+        if (calculateStats) {
+            assertEquals(Cohort.CohortStatus.READY, defaultCohort.getStatus().getName());
+            checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, defaultCohort), catalogManager, dbName, sessionId);
+        }
+    }
+
+    protected void checkEtlResults(long studyId, List<StorageETLResult> etlResults, String expectedStatus) throws CatalogException {
+        for (StorageETLResult etlResult : etlResults) {
+            File input = catalogManager.searchFile(studyId, new Query(FileDBAdaptor.QueryParams.URI.key(), etlResult.getInput()), sessionId).first();
+            long indexedFileId;
+            if (input.getRelatedFiles().isEmpty()) {
+                indexedFileId = input.getId();
+            } else {
+                indexedFileId = input.getRelatedFiles().get(0).getFileId();
+            }
+            assertEquals(expectedStatus, catalogManager.getFile(indexedFileId, sessionId).first().getIndex().getStatus().getName());
+            System.out.println("etlResult = " + etlResult);
+        }
     }
 }

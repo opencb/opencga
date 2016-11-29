@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 public class DummyVariantStorageManager extends VariantStorageManager {
 
 
-    public static final String STORAGE_ENGINE_ID = "mock";
+    public static final String STORAGE_ENGINE_ID = "dummy";
 
     @Override
     public VariantDBAdaptor getDBAdaptor(String dbName) throws StorageManagerException {
