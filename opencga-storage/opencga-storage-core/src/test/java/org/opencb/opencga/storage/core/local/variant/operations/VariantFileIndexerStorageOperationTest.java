@@ -59,7 +59,8 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
     Logger logger = LoggerFactory.getLogger(VariantFileIndexerStorageOperationTest.class);
     private List<File> files;
-    private final static String[] FILE_NAMES = {"1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+    private final static String[] FILE_NAMES = {
+            "1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
             "1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
             "1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
             "1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
@@ -125,7 +126,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
     @After
     public void tearDown() throws Exception {
         Path path = opencga.getOpencgaHome();
-        DummyStudyConfigurationManager.writeAndReset(path);
+        DummyStudyConfigurationManager.writeAndClear(path);
     }
 
     String newTmpOutdir() throws CatalogException {

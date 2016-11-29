@@ -2,8 +2,12 @@ package org.opencb.opencga.storage.core.local.models;
 
 import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Study;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -14,20 +18,18 @@ public class StudyInfo {
     private String sessionId;
     private String userId;
     private long projectId;
-    private long studyId;
+    private Study study;
 
     private String projectAlias;
-    private String studyAlias;
 
     private Path workspace;
     private Map<File.Bioformat, DataStore> dataStores;
 
-    private FileInfo fileInfo;
+    private List<FileInfo> fileInfos;
 
     public StudyInfo() {
         this.projectId = -1;
-        this.studyId = -1;
-        this.fileInfo = new FileInfo();
+        this.fileInfos = new ArrayList<>();
     }
 
     public String getUserId() {
@@ -49,11 +51,15 @@ public class StudyInfo {
     }
 
     public long getStudyId() {
-        return studyId;
+        return study != null ? study.getId() : -1;
     }
 
-    public StudyInfo setStudyId(long studyId) {
-        this.studyId = studyId;
+    public Study getStudy() {
+        return study;
+    }
+
+    public StudyInfo setStudy(Study study) {
+        this.study = study;
         return this;
     }
 
@@ -67,21 +73,12 @@ public class StudyInfo {
     }
 
     public String getStudyAlias() {
-        return studyAlias;
+        return study != null ? study.getAlias() : null;
     }
 
-    public StudyInfo setStudyAlias(String studyAlias) {
-        this.studyAlias = studyAlias;
-        return this;
-    }
 
     public Path getWorkspace() {
-        return workspace;
-    }
-
-    public StudyInfo setWorkspace(Path workspace) {
-        this.workspace = workspace;
-        return this;
+        return study != null ? Paths.get(study.getUri().getRawPath()) : null;
     }
 
     public Map<File.Bioformat, DataStore> getDataStores() {
@@ -103,11 +100,20 @@ public class StudyInfo {
     }
 
     public FileInfo getFileInfo() {
-        return fileInfo;
+        return fileInfos.get(0);
     }
 
     public StudyInfo setFileInfo(FileInfo fileInfo) {
-        this.fileInfo = fileInfo;
+        this.fileInfos.set(0, fileInfo);
+        return this;
+    }
+
+    public List<FileInfo> getFileInfos() {
+        return fileInfos;
+    }
+
+    public StudyInfo setFileInfos(List<FileInfo> fileInfos) {
+        this.fileInfos = fileInfos;
         return this;
     }
 }

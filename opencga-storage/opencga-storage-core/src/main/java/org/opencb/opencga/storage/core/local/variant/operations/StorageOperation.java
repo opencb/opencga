@@ -169,6 +169,11 @@ public abstract class StorageOperation {
     public static DataStore getDataStore(CatalogManager catalogManager, long studyId, File.Bioformat bioformat, String sessionId)
             throws CatalogException {
         Study study = catalogManager.getStudyManager().get(studyId, new QueryOptions(), sessionId).first();
+        return getDataStore(catalogManager, study, bioformat, sessionId);
+    }
+
+    public static DataStore getDataStore(CatalogManager catalogManager, Study study, File.Bioformat bioformat, String sessionId)
+            throws CatalogException {
         DataStore dataStore;
         if (study.getDataStores() != null && study.getDataStores().containsKey(bioformat)) {
             dataStore = study.getDataStores().get(bioformat);
@@ -182,11 +187,9 @@ public abstract class StorageOperation {
                 dataStore = project.getDataStores().get(bioformat);
             } else { //get default datastore
                 //Must use the UserByStudyId instead of the file owner.
-                String userId = catalogManager.getStudyManager().getUserId(studyId);
+                String userId = catalogManager.getStudyManager().getUserId(study.getId());
                 String alias = project.getAlias();
 
-                // TODO: We should be reading storageConfiguration, where the database prefix should be stored.
-//                String prefix = Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX, "opencga_");
                 String prefix;
                 if (StringUtils.isNotEmpty(catalogManager.getCatalogConfiguration().getDatabasePrefix())) {
                     prefix = catalogManager.getCatalogConfiguration().getDatabasePrefix();

@@ -22,9 +22,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
@@ -33,15 +33,15 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.local.models.FileInfo;
 import org.opencb.opencga.storage.core.local.models.StudyInfo;
+import org.opencb.opencga.storage.core.local.variant.operations.StorageOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
+import java.util.*;
 
 
 public abstract class StorageManager {
@@ -103,9 +103,14 @@ public abstract class StorageManager {
 
     public abstract void testConnection() throws StorageManagerException;
 
-    protected StudyInfo getStudyInfo(@Nullable String studyIdStr, String fileIdStr, String sessionId) throws CatalogException, IOException {
+    protected StudyInfo getStudyInfo(@Nullable String studyIdStr, String fileIdStr, String sessionId)
+            throws CatalogException, IOException {
+        return getStudyInfo(studyIdStr, Collections.singletonList(fileIdStr), sessionId);
+    }
+
+    protected StudyInfo getStudyInfo(@Nullable String studyIdStr, List<String> fileIdStrs, String sessionId)
+            throws CatalogException, IOException {
         StudyInfo studyInfo = new StudyInfo().setSessionId(sessionId);
-        FileInfo fileInfo = studyInfo.getFileInfo();
 
         String userId = catalogManager.getUserManager().getId(sessionId);
         studyInfo.setUserId(userId);
@@ -115,55 +120,66 @@ public abstract class StorageManager {
             studyId = catalogManager.getStudyManager().getId(userId, studyIdStr);
         }
 
-        long fileId;
-        if (studyId > 0) {
-            fileId = catalogManager.getFileManager().getId(userId, studyId, fileIdStr);
-            if (fileId <= 0) {
-                throw new CatalogException("The id of file " + fileIdStr + " could not be found under study " + studyIdStr);
+        List<FileInfo> fileInfos = new ArrayList<>(fileIdStrs.size());
+        for (String fileIdStr : fileIdStrs) {
+            FileInfo fileInfo = new FileInfo();
+            long fileId;
+            if (studyId > 0) {
+                fileId = catalogManager.getFileManager().getId(userId, studyId, fileIdStr);
+                if (fileId <= 0) {
+                    throw new CatalogException("The id of file " + fileIdStr + " could not be found under study " + studyIdStr);
+                }
+            } else {
+                fileId = catalogManager.getFileManager().getId(userId, fileIdStr);
+                if (fileId <= 0) {
+                    throw new CatalogException("The id of file " + fileIdStr + " could not be found");
+                }
+                studyId = catalogManager.getFileManager().getStudyId(fileId);
             }
-        } else {
-            fileId = catalogManager.getFileManager().getId(userId, fileIdStr);
-            if (fileId <= 0) {
-                throw new CatalogException("The id of file " + fileIdStr + " could not be found");
-            }
-            studyId = catalogManager.getFileManager().getStudyId(fileId);
-        }
-        studyInfo.setStudyId(studyId);
-        fileInfo.setFileId(fileId);
+            fileInfo.setFileId(fileId);
 
-        // Get workspace
-        QueryOptions studyOptions = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(StudyDBAdaptor.QueryParams.URI.key(), StudyDBAdaptor.QueryParams.ALIAS.key(),
-                        StudyDBAdaptor.QueryParams.DATASTORES.key()));
+            // Get file path
+            QueryOptions fileOptions = new QueryOptions(QueryOptions.INCLUDE,
+                    Arrays.asList(FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.NAME.key()));
+            QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(fileId, fileOptions, sessionId);
+
+            if (fileQueryResult.getNumResults() != 1) {
+                logger.error("Critical error: File {} not found in catalog.", fileId);
+                throw new CatalogException("Critical error: File " + fileId + " not found in catalog");
+            }
+
+            Path path = Paths.get(fileQueryResult.first().getUri().getRawPath());
+            FileUtils.checkFile(path);
+
+            fileInfo.setPath(path);
+            fileInfo.setName(fileQueryResult.first().getName());
+
+
+            fileInfos.add(fileInfo);
+        }
+        studyInfo.setFileInfos(fileInfos);
+
+        QueryOptions studyOptions = new QueryOptions();
+//        studyOptions.put(QueryOptions.INCLUDE,
+//                Arrays.asList(StudyDBAdaptor.QueryParams.URI.key(), StudyDBAdaptor.QueryParams.ALIAS.key(),
+//                        StudyDBAdaptor.QueryParams.DATASTORES.key()));
         QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyId, studyOptions, sessionId);
         if (studyQueryResult .getNumResults() != 1) {
             logger.error("Critical error: Study {} not found in catalog.", studyId);
             throw new CatalogException("Critical error: Study " + studyId + " not found in catalog");
         }
+        Study study = studyQueryResult.first();
+        studyInfo.setStudy(study);
 
-        Path workspace = Paths.get(studyQueryResult.first().getUri().getRawPath()).resolve(".opencga").resolve("alignments");
-        if (!workspace.toFile().exists()) {
-            Files.createDirectories(workspace);
-        }
-        studyInfo.setWorkspace(workspace);
-        studyInfo.setStudyAlias(studyQueryResult.first().getAlias());
-        studyInfo.setDataStores(studyQueryResult.first().getDataStores());
-
-        // Get file path
-        QueryOptions fileOptions = new QueryOptions(QueryOptions.INCLUDE,
-                Arrays.asList(FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.NAME.key()));
-        QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(fileId, fileOptions, sessionId);
-
-        if (fileQueryResult.getNumResults() != 1) {
-            logger.error("Critical error: File {} not found in catalog.", fileId);
-            throw new CatalogException("Critical error: File " + fileId + " not found in catalog");
-        }
-
-        Path path = Paths.get(fileQueryResult.first().getUri().getRawPath());
-        FileUtils.checkFile(path);
-
-        fileInfo.setPath(path);
-        fileInfo.setName(fileQueryResult.first().getName());
+//        Path workspace = Paths.get(study.getUri().getRawPath()).resolve(".opencga").resolve("alignments");
+//        if (!workspace.toFile().exists()) {
+//            Files.createDirectories(workspace);
+//        }
+//        studyInfo.setWorkspace(workspace);
+        Map<File.Bioformat, DataStore> dataStores = new HashMap<>();
+        dataStores.put(File.Bioformat.VARIANT, StorageOperation.getDataStore(catalogManager, study, File.Bioformat.VARIANT, sessionId));
+        dataStores.put(File.Bioformat.ALIGNMENT, StorageOperation.getDataStore(catalogManager, study, File.Bioformat.ALIGNMENT, sessionId));
+        studyInfo.setDataStores(dataStores);
 
         return studyInfo;
     }

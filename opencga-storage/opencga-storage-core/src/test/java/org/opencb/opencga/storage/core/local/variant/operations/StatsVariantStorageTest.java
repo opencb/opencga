@@ -103,13 +103,12 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         coh4 = catalogManager.createCohort(studyId, "coh4", Study.Type.CONTROL_SET, "", file4.getSampleIds(), null, sessionId).first().getId();
         coh5 = catalogManager.createCohort(studyId, "coh5", Study.Type.CONTROL_SET, "", file5.getSampleIds(), null, sessionId).first().getId();
 
-        VariantFileIndexerStorageOperation fileIndexer = new VariantFileIndexerStorageOperation(catalogManager.getCatalogConfiguration(), opencga.getStorageConfiguration());
-        QueryOptions queryOptions = new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false).append(VariantFileIndexerStorageOperation.CATALOG_PATH, outputId);
-        fileIndexer.index("" + file1.getId(), createTmpOutdir(file1), sessionId, queryOptions);
-        fileIndexer.index("" + file2.getId(), createTmpOutdir(file2), sessionId, queryOptions);
-        fileIndexer.index("" + file3.getId(), createTmpOutdir(file3), sessionId, queryOptions);
-        fileIndexer.index("" + file4.getId(), createTmpOutdir(file4), sessionId, queryOptions);
-        fileIndexer.index("" + file5.getId(), createTmpOutdir(file5), sessionId, queryOptions);
+        QueryOptions queryOptions = new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false);
+        variantManager.index(String.valueOf(file1.getId()), createTmpOutdir(file1), String.valueOf(outputId), queryOptions, sessionId);
+        variantManager.index(String.valueOf(file2.getId()), createTmpOutdir(file2), String.valueOf(outputId), queryOptions, sessionId);
+        variantManager.index(String.valueOf(file3.getId()), createTmpOutdir(file3), String.valueOf(outputId), queryOptions, sessionId);
+        variantManager.index(String.valueOf(file4.getId()), createTmpOutdir(file4), String.valueOf(outputId), queryOptions, sessionId);
+        variantManager.index(String.valueOf(file5.getId()), createTmpOutdir(file5), String.valueOf(outputId), queryOptions, sessionId);
 
 
         all = catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), DEFAULT_COHORT),
@@ -141,9 +140,8 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
 //        coh1 = catalogManager.createCohort(studyId, "coh1", Cohort.Type.CONTROL_SET, "", file1.getSampleIds(), null, sessionId).first().getId();
 
-        VariantFileIndexerStorageOperation fileIndexer = new VariantFileIndexerStorageOperation(catalogManager.getCatalogConfiguration(), opencga.getStorageConfiguration());
         QueryOptions queryOptions = new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false);
-        fileIndexer.index("" + file1.getId(), createTmpOutdir(file1), sessionId, queryOptions);
+        variantManager.index(String.valueOf(file1.getId()), createTmpOutdir(file1), String.valueOf(outputId), queryOptions, sessionId);
         return file1;
     }
 

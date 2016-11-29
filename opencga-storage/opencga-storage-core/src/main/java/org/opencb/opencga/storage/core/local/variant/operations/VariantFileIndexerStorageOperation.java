@@ -39,6 +39,8 @@ import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.local.models.FileInfo;
+import org.opencb.opencga.storage.core.local.models.StudyInfo;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.LoggerFactory;
@@ -87,17 +89,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         this.fileManager = catalogManager.getFileManager();
     }
 
-    public List<StorageETLResult> index(String fileIds, String outdirString, String sessionId, QueryOptions options)
-            throws CatalogException, IOException, IllegalAccessException, InstantiationException,
-            ClassNotFoundException, StorageManagerException, URISyntaxException {
-
-        // Query catalog for user data
-        String userId = catalogManager.getUserManager().getId(sessionId);
-        List<Long> fileIdsLong = fileManager.getIds(userId, fileIds);
-        return index(fileIdsLong, outdirString, options, sessionId);
-    }
-
-    public List<StorageETLResult> index(List<Long> fileIds, String outdirString, QueryOptions options, String sessionId)
+    public List<StorageETLResult> index(StudyInfo studyInfo, String outdirString, QueryOptions options, String sessionId)
             throws CatalogException, IOException, StorageManagerException, URISyntaxException {
 
         URI outdirUri = UriUtils.createDirectoryUri(outdirString);
@@ -139,36 +131,23 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         // We read all input files from fileId. This can either be a single file and then we just use it,
         // or this can be a directory, in that case we use all VCF files in that directory or subdirectory
-        List<File> inputFiles = new ArrayList<>();
-        long studyIdByInputFileId = -1;
+//        long studyIdByInputFileId = getStudyId(fileIds);
+        long studyIdByInputFileId = studyInfo.getStudyId();
 
-        for (Long fileIdLong : fileIds) {
-            long studyId = fileManager.getStudyId(fileIdLong);
-            if (studyId == -1) {
-                // Skip the file. Something strange occurred.
-                logger.error("Could not obtain study of the file {}", fileIdLong);
-                throw new CatalogException("Could not obtain the study of the file " + fileIdLong + ". Is it a correct file id?.");
-//                continue;
-            }
-
-            // Check that the study of all the files is the same
-            if (studyIdByInputFileId == -1) {
-                // First iteration
-                studyIdByInputFileId = studyId;
-            } else if (studyId != studyIdByInputFileId) {
-                throw new CatalogException("Cannot index files coming from different studies.");
-            }
-        }
-
-        Study study = catalogManager.getStudyManager().get(studyIdByInputFileId, new QueryOptions(), sessionId).getResult().get(0);
+//        Study study = catalogManager.getStudyManager().get(studyIdByInputFileId, new QueryOptions(), sessionId).getResult().get(0);
+        Study study = studyInfo.getStudy();
 
         // We get the credentials of the Datastore to insert the variants
-        DataStore dataStore = getDataStore(catalogManager, studyIdByInputFileId, File.Bioformat.VARIANT, sessionId);
+//        DataStore dataStore = getDataStore(catalogManager, studyIdByInputFileId, File.Bioformat.VARIANT, sessionId);
+        DataStore dataStore = studyInfo.getDataStores().get(File.Bioformat.VARIANT);
 
         // Update study configuration BEFORE executing the index and fetching files from Catalog
         updateStudyConfiguration(sessionId, studyIdByInputFileId, dataStore);
 
-        for (Long fileIdLong : fileIds) {
+        List<File> inputFiles = new ArrayList<>();
+//        for (Long fileIdLong : fileIds) {
+        for (FileInfo fileInfo : studyInfo.getFileInfos()) {
+            long fileIdLong = fileInfo.getFileId();
             File inputFile = fileManager.get(fileIdLong, new QueryOptions(), sessionId).first();
 
             if (inputFile.getType() == File.Type.FILE) {
@@ -312,6 +291,28 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             throw exception;
         }
         return storageETLResults;
+    }
+
+    private long getStudyId(List<Long> fileIds) throws CatalogException {
+        long studyIdByInputFileId = -1;
+        for (Long fileIdLong : fileIds) {
+            long studyId = fileManager.getStudyId(fileIdLong);
+            if (studyId == -1) {
+                // Skip the file. Something strange occurred.
+                logger.error("Could not obtain study of the file {}", fileIdLong);
+                throw new CatalogException("Could not obtain the study of the file " + fileIdLong + ". Is it a correct file id?.");
+//                continue;
+            }
+
+            // Check that the study of all the files is the same
+            if (studyIdByInputFileId == -1) {
+                // First iteration
+                studyIdByInputFileId = studyId;
+            } else if (studyId != studyIdByInputFileId) {
+                throw new CatalogException("Cannot index files coming from different studies.");
+            }
+        }
+        return studyIdByInputFileId;
     }
 
     @Override

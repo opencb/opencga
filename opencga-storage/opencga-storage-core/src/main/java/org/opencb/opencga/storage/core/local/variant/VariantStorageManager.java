@@ -39,6 +39,7 @@ import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.local.StorageManager;
+import org.opencb.opencga.storage.core.local.models.StudyInfo;
 import org.opencb.opencga.storage.core.local.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.local.variant.operations.VariantAnnotationStorageOperation;
 import org.opencb.opencga.storage.core.local.variant.operations.VariantFileIndexerStorageOperation;
@@ -97,14 +98,10 @@ public class VariantStorageManager extends StorageManager {
             throws CatalogException, StorageManagerException, IOException, URISyntaxException {
         VariantFileIndexerStorageOperation indexOperation = new VariantFileIndexerStorageOperation(catalogManager, storageConfiguration);
 
-        List<Long> fileIds = new ArrayList<>(files.size());
-        for (String file : files) {
-            long fileId = catalogManager.getFileId(file, sessionId);
-            fileIds.add(fileId);
-        }
         QueryOptions options = new QueryOptions(config);
         options.putIfNotNull(VariantFileIndexerStorageOperation.CATALOG_PATH, catalogOutDir);
-        return indexOperation.index(fileIds, outDir, options, sessionId);
+        StudyInfo studyInfo = getStudyInfo(null, files, sessionId);
+        return indexOperation.index(studyInfo, outDir, options, sessionId);
     }
 
     public void deleteStudy(String studyId, String sessionId) {

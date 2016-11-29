@@ -44,8 +44,6 @@ public class VariantFileIndexerTest extends AbstractVariantStorageOperationTest 
     @Test
     public void testIndex() throws Exception {
 
-        VariantFileIndexerStorageOperation variantFileIndexer = new VariantFileIndexerStorageOperation(opencga.getCatalogManager().getCatalogConfiguration(),
-                opencga.getStorageConfiguration());
 
         File file = create("variant-test-file.vcf.gz");
         Path outdir1 = opencga.getOpencgaHome().resolve("job1");
@@ -53,11 +51,11 @@ public class VariantFileIndexerTest extends AbstractVariantStorageOperationTest 
         Path outdir2 = opencga.getOpencgaHome().resolve("job2");
         Files.createDirectory(outdir2);
 
-        variantFileIndexer.index(file.getName(), outdir1.toString(), sessionId, new QueryOptions(TRANSFORM, true).append(CATALOG_PATH, "data/"));
+        variantManager.index(file.getPath(), outdir1.toString(), "data/", new QueryOptions(TRANSFORM, true), sessionId);
         file = opencga.getCatalogManager().getFile(file.getId(), sessionId).first();
         assertEquals(FileIndex.IndexStatus.TRANSFORMED, file.getIndex().getStatus().getName());
 
-        variantFileIndexer.index(file.getName(), outdir2.toString(), sessionId, new QueryOptions(LOAD, true).append(CATALOG_PATH, "data/"));
+        variantManager.index(file.getPath(), outdir2.toString(), "data/", new QueryOptions(LOAD, true), sessionId);
         file = opencga.getCatalogManager().getFile(file.getId(), sessionId).first();
         assertEquals(FileIndex.IndexStatus.READY, file.getIndex().getStatus().getName());
     }

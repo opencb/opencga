@@ -94,7 +94,7 @@ public class DummyStudyConfigurationManager extends StudyConfigurationManager {
         LOCK_STUDIES.get(studyId).unlock();
     }
 
-    public static synchronized void writeAndReset(Path path) {
+    public static synchronized void writeAndClear(Path path) {
         ObjectMapper objectMapper = new ObjectMapper(new JsonFactory());
         String prefix = "storage_configuration_" + NUM_PRINTS.incrementAndGet() + "_";
         for (StudyConfiguration studyConfiguration : DummyStudyConfigurationManager.STUDY_CONFIGURATIONS_BY_NAME.values()) {
@@ -104,6 +104,12 @@ public class DummyStudyConfigurationManager extends StudyConfigurationManager {
                 throw new UncheckedIOException(e);
             }
         }
+        STUDY_CONFIGURATIONS_BY_NAME.clear();
+        STUDY_CONFIGURATIONS_BY_ID.clear();
+        LOCK_STUDIES.clear();
+    }
+
+    public static void clear() {
         STUDY_CONFIGURATIONS_BY_NAME.clear();
         STUDY_CONFIGURATIONS_BY_ID.clear();
         LOCK_STUDIES.clear();

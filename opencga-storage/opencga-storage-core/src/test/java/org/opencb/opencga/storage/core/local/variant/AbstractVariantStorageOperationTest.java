@@ -38,6 +38,7 @@ import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.local.OpenCGATestExternalResource;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,6 +97,7 @@ public abstract class AbstractVariantStorageOperationTest {
                 new ObjectMap()
         ));
         StorageManagerFactory.configure(storageConfiguration);
+        DummyStudyConfigurationManager.clear();
 
         variantManager = new org.opencb.opencga.storage.core.local.variant.VariantStorageManager(catalogManager, storageConfiguration);
         clearDB(dbName);
