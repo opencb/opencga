@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.storage;
+package org.opencb.opencga.storage.core.local;
 
 import org.junit.rules.ExternalResource;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
@@ -31,11 +29,9 @@ import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.common.Config;
-import org.opencb.opencga.storage.core.local.StorageManager;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +42,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Map;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
@@ -65,7 +60,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
     private StorageManagerFactory storageManagerFactory;
 
 
-    public HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource;
+//    public HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource;
 
     public OpenCGATestExternalResource() {
         this(false);
@@ -81,20 +76,20 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
         catalogManagerExternalResource.before();
 
-        if (storageHadoop) {
-            try {
-                String name = HadoopVariantStorageTest.class.getName();
-                Class.forName(name);
-            } catch (ClassNotFoundException e) {
-                logger.error("Missing dependency opencga-storage-hadoop!");
-                throw e;
-            }
-        }
+//        if (storageHadoop) {
+//            try {
+//                String name = HadoopVariantStorageTest.class.getName();
+//                Class.forName(name);
+//            } catch (ClassNotFoundException e) {
+//                logger.error("Missing dependency opencga-storage-hadoop!");
+//                throw e;
+//            }
+//        }
 
-        if (storageHadoop) {
-            hadoopExternalResource = new HadoopVariantStorageTest.HadoopExternalResource();
-            hadoopExternalResource.before();
-        }
+//        if (storageHadoop) {
+//            hadoopExternalResource = new HadoopVariantStorageTest.HadoopExternalResource();
+//            hadoopExternalResource.before();
+//        }
         opencgaHome = isolateOpenCGA();
         Files.createDirectory(opencgaHome.resolve("storage"));
         VariantStorageBaseTest.setRootDir(opencgaHome.resolve("storage"));
@@ -107,9 +102,9 @@ public class OpenCGATestExternalResource extends ExternalResource {
         super.after();
 
         catalogManagerExternalResource.after();
-        if (storageHadoop) {
-            hadoopExternalResource.after();
-        }
+//        if (storageHadoop) {
+//            hadoopExternalResource.after();
+//        }
     }
 
     public Path getOpencgaHome() {
@@ -146,42 +141,42 @@ public class OpenCGATestExternalResource extends ExternalResource {
         catalogManagerExternalResource.getCatalogConfiguration().serialize(
                 new FileOutputStream(conf.resolve("catalog-configuration.yml").toFile()));
 
-        inputStream = new ByteArrayInputStream((ExecutorManager.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
-                AnalysisFileIndexer.OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX + "=" + "opencga_test_").getBytes());
-        Files.copy(inputStream, conf.resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);
+//        inputStream = new ByteArrayInputStream((ExecutorManager.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
+//                AnalysisFileIndexer.OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX + "=" + "opencga_test_").getBytes());
+//        Files.copy(inputStream, conf.resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);
 
         inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
 
         storageConfiguration = StorageConfiguration.load(inputStream, "yml");
-        if (storageHadoop) {
-            HadoopVariantStorageTest.updateStorageConfiguration(storageConfiguration, hadoopExternalResource.getConf());
-            ObjectMap variantHadoopOptions = storageConfiguration.getStorageEngine("hadoop").getVariant().getOptions();
-            ObjectMap alignmentHadoopOptions = storageConfiguration.getStorageEngine("hadoop").getAlignment().getOptions();
-            for (Map.Entry<String, String> entry : hadoopExternalResource.getConf()) {
-                variantHadoopOptions.put(entry.getKey(), entry.getValue());
-                alignmentHadoopOptions.put(entry.getKey(), entry.getValue());
-            }
-        }
+//        if (storageHadoop) {
+//            HadoopVariantStorageTest.updateStorageConfiguration(storageConfiguration, hadoopExternalResource.getConf());
+//            ObjectMap variantHadoopOptions = storageConfiguration.getStorageEngine("hadoop").getVariant().getOptions();
+//            ObjectMap alignmentHadoopOptions = storageConfiguration.getStorageEngine("hadoop").getAlignment().getOptions();
+//            for (Map.Entry<String, String> entry : hadoopExternalResource.getConf()) {
+//                variantHadoopOptions.put(entry.getKey(), entry.getValue());
+//                alignmentHadoopOptions.put(entry.getKey(), entry.getValue());
+//            }
+//        }
         try (OutputStream os = new FileOutputStream(conf.resolve("storage-configuration.yml").toFile())) {
             storageConfiguration.serialize(os);
         }
         storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
 
-        inputStream = StorageManager.class.getClassLoader().getResourceAsStream("client-configuration-test.yml");
-        Files.copy(inputStream, conf.resolve("client-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
+//        inputStream = StorageManager.class.getClassLoader().getResourceAsStream("client-configuration-test.yml");
+//        Files.copy(inputStream, conf.resolve("client-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
 
-        inputStream = StorageManager.class.getClassLoader().getResourceAsStream("configuration-test.yml");
-        Files.copy(inputStream, conf.resolve("configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
+//        inputStream = StorageManager.class.getClassLoader().getResourceAsStream("configuration-test.yml");
+//        Files.copy(inputStream, conf.resolve("configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
 
         // Example files
         Files.createDirectories(opencgaHome.resolve("examples"));
 
-        inputStream = new FileInputStream("app/examples/20130606_g1k.ped");
-        Files.copy(inputStream, opencgaHome.resolve("examples").resolve("20130606_g1k.ped"), StandardCopyOption.REPLACE_EXISTING);
-
-        inputStream = new FileInputStream("app/examples/1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
-        Files.copy(inputStream, opencgaHome.resolve("examples")
-                .resolve("1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), StandardCopyOption.REPLACE_EXISTING);
+//        inputStream = new FileInputStream("app/examples/20130606_g1k.ped");
+//        Files.copy(inputStream, opencgaHome.resolve("examples").resolve("20130606_g1k.ped"), StandardCopyOption.REPLACE_EXISTING);
+//
+//        inputStream = new FileInputStream("app/examples/1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
+//        Files.copy(inputStream, opencgaHome.resolve("examples")
+//                .resolve("1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), StandardCopyOption.REPLACE_EXISTING);
 
         return opencgaHome;
     }
@@ -196,16 +191,16 @@ public class OpenCGATestExternalResource extends ExternalResource {
     }
 
     public static Job runStorageJob(CatalogManager catalogManager, Job job, Logger logger, String sessionId)
-            throws AnalysisExecutionException, CatalogException, IOException {
+            throws CatalogException, IOException {
         try {
             ExecutorManager.execute(catalogManager, job, sessionId);
         } catch (ExecutionException e) {
-            throw new AnalysisExecutionException(e.getCause());
+            throw new IOException(e.getCause());
         }
         return catalogManager.getJob(job.getId(), null, sessionId).first();
     }
 
-    public Job runStorageJob(Job storageJob, String sessionId) throws CatalogException, AnalysisExecutionException, IOException {
+    public Job runStorageJob(Job storageJob, String sessionId) throws CatalogException, IOException {
         return runStorageJob(getCatalogManager(), storageJob, logger, sessionId);
     }
 

@@ -14,36 +14,29 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.storage.variant;
+package org.opencb.opencga.storage.core.local.variant.operations;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
-import org.opencb.opencga.analysis.storage.OpenCGATestExternalResource;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.local.variant.operations.VariantAnnotationStorageOperation;
-import org.opencb.opencga.storage.core.local.variant.operations.VariantStatsStorageOperation;
+import org.opencb.opencga.storage.core.local.OpenCGATestExternalResource;
+import org.opencb.opencga.storage.core.local.variant.AbstractVariantStorageOperationTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
 
@@ -52,16 +45,12 @@ import java.util.function.Function;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class AnnotationVariantStorageTest {
+public class AnnotationVariantStorageTest extends AbstractVariantStorageOperationTest {
 
     @Rule
     public OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
 
-    protected CatalogManager catalogManager;
     protected StorageConfiguration storageConfiguration;
-    protected String sessionId;
-    protected long studyId;
-    protected long outputId;
     protected Logger logger = LoggerFactory.getLogger(StatsVariantStorageTest.class);
 
     private final String userId = "user";
@@ -69,22 +58,13 @@ public class AnnotationVariantStorageTest {
 
     @Before
     public void setUp() throws Exception {
-        catalogManager = opencga.getCatalogManager();
-        storageConfiguration = opencga.getStorageConfiguration();
-        opencga.clearStorageDB(dbName);
-
         catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null, null).first();
-        sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");
-        long projectId = catalogManager.createProject("p1", "p1", "Project 1", "ACME", null, sessionId).first().getId();
-        studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, null, null, null, null, null,
-                Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(opencga.getStorageConfiguration().getDefaultStorageEngineId(), dbName)), null, null, null, sessionId).first().getId();
-        outputId = catalogManager.createFolder(studyId, Paths.get("data", "index"), false, null, sessionId).first().getId();
+
 
         File file = opencga.createFile(studyId, "variant-test-file.vcf.gz", sessionId);
 
-        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
-        Job job = analysisFileIndexer.index(file.getId(), outputId, sessionId, new QueryOptions(ExecutorManager.EXECUTE, true)).first();
-        System.out.println("job = " + job);
+        variantManager.index(String.valueOf(file.getId()), opencga.createTmpOutdir(studyId, "index", sessionId),
+                String.valueOf(outputId), new QueryOptions(), sessionId);
     }
 
     @Test
@@ -120,8 +100,10 @@ public class AnnotationVariantStorageTest {
     public void testAnnotateCreateAndLoad() throws Exception {
 
         VariantAnnotationStorageOperation annotOp = new VariantAnnotationStorageOperation(catalogManager, storageConfiguration);
-        annotOp.annotateVariants(studyId, new Query(), null, String.valueOf(outputId), sessionId, new QueryOptions(AnalysisFileIndexer.CREATE, true)
-                .append(ExecutorManager.EXECUTE, true));
+        annotOp.annotateVariants(studyId, new Query(), null, String.valueOf(outputId), sessionId,
+                new QueryOptions()
+//                        .append(VariantAnnotationManager.CREATE, true)
+        );
         Job job = null;
 
         System.out.println("job = " + job);
@@ -131,8 +113,8 @@ public class AnnotationVariantStorageTest {
 
         checkAnnotation(v -> false);
 
-        annotOp.annotateVariants(studyId, new Query(), null, String.valueOf(outputId), sessionId, new QueryOptions(AnalysisFileIndexer.LOAD, annotFile.getId())
-                .append(ExecutorManager.EXECUTE, true));
+        annotOp.annotateVariants(studyId, new Query(), null, String.valueOf(outputId), sessionId,
+                new QueryOptions(VariantAnnotationManager.LOAD_FILE, annotFile.getId()));
         job = null;
         System.out.println("job = " + job);
 
@@ -142,51 +124,56 @@ public class AnnotationVariantStorageTest {
     @Test
     public void testCustomAnnotation() throws Exception {
 
-        VariantStatsStorageOperation variantStorage = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
-
-        VariantAnnotationStorageOperation annotOp = new VariantAnnotationStorageOperation(catalogManager, storageConfiguration);
-        annotOp.annotateVariants(studyId, new Query(), null, String.valueOf(outputId), sessionId, new QueryOptions(ExecutorManager.EXECUTE, true));
+        variantManager.annotate(String.valueOf(studyId), new Query(), opencga.createTmpOutdir(studyId, "annot", sessionId),
+                String.valueOf(outputId), new QueryOptions(), sessionId);
 
         checkAnnotation(v -> true);
 
         File file = opencga.createFile(studyId, "custom_annotation/myannot.gff", sessionId);
-        annotOp.annotateVariants(studyId, new Query(), null, String.valueOf(outputId), sessionId, new QueryOptions()
-                .append(AnalysisFileIndexer.LOAD, file.getId())
-                .append(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, "myAnnot")
-                .append(ExecutorManager.EXECUTE, true));
+        QueryOptions options = new QueryOptions()
+                .append(VariantAnnotationManager.LOAD_FILE, file.getId())
+                .append(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, "myAnnot");
+        variantManager.annotate(String.valueOf(studyId), new Query(), opencga.createTmpOutdir(studyId, "annot", sessionId),
+                String.valueOf(outputId), options, sessionId);
 
         Assert.assertEquals(Collections.singleton("myAnnot"), checkAnnotation(v -> true));
 
         file = opencga.createFile(studyId, "custom_annotation/myannot.bed", sessionId);
-        annotOp.annotateVariants(studyId, new Query(), null, String.valueOf(outputId), sessionId, new QueryOptions()
-                .append(AnalysisFileIndexer.LOAD, file.getId())
-                .append(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, "myAnnot2")
-                .append(ExecutorManager.EXECUTE, true));
+        options = new QueryOptions()
+                .append(VariantAnnotationManager.LOAD_FILE, file.getId())
+                .append(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, "myAnnot2");
+        variantManager.annotate(String.valueOf(studyId), new Query(), opencga.createTmpOutdir(studyId, "annot", sessionId),
+                String.valueOf(outputId), options, sessionId);
 
         Assert.assertEquals(new HashSet<>(Arrays.asList("myAnnot", "myAnnot2")), checkAnnotation(v -> true));
     }
 
-    public Set<String> checkAnnotation(Function<Variant, Boolean> contains) throws CatalogException, StorageManagerException {
-        VariantFetcher variantFetcher = new VariantFetcher(catalogManager, opencga.getStorageManagerFactory());
-        VariantDBIterator iterator = variantFetcher.iterator(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId),
-                new QueryOptions(QueryOptions.SORT, true), sessionId);
+    public Set<String> checkAnnotation(Function<Variant, Boolean> contains) throws Exception {
 
-        Set<String> customAnnotationKeySet = new LinkedHashSet<>();
-        int c = 0;
-        while (iterator.hasNext()) {
-            c++;
-            Variant next = iterator.next();
-            if (contains.apply(next)) {
-                Assert.assertNotNull(next.getAnnotation());
-                if (next.getAnnotation().getAdditionalAttributes() != null) {
-                    customAnnotationKeySet.addAll(next.getAnnotation().getAdditionalAttributes().keySet());
+        try (VariantDBIterator iterator = variantManager.iterator(new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId),
+                new QueryOptions(QueryOptions.SORT, true), sessionId)) {
+
+            Set<String> customAnnotationKeySet = new LinkedHashSet<>();
+            int c = 0;
+            while (iterator.hasNext()) {
+                c++;
+                Variant next = iterator.next();
+                if (contains.apply(next)) {
+                    Assert.assertNotNull(next.getAnnotation());
+                    if (next.getAnnotation().getAdditionalAttributes() != null) {
+                        customAnnotationKeySet.addAll(next.getAnnotation().getAdditionalAttributes().keySet());
+                    }
+                } else {
+                    Assert.assertNull(next.getAnnotation());
                 }
-            } else {
-                Assert.assertNull(next.getAnnotation());
             }
+            Assert.assertTrue(c > 0);
+            return customAnnotationKeySet;
         }
-        Assert.assertTrue(c > 0);
-        return customAnnotationKeySet;
     }
 
+    @Override
+    protected VariantSource.Aggregation getAggregation() {
+        return VariantSource.Aggregation.NONE;
+    }
 }

@@ -14,24 +14,21 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.storage;
+package org.opencb.opencga.storage.core.local.variant.operations;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
-import org.opencb.opencga.storage.core.local.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.FileIndex;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.local.variant.AbstractVariantStorageOperationTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
 import org.slf4j.Logger;
@@ -53,15 +50,10 @@ import static org.junit.Assert.assertNotNull;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class PlatinumFileIndexerTest extends AbstractAnalysisFileIndexerTest {
+public class PlatinumFileIndexerTest extends AbstractVariantStorageOperationTest {
 
     private VariantFileIndexerStorageOperation fileIndexer;
-    private Logger logger = LoggerFactory.getLogger(AbstractAnalysisFileIndexerTest.class);
-
-    @Override
-    protected String getStorageEngine() {
-        return STORAGE_ENGINE_MONGODB;
-    }
+    private Logger logger = LoggerFactory.getLogger(AbstractVariantStorageOperationTest.class);
 
     @Override
     protected VariantSource.Aggregation getAggregation() {
@@ -84,8 +76,8 @@ public class PlatinumFileIndexerTest extends AbstractAnalysisFileIndexerTest {
             loadFile(transformFile, new QueryOptions());
         }
 
-        VariantFetcher fetcher = new VariantFetcher(catalogManager, StorageManagerFactory.get());
-        fetcher.iterator(new Query(VariantQueryParams.STUDIES.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
+
+        variantManager.iterator(new Query(VariantQueryParams.STUDIES.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
             System.out.println("variant = " + variant);
         });
     }
@@ -101,13 +93,12 @@ public class PlatinumFileIndexerTest extends AbstractAnalysisFileIndexerTest {
         }
         loadFiles(files, new QueryOptions());
 
-        VariantFetcher fetcher = new VariantFetcher(catalogManager, StorageManagerFactory.get());
-        fetcher.iterator(new Query(VariantQueryParams.STUDIES.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
+        variantManager.iterator(new Query(VariantQueryParams.STUDIES.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
             System.out.println("variant = " + variant);
         });
     }
 
-    public File transformFile(File inputFile, QueryOptions queryOptions) throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException, StorageManagerException, URISyntaxException, InstantiationException, IllegalAccessException {
+    public File transformFile(File inputFile, QueryOptions queryOptions) throws CatalogException, IOException, ClassNotFoundException, StorageManagerException, URISyntaxException, InstantiationException, IllegalAccessException {
         queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, true);
         queryOptions.append(VariantFileIndexerStorageOperation.LOAD, false);
         queryOptions.append(VariantFileIndexerStorageOperation.CATALOG_PATH, outputId);
@@ -137,11 +128,11 @@ public class PlatinumFileIndexerTest extends AbstractAnalysisFileIndexerTest {
         return transformedFile;
     }
 
-    public StorageETLResult loadFile(File inputFile, QueryOptions queryOptions) throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException, StorageManagerException, URISyntaxException, InstantiationException, IllegalAccessException {
+    public StorageETLResult loadFile(File inputFile, QueryOptions queryOptions) throws CatalogException, IOException, ClassNotFoundException, StorageManagerException, URISyntaxException, InstantiationException, IllegalAccessException {
         return loadFiles(Collections.singletonList(inputFile), queryOptions).get(0);
     }
 
-    public List<StorageETLResult> loadFiles(List<File> inputFiles, QueryOptions queryOptions) throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException, StorageManagerException, URISyntaxException, InstantiationException, IllegalAccessException {
+    public List<StorageETLResult> loadFiles(List<File> inputFiles, QueryOptions queryOptions) throws CatalogException, IOException, ClassNotFoundException, StorageManagerException, URISyntaxException, InstantiationException, IllegalAccessException {
         queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, false);
         queryOptions.append(VariantFileIndexerStorageOperation.LOAD, true);
         queryOptions.append(VariantFileIndexerStorageOperation.CATALOG_PATH, outputId);

@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.storage;
+package org.opencb.opencga.storage.core.local.variant;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
@@ -30,13 +31,19 @@ import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
+import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.config.DatabaseCredentials;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
+import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
+import org.opencb.opencga.storage.core.local.OpenCGATestExternalResource;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 
@@ -49,7 +56,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.get
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public abstract class AbstractAnalysisFileIndexerTest {
+public abstract class AbstractVariantStorageOperationTest {
     protected CatalogManager catalogManager;
 
     protected String sessionId;
@@ -64,21 +71,33 @@ public abstract class AbstractAnalysisFileIndexerTest {
 
     protected FileMetadataReader fileMetadataReader;
     protected CatalogFileUtils catalogFileUtils;
+    protected org.opencb.opencga.storage.core.local.variant.VariantStorageManager variantManager;
 
     protected final String dbName = DB_NAME;
+    protected static final String STORAGE_ENGINE_MOCKUP = DummyVariantStorageManager.STORAGE_ENGINE_ID;
     protected static final String STORAGE_ENGINE_MONGODB = "mongodb";
     protected static final String STORAGE_ENGINE_HADOOP = "hadoop";
-    protected static final String STORAGE_ENGINE = STORAGE_ENGINE_MONGODB;
-    private Logger logger = LoggerFactory.getLogger(AbstractAnalysisFileIndexerTest.class);
+    private Logger logger = LoggerFactory.getLogger(AbstractVariantStorageOperationTest.class);
+
+
 
     @Rule
     public OpenCGATestExternalResource opencga = new OpenCGATestExternalResource(getStorageEngine().equals(STORAGE_ENGINE_HADOOP));
 
     @Before
-    public final void setUpAbstract() throws CatalogException, IOException {
-        Path openCGA = opencga.getOpencgaHome();
-
+    public final void setUpAbstract() throws Exception {
         catalogManager = opencga.getCatalogManager();
+        StorageConfiguration storageConfiguration = opencga.getStorageConfiguration();
+        storageConfiguration.setDefaultStorageEngineId(STORAGE_ENGINE_MOCKUP);
+        storageConfiguration.getStorageEngines().add(new StorageEngineConfiguration(
+                STORAGE_ENGINE_MOCKUP,
+                new StorageEtlConfiguration(),
+                new StorageEtlConfiguration(DummyVariantStorageManager.class.getName(), new ObjectMap(), new DatabaseCredentials()),
+                new ObjectMap()
+        ));
+        StorageManagerFactory.configure(storageConfiguration);
+
+        variantManager = new org.opencb.opencga.storage.core.local.variant.VariantStorageManager(catalogManager, storageConfiguration);
         clearDB(dbName);
 
         fileMetadataReader = FileMetadataReader.get(catalogManager);
@@ -104,7 +123,7 @@ public abstract class AbstractAnalysisFileIndexerTest {
     }
 
     protected String getStorageEngine() {
-        return STORAGE_ENGINE_MONGODB;
+        return STORAGE_ENGINE_MOCKUP;
     }
 
     protected abstract VariantSource.Aggregation getAggregation();
@@ -123,6 +142,9 @@ public abstract class AbstractAnalysisFileIndexerTest {
     protected File create(long studyId, URI uri) throws IOException, CatalogException {
         File file;
         file = fileMetadataReader.create(studyId, uri, "data/vcfs/", "", true, null, sessionId).first();
+//        File.Format format = FormatDetector.detect(uri);
+//        File.Bioformat bioformat = BioformatDetector.detect(uri);
+//        file = catalogManager.createFile(studyId, format, bioformat, "data/vcfs/", "", true, -1, sessionId).first();
         catalogFileUtils.upload(uri, file, null, sessionId, false, false, true, false, Long.MAX_VALUE);
         return catalogManager.getFile(file.getId(), sessionId).first();
     }

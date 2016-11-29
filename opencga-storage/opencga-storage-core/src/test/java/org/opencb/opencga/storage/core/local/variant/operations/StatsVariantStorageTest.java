@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.storage.variant;
+package org.opencb.opencga.storage.core.local.variant.operations;
 
 import org.junit.After;
-import org.junit.Rule;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -30,18 +29,16 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.storage.OpenCGATestExternalResource;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.local.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
-import org.opencb.opencga.storage.core.local.variant.operations.VariantStatsStorageOperation;
+import org.opencb.opencga.storage.core.local.variant.AbstractVariantStorageOperationTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,18 +55,19 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.get
 /**
  * Created by hpccoll1 on 08/07/15.
  */
-public class StatsVariantStorageTest {
+public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest {
 
-    private static final String STORAGE_ENGINE = "mongodb";
+    private static final String STORAGE_ENGINE = DummyVariantStorageManager.STORAGE_ENGINE_ID;
+//    private static final String STORAGE_ENGINE = "mongodb";
 //    private static final String STORAGE_ENGINE = "hadoop";
-    @Rule
-    public OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
+//    @Rule
+//    public OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
 
-    private CatalogManager catalogManager;
-    private String sessionId;
-    private long projectId;
-    private long studyId;
-    private long outputId;
+//    private CatalogManager catalogManager;
+//    private String sessionId;
+//    private long projectId;
+//    private long studyId;
+//    private long outputId;
     Logger logger = LoggerFactory.getLogger(StatsVariantStorageTest.class);
     private long all;
     private long coh1;
@@ -87,12 +85,12 @@ public class StatsVariantStorageTest {
         storageConfiguration = opencga.getStorageConfiguration();
         clearDB(dbName);
 
-        User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null, null).first();
-        sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");
-        projectId = catalogManager.createProject("p1", "p1", "Project 1", "ACME", null, sessionId).first().getId();
-        studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, "Study 1", null, null, null, null,
-                Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(STORAGE_ENGINE, dbName)), null, null, null, sessionId).first().getId();
-        outputId = catalogManager.createFolder(studyId, Paths.get("data", "index"), true, null, sessionId).first().getId();
+//        User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null, null).first();
+//        sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");
+//        projectId = catalogManager.createProject("p1", "p1", "Project 1", "ACME", null, sessionId).first().getId();
+//        studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, "Study 1", null, null, null, null,
+//                Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(STORAGE_ENGINE, dbName)), null, null, null, sessionId).first().getId();
+//        outputId = catalogManager.createFolder(studyId, Paths.get("data", "index"), true, null, sessionId).first().getId();
         File file1 = opencga.createFile(studyId, "1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
         File file2 = opencga.createFile(studyId, "1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
         File file3 = opencga.createFile(studyId, "1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
@@ -125,9 +123,9 @@ public class StatsVariantStorageTest {
 
         catalogManager = opencga.getCatalogManager();
 
-        User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null, null).first();
-        sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");
-        projectId = catalogManager.createProject("p1", "p1", "Project 1", "ACME", null, sessionId).first().getId();
+//        User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null, null).first();
+//        sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");
+//        projectId = catalogManager.createProject("p1", "p1", "Project 1", "ACME", null, sessionId).first().getId();
         Map<String, Object> attributes;
         if (aggregation != null) {
             attributes = Collections.singletonMap(VariantStorageManager.Options.AGGREGATED_TYPE.key(), aggregation);
@@ -135,7 +133,7 @@ public class StatsVariantStorageTest {
             attributes = Collections.emptyMap();
         }
         studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, "Study 1", null,
-                null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", dbName)), null,
+                null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(STORAGE_ENGINE, dbName)), null,
                 attributes,
                 null, sessionId).first().getId();
         outputId = catalogManager.createFolder(studyId, Paths.get("data", "index"), true, null, sessionId).first().getId();
@@ -174,6 +172,11 @@ public class StatsVariantStorageTest {
             }
         }
         return queryResults;
+    }
+
+    @Override
+    protected VariantSource.Aggregation getAggregation() {
+        return VariantSource.Aggregation.NONE;
     }
 
     private void clearDB(String dbName) {
@@ -392,11 +395,13 @@ public class StatsVariantStorageTest {
 
         for (Variant variant : dbAdaptor) {
             for (StudyEntry sourceEntry : variant.getStudies()) {
-                assertEquals("In variant " +variant.toString(), cohorts.size(), sourceEntry.getStats().size());
+                assertEquals("In variant " + variant.toString(), cohorts.size(), sourceEntry.getStats().size());
                 for (Map.Entry<String, VariantStats> entry : sourceEntry.getStats().entrySet()) {
-                    assertTrue("In variant " +variant.toString(), cohorts.containsKey(entry.getKey()));
+                    assertTrue("In variant " + variant.toString(), cohorts.containsKey(entry.getKey()));
                     if (cohorts.get(entry.getKey()) != null) {
-                        assertEquals("Variant: " + variant.toString() + " does not have the correct number of samples.", cohorts.get(entry.getKey()).getSamples().size(), entry.getValue().getGenotypesCount().values().stream().reduce((integer, integer2) -> integer + integer2).orElse(0).intValue());
+                        assertEquals("Variant: " + variant.toString() + " does not have the correct number of samples.",
+                                cohorts.get(entry.getKey()).getSamples().size(),
+                                entry.getValue().getGenotypesCount().values().stream().reduce((integer, integer2) -> integer + integer2).orElse(0).intValue());
                     }
                 }
             }
@@ -423,7 +428,7 @@ public class StatsVariantStorageTest {
      * Do not execute Job using its command line, won't find the opencga-storage.sh
      * Call directly to the OpenCGAStorageMain
      */
-    private Job runStorageJob(Job storageJob, String sessionId) throws AnalysisExecutionException, IOException, CatalogException {
+    private Job runStorageJob(Job storageJob, String sessionId) throws IOException, CatalogException {
 //        storageJob.setCommandLine(storageJob.getCommandLine() + " --job-id " + storageJob.getId());
         Job job = opencga.runStorageJob(storageJob, sessionId);
         assertEquals(Job.JobStatus.READY, job.getStatus().getName());
