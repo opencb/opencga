@@ -67,6 +67,9 @@ public class GeneralCliOptions {
         @Parameter(names = {"--sid", "--session-id"}, description = "Token session id", arity = 1)
         public String sessionId;
 
+        @Parameter(names = {"-c", "--cache"}, description = "use cache ", arity = 1)
+        public boolean cache = false;
+
 //        @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
 //        public Map<String, String> dynamic = new HashMap<>();
 
