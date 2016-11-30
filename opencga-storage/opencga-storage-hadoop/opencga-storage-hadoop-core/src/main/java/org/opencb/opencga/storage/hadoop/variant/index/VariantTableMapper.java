@@ -179,7 +179,8 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
                     int max = toPosition(var, false);
                     return IntStream.range(min, max + 1).boxed();
                 }).collect(Collectors.toSet());
-                NavigableMap<Integer, List<Variant>> varFiltered = new TreeMap<>(coveredPositions.stream()
+                NavigableMap<Integer, List<Variant>> varFiltered = new TreeMap<>(
+                        coveredPositions.stream().filter(k -> varPosSortedOther.containsKey(k))
                         .collect(Collectors.toMap(k -> k, k -> varPosSortedOther.get(k))));
                 getLog().info("Pre-filter alts index to " + varFiltered.size() + " ... ");
                 ctx.context.getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE").increment(archiveOther.size());
