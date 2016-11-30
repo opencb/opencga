@@ -235,26 +235,26 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
                 throw new CatalogException("Project " + projectId + " not found");
             }
             ObjectMap objectMap = new ObjectMap();
-            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key()) &&
-                    StringUtils.isEmpty(projectQR.first().getOrganism().getScientificName())) {
+            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key())
+                    && StringUtils.isEmpty(projectQR.first().getOrganism().getScientificName())) {
                 objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(),
                         parameters.getString(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key()));
                 parameters.remove(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key());
             }
-            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key()) &&
-                    StringUtils.isEmpty(projectQR.first().getOrganism().getCommonName())) {
+            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key())
+                    && StringUtils.isEmpty(projectQR.first().getOrganism().getCommonName())) {
                 objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(),
                         parameters.getString(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key()));
                 parameters.remove(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key());
             }
-            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key()) &&
-                    projectQR.first().getOrganism().getTaxonomyCode() <= 0) {
+            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key())
+                    && projectQR.first().getOrganism().getTaxonomyCode() <= 0) {
                 objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(),
                         parameters.getInt(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key()));
                 parameters.remove(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key());
             }
-            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key()) &&
-                    StringUtils.isEmpty(projectQR.first().getOrganism().getAssembly())) {
+            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())
+                    && StringUtils.isEmpty(projectQR.first().getOrganism().getAssembly())) {
                 objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(),
                         parameters.getString(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key()));
                 parameters.remove(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key());

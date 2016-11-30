@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.*;

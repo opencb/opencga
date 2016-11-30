@@ -121,7 +121,11 @@ public class ProjectWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "alias", required = false) @QueryParam("alias") String alias,
                            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
                            @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
-                           @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes) throws IOException {
+                           @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes,
+                           @ApiParam(value = "Organism scientific name", required = false) @QueryParam("organism.scientificName") String scientificName,
+                           @ApiParam(value = "Organism common name", required = false) @QueryParam("organism.commonName") String commonName,
+                           @ApiParam(value = "Organism taxonomy code", required = false) @QueryParam("organism.taxonomyCode") String taxonomyCode,
+                           @ApiParam(value = "Organism assembly", required = false) @QueryParam("organism.assembly") String assembly) throws IOException {
         try {
             ObjectMap objectMap = new ObjectMap();
             objectMap.putIfNotNull("name", name);
@@ -129,6 +133,10 @@ public class ProjectWSServer extends OpenCGAWSServer {
             objectMap.putIfNotNull("description", description);
             objectMap.putIfNotNull("organization", organization);
             objectMap.putIfNotNull("attributes", attributes);
+            objectMap.putIfNotNull("organism.scientificName", scientificName);
+            objectMap.putIfNotNull("organism.commonName", commonName);
+            objectMap.putIfNotNull("organism.taxonomyCode", taxonomyCode);
+            objectMap.putIfNotNull("organism.assembly", assembly);
 
             long projectId = catalogManager.getProjectId(projectIdStr);
             QueryResult result = catalogManager.modifyProject(projectId, objectMap, sessionId);

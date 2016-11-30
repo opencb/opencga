@@ -110,6 +110,13 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         //    objectMap.put(CatalogProjectDBAdaptor.QueryParams.STATUS_NAME.key(), projectsCommandOptions.updateCommandOptions.status);
         //}
         objectMap.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ATTRIBUTES.key(), projectsCommandOptions.updateCommandOptions.attributes);
+        objectMap.putIfNotNull(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(),
+                projectsCommandOptions.updateCommandOptions.scientificName);
+        objectMap.putIfNotNull(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(),
+                projectsCommandOptions.updateCommandOptions.commonName);
+        objectMap.putIfNotNull(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(),
+                projectsCommandOptions.updateCommandOptions.taxonomyCode);
+        objectMap.putIfNotNull(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), projectsCommandOptions.updateCommandOptions.assembly);
 
         return openCGAClient.getProjectClient().update(projectsCommandOptions.updateCommandOptions.id, objectMap);
     }
