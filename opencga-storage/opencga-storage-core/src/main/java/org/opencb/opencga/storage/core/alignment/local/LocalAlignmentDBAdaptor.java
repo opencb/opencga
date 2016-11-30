@@ -147,19 +147,19 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
             Region region = parseRegion(query);
             if (region != null) {
                 if (Reads.ReadAlignment.class == clazz) {
-                    return (AlignmentIterator<T>) new ProtoAlignmentIterator(alignmentManager.iterator(region, alignmentOptions,
-                            alignmentFilters, Reads.ReadAlignment.class));
+                    return (AlignmentIterator<T>) new ProtoAlignmentIterator(alignmentManager.iterator(region,
+                            alignmentFilters, alignmentOptions, Reads.ReadAlignment.class));
                 } else if (SAMRecord.class == clazz) {
-                    return (AlignmentIterator<T>) new SamRecordAlignmentIterator(alignmentManager.iterator(region, alignmentOptions,
-                            alignmentFilters, SAMRecord.class));
+                    return (AlignmentIterator<T>) new SamRecordAlignmentIterator(alignmentManager.iterator(region,
+                            alignmentFilters, alignmentOptions, SAMRecord.class));
                 }
             } else {
                 if (Reads.ReadAlignment.class == clazz) {
-                    return (AlignmentIterator<T>) new ProtoAlignmentIterator(alignmentManager.iterator(alignmentOptions, alignmentFilters,
-                            Reads.ReadAlignment.class));
+                    return (AlignmentIterator<T>) new ProtoAlignmentIterator(alignmentManager.iterator(alignmentFilters,
+                            alignmentOptions, Reads.ReadAlignment.class));
                 } else if (SAMRecord.class == clazz) {
-                    return (AlignmentIterator<T>) new SamRecordAlignmentIterator(alignmentManager.iterator(alignmentOptions,
-                            alignmentFilters, SAMRecord.class));
+                    return (AlignmentIterator<T>) new SamRecordAlignmentIterator(alignmentManager.iterator(alignmentFilters,
+                            alignmentOptions, SAMRecord.class));
                 }
             }
         } catch (Exception e) {
@@ -234,7 +234,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         Region region = parseRegion(query);
 
         BamManager alignmentManager = new BamManager(path);
-        AlignmentGlobalStats alignmentGlobalStats = alignmentManager.stats(region, alignmentOptions, alignmentFilters);
+        AlignmentGlobalStats alignmentGlobalStats = alignmentManager.stats(region, alignmentFilters, alignmentOptions);
 
         watch.stop();
         return new QueryResult<>("Get stats", (int) watch.getTime(), 1, 1, "", "", Arrays.asList(alignmentGlobalStats));
@@ -280,7 +280,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
                 // if region is small enough we calculate all coverage for all positions dynamically
                 // calling the biodata alignment manager
                 BamManager alignmentManager = new BamManager(path);
-                coverage = alignmentManager.coverage(region, alignmentOptions, alignmentFilters);
+                coverage = alignmentManager.coverage(region, alignmentFilters, alignmentOptions);
             }
             queryResultId = region.toString();
         } else {

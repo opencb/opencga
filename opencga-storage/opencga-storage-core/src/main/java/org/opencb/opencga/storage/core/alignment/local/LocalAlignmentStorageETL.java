@@ -98,7 +98,7 @@ public class LocalAlignmentStorageETL implements StorageETL {
             for (int i = 0; i < next.getSequenceLength(); i += MINOR_CHUNK_SIZE) {
                 Region region = new Region(next.getSequenceName(), i + 1,
                         Math.min(i + MINOR_CHUNK_SIZE, next.getSequenceLength()));
-                RegionCoverage regionCoverage = bamManager.coverage(region, options, null);
+                RegionCoverage regionCoverage = bamManager.coverage(region, null, options);
                 int meanDepth = Math.min(regionCoverage.meanCoverage(), 255);
 
                 // File columns: chunk   chromosome start   end coverage
