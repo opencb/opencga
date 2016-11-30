@@ -282,12 +282,12 @@ public class VariantStorageManager extends StorageManager {
 
         try (VariantDBAdaptor dbAdaptor = getVariantDBAdaptor(studyId, sessionId)) {
             checkSamplesPermissions(query, null, dbAdaptor, sessionId);
-            return getCacheOrDB(query, new QueryOptions(), studyId, sessionId, dbAdaptor, supplier);
+            return getResultsFromCacheOrDB(query, new QueryOptions(), studyId, sessionId, dbAdaptor, supplier);
         }
     }
 
-    private <R> QueryResult<R> getCacheOrDB(Query query, QueryOptions options, Long studyId, String sessionId,
-             VariantDBAdaptor dbAdaptor, Function<VariantDBAdaptor, QueryResult<R>> supplier) throws CatalogException {
+    private <R> QueryResult<R> getResultsFromCacheOrDB(Query query, QueryOptions options, Long studyId, String sessionId,
+            VariantDBAdaptor dbAdaptor, Function<VariantDBAdaptor, QueryResult<R>> supplier) throws CatalogException {
 
         QueryResult<R> queryResult;
 
