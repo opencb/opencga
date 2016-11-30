@@ -51,9 +51,14 @@ public class ProjectWSServer extends OpenCGAWSServer {
     public Response createProject(@ApiParam(value = "name", required = true) @QueryParam("name") String name,
                                   @ApiParam(value = "alias", required = true) @QueryParam("alias") String alias,
                                   @ApiParam(value = "description", required = false) @QueryParam("description") String description,
-                                  @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization) {
+                                  @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
+                                  @ApiParam(value = "Organism scientific name", required = false) @QueryParam("organism.scientificName") String scientificName,
+                                  @ApiParam(value = "Organism common name", required = false) @QueryParam("organism.commonName") String commonName,
+                                  @ApiParam(value = "Organism taxonomy code", required = false) @QueryParam("organism.taxonomyCode") String taxonomyCode,
+                                  @ApiParam(value = "Organism assembly", required = false) @QueryParam("organism.assembly") String assembly) {
         try {
-            QueryResult queryResult = catalogManager.createProject(name, alias, description, organization, queryOptions, sessionId);
+            QueryResult queryResult = catalogManager.getProjectManager()
+                    .create(name, alias, description, organization, scientificName, commonName, taxonomyCode, assembly, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();

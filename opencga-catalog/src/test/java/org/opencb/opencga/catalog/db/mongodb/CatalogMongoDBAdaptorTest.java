@@ -124,8 +124,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
          * Let's init the database with some basic data to perform each of the tests
          */
         user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "1234", "", null, User.UserStatus.READY, "", 100, 1000,
-                Arrays.<Project>asList(new Project("project", "P1", "", new Status(), ""), new Project("project", "P2", "", new Status(),
-                        ""), new Project("project", "P3", "", new Status(), "")),
+                Arrays.<Project>asList(new Project("project", "P1", "", new Status(), "", null), new Project("project", "P2", "", new Status(),
+                        "", null), new Project("project", "P3", "", new Status(), "", null)),
                 Collections.<Tool>emptyList(), Collections.<Session>emptyList(), new HashMap<>(), new HashMap<>());
         QueryResult createUser = catalogUserDBAdaptor.insert(user1, null);
         assertNotNull(createUser.getResult());
@@ -135,18 +135,17 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         assertNotNull(createUser.getResult());
 
         user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", null, User.UserStatus.READY, "", 1222, 122222,
-                Arrays.asList(new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", new Status(), "", 0,
-                        Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "", "", new Status(), "", 0, "", null,
-                                        null, Collections.<Experiment>emptyList(),
-                                        Arrays.asList(
-                                                new File("data/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "data/", "", new File.FileStatus(File.FileStatus.READY), 1000),
-                                                new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file" +
-                                                        ".vcf", "", new File.FileStatus(File.FileStatus.READY), 1000)
-                                        ), Collections.<Job>emptyList(), new LinkedList<Individual>(), new LinkedList<Sample>(), new LinkedList<Dataset>(), new
-                                        LinkedList<Cohort>(), Collections.emptyList(), new LinkedList<VariableSet>(), null, null, Collections.<String, Object>emptyMap(), Collections.<String,
-                                        Object>emptyMap()
-                                )
-                        ), Collections.emptyMap(), Collections.<String, Object>emptyMap())
+                Arrays.asList(new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", null, new Status(), "", 0, Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "", "", new Status(), "", 0, "", null,
+                                null, Collections.<Experiment>emptyList(),
+                                Arrays.asList(
+                                        new File("data/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "data/", "", new File.FileStatus(File.FileStatus.READY), 1000),
+                                        new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file" +
+                                                ".vcf", "", new File.FileStatus(File.FileStatus.READY), 1000)
+                                ), Collections.<Job>emptyList(), new LinkedList<Individual>(), new LinkedList<Sample>(), new LinkedList<Dataset>(), new
+                                LinkedList<Cohort>(), Collections.emptyList(), new LinkedList<VariableSet>(), null, null, Collections.<String, Object>emptyMap(), Collections.<String,
+                                Object>emptyMap()
+                        )
+                ), Collections.emptyMap(), Collections.<String, Object>emptyMap())
                 ),
                 Collections.<Tool>emptyList(), Collections.<Session>emptyList(),
                 new HashMap<>(), new HashMap<>());
@@ -154,7 +153,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         assertNotNull(createUser.getResult());
 
         user4 = new User("pfurio", "Pedro", "pfurio@blabla", "pfuriopass", "Organization", null, User.UserStatus.READY, "", 0, 50000,
-                Arrays.asList(new Project(-1, "lncRNAs", "lncRNAs", "today", "My description", "My org", new Status(), "", 0, Arrays.asList(
+                Arrays.asList(new Project(-1, "lncRNAs", "lncRNAs", "today", "My description", "My org", null, new Status(), "", 0, Arrays.asList(
                                 new Study(-1, "spongeScan", "sponges", Study.Type.COLLECTION, "", "", new Status(), "", 0, "", null, null,
                                         null, Arrays.asList(
                                                 new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", "Description", new File.FileStatus(File.FileStatus.READY), 10),
@@ -167,7 +166,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
                                                 new File("alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
                                                         "data/alignment.bam", "Tophat alignment file",
                                                         new File.FileStatus(File.FileStatus.READY), 5000)
-                                                ), Collections.<Job>emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new
+                                                ), Collections.emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new
                                         LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, Collections.emptyMap(), Collections.emptyMap()
                                 ),
                                 new Study(-1, "MINECO", "mineco", Study.Type.COLLECTION, "", "", new Status(), "", 0, "", null, null, null,

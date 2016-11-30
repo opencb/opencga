@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -535,12 +534,6 @@ public class FileManager extends AbstractManager implements IFileManager {
         QueryResult<File> result = fileDBAdaptor.get(query, options);
         result.getResult().sort(rootFirst ? ROOT_FIRST_COMPARATOR : ROOT_LAST_COMPARATOR);
         return result;
-    }
-
-    @Deprecated
-    @Override
-    public QueryResult<File> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
-        throw new NotImplementedException("Deprecated create method.");
     }
 
     @Override

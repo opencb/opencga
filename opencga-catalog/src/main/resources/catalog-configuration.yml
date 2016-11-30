@@ -59,6 +59,12 @@ database:
   options:
     authenticationDatabase: ${OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE}
 
+organism:
+  taxonomyCode: ${OPENCGA.CATALOG.ORGANISM.TAXONOMY_CODE}
+  scientificName: ${OPENCGA.CATALOG.ORGANISM.SCIENTIFIC_NAME}
+  commonName: ${OPENCGA.CATALOG.ORGANISM.COMMON_NAME}
+  assembly: ${OPENCGA.CATALOG.ORGANISM.ASSEMBLY}
+
 # LDAP configuration example
 #authenticationOrigins:
 #- id: ldap            # Any id

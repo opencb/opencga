@@ -79,11 +79,15 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
 
     private QueryResponse<Project> create() throws CatalogException, IOException {
         logger.debug("Creating a new project");
+
         ObjectMap o = new ObjectMap();
-        o.append(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.createCommandOptions.description);
-        if (projectsCommandOptions.createCommandOptions.organization != null) {
-            o.append("organization", projectsCommandOptions.createCommandOptions.organization);
-        }
+        o.putIfNotNull("description", projectsCommandOptions.createCommandOptions.description);
+        o.putIfNotNull("organization", projectsCommandOptions.createCommandOptions.organization);
+        o.putIfNotNull("organism.scientificName", projectsCommandOptions.createCommandOptions.scientificName);
+        o.putIfNotNull("organism.commonName", projectsCommandOptions.createCommandOptions.commonName);
+        o.putIfNotNull("organism.taxonomyCode", projectsCommandOptions.createCommandOptions.taxonomyCode);
+        o.putIfNotNull("organism.assembly", projectsCommandOptions.createCommandOptions.assembly);
+
         return openCGAClient.getProjectClient().create(projectsCommandOptions.createCommandOptions.name,
                 projectsCommandOptions.createCommandOptions.alias, o);
     }

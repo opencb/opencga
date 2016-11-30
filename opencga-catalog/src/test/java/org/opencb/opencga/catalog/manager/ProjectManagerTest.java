@@ -5,10 +5,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.Project;
@@ -108,5 +110,47 @@ public class ProjectManagerTest extends GenericTest {
                 assertEquals(1, project.getStudies().size());
             }
         }
+    }
+
+    @Test
+    public void updateOrganismInProject() throws CatalogException {
+        Project pr = catalogManager.getProjectManager().create("Project about some genomes", "project2", "", "ACME", null,
+                "commonName", null, null, null, sessionIdUser).first();
+
+        long myProject = pr.getId();
+
+        assertEquals("", pr.getOrganism().getScientificName());
+        assertEquals("commonName", pr.getOrganism().getCommonName());
+        assertEquals("", pr.getOrganism().getAssembly());
+        assertEquals(-1, pr.getOrganism().getTaxonomyCode());
+
+        ObjectMap objectMap = new ObjectMap();
+        objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(), "scientific");
+        objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(), 55);
+        QueryResult<Project> update = catalogManager.getProjectManager().update(myProject, objectMap, null, sessionIdUser);
+
+        assertEquals(1, update.getNumResults());
+        assertEquals("scientific", update.first().getOrganism().getScientificName());
+        assertEquals("commonName", update.first().getOrganism().getCommonName());
+        assertEquals("", update.first().getOrganism().getAssembly());
+        assertEquals(55, update.first().getOrganism().getTaxonomyCode());
+
+        objectMap = new ObjectMap();
+        objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), "assembly");
+
+        update = catalogManager.getProjectManager().update(myProject, objectMap, null, sessionIdUser);
+
+        assertEquals(1, update.getNumResults());
+        assertEquals("scientific", update.first().getOrganism().getScientificName());
+        assertEquals("commonName", update.first().getOrganism().getCommonName());
+        assertEquals("assembly", update.first().getOrganism().getAssembly());
+        assertEquals(55, update.first().getOrganism().getTaxonomyCode());
+
+        objectMap = new ObjectMap();
+        objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), "assembly");
+
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Cannot update organism");
+        catalogManager.getProjectManager().update(myProject, objectMap, null, sessionIdUser);
     }
 }

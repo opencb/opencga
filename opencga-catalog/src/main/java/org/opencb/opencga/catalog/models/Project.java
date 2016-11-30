@@ -16,12 +16,10 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -34,6 +32,7 @@ public class Project {
     private String creationDate;
     private String description;
     private String organization;
+    private Organism organism;
     private Status status;
     private String lastModified;
     private long diskUsage;
@@ -45,22 +44,21 @@ public class Project {
 
 
     public Project() {
-        this(null, null, null, new Status(), null);
     }
 
-    public Project(String name, String alias, String description, Status status, String organization) {
-        this(-1, name, alias, TimeUtils.getTime(), description, organization, status, null, 0, new LinkedList<>(),
+    public Project(String name, String alias, String description, Status status, String organization, Organism organism) {
+        this(-1, name, alias, TimeUtils.getTime(), description, organization, organism, status, null, 0, new LinkedList<>(),
                 new HashMap<>(), new HashMap<>());
     }
 
-    public Project(String name, String alias, String creationDate, String description, Status status, String lastModified,
-                   long diskUsage, String organization) {
-        this(-1, name, alias, creationDate, description, organization, status, lastModified, diskUsage, new LinkedList<>(),
-                new HashMap<>(),  new HashMap<>());
+    public Project(String name, String alias, String creationDate, String description, Status status, String lastModified, long diskUsage,
+                   String organization, Organism organism) {
+        this(-1, name, alias, creationDate, description, organization, organism, status, lastModified, diskUsage, new LinkedList<>(),
+                new HashMap<>(), new HashMap<>());
     }
 
-    public Project(long id, String name, String alias, String creationDate, String description, String organization, Status status,
-                   String lastModified, long diskUsage, List<Study> studies, Map<File.Bioformat, DataStore> dataStores,
+    public Project(long id, String name, String alias, String creationDate, String description, String organization, Organism organism,
+                   Status status, String lastModified, long diskUsage, List<Study> studies, Map<File.Bioformat, DataStore> dataStores,
                    Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -68,12 +66,100 @@ public class Project {
         this.creationDate = creationDate;
         this.description = description;
         this.organization = organization;
+        this.organism = organism;
         this.status = status;
         this.lastModified = lastModified;
         this.diskUsage = diskUsage;
         this.studies = studies;
         this.dataStores = dataStores;
         this.attributes = attributes;
+    }
+
+    public static class Organism {
+
+        private String scientificName;
+        private String commonName;
+        private int taxonomyCode;
+        private String assembly;
+
+        public Organism() {
+        }
+
+        public Organism(String scientificName, String commonName) {
+            this(scientificName, commonName, -1, "");
+        }
+
+        public Organism(String scientificName, String commonName, int taxonomyCode, String assembly) {
+            this.scientificName = scientificName != null ? scientificName : "";
+            this.commonName = commonName != null ? commonName : "";
+            this.taxonomyCode = taxonomyCode;
+            this.assembly = assembly != null ? assembly : "";
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("Organism{");
+            sb.append("scientificName='").append(scientificName).append('\'');
+            sb.append(", commonName='").append(commonName).append('\'');
+            sb.append(", taxonomyCode=").append(taxonomyCode);
+            sb.append(", assembly='").append(assembly).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            Organism organism = (Organism) o;
+            return Objects.equals(taxonomyCode, organism.taxonomyCode) && Objects.equals(scientificName, organism.scientificName)
+                    && Objects.equals(commonName, organism.commonName) && Objects.equals(assembly, organism.assembly);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(taxonomyCode, scientificName, commonName, assembly);
+        }
+
+        public int getTaxonomyCode() {
+            return taxonomyCode;
+        }
+
+        public Organism setTaxonomyCode(int taxonomyCode) {
+            this.taxonomyCode = taxonomyCode;
+            return this;
+        }
+
+        public String getScientificName() {
+            return scientificName;
+        }
+
+        public Organism setScientificName(String scientificName) {
+            this.scientificName = scientificName;
+            return this;
+        }
+
+        public String getCommonName() {
+            return commonName;
+        }
+
+        public Organism setCommonName(String commonName) {
+            this.commonName = commonName;
+            return this;
+        }
+
+        public String getAssembly() {
+            return assembly;
+        }
+
+        public Organism setAssembly(String assembly) {
+            this.assembly = assembly;
+            return this;
+        }
     }
 
     @Override
@@ -146,6 +232,15 @@ public class Project {
 
     public Project setOrganization(String organization) {
         this.organization = organization;
+        return this;
+    }
+
+    public Organism getOrganism() {
+        return organism;
+    }
+
+    public Project setOrganism(Organism organism) {
+        this.organism = organism;
         return this;
     }
 

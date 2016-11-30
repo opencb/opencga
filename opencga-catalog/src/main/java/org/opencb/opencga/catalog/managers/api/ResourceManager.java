@@ -32,18 +32,6 @@ import java.util.List;
 public interface ResourceManager<I, R> {
 
     /**
-     * Creates a R object entry in Catalog.
-     *
-     * @param objectMap Object with all the attributes of the object
-     * @param options Object the includes/excludes to obtain the object after the creation
-     * @param sessionId sessionId
-     * @return The created object
-     * @throws CatalogException CatalogException
-     */
-    @Deprecated
-    QueryResult<R> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException;
-
-    /**
      * Reads an object from Catalog given an ID.
      *
      * @param id        Id of the object to read

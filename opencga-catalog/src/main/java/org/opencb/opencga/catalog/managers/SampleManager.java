@@ -222,21 +222,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         throw new UnsupportedOperationException();
     }
 
-    @Deprecated
-    @Override
-    public QueryResult<Sample> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(objectMap, "objectMap");
-        return create(
-                objectMap.getInt("studyId"),
-                objectMap.getString("name"),
-                objectMap.getString("source"),
-                objectMap.getString("description"),
-                objectMap.getMap("attributes"),
-                options,
-                sessionId
-        );
-    }
-
     @Override
     public QueryResult<Sample> create(long studyId, String name, String source, String description,
                                       Map<String, Object> attributes, QueryOptions options, String sessionId)
