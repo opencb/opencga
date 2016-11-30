@@ -113,6 +113,9 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         ObjectMap parsedSampleStr = parseFeatureId(userId, cohortStr);
         List<Long> studyIds = getStudyIds(parsedSampleStr);
         String cohortName = parsedSampleStr.getString("featureName");
+        if (StringUtils.isNumeric(cohortName)) {
+            return Long.parseLong(cohortName);
+        }
 
         Query query = new Query(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
                 .append(CohortDBAdaptor.QueryParams.NAME.key(), cohortName);

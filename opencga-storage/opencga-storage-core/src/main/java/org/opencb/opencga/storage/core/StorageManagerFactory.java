@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
@@ -110,6 +111,9 @@ public final class StorageManagerFactory {
          */
         if (this.storageConfiguration == null) {
             throw new NullPointerException();
+        }
+        if (StringUtils.isEmpty(storageEngineName)) {
+            storageEngineName = getDefaultStorageManagerName();
         }
         if (!storageManagerMap.containsKey(storageEngineName)) {
             String clazz = null;

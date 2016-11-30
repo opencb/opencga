@@ -168,6 +168,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putIfNotEmpty(QueryOptions.LIMIT, usersCommandOptions.projectsCommandOptions.limit);
         queryOptions.putIfNotEmpty(QueryOptions.SKIP, usersCommandOptions.projectsCommandOptions.skip);
         queryOptions.putIfNotEmpty("userId", usersCommandOptions.projectsCommandOptions.user);
+        queryOptions.put("shared", usersCommandOptions.projectsCommandOptions.shared);
 
         return openCGAClient.getUserClient().getProjects(queryOptions);
     }

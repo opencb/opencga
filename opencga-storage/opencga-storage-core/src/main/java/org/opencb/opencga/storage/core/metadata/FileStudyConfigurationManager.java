@@ -89,6 +89,11 @@ public class FileStudyConfigurationManager extends StudyConfigurationManager {
         return new QueryResult();
     }
 
+    @Override
+    public Map<String, Integer> getStudies(QueryOptions options) {
+        return Collections.emptyMap();
+    }
+
     private Path getPath(int studyId, QueryOptions options) {
         Path path;
         if (FILE_PATHS.containsKey(studyId)) {

@@ -39,10 +39,11 @@ import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.local.StorageManager;
-import org.opencb.opencga.storage.core.local.variant.operations.VariantAnnotationStorageOperation;
-import org.opencb.opencga.storage.core.local.variant.operations.VariantStatsStorageOperation;
+import org.opencb.opencga.storage.core.local.models.StudyInfo;
 import org.opencb.opencga.storage.core.local.variant.operations.StorageOperation;
+import org.opencb.opencga.storage.core.local.variant.operations.VariantAnnotationStorageOperation;
 import org.opencb.opencga.storage.core.local.variant.operations.VariantFileIndexerStorageOperation;
+import org.opencb.opencga.storage.core.local.variant.operations.VariantStatsStorageOperation;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
@@ -72,7 +73,6 @@ public class VariantStorageManager extends StorageManager {
     //   Import/Export methods  //
     // -------------------------//
 
-
     public void importData(String fileId, String studyId, String sessionId) {
         throw new UnsupportedOperationException();
     }
@@ -89,25 +89,19 @@ public class VariantStorageManager extends StorageManager {
     //   Data Operation methods  //
     // --------------------------//
 
-    public List<StorageETLResult> index(String fileId, String outDir, String catalogOutDir, String studyId,
-                                        ObjectMap config, String sessionId)
+    public List<StorageETLResult> index(String fileId, String outDir, String catalogOutDir, ObjectMap config, String sessionId)
             throws CatalogException, StorageManagerException, IOException, URISyntaxException {
-        return index(Collections.singletonList(fileId), outDir, catalogOutDir, studyId, config, sessionId);
+        return index(Arrays.asList(fileId.split(",")), outDir, catalogOutDir, config, sessionId);
     }
 
-    public List<StorageETLResult> index(List<String> files, String outDir, String catalogOutDir, String studyId,
-                                        ObjectMap config, String sessionId)
+    public List<StorageETLResult> index(List<String> files, String outDir, String catalogOutDir, ObjectMap config, String sessionId)
             throws CatalogException, StorageManagerException, IOException, URISyntaxException {
         VariantFileIndexerStorageOperation indexOperation = new VariantFileIndexerStorageOperation(catalogManager, storageConfiguration);
 
-        List<Long> fileIds = new ArrayList<>(files.size());
-        for (String file : files) {
-            long fileId = catalogManager.getFileId(file, sessionId);
-            fileIds.add(fileId);
-        }
         QueryOptions options = new QueryOptions(config);
         options.putIfNotNull(VariantFileIndexerStorageOperation.CATALOG_PATH, catalogOutDir);
-        return indexOperation.index(fileIds, outDir, sessionId, options);
+        StudyInfo studyInfo = getStudyInfo(null, files, sessionId);
+        return indexOperation.index(studyInfo, outDir, options, sessionId);
     }
 
     public void deleteStudy(String studyId, String sessionId) {
@@ -136,11 +130,14 @@ public class VariantStorageManager extends StorageManager {
 
         List<Long> cohortIds = new ArrayList<>(cohorts.size());
         for (String cohort : cohorts) {
+            if (!cohort.contains(":")) {
+                cohort = study + ":" + cohort;
+            }
             long cohortId = catalogManager.getCohortId(cohort, sessionId);
             cohortIds.add(cohortId);
         }
         long studyId = catalogManager.getStudyId(study, sessionId);
-        statsOperation.calculateStats(studyId, cohortIds, outDir, catalogOutDir, sessionId, new QueryOptions(config));
+        statsOperation.calculateStats(studyId, cohortIds, outDir, catalogOutDir, new QueryOptions(config), sessionId);
     }
 
     public void deleteStats(List<String> cohorts, String studyId, String sessionId) {
@@ -194,9 +191,10 @@ public class VariantStorageManager extends StorageManager {
         return (QueryResult) secure(query, sessionId, dbAdaptor -> dbAdaptor.groupBy(query, field, queryOptions));
     }
 
-    public QueryResult rank(Query query, String field, int limt, boolean asc, String sessionId)
+    public QueryResult rank(Query query, String field, int limit, boolean asc, String sessionId)
             throws StorageManagerException, CatalogException, IOException {
-        return (QueryResult) secure(query, sessionId, dbAdaptor -> dbAdaptor.rank(query, field, limt, asc));
+        getDefaultLimit(limit, 30, 10);
+        return (QueryResult) secure(query, sessionId, dbAdaptor -> dbAdaptor.rank(query, field, limit, asc));
     }
 
     public QueryResult<Long> count(Query query, String sessionId) throws CatalogException, StorageManagerException, IOException {
@@ -236,10 +234,12 @@ public class VariantStorageManager extends StorageManager {
     public VariantDBIterator iterator(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageManagerException {
         long mainStudyId = getMainStudyId(query, sessionId);
-        // TODO: CLOSE THIS DBADAPTOR!!!!
+
         VariantDBAdaptor dbAdaptor = getVariantDBAdaptor(mainStudyId, sessionId);
         checkSamplesPermissions(query, queryOptions, dbAdaptor, sessionId);
-        return dbAdaptor.iterator();
+        VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
+        iterator.addCloseable(dbAdaptor);
+        return iterator;
     }
 
 //    public <T> VariantDBIterator<T> iterator(Query query, QueryOptions queryOptions, Class<T> clazz, String sessionId) {
@@ -385,12 +385,16 @@ public class VariantStorageManager extends StorageManager {
 
     private int addDefaultLimit(QueryOptions queryOptions, int limitMax, int limitDefault) {
         // Add default limit
-        int limit = queryOptions.getInt("limit", -1);
+        int limit = getDefaultLimit(queryOptions.getInt(QueryOptions.LIMIT, -1), limitMax, limitDefault);
+        queryOptions.put(QueryOptions.LIMIT,  limit);
+        return limit;
+    }
+
+    private int getDefaultLimit(int limit, int limitMax, int limitDefault) {
         if (limit > limitMax) {
             logger.info("Unable to return more than {} variants. Change limit from {} to {}", limitMax, limit, limitMax);
         }
         limit = (limit > 0) ? Math.min(limit, limitMax) : limitDefault;
-        queryOptions.put("limit", limit);
         return limit;
     }
 

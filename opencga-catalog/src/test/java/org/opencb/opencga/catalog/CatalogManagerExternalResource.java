@@ -57,7 +57,11 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
     @Override
     public void before() throws Exception {
-        opencgaHome = Paths.get("target/test-data").resolve("junit_opencga_home_" + TimeUtils.getTimeMillis() + "_" + RandomStringUtils.randomAlphabetic(3));
+        int c = 0;
+        do {
+            opencgaHome = Paths.get("target/test-data").resolve("junit_opencga_home_" + TimeUtils.getTimeMillis() + (c > 0 ? "_" + c : ""));
+            c++;
+        } while (opencgaHome.toFile().exists());
         Files.createDirectories(opencgaHome);
         catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration-test.yml").openStream());
         catalogConfiguration.setDataDir(opencgaHome.resolve("sessions").toUri().toString());

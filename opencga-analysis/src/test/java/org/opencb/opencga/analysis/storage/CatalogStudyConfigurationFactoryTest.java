@@ -116,7 +116,7 @@ public class CatalogStudyConfigurationFactoryTest {
                 studyConfiguration.setIndexedFiles(indexedFiles);
                 return new QueryResult<StudyConfiguration>("", 0, 0, 0, "", "", Collections.emptyList());
             }
-
+            public Map<String, Integer> getStudies(QueryOptions options) { return Collections.emptyMap(); }
         }, new QueryOptions(), sessionId);
 
         checkStudyConfiguration(study, studyConfiguration);
@@ -145,6 +145,7 @@ public class CatalogStudyConfigurationFactoryTest {
                 studyConfiguration.setIndexedFiles(indexedFiles);
                 return new QueryResult<StudyConfiguration>("", 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
+            public Map<String, Integer> getStudies(QueryOptions options) { return Collections.emptyMap(); }
 
         }, new QueryOptions(), sessionId);
 

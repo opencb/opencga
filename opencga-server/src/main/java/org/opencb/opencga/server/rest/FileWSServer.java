@@ -23,8 +23,6 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
-import org.opencb.opencga.storage.core.local.variant.operations.StorageOperation;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -44,6 +42,8 @@ import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.local.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.local.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import javax.servlet.http.HttpServletRequest;
@@ -647,14 +647,14 @@ public class FileWSServer extends OpenCGAWSServer {
         addParamIfTrue(params, "overwrite-annotations", overwriteAnnotations);
 
         Set<String> knownParams = new HashSet<>();
-        knownParams.add("outdir");
+        knownParams.add("outDir");
         knownParams.add("transform");
         knownParams.add("load");
-        knownParams.add("include-extra-fields");
+        knownParams.add("includeExtraFields");
         knownParams.add("aggregated");
-        knownParams.add("calculate-stats");
+        knownParams.add("calculateStats");
         knownParams.add("annotate");
-        knownParams.add("overwrite-annotations");
+        knownParams.add("overwrite");
         knownParams.add("sid");
         knownParams.add("include");
         knownParams.add("exclude");
@@ -706,9 +706,12 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "limit", value = "[TO BE IMPLEMENTED] Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
     })
     public Response treeView(@ApiParam(value = "Folder id or path") @PathParam("folderId") String folderId,
+                             @ApiParam(value = "Study id (Can be user@projectAlias:studyAlias)") @QueryParam("studyId") String studyStr,
                              @ApiParam(value = "Maximum depth to get files from") @DefaultValue("5") @QueryParam("maxDepth") int maxDepth) {
         try {
-            QueryResult result = catalogManager.getFileManager().getTree(convertPath(folderId, sessionId), query, queryOptions, maxDepth, sessionId);
+            query.remove("maxDepth");
+            QueryResult result = catalogManager.getFileManager()
+                    .getTree(folderId.replace(":", "/"), studyStr, query, queryOptions, maxDepth, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -823,7 +826,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
                 case VARIANT: {
                     String warningMsg = null;
-                    Query query = VariantFetcher.getVariantQuery(queryOptions);
+                    Query query = VariantStorageManager.getVariantQuery(queryOptions);
                     query.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
 
 //                    for (Map.Entry<String, List<String>> entry : params.entrySet()) {
@@ -949,25 +952,31 @@ public class FileWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Histogram interval size", required = false) @DefaultValue("2000") @QueryParam("interval") int interval,
                                 @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge) {
 
-        List<QueryResult> results = new LinkedList<>();
+        List<QueryResult> queryResults = new LinkedList<>();
         try {
-            VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
             List<String> fileIds = convertPathList(fileIdCsv, sessionId);
 //            String[] splitFileId = fileIdCsv.split(",");
             for (String fileIdStr : fileIds) {
-                QueryResult result;
+                QueryResult queryResult;
+                // Get all query options
+                QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+                Query query = VariantStorageManager.getVariantQuery(queryOptions);
+                query.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileIdStr);
                 if (count) {
-                    long fileId = catalogManager.getFileId(fileIdStr, sessionId);
-                    result = variantFetcher.countByFile(fileId, queryOptions, sessionId);
+                    queryResult = variantManager.count(query, sessionId);
+                } else if (histogram) {
+                    queryResult = variantManager.getFrequency(query, interval, sessionId);
+                } else if (StringUtils.isNotEmpty(groupBy)) {
+                    queryResult = variantManager.groupBy(groupBy, query, queryOptions, sessionId);
                 } else {
-                    result = variantFetcher.getVariantsPerFile(region, histogram, groupBy, interval, fileIdStr, sessionId, queryOptions);
+                    queryResult = variantManager.get(query, queryOptions, sessionId);
                 }
-                results.add(result);
+                queryResults.add(queryResult);
             }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-        return createOkResponse(results);
+        return createOkResponse(queryResults);
     }
 
     @GET

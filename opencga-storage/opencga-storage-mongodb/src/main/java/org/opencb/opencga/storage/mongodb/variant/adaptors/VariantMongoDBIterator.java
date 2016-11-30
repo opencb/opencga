@@ -74,7 +74,8 @@ public class VariantMongoDBIterator extends VariantDBIterator {
     }
 
     @Override
-    public void close() {
+    public void close() throws Exception {
+        super.close();
         dbCursor.close();
     }
 }

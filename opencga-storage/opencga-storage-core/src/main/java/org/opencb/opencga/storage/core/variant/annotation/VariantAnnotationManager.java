@@ -18,6 +18,9 @@ public interface VariantAnnotationManager {
     String ANNOTATION_SOURCE = "annotationSource";
     String OVERWRITE_ANNOTATIONS = "overwriteAnnotations";
     String VARIANT_ANNOTATOR_CLASSNAME = "variant.annotator.classname";
+    // File to load.
+    String LOAD_FILE = "annotation.load.file";
+    String CUSTOM_ANNOTATION_KEY = "custom_annotation_key";
 
     void annotate(Query query, QueryOptions options) throws VariantAnnotatorException, IOException, StorageManagerException;
 

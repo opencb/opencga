@@ -140,6 +140,15 @@
             <artifactId>jackson-annotations</artifactId>
             <version>2.7.3</version>
         </dependency>
+
+
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-catalog</artifactId>
+            <version>${opencga.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

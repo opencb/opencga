@@ -337,11 +337,7 @@ public class AnalysisCliOptionsParser {
     }
 
     public class JobCommand {
-        @Parameter(names = {"--queue"}, description = "Enqueue the job. Do not execute", required = false, arity = 0)
-        public boolean queue = false;
 
-        @Parameter(names = {"--job-id"}, description = "Job id", hidden = true,required = false, arity = 1)
-        public String jobId = null;
     }
 
 
@@ -503,8 +499,12 @@ public class AnalysisCliOptionsParser {
                 arity = 1)
         public String studyId;
 
-        @Parameter(names = {"-o", "--outdir-id"}, description = "Output directory", required = false, arity = 1)
-        public String outdirId;
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
+        public String outdir = null;
+
+        @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
+                + "transformed files will not be registered in catalog.", required = false, arity = 1)
+        public String catalogPath;
 
         @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by --output-filename)")
         public boolean create = false;

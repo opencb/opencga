@@ -30,6 +30,7 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -143,11 +144,12 @@ public class CatalogStudyConfigurationFactory {
         // DO NOT update "indexed files" list. This MUST be modified only by storage.
         // This field will never be modified from catalog to storage
         // *** Except if it is a new StudyConfiguration...
-        if (newStudyConfiguration) {
-            for (File file : catalogManager.getAllFiles(studyId, INDEXED_FILES_QUERY, INDEXED_FILES_QUERY_OPTIONS, sessionId).getResult()) {
-                studyConfiguration.getIndexedFiles().add((int) file.getId());
-            }
-        }
+//        if (newStudyConfiguration) {
+//            for (File file : catalogManager.getAllFiles(studyId, INDEXED_FILES_QUERY,
+//                      INDEXED_FILES_QUERY_OPTIONS, sessionId).getResult()) {
+//                studyConfiguration.getIndexedFiles().add((int) file.getId());
+//            }
+//        }
 
         logger.debug("Get Files");
         QueryResult<File> files = catalogManager.getAllFiles(studyId, ALL_FILES_QUERY, ALL_FILES_QUERY_OPTIONS, sessionId);
@@ -257,8 +259,8 @@ public class CatalogStudyConfigurationFactory {
                 if (cohort.getStatus() == null || !cohort.getStatus().getName().equals(Cohort.CohortStatus.READY)) {
                     logger.debug("Cohort \"{}\":{} change status from {} to {}",
                             cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.CohortStatus.READY);
-                    ObjectMap updateParams = new ObjectMap("status.name", Cohort.CohortStatus.READY);
-                    catalogManager.modifyCohort(cohort.getId(), updateParams, new QueryOptions(), sessionId);
+                    catalogManager.getCohortManager().setStatus(String.valueOf(cohort.getId()), Cohort.CohortStatus.READY,
+                            "Update status from Storage", sessionId);
                 }
             }
         }
@@ -271,25 +273,80 @@ public class CatalogStudyConfigurationFactory {
                 if (cohort.getStatus() == null || !cohort.getStatus().getName().equals(Cohort.CohortStatus.INVALID)) {
                     logger.debug("Cohort \"{}\":{} change status from {} to {}",
                             cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.CohortStatus.INVALID);
-                    ObjectMap updateParams = new ObjectMap("status.name", Cohort.CohortStatus.INVALID);
-                    catalogManager.modifyCohort(cohort.getId(), updateParams, new QueryOptions(), sessionId);
+                    catalogManager.getCohortManager().setStatus(String.valueOf(cohort.getId()), Cohort.CohortStatus.INVALID,
+                            "Update status from Storage", sessionId);
                 }
             }
         }
 
         if (!studyConfiguration.getIndexedFiles().isEmpty()) {
             for (File file : catalogManager.getAllFiles(studyConfiguration.getStudyId(),
-                    new Query("id", new ArrayList<>(studyConfiguration.getIndexedFiles())), new QueryOptions(), sessionId)
+                    new Query(FileDBAdaptor.QueryParams.ID.key(), new ArrayList<>(studyConfiguration.getIndexedFiles())),
+                    new QueryOptions(), sessionId)
                     .getResult()) {
                 if (file.getIndex() == null || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
                     final FileIndex index;
                     index = file.getIndex() == null ? new FileIndex() : file.getIndex();
-                    index.getStatus().setName(FileIndex.IndexStatus.READY);
                     logger.debug("File \"{}\":{} change status from {} to {}", file.getName(), file.getId(),
                             file.getIndex().getStatus().getName(), FileIndex.IndexStatus.READY);
+                    index.getStatus().setName(FileIndex.IndexStatus.READY);
                     catalogManager.getFileManager().setFileIndex(file.getId(), index, sessionId);
                 }
             }
+        }
+
+        // Update READY files
+        Query query = new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(FileDBAdaptor.QueryParams.ID.key(),
+                        FileDBAdaptor.QueryParams.NAME.key(),
+                        FileDBAdaptor.QueryParams.INDEX.key()));
+        Set<Long> indexedFiles = new HashSet<>();
+        studyConfiguration.getIndexedFiles().forEach((e) -> indexedFiles.add(e.longValue()));
+        for (File file : catalogManager.getAllFiles(studyConfiguration.getStudyId(), query, queryOptions, sessionId).getResult()) {
+            if (!indexedFiles.contains(file.getId())) {
+                logger.info("File \"{}\":{} change status from {} to {}", file.getName(), file.getId(),
+                        FileIndex.IndexStatus.READY, FileIndex.IndexStatus.TRANSFORMED);
+                catalogManager.getFileManager().updateFileIndexStatus(file, FileIndex.IndexStatus.TRANSFORMED,
+                        "Not indexed, regarding StudyConfiguration", sessionId);
+            }
+        }
+
+        // Update ongoing files
+        query = new Query(FileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), Arrays.asList(
+                FileIndex.IndexStatus.LOADING,
+                FileIndex.IndexStatus.INDEXING));
+        for (File file : catalogManager.getAllFiles(studyConfiguration.getStudyId(), query, queryOptions, sessionId).getResult()) {
+            BatchFileOperation loadOperation = null;
+            // Find last load operation
+            for (int i = studyConfiguration.getBatches().size() - 1; i >= 0; i--) {
+                BatchFileOperation op = studyConfiguration.getBatches().get(i);
+                if (op.getType().equals(BatchFileOperation.Type.LOAD) && op.getFileIds().contains((int) file.getId())) {
+                    loadOperation = op;
+                    // Found last operation over this file.
+                    break;
+                }
+            }
+
+            // If last LOAD operation is ERROR or there is no LOAD operation
+            if (loadOperation != null && loadOperation.getStatus().lastEntry().getValue().equals(BatchFileOperation.Status.ERROR)
+                    || loadOperation == null) {
+                final FileIndex index;
+                index = file.getIndex() == null ? new FileIndex() : file.getIndex();
+                String prevStatus = index.getStatus().getName();
+                String newStatus;
+                if (index.getTransformedFile() != null && index.getTransformedFile().getId() > 0) {
+                    newStatus = FileIndex.IndexStatus.TRANSFORMED;
+                } else {
+                    newStatus = FileIndex.IndexStatus.NONE;
+                }
+                logger.info("File \"{}\":{} change status from {} to {}", file.getName(), file.getId(),
+                        prevStatus, newStatus);
+                catalogManager.getFileManager().updateFileIndexStatus(file, newStatus,
+                        "Error loading. Reset status to " + newStatus,
+                        sessionId);
+            }
+
         }
     }
 

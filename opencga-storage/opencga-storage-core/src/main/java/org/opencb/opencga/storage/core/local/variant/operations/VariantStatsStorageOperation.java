@@ -58,8 +58,8 @@ public class VariantStatsStorageOperation extends StorageOperation {
         super(catalogManager, StorageManagerFactory.get(storageConfiguration), LoggerFactory.getLogger(VariantStatsStorageOperation.class));
     }
 
-    public void calculateStats(long studyId, List<Long> cohortIds, String outdirStr, String catalogOutDirIdStr, String sessionId,
-                               QueryOptions options)
+    public void calculateStats(long studyId, List<Long> cohortIds, String outdirStr, String catalogOutDirIdStr,
+                               QueryOptions options, String sessionId)
             throws CatalogException, IOException, URISyntaxException, StorageManagerException {
         Job.Type step = Job.Type.COHORT_STATS;
         String fileIdStr = options.getString(Options.FILE_ID.key(), null);
@@ -111,10 +111,10 @@ public class VariantStatsStorageOperation extends StorageOperation {
         // Up to this point, catalog has not been modified
         try {
             // Modify cohort status to "CALCULATING"
-            updateCohorts(cohortIds, sessionId, Cohort.CohortStatus.CALCULATING);
+            updateCohorts(cohortIds, sessionId, Cohort.CohortStatus.CALCULATING, "");
 
             VariantStorageManager variantStorageManager
-                    = StorageManagerFactory.get().getVariantStorageManager(dataStore.getStorageEngine());
+                    = storageManagerFactory.getVariantStorageManager(dataStore.getStorageEngine());
             VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
 
             VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(dataStore.getDbName());
@@ -141,13 +141,13 @@ public class VariantStatsStorageOperation extends StorageOperation {
 
             writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.DONE, "Job completed"));
             // Modify cohort status to "READY"
-            updateCohorts(cohortIds, sessionId, Cohort.CohortStatus.READY);
+            updateCohorts(cohortIds, sessionId, Cohort.CohortStatus.READY, "");
         } catch (Exception e) {
             // Error!
             logger.error("Error executing stats. Set cohorts status to " + Cohort.CohortStatus.INVALID, e);
             writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.ERROR, "Job with error : " + e.getMessage()));
             // Modify to "INVALID"
-            updateCohorts(cohortIds, sessionId, Cohort.CohortStatus.INVALID);
+            updateCohorts(cohortIds, sessionId, Cohort.CohortStatus.INVALID, "");
             throw new StorageManagerException("Error calculating statistics.", e);
         } finally {
             // Remove hook
@@ -160,7 +160,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
     protected Thread buildHook(List<Long> cohortIds, String sessionId, Path outdir) {
         return buildHook(outdir, () -> {
             try {
-                updateCohorts(cohortIds, sessionId, Cohort.CohortStatus.INVALID);
+                updateCohorts(cohortIds, sessionId, Cohort.CohortStatus.INVALID, "");
             } catch (CatalogException e) {
                 logger.error("Error updating cohorts " + cohortIds + " to status " + Cohort.CohortStatus.INVALID, e);
             }
@@ -300,8 +300,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
                     break;
                 case Cohort.CohortStatus.READY:
                     if (updateStats) {
-                        catalogManager.modifyCohort(cohortId, new ObjectMap("status.name", Cohort.CohortStatus.INVALID),
-                                new QueryOptions(), sessionId);
+                        catalogManager.getCohortManager().setStatus(cohortId.toString(), Cohort.CohortStatus.INVALID, "", sessionId);
                         break;
                     }
                 case Cohort.CohortStatus.CALCULATING:
@@ -327,42 +326,10 @@ public class VariantStatsStorageOperation extends StorageOperation {
         return cohortMap;
     }
 
-    protected void updateCohorts(List<Long> cohortIds, String sessionId, String status) throws CatalogException {
+    protected void updateCohorts(List<Long> cohortIds, String sessionId, String status, String message) throws CatalogException {
         for (Long cohortId : cohortIds) {
-            catalogManager.modifyCohort(cohortId, new ObjectMap("status.name", status), new QueryOptions(), sessionId);
+            catalogManager.getCohortManager().setStatus(cohortId.toString(), status, message, sessionId);
         }
-    }
-
-//    /**
-//     * Accepts options:
-//     *      {@link ExecutorManager#EXECUTE}
-//     *      {@link ExecutorManager#SIMULATE}
-//     *      {@link AnalysisFileIndexer#LOG_LEVEL}
-//     *      {@link AnalysisFileIndexer#PARAMETERS}
-//     *      {@link AnalysisFileIndexer#CREATE}
-//     *      {@link AnalysisFileIndexer#LOAD}
-//     *      {@link VariantDBAdaptor.VariantQueryParams#REGION}
-//     *      {@link VariantDBAdaptor.VariantQueryParams#GENE}
-//     *      {@link VariantDBAdaptor.VariantQueryParams#CHROMOSOME}
-//     *      {@link VariantDBAdaptor.VariantQueryParams#ANNOT_CONSEQUENCE_TYPE}
-//     *      {@link VariantAnnotationManager#OVERWRITE_ANNOTATIONS}
-//     *      {@link DefaultVariantAnnotationManager#FILE_NAME}
-//     *      {@link VariantAnnotationManager#ANNOTATION_SOURCE}
-//     *      {@link VariantAnnotationManager#SPECIES}
-//     *      {@link VariantAnnotationManager#ASSEMBLY}
-//     *
-//     *
-//     * @param studyId
-//     * @param outDirId
-//     * @param sessionId
-//     * @param options
-//     * @return
-//     * @throws CatalogException
-//     * @throws AnalysisExecutionException
-//     */
-    @Deprecated
-    public QueryResult<Job> annotateVariants(long studyId, long outDirId, String sessionId, QueryOptions options) {
-        throw new UnsupportedOperationException();
     }
 
 

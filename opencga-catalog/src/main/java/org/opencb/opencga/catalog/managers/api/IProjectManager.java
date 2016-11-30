@@ -131,4 +131,14 @@ public interface IProjectManager extends ResourceManager<Long, Project> {
         return groupBy(userId, query, field, options, sessionId);
     }
 
+    /**
+     * Obtain the list of projects and studies that are shared with the user.
+     *
+     * @param userId user whose projects and studies are being shared with.
+     * @param queryOptions QueryOptions object.
+     * @param sessionId Session id which should correspond to userId.
+     * @return A QueryResult object containing the list of projects and studies that are shared with the user.
+     * @throws CatalogException CatalogException
+     */
+    QueryResult<Project> getSharedProjects(String userId, QueryOptions queryOptions, String sessionId) throws CatalogException;
 }

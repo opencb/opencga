@@ -71,6 +71,27 @@ public class VariantDBAdaptorUtils {
 
     private VariantDBAdaptor adaptor;
 
+    /**
+     * Check if the object query contains the value param, is not null and, if is an string or a list, is not empty.
+     *
+     * isValidParam(new Query(), PARAM) == false
+     * isValidParam(new Query(PARAM.key(), null), PARAM) == false
+     * isValidParam(new Query(PARAM.key(), ""), PARAM) == false
+     * isValidParam(new Query(PARAM.key(), Collections.emptyList()), PARAM) == false
+     * isValidParam(new Query(PARAM.key(), 5), PARAM) == true
+     * isValidParam(new Query(PARAM.key(), "sdfas"), PARAM) == true
+     *
+     * @param query Query to parse
+     * @param param QueryParam to check
+     * @return If is valid or not
+     */
+    public static boolean isValidParam(Query query, VariantDBAdaptor.VariantQueryParams param) {
+        Object value = query.getOrDefault(param.key(), null);
+        return (value != null)
+                && !(value instanceof String && ((String) value).isEmpty()
+                || value instanceof Collection && ((Collection) value).isEmpty());
+    }
+
     public enum QueryOperation {
         AND(VariantDBAdaptorUtils.AND),
         OR(VariantDBAdaptorUtils.OR);
