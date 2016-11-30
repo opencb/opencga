@@ -174,15 +174,24 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
                 getLog().info("Complete Alternate coordinates ... ");
                 NavigableMap<Integer, List<Variant>> varPosSortedOther = indexAlts(archiveOther, (int)ctx.startPos, (int)ctx.nextStartPos);
                 getLog().info("Create alts index of size " + varPosSortedOther.size() + " ... ");
+                Set<Integer> coveredPositions = analysisNew.stream().flatMap(var -> {
+                    int min = toPosition(var, true);
+                    int max = toPosition(var, false);
+                    return IntStream.range(min, max + 1).boxed();
+                }).collect(Collectors.toSet());
+                NavigableMap<Integer, List<Variant>> varFiltered = new TreeMap<>(coveredPositions.stream()
+                        .collect(Collectors.toMap(k -> k, k -> varPosSortedOther.get(k))));
+                getLog().info("Pre-filter alts index to " + varFiltered.size() + " ... ");
                 ctx.context.getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE").increment(archiveOther.size());
                 ctx.context.getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE_NUM_QUERIES").increment(1);
                 for (Variant var : analysisNew) {
                     long start = System.nanoTime();
-                    Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, varPosSortedOther);
+                    Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, varFiltered);
                     long mid = System.nanoTime();
                     this.getVariantMerger().merge(var, cleanList);
                     overlap += mid - start;
                     merge += System.nanoTime() - mid;
+                    getLog().info("Merge snapshot 2 - overlap {}; merge {}; ns", overlap, merge);
                 }
                 getLog().info("Merge 2 - overlap {}; merge {}; ns", overlap, merge);
                 endTime("8 Merge NEW with archive slice");
