@@ -43,7 +43,6 @@ import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
-import org.opencb.opencga.analysis.storage.variant.VariantStorage;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
@@ -445,19 +444,20 @@ public class OpenCGAMainOld {
                         break;
                     }
                     case "annotate-variants": {
-                        OptionsParser.StudyCommands.AnnotationCommand c = optionsParser.getStudyCommands().annotationCommand;
-                        VariantStorage variantStorage = new VariantStorage(catalogManager);
-
-                        long studyId = catalogManager.getStudyId(c.id);
-                        long outdirId = catalogManager.getFileId(c.outdir);
-                        QueryOptions queryOptions = new QueryOptions(c.cOpt.getQueryOptions());
-
-                        queryOptions.put(ExecutorManager.EXECUTE, !c.enqueue);
-                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
-                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
-                        System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(studyId, outdirId, sessionId, queryOptions), null));
-
-                        break;
+                        throw new UnsupportedOperationException();
+//                        OptionsParser.StudyCommands.AnnotationCommand c = optionsParser.getStudyCommands().annotationCommand;
+//                        VariantStorage variantStorage = new VariantStorage(catalogManager);
+//
+//                        long studyId = catalogManager.getStudyId(c.id);
+//                        long outdirId = catalogManager.getFileId(c.outdir);
+//                        QueryOptions queryOptions = new QueryOptions(c.cOpt.getQueryOptions());
+//
+//                        queryOptions.put(ExecutorManager.EXECUTE, !c.enqueue);
+//                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
+//                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
+//                        System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(studyId, outdirId, sessionId, queryOptions), null));
+//
+//                        break;
                     }
 //                    case "share": {
 //                        OptionsParser.CommandShareResource c = optionsParser.commandShareResource;
@@ -851,26 +851,27 @@ public class OpenCGAMainOld {
                     case OptionsParser.CohortCommands.StatsCommand.COMMAND_NAME: {
                         OptionsParser.CohortCommands.StatsCommand c = optionsParser.cohortCommands.statsCommand;
 
-                        VariantStorage variantStorage = new VariantStorage(catalogManager);
-
-                        long outdirId = catalogManager.getFileId(c.outdir);
-                        QueryOptions queryOptions = new QueryOptions(c.cOpt.getQueryOptions());
-                        if (c.enqueue) {
-                            queryOptions.put(ExecutorManager.EXECUTE, false);
-                        } else {
-                            queryOptions.add(ExecutorManager.EXECUTE, true);
-                        }
-                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
-                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
-                        if (c.tagmap != null) {
-                            queryOptions.put(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), c.tagmap);
-                        } else if (c.cohortIds == null) {
-                            logger.error("--cohort-id nor --aggregation-mapping-file provided");
-                            throw new IllegalArgumentException("--cohort-id or --aggregation-mapping-file is required to specify cohorts");
-                        }
-                        System.out.println(createOutput(c.cOpt, variantStorage.calculateStats(outdirId, c.cohortIds, sessionId, queryOptions), null));
-
-                        break;
+                        throw new UnsupportedOperationException();
+//                        VariantStorage variantStorage = new VariantStorage(catalogManager);
+//
+//                        long outdirId = catalogManager.getFileId(c.outdir);
+//                        QueryOptions queryOptions = new QueryOptions(c.cOpt.getQueryOptions());
+//                        if (c.enqueue) {
+//                            queryOptions.put(ExecutorManager.EXECUTE, false);
+//                        } else {
+//                            queryOptions.add(ExecutorManager.EXECUTE, true);
+//                        }
+//                        queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
+//                        queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
+//                        if (c.tagmap != null) {
+//                            queryOptions.put(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), c.tagmap);
+//                        } else if (c.cohortIds == null) {
+//                            logger.error("--cohort-id nor --aggregation-mapping-file provided");
+//                            throw new IllegalArgumentException("--cohort-id or --aggregation-mapping-file is required to specify cohorts");
+//                        }
+//                        System.out.println(createOutput(c.cOpt, variantStorage.calculateStats(outdirId, c.cohortIds, sessionId, queryOptions), null));
+//
+//                        break;
                     }
 
                     default: {

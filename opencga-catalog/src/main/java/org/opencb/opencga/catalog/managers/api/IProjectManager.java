@@ -64,8 +64,9 @@ public interface IProjectManager extends ResourceManager<Long, Project> {
     @Deprecated
     long getId(String projectId) throws CatalogException;
 
-    QueryResult<Project> create(String name, String alias, String description, String organization, QueryOptions options,
-                                String sessionId) throws CatalogException;
+    QueryResult<Project> create(String name, String alias, String description, String organization, String scientificName,
+                                String commonName, String taxonomyCode, String assembly, QueryOptions options, String sessionId)
+            throws CatalogException;
 
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.
@@ -131,4 +132,14 @@ public interface IProjectManager extends ResourceManager<Long, Project> {
         return groupBy(userId, query, field, options, sessionId);
     }
 
+    /**
+     * Obtain the list of projects and studies that are shared with the user.
+     *
+     * @param userId user whose projects and studies are being shared with.
+     * @param queryOptions QueryOptions object.
+     * @param sessionId Session id which should correspond to userId.
+     * @return A QueryResult object containing the list of projects and studies that are shared with the user.
+     * @throws CatalogException CatalogException
+     */
+    QueryResult<Project> getSharedProjects(String userId, QueryOptions queryOptions, String sessionId) throws CatalogException;
 }

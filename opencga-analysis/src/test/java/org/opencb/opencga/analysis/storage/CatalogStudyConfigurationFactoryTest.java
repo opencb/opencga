@@ -21,7 +21,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.variant.CatalogStudyConfigurationFactory;
+import org.opencb.opencga.storage.core.local.variant.CatalogStudyConfigurationFactory;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
@@ -116,7 +116,7 @@ public class CatalogStudyConfigurationFactoryTest {
                 studyConfiguration.setIndexedFiles(indexedFiles);
                 return new QueryResult<StudyConfiguration>("", 0, 0, 0, "", "", Collections.emptyList());
             }
-
+            public Map<String, Integer> getStudies(QueryOptions options) { return Collections.emptyMap(); }
         }, new QueryOptions(), sessionId);
 
         checkStudyConfiguration(study, studyConfiguration);
@@ -145,6 +145,7 @@ public class CatalogStudyConfigurationFactoryTest {
                 studyConfiguration.setIndexedFiles(indexedFiles);
                 return new QueryResult<StudyConfiguration>("", 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
+            public Map<String, Integer> getStudies(QueryOptions options) { return Collections.emptyMap(); }
 
         }, new QueryOptions(), sessionId);
 

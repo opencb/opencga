@@ -477,7 +477,8 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
             }
 
             boolean resume = options.getBoolean(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT_RESUME, false);
-            BatchFileOperation op = addBatchOperation(studyConfiguration, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles, resume);
+            BatchFileOperation op = addBatchOperation(studyConfiguration, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles, resume,
+                    BatchFileOperation.Type.LOAD);
 
             options.put(HADOOP_LOAD_VARIANT_STATUS, op.currentStatus());
             options.put(AbstractVariantTableDriver.TIMESTAMP, op.getTimestamp());
@@ -499,11 +500,12 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
      * @param jobOperationName   Job operation name used to create the jobName and as {@link BatchFileOperation#operationName}
      * @param fileIds            Files to be processed in this batch.
      * @param resume             Resume operation. Assume that previous operation went wrong.
+     * @param type               Operation type as {@link BatchFileOperation#type}
      * @return                   The current batchOperation
      * @throws StorageManagerException if the operation can't be executed
      */
     protected BatchFileOperation addBatchOperation(StudyConfiguration studyConfiguration, String jobOperationName, List<Integer> fileIds,
-                                                   boolean resume)
+                                                   boolean resume, BatchFileOperation.Type type)
             throws StorageManagerException {
 
         List<BatchFileOperation> batches = studyConfiguration.getBatches();
@@ -515,7 +517,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
 
             switch (currentStatus) {
                 case READY:
-                    batchFileOperation = new BatchFileOperation(jobOperationName, fileIds, batchFileOperation.getTimestamp() + 1);
+                    batchFileOperation = new BatchFileOperation(jobOperationName, fileIds, batchFileOperation.getTimestamp() + 1, type);
                     newOperation = true;
                     break;
                 case DONE:
@@ -539,7 +541,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
                     throw new IllegalArgumentException("Unknown Status " + currentStatus);
             }
         } else {
-            batchFileOperation = new BatchFileOperation(jobOperationName, fileIds, 1);
+            batchFileOperation = new BatchFileOperation(jobOperationName, fileIds, 1, type);
             newOperation = true;
         }
         if (!Objects.equals(batchFileOperation.currentStatus(), BatchFileOperation.Status.DONE)) {

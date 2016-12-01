@@ -40,24 +40,26 @@ public class BatchFileOperation {
         ERROR
     }
 
+    public enum Type {
+        LOAD,
+        REMOVE,
+        OTHER
+    }
+
     private String operationName;
     private List<Integer> fileIds;
     private long timestamp;
     private final TreeMap<Date, Status> status = new TreeMap<>(Date::compareTo);
+    private Type type = Type.OTHER;
 
     public BatchFileOperation() {
     }
 
-    public BatchFileOperation(List<Integer> fileIds, long timestamp, TreeMap<Date, Status> status, String operationName) {
-        this.fileIds = fileIds;
-        this.timestamp = timestamp;
-        this.operationName = operationName;
-    }
-
-    public BatchFileOperation(String operationName, List<Integer> fileIds, long timestamp) {
+    public BatchFileOperation(String operationName, List<Integer> fileIds, long timestamp, Type type) {
         this.operationName = operationName;
         this.fileIds = fileIds;
         this.timestamp = timestamp;
+        this.type = type;
     }
 
     public Status currentStatus() {
@@ -101,6 +103,15 @@ public class BatchFileOperation {
 
     public BatchFileOperation addStatus(Date date, Status status) {
         this.status.put(date, status);
+        return this;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public BatchFileOperation setType(Type type) {
+        this.type = type;
         return this;
     }
 

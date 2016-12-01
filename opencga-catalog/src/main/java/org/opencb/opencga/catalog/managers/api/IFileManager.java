@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.DatasetAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 
+import javax.annotation.Nullable;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
@@ -106,7 +107,7 @@ public interface IFileManager extends ResourceManager<Long, File> {
 
     boolean isExternal(File file) throws CatalogException;
 
-    QueryResult<FileIndex>  updateFileIndexStatus(File file, String newStatus, String sessionId) throws CatalogException;
+    QueryResult<FileIndex>  updateFileIndexStatus(File file, String newStatus, String message, String sessionId) throws CatalogException;
 
 
     /*--------------*/
@@ -147,8 +148,8 @@ public interface IFileManager extends ResourceManager<Long, File> {
     QueryResult<File> link(URI uriOrigin, String pathDestiny, long studyId, ObjectMap params, String sessionId)
             throws CatalogException, IOException;
 
-    QueryResult<FileTree> getTree(String fileIdStr, Query query, QueryOptions queryOptions, int maxDepth, String sessionId)
-            throws CatalogException;
+    QueryResult<FileTree> getTree(String fileIdStr, @Nullable String studyId, Query query, QueryOptions queryOptions, int maxDepth,
+                                  String sessionId) throws CatalogException;
 
     @Deprecated
     QueryResult<File> unlink(long fileId, String sessionId) throws CatalogException;

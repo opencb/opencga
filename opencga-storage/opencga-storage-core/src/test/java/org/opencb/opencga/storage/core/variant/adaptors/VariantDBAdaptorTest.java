@@ -35,10 +35,10 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.annotation.CellBaseVariantAnnotator;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 
 import java.io.IOException;
@@ -95,7 +95,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             clearDB(DB_NAME);
             ObjectMap params = new ObjectMap(VariantStorageManager.Options.STUDY_TYPE.key(), VariantStudy.StudyType.FAMILY)
                     .append(VariantStorageManager.Options.ANNOTATE.key(), true)
-                    .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, CellBaseVariantAnnotator.class.getName())
+                    .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, CellBaseRestVariantAnnotator.class.getName())
                     .append(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json")
                     .append(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
             params.putAll(getOtherParams());
@@ -143,10 +143,13 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                 System.out.println("count           = " + all);
                 System.out.println("get             = " + allVariants.getNumResults());
 
-                for (Variant variant : allVariants.getResult()) {
-                    if (variant.getAnnotation() == null) {
-                        System.out.println("no annotation for variant = " + variant);
-                    }
+                List<Variant> nonAnnotatedVariants = allVariants.getResult()
+                        .stream()
+                        .filter(variant -> variant.getAnnotation() == null)
+                        .collect(Collectors.toList());
+                if (!nonAnnotatedVariants.isEmpty()) {
+                    System.out.println(nonAnnotatedVariants.size() + " variants not annotated:");
+                    System.out.println("Variants not annotated: " + nonAnnotatedVariants);
                 }
                 if (Objects.equals(annotated, all)) {
                     break;

@@ -534,8 +534,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public VariantAnnotationPhoenixDBWriter annotationLoader(QueryOptions options) {
+    public VariantAnnotationPhoenixDBWriter newAnnotationLoader(QueryOptions options) {
         try {
             return new VariantAnnotationPhoenixDBWriter(this, options, variantTable,
                     phoenixHelper.newJdbcConnection(this.configuration), true);
@@ -551,12 +550,14 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
+    @Deprecated
     public QueryResult addAnnotations(List<org.opencb.biodata.models.variant.avro.VariantAnnotation> variantAnnotations,
                                       QueryOptions queryOptions) {
         return updateAnnotations(variantAnnotations, queryOptions);
     }
 
     @Override
+    @Deprecated
     public QueryResult updateAnnotations(List<org.opencb.biodata.models.variant.avro.VariantAnnotation> variantAnnotations,
                                          QueryOptions queryOptions) {
 

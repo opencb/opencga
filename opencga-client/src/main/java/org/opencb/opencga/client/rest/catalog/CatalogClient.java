@@ -45,7 +45,7 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
         return execute(category, "count", query, GET, Long.class);
     }
 
-    public QueryResponse<T> get(String id, QueryOptions options) throws CatalogException, IOException {
+    public QueryResponse<T> get(String id, QueryOptions options) throws IOException {
         return execute(category, id, "info", options, GET, clazz);
     }
 

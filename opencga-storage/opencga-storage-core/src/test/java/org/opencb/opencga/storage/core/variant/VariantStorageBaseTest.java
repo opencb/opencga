@@ -41,6 +41,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 31/05/15.
@@ -92,6 +94,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     protected VariantStorageManager variantStorageManager;
     public static Logger logger;
     private static Path rootDir = null;
+    private static AtomicInteger count = new AtomicInteger(0);
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -119,6 +122,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         corruptedInputUri = corruptedInputPath.toUri();
         outputUri = rootDir.toUri();
         logger = LoggerFactory.getLogger(VariantStorageManagerTest.class);
+        logger.info("count: " + count.getAndIncrement());
 
     }
 
@@ -154,22 +158,22 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     }
 
     public URI newOutputUri() throws IOException {
-        return newOutputUri(1);
+        return newOutputUri(1, outputUri);
     }
 
-    public URI newOutputUri(int extraCalls) throws IOException {
+    public static URI newOutputUri(int extraCalls, URI outputUri) throws IOException {
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
         // stackTrace[0] = "Thread.currentThread"
         // stackTrace[1] = "newOutputUri"
         // stackTrace[2] =  caller method
         String testName = stackTrace[2 + extraCalls].getMethodName();
         int c = 0;
-        URI outputUri = VariantStorageBaseTest.outputUri.resolve("test_" + testName + "/");
-        while (Paths.get(outputUri).toFile().exists()) {
-            outputUri = VariantStorageBaseTest.outputUri.resolve("test_" + testName + "-" + ++c + "/");
+        URI finalOutputUri = outputUri.resolve("test_" + testName + "/");
+        while (Paths.get(finalOutputUri).toFile().exists()) {
+            finalOutputUri = outputUri.resolve("test_" + testName + "-" + ++c + "/");
         }
-        Files.createDirectory(Paths.get(outputUri));
-        return outputUri;
+        Files.createDirectory(Paths.get(finalOutputUri));
+        return finalOutputUri;
     }
 
 //    private static File tempFile = null;
@@ -194,6 +198,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
 
     @Before
     public final void _before() throws Exception {
+        printActiveThreadsNumber();
         variantStorageManager = getVariantStorageManager();
     }
 
@@ -330,5 +335,37 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
             }
         }
     }
+    public void printActiveThreadsNumber() {
+        List<String> threads = Thread.getAllStackTraces()
+                .keySet()
+                .stream()
+                .filter(t -> t.getThreadGroup() == null || !t.getThreadGroup().getName().equals("system"))
+                .filter(t -> t.getState() != Thread.State.TERMINATED)
+                .map(Thread::toString).collect(Collectors.toList());
+        System.out.println("ActiveThreads: " + threads.size());
+//        threads.forEach(s -> System.out.println("\t" + s));
+    }
 
+    public void printActiveThreads() {
+        System.out.println("=========================================");
+        System.out.println("Thread.activeCount() = " + Thread.activeCount());
+
+        Map<Thread, StackTraceElement[]> allStackTraces = Thread.getAllStackTraces();
+        Set<String> groups = allStackTraces.keySet()
+                .stream()
+                .filter(t -> t.getThreadGroup() == null || !t.getThreadGroup().getName().equals("system"))
+                .map(t -> String.valueOf(t.getThreadGroup()))
+                .collect(Collectors.toSet());
+
+        for (String group : groups) {
+            System.out.println("group = " + group);
+            for (Map.Entry<Thread, StackTraceElement[]> entry : allStackTraces.entrySet()) {
+                Thread thread = entry.getKey();
+                if (String.valueOf(thread.getThreadGroup()).equals(group)) {
+                    System.out.println("\t[" + thread.getId() + "] " + thread.toString() + ":" + thread.getState());
+                }
+            }
+        }
+        System.out.println("=========================================");
+    }
 }

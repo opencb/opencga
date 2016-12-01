@@ -20,13 +20,10 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
-import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.main.options.catalog.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.models.File;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -64,11 +61,11 @@ public class FileCommandOptions {
     public AclCommandOptions.AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
 
     public JCommander jCommander;
-    public OpencgaCommonCommandOptions commonCommandOptions;
+    public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
 
     private AclCommandOptions aclCommandOptions;
 
-    public FileCommandOptions(OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public FileCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, JCommander jCommander) {
 
         this.commonCommandOptions = commonCommandOptions;
         this.jCommander = jCommander;
@@ -106,7 +103,7 @@ public class FileCommandOptions {
     public class BaseFileCommand {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "File id", required = true, arity = 1)
         public String id;
@@ -117,7 +114,7 @@ public class FileCommandOptions {
     public class CopyCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--path"}, description = "Directory where to create the file", required = false, arity = 1)
         public String path;
@@ -199,7 +196,7 @@ public class FileCommandOptions {
     public class SearchCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "Comma separated list of ids", arity = 1)
         public String id;
@@ -275,6 +272,9 @@ public class FileCommandOptions {
     @Parameters(commandNames = {"list"}, commandDescription = "List files in folder")
     public class ListCommandOptions {
 
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
         @Parameter(names = {"--folder-id"}, description = "Folder Id", arity = 1, required = true)
         public String folderId;
 
@@ -298,7 +298,7 @@ public class FileCommandOptions {
     public class IndexCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "Comma separated list of file ids (files or directories)", required = true, arity = 1)
         public String fileIds;
@@ -481,8 +481,14 @@ public class FileCommandOptions {
     @Parameters(commandNames = {"tree-view"}, commandDescription = "Obtain a tree view of the files and folders within a folder")
     public class TreeViewCommandOptions {
 
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
         @Parameter(names = {"--folder-id"}, description = "Folder id", required = true, arity = 1)
         public String folderId;
+
+        @Parameter(names = {"--study-id"}, description = "Study id or [[user@]projectAlias:]studyAlias", arity = 1, required = false)
+        public String studyStr;
 
         @Parameter(names = {"--max-Depth"}, description = "Maximum depth to get files from. Default: 5", required = false, arity = 1)
         public Integer maxDepth = 5;
@@ -516,7 +522,7 @@ public class FileCommandOptions {
     public class LinkCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
          @Parameter(names = {"-i", "--input"}, description = "File or folder location", required = true, variableArity = true)
          public List<String> inputs;
@@ -540,7 +546,7 @@ public class FileCommandOptions {
     public class UploadCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-s", "--study-id"}, description = "Study where the file will be associated to", required = true, arity = 1)
         public String studyId;
@@ -578,7 +584,7 @@ public class FileCommandOptions {
     public class GroupByCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
         public String fields;

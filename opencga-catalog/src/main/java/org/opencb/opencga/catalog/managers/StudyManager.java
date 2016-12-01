@@ -158,29 +158,6 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         return studyDBAdaptor.getId(projectId, projectStudy[1]);
     }
 
-    @Deprecated
-    @Override
-    public QueryResult<Study> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(objectMap, "objectMap");
-        // FIXME: Change the projectId, name... per CatalogStudyDBAdaptor.QueryParams...
-        return create(
-                objectMap.getInt("projectId", -1),
-                objectMap.getString("name"),
-                objectMap.getString("alias"),
-                Study.Type.valueOf(objectMap.getString("type", Study.Type.CASE_CONTROL.toString())),
-                objectMap.getString("creationDate"),
-                objectMap.getString("description"),
-                objectMap.get("status", Status.class, null),
-                objectMap.getString("cipher"),
-                objectMap.getString("uriScheme"),
-                objectMap.get("uri", URI.class, null),
-                objectMap.get("datastores", Map.class, null),
-                objectMap.getMap("stats"),
-                objectMap.getMap("attributes"),
-                options, sessionId
-        );
-    }
-
     @Override
     public QueryResult<Study> create(long projectId, String name, String alias, Study.Type type, String creationDate,
                                      String description, Status status, String cipher, String uriScheme, URI uri,

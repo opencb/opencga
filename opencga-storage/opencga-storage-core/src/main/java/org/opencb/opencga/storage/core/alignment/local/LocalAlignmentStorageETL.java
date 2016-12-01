@@ -1,9 +1,9 @@
 package org.opencb.opencga.storage.core.alignment.local;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceRecord;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.ObjectWriter;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.models.core.Region;
@@ -73,7 +73,7 @@ public class LocalAlignmentStorageETL implements StorageETL {
         if (!statsPath.toFile().exists()) {
             AlignmentGlobalStats stats = bamManager.stats();
             ObjectMapper objectMapper = new ObjectMapper();
-            ObjectWriter objectWriter = objectMapper.typedWriter(AlignmentGlobalStats.class);
+            ObjectWriter objectWriter = objectMapper.writerFor(AlignmentGlobalStats.class);
             objectWriter.writeValue(statsPath.toFile(), stats);
         }
 
@@ -147,7 +147,6 @@ public class LocalAlignmentStorageETL implements StorageETL {
     public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
         return null;
     }
-
 
     private void initDatabase(List<SAMSequenceRecord> sequenceRecordList, Path workspace) {
         Path coverageDBPath = workspace.toAbsolutePath().resolve(COVERAGE_DATABASE_NAME);

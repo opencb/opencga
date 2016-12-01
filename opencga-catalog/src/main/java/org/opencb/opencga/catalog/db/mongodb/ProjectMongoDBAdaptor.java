@@ -444,18 +444,19 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         Bson projectParameters = new Document();
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(), QueryParams.DESCRIPTION.key(),
-                QueryParams.ORGANIZATION.key(), QueryParams.LAST_MODIFIED.key(), };
+                QueryParams.ORGANIZATION.key(), QueryParams.LAST_MODIFIED.key(), QueryParams.ORGANISM_SCIENTIFIC_NAME.key(),
+                QueryParams.ORGANISM_COMMON_NAME.key(), QueryParams.ORGANISM_ASSEMBLY.key(), };
         for (String s : acceptedParams) {
             if (parameters.containsKey(s)) {
                 ((Document) projectParameters).put("projects.$." + s, parameters.getString(s));
             }
         }
-        String[] acceptedIntParams = {QueryParams.DISK_USAGE.key()};
+        String[] acceptedIntParams = {QueryParams.DISK_USAGE.key(), QueryParams.ORGANISM_TAXONOMY_CODE.key(), };
         for (String s : acceptedIntParams) {
             if (parameters.containsKey(s)) {
                 int anInt = parameters.getInt(s, Integer.MIN_VALUE);
                 if (anInt != Integer.MIN_VALUE) {
-                    ((Document) projectParameters).put(s, anInt);
+                    ((Document) projectParameters).put("projects.$." + s, anInt);
                 }
             }
         }
