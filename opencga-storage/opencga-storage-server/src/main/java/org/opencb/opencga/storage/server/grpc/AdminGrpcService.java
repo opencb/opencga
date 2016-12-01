@@ -18,18 +18,18 @@ package org.opencb.opencga.storage.server.grpc;
 
 import io.grpc.stub.StreamObserver;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.server.grpc.AdminServiceGrpc.AdminService;
+import org.opencb.opencga.storage.server.grpc.AdminServiceGrpc.AdminServiceImplBase;
 
 /**
  * Created by imedina on 02/01/16.
  */
-public class AdminGrpcService extends GenericGrpcService implements AdminService {
+public class AdminGrpcService extends AdminServiceImplBase {
 
     private GrpcStorageServer grpcServer;
 
 
     public AdminGrpcService(StorageConfiguration storageConfiguration, GrpcStorageServer grpcServer) {
-        super(storageConfiguration);
+//        super(storageConfiguration);
         this.grpcServer = grpcServer;
     }
 

@@ -316,7 +316,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.putIfNotEmpty(QueryOptions.SKIP, filesCommandOptions.alignmentCommandOptions.skip);
             queryOptions.put("count", filesCommandOptions.alignmentCommandOptions.count);
 
-        return openCGAClient.getAlignmentClient().query(queryOptions);
+        return openCGAClient.getAlignmentClient().query(filesCommandOptions.alignmentCommandOptions.id, queryOptions);
     }
 
     private QueryResponse content() throws CatalogException, IOException {

@@ -59,9 +59,9 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     }
 
     @GET
-    @Path("/index")
+    @Path("/{fileId}/index")
     @ApiOperation(value = "Index alignment files", position = 14, response = QueryResponse.class)
-    public Response index(@ApiParam("Comma separated list of file ids (files or directories)") @QueryParam(value = "fileId") String fileIdStr,
+    public Response index(@ApiParam("Comma separated list of file ids (files or directories)") @PathParam(value = "fileId") String fileIdStr,
                           // FIXME: Study id is not ingested by the analysis index command line. No longer needed.
                           @ApiParam("Study id") @QueryParam("studyId") String studyId,
                           @ApiParam("Boolean indicating that only the transform step will be run") @DefaultValue("false") @QueryParam("transform") boolean transform,
@@ -85,7 +85,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     }
 
     @GET
-    @Path("/query")
+    @Path("/{fileId}/query")
     @ApiOperation(value = "Fetch alignments from a BAM file", position = 15, response = ReadAlignment[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
@@ -94,7 +94,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
-    public Response getAlignments(@ApiParam(value = "Id of the alignment file in catalog", required = true) @QueryParam("fileId")
+    public Response getAlignments(@ApiParam(value = "Id of the alignment file in catalog", required = true) @PathParam("fileId")
                                           String fileIdStr,
                                   @ApiParam(value = "Study id", required = false) @QueryParam("studyId") String studyId,
                                   @ApiParam(value = "Region 'chr:start-end'", required = false) @QueryParam("region") String region,
@@ -127,9 +127,9 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     }
 
     @GET
-    @Path("/stats")
+    @Path("/{fileId}/stats")
     @ApiOperation(value = "Fetch the stats of an alignment file", position = 15, response = AlignmentGlobalStats.class)
-    public Response getStats(@ApiParam(value = "Id of the alignment file in catalog", required = true) @QueryParam("fileId")
+    public Response getStats(@ApiParam(value = "Id of the alignment file in catalog", required = true) @PathParam("fileId")
                                           String fileIdStr,
                                   @ApiParam(value = "Study id", required = false) @QueryParam("studyId") String studyId,
                              @ApiParam(value = "Region 'chr:start-end'", required = false) @QueryParam("region") String region,
@@ -176,9 +176,9 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     }
 
     @GET
-    @Path("/coverage")
+    @Path("/{fileId}/coverage")
     @ApiOperation(value = "Fetch the coverage of an alignment file", position = 15, response = RegionCoverage.class)
-    public Response getCoverage(@ApiParam(value = "Id of the alignment file in catalog", required = true) @QueryParam("fileId")
+    public Response getCoverage(@ApiParam(value = "Id of the alignment file in catalog", required = true) @PathParam("fileId")
                                      String fileIdStr,
                                 @ApiParam(value = "Study id", required = false) @QueryParam("studyId") String studyId,
                                 @ApiParam(value = "Region 'chr:start-end'", required = false) @QueryParam("region") String region,

@@ -304,7 +304,7 @@ public class VariantFetcher {
         } else {
             logger.debug("Missing returned samples! Obtaining returned samples from catalog.");
             List<Integer> returnedStudies = dbAdaptor.getReturnedStudies(query, queryOptions);
-            List<Study> studies = catalogManager.getAllStudies(new Query(StudyDBAdaptor.StudyFilterOptions.id.toString(), returnedStudies),
+            List<Study> studies = catalogManager.getAllStudies(new Query(StudyDBAdaptor.QueryParams.ID.key(), returnedStudies),
                     new QueryOptions("include", "projects.studies.id"), sessionId).getResult();
             samplesMap = new HashMap<>();
             List<Long> returnedSamples = new LinkedList<>();

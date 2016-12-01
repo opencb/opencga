@@ -93,20 +93,24 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
             AlignmentFilters<SAMRecord> alignmentFilters = parseQuery(query);
             Region region = parseRegion(query);
 
+            String queryResultId;
             List<ReadAlignment> readAlignmentList;
             if (region != null) {
-                readAlignmentList = alignmentManager.query(region, alignmentOptions, alignmentFilters, ReadAlignment.class);
+                readAlignmentList = alignmentManager.query(region, alignmentFilters, alignmentOptions, ReadAlignment.class);
+                queryResultId = region.toString();
             } else {
-                readAlignmentList = alignmentManager.query(alignmentOptions, alignmentFilters, ReadAlignment.class);
+                readAlignmentList = alignmentManager.query(alignmentFilters, alignmentOptions, ReadAlignment.class);
+                queryResultId = "Get alignments";
             }
 //            List<String> stringFormatList = new ArrayList<>(readAlignmentList.size());
 //            for (Reads.ReadAlignment readAlignment : readAlignmentList) {
 //                stringFormatList.add(readAlignment());
 //            }
 //            List<JsonFormat> list = alignmentManager.query(region, alignmentOptions, alignmentFilters, Reads.ReadAlignment.class);
+            alignmentManager.close();
             watch.stop();
-            return new QueryResult("Get alignments", ((int) watch.getTime()), readAlignmentList.size(), readAlignmentList.size(),
-                    null, null, readAlignmentList);
+            return new QueryResult(queryResultId, ((int) watch.getTime()), readAlignmentList.size(), readAlignmentList.size(), null, null,
+                    readAlignmentList);
         } catch (Exception e) {
             e.printStackTrace();
             return new QueryResult<>();
@@ -143,19 +147,19 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
             Region region = parseRegion(query);
             if (region != null) {
                 if (Reads.ReadAlignment.class == clazz) {
-                    return (AlignmentIterator<T>) new ProtoAlignmentIterator(alignmentManager.iterator(region, alignmentOptions,
-                            alignmentFilters, Reads.ReadAlignment.class));
+                    return (AlignmentIterator<T>) new ProtoAlignmentIterator(alignmentManager.iterator(region,
+                            alignmentFilters, alignmentOptions, Reads.ReadAlignment.class));
                 } else if (SAMRecord.class == clazz) {
-                    return (AlignmentIterator<T>) new SamRecordAlignmentIterator(alignmentManager.iterator(region, alignmentOptions,
-                            alignmentFilters, SAMRecord.class));
+                    return (AlignmentIterator<T>) new SamRecordAlignmentIterator(alignmentManager.iterator(region,
+                            alignmentFilters, alignmentOptions, SAMRecord.class));
                 }
             } else {
                 if (Reads.ReadAlignment.class == clazz) {
-                    return (AlignmentIterator<T>) new ProtoAlignmentIterator(alignmentManager.iterator(alignmentOptions, alignmentFilters,
-                            Reads.ReadAlignment.class));
+                    return (AlignmentIterator<T>) new ProtoAlignmentIterator(alignmentManager.iterator(alignmentFilters,
+                            alignmentOptions, Reads.ReadAlignment.class));
                 } else if (SAMRecord.class == clazz) {
-                    return (AlignmentIterator<T>) new SamRecordAlignmentIterator(alignmentManager.iterator(alignmentOptions,
-                            alignmentFilters, SAMRecord.class));
+                    return (AlignmentIterator<T>) new SamRecordAlignmentIterator(alignmentManager.iterator(alignmentFilters,
+                            alignmentOptions, SAMRecord.class));
                 }
             }
         } catch (Exception e) {
@@ -230,7 +234,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         Region region = parseRegion(query);
 
         BamManager alignmentManager = new BamManager(path);
-        AlignmentGlobalStats alignmentGlobalStats = alignmentManager.stats(region, alignmentOptions, alignmentFilters);
+        AlignmentGlobalStats alignmentGlobalStats = alignmentManager.stats(region, alignmentFilters, alignmentOptions);
 
         watch.stop();
         return new QueryResult<>("Get stats", (int) watch.getTime(), 1, 1, "", "", Arrays.asList(alignmentGlobalStats));
@@ -263,6 +267,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         AlignmentFilters alignmentFilters = parseQuery(query);
         Region region = parseRegion(query);
 
+        String queryResultId;
         int windowSize;
         RegionCoverage coverage;
         if (region != null) {
@@ -275,8 +280,9 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
                 // if region is small enough we calculate all coverage for all positions dynamically
                 // calling the biodata alignment manager
                 BamManager alignmentManager = new BamManager(path);
-                coverage = alignmentManager.coverage(region, alignmentOptions, alignmentFilters);
+                coverage = alignmentManager.coverage(region, alignmentFilters, alignmentOptions);
             }
+            queryResultId = region.toString();
         } else {
             // if no region is given we set up the windowSize to default value,
             // we should return a few thousands mean values
@@ -291,10 +297,11 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
             region = new Region(seq.getSequenceName(), 1, arraySize * MINOR_CHUNK_SIZE);
             coverage = meanCoverage(path, workspace, region, windowSize);
+            queryResultId = "Get coverage";
         }
 
         watch.stop();
-        return new QueryResult("Region coverage", ((int) watch.getTime()), 1, 1, null, null, Arrays.asList(coverage));
+        return new QueryResult(queryResultId, ((int) watch.getTime()), 1, 1, null, null, Arrays.asList(coverage));
     }
 
 
