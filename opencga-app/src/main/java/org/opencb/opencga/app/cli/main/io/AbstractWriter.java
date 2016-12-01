@@ -26,8 +26,8 @@ import java.io.PrintStream;
  */
 public abstract class AbstractWriter {
 
-    private WriterConfiguration writerConfiguration;
-    private PrintStream ps;
+    protected WriterConfiguration writerConfiguration;
+    protected PrintStream ps;
 
     protected static final String ANSI_RESET = "\033[0m";
     protected static final String ANSI_RED = "\033[31m";

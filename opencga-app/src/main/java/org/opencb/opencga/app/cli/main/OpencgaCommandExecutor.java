@@ -53,10 +53,11 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
             WriterConfiguration writerConfiguration = new WriterConfiguration();
             writerConfiguration.setMetadata(options.metadata);
-            writerConfiguration.setPretty(options.pretty);
             writerConfiguration.setHeader(!options.noHeader);
 
             switch (options.outputFormat.toLowerCase()) {
+                case "json_pretty":
+                    writerConfiguration.setPretty(true);
                 case "json":
                     this.writer = new JsonWriter(writerConfiguration);
                     break;

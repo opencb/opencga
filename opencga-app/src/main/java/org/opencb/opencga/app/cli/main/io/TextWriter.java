@@ -26,12 +26,12 @@ public class TextWriter extends AbstractWriter {
 
     @Override
     public void print(QueryResponse queryResponse, WriterConfiguration writerConfiguration, PrintStream ps) {
-        if (writerConfiguration == null) {
-            writerConfiguration = new WriterConfiguration();
-        }
-
         if (checkErrors(queryResponse)) {
             return;
+        }
+
+        if (writerConfiguration == null) {
+            writerConfiguration = this.writerConfiguration;
         }
 
         if (queryResponse.getResponse().size() == 0 || ((QueryResult) queryResponse.getResponse().get(0)).getNumResults() == 0) {
@@ -75,19 +75,20 @@ public class TextWriter extends AbstractWriter {
 
     }
 
-    private void printHeader(QueryResult queryResult, StringBuilder sb) {
-        sb.append("# ").append(TimeUtils.getTime()).append(" - ")
-                .append(queryResult.getNumResults()).append("/").append(queryResult.getNumTotalResults()).append("results. ")
-                .append(queryResult.getDbTime()).append(" ms.\n");
+    private void printMetadata(QueryResult queryResult, StringBuilder sb) {
+        if (writerConfiguration.isMetadata()) {
+            sb.append("# ").append(TimeUtils.getTime()).append(" - ")
+                    .append(queryResult.getNumResults()).append("/").append(queryResult.getNumTotalResults()).append("results. ")
+                    .append(queryResult.getDbTime()).append(" ms.\n");
+        }
     }
 
     private void printUser(List<QueryResult<User>> queryResultList, WriterConfiguration writerConfiguration, PrintStream ps) {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<User> queryResult : queryResultList) {
             // Write num results and time (metadata)
-            if (writerConfiguration.isMetadata()) {
-                printHeader(queryResult, sb);
-            }
+                printMetadata(queryResult, sb);
+
             // Write header
             if (writerConfiguration.isHeader()) {
                 sb.append("#(U) id\tname\te-mail\torganization\taccountType\tdiskUsage\tdiskQuota\n");
@@ -101,7 +102,6 @@ public class TextWriter extends AbstractWriter {
         }
 
         ps.println(sb.toString());
-
     }
 
 
@@ -111,7 +111,7 @@ public class TextWriter extends AbstractWriter {
                 user.getOrganization(), user.getAccount().getType(), user.getDiskUsage(), user.getDiskQuota()));
 
         if (user.getProjects().size() > 0) {
-            format = format + "\t";
+            format = format + " * ";
             for (Project project : user.getProjects()) {
                 printProject(project, sb, format);
             }
@@ -159,7 +159,7 @@ public class TextWriter extends AbstractWriter {
         for (QueryResult<Project> queryResult : queryResultList) {
             // Write num results and time (metadata)
             if (writerConfiguration.isMetadata()) {
-                printHeader(queryResult, sb);
+                printMetadata(queryResult, sb);
             }
 
             // Write header
@@ -200,7 +200,7 @@ public class TextWriter extends AbstractWriter {
                 project.getDescription(), project.getId(), project.getDiskUsage()));
 
         if (project.getStudies().size() > 0) {
-            format = format + "\t";
+            format = format + " - ";
             for (Study study : project.getStudies()) {
                 printStudy(study, sb, format);
             }
@@ -222,7 +222,7 @@ public class TextWriter extends AbstractWriter {
         for (QueryResult<Study> queryResult : queryResultList) {
             // Write num results and time (metadata)
             if (writerConfiguration.isMetadata()) {
-                printHeader(queryResult, sb);
+                printMetadata(queryResult, sb);
             }
 
             // Write header
@@ -296,7 +296,7 @@ public class TextWriter extends AbstractWriter {
         for (QueryResult<File> queryResult : queryResultList) {
             // Write num results and time (metadata)
             if (writerConfiguration.isMetadata()) {
-                printHeader(queryResult, sb);
+                printMetadata(queryResult, sb);
             }
 
             // Write header
@@ -371,7 +371,7 @@ public class TextWriter extends AbstractWriter {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<FileTree> fileTreeQueryResult : queryResponse.getResponse()) {
             if (writerConfiguration.isMetadata()) {
-                printHeader(fileTreeQueryResult, sb);
+                printMetadata(fileTreeQueryResult, sb);
             }
             printRecursiveTree(fileTreeQueryResult.getResult(), sb, "");
         }

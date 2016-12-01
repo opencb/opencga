@@ -61,13 +61,10 @@ public class GeneralCliOptions {
         @Parameter(names = {"-v", "--verbose"}, description = "Increase the verbosity of logs")
         public boolean verbose = false;
 
-        @Parameter(names = {"--output-format"}, description = "Output format. one of {JSON, TEXT, YAML}", arity = 1)
+        @Parameter(names = {"--of", "--output-format"}, description = "Output format. one of {JSON, JSON_PRETTY, TEXT, YAML}", arity = 1)
         public String outputFormat = "TEXT";
 
-        @Parameter(names = {"--pretty"}, description = "Print as a json in a pretty formatted way.", required = false, arity = 0)
-        public boolean pretty = false;
-
-        @Parameter(names = {"--sid", "--session-id"}, description = "Token session id", arity = 1)
+        @Parameter(names = {"-S", "--sid", "--session-id"}, description = "Token session id", arity = 1)
         public String sessionId;
 
         @Parameter(names = {"-M", "--metadata"}, description = "Include metadata information", required = false, arity = 0)

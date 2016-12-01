@@ -63,12 +63,12 @@ public class JsonWriter extends AbstractWriter {
 
     @Override
     public void print(QueryResponse queryResponse, WriterConfiguration writerConfiguration, PrintStream ps) {
-        if (writerConfiguration == null) {
-            writerConfiguration = new WriterConfiguration();
-        }
-
         if (checkErrors(queryResponse)) {
             return;
+        }
+
+        if (writerConfiguration == null) {
+            writerConfiguration = this.writerConfiguration;
         }
 
         ObjectWriter objectWriter;

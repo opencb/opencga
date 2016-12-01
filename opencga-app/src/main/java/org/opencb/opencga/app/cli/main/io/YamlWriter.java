@@ -68,7 +68,7 @@ public class YamlWriter extends AbstractWriter {
         }
 
         if (writerConfiguration == null) {
-            writerConfiguration = new WriterConfiguration();
+            writerConfiguration = this.writerConfiguration;
         }
 
         ObjectWriter objectWriter = objectMapper.writer();
