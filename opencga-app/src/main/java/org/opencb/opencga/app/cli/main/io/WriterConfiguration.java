@@ -6,8 +6,10 @@ package org.opencb.opencga.app.cli.main.io;
 public class WriterConfiguration {
 
     private boolean metadata;
+    private boolean header;
     private boolean pretty;
     private boolean count;
+    @Deprecated
     private boolean tree;
 
     public WriterConfiguration() {
@@ -46,6 +48,15 @@ public class WriterConfiguration {
 
     public WriterConfiguration setMetadata(boolean metadata) {
         this.metadata = metadata;
+        return this;
+    }
+
+    public boolean isHeader() {
+        return header;
+    }
+
+    public WriterConfiguration setHeader(boolean header) {
+        this.header = header;
         return this;
     }
 }

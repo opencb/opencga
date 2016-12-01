@@ -48,17 +48,13 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         init(options, skipDuration);
     }
 
-//    @Deprecated
-//    public OpencgaCommandExecutor(String logLevel, boolean verbose, String conf, boolean skipDuration) {
-//        super(logLevel, verbose, conf);
-//        init(skipDuration);
-//    }
-
     private void init(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) {
         try {
 
             WriterConfiguration writerConfiguration = new WriterConfiguration();
             writerConfiguration.setMetadata(options.metadata);
+            writerConfiguration.setPretty(options.pretty);
+            writerConfiguration.setHeader(!options.noHeader);
 
             switch (options.outputFormat.toLowerCase()) {
                 case "json":

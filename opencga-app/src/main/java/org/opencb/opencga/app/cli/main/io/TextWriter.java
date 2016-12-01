@@ -5,6 +5,7 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.AbstractAclEntry;
+import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.PrintStream;
 import java.util.Iterator;
@@ -35,9 +36,6 @@ public class TextWriter extends AbstractWriter {
 
         if (queryResponse.getResponse().size() == 0 || ((QueryResult) queryResponse.getResponse().get(0)).getNumResults() == 0) {
             ps.println("No results found for the query.");
-//            if (writerConfiguration.isPretty()) {
-//                ps.println("No results found for the query.");
-//            }
             return;
         }
 
@@ -47,19 +45,19 @@ public class TextWriter extends AbstractWriter {
 
         switch (clazz) {
             case "User":
-                printUser(queryResponse.getResponse(), ps);
+                printUser(queryResponse.getResponse(), writerConfiguration, ps);
                 break;
             case "Project":
-                printProject(queryResponse.getResponse(), ps);
+                printProject(queryResponse.getResponse(), writerConfiguration, ps);
                 break;
             case "Study":
-                printStudy(queryResponse.getResponse(), ps);
+                printStudy(queryResponse.getResponse(), writerConfiguration, ps);
                 break;
             case "File":
-                printFiles(queryResponse.getResponse(), ps);
+                printFiles(queryResponse.getResponse(), writerConfiguration, ps);
                 break;
             case "Sample":
-                printSamples(queryResponse.getResponse(), ps);
+                printSamples(queryResponse.getResponse(), writerConfiguration, ps);
                 break;
             case "Cohort":
                 break;
@@ -68,7 +66,7 @@ public class TextWriter extends AbstractWriter {
             case "VariableSet":
                 break;
             case "FileTree":
-                printTreeFile(queryResponse, ps);
+                printTreeFile(queryResponse, writerConfiguration, ps);
                 break;
             default:
                 System.err.println(ANSI_RED + "Error: " + clazz + " not yet supported in text format" + ANSI_RESET);
@@ -77,25 +75,25 @@ public class TextWriter extends AbstractWriter {
 
     }
 
-    private void printUser(List<QueryResult<User>> queryResultList, PrintStream ps) {
-//        for (QueryResult<User> queryResult : queryResultList) {
-//            ps.println("QueryResult id: " + queryResult.getId() + "\n");
-//
-//            for (User user : queryResult.getResult()) {
-//                ps.println("User\n====\n");
-//                printUser(user, ps, "");
-//            }
-//        }
+    private void printHeader(QueryResult queryResult, StringBuilder sb) {
+        sb.append("# ").append(TimeUtils.getTime()).append(" - ")
+                .append(queryResult.getNumResults()).append("/").append(queryResult.getNumTotalResults()).append("results. ")
+                .append(queryResult.getDbTime()).append(" ms.\n");
+    }
+
+    private void printUser(List<QueryResult<User>> queryResultList, WriterConfiguration writerConfiguration, PrintStream ps) {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<User> queryResult : queryResultList) {
             // Write num results and time (metadata)
-            sb.append("# ").append(queryResult.getNumResults()).append("/").append(queryResult.getNumTotalResults()).append("\t")
-                    .append(queryResult.getDbTime()).append(" ms.\n");
-
+            if (writerConfiguration.isMetadata()) {
+                printHeader(queryResult, sb);
+            }
             // Write header
-            sb.append("#(U) id\tname\te-mail\torganization\taccountType\tdiskUsage\tdiskQuota\n");
-            sb.append("#(P) \talias\tname\torganization\tdescription\tid\tdiskUsage\n");
-            sb.append("#(S) \t\talias\tname\ttype\tdescription\tid\tgroups\tdiskUsage\n");
+            if (writerConfiguration.isHeader()) {
+                sb.append("#(U) id\tname\te-mail\torganization\taccountType\tdiskUsage\tdiskQuota\n");
+                sb.append("#(P) \talias\tname\torganization\tdescription\tid\tdiskUsage\n");
+                sb.append("#(S) \t\talias\tname\ttype\tdescription\tid\tgroups\tdiskUsage\n");
+            }
 
             for (User user : queryResult.getResult()) {
                 printUser(user, sb, "");
@@ -146,7 +144,7 @@ public class TextWriter extends AbstractWriter {
         ps.println(format + "Date:\t" + account.getCreationDate() + " - " + account.getExpirationDate());
     }
 
-    private void printProject(List<QueryResult<Project>> queryResultList, PrintStream ps) {
+    private void printProject(List<QueryResult<Project>> queryResultList, WriterConfiguration writerConfiguration, PrintStream ps) {
 //        for (QueryResult<Project> queryResult : queryResultList) {
 //            ps.println("QueryResult id: " + queryResult.getId() + "\n");
 ////            ps.println("==============================================");
@@ -160,8 +158,9 @@ public class TextWriter extends AbstractWriter {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<Project> queryResult : queryResultList) {
             // Write num results and time (metadata)
-            sb.append("# ").append(queryResult.getNumResults()).append("/").append(queryResult.getNumTotalResults()).append("\t")
-                    .append(queryResult.getDbTime()).append(" ms.\n");
+            if (writerConfiguration.isMetadata()) {
+                printHeader(queryResult, sb);
+            }
 
             // Write header
             sb.append("#(P) alias\tname\torganization\tdescription\tid\tdiskUsage\n");
@@ -208,7 +207,7 @@ public class TextWriter extends AbstractWriter {
         }
     }
 
-    private void printStudy(List<QueryResult<Study>> queryResultList, PrintStream ps) {
+    private void printStudy(List<QueryResult<Study>> queryResultList, WriterConfiguration writerConfiguration, PrintStream ps) {
 //        for (QueryResult<Study> queryResult : queryResultList) {
 //            ps.println("QueryResult id: " + queryResult.getId());
 //            ps.println("==============================================");
@@ -222,8 +221,9 @@ public class TextWriter extends AbstractWriter {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<Study> queryResult : queryResultList) {
             // Write num results and time (metadata)
-            sb.append("# ").append(queryResult.getNumResults()).append("/").append(queryResult.getNumTotalResults()).append("\t")
-                    .append(queryResult.getDbTime()).append(" ms.\n");
+            if (writerConfiguration.isMetadata()) {
+                printHeader(queryResult, sb);
+            }
 
             // Write header
             sb.append("# alias\tname\ttype\tdescription\tid\tgroups\tdiskUsage\n");
@@ -291,12 +291,13 @@ public class TextWriter extends AbstractWriter {
         }
     }
 
-    private void printFiles(List<QueryResult<File>> queryResultList, PrintStream ps) {
+    private void printFiles(List<QueryResult<File>> queryResultList, WriterConfiguration writerConfiguration, PrintStream ps) {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<File> queryResult : queryResultList) {
             // Write num results and time (metadata)
-            sb.append("# ").append(queryResult.getNumResults()).append("/").append(queryResult.getNumTotalResults()).append("\t")
-                    .append(queryResult.getDbTime()).append(" ms.\n");
+            if (writerConfiguration.isMetadata()) {
+                printHeader(queryResult, sb);
+            }
 
             // Write header
             sb.append("# name\ttype\tformat\tbioformat\tdescription\tpath\tid\tstatus\tdiskUsage\tindexStatus\trelatedFiles\t"
@@ -336,7 +337,7 @@ public class TextWriter extends AbstractWriter {
         }
     }
 
-    private void printSamples(List<QueryResult<Sample>> queryResultList, PrintStream ps) {
+    private void printSamples(List<QueryResult<Sample>> queryResultList, WriterConfiguration writerConfiguration, PrintStream ps) {
         for (QueryResult<Sample> queryResult : queryResultList) {
             ps.println("QueryResult id: " + queryResult.getId());
             ps.println("==============================================");
@@ -366,13 +367,18 @@ public class TextWriter extends AbstractWriter {
     }
 
 
-    private void printTreeFile(QueryResponse<FileTree> queryResponse, PrintStream ps) {
+    private void printTreeFile(QueryResponse<FileTree> queryResponse, WriterConfiguration writerConfiguration, PrintStream ps) {
+        StringBuilder sb = new StringBuilder();
         for (QueryResult<FileTree> fileTreeQueryResult : queryResponse.getResponse()) {
-            printRecursiveTree(fileTreeQueryResult.getResult(), ps, "");
+            if (writerConfiguration.isMetadata()) {
+                printHeader(fileTreeQueryResult, sb);
+            }
+            printRecursiveTree(fileTreeQueryResult.getResult(), sb, "");
         }
+        ps.println(sb.toString());
     }
 
-    private void printRecursiveTree(List<FileTree> fileTreeList, PrintStream ps, String indent) {
+    private void printRecursiveTree(List<FileTree> fileTreeList, StringBuilder sb, String indent) {
         if (fileTreeList == null || fileTreeList.size() == 0) {
             return;
         }
@@ -381,7 +387,7 @@ public class TextWriter extends AbstractWriter {
             FileTree fileTree = iterator.next();
             File file = fileTree.getFile();
 
-            ps.println(String.format("%s (%d) - %s   [%s, %s]",
+            sb.append(String.format("%s (%d) - %s   [%s, %s]\n",
                     indent.isEmpty() ? "" : indent + (iterator.hasNext() ? "├──" : "└──"),
                     file.getId(),
                     file.getName(),
@@ -389,7 +395,7 @@ public class TextWriter extends AbstractWriter {
                     humanReadableByteCount(file.getDiskUsage(), false)));
 
             if (file.getType() == File.Type.DIRECTORY) {
-                printRecursiveTree(fileTree.getChildren(), ps, indent + (iterator.hasNext()? "│   " : "    "));
+                printRecursiveTree(fileTree.getChildren(), sb, indent + (iterator.hasNext()? "│   " : "    "));
             }
         }
     }
