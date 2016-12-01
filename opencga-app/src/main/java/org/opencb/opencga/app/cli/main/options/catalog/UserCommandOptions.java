@@ -98,8 +98,12 @@ public class UserCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"info"}, commandDescription = "Get user's information")
-    public class InfoCommandOptions extends BaseUserCommand {
+    @Parameters(commandNames = {"info"}, commandDescription = "Get complete information of the user together with owned and shared projects"
+            + " and studies")
+    public class InfoCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
         public String include;

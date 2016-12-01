@@ -49,6 +49,7 @@ public abstract class CommandExecutor {
     protected String appHome;
     protected String conf;
 
+    protected String userId;
     protected String sessionId;
 
     /** Use {@link #getOpenCGAConfiguration()} */
@@ -106,6 +107,7 @@ public abstract class CommandExecutor {
             SessionFile sessionFile = loadSessionFile();
             if (sessionFile != null) {
                 this.sessionId = sessionFile.getSessionId();
+                this.userId = sessionFile.getUserId();
             }
         } catch (IOException e) {
             e.printStackTrace();

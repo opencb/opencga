@@ -111,7 +111,7 @@ public class TextWriter extends AbstractWriter {
             if (writerConfiguration.isHeader()) {
                 sb.append("#(U) ID\tNAME\tE-MAIL\tORGANIZATION\tACCOUNT_TYPE\tDISK_USAGE\tDISK_QUOTA\n");
                 sb.append("#(P) \tALIAS\tNAME\tORGANIZATION\tDESCRIPTION\tID\tDISK_USAGE\n");
-                sb.append("#(S) \t\tALIAS\tNAME\tTYPE\tDESCRIPTION\tID\tGROUPS\tDISK_USAGE\n");
+                sb.append("#(S) \t\tALIAS\tNAME\tTYPE\tDESCRIPTION\tID\t#GROUPS\tDISK_USAGE\n");
             }
 
             for (User user : queryResult.getResult()) {
@@ -120,23 +120,27 @@ public class TextWriter extends AbstractWriter {
 
                 if (user.getProjects().size() > 0) {
                     for (Project project : user.getProjects()) {
-                        printProject(project, sb, " * ");
+                        sb.append(String.format("%s%s\t%s\t%s\t%s\t%d\t%d\n", " * ", project.getAlias(), project.getName(),
+                                project.getOrganization(), project.getDescription(), project.getId(), project.getDiskUsage()));
 
                         if (project.getStudies().size() > 0) {
                             for (Study study : project.getStudies()) {
-                                printStudy(study, sb, "    - ");
+                                sb.append(String.format("    - %s\t%s\t%s\t%s\t%d\t%s\t%d\n", study.getAlias(), study.getName(),
+                                        study.getType(), study.getDescription(), study.getId(),
+                                        StringUtils.join(study.getGroups().stream().map(Group::getName).collect(Collectors.toList()), ", "),
+                                        study.getDiskUsage()));
 
                                 if (study.getGroups().size() > 0) {
-                                    sb.append("      Groups:\n");
+                                    sb.append("       Groups:\n");
                                     for (Group group : study.getGroups()) {
-                                        printGroup(group, sb, "       + ");
+                                        printGroup(group, sb, "        + ");
                                     }
                                 }
 
                                 if (study.getAcl().size() > 0) {
-                                    sb.append("      Acl:\n");
+                                    sb.append("       Acl:\n");
                                     for (StudyAclEntry studyAclEntry : study.getAcl()) {
-                                        printACL(studyAclEntry, sb, "       + ");
+                                        printACL(studyAclEntry, sb, "        + ");
                                     }
                                 }
 
@@ -154,75 +158,46 @@ public class TextWriter extends AbstractWriter {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<Project> queryResult : queryResultList) {
             // Write header
-            sb.append("#(P) ALIAS\tNAME\tORGANIZATION\tDESCRIPTION\tID\tDISK_USAGE\n");
-            sb.append("#(S) \tALIAS\tNAME\tTYPE\tDESCRIPTION\tID\tGROUPS\tDISK_USAGE\n");
+            sb.append("# ALIAS\tNAME\tID\tORGANIZATION\tORGANISM\tASSEMBLY\tDESCRIPTION\tDISK_USAGE\t#STUDIES\tSTATUS\n");
 
             for (Project project : queryResult.getResult()) {
-                printProject(project, sb, "");
-
-                if (project.getStudies().size() > 0) {
-                    for (Study study : project.getStudies()) {
-                        printStudy(study, sb, " - ");
-
-                        if (study.getGroups().size() > 0) {
-                            sb.append("   Groups:\n");
-                            for (Group group : study.getGroups()) {
-                                printGroup(group, sb, "    + ");
-                            }
-                        }
-
-                        if (study.getAcl().size() > 0) {
-                            sb.append("   Acl:\n");
-                            for (StudyAclEntry studyAclEntry : study.getAcl()) {
-                                printACL(studyAclEntry, sb, "    + ");
-                            }
-                        }
+                String organism = "NA";
+                String assembly = "NA";
+                if (project.getOrganism() != null) {
+                    organism = StringUtils.isNotEmpty(project.getOrganism().getScientificName())
+                            ? project.getOrganism().getScientificName()
+                            : (StringUtils.isNotEmpty(project.getOrganism().getCommonName())
+                                ? project.getOrganism().getCommonName() : "NA");
+                    if (StringUtils.isNotEmpty(project.getOrganism().getAssembly())) {
+                        assembly = project.getOrganism().getAssembly();
                     }
                 }
+
+                sb.append(String.format("%s\t%s\t%d\t%s\t%s\t%s\t%s\t%d\t%d\t%s\n", project.getAlias(), project.getName(),
+                        project.getId(), project.getOrganization(), organism, assembly, project.getDescription(), project.getDiskUsage(),
+                        project.getStudies().size(), project.getStatus().getName()));
             }
         }
         ps.println(sb.toString());
-    }
-
-    private void printProject(Project project, StringBuilder sb, String format) {
-        // #(P) \talias\tname\torganization\tdescription\tid\tdiskUsage\n
-        sb.append(String.format("%s%s\t%s\t%s\t%s\t%d\t%d\n", format, project.getAlias(), project.getName(), project.getOrganization(),
-                project.getDescription(), project.getId(), project.getDiskUsage()));
     }
 
     private void printStudy(List<QueryResult<Study>> queryResultList) {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<Study> queryResult : queryResultList) {
             // Write header
-            sb.append("#(S) ALIAS\tNAME\tTYPE\tDESCRIPTION\tID\tGROUPS\tDISK_USAGE\n");
+            sb.append("# ALIAS\tNAME\tTYPE\tDESCRIPTION\tID\t#GROUPS\tDISK_USAGE\t#FILES\t#SAMPLES\t#COHORTS\t#INDIVIDUALS\t#JOBS\t")
+                    .append("#VARIABLE_SETS\tSTATUS\n");
 
             for (Study study : queryResult.getResult()) {
-                printStudy(study, sb, "");
-
-                if (study.getGroups().size() > 0) {
-                    sb.append("Groups:\n");
-                    for (Group group : study.getGroups()) {
-                        printGroup(group, sb, " + ");
-                    }
-                }
-
-                if (study.getAcl().size() > 0) {
-                    sb.append("Acl:\n");
-                    for (StudyAclEntry studyAclEntry : study.getAcl()) {
-                        printACL(studyAclEntry, sb, " + ");
-                    }
-                }
+                sb.append(String.format("%s\t%s\t%s\t%s\t%d\t%d\t%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\n",
+                        study.getAlias(), study.getName(), study.getType(), study.getDescription(), study.getId(), study.getGroups().size(),
+                        study.getDiskUsage(), study.getFiles().size(), study.getSamples().size(), study.getCohorts().size(),
+                        study.getIndividuals().size(), study.getJobs().size(), study.getVariableSets().size(),
+                        study.getStatus().getName()));
             }
         }
 
         ps.println(sb.toString());
-    }
-
-    private void printStudy(Study study, StringBuilder sb, String format) {
-        // #(S) 		alias	name	type	description	id	groups	diskUsage
-        sb.append(String.format("%s%s\t%s\t%s\t%s\t%d\t%s\t%d\n", format, study.getAlias(), study.getName(), study.getType(),
-                study.getDescription(), study.getId(),
-                StringUtils.join(study.getGroups().stream().map(Group::getName).collect(Collectors.toList()), ", "), study.getDiskUsage()));
     }
 
     private void printGroup(Group group, StringBuilder sb, String prefix) {
