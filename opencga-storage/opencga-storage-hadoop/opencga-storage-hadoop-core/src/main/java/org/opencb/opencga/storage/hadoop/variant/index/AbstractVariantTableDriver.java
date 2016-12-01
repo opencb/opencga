@@ -238,8 +238,8 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         // See opencb/opencga#352 for more info.
         int scannerTimeout = getConf().getInt(OPENCGA_STORAGE_HADOOP_MAPREDUCE_SCANNER_TIMEOUT,
                 getConf().getInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, HConstants.DEFAULT_HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD));
+        getLog().info("Set Scanner timeout to " + scannerTimeout + " ...");
         job.getConfiguration().setInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, scannerTimeout);
-
         return job;
     }
 

@@ -150,6 +150,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
 
         // with current files of same region
         for (Variant var : analysisNew) {
+            ctx.getContext().progress(); // Call process to avoid timeouts
             long start = System.nanoTime();
             Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, varPosRegister);
             long mid = System.nanoTime();
@@ -186,6 +187,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
                 ctx.context.getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE").increment(archiveOther.size());
                 ctx.context.getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE_NUM_QUERIES").increment(1);
                 for (Variant var : analysisNew) {
+                    ctx.getContext().progress(); // Call process to avoid timeouts
                     long start = System.nanoTime();
                     Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, varFiltered);
                     long mid = System.nanoTime();
@@ -201,11 +203,13 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
 
         // (2) and (3): Same, missing (and overlapping missing) variants
         for (Variant var : analysisVar) {
+            ctx.getContext().progress(); // Call process to avoid timeouts
             Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, varPosRegister);
             this.getVariantMerger().merge(var, cleanList);
         }
         endTime("9 Merge same and missing");
 
+        ctx.getContext().progress(); // Call process to avoid timeouts
         // WRITE VALUES
         List<VariantTableStudyRow> rows = new ArrayList<>(analysisNew.size() + analysisVar.size());
         updateOutputTable(ctx.context, analysisNew, rows, null);
