@@ -36,6 +36,7 @@ public class FileAclEntry extends AbstractAclEntry<FileAclEntry.FilePermissions>
         DELETE,
         UPDATE,       // Modify metadata fields
         DOWNLOAD,
+        UPLOAD,
         SHARE
     }
 

@@ -80,6 +80,7 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
         DELETE_FILES(FileAclEntry.FilePermissions.DELETE.name(), FILE),
         UPDATE_FILES(FileAclEntry.FilePermissions.UPDATE.name(), FILE),
         DOWNLOAD_FILES(FileAclEntry.FilePermissions.DOWNLOAD.name(), FILE),
+        UPLOAD_FILES(FileAclEntry.FilePermissions.UPLOAD.name(), FILE),
         SHARE_FILES(FileAclEntry.FilePermissions.SHARE.name(), FILE),
 
         // JOBS
