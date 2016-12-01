@@ -816,10 +816,19 @@ public class FileManager extends AbstractManager implements IFileManager {
         String userId = catalogManager.getUserManager().getId(sessionId);
 
         // Check 1. No comma-separated values are valid, only one single File or Directory can be deleted.
-        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-        Long fileId = getId(fileIdStr, studyId, sessionId);
-        fileDBAdaptor.checkId(fileId);
-//        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
+        long fileId;
+        long studyId;
+        if (StringUtils.isEmpty(studyStr)) {
+            fileId = getId(userId, fileIdStr);
+            fileDBAdaptor.checkId(fileId);
+            studyId = getStudyId(fileId);
+        } else {
+            studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+            studyDBAdaptor.checkId(studyId);
+            fileId = getId(fileIdStr, studyId, sessionId);
+            fileDBAdaptor.checkId(fileId);
+        }
+
         query.put(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
         // Check if we can obtain the file from the dbAdaptor properly.

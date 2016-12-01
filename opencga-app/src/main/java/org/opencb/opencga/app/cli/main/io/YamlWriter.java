@@ -62,13 +62,9 @@ public class YamlWriter extends AbstractWriter {
     }
 
     @Override
-    public void print(QueryResponse queryResponse, WriterConfiguration writerConfiguration, PrintStream ps) {
+    public void print(QueryResponse queryResponse) {
         if (checkErrors(queryResponse)) {
             return;
-        }
-
-        if (writerConfiguration == null) {
-            writerConfiguration = this.writerConfiguration;
         }
 
         ObjectWriter objectWriter = objectMapper.writer();

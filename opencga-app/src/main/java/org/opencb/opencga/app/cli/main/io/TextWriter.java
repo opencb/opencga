@@ -5,6 +5,7 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.AbstractAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.PrintStream;
@@ -25,19 +26,17 @@ public class TextWriter extends AbstractWriter {
     }
 
     @Override
-    public void print(QueryResponse queryResponse, WriterConfiguration writerConfiguration, PrintStream ps) {
+    public void print(QueryResponse queryResponse) {
         if (checkErrors(queryResponse)) {
             return;
         }
 
-        if (writerConfiguration == null) {
-            writerConfiguration = this.writerConfiguration;
-        }
-
         if (queryResponse.getResponse().size() == 0 || ((QueryResult) queryResponse.getResponse().get(0)).getNumResults() == 0) {
-            ps.println("No results found for the query.");
+            ps.print("No results found for the query.");
             return;
         }
+
+        ps.print(printMetadata(queryResponse));
 
         List<QueryResult> queryResultList = queryResponse.getResponse();
         String[] split = queryResultList.get(0).getResultType().split("\\.");
@@ -45,28 +44,31 @@ public class TextWriter extends AbstractWriter {
 
         switch (clazz) {
             case "User":
-                printUser(queryResponse.getResponse(), writerConfiguration, ps);
+                printUser(queryResponse.getResponse());
                 break;
             case "Project":
-                printProject(queryResponse.getResponse(), writerConfiguration, ps);
+                printProject(queryResponse.getResponse());
                 break;
             case "Study":
-                printStudy(queryResponse.getResponse(), writerConfiguration, ps);
+                printStudy(queryResponse.getResponse());
                 break;
             case "File":
-                printFiles(queryResponse.getResponse(), writerConfiguration, ps);
+                printFiles(queryResponse.getResponse());
                 break;
             case "Sample":
-                printSamples(queryResponse.getResponse(), writerConfiguration, ps);
+                printSamples(queryResponse.getResponse());
                 break;
             case "Cohort":
+                printCohorts(queryResponse.getResponse());
                 break;
             case "Individual":
+                printIndividual(queryResponse.getResponse());
                 break;
             case "VariableSet":
+                printVariableSet(queryResponse.getResponse());
                 break;
             case "FileTree":
-                printTreeFile(queryResponse, writerConfiguration, ps);
+                printTreeFile(queryResponse);
                 break;
             default:
                 System.err.println(ANSI_RED + "Error: " + clazz + " not yet supported in text format" + ANSI_RESET);
@@ -75,201 +77,145 @@ public class TextWriter extends AbstractWriter {
 
     }
 
-    private void printMetadata(QueryResult queryResult, StringBuilder sb) {
+    private String printMetadata(QueryResponse queryResponse) {
+        StringBuilder sb = new StringBuilder();
         if (writerConfiguration.isMetadata()) {
-            sb.append("# ").append(TimeUtils.getTime()).append(" - ")
-                    .append(queryResult.getNumResults()).append("/").append(queryResult.getNumTotalResults()).append("results. ")
-                    .append(queryResult.getDbTime()).append(" ms.\n");
+            int numResults = 0;
+//            int totalResults = 0;
+            int time = 0;
+
+            List<QueryResult> queryResultList = queryResponse.getResponse();
+            for (QueryResult queryResult : queryResultList) {
+                numResults += queryResult.getNumResults();
+//                totalResults += queryResult.getNumTotalResults();
+                time += queryResult.getDbTime();
+            }
+
+            sb.append("## Date: ").append(TimeUtils.getTime()).append("\n")
+                    .append("## Number of results: ").append(numResults)
+                        .append(". Time: ").append(time).append(" ms\n");
+
+            // TODO: Add query info
+            sb.append("## Query: { ")
+                    .append(queryResponse.getQueryOptions()
+                            .entrySet().stream().map(entry -> entry.getKey() + ": " + entry.getValue()).collect(Collectors.joining(", ")))
+                    .append(" }\n");
         }
+        return sb.toString();
     }
 
-    private void printUser(List<QueryResult<User>> queryResultList, WriterConfiguration writerConfiguration, PrintStream ps) {
+    private void printUser(List<QueryResult<User>> queryResultList) {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<User> queryResult : queryResultList) {
-            // Write num results and time (metadata)
-                printMetadata(queryResult, sb);
-
             // Write header
             if (writerConfiguration.isHeader()) {
-                sb.append("#(U) id\tname\te-mail\torganization\taccountType\tdiskUsage\tdiskQuota\n");
-                sb.append("#(P) \talias\tname\torganization\tdescription\tid\tdiskUsage\n");
-                sb.append("#(S) \t\talias\tname\ttype\tdescription\tid\tgroups\tdiskUsage\n");
+                sb.append("#(U) ID\tNAME\tE-MAIL\tORGANIZATION\tACCOUNT_TYPE\tDISK_USAGE\tDISK_QUOTA\n");
+                sb.append("#(P) \tALIAS\tNAME\tORGANIZATION\tDESCRIPTION\tID\tDISK_USAGE\n");
+                sb.append("#(S) \t\tALIAS\tNAME\tTYPE\tDESCRIPTION\tID\tGROUPS\tDISK_USAGE\n");
             }
 
             for (User user : queryResult.getResult()) {
-                printUser(user, sb, "");
+                sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%d\t%d\n", "", user.getId(), user.getName(), user.getEmail(),
+                        user.getOrganization(), user.getAccount().getType(), user.getDiskUsage(), user.getDiskQuota()));
+
+                if (user.getProjects().size() > 0) {
+                    for (Project project : user.getProjects()) {
+                        printProject(project, sb, " * ");
+
+                        if (project.getStudies().size() > 0) {
+                            for (Study study : project.getStudies()) {
+                                printStudy(study, sb, "    - ");
+
+                                if (study.getGroups().size() > 0) {
+                                    sb.append("      Groups:\n");
+                                    for (Group group : study.getGroups()) {
+                                        printGroup(group, sb, "       + ");
+                                    }
+                                }
+
+                                if (study.getAcl().size() > 0) {
+                                    sb.append("      Acl:\n");
+                                    for (StudyAclEntry studyAclEntry : study.getAcl()) {
+                                        printACL(studyAclEntry, sb, "       + ");
+                                    }
+                                }
+
+                            }
+                        }
+                    }
+                }
             }
         }
 
         ps.println(sb.toString());
     }
 
-
-    private void printUser(User user, StringBuilder sb, String format) {
-        // #(U) id	name	e-mail	organization	account type	diskUsage	diskQuota
-        sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%d\t%d\n", format, user.getId(), user.getName(), user.getEmail(),
-                user.getOrganization(), user.getAccount().getType(), user.getDiskUsage(), user.getDiskQuota()));
-
-        if (user.getProjects().size() > 0) {
-            format = format + " * ";
-            for (Project project : user.getProjects()) {
-                printProject(project, sb, format);
-            }
-        }
-    }
-
-    @Deprecated
-    private void printUser(User user, PrintStream ps, String format) {
-        ps.println(format + "Name:\t\t" + user.getName());
-        ps.println(format + "Id:\t\t" + user.getId());
-        ps.println(format + "Email:\t\t" + user.getEmail());
-        ps.println(format + "Organization:\t" + user.getOrganization());
-        ps.println(format + "Status:\t\t" + user.getStatus().getName());
-        ps.println(format + "Disk usage:\t" + user.getDiskUsage());
-        ps.println(format + "Account:");
-        printAccount(user.getAccount(), ps, format + "  ");
-
-        if (user.getProjects().size() > 0) {
-            ps.println(format + "Projects:");
-            format = format + "  ";
-            for (Project project : user.getProjects()) {
-                ps.println(format + "- Project\n" + format + "  ------");
-                printProject(project, ps, format + "    ");
-            }
-        }
-    }
-
-    private void printAccount(Account account, PrintStream ps, String format) {
-        ps.println(format + "Type:\t" + account.getType() + " - " + account.getAuthOrigin());
-        ps.println(format + "Date:\t" + account.getCreationDate() + " - " + account.getExpirationDate());
-    }
-
-    private void printProject(List<QueryResult<Project>> queryResultList, WriterConfiguration writerConfiguration, PrintStream ps) {
-//        for (QueryResult<Project> queryResult : queryResultList) {
-//            ps.println("QueryResult id: " + queryResult.getId() + "\n");
-////            ps.println("==============================================");
-//
-//            for (Project project : queryResult.getResult()) {
-//                ps.println("- Project\n  =======");
-//                printProject(project, ps, "    ");
-//            }
-//        }
-
+    private void printProject(List<QueryResult<Project>> queryResultList) {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<Project> queryResult : queryResultList) {
-            // Write num results and time (metadata)
-            if (writerConfiguration.isMetadata()) {
-                printMetadata(queryResult, sb);
-            }
-
             // Write header
-            sb.append("#(P) alias\tname\torganization\tdescription\tid\tdiskUsage\n");
-            sb.append("#(S) \talias\tname\ttype\tdescription\tid\tgroups\tdiskUsage\n");
+            sb.append("#(P) ALIAS\tNAME\tORGANIZATION\tDESCRIPTION\tID\tDISK_USAGE\n");
+            sb.append("#(S) \tALIAS\tNAME\tTYPE\tDESCRIPTION\tID\tGROUPS\tDISK_USAGE\n");
 
             for (Project project : queryResult.getResult()) {
                 printProject(project, sb, "");
+
+                if (project.getStudies().size() > 0) {
+                    for (Study study : project.getStudies()) {
+                        printStudy(study, sb, " - ");
+
+                        if (study.getGroups().size() > 0) {
+                            sb.append("   Groups:\n");
+                            for (Group group : study.getGroups()) {
+                                printGroup(group, sb, "    + ");
+                            }
+                        }
+
+                        if (study.getAcl().size() > 0) {
+                            sb.append("   Acl:\n");
+                            for (StudyAclEntry studyAclEntry : study.getAcl()) {
+                                printACL(studyAclEntry, sb, "    + ");
+                            }
+                        }
+                    }
+                }
             }
         }
-
         ps.println(sb.toString());
-
-    }
-
-    @Deprecated
-    private void printProject(Project project, PrintStream ps, String format) {
-        ps.println(format + "Id:\t\t" + project.getId());
-        ps.println(format + "Alias:\t\t" + project.getAlias());
-        ps.println(format + "Name:\t\t" + project.getName());
-        ps.println(format + "Description:\t" + project.getDescription());
-        ps.println(format + "Creation date:\t" + project.getCreationDate());
-        ps.println(format + "Organization:\t" + project.getOrganization());
-        ps.println(format + "Status:\t\t" + project.getStatus().getName());
-        if (project.getStudies().size() > 0) {
-            ps.println(format + "Studies:");
-            format = format + "  ";
-            for (Study study : project.getStudies()) {
-                ps.println(format + "- Study\n" + format + "  ------");
-                printStudy(study, ps, format + "    ");
-            }
-        }
     }
 
     private void printProject(Project project, StringBuilder sb, String format) {
         // #(P) \talias\tname\torganization\tdescription\tid\tdiskUsage\n
         sb.append(String.format("%s%s\t%s\t%s\t%s\t%d\t%d\n", format, project.getAlias(), project.getName(), project.getOrganization(),
                 project.getDescription(), project.getId(), project.getDiskUsage()));
-
-        if (project.getStudies().size() > 0) {
-            format = format + " - ";
-            for (Study study : project.getStudies()) {
-                printStudy(study, sb, format);
-            }
-        }
     }
 
-    private void printStudy(List<QueryResult<Study>> queryResultList, WriterConfiguration writerConfiguration, PrintStream ps) {
-//        for (QueryResult<Study> queryResult : queryResultList) {
-//            ps.println("QueryResult id: " + queryResult.getId());
-//            ps.println("==============================================");
-//
-//            for (Study study : queryResult.getResult()) {
-//                ps.println("- Study\n  =======");
-//                printStudy(study, ps, "    ");
-//            }
-//        }
-
+    private void printStudy(List<QueryResult<Study>> queryResultList) {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<Study> queryResult : queryResultList) {
-            // Write num results and time (metadata)
-            if (writerConfiguration.isMetadata()) {
-                printMetadata(queryResult, sb);
-            }
-
             // Write header
-            sb.append("# alias\tname\ttype\tdescription\tid\tgroups\tdiskUsage\n");
+            sb.append("#(S) ALIAS\tNAME\tTYPE\tDESCRIPTION\tID\tGROUPS\tDISK_USAGE\n");
 
             for (Study study : queryResult.getResult()) {
                 printStudy(study, sb, "");
+
+                if (study.getGroups().size() > 0) {
+                    sb.append("Groups:\n");
+                    for (Group group : study.getGroups()) {
+                        printGroup(group, sb, " + ");
+                    }
+                }
+
+                if (study.getAcl().size() > 0) {
+                    sb.append("Acl:\n");
+                    for (StudyAclEntry studyAclEntry : study.getAcl()) {
+                        printACL(studyAclEntry, sb, " + ");
+                    }
+                }
             }
         }
 
         ps.println(sb.toString());
-    }
-
-    @Deprecated
-    private void printStudy(Study study, PrintStream ps, String format) {
-        ps.println(format + "Id:\t\t" + study.getId());
-        ps.println(format + "Alias:\t" + study.getAlias());
-        ps.println(format + "Name:\t\t" + study.getName());
-        ps.println(format + "Description:\t" + study.getDescription());
-        ps.println(format + "Creation date:" + study.getCreationDate());
-        ps.println(format + "Status:\t" + study.getStatus().getName());
-
-        if (study.getGroups().size() > 0) {
-            ps.println(format + "Groups:");
-            printGroups(study.getGroups(), ps, format + "  ");
-        }
-
-        if (study.getAcl().size() > 0) {
-            ps.println(format + "ACL:");
-            printACLs(study.getAcl(), ps, format + "  ");
-        }
-
-        if (study.getFiles().size() > 0) {
-            ps.println(format + "Total files: " + study.getFiles().size());
-        }
-
-        if (study.getSamples().size() > 0) {
-            ps.println(format + "Total samples: " + study.getSamples().size());
-        }
-
-        if (study.getIndividuals().size() > 0) {
-            ps.println(format + "Total individuals: " + study.getIndividuals().size());
-        }
-
-        if (study.getCohorts().size() > 0) {
-            ps.println(format + "Total cohorts: " + study.getCohorts().size());
-        }
     }
 
     private void printStudy(Study study, StringBuilder sb, String format) {
@@ -279,26 +225,17 @@ public class TextWriter extends AbstractWriter {
                 StringUtils.join(study.getGroups().stream().map(Group::getName).collect(Collectors.toList()), ", "), study.getDiskUsage()));
     }
 
-    private void printGroups(List<Group> groupList, PrintStream ps, String format) {
-        for (Group group : groupList) {
-            ps.println(format + group.getName() + ":\t" + StringUtils.join(group.getUserIds(), ", "));
-        }
+    private void printGroup(Group group, StringBuilder sb, String prefix) {
+        sb.append(String.format("%s%s\t%s\n", prefix, group.getName(), StringUtils.join(group.getUserIds(), ", ")));
     }
 
-    private void printACLs(List<? extends AbstractAclEntry> aclEntries, PrintStream ps, String format) {
-        for (AbstractAclEntry aclEntry : aclEntries) {
-            ps.println(format + aclEntry.getMember() + ":\t" + aclEntry.getPermissions().toString());
-        }
+    private void printACL(AbstractAclEntry aclEntry, StringBuilder sb, String prefix) {
+        sb.append(String.format("%s%s\t%s\n", prefix, aclEntry.getMember(), aclEntry.getPermissions().toString()));
     }
 
-    private void printFiles(List<QueryResult<File>> queryResultList, WriterConfiguration writerConfiguration, PrintStream ps) {
+    private void printFiles(List<QueryResult<File>> queryResultList) {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<File> queryResult : queryResultList) {
-            // Write num results and time (metadata)
-            if (writerConfiguration.isMetadata()) {
-                printMetadata(queryResult, sb);
-            }
-
             // Write header
             sb.append("# name\ttype\tformat\tbioformat\tdescription\tpath\tid\tstatus\tdiskUsage\tindexStatus\trelatedFiles\t"
                     + "samples\n");
@@ -307,23 +244,6 @@ public class TextWriter extends AbstractWriter {
         }
 
         ps.println(sb.toString());
-
-//        ps.println(sb.toString());
-//        for (QueryResult<File> queryResult : queryResultList) {
-//            ps.println("QueryResult id: " + queryResult.getId());
-//            ps.println("==============================================");
-//
-//            ps.println("Showing " + queryResult.getNumResults() + " results out of the " + queryResult.getNumTotalResults()
-//                    + " matching the query");
-//            printFiles(queryResult.getResult(), ps, "  ");
-//        }
-    }
-
-    @Deprecated
-    private void printFiles(List<File> files, PrintStream ps, String format) {
-        for (File file : files) {
-            ps.println(String.format("%s (%d) - %s   [%s]", format, file.getId(), file.getName(), file.getPath()));
-        }
     }
 
     private void printFiles(List<File> files, StringBuilder sb, String format) {
@@ -337,42 +257,109 @@ public class TextWriter extends AbstractWriter {
         }
     }
 
-    private void printSamples(List<QueryResult<Sample>> queryResultList, WriterConfiguration writerConfiguration, PrintStream ps) {
+    private void printSamples(List<QueryResult<Sample>> queryResultList) {
+        StringBuilder sb = new StringBuilder();
         for (QueryResult<Sample> queryResult : queryResultList) {
-            ps.println("QueryResult id: " + queryResult.getId());
-            ps.println("==============================================");
-
-            ps.println("Showing " + queryResult.getNumResults() + " results out of the " + queryResult.getNumTotalResults()
-                    + " matching the query");
-            printSamples(queryResult.getResult(), ps, "  ");
-        }
-    }
-
-    private void printSamples(List<Sample> samples, PrintStream ps, String format) {
-        String internalFormat = format + "    ";
-        for (Sample sample : samples) {
-            ps.println(format + "- Sample (" + sample.getId() + ")");
-
-            ps.println(internalFormat + "Id:\t\t" + sample.getId());
-            ps.println(internalFormat + "Name:\t\t" + sample.getName());
-            ps.println(internalFormat + "Source:\t\t" + sample.getSource());
-            ps.println(internalFormat + "Description:\t" + sample.getDescription());
-            if (sample.getIndividual() != null && sample.getIndividual().getId() > 0) {
-                Individual individual = sample.getIndividual();
-                ps.println(String.format("%sIndividual:\t(%d) - %s [%s]", internalFormat, individual.getId(), individual.getName(),
-                        individual.getFamily()));
+            // Write header
+            if (writerConfiguration.isHeader()) {
+                sb.append("# NAME\tID\tSOURCE\tDESCRIPTION\tSTATUS\tINDIVIDUAL_NAME\tINDIVIDUAL_ID\n");
             }
-            ps.println(internalFormat + "Status:\t\t" + sample.getStatus().getName());
+
+            printSamples(queryResult.getResult(), sb, "");
+        }
+
+        ps.println(sb.toString());
+    }
+
+    private void printSamples(List<Sample> samples, StringBuilder sb, String format) {
+        // # name	id	source	description	status	individualName	individualID
+        for (Sample sample : samples) {
+            String individualName = "NA";
+            String individualId = "NA";
+            if (sample.getIndividual() != null) {
+                if (sample.getIndividual().getId() >= 0) {
+                    individualId = Long.toString(sample.getIndividual().getId());
+                }
+                if (StringUtils.isNotEmpty(sample.getIndividual().getName())) {
+                    individualName = sample.getIndividual().getName();
+                }
+            }
+            sb.append(String.format("%s%s\t%d\t%s\t%s\t%s\t%s\t%s\n", format, sample.getName(), sample.getId(), sample.getSource(),
+                    sample.getDescription(), sample.getStatus().getName(), individualName, individualId));
         }
     }
 
+    private void printCohorts(List<QueryResult<Cohort>> queryResultList) {
+        StringBuilder sb = new StringBuilder();
+        for (QueryResult<Cohort> queryResult : queryResultList) {
+            // Write header
+            if (writerConfiguration.isHeader()) {
+                sb.append("# NAME\tID\tTYPE\tDESCRIPTION\tSTATUS\tTOTAL_SAMPLES\tSAMPLES\tFAMILY\n");
+            }
 
-    private void printTreeFile(QueryResponse<FileTree> queryResponse, WriterConfiguration writerConfiguration, PrintStream ps) {
+            for (Cohort cohort : queryResult.getResult()) {
+                sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%d\t%s\t%s\n", cohort.getName(), cohort.getId(), cohort.getType(),
+                        cohort.getDescription(), cohort.getStatus().getName(), cohort.getSamples().size(),
+                        cohort.getSamples().size() > 0 ? StringUtils.join(cohort.getSamples(), ", ") : "NA",
+                        cohort.getFamily() != null && StringUtils.isNotEmpty(cohort.getFamily().getId()) ? cohort.getFamily().getId() : "NA"));
+            }
+        }
+
+        ps.println(sb.toString());
+    }
+
+    private void printIndividual(List<QueryResult<Individual>> queryResultList) {
+        StringBuilder sb = new StringBuilder();
+        for (QueryResult<Individual> queryResult : queryResultList) {
+            // Write header
+            if (writerConfiguration.isHeader()) {
+                sb.append("# NAME\tID\tFAMILY\tAFFECTATION_STATUS\tSEX\tKARYOTYPIC_SEX\tETHNICITY\tPOPULATION\tSUBPOPULATION\tLIFE_STATUS")
+                        .append("\tSTATUS\tFATHER_ID\tMOTHER_ID\tCREATION_DATE\n");
+            }
+
+            for (Individual individual : queryResult.getResult()) {
+                String population = "NA";
+                String subpopulation = "NA";
+                if (individual.getPopulation() != null) {
+                    if (StringUtils.isNotEmpty(individual.getPopulation().getName())) {
+                        population = individual.getPopulation().getName();
+                    }
+                    if (StringUtils.isNotEmpty(individual.getPopulation().getSubpopulation())) {
+                        subpopulation = individual.getPopulation().getSubpopulation();
+                    }
+                }
+                sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+                        individual.getName(), individual.getId(), individual.getFamily(), individual.getAffectationStatus(),
+                        individual.getSex(), individual.getKaryotypicSex(), individual.getEthnicity(), population, subpopulation,
+                        individual.getLifeStatus(), individual.getStatus().getName(),
+                        individual.getFatherId() > 0 ? Long.toString(individual.getFatherId()) : "NA",
+                        individual.getMotherId() > 0 ? Long.toString(individual.getMotherId()) : "NA", individual.getCreationDate()));
+            }
+        }
+
+        ps.println(sb.toString());
+    }
+
+    private void printVariableSet(List<QueryResult<VariableSet>> queryResultList) {
+        StringBuilder sb = new StringBuilder();
+        for (QueryResult<VariableSet> queryResult : queryResultList) {
+            // Write header
+            if (writerConfiguration.isHeader()) {
+                sb.append("# NAME\tID\tDESCRIPTION\tVARIABLES\n");
+            }
+
+            for (VariableSet variableSet : queryResult.getResult()) {
+                sb.append(String.format("%s\t%s\t%s\t%s\n", variableSet.getName(), variableSet.getId(), variableSet.getDescription(),
+                        variableSet.getVariables().stream().map(variable -> variable.getName()).collect(Collectors.joining(", "))));
+            }
+        }
+
+        ps.println(sb.toString());
+    }
+
+    private void printTreeFile(QueryResponse<FileTree> queryResponse) {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<FileTree> fileTreeQueryResult : queryResponse.getResponse()) {
-            if (writerConfiguration.isMetadata()) {
-                printMetadata(fileTreeQueryResult, sb);
-            }
             printRecursiveTree(fileTreeQueryResult.getResult(), sb, "");
         }
         ps.println(sb.toString());
@@ -387,10 +374,10 @@ public class TextWriter extends AbstractWriter {
             FileTree fileTree = iterator.next();
             File file = fileTree.getFile();
 
-            sb.append(String.format("%s (%d) - %s   [%s, %s]\n",
+            sb.append(String.format("%s %s - (%d)   [%s, %s]\n",
                     indent.isEmpty() ? "" : indent + (iterator.hasNext() ? "├──" : "└──"),
+                    file.getType() == File.Type.FILE ? file.getName() : file.getName() + "/",
                     file.getId(),
-                    file.getName(),
                     file.getStatus().getName(),
                     humanReadableByteCount(file.getDiskUsage(), false)));
 

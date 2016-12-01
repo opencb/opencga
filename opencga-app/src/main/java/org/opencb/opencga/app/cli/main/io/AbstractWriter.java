@@ -46,21 +46,7 @@ public abstract class AbstractWriter {
         this.ps = ps;
     }
 
-    public void print(QueryResponse queryResponse) {
-        print(queryResponse, writerConfiguration, ps);
-    }
-
-    public void print(QueryResponse queryResponse, WriterConfiguration writerConfiguration) {
-        print(queryResponse, writerConfiguration, ps);
-    }
-
-    /**
-     * Prints the queryResponse to stdout.
-     * @param queryResponse queryResponse object to be printed.
-     * @param writerConfiguration basic configuration containing the different parameters accepted to print.
-     *
-     */
-    abstract public void print(QueryResponse queryResponse, WriterConfiguration writerConfiguration, PrintStream ps);
+    abstract public void print(QueryResponse queryResponse);
 
     /**
      * Print errors or warnings and return true if any error was found.
