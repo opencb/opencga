@@ -367,7 +367,6 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
      * @param options     Other options
      * @return            Result of the insertion
      */
-    @Deprecated
     QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, QueryOptions options);
 
     @Deprecated

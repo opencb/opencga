@@ -393,6 +393,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         options.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, cliOptions.overwriteAnnotations);
         options.putIfNotEmpty(VariantAnnotationManager.SPECIES, cliOptions.species);
         options.putIfNotEmpty(VariantAnnotationManager.ASSEMBLY, cliOptions.assembly);
+        options.put(VariantAnnotationManager.CREATE, cliOptions.create);
         options.putIfNotEmpty(VariantAnnotationManager.LOAD_FILE, cliOptions.load);
         options.putIfNotEmpty(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, cliOptions.customAnnotationKey);
         options.putIfNotEmpty(DefaultVariantAnnotationManager.FILE_NAME, cliOptions.fileName);

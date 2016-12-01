@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.cache.CacheManager;
@@ -170,6 +171,12 @@ public abstract class StorageManager {
         }
         Study study = studyQueryResult.first();
         studyInfo.setStudy(study);
+        long projectId = catalogManager.getProjectIdByStudyId(study.getId());
+        Project project = catalogManager.getProject(projectId, new QueryOptions(), sessionId).first();
+        studyInfo.setProjectId(project.getId());
+        studyInfo.setProjectAlias(project.getAlias());
+        studyInfo.setOrganism(project.getOrganism());
+
 
 //        Path workspace = Paths.get(study.getUri().getRawPath()).resolve(".opencga").resolve("alignments");
 //        if (!workspace.toFile().exists()) {

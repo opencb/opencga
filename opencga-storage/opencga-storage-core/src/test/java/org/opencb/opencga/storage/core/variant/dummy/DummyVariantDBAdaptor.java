@@ -41,6 +41,17 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     private final String dbName;
     private boolean closed = false;
     private Logger logger = LoggerFactory.getLogger(DummyVariantDBAdaptor.class);
+    private static final List<String> TEMPLATES;
+
+    static {
+        TEMPLATES = new ArrayList<>();
+        for (int chr = 22; chr > 0; chr--) {
+            TEMPLATES.add(chr + ":1000:A:C");
+        }
+        TEMPLATES.add("X:1000:A:C");
+        TEMPLATES.add("Y:1000:A:C");
+        TEMPLATES.add("MT:1000:A:C");
+    }
 
     public DummyVariantDBAdaptor(String dbName) {
         this.dbName = dbName;
@@ -78,12 +89,8 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
-        List<String> templates = Arrays.asList(
-                "1:1000:A:C",
-                "1:2000:A:C",
-                "1:3000:A:C");
-        List<Variant> variants = new ArrayList<>(templates.size());
-        for (String template : templates) {
+        List<Variant> variants = new ArrayList<>(TEMPLATES.size());
+        for (String template : TEMPLATES) {
             Variant variant = new Variant(template);
 
             Map<Integer, List<Integer>> returnedSamples = getReturnedSamples(query, options);
@@ -172,11 +179,17 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
         queryResult.setNumTotalResults(variantStatsWrappers.size());
         return queryResult;
     }
+
     @Override
     public QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
         return new QueryResult();
     }
 
+    @Override
+    public QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, QueryOptions options) {
+        System.out.println("Update custom annotation : " + name);
+        return new QueryResult();
+    }
 
     // Unsupported methods
 
@@ -224,12 +237,6 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     @Override
     @Deprecated
     public QueryResult addAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions) {
-        throw new UnsupportedOperationException();
-    }
-
-
-    @Override
-    public QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, QueryOptions options) {
         throw new UnsupportedOperationException();
     }
 

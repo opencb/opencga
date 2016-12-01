@@ -18,13 +18,16 @@ package org.opencb.opencga.storage.core.local.variant.operations;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.local.variant.AbstractVariantStorageOperationTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +53,7 @@ public class PlatinumFileIndexerTest extends AbstractVariantStorageOperationTest
     }
 
     @Test
-    public void test() throws Exception {
+    public void testBySteps() throws Exception {
 
         File inputFile;
         File transformFile;
@@ -68,6 +71,19 @@ public class PlatinumFileIndexerTest extends AbstractVariantStorageOperationTest
 
     @Test
     public void testBatch() throws Exception {
+
+        List<File> files = new ArrayList<>();
+        for (int i = 77; i <= 93; i++) {
+            files.add(create("platinum/1K.end.platinum-genomes-vcf-NA128" + i + "_S1.genome.vcf.gz"));
+        }
+        indexFiles(files, new QueryOptions(), outputId);
+
+        variantManager.iterator(new Query(VariantQueryParams.STUDIES.key(), studyId), new QueryOptions(), sessionId).forEachRemaining(variant -> {
+            System.out.println("variant = " + variant);
+        });
+    }
+    @Test
+    public void testBatchBySteps() throws Exception {
 
         File inputFile;
         List<File> files = new ArrayList<>();

@@ -35,6 +35,7 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.core.common.ProgressLogger;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.io.avro.AvroDataReader;
 import org.opencb.opencga.storage.core.io.avro.AvroDataWriter;
@@ -52,6 +53,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -90,8 +92,15 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
     public void annotate(Query query, QueryOptions options) throws VariantAnnotatorException, IOException, StorageManagerException {
 
         String annotationFileStr = options.getString(LOAD_FILE);
+        boolean doCreate = options.getBoolean(CREATE);
+        boolean doLoad = StringUtils.isNotEmpty(annotationFileStr);
+        if (!doCreate && !doLoad) {
+            doCreate = true;
+            doLoad = true;
+        }
+
         URI annotationFile;
-        if (StringUtils.isEmpty(annotationFileStr)) {
+        if (doCreate) {
             long start = System.currentTimeMillis();
             logger.info("Starting annotation creation");
             logger.info("Query : {} ", query.toJson());
@@ -101,13 +110,19 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
                     query, options);
             logger.info("Finished annotation creation {}ms, generated file {}", System.currentTimeMillis() - start, annotationFile);
         } else {
-            annotationFile = URI.create(annotationFileStr);
+            try {
+                annotationFile = UriUtils.createUri(annotationFileStr);
+            } catch (URISyntaxException e) {
+                throw new IllegalArgumentException(e);
+            }
         }
 
-        long start = System.currentTimeMillis();
-        logger.info("Starting annotation load");
-        loadAnnotation(annotationFile, options);
-        logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
+        if (doLoad) {
+            long start = System.currentTimeMillis();
+            logger.info("Starting annotation load");
+            loadAnnotation(annotationFile, options);
+            logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
+        }
     }
 
     /**

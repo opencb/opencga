@@ -19,6 +19,11 @@ public class DummyVariantStorageManager extends VariantStorageManager {
     public static final String STORAGE_ENGINE_ID = "dummy";
 
     @Override
+    public String getStorageEngineId() {
+        return STORAGE_ENGINE_ID;
+    }
+
+    @Override
     public VariantDBAdaptor getDBAdaptor(String dbName) throws StorageManagerException {
         return new DummyVariantDBAdaptor(dbName);
     }
