@@ -33,6 +33,7 @@ import java.util.*;
 /**
 * Created by hpccoll1 on 13/02/15.
 */
+@Deprecated
 public abstract class CatalogVariantDBAdaptor implements VariantDBAdaptor {
 
     private final CatalogManager catalogManager;

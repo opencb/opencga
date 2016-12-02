@@ -21,13 +21,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.storage.variant.CatalogVariantDBAdaptor;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.executors.commons.AclCommandExecutor;
+import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.catalog.FileCommandOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.FileTree;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
@@ -264,14 +265,14 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<File> list() throws CatalogException, IOException {
         logger.debug("Listing files in folder");
 
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, filesCommandOptions.listCommandOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, filesCommandOptions.listCommandOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, filesCommandOptions.listCommandOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, filesCommandOptions.listCommandOptions.skip);
-        queryOptions.put("count", filesCommandOptions.listCommandOptions.count);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(QueryOptions.INCLUDE, filesCommandOptions.listCommandOptions.include);
+        params.putIfNotEmpty(QueryOptions.EXCLUDE, filesCommandOptions.listCommandOptions.exclude);
+        params.putIfNotEmpty(QueryOptions.LIMIT, filesCommandOptions.listCommandOptions.limit);
+        params.putIfNotEmpty(QueryOptions.SKIP, filesCommandOptions.listCommandOptions.skip);
+        params.put("count", filesCommandOptions.listCommandOptions.count);
 
-        return openCGAClient.getFileClient().list(filesCommandOptions.listCommandOptions.folderId, queryOptions);
+        return openCGAClient.getFileClient().list(filesCommandOptions.listCommandOptions.folderId, params);
     }
 
     private QueryResponse<Job> index() throws CatalogException, IOException {
@@ -289,12 +290,12 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         o.putIfNotNull("calculateStats", filesCommandOptions.indexCommandOptions.calculateStats);
         o.putIfNotNull("annotate", filesCommandOptions.indexCommandOptions.annotate);
         o.putIfNotNull("overwrite", filesCommandOptions.indexCommandOptions.overwriteAnnotations);
-        o.putAll(filesCommandOptions.commonCommandOptions.dynamic);
+        o.putAll(filesCommandOptions.commonCommandOptions.params);
 
         return openCGAClient.getFileClient().index(fileIds, o);
     }
 
-    private QueryResponse<File> treeView() throws CatalogException, IOException {
+    private QueryResponse<FileTree> treeView() throws CatalogException, IOException {
         logger.debug("Obtain a tree view of the files and folders within a folder");
 
         ObjectMap o = new ObjectMap();
@@ -302,6 +303,8 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         o.putIfNotNull("include", filesCommandOptions.treeViewCommandOptions.include);
         o.putIfNotNull("exclude", filesCommandOptions.treeViewCommandOptions.exclude);
         o.putIfNotNull("limit", filesCommandOptions.treeViewCommandOptions.limit);
+        o.putIfNotNull(FileDBAdaptor.QueryParams.STUDY_ID.key(), filesCommandOptions.treeViewCommandOptions.studyStr);
+
         return openCGAClient.getFileClient().treeView(filesCommandOptions.treeViewCommandOptions.folderId, o);
     }
 

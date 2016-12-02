@@ -16,7 +16,12 @@
 
 package org.opencb.opencga.app.cli;
 
+import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
+import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created on 03/05/16
@@ -48,12 +53,29 @@ public class GeneralCliOptions {
         @Parameter(names = {"--log-file"}, description = "Set the file to write the log")
         public String logFile;
 
-        @Parameter(names = {"-C", "--conf"}, description = "Configuration folder that contains opencga.yml, catalog-configuration.yaml, storage-configuration.yml and client-configuration.yaml files.")
+        @Parameter(names = {"-C", "--conf"}, description = "Configuration folder that contains opencga.yml, catalog-configuration.yaml, "
+                + "storage-configuration.yml and client-configuration.yaml files.")
         public String conf;
 
         @Deprecated
         @Parameter(names = {"-v", "--verbose"}, description = "Increase the verbosity of logs")
         public boolean verbose = false;
 
+        @Parameter(names = {"--of", "--output-format"}, description = "Output format. one of {JSON, JSON_PRETTY, TEXT, YAML}", arity = 1)
+        public String outputFormat = "TEXT";
+
+        @Parameter(names = {"-S", "--sid", "--session-id"}, description = "Token session id", arity = 1)
+        public String sessionId;
+
+        @Parameter(names = {"-M", "--metadata"}, description = "Include metadata information", required = false, arity = 0)
+        public boolean metadata = false;
+
+        @Parameter(names = {"--no-header"}, description = "Not include headers in the output (not applicable to json output-format)",
+                required = false, arity = 0)
+        public boolean noHeader = false;
+
+        @DynamicParameter(names = "-D", description = "Storage engine specific parameters go here comma separated, ie. -Dmongodb" +
+                ".compression=snappy", hidden = false)
+        public Map<String, String> params = new HashMap<>(); //Dynamic parameters must be initialized
     }
 }

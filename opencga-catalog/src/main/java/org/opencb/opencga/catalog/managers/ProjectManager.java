@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.collections.map.LinkedMap;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -27,22 +28,20 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IProjectManager;
-import org.opencb.opencga.catalog.models.Account;
-import org.opencb.opencga.catalog.models.Project;
-import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -105,9 +104,10 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     }
 
     @Override
-    public QueryResult<Project> create(String name, String alias, String description,
-                                       String organization, QueryOptions options, String sessionId)
+    public QueryResult<Project> create(String name, String alias, String description, String organization, String scientificName,
+                                       String commonName, String taxonomyCode, String assembly, QueryOptions options, String sessionId)
             throws CatalogException {
+
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkAlias(alias, "alias");
         ParamUtils.checkParameter(sessionId, "sessionId");
@@ -132,7 +132,22 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         description = description != null ? description : "";
         organization = organization != null ? organization : "";
 
-        Project project = new Project(name, alias, description, new Status(), organization);
+        // Organism
+        Project.Organism organism;
+        if (!StringUtils.isEmpty(scientificName) || !StringUtils.isEmpty(commonName) || !StringUtils.isEmpty(taxonomyCode)
+                || !StringUtils.isEmpty(assembly)) {
+            organism = new Project.Organism(scientificName, commonName);
+            if (StringUtils.isNumeric(taxonomyCode)) {
+                organism.setTaxonomyCode(Integer.parseInt(taxonomyCode));
+            }
+            if (StringUtils.isNotEmpty(assembly)) {
+                organism.setAssembly(assembly);
+            }
+        } else {
+            organism = catalogConfiguration.getOrganism();
+        }
+
+        Project project = new Project(name, alias, description, new Status(), organization, organism);
 
         QueryResult<Project> queryResult = projectDBAdaptor.insert(project, userId, options);
         project = queryResult.getResult().get(0);
@@ -148,19 +163,6 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         auditManager.recordAction(AuditRecord.Resource.project, AuditRecord.Action.create, AuditRecord.Magnitude.low,
                 queryResult.first().getId(), userId, null, queryResult.first(), null, null);
         return queryResult;
-    }
-
-    @Deprecated
-    @Override
-    public QueryResult<Project> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(objectMap, "objectMap");
-        return create(
-                objectMap.getString("name"),
-                objectMap.getString("alias"),
-                objectMap.getString("description"),
-                objectMap.getString("organization"),
-                options, sessionId
-        );
     }
 
     @Override
@@ -213,6 +215,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             throw new CatalogException("Permission denied: Only the owner of the project can update it.");
         }
 
+        QueryResult<Project> queryResult = new QueryResult<>();
         if (parameters.containsKey("alias")) {
             rename(projectId, parameters.getString("alias"), sessionId);
 
@@ -220,13 +223,55 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             parameters = new ObjectMap(parameters);
             parameters.remove("alias");
         }
+
+        // Update organism information only if any of the fields was not properly defined
+        if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key())
+                || parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key())
+                || parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key())
+                || parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())) {
+            QueryResult<Project> projectQR = projectDBAdaptor
+                    .get(projectId, new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ORGANISM.key()));
+            if (projectQR.getNumResults() == 0) {
+                throw new CatalogException("Project " + projectId + " not found");
+            }
+            ObjectMap objectMap = new ObjectMap();
+            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key())
+                    && StringUtils.isEmpty(projectQR.first().getOrganism().getScientificName())) {
+                objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(),
+                        parameters.getString(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key()));
+                parameters.remove(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key());
+            }
+            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key())
+                    && StringUtils.isEmpty(projectQR.first().getOrganism().getCommonName())) {
+                objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(),
+                        parameters.getString(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key()));
+                parameters.remove(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key());
+            }
+            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key())
+                    && projectQR.first().getOrganism().getTaxonomyCode() <= 0) {
+                objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(),
+                        parameters.getInt(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key()));
+                parameters.remove(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key());
+            }
+            if (parameters.containsKey(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key())
+                    && StringUtils.isEmpty(projectQR.first().getOrganism().getAssembly())) {
+                objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(),
+                        parameters.getString(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key()));
+                parameters.remove(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key());
+            }
+            if (!objectMap.isEmpty()) {
+                queryResult = projectDBAdaptor.update(projectId, objectMap);
+            } else {
+                throw new CatalogException("Cannot update organism information that is already filled in");
+            }
+        }
+
         for (String s : parameters.keySet()) {
             if (!s.matches("name|description|organization|attributes")) {
                 throw new CatalogDBException("Parameter '" + s + "' can't be changed");
             }
         }
         userDBAdaptor.updateUserLastModified(ownerId);
-        QueryResult<Project> queryResult = new QueryResult<>();
         if (parameters.size() > 0) {
             queryResult = projectDBAdaptor.update(projectId, parameters);
         }
@@ -368,5 +413,69 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         }
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
+    }
+
+    @Override
+    public QueryResult<Project> getSharedProjects(String userId, QueryOptions queryOptions, String sessionId) throws CatalogException {
+        queryOptions = ParamUtils.defaultObject(queryOptions, QueryOptions::new);
+        long startTime = System.currentTimeMillis();
+
+        String userSessionId = catalogManager.getUserManager().getId(sessionId);
+        if (!userSessionId.equals(userId)) {
+            throw new CatalogException("Invalid session id: The user corresponding to the session provided is not " + userId);
+        }
+
+        // Search all studies shared with the user
+        // 1. Look for userId in a group in all the studies.
+        Query query = new Query(StudyDBAdaptor.QueryParams.GROUP_USER_IDS.key(), userId);
+        QueryResult<Study> studyGroupQR = catalogManager.getStudyManager().get(query, queryOptions, sessionId);
+        // The studies obtained are already filtered in studyManager, so if we get them is because those have been shared with the user
+
+        // 2. Look for userId in an ACL in all the studies.
+        query = new Query(StudyDBAdaptor.QueryParams.ACL_MEMBER.key(), userId);
+        QueryResult<Study> studyACLQR = catalogManager.getStudyManager().get(query, queryOptions, sessionId);
+
+        List<Study> studyList = new ArrayList<>();
+        studyList.addAll(studyGroupQR.getResult());
+        studyList.addAll(studyACLQR.getResult());
+
+        if (studyList.size() == 0) {
+            // No studies are shared with userId
+            return new QueryResult<>(userId, (int) (System.currentTimeMillis() - startTime), 0, 0, "", "", Collections.emptyList());
+        }
+
+        // Obtain the projects corresponding to each study
+        List<Long> projectIds = new LinkedList<>();
+        Map<Long, List<Study>> projectStudyMap = new LinkedMap();
+        for (Study study : studyList) {
+            Long projectId = catalogManager.getStudyManager().getProjectId(study.getId());
+            if (!projectStudyMap.containsKey(projectId)) {
+                projectStudyMap.put(projectId, new LinkedList<>());
+                projectIds.add(projectId);
+            }
+            projectStudyMap.get(projectId).add(study);
+        }
+
+        // Obtain the project info of all the project ids needed
+        query = new Query(ProjectDBAdaptor.QueryParams.ID.key(), projectIds);
+        QueryOptions options = new QueryOptions(queryOptions); // Copy of queryOptions
+        if (options.containsKey(QueryOptions.EXCLUDE)) {
+            List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
+            excludeList.add("projects.studies");
+            options.put(QueryOptions.EXCLUDE, excludeList);
+        } else {
+            options.add(QueryOptions.EXCLUDE, "projects.studies");
+        }
+
+        QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options);
+        for (Project project : projectQueryResult.getResult()) {
+            // Update with the studies shared with the user
+            project.setStudies(projectStudyMap.get(project.getId()));
+        }
+
+        projectQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
+        projectQueryResult.setId(userId);
+
+        return projectQueryResult;
     }
 }

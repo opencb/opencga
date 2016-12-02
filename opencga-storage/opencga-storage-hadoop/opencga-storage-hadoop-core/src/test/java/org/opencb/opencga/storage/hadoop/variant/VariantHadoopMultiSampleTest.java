@@ -400,6 +400,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         HBaseStudyConfigurationManager scm = (HBaseStudyConfigurationManager) dbAdaptor.getStudyConfigurationManager();
 
 
+        int maxFilesLoaded = 3;
         for (int fileId = 12877; fileId <= 12893; fileId++) {
             VariantSource source = loadFile("platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz", fileId, studyConfiguration);
 
@@ -413,6 +414,9 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
 //            checkLoadedVariants(expectedVariants, dbAdaptor, PLATINUM_SKIP_VARIANTS);
             checkArchiveTableTimeStamp(dbAdaptor);
+            if (sources.size() >= maxFilesLoaded) {
+                break;
+            }
         }
 
 

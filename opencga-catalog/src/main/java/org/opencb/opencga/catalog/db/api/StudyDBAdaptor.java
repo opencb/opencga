@@ -212,6 +212,7 @@ public interface StudyDBAdaptor extends AclDBAdaptor<Study, StudyAclEntry> {
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         LAST_MODIFIED("lastModified", TEXT_ARRAY, ""),
+        DATASTORES("dataStores", TEXT_ARRAY, ""),
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),
         ACL("acl", TEXT_ARRAY, ""),

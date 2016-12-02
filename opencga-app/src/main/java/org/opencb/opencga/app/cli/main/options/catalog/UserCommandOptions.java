@@ -20,7 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
 
 /**
  * Created by pfurio on 13/06/16.
@@ -39,9 +39,9 @@ public class UserCommandOptions {
     public ResetPasswordCommandOptions resetPasswordCommandOptions;
     public JCommander jCommander;
 
-    public OpencgaCommonCommandOptions commonCommandOptions;
+    public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
 
-    public UserCommandOptions(OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public UserCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, JCommander jCommander) {
         this.commonCommandOptions = commonCommandOptions;
         this.jCommander = jCommander;
 
@@ -62,7 +62,7 @@ public class UserCommandOptions {
 
     public class BaseUserCommand {
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "User id",  required = true, arity = 1)
         public String user;
@@ -146,7 +146,7 @@ public class UserCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"projects"}, commandDescription = "List all projects and studies from a selected user")
+    @Parameters(commandNames = {"projects"}, commandDescription = "List all projects and studies belonging to the selected user")
     public class ProjectsCommandOptions extends BaseUserCommand {
 
         @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
@@ -161,6 +161,8 @@ public class UserCommandOptions {
         @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
         public String limit;
 
+        @Parameter(names = {"--shared"}, description = "Show only the projects and studies shared with the user.", arity = 0)
+        public boolean shared;
 //        @ParametersDelegate
 //        public OpencgaCommonCommandOptions commonOptions = UserCommandOptions.this.commonCommandOptions;
 //
@@ -184,11 +186,11 @@ public class UserCommandOptions {
         @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, required = true, password = true)
         public String password;
 
-        @Parameter(names = {"-S","--session-id"}, description = "SessionId", arity = 1, required = false, hidden = true)
-        public String sessionId;
+//        @Parameter(names = {"-S","--session-id"}, description = "SessionId", arity = 1, required = false, hidden = true)
+//        public String sessionId;
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = UserCommandOptions.this.commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = UserCommandOptions.this.commonCommandOptions;
     }
 
     @Parameters(commandNames = {"logout"}, commandDescription = "End user session")

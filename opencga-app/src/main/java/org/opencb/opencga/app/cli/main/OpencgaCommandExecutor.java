@@ -19,18 +19,13 @@ package org.opencb.opencga.app.cli.main;
 import com.beust.jcommander.JCommander;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.CommandExecutor;
-import org.opencb.opencga.app.cli.main.io.IWriter;
-import org.opencb.opencga.app.cli.main.io.JsonWriter;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.main.io.*;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Created on 27/05/16.
@@ -42,25 +37,38 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     protected OpenCGAClient openCGAClient;
     protected CatalogManager catalogManager;
 //    protected ClientConfiguration clientConfiguration;
-    protected IWriter writer;
+    protected AbstractWriter writer;
 
-    public OpencgaCommandExecutor(OpencgaCliOptionsParser.OpencgaCommonCommandOptions options) {
+    public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
         this(options, false);
     }
 
-    public OpencgaCommandExecutor(OpencgaCliOptionsParser.OpencgaCommonCommandOptions options, boolean skipDuration) {
+    public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) {
         super(options);
-        init(skipDuration);
+        init(options, skipDuration);
     }
 
-    public OpencgaCommandExecutor(String logLevel, boolean verbose, String conf, boolean skipDuration) {
-        super(logLevel, verbose, conf);
-        init(skipDuration);
-    }
-
-    private void init(boolean skipDuration) {
+    private void init(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) {
         try {
-            this.writer = new JsonWriter();
+
+            WriterConfiguration writerConfiguration = new WriterConfiguration();
+            writerConfiguration.setMetadata(options.metadata);
+            writerConfiguration.setHeader(!options.noHeader);
+
+            switch (options.outputFormat.toLowerCase()) {
+                case "json_pretty":
+                    writerConfiguration.setPretty(true);
+                case "json":
+                    this.writer = new JsonWriter(writerConfiguration);
+                    break;
+                case "yaml":
+                    this.writer = new YamlWriter(writerConfiguration);
+                    break;
+                case "text":
+                default:
+                    this.writer = new TextWriter(writerConfiguration);
+                    break;
+            }
 
 //            loadClientConfiguration();
             loadCatalogConfiguration();
@@ -72,6 +80,9 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                     if (skipDuration) {
                         openCGAClient = new OpenCGAClient(sessionFile.getSessionId(), clientConfiguration);
                         openCGAClient.setUserId(sessionFile.getUserId());
+                        if (options.sessionId == null) {
+                            options.sessionId = sessionFile.getSessionId();
+                        }
                     } else {
                         int sessionDuration = clientConfiguration.getSessionDuration() * 1000;
                         long timestamp = sessionFile.getTimestamp();
@@ -89,6 +100,9 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                             openCGAClient = new OpenCGAClient(sessionFile.getSessionId(), clientConfiguration);
                             openCGAClient.setUserId(sessionFile.getUserId());
 
+                            if (options.sessionId == null) {
+                                options.sessionId = sessionFile.getSessionId();
+                            }
                             // Some operations such as copy and link are run in the server side and need Catalog Manager
                             catalogManager = new CatalogManager(catalogConfiguration);
                         }
@@ -129,7 +143,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
     public void createOutput(QueryResponse queryResponse) {
         if (queryResponse != null) {
-            writer.print(queryResponse, true);
+            writer.print(queryResponse);
         }
     }
 

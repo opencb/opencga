@@ -37,7 +37,6 @@ import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
@@ -54,9 +53,6 @@ import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
@@ -133,11 +129,12 @@ public abstract class VariantStorageETL implements StorageETL {
 
     @Override
     public URI preTransform(URI input) throws StorageManagerException, IOException, FileFormatException {
-        String fileName = Paths.get(input.getPath()).getFileName().toString();
+        String fileName = VariantReaderUtils.getFileName(input);
         int fileId = options.getInt(Options.FILE_ID.key(), Options.FILE_ID.defaultValue());
         int studyId = options.getInt(Options.STUDY_ID.key(), Options.STUDY_ID.defaultValue());
 
-        boolean isolate = options.getBoolean(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), false);
+        boolean isolate = options.getBoolean(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(),
+                Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.defaultValue());
         StudyConfiguration studyConfiguration;
         if (studyId < 0 && fileId < 0 || isolate) {
             logger.debug("Isolated study configuration");
@@ -155,7 +152,12 @@ public abstract class VariantStorageETL implements StorageETL {
                     logger.info("Creating a new StudyConfiguration");
                     checkStudyId(studyId);
                     studyConfiguration = new StudyConfiguration(studyId, options.getString(Options.STUDY_NAME.key()));
-                    studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class));
+                    studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(),
+                            VariantSource.Aggregation.class, Options.AGGREGATED_TYPE.defaultValue()));
+                }
+                if (studyConfiguration.getAggregation() == null) {
+                    studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(),
+                            VariantSource.Aggregation.class, Options.AGGREGATED_TYPE.defaultValue()));
                 }
                 fileId = checkNewFile(studyConfiguration, fileId, fileName);
                 options.put(Options.FILE_ID.key(), fileId);
@@ -544,7 +546,8 @@ public abstract class VariantStorageETL implements StorageETL {
             // First indexed file
             // Use the EXCLUDE_GENOTYPES value from CLI. Write in StudyConfiguration.attributes
             boolean excludeGenotypes = options.getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
-            studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class));
+            studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class,
+                    Options.AGGREGATED_TYPE.defaultValue()));
             studyConfiguration.getAttributes().put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
         } else {
             // Not first indexed file
@@ -756,7 +759,6 @@ public abstract class VariantStorageETL implements StorageETL {
 
         String dbName = options.getString(Options.DB_NAME.key(), null);
         List<Integer> fileIds = options.getAsIntegerList(Options.FILE_ID.key());
-        boolean annotate = options.getBoolean(Options.ANNOTATE.key(), Options.ANNOTATE.defaultValue());
 
         int studyId = options.getInt(Options.STUDY_ID.key(), -1);
         long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
@@ -772,42 +774,6 @@ public abstract class VariantStorageETL implements StorageETL {
             dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, new QueryOptions());
         } finally {
             dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
-        }
-
-
-        if (annotate) {
-
-            VariantAnnotator annotator;
-            try {
-                annotator = VariantAnnotationManager.buildVariantAnnotator(configuration, storageEngineId);
-            } catch (VariantAnnotatorException e) {
-                e.printStackTrace();
-                logger.error("Can't annotate variants.", e);
-                return input;
-            }
-
-            VariantAnnotationManager variantAnnotationManager = new VariantAnnotationManager(annotator, dbAdaptor);
-
-            QueryOptions annotationOptions = new QueryOptions();
-            Query annotationQuery = new Query();
-            if (!options.getBoolean(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, false)) {
-                annotationQuery.put(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(), false);
-            }
-            annotationQuery.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(),
-                    Collections.singletonList(studyConfiguration.getStudyId()));    // annotate just the indexed variants
-            // annotate just the indexed variants
-            annotationQuery.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileIds);
-
-            annotationOptions.add(VariantAnnotationManager.OUT_DIR, output.getPath());
-            annotationOptions.add(VariantAnnotationManager.FILE_NAME, dbName + "." + TimeUtils.getTime());
-            try {
-                variantAnnotationManager.annotate(annotationQuery, annotationOptions);
-            } catch (IOException e) {
-                throw new StorageManagerException("Error annotating", e);
-            }
-//            URI annotationFile = variantAnnotationManager
-//              .createAnnotation(Paths.get(output.getPath()), dbName + "." + TimeUtils.getTime(), annotationOptions);
-//            variantAnnotationManager.loadAnnotation(annotationFile, annotationOptions);
         }
 
         if (options.getBoolean(Options.CALCULATE_STATS.key(), Options.CALCULATE_STATS.defaultValue())) {
@@ -972,7 +938,8 @@ public abstract class VariantStorageETL implements StorageETL {
         if (studyConfiguration.getFileIds().containsKey(fileName)) {
             if (studyConfiguration.getFileIds().get(fileName) != fileId) {
                 throw new StorageManagerException("File " + fileName + " (" + fileId + ") "
-                        + "has a different fileId in the StudyConfiguration: "
+                        + "has a different fileId in the study "
+                        + studyConfiguration.getStudyName() + " (" + studyConfiguration.getStudyId() + ") : "
                         + fileName + " (" + studyConfiguration.getFileIds().get(fileName) + ")");
             }
         }

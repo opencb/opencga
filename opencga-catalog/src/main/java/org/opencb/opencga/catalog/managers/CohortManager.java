@@ -64,12 +64,6 @@ public class CohortManager extends AbstractManager implements ICohortManager {
     }
 
     @Override
-    @Deprecated
-    public QueryResult<Cohort> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
-    }
-
-    @Override
     public QueryResult<Cohort> create(long studyId, String name, Study.Type type, String description, List<Long> sampleIds,
                                             Map<String, Object> attributes, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(name, "name");
@@ -113,6 +107,9 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         ObjectMap parsedSampleStr = parseFeatureId(userId, cohortStr);
         List<Long> studyIds = getStudyIds(parsedSampleStr);
         String cohortName = parsedSampleStr.getString("featureName");
+        if (StringUtils.isNumeric(cohortName)) {
+            return Long.parseLong(cohortName);
+        }
 
         Query query = new Query(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
                 .append(CohortDBAdaptor.QueryParams.NAME.key(), cohortName);

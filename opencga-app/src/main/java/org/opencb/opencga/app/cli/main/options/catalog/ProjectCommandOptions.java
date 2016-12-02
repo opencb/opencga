@@ -20,8 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
 
 /**
  * Created by pfurio on 13/06/16.
@@ -37,9 +36,9 @@ public class ProjectCommandOptions {
     public HelpCommandOptions helpCommandOptions;
 
     public JCommander jCommander;
-    public OpencgaCommonCommandOptions commonCommandOptions;
+    public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
 
-    public ProjectCommandOptions(OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public ProjectCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, JCommander jCommander) {
 
         this.commonCommandOptions = commonCommandOptions;
         this.jCommander = jCommander;
@@ -55,7 +54,7 @@ public class ProjectCommandOptions {
     public class BaseProjectCommand {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "Project identifier", required = true, arity = 1)
         public String id;
@@ -65,7 +64,7 @@ public class ProjectCommandOptions {
     public class CreateCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-n", "--name"}, description = "Project name", required = true, arity = 1)
         public String name;
@@ -78,6 +77,18 @@ public class ProjectCommandOptions {
 
         @Parameter(names = {"-o", "--organization"}, description = "Organization", required = false, arity = 1)
         public String organization;
+
+        @Parameter(names = {"--organism-scientific-name"}, description = "Organism scientific name", required = false, arity = 1)
+        public String scientificName;
+
+        @Parameter(names = {"--organism-common-name"}, description = "Organism common name", required = false, arity = 1)
+        public String commonName;
+
+        @Parameter(names = {"--organism-taxonomy-code"}, description = "Organism taxonomy code", required = false, arity = 1)
+        public String taxonomyCode;
+
+        @Parameter(names = {"--organism-assembly"}, description = "Organism assembly", required = false, arity = 1)
+        public String assembly;
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get project information")
@@ -123,6 +134,18 @@ public class ProjectCommandOptions {
 
         @Parameter(names = {"-a", "--attributes"}, description = "Attributes", required = false, arity = 1)
         public String attributes;
+
+        @Parameter(names = {"--organism-scientific-name"}, description = "Organism scientific name", required = false, arity = 1)
+        public String scientificName;
+
+        @Parameter(names = {"--organism-common-name"}, description = "Organism common name", required = false, arity = 1)
+        public String commonName;
+
+        @Parameter(names = {"--organism-taxonomy-code"}, description = "Organism taxonomy code", required = false, arity = 1)
+        public String taxonomyCode;
+
+        @Parameter(names = {"--organism-assembly"}, description = "Organism assembly", required = false, arity = 1)
+        public String assembly;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete a project")
@@ -133,7 +156,7 @@ public class ProjectCommandOptions {
     @Parameters(commandNames = {"help"}, commandDescription = "Help in project")
     public class HelpCommandOptions {
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
     }
 
 }

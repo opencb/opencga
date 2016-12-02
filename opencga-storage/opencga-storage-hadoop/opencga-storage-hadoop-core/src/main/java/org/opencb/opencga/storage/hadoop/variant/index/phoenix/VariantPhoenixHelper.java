@@ -275,9 +275,13 @@ public class VariantPhoenixHelper {
     }
 
     public void createTableIfNeeded(Connection con, String table) throws SQLException {
-        String sql = buildCreate(table);
-        logger.info(sql);
-        phoenixHelper.execute(con, sql);
+        if (!phoenixHelper.tableExists(con, table)) {
+            String sql = buildCreate(table);
+            logger.info(sql);
+            phoenixHelper.execute(con, sql);
+        } else {
+            logger.info("Table {} already exists", table);
+        }
     }
 
     private void addColumns(Connection con, String tableName, Integer studyId, PDataType<?> dataType, String ... columns)

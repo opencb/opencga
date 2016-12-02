@@ -21,22 +21,19 @@ import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.rules.ExternalResource;
+import org.junit.*;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
-import org.opencb.biodata.tools.variant.converter.VcfSliceToVariantListConverter;
+import org.opencb.biodata.tools.variant.converters.proto.VcfSliceToVariantListConverter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageETLResult;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -53,7 +50,6 @@ import java.net.URI;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 /**
  * Created on 15/10/15
@@ -68,46 +64,57 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
     private static StorageETLResult etlResult = null;
 
     @ClassRule
-    public static ExternalResource externalResource = new HadoopExternalResource();
+    public static HadoopExternalResource externalResource = new HadoopExternalResource();
     private QueryResult<Variant> allVariantsQueryResult;
 
-    @Before
-    public void before() throws Exception {
-        if (etlResult == null) {
-            HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
-            clearDB(variantStorageManager.getVariantTableName(DB_NAME));
-            clearDB(variantStorageManager.getArchiveTableName(STUDY_ID));
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+        HadoopVariantStorageManager variantStorageManager = externalResource.getVariantStorageManager();
+        externalResource.clearDB(variantStorageManager.getVariantTableName(DB_NAME));
+        externalResource.clearDB(variantStorageManager.getArchiveTableName(STUDY_ID));
 
-            URI inputUri = VariantStorageBaseTest.getResourceUri("sample1.genome.vcf");
+        URI inputUri = VariantStorageBaseTest.getResourceUri("sample1.genome.vcf");
 //            URI inputUri = VariantStorageManagerTestUtils.getResourceUri("variant-test-file.vcf.gz");
 
-            studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
-            etlResult = VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
-                    new ObjectMap(Options.TRANSFORM_FORMAT.key(), "avro")
-                            .append(Options.FILE_ID.key(), FILE_ID)
-                            .append(Options.ANNOTATE.key(), true)
-                            .append(Options.CALCULATE_STATS.key(), false)
-                            .append(HadoopVariantStorageManager.HADOOP_LOAD_DIRECT, false)
-                            .append(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, true)
-                            .append(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, true)
-            );
+        studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
+        etlResult = VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
+                new ObjectMap(Options.TRANSFORM_FORMAT.key(), "avro")
+                        .append(Options.FILE_ID.key(), FILE_ID)
+                        .append(Options.ANNOTATE.key(), true)
+                        .append(Options.CALCULATE_STATS.key(), false)
+                        .append(HadoopVariantStorageManager.HADOOP_LOAD_DIRECT, false)
+                        .append(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, true)
+                        .append(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, true)
+        );
 
-            source = variantStorageManager.readVariantSource(etlResult.getTransformResult());
-            VariantGlobalStats stats = source.getStats();
-            Assert.assertNotNull(stats);
+        source = variantStorageManager.readVariantSource(etlResult.getTransformResult());
+        VariantGlobalStats stats = source.getStats();
+        Assert.assertNotNull(stats);
 
-            allVariantsQueryResult = null;
-            dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
+        try (VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME)) {
             VariantHbaseTestUtils.printVariantsFromVariantsTable(dbAdaptor);
             VariantHbaseTestUtils.printVariantsFromArchiveTable(dbAdaptor, studyConfiguration);
         }
-        HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
-        dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
+    }
+
+    @Before
+    @Override
+    public void before() throws Exception {
+        dbAdaptor = ((HadoopVariantStorageManager) variantStorageManager).getDBAdaptor(DB_NAME);
 
         if (allVariantsQueryResult == null) {
             allVariantsQueryResult = dbAdaptor.get(new Query(), new QueryOptions());
         }
+    }
 
+    @After
+    public void tearDown() throws Exception {
+        dbAdaptor.close();
+    }
+
+    @Test
+    public void testConnection() throws StorageManagerException {
+        variantStorageManager.testConnection();
     }
 
     @Test

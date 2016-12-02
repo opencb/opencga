@@ -72,7 +72,8 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
     }
 
     @Override
-    public void close() throws SQLException {
+    public void close() throws Exception {
+        super.close();
         logger.debug("Close variant iterator. Fetch = {}ms, Convert = {}ms",
                 getTimeFetching() / 1000000.0, getTimeConverting() / 1000000.0);
         resultSet.close();

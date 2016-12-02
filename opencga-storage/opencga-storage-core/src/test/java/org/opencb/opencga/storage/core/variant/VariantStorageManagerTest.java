@@ -34,11 +34,12 @@ import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.search.SearchManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
@@ -98,16 +99,19 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         StorageETLResult etlResult;
         ObjectMap options = new ObjectMap()
                 .append(VariantStorageManager.Options.STUDY_TYPE.key(), VariantStudy.StudyType.CONTROL)
-                .append(VariantStorageManager.Options.CALCULATE_STATS.key(), true)
+                .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
                 .append(VariantStorageManager.Options.ANNOTATE.key(), false);
         runDefaultETL(getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
                 variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 5));
-        Integer defaultCohortId = studyConfigurationMultiFile.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
-        assertTrue(studyConfigurationMultiFile.getCohorts().containsKey(defaultCohortId));
-        assertEquals(500, studyConfigurationMultiFile.getCohorts().get(defaultCohortId).size());
+//        Integer defaultCohortId = studyConfigurationMultiFile.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
+//        assertTrue(studyConfigurationMultiFile.getCohorts().containsKey(defaultCohortId));
+//        assertEquals(500, studyConfigurationMultiFile.getCohorts().get(defaultCohortId).size());
         assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(5));
+
+        options.append(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
         runDefaultETL(getResourceUri("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
                 variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 6));
+        Integer defaultCohortId = studyConfigurationMultiFile.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
         assertEquals(1000, studyConfigurationMultiFile.getCohorts().get(defaultCohortId).size());
         assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(6));
         runDefaultETL(getResourceUri("1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
@@ -466,6 +470,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
             assertEquals("\n" + variant.toJson() + "\n" + loadedVariant.toJson(), variant.toJson(), loadedVariant.toJson());
 
         }
+        dbAdaptor.close();
         reader.post();
         reader.close();
 
@@ -825,5 +830,33 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         logger.info("checkLoadedVariants time : " + (System.currentTimeMillis() - start) / 1000.0 + "s");
     }
 
+
+    @Test
+    public void insertVariantIntoSolr() throws Exception {
+        clearDB(DB_NAME);
+        ObjectMap params = new ObjectMap();
+        StudyConfiguration studyConfiguration = newStudyConfiguration();
+
+        params.put(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
+        params.put(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
+        params.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json");
+        params.put(VariantStorageManager.Options.FILE_ID.key(), 6);
+        params.put(VariantStorageManager.Options.COMPRESS_METHOD.key(), "gZiP");
+        params.put(VariantStorageManager.Options.TRANSFORM_THREADS.key(), 1);
+        params.put(VariantStorageManager.Options.LOAD_THREADS.key(), 1);
+        params.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
+        params.put(VariantStorageManager.Options.ANNOTATE.key(), true);
+        runETL(variantStorageManager, params, true, true, true);
+
+        VariantDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+
+
+        SearchManager searchManager = new SearchManager(variantStorageManager.getConfiguration());
+
+        for (Variant variant:dbAdaptor) {
+            searchManager.insert(variant);
+        }
+
+    }
 
 }

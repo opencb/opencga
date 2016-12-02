@@ -72,20 +72,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         this.userManager = catalogManager.getUserManager();
     }
 
-    @Deprecated
-    @Override
-    public QueryResult<Individual> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(objectMap, "objectMap");
-        return create(
-                objectMap.getInt(IndividualDBAdaptor.QueryParams.STUDY_ID.key()),
-                objectMap.getString(IndividualDBAdaptor.QueryParams.NAME.key()),
-                objectMap.getString(IndividualDBAdaptor.QueryParams.FAMILY.key()),
-                objectMap.getInt(IndividualDBAdaptor.QueryParams.FATHER_ID.key()),
-                objectMap.getInt(IndividualDBAdaptor.QueryParams.MOTHER_ID.key()),
-                objectMap.get(IndividualDBAdaptor.QueryParams.SEX.key(), Individual.Sex.class), "", "", "", "", "", "", "",
-                Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, options, sessionId);
-    }
-
     @Override
     public QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId, Individual.Sex sex,
                                           String ethnicity, String speciesCommonName, String speciesScientificName,

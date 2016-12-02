@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantStats;
@@ -30,23 +29,28 @@ import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJs
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Path;
 
 /**
  * Created by pfurio on 28/07/16.
  */
-public class JsonWriter implements IWriter {
+public class JsonWriter extends AbstractWriter {
 
-    protected Logger logger = LoggerFactory.getLogger(JsonWriter.class);
-    private final ObjectMapper objectMapper;
+    private ObjectMapper objectMapper;
 
     public JsonWriter() {
+        super();
+        initObjectMapper();
+    }
+
+    public JsonWriter(WriterConfiguration writerConfiguration) {
+        super(writerConfiguration);
+        initObjectMapper();
+    }
+
+    private void initObjectMapper() {
         // Same options as in OpenCGAWSServer
         objectMapper = new ObjectMapper();
         objectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
@@ -58,60 +62,27 @@ public class JsonWriter implements IWriter {
     }
 
     @Override
-    public void print(QueryResponse queryResponse, boolean beauty) {
-        if (!checkErrors(queryResponse)) {
-            generalPrint(queryResponse, beauty, System.out);
-        }
-    }
-
-    @Override
-    public void writeToFile(QueryResponse queryResponse, Path filePath, boolean beauty) {
+    public void print(QueryResponse queryResponse) {
         if (checkErrors(queryResponse)) {
             return;
         }
 
-        try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
-            PrintStream ps = new PrintStream(fos);
-            generalPrint(queryResponse, beauty, ps);
-//            System.setOut(ps);
-        } catch (IOException e) {
-            // TODO: Throw exception?
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Print errors or warnings and return true if any error was found.
-     *
-     * @param queryResponse queryResponse object
-     * @return true if the query gave an error.
-     */
-    private boolean checkErrors(QueryResponse queryResponse) {
-        boolean errors = false;
-        if (StringUtils.isNotEmpty(queryResponse.getError())) {
-            logger.error(queryResponse.getError());
-            errors = true;
-        }
-
-        // Print warnings
-        if (StringUtils.isNotEmpty(queryResponse.getWarning())) {
-            logger.warn(queryResponse.getWarning());
-        }
-
-        return errors;
-    }
-
-    private void generalPrint(QueryResponse queryResponse, boolean beauty, PrintStream out) {
         ObjectWriter objectWriter;
-        if (beauty) {
+        if (writerConfiguration.isPretty()) {
             objectWriter = objectMapper.writerWithDefaultPrettyPrinter();
         } else {
             objectWriter = objectMapper.writer();
         }
+        Object toPrint = queryResponse;
+        if (!writerConfiguration.isMetadata()) {
+            toPrint = queryResponse.getResponse();
+        }
         try {
-            out.println(objectWriter.writeValueAsString(queryResponse.getResponse()));
+            ps.println(objectWriter.writeValueAsString(toPrint));
         } catch (IOException e) {
-            logger.error("Error parsing the queryResponse to print as " + (beauty ? "a beautiful" : "") + " JSON", e);
+            System.err.println(ANSI_RED + "ERROR: Could not parse the queryResponse to print as "
+                            + (writerConfiguration.isPretty() ? "a beautiful" : "") + " JSON");
+            System.err.println(e.getMessage() + ANSI_RESET);
         }
     }
 }

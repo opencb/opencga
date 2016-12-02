@@ -64,7 +64,7 @@ public class UserClient extends CatalogClient<User, User> {
         }
         return response;
     }*/
-    public QueryResponse<User> create(String user, String password, ObjectMap params)throws IOException {
+    public QueryResponse<User> create(String user, String password, ObjectMap params) throws IOException {
         //TODO TEST
         if (params.containsKey("method") && params.get("method").equals("GET")) {
             params = addParamsToObjectMap(params, "userId", user, "password", password);
@@ -104,19 +104,22 @@ public class UserClient extends CatalogClient<User, User> {
     public QueryResponse<ObjectMap> logout() {
         QueryResponse<ObjectMap> response = null;
         try {
-            response = execute(USERS_URL, getUserId(), "logout", null, GET, ObjectMap.class);
+            response = execute(USERS_URL, getUserId(null), "logout", null, GET, ObjectMap.class);
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (CatalogException e) {
             e.printStackTrace();
         }
         return response;
     }
 
-    public QueryResponse<User> get(QueryOptions options) throws CatalogException, IOException {
-        return super.get(getUserId(), options);
+    public QueryResponse<User> get(QueryOptions options) throws IOException, CatalogException {
+        return super.get(getUserId(options), options);
     }
 
-    public QueryResponse<Project> getProjects(QueryOptions options) throws CatalogException, IOException {
-        return execute(USERS_URL, getUserId(), "projects", options, GET, Project.class);
+    public QueryResponse<Project> getProjects(QueryOptions options) throws IOException, CatalogException {
+        String userId = getUserId(options);
+        return execute(USERS_URL, userId, "projects", options, GET, Project.class);
     }
     /*Deprecated
     public QueryResponse<User> changePassword(String currentPassword, String newPassword, ObjectMap params)
@@ -134,16 +137,16 @@ public class UserClient extends CatalogClient<User, User> {
             throws CatalogException, IOException {
         if (params.containsKey("method") && params.get("method").equals("GET")) {
             params = addParamsToObjectMap(params, "password", currentPassword, "npassword", newPassword);
-            return execute(USERS_URL, getUserId(), "change-password", params, GET, User.class);
+            return execute(USERS_URL, getUserId(params), "change-password", params, GET, User.class);
         }
         ObjectMapper mapper = new ObjectMapper();
         params = addParamsToObjectMap(params, "password", currentPassword, "npassword", newPassword);
         String json = mapper.writeValueAsString(params);
         ObjectMap objectMap = new ObjectMap("body", json);
-        return execute(USERS_URL, getUserId(), "change-password", objectMap, POST, User.class);
+        return execute(USERS_URL, getUserId(params), "change-password", objectMap, POST, User.class);
     }
     public QueryResponse<User> resetPassword(ObjectMap params) throws CatalogException, IOException {
-        return execute(USERS_URL, getUserId(), "change-password", params, GET, User.class);
+        return execute(USERS_URL, getUserId(params), "change-password", params, GET, User.class);
     }
 
 

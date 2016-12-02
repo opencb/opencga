@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,10 +35,13 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by imedina on 04/05/16.
@@ -144,9 +148,9 @@ public abstract class AbstractParentClient {
             params.put(QueryOptions.LIMIT, limit);
 
             if (!action.equals("upload")) {
-                queryResponse = (QueryResponse<T>) callRest(path, params, clazz, method);
+                queryResponse = callRest(path, params, clazz, method);
             } else {
-                queryResponse = (QueryResponse<T>) callUploadRest(path, params, clazz);
+                queryResponse = callUploadRest(path, params, clazz);
             }
             int numResults = queryResponse.getResponse().isEmpty() ? 0 : queryResponse.getResponse().get(0).getNumResults();
 
@@ -193,7 +197,13 @@ public abstract class AbstractParentClient {
             // TODO we still have to check the limit of the query, and keep querying while there are more results
             if (params != null) {
                 for (String s : params.keySet()) {
-                    path = path.queryParam(s, params.get(s));
+                    Object o = params.get(s);
+                    if (o instanceof Collection) {
+                        String value = ((Collection<?>) o).stream().map(Object::toString).collect(Collectors.joining(","));
+                        path = path.queryParam(s, value);
+                    } else {
+                        path = path.queryParam(s, o);
+                    }
                 }
             }
 
@@ -224,9 +234,9 @@ public abstract class AbstractParentClient {
 //            ObjectMap json = new ObjectMap("body", params.get("body"));
 
             logger.debug("POST URL: " + path.getUri().toURL());
-//            jsonString = path.request().accept(MediaType.APPLICATION_JSON).post(Entity.entity(json, MediaType.APPLICATION_JSON),
-//                    String.class);est().accept(MediaType.APPLICATION_JSON).post(Entity.entity(json, MediaType.APPLICATION_JSON),
-            jsonString = path.request().post(Entity.json(params.get("body")), String.class);
+            Response body = path.request().post(Entity.json(params.get("body")));
+            jsonString = body.readEntity(String.class);
+//            jsonString = path.request().post(Entity.json(params.get("body")), String.class);
         }
         return parseResult(jsonString, clazz);
     }
@@ -321,7 +331,14 @@ public abstract class AbstractParentClient {
         return this;
     }
 
-    public String getUserId() {
+    public String getUserId(ObjectMap options) throws CatalogException {
+        String userId = this.userId;
+        if (options != null && options.containsKey("userId")) {
+            userId = options.getString("userId");
+        }
+        if (userId == null || userId.isEmpty()) {
+            throw new CatalogException("Missing user id");
+        }
         return userId;
     }
 
