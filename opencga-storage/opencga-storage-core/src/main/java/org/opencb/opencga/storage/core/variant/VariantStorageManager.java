@@ -38,6 +38,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.slf4j.LoggerFactory;
 
@@ -253,7 +254,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
      * @return              A new instance of VariantAnnotationManager
      */
     protected VariantStatisticsManager newVariantStatisticsManager(VariantDBAdaptor dbAdaptor) {
-        return new VariantStatisticsManager(dbAdaptor);
+        return new DefaultVariantStatisticsManager(dbAdaptor);
     }
 
 

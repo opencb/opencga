@@ -50,7 +50,7 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantVcfExporter;
-import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
+import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.server.grpc.GenericServiceModel;
 import org.opencb.opencga.storage.server.grpc.VariantProto;
 import org.opencb.opencga.storage.server.grpc.VariantServiceGrpc;
@@ -534,7 +534,7 @@ public class VariantCommandExecutor extends CommandExecutor {
                 statsVariantsCommandOptions.fileId)
                 : Paths.get(outputUri.getPath()).getFileName().toString();
 //        assertDirectoryExists(directoryUri);
-        VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager(dbAdaptor);
+        DefaultVariantStatisticsManager variantStatisticsManager = new DefaultVariantStatisticsManager(dbAdaptor);
 
         boolean doCreate = true;
         boolean doLoad = true;

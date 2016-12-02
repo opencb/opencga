@@ -39,7 +39,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
-import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
+import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
 import java.io.IOException;
 import java.net.URI;
@@ -105,7 +105,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             fileIndexed = true;
             Integer indexedFileId = studyConfiguration.getIndexedFiles().iterator().next();
 
-            VariantStatisticsManager vsm = new VariantStatisticsManager(dbAdaptor);
+            DefaultVariantStatisticsManager vsm = new DefaultVariantStatisticsManager(dbAdaptor);
 
             QueryOptions options = new QueryOptions(VariantStorageManager.Options.STUDY_ID.key(), STUDY_ID)
                 .append(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 100);

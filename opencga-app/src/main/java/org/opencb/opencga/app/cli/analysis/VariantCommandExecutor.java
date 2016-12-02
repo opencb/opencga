@@ -48,7 +48,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.VariantVcfExporter;
 import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroWriter;
-import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
+import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -346,7 +346,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                 new org.opencb.opencga.storage.core.local.variant.VariantStorageManager(catalogManager, storageConfiguration);
 
         QueryOptions options = new QueryOptions()
-                .append(VariantStatisticsManager.OUTPUT_FILE_NAME, cliOptions.fileName)
+                .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, cliOptions.fileName)
 //                .append(AnalysisFileIndexer.CREATE, cliOptions.create)
 //                .append(AnalysisFileIndexer.LOAD, cliOptions.load)
                 .append(VariantStorageManager.Options.UPDATE_STATS.key(), cliOptions.updateStats)

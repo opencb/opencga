@@ -32,7 +32,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
+import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
@@ -113,7 +113,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
             // Modify cohort status to "CALCULATING"
             updateCohorts(cohortIds, sessionId, Cohort.CohortStatus.CALCULATING, "Start calculating stats");
 
-            calculateStatsOptions.put(VariantStatisticsManager.OUTPUT, outdirUri.resolve(outputFileName));
+            calculateStatsOptions.put(DefaultVariantStatisticsManager.OUTPUT, outdirUri.resolve(outputFileName));
             VariantStorageManager variantStorageManager
                     = storageManagerFactory.getVariantStorageManager(dataStore.getStorageEngine());
             List<String> cohortsName = cohortsMap.values().stream().map(Cohort::getName).collect(Collectors.toList());
@@ -174,8 +174,8 @@ public class VariantStatsStorageOperation extends StorageOperation {
 
     protected String buildOutputFileName(List<Long> cohortIds, QueryOptions options, Map<Long, Cohort> cohortsMap, String region) {
         final String outputFileName;
-        if (isNotEmpty(options.getString(VariantStatisticsManager.OUTPUT_FILE_NAME))) {
-            outputFileName = options.getString(VariantStatisticsManager.OUTPUT_FILE_NAME);
+        if (isNotEmpty(options.getString(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME))) {
+            outputFileName = options.getString(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME);
         } else {
             StringBuilder outputFileNameBuilder;
             outputFileNameBuilder = new StringBuilder("stats_");
