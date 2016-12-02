@@ -128,16 +128,8 @@ public class VariantStorageManager extends StorageManager {
             throws CatalogException, StorageManagerException, IOException, URISyntaxException {
         VariantStatsStorageOperation statsOperation = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
 
-        List<Long> cohortIds = new ArrayList<>(cohorts.size());
-        for (String cohort : cohorts) {
-            if (!cohort.contains(":")) {
-                cohort = study + ":" + cohort;
-            }
-            long cohortId = catalogManager.getCohortId(cohort, sessionId);
-            cohortIds.add(cohortId);
-        }
         long studyId = catalogManager.getStudyId(study, sessionId);
-        statsOperation.calculateStats(studyId, cohortIds, outDir, catalogOutDir, new QueryOptions(config), sessionId);
+        statsOperation.calculateStats(studyId, cohorts, outDir, catalogOutDir, new QueryOptions(config), sessionId);
     }
 
     public void deleteStats(List<String> cohorts, String studyId, String sessionId) {

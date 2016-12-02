@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.local.variant;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -101,7 +102,8 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     protected static final String STORAGE_ENGINE_HADOOP = "hadoop";
     private Logger logger = LoggerFactory.getLogger(AbstractVariantStorageOperationTest.class);
 
-
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     @Rule
     public OpenCGATestExternalResource opencga = new OpenCGATestExternalResource(getStorageEngine().equals(STORAGE_ENGINE_HADOOP));

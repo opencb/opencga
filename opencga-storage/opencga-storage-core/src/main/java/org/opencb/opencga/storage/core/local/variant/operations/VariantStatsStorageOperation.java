@@ -58,7 +58,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         super(catalogManager, StorageManagerFactory.get(storageConfiguration), LoggerFactory.getLogger(VariantStatsStorageOperation.class));
     }
 
-    public void calculateStats(long studyId, List<Long> cohortIds, String outdirStr, String catalogOutDirIdStr,
+    public void calculateStats(long studyId, List<String> cohorts, String outdirStr, String catalogOutDirIdStr,
                                QueryOptions options, String sessionId)
             throws CatalogException, IOException, URISyntaxException, StorageManagerException {
         Job.Type step = Job.Type.COHORT_STATS;
@@ -73,7 +73,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         final Path outdir = Paths.get(outdirUri);
         outdirMustBeEmpty(outdir);
 
-        cohortIds = checkCohorts(studyId, cohortIds, options, sessionId);
+        List<Long> cohortIds = checkCohorts(studyId, cohorts, options, sessionId);
         Map<Long, Cohort> cohortsMap = checkCanCalculateCohorts(studyId, cohortIds, updateStats, sessionId);
 
 
@@ -197,21 +197,47 @@ public class VariantStatsStorageOperation extends StorageOperation {
     /**
      * Must provide a list of cohorts or a aggregation_mapping_properties file.
      * @param studyId   StudyId
-     * @param cohortIds List of cohorts
+     * @param cohorts   List of cohorts
      * @param options   Options, where the aggregation mapping properties file will be
      * @param sessionId User's sessionId
      * @return          Checked list of cohorts
      * @throws CatalogException if an error on Catalog
      * @throws IOException if an IO error reading the aggregation map file (if any)
      */
-    protected List<Long> checkCohorts(long studyId, List<Long> cohortIds, QueryOptions options, String sessionId)
+    protected List<Long> checkCohorts(long studyId, List<String> cohorts, QueryOptions options, String sessionId)
             throws CatalogException, IOException {
-        if (cohortIds == null || cohortIds.isEmpty()) {
-            String tagMap = options.getString(Options.AGGREGATION_MAPPING_PROPERTIES.key());
-            if (isBlank(tagMap)) {
+        List<Long> cohortIds;
+
+        // Check aggregation mapping properties
+        String tagMap = options.getString(Options.AGGREGATION_MAPPING_PROPERTIES.key());
+        List<Long> cohortsByAggregationMapFile = null;
+        if (!isBlank(tagMap)) {
+            cohortsByAggregationMapFile = createCohortsByAggregationMapFile(studyId, tagMap, sessionId);
+        }
+
+        if (cohorts == null || cohorts.isEmpty()) {
+            // If no aggregation map file provided
+            if (cohortsByAggregationMapFile == null || cohortsByAggregationMapFile.isEmpty()) {
                 throw new CatalogException("Cohort list null or empty");
             } else {
-                cohortIds = createCohortsByAggregationMapFile(studyId, tagMap, sessionId);
+                cohortIds = cohortsByAggregationMapFile;
+            }
+        } else {
+            cohortIds = new ArrayList<>(cohorts.size());
+            for (String cohort : cohorts) {
+                if (!cohort.contains(":")) {
+                    cohort = studyId + ":" + cohort;
+                }
+                long cohortId = catalogManager.getCohortId(cohort, sessionId);
+                if (cohortId < 0) {
+                    throw new CatalogException("Cohort '" + cohort + "' not found");
+                }
+                cohortIds.add(cohortId);
+            }
+            if (cohortsByAggregationMapFile != null) {
+                if (cohortIds.size() != cohortsByAggregationMapFile.size() || !cohortIds.containsAll(cohortsByAggregationMapFile)) {
+                    throw new CatalogException("Given cohorts (if any) must match with cohorts in the aggregation mapping file.");
+                }
             }
         }
         return cohortIds;
@@ -221,7 +247,9 @@ public class VariantStatsStorageOperation extends StorageOperation {
             throws IOException, CatalogException {
         List<Long> cohorts = new ArrayList<>();
         Properties tagmap = new Properties();
-        tagmap.load(new FileInputStream(aggregationMapFile));
+        try (InputStream is = new FileInputStream(aggregationMapFile)) {
+            tagmap.load(is);
+        }
         Map<String, Long> catalogCohorts = catalogManager.getAllCohorts(studyId, null,
                 new QueryOptions(QueryOptions.INCLUDE, "name,id"), sessionId).getResult()
                 .stream()
