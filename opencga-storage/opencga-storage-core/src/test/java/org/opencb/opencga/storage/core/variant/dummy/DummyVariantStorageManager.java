@@ -29,7 +29,7 @@ public class DummyVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    public VariantStorageETL newStorageETL(boolean connected) throws StorageManagerException {
+    public DummyVariantStorageETL newStorageETL(boolean connected) throws StorageManagerException {
         return new DummyVariantStorageETL(getConfiguration(), STORAGE_ENGINE_ID, LoggerFactory.getLogger(DummyVariantStorageETL.class), getDBAdaptor(), getVariantReaderUtils());
     }
 

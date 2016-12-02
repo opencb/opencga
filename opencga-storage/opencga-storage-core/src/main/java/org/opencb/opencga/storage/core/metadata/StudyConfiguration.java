@@ -83,6 +83,7 @@ public class StudyConfiguration {
         this.invalidStats = new LinkedHashSet<>(other.invalidStats);
         this.batches = other.batches;
         this.aggregation = other.aggregation;
+        this.timeStamp = other.timeStamp;
         this.attributes = new ObjectMap(other.attributes);
     }
 
@@ -91,20 +92,7 @@ public class StudyConfiguration {
     }
 
     public StudyConfiguration(int studyId, String studyName) {
-        this.studyId = studyId;
-        this.studyName = studyName;
-        this.fileIds = HashBiMap.create(1);
-        this.sampleIds = HashBiMap.create();
-        this.cohortIds = HashBiMap.create();
-        this.cohorts = new HashMap<>();
-        this.indexedFiles = new LinkedHashSet<>();
-        this.headers = new HashMap<>();
-        this.samplesInFiles = new LinkedHashMap<>();
-        this.calculatedStats = new LinkedHashSet<>();
-        this.invalidStats = new LinkedHashSet<>();
-        this.batches = new LinkedList<>();
-        this.aggregation = VariantSource.Aggregation.NONE;
-        this.attributes = new ObjectMap();
+        this(studyId, studyName, null, null, null, null);
     }
 
     public StudyConfiguration(int studyId, String studyName, int fileId, String fileName) {
@@ -120,13 +108,15 @@ public class StudyConfiguration {
         this.fileIds = HashBiMap.create(fileIds == null ? Collections.emptyMap() : fileIds);
         this.sampleIds = HashBiMap.create(sampleIds == null ? Collections.emptyMap() : sampleIds);
         this.cohortIds = HashBiMap.create(cohortIds == null ? Collections.emptyMap() : cohortIds);
-        this.cohorts = cohorts;
+        this.cohorts = cohorts == null ? new HashMap<>() : cohorts;
         this.indexedFiles = new LinkedHashSet<>();
         this.headers = HashBiMap.create();
         this.samplesInFiles = HashBiMap.create();
         this.calculatedStats = new LinkedHashSet<>();
         this.invalidStats = new LinkedHashSet<>();
+        this.batches = new ArrayList<>();
         this.aggregation = VariantSource.Aggregation.NONE;
+        this.timeStamp = 0L;
         this.attributes = new ObjectMap();
     }
 
@@ -306,63 +296,27 @@ public class StudyConfiguration {
         }
 
         StudyConfiguration that = (StudyConfiguration) o;
-
-        if (studyId != that.studyId) {
-            return false;
-        }
-        if (studyName != null ? !studyName.equals(that.studyName) : that.studyName != null) {
-            return false;
-        }
-        if (fileIds != null ? !fileIds.equals(that.fileIds) : that.fileIds != null) {
-            return false;
-        }
-        if (sampleIds != null ? !sampleIds.equals(that.sampleIds) : that.sampleIds != null) {
-            return false;
-        }
-        if (cohortIds != null ? !cohortIds.equals(that.cohortIds) : that.cohortIds != null) {
-            return false;
-        }
-        if (cohorts != null ? !cohorts.equals(that.cohorts) : that.cohorts != null) {
-            return false;
-        }
-        if (indexedFiles != null ? !indexedFiles.equals(that.indexedFiles) : that.indexedFiles != null) {
-            return false;
-        }
-        if (samplesInFiles != null ? !samplesInFiles.equals(that.samplesInFiles) : that.samplesInFiles != null) {
-            return false;
-        }
-        if (calculatedStats != null ? !calculatedStats.equals(that.calculatedStats) : that.calculatedStats != null) {
-            return false;
-        }
-        if (invalidStats != null ? !invalidStats.equals(that.invalidStats) : that.invalidStats != null) {
-            return false;
-        }
-        if (aggregation != null ? !aggregation.equals(that.aggregation) : that.aggregation != null) {
-            return false;
-        }
-        if (timeStamp != null ? !timeStamp.equals(that.timeStamp) : that.timeStamp != null) {
-            return false;
-        }
-        return !(attributes != null ? !attributes.equals(that.attributes) : that.attributes != null);
-
+        return studyId == that.studyId
+                && Objects.equals(studyName, that.studyName)
+                && Objects.equals(fileIds, that.fileIds)
+                && Objects.equals(sampleIds, that.sampleIds)
+                && Objects.equals(cohortIds, that.cohortIds)
+                && Objects.equals(cohorts, that.cohorts)
+                && Objects.equals(indexedFiles, that.indexedFiles)
+                && Objects.equals(headers, that.headers)
+                && Objects.equals(samplesInFiles, that.samplesInFiles)
+                && Objects.equals(calculatedStats, that.calculatedStats)
+                && Objects.equals(invalidStats, that.invalidStats)
+                && Objects.equals(batches, that.batches)
+                && aggregation == that.aggregation
+                && Objects.equals(timeStamp, that.timeStamp)
+                && Objects.equals(attributes, that.attributes);
     }
 
     @Override
     public int hashCode() {
-        int result = studyId;
-        result = 31 * result + (studyName != null ? studyName.hashCode() : 0);
-        result = 31 * result + (fileIds != null ? fileIds.hashCode() : 0);
-        result = 31 * result + (sampleIds != null ? sampleIds.hashCode() : 0);
-        result = 31 * result + (cohortIds != null ? cohortIds.hashCode() : 0);
-        result = 31 * result + (cohorts != null ? cohorts.hashCode() : 0);
-        result = 31 * result + (indexedFiles != null ? indexedFiles.hashCode() : 0);
-        result = 31 * result + (samplesInFiles != null ? samplesInFiles.hashCode() : 0);
-        result = 31 * result + (calculatedStats != null ? calculatedStats.hashCode() : 0);
-        result = 31 * result + (invalidStats != null ? invalidStats.hashCode() : 0);
-        result = 31 * result + (aggregation != null ? aggregation.hashCode() : 0);
-        result = 31 * result + (timeStamp != null ? timeStamp.hashCode() : 0);
-        result = 31 * result + (attributes != null ? attributes.hashCode() : 0);
-        return result;
+        return Objects.hash(studyId, studyName, fileIds, sampleIds, cohortIds, cohorts, indexedFiles, headers, samplesInFiles,
+                calculatedStats, invalidStats, batches, aggregation, timeStamp, attributes);
     }
 
     public static <T, R> BiMap<R, T> inverseMap(BiMap<T, R> map) {
