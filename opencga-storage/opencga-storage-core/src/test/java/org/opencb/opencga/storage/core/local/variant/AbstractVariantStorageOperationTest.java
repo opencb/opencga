@@ -45,6 +45,7 @@ import org.opencb.opencga.storage.core.local.OpenCGATestExternalResource;
 import org.opencb.opencga.storage.core.local.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,9 +58,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
 import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
 import static org.opencb.opencga.storage.core.local.variant.operations.StatsVariantStorageTest.checkCalculatedStats;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.DB_NAME;
@@ -79,7 +83,10 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
     protected long projectId;
     protected long studyId;
+    protected String studyStr;
     protected long outputId;
+    protected String outputStr;
+    protected String outputPath;
     protected long studyId2;
     protected long outputId2;
 
@@ -88,7 +95,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     protected org.opencb.opencga.storage.core.local.variant.VariantStorageManager variantManager;
 
     protected final String dbName = DB_NAME;
-    protected static final String STORAGE_ENGINE_MOCKUP = DummyVariantStorageManager.STORAGE_ENGINE_ID;
+    protected static final String STORAGE_ENGINE_DUMMY = DummyVariantStorageManager.STORAGE_ENGINE_ID;
     protected static final String STORAGE_ENGINE_MONGODB = "mongodb";
     protected static final String STORAGE_ENGINE_HADOOP = "hadoop";
     private Logger logger = LoggerFactory.getLogger(AbstractVariantStorageOperationTest.class);
@@ -102,14 +109,16 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     public final void setUpAbstract() throws Exception {
         catalogManager = opencga.getCatalogManager();
         StorageConfiguration storageConfiguration = opencga.getStorageConfiguration();
-        storageConfiguration.setDefaultStorageEngineId(STORAGE_ENGINE_MOCKUP);
+        storageConfiguration.setDefaultStorageEngineId(STORAGE_ENGINE_DUMMY);
         storageConfiguration.getStorageEngines().add(new StorageEngineConfiguration(
-                STORAGE_ENGINE_MOCKUP,
+                STORAGE_ENGINE_DUMMY,
                 new StorageEtlConfiguration(),
                 new StorageEtlConfiguration(DummyVariantStorageManager.class.getName(), new ObjectMap(), new DatabaseCredentials()),
                 new ObjectMap()
         ));
-        StorageManagerFactory.configure(storageConfiguration);
+        StorageManagerFactory factory = StorageManagerFactory.get(storageConfiguration);
+        factory.unregisterVariantStorageManager(DummyVariantStorageManager.STORAGE_ENGINE_ID);
+
         DummyStudyConfigurationManager.clear();
 
         variantManager = new org.opencb.opencga.storage.core.local.variant.VariantStorageManager(catalogManager, storageConfiguration);
@@ -127,8 +136,10 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
                 null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(getStorageEngine(), dbName)), null,
                 Collections.singletonMap(VariantStorageManager.Options.AGGREGATED_TYPE.key(), getAggregation()),
                 null, sessionId).first().getId();
+        studyStr = String.valueOf(studyId);
         outputId = catalogManager.createFolder(studyId, Paths.get("data", "index"), true, null, sessionId).first().getId();
-
+        outputStr = String.valueOf(outputId);
+        outputPath = "data/index/";
         studyId2 = catalogManager.createStudy(projectId, "s2", "s2", Study.Type.CASE_CONTROL, null, "Study 2", null,
                 null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(getStorageEngine(), dbName)), null,
                 Collections.singletonMap(VariantStorageManager.Options.AGGREGATED_TYPE.key(), getAggregation()),
@@ -143,7 +154,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     }
 
     protected String getStorageEngine() {
-        return STORAGE_ENGINE_MOCKUP;
+        return STORAGE_ENGINE_DUMMY;
     }
 
     protected abstract VariantSource.Aggregation getAggregation();
@@ -217,7 +228,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         String outdir = opencga.createTmpOutdir(studyId, "_LOAD_", sessionId);
         List<StorageETLResult> etlResults = variantManager.index(fileIds, outdir, String.valueOf(outputId), queryOptions, sessionId);
 
-        assertEquals(1, etlResults.size());
+        assertEquals(files.size(), etlResults.size());
         checkEtlResults(studyId, etlResults, FileIndex.IndexStatus.READY);
 
         Cohort defaultCohort = getDefaultCohort(studyId);
@@ -231,25 +242,34 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         return etlResults;
     }
 
-    protected void indexFile(File file, QueryOptions queryOptions, long outputId) throws Exception {
+    protected List<StorageETLResult> indexFile(File file, QueryOptions queryOptions, long outputId) throws Exception {
+        return indexFiles(Collections.singletonList(file), queryOptions, outputId);
+    }
+
+    protected List<StorageETLResult> indexFiles(List<File> files, QueryOptions queryOptions, long outputId) throws Exception {
         queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, true);
         queryOptions.append(VariantFileIndexerStorageOperation.LOAD, true);
         boolean calculateStats = queryOptions.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key());
 
-        long studyId = catalogManager.getStudyIdByFileId(file.getId());
+        long studyId = catalogManager.getStudyIdByFileId(files.get(0).getId());
 
         String outdir = opencga.createTmpOutdir(studyId, "_INDEX_", sessionId);
-        List<StorageETLResult> etlResults = variantManager.index(file.getPath(), outdir, String.valueOf(outputId), queryOptions, sessionId);
+        List<String> fileIds = files.stream().map(File::getId).map(Object::toString).collect(Collectors.toList());
+        List<StorageETLResult> etlResults = variantManager.index(fileIds, outdir, String.valueOf(outputId), queryOptions, sessionId);
 
-        assertEquals(1, etlResults.size());
+        assertEquals(files.size(), etlResults.size());
         checkEtlResults(studyId, etlResults, FileIndex.IndexStatus.READY);
 
         Cohort defaultCohort = getDefaultCohort(studyId);
-        assertTrue(defaultCohort.getSamples().containsAll(file.getSampleIds()));
+        for (File file : files) {
+            assertTrue(defaultCohort.getSamples().containsAll(file.getSampleIds()));
+        }
         if (calculateStats) {
             assertEquals(Cohort.CohortStatus.READY, defaultCohort.getStatus().getName());
             checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, defaultCohort), catalogManager, dbName, sessionId);
         }
+
+        return etlResults;
     }
 
     protected void checkEtlResults(long studyId, List<StorageETLResult> etlResults, String expectedStatus) throws CatalogException {
@@ -265,4 +285,24 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
             System.out.println("etlResult = " + etlResult);
         }
     }
+
+    protected DummyVariantStorageManager mockVariantStorageManager() {
+        DummyVariantStorageManager vsm = spy(new DummyVariantStorageManager());
+        vsm.setConfiguration(opencga.getStorageConfiguration(), DummyVariantStorageManager.STORAGE_ENGINE_ID);
+        StorageManagerFactory.get(opencga.getStorageConfiguration()).registerStorageManager(vsm);
+        return vsm;
+    }
+
+    protected DummyVariantDBAdaptor mockVariantDBAdaptor() throws StorageManagerException {
+        DummyVariantStorageManager vsm = mockVariantStorageManager();
+        return mockVariantDBAdaptor(vsm);
+    }
+
+    protected DummyVariantDBAdaptor mockVariantDBAdaptor(DummyVariantStorageManager vsm) throws StorageManagerException {
+        DummyVariantDBAdaptor dbAdaptor = spy(new DummyVariantDBAdaptor(""));
+        doReturn(dbAdaptor).when(vsm).getDBAdaptor();
+        doReturn(dbAdaptor).when(vsm).getDBAdaptor(anyString());
+        return dbAdaptor;
+    }
+
 }

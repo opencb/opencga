@@ -112,12 +112,12 @@ public class VariantStorageManager extends StorageManager {
         throw new UnsupportedOperationException();
     }
 
-    public void annotate(String study, Query query, String outDir, String catalogOutDir, ObjectMap config, String sessionId)
+    public List<File> annotate(String study, Query query, String outDir, String catalogOutDir, ObjectMap config, String sessionId)
             throws CatalogException, StorageManagerException, IOException, URISyntaxException {
         VariantAnnotationStorageOperation annotOperation = new VariantAnnotationStorageOperation(catalogManager, storageConfiguration);
 
-        long studyId = catalogManager.getStudyId(study, sessionId);
-        annotOperation.annotateVariants(studyId, query, outDir, catalogOutDir, sessionId, config);
+        StudyInfo studyInfo = getStudyInfo(study, Collections.emptyList(), sessionId);
+        return annotOperation.annotateVariants(studyInfo, query, outDir, catalogOutDir, sessionId, config);
     }
 
     public void deleteAnnotation(String annotationId, String studyId, String sessionId) {

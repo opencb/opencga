@@ -74,6 +74,14 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
         }
     }
 
+    public static String toCellBaseSpeciesName(String scientificName) {
+        if (scientificName.contains(" ")) {
+            String[] split = scientificName.split(" ", 2);
+            scientificName = (split[0].charAt(0) + split[1]).toLowerCase();
+        }
+        return scientificName;
+    }
+
 
     @Override
     public final List<VariantAnnotation> annotate(List<Variant> variants) throws VariantAnnotatorException {

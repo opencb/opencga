@@ -168,4 +168,19 @@ public final class StorageManagerFactory {
 //        }
 //    }
 
+    public void registerStorageManager(VariantStorageManager variantStorageManager) {
+        variantStorageManagerMap.put(variantStorageManager.getStorageEngineId(), variantStorageManager);
+    }
+
+    public VariantStorageManager unregisterVariantStorageManager(String storageEngineId) {
+        return variantStorageManagerMap.remove(storageEngineId);
+    }
+
+    public void registerStorageManager(AlignmentStorageManager alignmentStorageManager) {
+        alignmentStorageManagerMap.put(alignmentStorageManager.getStorageEngineId(), alignmentStorageManager);
+    }
+
+    public AlignmentStorageManager unregisterAlignmentStorageManager(String storageEngineId) {
+        return alignmentStorageManagerMap.remove(storageEngineId);
+    }
 }

@@ -19,6 +19,7 @@ public interface VariantAnnotationManager {
     String OVERWRITE_ANNOTATIONS = "overwriteAnnotations";
     String VARIANT_ANNOTATOR_CLASSNAME = "variant.annotator.classname";
     // File to load.
+    String CREATE = "annotation.create";
     String LOAD_FILE = "annotation.load.file";
     String CUSTOM_ANNOTATION_KEY = "custom_annotation_key";
 

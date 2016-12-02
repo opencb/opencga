@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.catalog.UserCommandOptions;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
@@ -29,6 +30,9 @@ import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by imedina on 02/03/15.
@@ -154,9 +158,22 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, usersCommandOptions.infoCommandOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, usersCommandOptions.infoCommandOptions.exclude);
         queryOptions.putIfNotEmpty(UserDBAdaptor.QueryParams.LAST_MODIFIED.key(), usersCommandOptions.infoCommandOptions.lastModified);
-        queryOptions.putIfNotNull("userId", usersCommandOptions.infoCommandOptions.user);
+        queryOptions.putIfNotNull("userId", userId);
 
-        return openCGAClient.getUserClient().get(queryOptions);
+        QueryResponse<User> userQueryResponse = openCGAClient.getUserClient().get(queryOptions);
+        if (userQueryResponse.getResponse().size() == 1 && userQueryResponse.getResponse().get(0).getNumResults() == 1) {
+            queryOptions.put("shared", true);
+            QueryResponse<Project> sharedProjects = openCGAClient.getUserClient().getProjects(queryOptions);
+            if (sharedProjects.getResponse().size() > 0 && sharedProjects.getResponse().get(0).getNumResults() > 0) {
+                QueryResult<User> userQueryResult = userQueryResponse.getResponse().get(0);
+                List<Project> newProjectList = Stream
+                        .concat(userQueryResult.first().getProjects().stream(), sharedProjects.first().getResult().stream())
+                        .collect(Collectors.toList());
+                userQueryResult.first().setProjects(newProjectList);
+            }
+        }
+
+        return userQueryResponse;
     }
 
     private QueryResponse<Project> projects() throws CatalogException, IOException {

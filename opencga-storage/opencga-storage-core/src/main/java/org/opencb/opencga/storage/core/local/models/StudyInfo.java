@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.local.models;
 
 import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Study;
 
 import java.nio.file.Path;
@@ -24,6 +25,7 @@ public class StudyInfo {
 
     private Path workspace;
     private Map<File.Bioformat, DataStore> dataStores;
+    private Project.Organism organism;
 
     private List<FileInfo> fileInfos;
 
@@ -114,6 +116,15 @@ public class StudyInfo {
 
     public StudyInfo setFileInfos(List<FileInfo> fileInfos) {
         this.fileInfos = fileInfos;
+        return this;
+    }
+
+    public Project.Organism getOrganism() {
+        return organism;
+    }
+
+    public StudyInfo setOrganism(Project.Organism organism) {
+        this.organism = organism;
         return this;
     }
 }
