@@ -250,7 +250,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
     @Override
     public QueryResult<RegionCoverage> coverage(Path path, Path workspace) throws Exception {
         QueryOptions options = new QueryOptions();
-        options.put("windowSize", DEFAULT_WINDOW_SIZE);
+        options.put("windowSize", LocalAlignmentGlobals.DEFAULT_WINDOW_SIZE);
         options.put("contained", false);
         return coverage(path, workspace, new Query(), options);
     }

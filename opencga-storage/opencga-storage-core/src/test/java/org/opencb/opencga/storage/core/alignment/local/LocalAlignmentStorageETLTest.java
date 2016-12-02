@@ -25,12 +25,18 @@ import java.nio.file.Paths;
  * Created by imedina on 01/11/16.
  */
 public class LocalAlignmentStorageETLTest {
-    //@Test
+    @Test
     public void transform() throws Exception {
-        Path inputPath = Paths.get(getClass().getResource("/HG00096.chrom20.small.bam").toURI());
+        Path inputPath = Paths.get("/home/jtarraga/data150/bam/NA12877_chrM.bam");
+//        Path inputPath = Paths.get(getClass().getResource("/HG00096.chrom20.small.bam").toURI());
+        Path coverageDBPath = inputPath.getParent().resolve(CoverageDBManager.COVERAGE_DATABASE_NAME);
+
+        System.out.println("inputPath = " + inputPath);
+        System.out.println("coverageDBPath = " + coverageDBPath);
+        coverageDBPath.toFile().delete();
+
 //        String inputPath = "/tmp/kk/ebi.bam";
 //        String inputPath = "/tmp/kk/HG00096.chrom20.small.bam";
-        System.out.println("inputPath = " + inputPath);
         LocalAlignmentStorageETL storageETL = new LocalAlignmentStorageETL();
         storageETL.transform(inputPath.toUri(), null, inputPath.getParent().toUri());
     }

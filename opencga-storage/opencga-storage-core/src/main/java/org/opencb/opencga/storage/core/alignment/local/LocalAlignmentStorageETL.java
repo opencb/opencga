@@ -68,54 +68,30 @@ public class LocalAlignmentStorageETL implements StorageETL {
         }
 
         // 3. Calculate coverage and store in SQLite
+        CoverageDBManager coverageDBManager = new CoverageDBManager();
         SAMFileHeader fileHeader = BamUtils.getFileHeader(path);
-//        long start = System.currentTimeMillis();
-        LocalAlignmentUtils.initDatabase(fileHeader.getSequenceDictionary().getSequences(), workspace);
-//        System.out.println("SQLite database initialization, in " + ((System.currentTimeMillis() - start) / 1000.0f)
-//                + " s.");
+        Path coverageDBPath = coverageDBManager.create(path);
 
         Path coveragePath = workspace.toAbsolutePath().resolve(path.getFileName()
-                + LocalAlignmentUtils.COVERAGE_WIG_SUFFIX);
+                + LocalAlignmentGlobals.COVERAGE_WIG_SUFFIX);
 
         FileOutputStream fos = new FileOutputStream(coveragePath.toString());
         OutputStream os = new BufferedOutputStream(fos);
         PrintStream ps = new PrintStream(os);
 
         AlignmentOptions options = new AlignmentOptions();
-        options.setContained(false);
-
-
         Iterator<SAMSequenceRecord> iterator = fileHeader.getSequenceDictionary().getSequences().iterator();
-//        PrintWriter writer = new PrintWriter(coveragePath.toFile());
-//        StringBuilder line;
-//        start = System.currentTimeMillis();
+        long start = System.currentTimeMillis();
         while (iterator.hasNext()) {
             SAMSequenceRecord next = iterator.next();
-            for (int i = 0; i < next.getSequenceLength(); i += LocalAlignmentUtils.COVERAGE_REGION_SIZE) {
+            for (int i = 0; i < next.getSequenceLength(); i += LocalAlignmentGlobals.COVERAGE_REGION_SIZE) {
                 Region region = new Region(next.getSequenceName(), i + 1,
-                        Math.min(i + LocalAlignmentUtils.COVERAGE_REGION_SIZE, next.getSequenceLength()));
+                        Math.min(i + LocalAlignmentGlobals.COVERAGE_REGION_SIZE, next.getSequenceLength()));
                 RegionCoverage regionCoverage = bamManager.coverage(region, null, options);
 
                 // write coverage to wigfile
-                BamUtils.printWigFileCoverage(regionCoverage, LocalAlignmentUtils.CHUNK_SIZE,
+                BamUtils.printWigFileCoverage(regionCoverage, LocalAlignmentGlobals.DEFAULT_WINDOW_SIZE,
                         regionCoverage.getStart() == 1, ps);
-
-//                int meanDepth = Math.min(regionCoverage.meanCoverage(), 255);
-//
-//                // File columns: chunk   chromosome start   end coverage
-//                // chunk format: chrom_id_suffix, where:
-//                //      id: int value starting at 0
-//                //      suffix: chunkSize + k
-//                // eg. 3_4_1k
-//
-//                line = new StringBuilder();
-//                line.append(region.getChromosome()).append("_");
-//                line.append(i / MINOR_CHUNK_SIZE).append("_").append(MINOR_CHUNK_SIZE / 1000).append("k");
-//                line.append("\t").append(region.getChromosome());
-//                line.append("\t").append(region.getStart());
-//                line.append("\t").append(region.getEnd());
-//                line.append("\t").append(meanDepth);
-//                writer.println(line.toString());
             }
         }
 
@@ -123,14 +99,11 @@ public class LocalAlignmentStorageETL implements StorageETL {
         ps.close();
         os.close();
         fos.close();
-
-//        writer.close();
-//        System.out.println("Mean coverage file creation, in " + ((System.currentTimeMillis() - start) / 1000.0f) + " s.");
+        System.err.println("LocalAlignmentStorageETL: Coverage file creation (window size " + LocalAlignmentGlobals.DEFAULT_WINDOW_SIZE
+                + "), in " + ((System.currentTimeMillis() - start) / 1000.0f) + " s.");
 
         // save file to db
-//        start = System.currentTimeMillis();
-        LocalAlignmentUtils.insertCoverageDBFromWig(path, workspace);
-//        System.out.println("SQLite database population, in " + ((System.currentTimeMillis() - start) / 1000.0f) + " s.");
+        coverageDBManager.loadWigFile(coveragePath);
 
         return input;
     }
