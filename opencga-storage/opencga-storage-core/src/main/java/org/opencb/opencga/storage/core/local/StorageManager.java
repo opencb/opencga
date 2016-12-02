@@ -20,7 +20,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -150,7 +149,8 @@ public abstract class StorageManager {
             }
 
             Path path = Paths.get(fileQueryResult.first().getUri().getRawPath());
-            FileUtils.checkFile(path);
+            // Do not check file! Input may be a folder in some scenarios
+//            FileUtils.checkFile(path);
 
             fileInfo.setPath(path);
             fileInfo.setName(fileQueryResult.first().getName());

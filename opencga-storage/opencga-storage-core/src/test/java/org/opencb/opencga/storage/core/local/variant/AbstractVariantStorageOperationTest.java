@@ -62,7 +62,6 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
@@ -253,6 +252,10 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     }
 
     protected List<StorageETLResult> indexFiles(List<File> files, QueryOptions queryOptions, long outputId) throws Exception {
+        return indexFiles(files, files, queryOptions, outputId);
+    }
+
+    protected List<StorageETLResult> indexFiles(List<File> files, List<File> expectedLoadedFiles, QueryOptions queryOptions, long outputId) throws Exception {
         queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, true);
         queryOptions.append(VariantFileIndexerStorageOperation.LOAD, true);
         boolean calculateStats = queryOptions.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key());
@@ -263,11 +266,11 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         List<String> fileIds = files.stream().map(File::getId).map(Object::toString).collect(Collectors.toList());
         List<StorageETLResult> etlResults = variantManager.index(fileIds, outdir, String.valueOf(outputId), queryOptions, sessionId);
 
-        assertEquals(files.size(), etlResults.size());
+        assertEquals(expectedLoadedFiles.size(), etlResults.size());
         checkEtlResults(studyId, etlResults, FileIndex.IndexStatus.READY);
 
         Cohort defaultCohort = getDefaultCohort(studyId);
-        for (File file : files) {
+        for (File file : expectedLoadedFiles) {
             assertTrue(defaultCohort.getSamples().containsAll(file.getSampleIds()));
         }
         if (calculateStats) {

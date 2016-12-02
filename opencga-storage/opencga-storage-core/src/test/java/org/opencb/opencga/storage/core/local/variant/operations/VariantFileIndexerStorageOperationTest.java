@@ -45,6 +45,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.*;
 import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
 import static org.opencb.opencga.storage.core.local.variant.operations.StatsVariantStorageTest.checkCalculatedStats;
@@ -136,6 +137,15 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
     }
 
     @Test
+    public void testIndexFromFolder() throws Exception {
+        QueryOptions queryOptions = new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false)
+                .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false);
+        File file = getFile(0);
+        File parent = catalogManager.getFileParent(file.getId(), null, sessionId).first();
+        indexFiles(singletonList(parent), singletonList(file), queryOptions, outputId);
+    }
+
+    @Test
     public void testIndexBySteps() throws Exception {
         QueryOptions queryOptions = new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false)
                 .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false);
@@ -194,7 +204,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         mockVariantStorageETL();
         // File 0 already loaded.
         // Expecting to load only file 1
-        loadFiles(files, Collections.singletonList(files.get(1)), queryOptions, outputId);
+        loadFiles(files, singletonList(files.get(1)), queryOptions, outputId);
     }
 
     @Test
@@ -211,7 +221,7 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         create(studyId2, catalogManager.getFileUri(getFile(0)));
         create(studyId2, catalogManager.getFileUri(transformSourceFile));
         transformFile = create(studyId2, catalogManager.getFileUri(transformFile));
-        catalogManager.getFileManager().matchUpVariantFiles(Collections.singletonList(transformFile), sessionId);
+        catalogManager.getFileManager().matchUpVariantFiles(singletonList(transformFile), sessionId);
 
         queryOptions = new QueryOptions().append(VariantStorageManager.Options.ANNOTATE.key(), false)
                 .append(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
