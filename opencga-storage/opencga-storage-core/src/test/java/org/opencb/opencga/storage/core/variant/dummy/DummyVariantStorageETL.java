@@ -23,10 +23,15 @@ import java.util.List;
  */
 public class DummyVariantStorageETL extends VariantStorageETL {
 
-    private static final String MOCK_VARIANTS_LOAD_FAIL = "mock.variants.load.fail";
+    public static final String VARIANTS_LOAD_FAIL = "dummy.variants.load.fail";
 
     public DummyVariantStorageETL(StorageConfiguration configuration, String storageEngineId, Logger logger, VariantDBAdaptor dbAdaptor, VariantReaderUtils variantReaderUtils) {
         super(configuration, storageEngineId, logger, dbAdaptor, variantReaderUtils);
+    }
+
+    public void init(ObjectMap options) {
+        getOptions().clear();
+        getOptions().putAll(options);
     }
 
     @Override
@@ -43,7 +48,7 @@ public class DummyVariantStorageETL extends VariantStorageETL {
     public URI load(URI input) throws IOException, StorageManagerException {
         logger.info("Loading file " + input);
         List<Integer> fileIds = getOptions().getAsIntegerList(VariantStorageManager.Options.FILE_ID.key());
-        if (getOptions().getBoolean(MOCK_VARIANTS_LOAD_FAIL)) {
+        if (getOptions().getBoolean(VARIANTS_LOAD_FAIL)) {
             setStatus(BatchFileOperation.Status.ERROR, "load", fileIds);
         } else {
             setStatus(BatchFileOperation.Status.DONE, "load", fileIds);

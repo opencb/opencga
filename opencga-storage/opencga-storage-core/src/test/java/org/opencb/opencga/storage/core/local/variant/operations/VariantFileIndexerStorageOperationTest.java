@@ -20,6 +20,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -29,8 +31,12 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
+import org.opencb.opencga.storage.core.StorageETLResult;
+import org.opencb.opencga.storage.core.exceptions.StorageETLException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.local.variant.AbstractVariantStorageOperationTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageETL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,8 +45,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
 import static org.opencb.opencga.storage.core.local.variant.operations.StatsVariantStorageTest.checkCalculatedStats;
 
@@ -156,6 +161,40 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         transformFile(getFile(0), queryOptions);
         loadFile(getFile(0), queryOptions, outputId);
 
+    }
+
+    @Test
+    public void testIndexWithError() throws Exception {
+        QueryOptions queryOptions = new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false)
+                .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false);
+
+        DummyVariantStorageETL storageETL = mockVariantStorageETL();
+        List<File> files = Arrays.asList(getFile(0), getFile(1));
+        StorageManagerException loadException = StorageManagerException.unableToExecute("load", 0, "");
+        Mockito.doThrow(loadException).when(storageETL)
+                .load(ArgumentMatchers.argThat(argument -> argument.toString().contains(files.get(1).getName())));
+
+        try {
+            indexFiles(files, queryOptions, outputId);
+        } catch (StorageETLException exception) {
+            assertEquals(files.size(), exception.getResults().size());
+
+            for (int i = files.size(); i > 0; i--) {
+                assertTrue(exception.getResults().get(1).isTransformExecuted());
+                assertNull(exception.getResults().get(1).getTransformError());
+            }
+
+            assertTrue(exception.getResults().get(0).isLoadExecuted());
+            assertNull(exception.getResults().get(0).getLoadError());
+
+            assertTrue(exception.getResults().get(1).isLoadExecuted());
+            assertSame(loadException, exception.getResults().get(1).getLoadError());
+        }
+
+        mockVariantStorageETL();
+        // File 0 already loaded.
+        // Expecting to load only file 1
+        loadFiles(files, Collections.singletonList(files.get(1)), queryOptions, outputId);
     }
 
     @Test
