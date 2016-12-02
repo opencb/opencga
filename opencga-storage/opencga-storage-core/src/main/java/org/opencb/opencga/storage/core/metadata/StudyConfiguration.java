@@ -110,8 +110,8 @@ public class StudyConfiguration {
         this.cohortIds = HashBiMap.create(cohortIds == null ? Collections.emptyMap() : cohortIds);
         this.cohorts = cohorts == null ? new HashMap<>() : cohorts;
         this.indexedFiles = new LinkedHashSet<>();
-        this.headers = HashBiMap.create();
-        this.samplesInFiles = HashBiMap.create();
+        this.headers = new HashMap<>();
+        this.samplesInFiles = new HashMap<>();
         this.calculatedStats = new LinkedHashSet<>();
         this.invalidStats = new LinkedHashSet<>();
         this.batches = new ArrayList<>();
