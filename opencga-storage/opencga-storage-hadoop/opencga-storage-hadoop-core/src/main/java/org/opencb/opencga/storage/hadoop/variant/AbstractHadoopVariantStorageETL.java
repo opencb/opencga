@@ -34,7 +34,7 @@ import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
-import org.opencb.biodata.tools.variant.converter.VariantToVcfSliceConverter;
+import org.opencb.biodata.tools.variant.converters.proto.VariantToVcfSliceConverter;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.DataWriter;

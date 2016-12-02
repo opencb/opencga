@@ -26,8 +26,8 @@ import java.io.PrintStream;
  */
 public abstract class AbstractWriter {
 
-    private WriterConfiguration writerConfiguration;
-    private PrintStream ps;
+    protected WriterConfiguration writerConfiguration;
+    protected PrintStream ps;
 
     protected static final String ANSI_RESET = "\033[0m";
     protected static final String ANSI_RED = "\033[31m";
@@ -46,21 +46,7 @@ public abstract class AbstractWriter {
         this.ps = ps;
     }
 
-    public void print(QueryResponse queryResponse) {
-        print(queryResponse, writerConfiguration, ps);
-    }
-
-    public void print(QueryResponse queryResponse, WriterConfiguration writerConfiguration) {
-        print(queryResponse, writerConfiguration, ps);
-    }
-
-    /**
-     * Prints the queryResponse to stdout.
-     * @param queryResponse queryResponse object to be printed.
-     * @param writerConfiguration basic configuration containing the different parameters accepted to print.
-     *
-     */
-    abstract public void print(QueryResponse queryResponse, WriterConfiguration writerConfiguration, PrintStream ps);
+    abstract public void print(QueryResponse queryResponse);
 
     /**
      * Print errors or warnings and return true if any error was found.

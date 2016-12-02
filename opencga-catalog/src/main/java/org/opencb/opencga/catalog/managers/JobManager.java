@@ -50,7 +50,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -216,37 +215,6 @@ public class JobManager extends AbstractManager implements IJobManager {
         String userId = userManager.getId(sessionId);
         authorizationManager.checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.VIEW);
         return jobDBAdaptor.incJobVisits(jobId);
-    }
-
-    @Deprecated
-    @Override
-    public QueryResult<Job> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(objectMap, "objectMap");
-        try {
-
-            return create(
-                    objectMap.getLong("studyId"),
-                    objectMap.getString("name"),
-                    objectMap.getString("toolName"),
-                    objectMap.getString("description"),
-                    objectMap.getString("execution"),
-                    Collections.emptyMap(),
-                    objectMap.getString("commandLine"),
-                    objectMap.containsKey("tmpOutDirUri") ? new URI(null, objectMap.getString("tmpOutDirUri"), null) : null,
-                    objectMap.getLong("outDirId"),
-                    objectMap.getAsLongList("inputFiles"),
-                    objectMap.getAsLongList("outputFiles"),
-                    objectMap.getMap("attributes"),
-                    objectMap.getMap("resourceManagerAttributes"),
-                    new Job.JobStatus(options.getString("status")),
-                    objectMap.getLong("startTime"),
-                    objectMap.getLong("endTime"),
-                    options,
-                    sessionId
-            );
-        } catch (URISyntaxException e) {
-            throw new CatalogException(e);
-        }
     }
 
     @Override

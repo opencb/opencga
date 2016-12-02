@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.avro.generic.GenericRecord;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -34,25 +35,24 @@ import java.io.IOException;
 import java.io.PrintStream;
 
 /**
- * Created by pfurio on 28/07/16.
+ * Created by imedina on 01/12/16.
  */
-public class JsonWriter extends AbstractWriter {
+public class YamlWriter extends AbstractWriter {
 
     private ObjectMapper objectMapper;
 
-    public JsonWriter() {
-        super();
-        initObjectMapper();
+    public YamlWriter() {
+        this(new WriterConfiguration());
     }
 
-    public JsonWriter(WriterConfiguration writerConfiguration) {
+    public YamlWriter(WriterConfiguration writerConfiguration) {
         super(writerConfiguration);
         initObjectMapper();
     }
 
     private void initObjectMapper() {
         // Same options as in OpenCGAWSServer
-        objectMapper = new ObjectMapper();
+        objectMapper = new ObjectMapper(new YAMLFactory());
         objectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
         objectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
         objectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
@@ -67,21 +67,17 @@ public class JsonWriter extends AbstractWriter {
             return;
         }
 
-        ObjectWriter objectWriter;
-        if (writerConfiguration.isPretty()) {
-            objectWriter = objectMapper.writerWithDefaultPrettyPrinter();
-        } else {
-            objectWriter = objectMapper.writer();
-        }
+        ObjectWriter objectWriter = objectMapper.writer();
         Object toPrint = queryResponse;
         if (!writerConfiguration.isMetadata()) {
             toPrint = queryResponse.getResponse();
         }
+
         try {
             ps.println(objectWriter.writeValueAsString(toPrint));
         } catch (IOException e) {
             System.err.println(ANSI_RED + "ERROR: Could not parse the queryResponse to print as "
-                            + (writerConfiguration.isPretty() ? "a beautiful" : "") + " JSON");
+                    + (writerConfiguration.isPretty() ? "a beautiful" : "") + " JSON");
             System.err.println(e.getMessage() + ANSI_RESET);
         }
     }

@@ -19,9 +19,9 @@ package org.opencb.opencga.storage.core.local.variant;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.ga4gh.AvroGa4GhVariantFactory;
-import org.opencb.biodata.tools.ga4gh.ProtoGa4GhVariantFactory;
-import org.opencb.biodata.tools.variant.converter.ga4gh.Ga4ghVariantConverter;
+import org.opencb.biodata.tools.variant.converters.ga4gh.Ga4ghVariantConverter;
+import org.opencb.biodata.tools.variant.converters.ga4gh.factories.AvroGa4GhVariantFactory;
+import org.opencb.biodata.tools.variant.converters.ga4gh.factories.ProtoGa4GhVariantFactory;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -112,12 +112,12 @@ public class VariantStorageManager extends StorageManager {
         throw new UnsupportedOperationException();
     }
 
-    public void annotate(String study, Query query, String outDir, String catalogOutDir, ObjectMap config, String sessionId)
+    public List<File> annotate(String study, Query query, String outDir, String catalogOutDir, ObjectMap config, String sessionId)
             throws CatalogException, StorageManagerException, IOException, URISyntaxException {
         VariantAnnotationStorageOperation annotOperation = new VariantAnnotationStorageOperation(catalogManager, storageConfiguration);
 
-        long studyId = catalogManager.getStudyId(study, sessionId);
-        annotOperation.annotateVariants(studyId, query, outDir, catalogOutDir, sessionId, config);
+        StudyInfo studyInfo = getStudyInfo(study, Collections.emptyList(), sessionId);
+        return annotOperation.annotateVariants(studyInfo, query, outDir, catalogOutDir, sessionId, config);
     }
 
     public void deleteAnnotation(String annotationId, String studyId, String sessionId) {

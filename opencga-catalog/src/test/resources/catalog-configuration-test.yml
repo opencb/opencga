@@ -58,3 +58,9 @@ database:
   password: ""
   options:
     authenticationDatabase: ""
+
+organism:
+  taxonomyCode: 9606
+  scientificName: "Homo sapiens"
+  commonName: "human"
+  assembly: "GRCh38"

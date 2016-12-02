@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.local.variant.operations;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -15,11 +16,13 @@ import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.local.models.StudyInfo;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -27,6 +30,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -41,7 +45,8 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
                 LoggerFactory.getLogger(VariantAnnotationStorageOperation.class));
     }
 
-    public void annotateVariants(long studyId, Query query, String outdirStr, String catalogOutDir, String sessionId, ObjectMap options)
+    public List<File> annotateVariants(StudyInfo studyInfo, Query query, String outdirStr, String catalogOutDir, String sessionId,
+                                       ObjectMap options)
             throws CatalogException, StorageManagerException, URISyntaxException, IOException {
         if (options == null) {
             options = new ObjectMap();
@@ -52,13 +57,17 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
         final Path outdir = Paths.get(outdirUri);
         outdirMustBeEmpty(outdir);
 
+        List<File> newFiles;
         Thread hook = buildHook(outdir);
         writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
         Runtime.getRuntime().addShutdownHook(hook);
         // Up to this point, catalog has not been modified
         try {
 
-            Study study = catalogManager.getStudy(studyId, sessionId).first();
+            Study study = studyInfo.getStudy();
+            long studyId = studyInfo.getStudyId();
+            DataStore dataStore = studyInfo.getDataStores().get(File.Bioformat.VARIANT);
+
             List<Region> regions = Region.parseRegions(query.getString(VariantQueryParams.REGION.key()));
             String outputFileName = buildOutputFileName(study.getAlias(), regions);
 
@@ -75,7 +84,29 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
                     .append(DefaultVariantAnnotationManager.OUT_DIR, outdirUri.getPath());
             options.putIfAbsent(DefaultVariantAnnotationManager.FILE_NAME, outputFileName);
 
-            DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
+            String loadFileStr = options.getString(VariantAnnotationManager.LOAD_FILE);
+            if (StringUtils.isNotEmpty(loadFileStr)) {
+                long fileId = catalogManager.getFileId(loadFileStr, sessionId);
+                if (fileId < 0) {
+                    // No result. Check if external file
+                    if (!Paths.get(loadFileStr).toFile().exists()) {
+                        throw new CatalogException("File '" + loadFileStr + "' does not exist!");
+                    }
+                } else {
+                    File loadFile = catalogManager.getFile(fileId, sessionId).first();
+                    annotationOptions.put(VariantAnnotationManager.LOAD_FILE, loadFile.getUri().toString());
+                }
+            }
+            if (studyInfo.getOrganism() == null) {
+                annotationOptions.putIfAbsent(VariantAnnotationManager.SPECIES, "hsapiens");
+                annotationOptions.putIfAbsent(VariantAnnotationManager.ASSEMBLY, "GRc37");
+            } else {
+                String scientificName = studyInfo.getOrganism().getScientificName();
+                scientificName = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(scientificName);
+                annotationOptions.putIfAbsent(VariantAnnotationManager.SPECIES, scientificName);
+                annotationOptions.putIfAbsent(VariantAnnotationManager.ASSEMBLY, studyInfo.getOrganism().getAssembly());
+            }
+
             // TODO: Needed?
             StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyId, dataStore);
 
@@ -83,7 +114,9 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
             variantStorageManager.annotate(dataStore.getDbName(), annotationQuery, annotationOptions);
 
             if (catalogOutDirId != null) {
-                copyResults(Paths.get(outdirUri), catalogOutDirId, sessionId);
+                newFiles = copyResults(Paths.get(outdirUri), catalogOutDirId, sessionId);
+            } else {
+                newFiles = Collections.emptyList();
             }
 
             writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.DONE, "Job completed"));
@@ -96,6 +129,8 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
             // Remove hook
             Runtime.getRuntime().removeShutdownHook(hook);
         }
+
+        return newFiles;
     }
 
     private String buildOutputFileName(String studyName, List<Region> regions) {

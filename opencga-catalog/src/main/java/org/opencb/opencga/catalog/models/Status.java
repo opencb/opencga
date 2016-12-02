@@ -18,6 +18,8 @@ package org.opencb.opencga.catalog.models;
 
 import org.opencb.opencga.core.common.TimeUtils;
 
+import java.util.Objects;
+
 /**
  * Created by pfurio on 11/03/16.
  */
@@ -107,5 +109,24 @@ public class Status {
         sb.append(", message='").append(message).append('\'');
         sb.append('}');
         return sb.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Status)) {
+            return false;
+        }
+        Status status = (Status) o;
+        return Objects.equals(name, status.name)
+                && Objects.equals(date, status.date)
+                && Objects.equals(message, status.message);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, date, message);
     }
 }

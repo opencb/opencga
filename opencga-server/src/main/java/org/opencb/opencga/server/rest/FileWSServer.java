@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.FileIndex;
 import org.opencb.opencga.catalog.models.FileTree;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.common.IOUtils;
@@ -241,7 +242,8 @@ public class FileWSServer extends OpenCGAWSServer {
 //                                @ApiParam(value = "userId", required = true) @DefaultValue("") @FormDataParam("userId") String userId,
 //                                @ApiParam(defaultValue = "projectId", required = true) @DefaultValue("") @FormDataParam("projectId") String projectId,
                                 @ApiParam(value = "studyId", required = true) @FormDataParam("studyId") String studyIdStr,
-                                @ApiParam(value = "Path within catalog where the file will be located (default: root folder)", required = false) @DefaultValue(".") @FormDataParam("relativeFilePath") String relativeFilePath,
+                                @ApiParam(value = "Path within catalog where the file will be located (default: root folder)",
+                                        required = true) @DefaultValue(".") @FormDataParam("relativeFilePath") String relativeFilePath,
                                 @ApiParam(value = "description", required = false) @DefaultValue("") @FormDataParam("description") String description,
                                 @ApiParam(value = "Create the parent directories if they do not exist", required = false) @DefaultValue("true") @FormDataParam("parents") boolean parents) {
 
@@ -259,6 +261,9 @@ public class FileWSServer extends OpenCGAWSServer {
         final long studyId;
         try {
             studyId = catalogManager.getStudyId(studyIdStr, sessionId);
+            String userId = catalogManager.getUserManager().getId(sessionId);
+            catalogManager.getAuthorizationManager().checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.UPLOAD_FILES);
+            // TODO: Improve upload method. Check upload permission not only at study level.
         } catch (Exception e) {
             return createErrorResponse(e);
         }

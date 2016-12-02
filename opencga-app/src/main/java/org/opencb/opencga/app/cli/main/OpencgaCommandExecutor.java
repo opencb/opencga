@@ -20,10 +20,7 @@ import com.beust.jcommander.JCommander;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.app.cli.main.io.AbstractWriter;
-import org.opencb.opencga.app.cli.main.io.JsonWriter;
-import org.opencb.opencga.app.cli.main.io.TextWriter;
-import org.opencb.opencga.app.cli.main.io.WriterConfiguration;
+import org.opencb.opencga.app.cli.main.io.*;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
@@ -51,22 +48,26 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         init(options, skipDuration);
     }
 
-//    @Deprecated
-//    public OpencgaCommandExecutor(String logLevel, boolean verbose, String conf, boolean skipDuration) {
-//        super(logLevel, verbose, conf);
-//        init(skipDuration);
-//    }
-
     private void init(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) {
         try {
+
             WriterConfiguration writerConfiguration = new WriterConfiguration();
-            if (options.metadata) {
-                writerConfiguration.setMetadata(true);
-            }
-            if (options.outputFormat.equalsIgnoreCase("json")) {
-                this.writer = new JsonWriter(writerConfiguration);
-            } else {
-                this.writer = new TextWriter(writerConfiguration);
+            writerConfiguration.setMetadata(options.metadata);
+            writerConfiguration.setHeader(!options.noHeader);
+
+            switch (options.outputFormat.toLowerCase()) {
+                case "json_pretty":
+                    writerConfiguration.setPretty(true);
+                case "json":
+                    this.writer = new JsonWriter(writerConfiguration);
+                    break;
+                case "yaml":
+                    this.writer = new YamlWriter(writerConfiguration);
+                    break;
+                case "text":
+                default:
+                    this.writer = new TextWriter(writerConfiguration);
+                    break;
             }
 
 //            loadClientConfiguration();

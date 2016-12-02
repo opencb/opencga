@@ -27,7 +27,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
-import org.opencb.biodata.tools.variant.converter.VcfSliceToVariantListConverter;
+import org.opencb.biodata.tools.variant.converters.proto.VcfSliceToVariantListConverter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;

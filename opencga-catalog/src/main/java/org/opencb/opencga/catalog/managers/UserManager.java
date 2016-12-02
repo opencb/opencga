@@ -163,18 +163,6 @@ public class UserManager extends AbstractManager implements IUserManager {
         return null;
     }
 
-    @Deprecated
-    @Override
-    public QueryResult<User> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(objectMap, "objectMap");
-        return create(
-                objectMap.getString("id"),
-                objectMap.getString("name"),
-                objectMap.getString("email"),
-                objectMap.getString("password"),
-                objectMap.getString("organization"), objectMap.getLong("diskQuota"), options, sessionId);
-    }
-
     @Override
     public QueryResult<User> create(String id, String name, String email, String password, String organization, Long diskQuota,
                                     QueryOptions options, String adminPassword) throws CatalogException {

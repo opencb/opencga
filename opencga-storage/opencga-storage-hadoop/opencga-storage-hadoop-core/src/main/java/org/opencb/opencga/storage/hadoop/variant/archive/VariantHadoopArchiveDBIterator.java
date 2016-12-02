@@ -25,7 +25,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
-import org.opencb.biodata.tools.variant.converter.VcfRecordToVariantConverter;
+import org.opencb.biodata.tools.variant.converters.proto.VcfRecordProtoToVariantConverter;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.slf4j.Logger;
@@ -43,7 +43,7 @@ import java.util.NoSuchElementException;
 public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements AutoCloseable {
 
     private final Logger logger = LoggerFactory.getLogger(VariantHadoopArchiveDBIterator.class);
-    private final VcfRecordToVariantConverter converter;
+    private final VcfRecordProtoToVariantConverter converter;
     private long limit;
     private long count = 0;
     private Iterator<VcfSliceProtos.VcfRecord> vcfRecordIterator = Collections.emptyIterator();
@@ -62,7 +62,7 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
         this.columnFamily = archiveHelper.getColumnFamily();
         this.fileIdBytes = archiveHelper.getColumn();
         VariantSource variantSource = archiveHelper.getMeta().getVariantSource();
-        converter = new VcfRecordToVariantConverter(StudyEntry.sortSamplesPositionMap(variantSource.getSamplesPosition()),
+        converter = new VcfRecordProtoToVariantConverter(StudyEntry.sortSamplesPositionMap(variantSource.getSamplesPosition()),
                 variantSource.getStudyId(), variantSource.getFileId());
         setLimit(options.getLong("limit"));
     }
@@ -73,7 +73,7 @@ public class VariantHadoopArchiveDBIterator extends VariantDBIterator implements
         this.columnFamily = columnFamily;
         this.fileIdBytes = fileIdBytes;
         VariantSource variantSource = meta.getVariantSource();
-        converter = new VcfRecordToVariantConverter(StudyEntry.sortSamplesPositionMap(variantSource.getSamplesPosition()),
+        converter = new VcfRecordProtoToVariantConverter(StudyEntry.sortSamplesPositionMap(variantSource.getSamplesPosition()),
                 variantSource.getStudyId(), variantSource.getFileId());
     }
 

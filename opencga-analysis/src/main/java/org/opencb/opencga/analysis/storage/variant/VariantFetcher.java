@@ -19,7 +19,7 @@ package org.opencb.opencga.analysis.storage.variant;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.variant.converter.ga4gh.GAVariantFactory;
+import org.opencb.biodata.tools.variant.converters.ga4gh.Ga4ghVariantConverter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -340,8 +340,8 @@ public class VariantFetcher {
     }
 
     protected QueryResult<org.ga4gh.models.Variant> convertToGA4GH(QueryResult<Variant> result) {
-        GAVariantFactory factory = new GAVariantFactory();
-        List<org.ga4gh.models.Variant> gaVariants = factory.create(result.getResult());
+        Ga4ghVariantConverter<org.ga4gh.models.Variant> converter = Ga4ghVariantConverter.newAvroConverter(false, null);
+        List<org.ga4gh.models.Variant> gaVariants = converter.apply(result.getResult());
         QueryResult<org.ga4gh.models.Variant> gaResult = new QueryResult<>(result.getId(), result.getDbTime(), result.getNumResults(), result.getNumTotalResults(), result.getWarningMsg(), result.getErrorMsg(), gaVariants);
         return gaResult;
     }

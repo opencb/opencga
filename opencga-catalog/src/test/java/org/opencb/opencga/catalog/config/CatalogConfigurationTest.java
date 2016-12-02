@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.config;
 
 import org.junit.Test;
+import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 
 import java.io.FileOutputStream;
@@ -41,6 +42,8 @@ public class CatalogConfigurationTest {
 
         catalogConfiguration.setMonitor(new Monitor());
         catalogConfiguration.setExecution(new Execution());
+
+        catalogConfiguration.setOrganism(new Project.Organism("Homo sapiens", "human", 9606, "GRCh38"));
 
         List<AuthenticationOrigin> authenticationOriginList = new ArrayList<>();
         authenticationOriginList.add(new AuthenticationOrigin("opencga", AuthenticationOrigin.AuthenticationType.OPENCGA.toString(),

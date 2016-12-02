@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.managers;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -537,12 +536,6 @@ public class FileManager extends AbstractManager implements IFileManager {
         return result;
     }
 
-    @Deprecated
-    @Override
-    public QueryResult<File> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
-        throw new NotImplementedException("Deprecated create method.");
-    }
-
     @Override
     public QueryResult<File> createFolder(long studyId, String path, File.FileStatus status, boolean parents, String description,
                                           QueryOptions options, String sessionId) throws CatalogException {
@@ -823,10 +816,19 @@ public class FileManager extends AbstractManager implements IFileManager {
         String userId = catalogManager.getUserManager().getId(sessionId);
 
         // Check 1. No comma-separated values are valid, only one single File or Directory can be deleted.
-        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-        Long fileId = getId(fileIdStr, studyId, sessionId);
-        fileDBAdaptor.checkId(fileId);
-//        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
+        long fileId;
+        long studyId;
+        if (StringUtils.isEmpty(studyStr)) {
+            fileId = getId(userId, fileIdStr);
+            fileDBAdaptor.checkId(fileId);
+            studyId = getStudyId(fileId);
+        } else {
+            studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+            studyDBAdaptor.checkId(studyId);
+            fileId = getId(fileIdStr, studyId, sessionId);
+            fileDBAdaptor.checkId(fileId);
+        }
+
         query.put(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
         // Check if we can obtain the file from the dbAdaptor properly.

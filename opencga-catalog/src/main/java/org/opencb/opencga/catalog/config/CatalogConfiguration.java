@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,8 @@ public class CatalogConfiguration {
     private String dataDir;
     private String tempJobsDir;
     private String toolsDir;
+
+    private Project.Organism organism;
 
     private Admin admin;
     private List<AuthenticationOrigin> authenticationOrigins;
@@ -104,9 +107,11 @@ public class CatalogConfiguration {
         sb.append(", logFile='").append(logFile).append('\'');
         sb.append(", openRegister=").append(openRegister);
         sb.append(", userDefaultDiskQuota=").append(userDefaultDiskQuota);
+        sb.append(", databasePrefix='").append(databasePrefix).append('\'');
         sb.append(", dataDir='").append(dataDir).append('\'');
         sb.append(", tempJobsDir='").append(tempJobsDir).append('\'');
         sb.append(", toolsDir='").append(toolsDir).append('\'');
+        sb.append(", organism=").append(organism);
         sb.append(", admin=").append(admin);
         sb.append(", authenticationOrigins=").append(authenticationOrigins);
         sb.append(", monitor=").append(monitor);
@@ -260,6 +265,15 @@ public class CatalogConfiguration {
 
     public CatalogConfiguration setAcl(List<StudyAclEntry> acl) {
         this.acl = acl;
+        return this;
+    }
+
+    public Project.Organism getOrganism() {
+        return organism;
+    }
+
+    public CatalogConfiguration setOrganism(Project.Organism organism) {
+        this.organism = organism;
         return this;
     }
 }

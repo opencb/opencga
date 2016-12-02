@@ -387,7 +387,7 @@
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
-                <version>1.9.0</version>
+                <version>2.2.27</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>
@@ -479,18 +479,26 @@
             <properties>
                 <opencga.war.name>opencga-${opencga.version}</opencga.war.name>
 
+                <!-- General -->
+                <OPENCGA.INSTALLATION.DIR>/opt/opencga</OPENCGA.INSTALLATION.DIR>
+
+                <!-- Catalog -->
                 <OPENCGA.CATALOG.DB.HOSTS>localhost:27017</OPENCGA.CATALOG.DB.HOSTS>
                 <!-- Deprecated: use PREFIX instead -->
                 <OPENCGA.CATALOG.DB.DATABASE>opencga_catalog</OPENCGA.CATALOG.DB.DATABASE>
                 <OPENCGA.CATALOG.DB.USER></OPENCGA.CATALOG.DB.USER>
                 <OPENCGA.CATALOG.DB.PASSWORD></OPENCGA.CATALOG.DB.PASSWORD>
                 <OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE></OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE>
-
-                <OPENCGA.INSTALLATION.DIR>/opt/opencga</OPENCGA.INSTALLATION.DIR>
                 <OPENCGA.CATALOG.DB.PREFIX>opencga</OPENCGA.CATALOG.DB.PREFIX>
                 <OPENCGA.CATALOG.ROOTDIR>file:///opt/opencga/sessions/</OPENCGA.CATALOG.ROOTDIR>
                 <OPENCGA.CATALOG.JOBS.ROOTDIR>${OPENCGA.CATALOG.ROOTDIR}/jobs/</OPENCGA.CATALOG.JOBS.ROOTDIR>
 
+                <OPENCGA.CATALOG.ORGANISM.SCIENTIFIC_NAME>Homo sapiens</OPENCGA.CATALOG.ORGANISM.SCIENTIFIC_NAME>
+                <OPENCGA.CATALOG.ORGANISM.COMMON_NAME>human</OPENCGA.CATALOG.ORGANISM.COMMON_NAME>
+                <OPENCGA.CATALOG.ORGANISM.TAXONOMY_CODE>9606</OPENCGA.CATALOG.ORGANISM.TAXONOMY_CODE>
+                <OPENCGA.CATALOG.ORGANISM.ASSEMBLY>GRCh38</OPENCGA.CATALOG.ORGANISM.ASSEMBLY>
+
+                <!-- Storage -->
                 <OPENCGA.STORAGE.STUDY.METADATA.MANAGER></OPENCGA.STORAGE.STUDY.METADATA.MANAGER>
                 <OPENCGA.STORAGE.VARIANT.DB.HOSTS>localhost:27017</OPENCGA.STORAGE.VARIANT.DB.HOSTS>
                 <OPENCGA.STORAGE.VARIANT.DB.USER></OPENCGA.STORAGE.VARIANT.DB.USER>

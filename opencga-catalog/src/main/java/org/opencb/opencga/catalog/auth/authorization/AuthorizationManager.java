@@ -22,7 +22,10 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.*;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.List;
 
 /**
  * Created by pfurio on 12/05/16.
@@ -54,6 +57,7 @@ public interface AuthorizationManager {
                 StudyAclEntry.StudyPermissions.CREATE_FILES, StudyAclEntry.StudyPermissions.VIEW_FILE_HEADERS,
                 StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENTS, StudyAclEntry.StudyPermissions.VIEW_FILES,
                 StudyAclEntry.StudyPermissions.UPDATE_FILES, StudyAclEntry.StudyPermissions.DOWNLOAD_FILES,
+                StudyAclEntry.StudyPermissions.UPLOAD_FILES,
                 StudyAclEntry.StudyPermissions.CREATE_JOBS, StudyAclEntry.StudyPermissions.VIEW_JOBS,
                 StudyAclEntry.StudyPermissions.UPDATE_JOBS, StudyAclEntry.StudyPermissions.CREATE_SAMPLES,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLES, StudyAclEntry.StudyPermissions.UPDATE_SAMPLES,

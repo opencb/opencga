@@ -61,23 +61,24 @@ public class GeneralCliOptions {
         @Parameter(names = {"-v", "--verbose"}, description = "Increase the verbosity of logs")
         public boolean verbose = false;
 
-        @Parameter(names = {"--output-format"}, description = "Output format. one of {JSON, TEXT, EXTENDED_TEXT}", arity = 1)
+        @Parameter(names = {"--of", "--output-format"}, description = "Output format. one of {JSON, JSON_PRETTY, TEXT, YAML}", arity = 1)
         public String outputFormat = "TEXT";
 
-        @Parameter(names = {"--sid", "--session-id"}, description = "Token session id", arity = 1)
+        @Parameter(names = {"-S", "--sid", "--session-id"}, description = "Token session id", arity = 1)
         public String sessionId;
 
         @Parameter(names = {"-c", "--cache"}, description = "use cache ", arity = 1)
         public boolean cache = false;
 
-//        @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
-//        public Map<String, String> dynamic = new HashMap<>();
+        @Parameter(names = {"-M", "--metadata"}, description = "Include metadata information", required = false, arity = 0)
+        public boolean metadata = false;
+
+        @Parameter(names = {"--no-header"}, description = "Not include headers in the output (not applicable to json output-format)",
+                required = false, arity = 0)
+        public boolean noHeader = false;
 
         @DynamicParameter(names = "-D", description = "Storage engine specific parameters go here comma separated, ie. -Dmongodb" +
                 ".compression=snappy", hidden = false)
         public Map<String, String> params = new HashMap<>(); //Dynamic parameters must be initialized
-
-        @Parameter(names = {"--metadata"}, description = "Include metadata information", required = false, arity = 0)
-        public boolean metadata = false;
     }
 }
