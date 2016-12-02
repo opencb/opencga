@@ -24,7 +24,7 @@ import java.io.PrintStream;
 /**
  * Created by pfurio on 28/07/16.
  */
-public abstract class AbstractWriter {
+public abstract class AbstractOutputWriter {
 
     protected WriterConfiguration writerConfiguration;
     protected PrintStream ps;
@@ -33,15 +33,15 @@ public abstract class AbstractWriter {
     protected static final String ANSI_RED = "\033[31m";
     protected static final String ANSI_YELLOW = "\033[33m";
 
-    public AbstractWriter() {
+    public AbstractOutputWriter() {
         this(new WriterConfiguration(), System.out);
     }
 
-    public AbstractWriter(WriterConfiguration writerConfiguration) {
+    public AbstractOutputWriter(WriterConfiguration writerConfiguration) {
         this(writerConfiguration, System.out);
     }
 
-    public AbstractWriter(WriterConfiguration writerConfiguration, PrintStream ps) {
+    public AbstractOutputWriter(WriterConfiguration writerConfiguration, PrintStream ps) {
         this.writerConfiguration = writerConfiguration;
         this.ps = ps;
     }

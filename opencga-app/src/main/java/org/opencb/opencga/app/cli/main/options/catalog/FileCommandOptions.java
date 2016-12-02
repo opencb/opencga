@@ -40,7 +40,7 @@ public class FileCommandOptions {
     public SearchCommandOptions searchCommandOptions;
     public ListCommandOptions listCommandOptions;
     public IndexCommandOptions indexCommandOptions;
-    public TreeViewCommandOptions treeViewCommandOptions;
+    public TreeCommandOptions treeCommandOptions;
     public AlignmentCommandOptions alignmentCommandOptions;
     public ContentCommandOptions contentCommandOptions;
     public FetchCommandOptions fetchCommandOptions;
@@ -78,7 +78,7 @@ public class FileCommandOptions {
         this.searchCommandOptions = new SearchCommandOptions();
         this.listCommandOptions = new ListCommandOptions();
         this.indexCommandOptions = new IndexCommandOptions();
-        this.treeViewCommandOptions = new TreeViewCommandOptions();
+        this.treeCommandOptions = new TreeCommandOptions();
         this.alignmentCommandOptions = new AlignmentCommandOptions();
         this.contentCommandOptions = new ContentCommandOptions();
         this.fetchCommandOptions = new FetchCommandOptions();
@@ -478,8 +478,8 @@ public class FileCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"tree-view"}, commandDescription = "Obtain a tree view of the files and folders within a folder")
-    public class TreeViewCommandOptions {
+    @Parameters(commandNames = {"tree"}, commandDescription = "Obtain a tree view of the files and folders within a folder")
+    public class TreeCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;

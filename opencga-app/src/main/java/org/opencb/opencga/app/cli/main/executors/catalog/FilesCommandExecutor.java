@@ -87,7 +87,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
             case "list":
                 queryResponse = list();
                 break;
-            case "tree-view":
+            case "tree":
                 queryResponse = treeView();
                 break;
             case "index":
@@ -299,13 +299,13 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Obtain a tree view of the files and folders within a folder");
 
         ObjectMap o = new ObjectMap();
-        o.putIfNotNull("maxDepth", filesCommandOptions.treeViewCommandOptions.maxDepth);
-        o.putIfNotNull("include", filesCommandOptions.treeViewCommandOptions.include);
-        o.putIfNotNull("exclude", filesCommandOptions.treeViewCommandOptions.exclude);
-        o.putIfNotNull("limit", filesCommandOptions.treeViewCommandOptions.limit);
-        o.putIfNotNull(FileDBAdaptor.QueryParams.STUDY_ID.key(), filesCommandOptions.treeViewCommandOptions.studyStr);
+        o.putIfNotNull("maxDepth", filesCommandOptions.treeCommandOptions.maxDepth);
+        o.putIfNotNull("include", filesCommandOptions.treeCommandOptions.include);
+        o.putIfNotNull("exclude", filesCommandOptions.treeCommandOptions.exclude);
+        o.putIfNotNull("limit", filesCommandOptions.treeCommandOptions.limit);
+        o.putIfNotNull(FileDBAdaptor.QueryParams.STUDY_ID.key(), filesCommandOptions.treeCommandOptions.studyStr);
 
-        return openCGAClient.getFileClient().treeView(filesCommandOptions.treeViewCommandOptions.folderId, o);
+        return openCGAClient.getFileClient().treeView(filesCommandOptions.treeCommandOptions.folderId, o);
     }
 
     private QueryResponse alignment() throws CatalogException, IOException {
