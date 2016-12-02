@@ -17,16 +17,8 @@
 package org.opencb.opencga.storage.core.alignment.local;
 
 import org.junit.Test;
-import org.opencb.biodata.models.alignment.RegionCoverage;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 
-import java.net.URI;
-<<<<<<< HEAD
 import java.nio.file.Path;
-=======
->>>>>>> f097ce28f6adde625841eaf99db01e3e9171f10b
 import java.nio.file.Paths;
 
 /**
