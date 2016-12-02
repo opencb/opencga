@@ -78,10 +78,6 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response getInfo(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
                             @ApiParam(value = "If matches with the user's last activity, return an empty QueryResult") @QueryParam("lastModified") String lastModified) {
         try {
-            System.out.println("userId = " + userId);
-            System.out.println("catalogManager = " + catalogManager);
-            System.out.println("sessionId = " + sessionId);
-            System.out.println("queryOptions = " + queryOptions);
             QueryResult result = catalogManager.getUser(userId, lastModified, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
