@@ -780,7 +780,7 @@ public abstract class VariantStorageETL implements StorageETL {
             // TODO add filters
             try {
                 logger.debug("about to calculate stats");
-                VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
+                VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager(dbAdaptor);
 //                VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName);
                 URI statsOutputUri = output.resolve(buildFilename(studyConfiguration.getStudyName(), fileIds.get(0))
                         + "." + TimeUtils.getTime());

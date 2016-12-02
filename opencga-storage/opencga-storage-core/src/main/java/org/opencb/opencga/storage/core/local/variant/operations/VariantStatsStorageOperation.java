@@ -111,29 +111,34 @@ public class VariantStatsStorageOperation extends StorageOperation {
         // Up to this point, catalog has not been modified
         try {
             // Modify cohort status to "CALCULATING"
-            updateCohorts(cohortIds, sessionId, Cohort.CohortStatus.CALCULATING, "");
+            updateCohorts(cohortIds, sessionId, Cohort.CohortStatus.CALCULATING, "Start calculating stats");
 
+            calculateStatsOptions.put(VariantStatisticsManager.OUTPUT, outdirUri.resolve(outputFileName));
             VariantStorageManager variantStorageManager
                     = storageManagerFactory.getVariantStorageManager(dataStore.getStorageEngine());
-            VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
+            List<String> cohortsName = cohortsMap.values().stream().map(Cohort::getName).collect(Collectors.toList());
+            variantStorageManager.calculateStats(studyConfiguration.getStudyName(), cohortsName, dataStore.getDbName(),
+                    calculateStatsOptions);
 
-            VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(dataStore.getDbName());
-            Map<String, Integer> cohortNameIdMap = new HashMap<>(cohortIds.size());
-            Map<String, Set<String>> cohortSamplesMap = new HashMap<>(cohortIds.size());
-            for (Map.Entry<Long, Cohort> entry : cohortsMap.entrySet()) {
-                cohortNameIdMap.put(entry.getValue().getName(), entry.getKey().intValue());
-                cohortSamplesMap.put(entry.getValue().getName(), entry.getValue().getSamples()
-                        .stream()
-                        .map(sampleId -> {
-                            return studyConfiguration.getSampleIds().inverse().get(sampleId.intValue());
-                        })
-                        .collect(Collectors.toSet()));
-            }
-            URI stats = variantStatisticsManager.createStats(dbAdaptor, outdirUri.resolve(outputFileName), cohortSamplesMap,
-                    cohortNameIdMap, studyConfiguration, calculateStatsOptions);
-
-            writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job still running. Statistics created."));
-            variantStatisticsManager.loadStats(dbAdaptor, stats, studyConfiguration, options);
+//            DefaultVariantStatisticsManager variantStatisticsManager = new DefaultVariantStatisticsManager(dbAdaptor);
+//
+//            VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(dataStore.getDbName());
+//            Map<String, Integer> cohortNameIdMap = new HashMap<>(cohortIds.size());
+//            Map<String, Set<String>> cohortSamplesMap = new HashMap<>(cohortIds.size());
+//            for (Map.Entry<Long, Cohort> entry : cohortsMap.entrySet()) {
+//                cohortNameIdMap.put(entry.getValue().getName(), entry.getKey().intValue());
+//                cohortSamplesMap.put(entry.getValue().getName(), entry.getValue().getSamples()
+//                        .stream()
+//                        .map(sampleId -> {
+//                            return studyConfiguration.getSampleIds().inverse().get(sampleId.intValue());
+//                        })
+//                        .collect(Collectors.toSet()));
+//            }
+//            URI stats = variantStatisticsManager.createStats(dbAdaptor, outdirUri.resolve(outputFileName), cohortSamplesMap,
+//                    cohortNameIdMap, studyConfiguration, calculateStatsOptions);
+//
+//            writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job still running. Statistics created."));
+//            variantStatisticsManager.loadStats(dbAdaptor, stats, studyConfiguration, options);
 
             if (catalogOutDirId != null) {
                 copyResults(Paths.get(outdirUri), catalogOutDirId, sessionId);
@@ -147,7 +152,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
             logger.error("Error executing stats. Set cohorts status to " + Cohort.CohortStatus.INVALID, e);
             writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.ERROR, "Job with error : " + e.getMessage()));
             // Modify to "INVALID"
-            updateCohorts(cohortIds, sessionId, Cohort.CohortStatus.INVALID, "");
+            updateCohorts(cohortIds, sessionId, Cohort.CohortStatus.INVALID, "Error calculating stats: " + e.getMessage());
             throw new StorageManagerException("Error calculating statistics.", e);
         } finally {
             // Remove hook

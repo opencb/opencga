@@ -534,7 +534,7 @@ public class VariantCommandExecutor extends CommandExecutor {
                 statsVariantsCommandOptions.fileId)
                 : Paths.get(outputUri.getPath()).getFileName().toString();
 //        assertDirectoryExists(directoryUri);
-        VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager();
+        VariantStatisticsManager variantStatisticsManager = new VariantStatisticsManager(dbAdaptor);
 
         boolean doCreate = true;
         boolean doLoad = true;

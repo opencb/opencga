@@ -29,15 +29,18 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.core.common.ProgressLogger;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
+import org.opencb.opencga.storage.core.variant.io.db.VariantStatsDBWriter;
+import org.opencb.opencga.storage.core.variant.io.json.JsonDataReader;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 import org.slf4j.Logger;
@@ -45,6 +48,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -63,19 +67,40 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageManager.Opti
 public class VariantStatisticsManager {
 
     public static final String OUTPUT_FILE_NAME = "output.file.name";
+    public static final String OUTPUT = "output";
+    public static final String STATS_LOAD_PARALLEL = "stats.load.parallel";
+    public static final boolean DEFAULT_STATS_LOAD_PARALLEL = true;
 
-    private String VARIANT_STATS_SUFFIX = ".variants.stats.json.gz";
-    private String SOURCE_STATS_SUFFIX = ".source.stats.json.gz";
+    private static final String VARIANT_STATS_SUFFIX = ".variants.stats.json.gz";
+    private static final String SOURCE_STATS_SUFFIX = ".source.stats.json.gz";
+
     private final JsonFactory jsonFactory;
-    private ObjectMapper jsonObjectMapper;
+    private final ObjectMapper jsonObjectMapper;
+    private final VariantDBAdaptor dbAdaptor;
     protected static Logger logger = LoggerFactory.getLogger(VariantStatisticsManager.class);
 
-    public VariantStatisticsManager() {
+    public VariantStatisticsManager(VariantDBAdaptor dbAdaptor) {
+        this.dbAdaptor = dbAdaptor;
         jsonFactory = new JsonFactory();
         jsonObjectMapper = new ObjectMapper(jsonFactory);
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
         jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
     }
+
+    public void calculateStatistics(String study, List<String> cohorts, QueryOptions options) throws IOException, StorageManagerException {
+
+        URI output;
+        try {
+            output = UriUtils.createUri(options.getString(OUTPUT));
+        } catch (URISyntaxException e) {
+            throw new IllegalArgumentException(e);
+        }
+
+        URI stats = createStats(dbAdaptor, output, study, cohorts, options);
+
+        loadStats(dbAdaptor, stats, study, options);
+    }
+
 
     private OutputStream getOutputStream(Path filePath, QueryOptions options) throws IOException {
         OutputStream outputStream = new FileOutputStream(filePath.toFile());
@@ -222,10 +247,10 @@ public class VariantStatisticsManager {
         }
         // source stats
         Path fileSourcePath = Paths.get(output.getPath() + SOURCE_STATS_SUFFIX);
-        OutputStream outputSourceStream = getOutputStream(fileSourcePath, options);
-        ObjectWriter sourceWriter = jsonObjectMapper.writerFor(VariantSourceStats.class);
-        outputSourceStream.write(sourceWriter.writeValueAsBytes(variantSourceStats));
-        outputSourceStream.close();
+        try (OutputStream outputSourceStream = getOutputStream(fileSourcePath, options)) {
+            ObjectWriter sourceWriter = jsonObjectMapper.writerFor(VariantSourceStats.class);
+            outputSourceStream.write(sourceWriter.writeValueAsBytes(variantSourceStats));
+        }
 
         variantDBAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, options);
 
@@ -351,52 +376,69 @@ public class VariantStatisticsManager {
         variantInputStream = new FileInputStream(variantInput.toFile());
         variantInputStream = new GZIPInputStream(variantInputStream);
 
-        final int[] writes = {0};
-        final int[] variantsNumber = {0};
 
-        /* Initialize Json parse */
-        try (JsonParser parser = jsonFactory.createParser(variantInputStream)) {
-            ProgressLogger progressLogger = new ProgressLogger("Loaded stats:");
-            ParallelTaskRunner<VariantStatsWrapper, Integer> ptr = new ParallelTaskRunner<>(
-                    size -> {
-                        ArrayList<VariantStatsWrapper> statsBatch = new ArrayList<>(size);
-                        try {
-                            while (parser.nextToken() != null && statsBatch.size() < size) {
-                                variantsNumber[0]++;
-                                statsBatch.add(parser.readValueAs(VariantStatsWrapper.class));
-                            }
-                        } catch (IOException e) {
-                            throw new UncheckedIOException(e);
-                        }
-                        return statsBatch;
+        ProgressLogger progressLogger = new ProgressLogger("Loaded stats:");
+        ParallelTaskRunner<VariantStatsWrapper, ?> ptr;
+        DataReader<VariantStatsWrapper> dataReader = newVariantStatsWrapperDataReader(variantInputStream);
+        List<VariantStatsDBWriter> writers = new ArrayList<>();
+        if (options.getBoolean(STATS_LOAD_PARALLEL, DEFAULT_STATS_LOAD_PARALLEL)) {
+            ptr = new ParallelTaskRunner<>(
+                    dataReader,
+                    () -> {
+                        VariantStatsDBWriter dbWriter = newVariantStatisticsDBWriter(dbAdaptor, studyConfiguration, options);
+                        dbWriter.setProgressLogger(progressLogger);
+                        writers.add(dbWriter);
+                        return (batch -> {
+                            dbWriter.write(batch);
+                            return Collections.emptyList();
+                        });
                     },
-                    statsBatch -> {
-                        QueryResult writeResult = variantDBAdaptor.updateStats(statsBatch, studyConfiguration, options);
-                        VariantStatsWrapper last = statsBatch.get(statsBatch.size() - 1);
-                        progressLogger.increment(statsBatch.size(), ", up to position " + last.getChromosome() + ":" + last.getPosition());
-                        return Collections.singletonList(writeResult.getNumResults());
-                    },
-                    writesList -> {
-                        writes[0] += writesList.get(0);
-                        return true;
-                    },
+                    null,
                     ParallelTaskRunner.Config.builder().setAbortOnFail(true)
                             .setBatchSize(options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue()))
                             .setNumTasks(options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue())).build()
 
             );
-            try {
-                ptr.run();
-            } catch (ExecutionException e) {
-                throw new StorageManagerException("Error loading stats", e);
-            }
+        } else {
+            VariantStatsDBWriter dbWriter = newVariantStatisticsDBWriter(dbAdaptor, studyConfiguration, options);
+            dbWriter.setProgressLogger(progressLogger);
+            writers.add(dbWriter);
+            ptr = new ParallelTaskRunner<>(
+                    dataReader,
+                    batch -> batch,
+                    dbWriter,
+                    ParallelTaskRunner.Config.builder().setAbortOnFail(true)
+                            .setBatchSize(options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue()))
+                            .setNumTasks(options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue())).build()
+
+            );
         }
 
-        if (writes[0] < variantsNumber[0]) {
-            logger.warn("provided statistics of {} variants, but only {} were updated", variantsNumber[0], writes[0]);
+        try {
+            ptr.run();
+        } catch (ExecutionException e) {
+            throw new StorageManagerException("Error loading stats", e);
+        }
+
+        Long writes = writers.stream().map(VariantStatsDBWriter::getNumWrites).reduce((a, b) -> a + b).orElse(0L);
+        Long variantStats = writers.stream().map(VariantStatsDBWriter::getVariantStats).reduce((a, b) -> a + b).orElse(0L);
+        if (writes < variantStats) {
+            logger.warn("provided statistics of {} variants, but only {} were updated", variantStats, writes);
             logger.info("note: maybe those variants didn't had the proper study? maybe the new and the old stats were the same?");
         }
 
+    }
+
+    protected DataReader<VariantStatsWrapper> newVariantStatsWrapperDataReader(InputStream inputStream) {
+        JsonDataReader<VariantStatsWrapper> reader = new JsonDataReader<>(VariantStatsWrapper.class, inputStream);
+        reader.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
+        reader.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+        return reader;
+    }
+
+    protected VariantStatsDBWriter newVariantStatisticsDBWriter(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration,
+                                                             QueryOptions options) {
+        return new VariantStatsDBWriter(dbAdaptor, studyConfiguration, options);
     }
 
     public void loadSourceStats(VariantDBAdaptor variantDBAdaptor, URI uri, String study, QueryOptions options)
@@ -409,19 +451,15 @@ public class VariantStatisticsManager {
     public void loadSourceStats(VariantDBAdaptor variantDBAdaptor, URI uri, StudyConfiguration studyConfiguration, QueryOptions options)
             throws IOException {
 
-        /* Open input streams */
+        /* select input path */
         Path sourceInput = Paths.get(uri.getPath());
-        InputStream sourceInputStream;
-        sourceInputStream = new FileInputStream(sourceInput.toFile());
-        sourceInputStream = new GZIPInputStream(sourceInputStream);
 
-        /* Initialize Json parse */
-        JsonParser sourceParser = jsonFactory.createParser(sourceInputStream);
-
+        /* Open input stream and initialize Json parse */
         VariantSourceStats variantSourceStats;
-//        if (sourceParser.nextToken() != null) {
-        variantSourceStats = sourceParser.readValueAs(VariantSourceStats.class);
-//        }
+        try (InputStream sourceInputStream = new GZIPInputStream(new FileInputStream(sourceInput.toFile()));
+             JsonParser sourceParser = jsonFactory.createParser(sourceInputStream)) {
+            variantSourceStats = sourceParser.readValueAs(VariantSourceStats.class);
+        }
 
         // TODO if variantSourceStats doesn't have studyId and fileId, create another with variantSource.getStudyId() and variantSource
         // .getFileId()
@@ -561,14 +599,12 @@ public class VariantStatisticsManager {
 
     void checkAndUpdateCalculatedCohorts(StudyConfiguration studyConfiguration, URI uri, boolean updateStats) throws IOException {
 
-        /** Open input streams **/
+        /** Select input path **/
         Path variantInput = Paths.get(uri.getPath());
-        InputStream variantInputStream;
-        variantInputStream = new FileInputStream(variantInput.toFile());
-        variantInputStream = new GZIPInputStream(variantInputStream);
 
-        /** Initialize Json parse **/
-        try (JsonParser parser = jsonFactory.createParser(variantInputStream)) {
+        /** Open input streams and Initialize Json parse **/
+        try (InputStream variantInputStream = new GZIPInputStream(new FileInputStream(variantInput.toFile()));
+             JsonParser parser = jsonFactory.createParser(variantInputStream)) {
             if (parser.nextToken() != null) {
                 VariantStatsWrapper variantStatsWrapper = parser.readValueAs(VariantStatsWrapper.class);
                 Set<String> cohortNames = variantStatsWrapper.getCohortStats().keySet();

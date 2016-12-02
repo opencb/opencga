@@ -105,7 +105,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             fileIndexed = true;
             Integer indexedFileId = studyConfiguration.getIndexedFiles().iterator().next();
 
-            VariantStatisticsManager vsm = new VariantStatisticsManager();
+            VariantStatisticsManager vsm = new VariantStatisticsManager(dbAdaptor);
 
             QueryOptions options = new QueryOptions(VariantStorageManager.Options.STUDY_ID.key(), STUDY_ID)
                 .append(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 100);
