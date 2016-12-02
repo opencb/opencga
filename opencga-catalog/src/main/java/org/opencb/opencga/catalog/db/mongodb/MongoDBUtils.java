@@ -31,6 +31,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -575,9 +576,30 @@ class MongoDBUtils {
         query.remove(SampleDBAdaptor.QueryParams.ANNOTATION.key());
     }
 
+
+    /**
+     * Parse the query values from the ontology terms to bson format.
+     * At this point, any value that we find in the query (as comma separated or as a list), will be looked for in the id and name
+     * attributes of the ontologyTerm java bean.
+     *
+     * Example: ontologyTerms: X,Y
+     *          This will be transformed to something like ontologyTerms.id == X || ontologyTerms.name == X || ontologyTerms.id == Y ||
+     *          ontologyTerms.name == Y)
+     *
+     * @param mongoKey Key corresponding to the data model to know how it is stored in mongoDB. (If not altered, ontologyTerms).
+     * @param queryKey Key by which the values will be retrieved from the query.
+     * @param query Query object containing all the query keys and values to parse. Only to get the ones regarding ontology terms.
+     * @param bsonList List to which we will add the ontology terms search.
+     */
+    public static void addOntologyQueryFilter(String mongoKey, String queryKey, Query query, List<Bson> bsonList) {
+        List<String> ontologyValues = query.getAsStringList(queryKey);
+        Bson ontologyId = MongoDBQueryUtils.createFilter(mongoKey + ".id", ontologyValues);
+        Bson ontologyName = MongoDBQueryUtils.createFilter(mongoKey + ".name", ontologyValues);
+        bsonList.add(Filters.or(ontologyId, ontologyName));
+    }
+
     public static void addAnnotationQueryFilter(String optionKey, Query query, Map<String, Variable> variableMap,
-                                                List<Bson> annotationSetFilter)
-            throws CatalogDBException {
+                                                List<Bson> annotationSetFilter) throws CatalogDBException {
         // Annotation Filter
         final String sepOr = ",";
 

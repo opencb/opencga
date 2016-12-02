@@ -132,6 +132,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 //                                  @ApiParam(value = "acls.users") @QueryParam("acls.users") String acl_userIds,
                                   @ApiParam(value = "(DEPRECATED) Individual id") @QueryParam("individualId") String individualIdOld,
                                   @ApiParam(value = "Individual id") @QueryParam("individual.id") String individualId,
+                                  @ApiParam(value = "Ontology terms") @QueryParam("ontologies") String ontologies,
                                   @ApiParam(value = "annotationSetName") @QueryParam("annotationSetName") String annotationSetName,
                                   @ApiParam(value = "variableSetId") @QueryParam("variableSetId") String variableSetId,
                                   @ApiParam(value = "annotation") @QueryParam("annotation") String annotation

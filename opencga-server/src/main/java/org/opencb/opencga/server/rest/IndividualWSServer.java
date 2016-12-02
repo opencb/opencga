@@ -133,6 +133,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                       @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
                                       @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation") String populationSubpopulation,
                                       @ApiParam(value = "Population description", required = false) @QueryParam("population.description") String populationDescription,
+                                      @ApiParam(value = "Ontology terms", required = false) @QueryParam("ontologies") String ontologies,
                                       @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex") Individual.KaryotypicSex karyotypicSex,
                                       @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") Individual.LifeStatus lifeStatus,
                                       @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")Individual.AffectationStatus affectationStatus,
