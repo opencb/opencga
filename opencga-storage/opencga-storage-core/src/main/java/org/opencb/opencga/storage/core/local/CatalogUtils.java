@@ -16,6 +16,11 @@ import java.util.regex.Pattern;
 public class CatalogUtils {
 
     /**
+     * @see {@link org.opencb.opencga.catalog.db.mongodb.MongoDBUtils#ANNOTATION_PATTERN}
+     */
+    public static final Pattern ANNOTATION_PATTERN = Pattern.compile("^([a-zA-Z\\\\.]+)([\\^=<>~!$]+.*)$");
+
+    /**
      * Parse a generic string with comma separated key=values and obtain a query understandable by catalog.
      *
      * @param myString String of the kind age>20;ontologies=hpo:123,hpo:456;name=smith
@@ -27,12 +32,10 @@ public class CatalogUtils {
 
         org.opencb.commons.datastore.core.Query query = new Query();
 
-        Pattern annotationPattern = Pattern.compile("^([annotation.]?[a-zA-Z\\.]+)([\\^=<>~!\\^\\$]+.*)$");
-
         List<String> annotationList = new ArrayList<>();
-        List<String> params = Arrays.asList(myString.replaceAll("\\s+","").split(";"));
+        List<String> params = Arrays.asList(myString.replaceAll("\\s+", "").split(";"));
         for (String param : params) {
-            Matcher matcher = annotationPattern.matcher(param);
+            Matcher matcher = ANNOTATION_PATTERN.matcher(param);
             String key;
             if (matcher.find()) {
                 key = matcher.group(1);

@@ -79,6 +79,7 @@ class MongoDBUtils {
             "includeStudies", "includeFiles", "includeJobs", "includeSamples").stream().collect(Collectors.toSet());
     //    public static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
     public static final Pattern OPERATION_PATTERN = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
+    public static final Pattern ANNOTATION_PATTERN = Pattern.compile("^([a-zA-Z\\\\.]+)([\\^=<>~!$]+.*)$");
     static final String TO_REPLACE_DOTS = "&#46;";
     private static ObjectMapper jsonObjectMapper;
     private static ObjectWriter jsonObjectWriter;
@@ -554,11 +555,9 @@ class MongoDBUtils {
             return;
         }
 
-        Pattern annotationPattern = Pattern.compile("^([annotation.]?[a-zA-Z\\.]+)([\\^=<>~!\\^\\$]+.*)$");
-
         List<String> valueList = query.getAsStringList(SampleDBAdaptor.QueryParams.ANNOTATION.key(), ";");
         for (String annotation : valueList) {
-            Matcher matcher = annotationPattern.matcher(annotation);
+            Matcher matcher = ANNOTATION_PATTERN.matcher(annotation);
             String key;
             String queryValueString;
             if (matcher.find()) {
