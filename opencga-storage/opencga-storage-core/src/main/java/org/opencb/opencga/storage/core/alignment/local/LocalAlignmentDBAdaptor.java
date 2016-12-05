@@ -27,11 +27,9 @@ import org.opencb.opencga.storage.core.alignment.iterators.ProtoAlignmentIterato
 import org.opencb.opencga.storage.core.alignment.iterators.SamRecordAlignmentIterator;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -368,36 +366,8 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         AlignmentOptions options = new AlignmentOptions();
         options.setContained(false);
 
-        BamManager alignmentManager = new BamManager(filePath);
-        Iterator<SAMSequenceRecord> iterator = fileHeader.getSequenceDictionary().getSequences().iterator();
-        PrintWriter writer = new PrintWriter(coveragePath.toFile());
-        StringBuilder line;
-        while (iterator.hasNext()) {
-            SAMSequenceRecord next = iterator.next();
-            for (int i = 0; i < next.getSequenceLength(); i += MINOR_CHUNK_SIZE) {
-                Region region = new Region(next.getSequenceName(), i + 1,
-                        Math.min(i + MINOR_CHUNK_SIZE, next.getSequenceLength()));
-                RegionCoverage regionCoverage = alignmentManager.coverage(region, null, options);
-                int meanDepth = Math.min(regionCoverage.meanCoverage(), 255);
-
-                // File columns: chunk   chromosome start   end coverage
-                // chunk format: chrom_id_suffix, where:
-                //      id: int value starting at 0
-                //      suffix: chunkSize + k
-                // eg. 3_4_1k
-
-                line = new StringBuilder();
-                line.append(region.getChromosome()).append("_");
-                line.append(i / MINOR_CHUNK_SIZE).append("_").append(MINOR_CHUNK_SIZE / 1000).append("k");
-                line.append("\t").append(region.getChromosome());
-                line.append("\t").append(region.getStart());
-                line.append("\t").append(region.getEnd());
-                line.append("\t").append(meanDepth);
-                writer.println(line.toString());
-            }
-        }
-        writer.close();
-        chunkFrequencyManager.load(coveragePath, filePath);
+        BamUtils.createCoverageWigFile(filePath, coveragePath, 200);
+        chunkFrequencyManager.loadWigFile(coveragePath, filePath);
     }
 
 }
