@@ -31,21 +31,20 @@ import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceJsonMi
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 
 import java.io.IOException;
-import java.io.PrintStream;
 
 /**
  * Created by pfurio on 28/07/16.
  */
-public class JsonWriter extends AbstractWriter {
+public class JsonOutputWriter extends AbstractOutputWriter {
 
     private ObjectMapper objectMapper;
 
-    public JsonWriter() {
+    public JsonOutputWriter() {
         super();
         initObjectMapper();
     }
 
-    public JsonWriter(WriterConfiguration writerConfiguration) {
+    public JsonOutputWriter(WriterConfiguration writerConfiguration) {
         super(writerConfiguration);
         initObjectMapper();
     }

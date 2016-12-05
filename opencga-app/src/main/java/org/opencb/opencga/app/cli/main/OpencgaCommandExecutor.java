@@ -37,7 +37,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     protected OpenCGAClient openCGAClient;
     protected CatalogManager catalogManager;
 //    protected ClientConfiguration clientConfiguration;
-    protected AbstractWriter writer;
+    protected AbstractOutputWriter writer;
 
     public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
         this(options, false);
@@ -59,14 +59,14 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                 case "json_pretty":
                     writerConfiguration.setPretty(true);
                 case "json":
-                    this.writer = new JsonWriter(writerConfiguration);
+                    this.writer = new JsonOutputWriter(writerConfiguration);
                     break;
                 case "yaml":
-                    this.writer = new YamlWriter(writerConfiguration);
+                    this.writer = new YamlOutputWriter(writerConfiguration);
                     break;
                 case "text":
                 default:
-                    this.writer = new TextWriter(writerConfiguration);
+                    this.writer = new TextOutputWriter(writerConfiguration);
                     break;
             }
 

@@ -38,6 +38,8 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -219,6 +221,42 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator, VariantDBAdaptor dbAdaptor) {
         return new DefaultVariantAnnotationManager(annotator, dbAdaptor);
     }
+
+    /**
+     *
+     * @param study     Study
+     * @param cohorts   Cohorts to calculate stats
+     * @param dbName    database name to annotate.
+     * @param options   Other options
+     *                  {@link Options#AGGREGATION_MAPPING_PROPERTIES}
+     *                  {@link Options#OVERWRITE_STATS}
+     *                  {@link Options#UPDATE_STATS}
+     *                  {@link Options#LOAD_THREADS}
+     *                  {@link Options#LOAD_BATCH_SIZE}
+     *                  {@link VariantDBAdaptor.VariantQueryParams#REGION}
+     *
+     * @throws StorageManagerException      If there is any problem related with the StorageManager
+     * @throws IOException                  If there is any IO problem
+     */
+    public void calculateStats(String study, List<String> cohorts, String dbName, QueryOptions options)
+            throws StorageManagerException, IOException {
+
+        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
+            VariantStatisticsManager statisticsManager = newVariantStatisticsManager(dbAdaptor);
+            statisticsManager.calculateStatistics(study, cohorts, options);
+        }
+    }
+
+    /**
+     * Provide a new VariantAnnotationManager for creating and loading annotations.
+     *
+     * @param dbAdaptor     VariantDBAdaptor
+     * @return              A new instance of VariantAnnotationManager
+     */
+    protected VariantStatisticsManager newVariantStatisticsManager(VariantDBAdaptor dbAdaptor) {
+        return new DefaultVariantStatisticsManager(dbAdaptor);
+    }
+
 
     /**
      * Drops a file from the Variant Storage.

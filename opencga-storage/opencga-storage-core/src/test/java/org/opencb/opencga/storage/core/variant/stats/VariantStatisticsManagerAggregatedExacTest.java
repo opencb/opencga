@@ -84,7 +84,7 @@ public abstract class VariantStatisticsManagerAggregatedExacTest extends Variant
     @Test
     public void calculateAggregatedStatsTest() throws Exception {
         //Calculate stats for 2 cohorts at one time
-        VariantStatisticsManager vsm = new VariantStatisticsManager();
+        DefaultVariantStatisticsManager vsm = new DefaultVariantStatisticsManager(dbAdaptor);
 
         checkAggregatedCohorts(dbAdaptor, studyConfiguration);
 

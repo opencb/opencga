@@ -32,20 +32,19 @@ import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceJsonMi
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 
 import java.io.IOException;
-import java.io.PrintStream;
 
 /**
  * Created by imedina on 01/12/16.
  */
-public class YamlWriter extends AbstractWriter {
+public class YamlOutputWriter extends AbstractOutputWriter {
 
     private ObjectMapper objectMapper;
 
-    public YamlWriter() {
+    public YamlOutputWriter() {
         this(new WriterConfiguration());
     }
 
-    public YamlWriter(WriterConfiguration writerConfiguration) {
+    public YamlOutputWriter(WriterConfiguration writerConfiguration) {
         super(writerConfiguration);
         initObjectMapper();
     }

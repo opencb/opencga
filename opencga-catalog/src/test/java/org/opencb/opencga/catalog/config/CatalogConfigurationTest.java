@@ -69,7 +69,8 @@ public class CatalogConfigurationTest {
                 StudyAclEntry.StudyPermissions.VIEW_JOBS, StudyAclEntry.StudyPermissions.UPDATE_JOBS));
         catalogConfiguration.setAcl(Arrays.asList(studyAcl));
 
-//        CellBaseConfiguration cellBaseConfiguration = new CellBaseConfiguration(Arrays.asList("localhost"), "v3", new DatabaseCredentials(Arrays.asList("localhost"), "user", "password"));
+//        CellBaseConfiguration cellBaseConfiguration = new CellBaseConfiguration(Arrays.asList("localhost"), "v3",
+// new DatabaseCredentials(Arrays.asList("localhost"), "user", "password"));
 //        QueryServerConfiguration queryServerConfiguration = new QueryServerConfiguration(61976, Arrays.asList("localhost"));
 //
 //        catalogConfiguration.setDefaultStorageEngineId("mongodb");
@@ -89,7 +90,8 @@ public class CatalogConfigurationTest {
 
     @Test
     public void testLoad() throws Exception {
-        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration-test.yml").openStream());
+        CatalogConfiguration catalogConfiguration = CatalogConfiguration
+                .load(getClass().getResource("/catalog-configuration-test.yml").openStream());
         System.out.println("catalogConfiguration = " + catalogConfiguration);
     }
 }

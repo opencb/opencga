@@ -161,7 +161,9 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
     public abstract Map<String, Integer> getStudies(QueryOptions options);
 
     public final QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
-        studyConfiguration.setTimeStamp(System.currentTimeMillis());
+        long timeStamp = System.currentTimeMillis();
+        logger.debug("Timestamp : {} -> {}", studyConfiguration.getTimeStamp(), timeStamp);
+        studyConfiguration.setTimeStamp(timeStamp);
         Map<Integer, String> headers = studyConfiguration.getHeaders();
 
         studyConfiguration.setHeaders(null);

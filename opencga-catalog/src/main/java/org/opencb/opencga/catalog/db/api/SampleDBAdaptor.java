@@ -55,6 +55,14 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample, SampleAc
         ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
         ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),
 
+        ONTOLOGIES("ontologies", TEXT_ARRAY, ""), // Alias in the webservice to ONTOLOGY_TERMS
+        ONTOLOGY_TERMS("ontologyTerms", TEXT_ARRAY, ""),
+        ONTOLOGY_TERMS_ID("ontologyTerms.id", TEXT, ""),
+        ONTOLOGY_TERMS_NAME("ontologyTerms.name", TEXT, ""),
+        ONTOLOGY_TERMS_SOURCE("ontologyTerms.source", TEXT, ""),
+        ONTOLOGY_TERMS_AGE_OF_ONSET("ontologyTerms.ageOfOnset", TEXT, ""),
+        ONTOLOGY_TERMS_MODIFIERS("ontologyTerms.modifiers", TEXT_ARRAY, ""),
+
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSetId", INTEGER, ""),
         ANNOTATION_SET_NAME("annotationSetName", TEXT_ARRAY, ""),

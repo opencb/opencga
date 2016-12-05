@@ -56,6 +56,7 @@ public class CatalogMongoSampleDBAdaptorTest {
     private User user2;
     private User user3;
     private User user4;
+    private long studyId;
     private Sample s1;
     private Sample s2;
     private SampleAclEntry acl_s1_user1;
@@ -80,7 +81,7 @@ public class CatalogMongoSampleDBAdaptorTest {
         dbAdaptorFactory = CatalogMongoDBAdaptorTest.catalogDBAdaptor;
         catalogSampleDBAdaptor = dbAdaptorFactory.getCatalogSampleDBAdaptor();
 
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         acl_s1_user1 = new SampleAclEntry(user1.getId(), Arrays.asList());
         acl_s1_user2 = new SampleAclEntry(user2.getId(), Arrays.asList(
                 SampleAclEntry.SamplePermissions.VIEW.name(),
@@ -212,6 +213,57 @@ public class CatalogMongoSampleDBAdaptorTest {
         annot = catalogSampleDBAdaptor.get(sampleId, null).first().getAnnotationSets().get(0);
         assertEquals(expectedAnnot, annot);
 
+    }
+
+    @Test
+    public void searchByOntology() throws CatalogDBException {
+        List<OntologyTerm> ontologyList = Arrays.asList(
+                new OntologyTerm("hpo:123", "One hpo term", "hpo", "whatever", Collections.emptyMap()),
+                new OntologyTerm("hpo:456", "Another hpo term", "hpo", "whatever", Collections.emptyMap()),
+                new OntologyTerm("go:123", "My go term", "go", "whatever", Collections.emptyMap())
+        );
+        Sample sample1 = new Sample().setName("sample1").setOntologyTerms(ontologyList);
+
+        ontologyList = Arrays.asList(
+                new OntologyTerm("hpo:789", "One hpo term", "hpo", "whatever", Collections.emptyMap()),
+                new OntologyTerm("hpo:xxx", "Another hpo term", "hpo", "whatever", Collections.emptyMap()),
+                new OntologyTerm("hpo:456", "Another hpo term", "hpo", "whatever", Collections.emptyMap()),
+                new OntologyTerm("go:yyy", "My go term", "go", "whatever", Collections.emptyMap())
+        );
+        Sample sample2 = new Sample().setName("sample2").setOntologyTerms(ontologyList);
+
+        catalogSampleDBAdaptor.insert(sample1, studyId, new QueryOptions()).first().getId();
+        catalogSampleDBAdaptor.insert(sample2, studyId, new QueryOptions()).first().getId();
+
+        // Start the search
+        Query query = new Query()
+                .append(SampleDBAdaptor.QueryParams.ONTOLOGY_TERMS.key(), "=hpo:456,hpo:xxx")
+                .append(SampleDBAdaptor.QueryParams.NAME.key(), "=sample2");
+
+        QueryResult<Sample> sampleQueryResult = catalogSampleDBAdaptor.get(query, new QueryOptions());
+        assertEquals(1, sampleQueryResult.getNumResults());
+        assertEquals(sample2.getName(), sampleQueryResult.first().getName());
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.ONTOLOGY_TERMS.key(), "hpo:456,hpo:xxx");
+        sampleQueryResult = catalogSampleDBAdaptor.get(query, new QueryOptions());
+        assertEquals(2, sampleQueryResult.getNumResults());
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.ONTOLOGY_TERMS.key(), "My go term");
+        sampleQueryResult = catalogSampleDBAdaptor.get(query, new QueryOptions());
+        assertEquals(2, sampleQueryResult.getNumResults());
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.ONTOLOGIES.key(), "go:123");
+        sampleQueryResult = catalogSampleDBAdaptor.get(query, new QueryOptions());
+        assertEquals(1, sampleQueryResult.getNumResults());
+        assertEquals(sample1.getName(), sampleQueryResult.first().getName());
+
+        query = new Query()
+                .append(SampleDBAdaptor.QueryParams.ONTOLOGIES.key(), "=hpo:456,My go term");
+        sampleQueryResult = catalogSampleDBAdaptor.get(query, new QueryOptions());
+        assertEquals(2, sampleQueryResult.getNumResults());
     }
 
     @Test

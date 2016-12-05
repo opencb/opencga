@@ -19,6 +19,8 @@ package org.opencb.opencga.storage.core.local.variant;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.rules.ExpectedException;
+import org.mockito.Mockito;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -46,6 +48,7 @@ import org.opencb.opencga.storage.core.local.variant.operations.VariantFileIndex
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageETL;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,11 +62,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
 import static org.opencb.opencga.storage.core.local.variant.operations.StatsVariantStorageTest.checkCalculatedStats;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.DB_NAME;
@@ -100,7 +102,8 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     protected static final String STORAGE_ENGINE_HADOOP = "hadoop";
     private Logger logger = LoggerFactory.getLogger(AbstractVariantStorageOperationTest.class);
 
-
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     @Rule
     public OpenCGATestExternalResource opencga = new OpenCGATestExternalResource(getStorageEngine().equals(STORAGE_ENGINE_HADOOP));
@@ -217,6 +220,10 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     }
 
     protected List<StorageETLResult> loadFiles(List<File> files, QueryOptions queryOptions, long outputId) throws Exception {
+        return loadFiles(files, files, queryOptions, outputId);
+    }
+
+    protected List<StorageETLResult> loadFiles(List<File> files, List<File> expectedLoadedFiles, QueryOptions queryOptions, long outputId) throws Exception {
 
         queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, false);
         queryOptions.append(VariantFileIndexerStorageOperation.LOAD, true);
@@ -228,11 +235,11 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         String outdir = opencga.createTmpOutdir(studyId, "_LOAD_", sessionId);
         List<StorageETLResult> etlResults = variantManager.index(fileIds, outdir, String.valueOf(outputId), queryOptions, sessionId);
 
-        assertEquals(files.size(), etlResults.size());
+        assertEquals(expectedLoadedFiles.size(), etlResults.size());
         checkEtlResults(studyId, etlResults, FileIndex.IndexStatus.READY);
 
         Cohort defaultCohort = getDefaultCohort(studyId);
-        for (File file : files) {
+        for (File file : expectedLoadedFiles) {
             assertTrue(defaultCohort.getSamples().containsAll(file.getSampleIds()));
         }
         if (calculateStats) {
@@ -247,6 +254,10 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     }
 
     protected List<StorageETLResult> indexFiles(List<File> files, QueryOptions queryOptions, long outputId) throws Exception {
+        return indexFiles(files, files, queryOptions, outputId);
+    }
+
+    protected List<StorageETLResult> indexFiles(List<File> files, List<File> expectedLoadedFiles, QueryOptions queryOptions, long outputId) throws Exception {
         queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, true);
         queryOptions.append(VariantFileIndexerStorageOperation.LOAD, true);
         boolean calculateStats = queryOptions.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key());
@@ -257,11 +268,11 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         List<String> fileIds = files.stream().map(File::getId).map(Object::toString).collect(Collectors.toList());
         List<StorageETLResult> etlResults = variantManager.index(fileIds, outdir, String.valueOf(outputId), queryOptions, sessionId);
 
-        assertEquals(files.size(), etlResults.size());
+        assertEquals(expectedLoadedFiles.size(), etlResults.size());
         checkEtlResults(studyId, etlResults, FileIndex.IndexStatus.READY);
 
         Cohort defaultCohort = getDefaultCohort(studyId);
-        for (File file : files) {
+        for (File file : expectedLoadedFiles) {
             assertTrue(defaultCohort.getSamples().containsAll(file.getSampleIds()));
         }
         if (calculateStats) {
@@ -303,6 +314,22 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         doReturn(dbAdaptor).when(vsm).getDBAdaptor();
         doReturn(dbAdaptor).when(vsm).getDBAdaptor(anyString());
         return dbAdaptor;
+    }
+
+    protected DummyVariantStorageETL mockVariantStorageETL() throws StorageManagerException {
+        DummyVariantStorageManager vsm = mockVariantStorageManager();
+        return mockVariantStorageETL(vsm);
+    }
+
+    protected DummyVariantStorageETL mockVariantStorageETL(DummyVariantStorageManager vsm) throws StorageManagerException {
+        DummyVariantStorageETL storageETL = spy(vsm.newStorageETL(true));
+//        doReturn(storageETL).when(vsm).newStorageETL(anyBoolean());
+        Mockito.doAnswer(invocation -> {
+            DummyVariantStorageETL etl = (DummyVariantStorageETL) invocation.callRealMethod();
+            storageETL.init(etl.getOptions());
+            return storageETL;
+        }).when(vsm).newStorageETL(anyBoolean());
+        return storageETL;
     }
 
 }

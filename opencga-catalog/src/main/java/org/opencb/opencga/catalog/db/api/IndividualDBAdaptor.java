@@ -91,6 +91,15 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual, 
         POPULATION_NAME("population.name", TEXT, ""),
         POPULATION_SUBPOPULATION("population.subpopulation", TEXT, ""),
         POPULATION_DESCRIPTION("population.description", TEXT, ""),
+
+        ONTOLOGIES("ontologies", TEXT_ARRAY, ""), // Alias in the webservice to ONTOLOGY_TERMS
+        ONTOLOGY_TERMS("ontologyTerms", TEXT_ARRAY, ""),
+        ONTOLOGY_TERMS_ID("ontologyTerms.id", TEXT, ""),
+        ONTOLOGY_TERMS_NAME("ontologyTerms.name", TEXT, ""),
+        ONTOLOGY_TERMS_SOURCE("ontologyTerms.source", TEXT, ""),
+        ONTOLOGY_TERMS_AGE_OF_ONSET("ontologyTerms.ageOfOnset", TEXT, ""),
+        ONTOLOGY_TERMS_MODIFIERS("ontologyTerms.modifiers", TEXT_ARRAY, ""),
+
         KARYOTYPIC_SEX("karyotypicSex", TEXT, ""),
         LIFE_STATUS("lifeStatus", TEXT, ""),
         AFFECTATION_STATUS("affectationStatus", TEXT, ""),

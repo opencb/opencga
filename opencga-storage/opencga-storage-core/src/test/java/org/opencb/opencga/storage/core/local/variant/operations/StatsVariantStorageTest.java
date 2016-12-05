@@ -188,8 +188,11 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
     }
 
     public void calculateStats(List<Long> cohortIds, QueryOptions options) throws Exception {
-        String tmpOutdir = createTmpOutdir("_STATS_" + cohortIds.stream().map(Object::toString).collect(Collectors.joining("_")));
-        List<String> cohorts = cohortIds.stream().map(Object::toString).collect(Collectors.toList());
+        calculateStats(options, cohortIds.stream().map(Object::toString).collect(Collectors.toList()));
+    }
+
+    public void calculateStats(QueryOptions options, List<String> cohorts) throws Exception {
+        String tmpOutdir = createTmpOutdir("_STATS_" + cohorts.stream().collect(Collectors.joining("_")));
         variantManager.stats(String.valueOf(studyId), cohorts, tmpOutdir, String.valueOf(outputId), options, sessionId);
     }
 
@@ -294,12 +297,49 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         QueryOptions options = new QueryOptions(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
         calculateStats(cohorIds, options);
 
-        Set<String> cohorts = catalogManager.getAllCohorts(studyId, null, null, sessionId).getResult()
+        List<Cohort> cohorts = catalogManager.getAllCohorts(studyId, null, null, sessionId).getResult();
+        Set<String> cohortNames = cohorts
                 .stream()
                 .map(Cohort::getName)
                 .collect(Collectors.toSet());
-        assertEquals(8, cohorts.size());
-        checkCalculatedAggregatedStats(cohorts, dbName);
+        assertEquals(8, cohortNames.size());
+        for (Cohort cohort : cohorts) {
+            assertEquals(Cohort.CohortStatus.READY, cohort.getStatus().getName());
+        }
+//        checkCalculatedAggregatedStats(cohorts, dbName);
+    }
+
+    @Test
+    public void testCalculateAggregatedExacStatsExplicitCohorts() throws Exception {
+        beforeAggregated("exachead.vcf.gz", VariantSource.Aggregation.EXAC);
+
+        String tagMap = getResourceUri("exac-tag-mapping.properties").getPath();
+
+        QueryOptions options = new QueryOptions(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
+        calculateStats(options, Arrays.asList("AFR", "ALL", "AMR", "EAS", "FIN", "NFE", "OTH", "SAS"));
+
+        List<Cohort> cohorts = catalogManager.getAllCohorts(studyId, null, null, sessionId).getResult();
+        Set<String> cohortNames = cohorts
+                .stream()
+                .map(Cohort::getName)
+                .collect(Collectors.toSet());
+        assertEquals(8, cohortNames.size());
+        for (Cohort cohort : cohorts) {
+            assertEquals(Cohort.CohortStatus.READY, cohort.getStatus().getName());
+        }
+//        checkCalculatedAggregatedStats(cohorts, dbName);
+    }
+
+    @Test
+    public void testCalculateAggregatedExacStatsWrongExplicitCohorts() throws Exception {
+        beforeAggregated("exachead.vcf.gz", VariantSource.Aggregation.EXAC);
+
+        String tagMap = getResourceUri("exac-tag-mapping.properties").getPath();
+
+        QueryOptions options = new QueryOptions(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
+
+        thrown.expectMessage("Given cohorts (if any) must match with cohorts in the aggregation mapping file.");
+        calculateStats(options, Arrays.asList("AFR", "ALL"));
     }
 
     @Test
@@ -308,29 +348,22 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
         String tagMap = getResourceUri("exac-tag-mapping.properties").getPath();
 
-        try {
-            QueryOptions options = new QueryOptions(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
-            calculateStats(Collections.emptyList(), options);
+        QueryOptions options = new QueryOptions(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
+        calculateStats(Collections.emptyList(), options);
 
-            Set<String> cohorts = catalogManager.getAllCohorts(studyId, null, null, sessionId).getResult()
-                    .stream()
-                    .map(Cohort::getName)
-                    .collect(Collectors.toSet());
-            assertEquals(8, cohorts.size());
-            checkCalculatedAggregatedStats(cohorts, dbName);
-        } catch (AssertionError e) {
-            List<Cohort> result = catalogManager.getAllCohorts(studyId, null, null, sessionId).getResult();
-            for (Cohort cohort : result) {
-                System.out.println("cohort.getName() = " + cohort.getName());
-            }
-            throw e;
+        List<Cohort> cohorts = catalogManager.getAllCohorts(studyId, null, null, sessionId).getResult();
+        Set<String> cohortNames = cohorts
+                .stream()
+                .map(Cohort::getName)
+                .collect(Collectors.toSet());
+        assertEquals(8, cohortNames.size());
+        for (Cohort cohort : cohorts) {
+            assertEquals(Cohort.CohortStatus.READY, cohort.getStatus().getName());
         }
+//            checkCalculatedAggregatedStats(cohorts, dbName);
+
     }
 
-    //    @Test
-//    public void testAnnotateVariants() throws Exception {
-//
-//    }
 
     public void checkCalculatedStats(Map<String, Cohort> cohorts) throws Exception {
         checkCalculatedStats(cohorts, catalogManager, dbName, sessionId);

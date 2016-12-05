@@ -8,7 +8,6 @@ import org.opencb.opencga.catalog.models.acls.permissions.AbstractAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
-import java.io.PrintStream;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,12 +15,12 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 28/11/16.
  */
-public class TextWriter extends AbstractWriter {
+public class TextOutputWriter extends AbstractOutputWriter {
 
-    public TextWriter() {
+    public TextOutputWriter() {
     }
 
-    public TextWriter(WriterConfiguration writerConfiguration) {
+    public TextOutputWriter(WriterConfiguration writerConfiguration) {
         super(writerConfiguration);
     }
 
@@ -349,7 +348,7 @@ public class TextWriter extends AbstractWriter {
             FileTree fileTree = iterator.next();
             File file = fileTree.getFile();
 
-            sb.append(String.format("%s %s - (%d)   [%s, %s]\n",
+            sb.append(String.format("%s %s  [%d, %s, %s]\n",
                     indent.isEmpty() ? "" : indent + (iterator.hasNext() ? "├──" : "└──"),
                     file.getType() == File.Type.FILE ? file.getName() : file.getName() + "/",
                     file.getId(),
