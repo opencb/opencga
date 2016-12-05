@@ -16,12 +16,15 @@
 
 package org.opencb.opencga.storage.core.local.variant.operations;
 
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantSource.Aggregation;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
@@ -35,7 +38,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -73,7 +75,8 @@ public class VariantStatsStorageOperation extends StorageOperation {
         final Path outdir = Paths.get(outdirUri);
         outdirMustBeEmpty(outdir);
 
-        List<Long> cohortIds = checkCohorts(studyId, cohorts, options, sessionId);
+        Aggregation aggregation = getAggregation(studyId, options, sessionId);
+        List<Long> cohortIds = checkCohorts(studyId, aggregation, cohorts, options, sessionId);
         Map<Long, Cohort> cohortsMap = checkCanCalculateCohorts(studyId, cohortIds, updateStats, sessionId);
 
 
@@ -92,14 +95,10 @@ public class VariantStatsStorageOperation extends StorageOperation {
 
         // if the study is aggregated and a mapping file is provided, pass it to storage
         // and create in catalog the cohorts described in the mapping file
-        Aggregation aggregation = getAggregation(studyId, options, sessionId);
         String aggregationMappingFile = options.getString(Options.AGGREGATION_MAPPING_PROPERTIES.key());
-        if (Aggregation.isAggregated(aggregation) && !aggregationMappingFile.isEmpty()) {
-            try (InputStream is = FileUtils.newInputStream(Paths.get(aggregationMappingFile))) {
-                Properties properties = new Properties();
-                properties.load(is);
-                calculateStatsOptions.append(Options.AGGREGATION_MAPPING_PROPERTIES.key(), properties);
-            }
+        if (Aggregation.isAggregated(aggregation) && StringUtils.isNotEmpty(aggregationMappingFile)) {
+            Properties mappingFile = readAggregationMappingFile(aggregationMappingFile);
+            calculateStatsOptions.append(Options.AGGREGATION_MAPPING_PROPERTIES.key(), mappingFile);
         }
 
         DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
@@ -197,6 +196,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
     /**
      * Must provide a list of cohorts or a aggregation_mapping_properties file.
      * @param studyId   StudyId
+     * @param aggregation Aggregation type for this study. {@link #getAggregation}
      * @param cohorts   List of cohorts
      * @param options   Options, where the aggregation mapping properties file will be
      * @param sessionId User's sessionId
@@ -204,21 +204,30 @@ public class VariantStatsStorageOperation extends StorageOperation {
      * @throws CatalogException if an error on Catalog
      * @throws IOException if an IO error reading the aggregation map file (if any)
      */
-    protected List<Long> checkCohorts(long studyId, List<String> cohorts, QueryOptions options, String sessionId)
+    protected List<Long> checkCohorts(long studyId, Aggregation aggregation, List<String> cohorts, QueryOptions options, String sessionId)
             throws CatalogException, IOException {
         List<Long> cohortIds;
 
         // Check aggregation mapping properties
         String tagMap = options.getString(Options.AGGREGATION_MAPPING_PROPERTIES.key());
-        List<Long> cohortsByAggregationMapFile = null;
+        List<Long> cohortsByAggregationMapFile = Collections.emptyList();
         if (!isBlank(tagMap)) {
+            if (!Aggregation.isAggregated(aggregation)) {
+                throw nonAggregatedWithMappingFile();
+            }
             cohortsByAggregationMapFile = createCohortsByAggregationMapFile(studyId, tagMap, sessionId);
+        } else if (Aggregation.isAggregated(aggregation)) {
+            if (aggregation.equals(Aggregation.BASIC)) {
+                cohortsByAggregationMapFile = createCohortsIfNeeded(studyId, Collections.singleton(StudyEntry.DEFAULT_COHORT), sessionId);
+            } else {
+                throw missingAggregationMappingFile(aggregation);
+            }
         }
 
         if (cohorts == null || cohorts.isEmpty()) {
             // If no aggregation map file provided
-            if (cohortsByAggregationMapFile == null || cohortsByAggregationMapFile.isEmpty()) {
-                throw new CatalogException("Cohort list null or empty");
+            if (cohortsByAggregationMapFile.isEmpty()) {
+                throw missingCohorts();
             } else {
                 cohortIds = cohortsByAggregationMapFile;
             }
@@ -234,27 +243,54 @@ public class VariantStatsStorageOperation extends StorageOperation {
                 }
                 cohortIds.add(cohortId);
             }
-            if (cohortsByAggregationMapFile != null) {
+            if (!cohortsByAggregationMapFile.isEmpty()) {
                 if (cohortIds.size() != cohortsByAggregationMapFile.size() || !cohortIds.containsAll(cohortsByAggregationMapFile)) {
-                    throw new CatalogException("Given cohorts (if any) must match with cohorts in the aggregation mapping file.");
+                    throw differentCohortsThanMappingFile();
                 }
             }
         }
         return cohortIds;
     }
 
+    static CatalogException differentCohortsThanMappingFile() throws CatalogException {
+        return new CatalogException("Given cohorts (if any) must match with cohorts in the aggregation mapping file.");
+    }
+
+    static CatalogException missingCohorts() throws CatalogException {
+        return new CatalogException("Cohort list null or empty");
+    }
+
+    static IllegalArgumentException missingAggregationMappingFile(Aggregation aggregation) {
+        return new IllegalArgumentException("Unable to calculate statistics for an aggregated study of type "
+                + "\"" + aggregation + "\" without an aggregation mapping file.");
+    }
+
+    static IllegalArgumentException nonAggregatedWithMappingFile() {
+        return new IllegalArgumentException("Unable to use an aggregation mapping file for non aggregated study");
+    }
+
     private List<Long> createCohortsByAggregationMapFile(long studyId, String aggregationMapFile, String sessionId)
             throws IOException, CatalogException {
-        List<Long> cohorts = new ArrayList<>();
+        Properties tagmap = readAggregationMappingFile(aggregationMapFile);
+        Set<String> cohortNames = VariantAggregatedStatsCalculator.getCohorts(tagmap);
+        return createCohortsIfNeeded(studyId, cohortNames, sessionId);
+    }
+
+    private Properties readAggregationMappingFile(String aggregationMapFile) throws IOException {
         Properties tagmap = new Properties();
-        try (InputStream is = new FileInputStream(aggregationMapFile)) {
+        try (InputStream is = FileUtils.newInputStream(Paths.get(aggregationMapFile))) {
             tagmap.load(is);
         }
+        return tagmap;
+    }
+
+    private List<Long> createCohortsIfNeeded(long studyId, Set<String> cohortNames, String sessionId) throws CatalogException {
+        List<Long> cohorts = new ArrayList<>();
         Map<String, Long> catalogCohorts = catalogManager.getAllCohorts(studyId, null,
                 new QueryOptions(QueryOptions.INCLUDE, "name,id"), sessionId).getResult()
                 .stream()
                 .collect(Collectors.toMap(Cohort::getName, Cohort::getId));
-        for (String cohortName : VariantAggregatedStatsCalculator.getCohorts(tagmap)) {
+        for (String cohortName : cohortNames) {
             if (!catalogCohorts.containsKey(cohortName)) {
                 QueryResult<Cohort> cohort = catalogManager
                         .createCohort(studyId, cohortName, Study.Type.COLLECTION, "", Collections.emptyList(), null, sessionId);
@@ -281,7 +317,8 @@ public class VariantStatsStorageOperation extends StorageOperation {
      * @throws CatalogException if something is wrong with catalog
      */
     public Aggregation getAggregation(long studyId, QueryOptions options, String sessionId) throws CatalogException {
-        Study study = catalogManager.getStudy(studyId, new QueryOptions("include", "projects.studies.attributes"), sessionId).first();
+        QueryOptions include = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ATTRIBUTES.key());
+        Study study = catalogManager.getStudy(studyId, include, sessionId).first();
         Aggregation argsAggregation = options.get(Options.AGGREGATED_TYPE.key(), Aggregation.class, Aggregation.NONE);
         Object studyAggregationObj = study.getAttributes().get(Options.AGGREGATED_TYPE.key());
         Aggregation studyAggregation = null;

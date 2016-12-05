@@ -187,8 +187,8 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
                 options, sessionId);
     }
 
-    public void calculateStats(List<Long> cohortIds, QueryOptions options) throws Exception {
-        calculateStats(options, cohortIds.stream().map(Object::toString).collect(Collectors.toList()));
+    public void calculateStats(QueryOptions options, Long... cohortIds) throws Exception {
+        calculateStats(options, Arrays.stream(cohortIds).map(Object::toString).collect(Collectors.toList()));
     }
 
     public void calculateStats(QueryOptions options, List<String> cohorts) throws Exception {
@@ -202,14 +202,14 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         
         Map<String, Cohort> cohorts = new HashMap<>();
 
-        calculateStats(Arrays.asList(coh[0], coh[1], coh[2]), new QueryOptions());
+        calculateStats(new QueryOptions(), coh[0], coh[1], coh[2]);
         cohorts.put("coh0", catalogManager.getCohort(coh[0], null, sessionId).first());
         cohorts.put("coh1", catalogManager.getCohort(coh[1], null, sessionId).first());
         cohorts.put("coh2", catalogManager.getCohort(coh[2], null, sessionId).first());
         checkCalculatedStats(cohorts);
 
         try {
-            calculateStats(Arrays.asList(all, coh[3], -coh[4]), new QueryOptions());
+            calculateStats(new QueryOptions(), all, coh[3], -coh[4]);
             fail();
         } catch (CatalogException e) {
             logger.info("received expected exception. this is OK, there is no cohort " + (-coh[4]) + "\n");
@@ -218,7 +218,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         assertEquals(Cohort.CohortStatus.NONE, catalogManager.getCohort(coh[3], null, sessionId).first().getStatus().getName());
         assertEquals(Cohort.CohortStatus.NONE, catalogManager.getCohort(coh[4], null, sessionId).first().getStatus().getName());
 
-        calculateStats(Arrays.asList(all, coh[3], coh[4]), new QueryOptions());
+        calculateStats(new QueryOptions(), all, coh[3], coh[4]);
         cohorts.put(DEFAULT_COHORT, catalogManager.getCohort(all, null, sessionId).first());
         cohorts.put("coh3", catalogManager.getCohort(coh[3], null, sessionId).first());
         cohorts.put("coh4", catalogManager.getCohort(coh[4], null, sessionId).first());
@@ -264,6 +264,13 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
     }
 
     @Test
+    public void testCalculateAggregatedStatsWithoutCohorts() throws Exception {
+        beforeAggregated("variant-test-aggregated-file.vcf.gz", VariantSource.Aggregation.BASIC);
+
+        calculateStats(new QueryOptions());
+    }
+
+    @Test
     public void testCalculateAggregatedStatsNonAggregatedStudy() throws Exception {
         beforeAggregated("variant-test-aggregated-file.vcf.gz", null);
 
@@ -291,11 +298,11 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         beforeAggregated("exachead.vcf.gz", VariantSource.Aggregation.EXAC);
 
         String tagMap = getResourceUri("exac-tag-mapping.properties").getPath();
-        List<Long> cohorIds = createCohorts(sessionId, studyId, tagMap, catalogManager, logger)
-                .stream().map(Cohort::getId).collect(Collectors.toList());
+        List<String> cohortIds = createCohorts(sessionId, studyId, tagMap, catalogManager, logger)
+                .stream().map(Cohort::getId).map(Object::toString).collect(Collectors.toList());
 
         QueryOptions options = new QueryOptions(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
-        calculateStats(cohorIds, options);
+        calculateStats(options, cohortIds);
 
         List<Cohort> cohorts = catalogManager.getAllCohorts(studyId, null, null, sessionId).getResult();
         Set<String> cohortNames = cohorts
@@ -338,8 +345,30 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
         QueryOptions options = new QueryOptions(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
 
-        thrown.expectMessage("Given cohorts (if any) must match with cohorts in the aggregation mapping file.");
+        thrown.expectMessage(VariantStatsStorageOperation.differentCohortsThanMappingFile().getMessage());
         calculateStats(options, Arrays.asList("AFR", "ALL"));
+    }
+
+    @Test
+    public void testCalculateAggregatedExacMissingAggregationMappingFile() throws Exception {
+        beforeAggregated("exachead.vcf.gz", VariantSource.Aggregation.EXAC);
+
+        QueryOptions options = new QueryOptions();
+
+        thrown.expectMessage(VariantStatsStorageOperation.missingAggregationMappingFile(VariantSource.Aggregation.EXAC).getMessage());
+        calculateStats(options, Collections.emptyList());
+    }
+
+    @Test
+    public void testCalculateNonAggregatedWithAggregationMappingFile() throws Exception {
+        before();
+
+        String tagMap = getResourceUri("exac-tag-mapping.properties").getPath();
+
+        QueryOptions options = new QueryOptions(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
+
+        thrown.expectMessage(VariantStatsStorageOperation.nonAggregatedWithMappingFile().getMessage());
+        calculateStats(options, Arrays.asList("ALL"));
     }
 
     @Test
@@ -349,7 +378,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         String tagMap = getResourceUri("exac-tag-mapping.properties").getPath();
 
         QueryOptions options = new QueryOptions(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), tagMap);
-        calculateStats(Collections.emptyList(), options);
+        calculateStats(options);
 
         List<Cohort> cohorts = catalogManager.getAllCohorts(studyId, null, null, sessionId).getResult();
         Set<String> cohortNames = cohorts
