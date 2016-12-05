@@ -252,6 +252,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
                 }
 
                 annotateLoadedFiles(outdirUri, inputFiles, concurrResult, getOptions());
+                calculateStatsForLoadedFiles(outdirUri, inputFiles, concurrResult, getOptions());
 
             }
         } catch (InterruptedException e) {

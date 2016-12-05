@@ -103,21 +103,30 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
                 .append(VariantStorageManager.Options.ANNOTATE.key(), false);
         runDefaultETL(getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
                 variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 5));
-//        Integer defaultCohortId = studyConfigurationMultiFile.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
-//        assertTrue(studyConfigurationMultiFile.getCohorts().containsKey(defaultCohortId));
-//        assertEquals(500, studyConfigurationMultiFile.getCohorts().get(defaultCohortId).size());
+        Integer defaultCohortId = studyConfigurationMultiFile.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
+        assertTrue(studyConfigurationMultiFile.getCohorts().containsKey(defaultCohortId));
+        assertEquals(500, studyConfigurationMultiFile.getCohorts().get(defaultCohortId).size());
+        assertEquals(Collections.emptySet(), studyConfigurationMultiFile.getCalculatedStats());
+        assertEquals(Collections.emptySet(), studyConfigurationMultiFile.getInvalidStats());
         assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(5));
 
         options.append(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
         runDefaultETL(getResourceUri("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
                 variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 6));
-        Integer defaultCohortId = studyConfigurationMultiFile.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
         assertEquals(1000, studyConfigurationMultiFile.getCohorts().get(defaultCohortId).size());
+        assertEquals(Collections.singleton(defaultCohortId), studyConfigurationMultiFile.getCalculatedStats());
+        assertEquals(Collections.emptySet(), studyConfigurationMultiFile.getInvalidStats());
         assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(6));
+
+        options.append(VariantStorageManager.Options.CALCULATE_STATS.key(), false);
         runDefaultETL(getResourceUri("1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
                 variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 7));
         assertEquals(1500, studyConfigurationMultiFile.getCohorts().get(defaultCohortId).size());
+        assertEquals(Collections.emptySet(), studyConfigurationMultiFile.getCalculatedStats());
+        assertEquals(Collections.singleton(defaultCohortId), studyConfigurationMultiFile.getInvalidStats());
         assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(7));
+
+        options.append(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
         runDefaultETL(getResourceUri("1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
                 variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), 8));
         assertEquals(2000, studyConfigurationMultiFile.getCohorts().get(defaultCohortId).size());

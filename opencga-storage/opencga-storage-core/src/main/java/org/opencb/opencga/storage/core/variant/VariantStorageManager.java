@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant;
 
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -45,9 +46,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by imedina on 13/08/14.
@@ -138,6 +137,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
         List<StorageETLResult> results = super.index(inputFiles, outdirUri, doExtract, doTransform, doLoad);
         if (doLoad) {
             annotateLoadedFiles(outdirUri, inputFiles, results, getOptions());
+            calculateStatsForLoadedFiles(outdirUri, inputFiles, results, getOptions());
         }
         return results;
     }
@@ -178,8 +178,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
             throws StorageETLException {
 
         if (!files.isEmpty() && options.getBoolean(Options.ANNOTATE.key(), Options.ANNOTATE.defaultValue())) {
-            try (VariantDBAdaptor dbAdaptor = getDBAdaptor()) {
-
+            String dbName = options.getString(Options.DB_NAME.key(), null);
+            try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
                 int studyId = options.getInt(Options.STUDY_ID.key());
                 StudyConfiguration studyConfiguration = dbAdaptor.getStudyConfigurationManager()
                         .getStudyConfiguration(studyId, new QueryOptions(options)).first();
@@ -199,7 +199,6 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
                 // annotate just the indexed variants
                 annotationQuery.put(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileIds);
 
-                String dbName = options.getString(Options.DB_NAME.key());
                 QueryOptions annotationOptions = new QueryOptions()
                         .append(DefaultVariantAnnotationManager.OUT_DIR, outdirUri.getPath())
                         .append(DefaultVariantAnnotationManager.FILE_NAME, dbName + "." + TimeUtils.getTime());
@@ -244,6 +243,54 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
         try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
             VariantStatisticsManager statisticsManager = newVariantStatisticsManager(dbAdaptor);
             statisticsManager.calculateStatistics(study, cohorts, options);
+        }
+    }
+
+    /**
+     * Calculate stats for loaded files. Used to calculate statistics for cohort ALL from recently loaded files, after the {@link #index}.
+     *
+     * @param output     Index output directory
+     * @param files         Indexed files
+     * @param results       StorageETLResults
+     * @param options       Other options
+     * @throws StorageETLException  If there is any problem related with the StorageManager
+     */
+    protected void calculateStatsForLoadedFiles(URI output, List<URI> files, List<StorageETLResult> results, ObjectMap options)
+            throws StorageETLException {
+
+        if (options.getBoolean(Options.CALCULATE_STATS.key(), Options.CALCULATE_STATS.defaultValue())) {
+            // TODO add filters
+            String dbName = options.getString(Options.DB_NAME.key(), null);
+            try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
+                logger.debug("about to calculate stats");
+
+                int studyId = options.getInt(Options.STUDY_ID.key());
+                QueryOptions statsOptions = new QueryOptions(options);
+                StudyConfiguration studyConfiguration = dbAdaptor.getStudyConfigurationManager()
+                        .getStudyConfiguration(studyId, new QueryOptions()).first();
+
+                List<Integer> fileIds = new ArrayList<>();
+                for (URI uri : files) {
+                    String fileName = VariantReaderUtils.getOriginalFromTransformedFile(uri);
+                    fileIds.add(studyConfiguration.getFileIds().get(fileName));
+                }
+                Integer defaultCohortId = studyConfiguration.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
+                if (studyConfiguration.getCalculatedStats().contains(defaultCohortId)) {
+                    logger.debug("Cohort \"{}\":{} was already calculated. Just update stats.", StudyEntry.DEFAULT_COHORT, defaultCohortId);
+                    statsOptions.append(Options.UPDATE_STATS.key(), true);
+                }
+                URI statsOutputUri = output.resolve(buildFilename(studyConfiguration.getStudyName(), fileIds.get(0))
+                        + "." + TimeUtils.getTime());
+                statsOptions.put(DefaultVariantStatisticsManager.OUTPUT, statsOutputUri.toString());
+
+                statsOptions.remove(Options.FILE_ID.key());
+
+                List<String> cohorts = Collections.singletonList(StudyEntry.DEFAULT_COHORT);
+                calculateStats(studyConfiguration.getStudyName(), cohorts, dbName, statsOptions);
+            } catch (Exception e) {
+                logger.error("Can't calculate stats.", e);
+                throw new StorageETLException("Can't calculate stats.", e, results);
+            }
         }
     }
 

@@ -228,6 +228,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
                     }
                 }
                 annotateLoadedFiles(outdirUri, inputFiles, results, getOptions());
+                calculateStatsForLoadedFiles(outdirUri, inputFiles, results, getOptions());
             }
 
         } finally {
@@ -257,8 +258,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             variantMongoDBAdaptor = new VariantMongoDBAdaptor(mongoDataStoreManager, credentials, variantsCollection, filesCollection,
                     studyConfigurationManager, configuration);
         } catch (UnknownHostException e) {
-            e.printStackTrace();
-            return null;
+            throw new IllegalArgumentException(e);
         }
 
         logger.debug("getting DBAdaptor to db: {}", credentials.getMongoDbName());

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant;
 
+import com.google.common.collect.BiMap;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLineType;
@@ -42,20 +43,18 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.hpg.bigdata.core.io.avro.AvroFileWriter;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageETL;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.io.plain.StringDataReader;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
+import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
-import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.core.variant.transform.MalformedVariantHandler;
 import org.opencb.opencga.storage.core.variant.transform.VariantAvroTransformTask;
 import org.opencb.opencga.storage.core.variant.transform.VariantJsonTransformTask;
@@ -757,7 +756,6 @@ public abstract class VariantStorageETL implements StorageETL {
     public URI postLoad(URI input, URI output) throws StorageManagerException {
 //        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
-        String dbName = options.getString(Options.DB_NAME.key(), null);
         List<Integer> fileIds = options.getAsIntegerList(Options.FILE_ID.key());
 
         int studyId = options.getInt(Options.STUDY_ID.key(), -1);
@@ -776,53 +774,35 @@ public abstract class VariantStorageETL implements StorageETL {
             dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
         }
 
-        if (options.getBoolean(Options.CALCULATE_STATS.key(), Options.CALCULATE_STATS.defaultValue())) {
-            // TODO add filters
-            try {
-                logger.debug("about to calculate stats");
-                DefaultVariantStatisticsManager variantStatisticsManager = new DefaultVariantStatisticsManager(dbAdaptor);
-//                VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName);
-                URI statsOutputUri = output.resolve(buildFilename(studyConfiguration.getStudyName(), fileIds.get(0))
-                        + "." + TimeUtils.getTime());
-
-                String defaultCohortName = StudyEntry.DEFAULT_COHORT;
-                Map<String, Integer> indexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration);
-                Map<String, Set<String>> defaultCohort =
-                        new HashMap<>(Collections.singletonMap(defaultCohortName, indexedSamples.keySet()));
-
-                QueryOptions statsOptions = new QueryOptions(options);
-                if (studyConfiguration.getCohortIds().containsKey(defaultCohortName)) { //Check if "defaultCohort" exists
-                    Integer defaultCohortId = studyConfiguration.getCohortIds().get(defaultCohortName);
-                    if (studyConfiguration.getCalculatedStats().contains(defaultCohortId)) { //Check if "defaultCohort" is calculated
-                        //Check if the samples number are different
-                        if (!indexedSamples.values().equals(studyConfiguration.getCohorts().get(defaultCohortId))) {
-                            logger.debug("Cohort \"{}\":{} was already calculated. Invalidating stats to recalculate.",
-                                    defaultCohortName, defaultCohortId);
-                            studyConfiguration.getCalculatedStats().remove(defaultCohortId);
-                            studyConfiguration.getInvalidStats().add(defaultCohortId);
-                            statsOptions.put(Options.OVERWRITE_STATS.key(), true);
-                        } else {
-                            logger.debug("Cohort \"{}\":{} was already calculated. Just update stats.", defaultCohortName, defaultCohortId);
-                            statsOptions.put(Options.UPDATE_STATS.key(), true);
-                        }
-                    }
-                }
-                statsOptions.remove(Options.FILE_ID.key());
-
-                URI statsUri = variantStatisticsManager
-                        .createStats(dbAdaptor, statsOutputUri, defaultCohort, new HashMap<>(), studyConfiguration, statsOptions);
-                variantStatisticsManager.loadStats(dbAdaptor, statsUri, studyConfiguration, statsOptions);
-            } catch (Exception e) {
-                logger.error("Can't calculate stats.", e);
-                e.printStackTrace();
-            }
-        }
-
         return input;
     }
 
     public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageManagerException {
+        // Update indexed files
         studyConfiguration.getIndexedFiles().addAll(fileIds);
+
+        // Update the cohort ALL. Invalidate if needed
+        String defaultCohortName = StudyEntry.DEFAULT_COHORT;
+        BiMap<String, Integer> indexedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration);
+        final Integer defaultCohortId;
+        if (studyConfiguration.getCohortIds().containsKey(defaultCohortName)) { //Check if "defaultCohort" exists
+            defaultCohortId = studyConfiguration.getCohortIds().get(defaultCohortName);
+            if (studyConfiguration.getCalculatedStats().contains(defaultCohortId)) { //Check if "defaultCohort" is calculated
+                //Check if the samples number are different
+                if (!indexedSamples.values().equals(studyConfiguration.getCohorts().get(defaultCohortId))) {
+                    logger.debug("Cohort \"{}\":{} was already calculated. Invalidating stats.",
+                            defaultCohortName, defaultCohortId);
+                    studyConfiguration.getCalculatedStats().remove(defaultCohortId);
+                    studyConfiguration.getInvalidStats().add(defaultCohortId);
+                }
+            }
+        } else {
+            // Default cohort does not exist. Create cohort.
+            defaultCohortId = studyConfiguration.getCohortIds().values().stream().max(Integer::compareTo).orElse(1);
+            studyConfiguration.getCohortIds().put(StudyEntry.DEFAULT_COHORT, defaultCohortId);
+        }
+        studyConfiguration.getCohorts().put(defaultCohortId, indexedSamples.values());
+
     }
 
     @Override
