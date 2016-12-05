@@ -53,7 +53,6 @@ import static org.opencb.commons.datastore.mongodb.MongoDBCollection.UPSERT;
 public class MongoDBStudyConfigurationManager extends StudyConfigurationManager {
 
     private final MongoDataStoreManager mongoManager;
-    private final MongoDataStore db;
     private final boolean closeConnection;
 
     private final DocumentToStudyConfigurationConverter studyConfigurationConverter = new DocumentToStudyConfigurationConverter();
@@ -77,7 +76,7 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
         // Mongo configuration
         this.mongoManager = mongoManager;
         this.closeConnection = closeConnection;
-        db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
+        MongoDataStore db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
         collection = db.getCollection(collectionName)
                 .withReadPreference(ReadPreference.primary())
                 .withWriteConcern(WriteConcern.ACKNOWLEDGED);

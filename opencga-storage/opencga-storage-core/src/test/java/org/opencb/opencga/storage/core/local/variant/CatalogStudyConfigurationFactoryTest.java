@@ -14,22 +14,21 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.storage;
+package org.opencb.opencga.storage.core.local.variant;
 
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.local.variant.CatalogStudyConfigurationFactory;
-import org.opencb.opencga.catalog.utils.FileMetadataReader;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,6 +39,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.DB_NAME;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 
@@ -76,7 +76,7 @@ public class CatalogStudyConfigurationFactoryTest {
         sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");
         projectId = catalogManager.createProject("p1", "p1", "Project 1", "ACME", null, sessionId).first().getId();
         studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, "Study 1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", DB_NAME)), null, null, null, sessionId).first().getId();
-        outputId = catalogManager.createFolder(studyId, Paths.get("data", "index"), false, null, sessionId).first().getId();
+        outputId = catalogManager.createFolder(studyId, Paths.get("data", "index"), true, null, sessionId).first().getId();
         files.add(create("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
         files.add(create("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", true));
         files.add(create("1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
@@ -108,16 +108,12 @@ public class CatalogStudyConfigurationFactoryTest {
         CatalogStudyConfigurationFactory studyConfigurationManager = new CatalogStudyConfigurationFactory(catalogManager);
 
         Study study = catalogManager.getStudy(studyId, sessionId).first();
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, new StudyConfigurationManager(new org.opencb.commons.datastore.core.ObjectMap()) {
-            protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(String studyName, Long timeStamp, org.opencb.commons.datastore.core.QueryOptions options) {return null;}
-            protected QueryResult internalUpdateStudyConfiguration(StudyConfiguration studyConfiguration, org.opencb.commons.datastore.core.QueryOptions options) {return null;}
-            protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, org.opencb.commons.datastore.core.QueryOptions options) {
-                StudyConfiguration studyConfiguration = new StudyConfiguration((int) study.getId(), "user@p1:s1");
-                studyConfiguration.setIndexedFiles(indexedFiles);
-                return new QueryResult<StudyConfiguration>("", 0, 0, 0, "", "", Collections.emptyList());
-            }
-            public Map<String, Integer> getStudies(QueryOptions options) { return Collections.emptyMap(); }
-        }, new QueryOptions(), sessionId);
+
+        DummyStudyConfigurationManager scm = spy(new DummyStudyConfigurationManager());
+        doReturn(new QueryResult<StudyConfiguration>("", 0, 0, 0, "", "", Collections.emptyList()))
+                .when(scm).internalGetStudyConfiguration(anyInt(), any(), any());
+
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, scm, new QueryOptions(), sessionId);
 
         checkStudyConfiguration(study, studyConfiguration);
     }
@@ -137,17 +133,15 @@ public class CatalogStudyConfigurationFactoryTest {
         CatalogStudyConfigurationFactory studyConfigurationManager = new CatalogStudyConfigurationFactory(catalogManager);
 
         Study study = catalogManager.getStudy(studyId, sessionId).first();
-        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, new StudyConfigurationManager(new org.opencb.commons.datastore.core.ObjectMap()) {
-            protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(String studyName, Long timeStamp, org.opencb.commons.datastore.core.QueryOptions options) {return null;}
-            protected QueryResult internalUpdateStudyConfiguration(StudyConfiguration studyConfiguration, org.opencb.commons.datastore.core.QueryOptions options) {return null;}
-            protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, org.opencb.commons.datastore.core.QueryOptions options) {
-                StudyConfiguration studyConfiguration = new StudyConfiguration((int) study.getId(), "user@p1:s1");
-                studyConfiguration.setIndexedFiles(indexedFiles);
-                return new QueryResult<StudyConfiguration>("", 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
-            }
-            public Map<String, Integer> getStudies(QueryOptions options) { return Collections.emptyMap(); }
 
-        }, new QueryOptions(), sessionId);
+        DummyStudyConfigurationManager scm = spy(new DummyStudyConfigurationManager());
+        StudyConfiguration studyConfigurationToReturn = new StudyConfiguration((int) study.getId(), "user@p1:s1");
+        studyConfigurationToReturn.setIndexedFiles(indexedFiles);
+        doReturn(new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(studyConfigurationToReturn)))
+                .when(scm).internalGetStudyConfiguration(anyInt(), any(), any());
+
+
+        StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, scm, new QueryOptions(), sessionId);
 
         checkStudyConfiguration(study, studyConfiguration);
     }

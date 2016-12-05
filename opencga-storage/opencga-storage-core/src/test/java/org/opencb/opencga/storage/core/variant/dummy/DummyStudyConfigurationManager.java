@@ -53,7 +53,7 @@ public class DummyStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     @Override
-    protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(String studyName, Long time, QueryOptions options) {
+    public QueryResult<StudyConfiguration> internalGetStudyConfiguration(String studyName, Long time, QueryOptions options) {
         if (STUDY_CONFIGURATIONS_BY_NAME.containsKey(studyName)) {
             return new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(STUDY_CONFIGURATIONS_BY_NAME.get(studyName).newInstance()));
         } else {
@@ -62,7 +62,7 @@ public class DummyStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     @Override
-    protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+    public QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
         if (STUDY_CONFIGURATIONS_BY_ID.containsKey(studyId)) {
             return new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(STUDY_CONFIGURATIONS_BY_ID.get(studyId).newInstance()));
         } else {
