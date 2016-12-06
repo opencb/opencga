@@ -45,7 +45,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
 
     static {
         TEMPLATES = new ArrayList<>();
-        for (int chr = 22; chr > 0; chr--) {
+        for (int chr = 1; chr <= 22; chr++) {
             TEMPLATES.add(chr + ":1000:A:C");
         }
         TEMPLATES.add("X:1000:A:C");
@@ -74,7 +74,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult<Long> count(Query query) {
-        return null;
+        return new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList((long) TEMPLATES.size()));
     }
 
     @Override

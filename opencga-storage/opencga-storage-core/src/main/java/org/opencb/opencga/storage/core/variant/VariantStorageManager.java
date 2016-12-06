@@ -38,6 +38,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
+import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
@@ -46,7 +47,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Created by imedina on 13/08/14.
@@ -131,6 +134,47 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
         logger = LoggerFactory.getLogger(VariantStorageManager.class);
     }
 
+
+    public void importData(String fileId, String studyId) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Exports the result of the given query and the associated metadata.
+     * @param outputFile    Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
+     * @param outputFormat  Output format.
+     * @param dbName        DBName for reading the variants
+     * @param query         Query with the variants to export
+     * @param queryOptions  Query options
+     * @throws IOException  If there is any IO error
+     * @throws StorageManagerException  If there is any error exporting variants
+     */
+    public void exportData(URI outputFile, String outputFormat, String dbName, Query query, QueryOptions queryOptions)
+            throws IOException, StorageManagerException {
+
+        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
+            VariantExporter exporter = newVariantExporter(dbAdaptor);
+            exporter.export(outputFile, outputFormat, query, queryOptions);
+        }
+    }
+
+    protected VariantExporter newVariantExporter(VariantDBAdaptor dbAdaptor) {
+        return new VariantExporter(dbAdaptor);
+    }
+
+    /**
+     * Index the given input files. By default, executes the steps in {@link VariantStorageETL}.
+     *
+     * Will create a {@link #newStorageETL} for each input file.
+     *
+     * @param inputFiles    Input files to index
+     * @param outdirUri     Output directory for possible intermediate files
+     * @param doExtract     Execute extract step {@link VariantStorageETL#extract}
+     * @param doTransform   Execute transform step {@link VariantStorageETL#transform}
+     * @param doLoad        Execute load step {@link VariantStorageETL#load}
+     * @return              List of {@link StorageETLResult}, one for each input file.
+     * @throws StorageManagerException      If there is any problem related with the StorageManager
+     */
     @Override
     public List<StorageETLResult> index(List<URI> inputFiles, URI outdirUri, boolean doExtract, boolean doTransform, boolean doLoad)
             throws StorageManagerException {
@@ -288,7 +332,6 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
                 List<String> cohorts = Collections.singletonList(StudyEntry.DEFAULT_COHORT);
                 calculateStats(studyConfiguration.getStudyName(), cohorts, dbName, statsOptions);
             } catch (Exception e) {
-                logger.error("Can't calculate stats.", e);
                 throw new StorageETLException("Can't calculate stats.", e, results);
             }
         }

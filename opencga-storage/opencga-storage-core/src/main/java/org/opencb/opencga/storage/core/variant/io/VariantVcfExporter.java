@@ -62,7 +62,8 @@ import java.util.stream.Collectors;
  */
 public class VariantVcfExporter implements DataWriter<Variant> {
 
-    private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.#######");
+    private static final DecimalFormat DECIMAL_FORMAT_7 = new DecimalFormat("#.#######");
+    private static final DecimalFormat DECIMAL_FORMAT_3 = new DecimalFormat("#.###");
     private final Logger logger = LoggerFactory.getLogger(VariantVcfExporter.class);
 
 
@@ -76,7 +77,6 @@ public class VariantVcfExporter implements DataWriter<Variant> {
     private final OutputStream outputStream;
     private final QueryOptions queryOptions;
 
-    private DecimalFormat df3 = new DecimalFormat("#.###");
     private VariantContextWriter writer;
     private List<String> annotations;
     private int failedVariants;
@@ -109,6 +109,7 @@ public class VariantVcfExporter implements DataWriter<Variant> {
      * @param query The query object
      * @param options The options
      */
+    @Deprecated
     public static void vcfExport(VariantDBAdaptor adaptor, StudyConfiguration studyConfiguration, URI outputUri, Query query,
                                  QueryOptions options) {
 
@@ -146,6 +147,7 @@ public class VariantVcfExporter implements DataWriter<Variant> {
         writer.close();
     }
 
+    @Deprecated
     public static int htsExport(VariantDBIterator iterator, StudyConfiguration studyConfiguration, VariantSourceDBAdaptor sourceDBAdaptor,
                                 OutputStream outputStream, QueryOptions queryOptions) {
 
@@ -161,6 +163,7 @@ public class VariantVcfExporter implements DataWriter<Variant> {
         return exporter.failedVariants;
     }
 
+    @Override
     public boolean pre() {
         final VCFHeader header;
         try {
@@ -348,6 +351,7 @@ public class VariantVcfExporter implements DataWriter<Variant> {
      * @param studyConfiguration StudyConfiguration
      * @param annotations Variant annotation
      * @return The variant in HTSJDK format
+     * TODO: Move to a separated converter
      */
     public VariantContext convertVariantToVariantContext(Variant variant, StudyConfiguration studyConfiguration,
                                                          List<String> annotations) { //, StudyConfiguration
@@ -360,9 +364,13 @@ public class VariantVcfExporter implements DataWriter<Variant> {
 
         VariantType type = variant.getType();
         if (type == VariantType.INDEL) {
-            reference = "N" + reference;
-            alternate = "N" + alternate;
-            start -= 1; // adjust start
+            if (reference.isEmpty()) {
+                reference = "N" + reference;
+                start -= 1; // adjust start
+            }
+            if (alternate.isEmpty()) {
+                alternate = "N" + alternate;
+            }
         }
 
         String filter = "PASS";
@@ -413,8 +421,6 @@ public class VariantVcfExporter implements DataWriter<Variant> {
                     List<String> ftSplit = new ArrayList<>(Arrays.asList(
                             (StringUtils.isBlank(genotypeFilter) ? "." : genotypeFilter).split(",")));
                     boolean filterIsMatching = gtSplit.size() == ftSplit.size();
-                    String gt = gtSplit.get(0);
-                    String ft = ftSplit.get(0);
                     while (gtSplit.size() > 1) {
                         int idx = gtSplit.indexOf(".");
                         if (idx < 0) {
@@ -426,8 +432,8 @@ public class VariantVcfExporter implements DataWriter<Variant> {
                         gtSplit.remove(idx);
                         ftSplit.remove(idx);
                     }
-                    gt = gtSplit.get(0);
-                    ft = ftSplit.get(0);
+                    String gt = gtSplit.get(0);
+                    String ft = ftSplit.get(0);
 
                     org.opencb.biodata.models.feature.Genotype genotype =
                             new org.opencb.biodata.models.feature.Genotype(gt, reference, alternate);
@@ -552,7 +558,7 @@ public class VariantVcfExporter implements DataWriter<Variant> {
                                     .map(Score::getScore)
                                     .collect(Collectors.toList());
                             if (phastCons.size() > 0) {
-                                stringBuilder.append(df3.format(phastCons.get(0)));
+                                stringBuilder.append(DECIMAL_FORMAT_3.format(phastCons.get(0)));
                             }
                         }
                         break;
@@ -563,7 +569,7 @@ public class VariantVcfExporter implements DataWriter<Variant> {
                                     .map(Score::getScore)
                                     .collect(Collectors.toList());
                             if (phylop.size() > 0) {
-                                stringBuilder.append(df3.format(phylop.get(0)));
+                                stringBuilder.append(DECIMAL_FORMAT_3.format(phylop.get(0)));
                             }
                         }
                         break;
@@ -594,7 +600,7 @@ public class VariantVcfExporter implements DataWriter<Variant> {
                                     .map(Score::getScore)
                                     .collect(Collectors.toList());
                             if (sift.size() > 0) {
-                                stringBuilder.append(df3.format(sift.get(0)));
+                                stringBuilder.append(DECIMAL_FORMAT_3.format(sift.get(0)));
                             }
                         }
                         break;
@@ -606,7 +612,7 @@ public class VariantVcfExporter implements DataWriter<Variant> {
                                     .map(Score::getScore)
                                     .collect(Collectors.toList());
                             if (polyphen.size() > 0) {
-                                stringBuilder.append(df3.format(polyphen.get(0)));
+                                stringBuilder.append(DECIMAL_FORMAT_3.format(polyphen.get(0)));
                             }
                         }
                         break;
@@ -676,7 +682,7 @@ public class VariantVcfExporter implements DataWriter<Variant> {
             } else {
                 cohortName = cohortName + "_";
             }
-            attributes.put(cohortName + VCFConstants.ALLELE_FREQUENCY_KEY, DECIMAL_FORMAT.format(stats.getAltAlleleFreq()));
+            attributes.put(cohortName + VCFConstants.ALLELE_FREQUENCY_KEY, DECIMAL_FORMAT_7.format(stats.getAltAlleleFreq()));
         }
     }
 

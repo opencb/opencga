@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.opencb.opencga.storage.mongodb.variant;
+package org.opencb.opencga.storage.mongodb.variant.io;
 
-import org.opencb.opencga.storage.core.variant.io.VariantExporterTest;
+import org.opencb.opencga.storage.core.variant.io.VariantVcfExporterTest;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
 /**
  * Created by jmmut on 2015-07-15.
  *
  * @author Jose Miguel Mut Lopez &lt;jmmut@ebi.ac.uk&gt;
  */
-public class VariantMongoExporterTest extends VariantExporterTest implements MongoDBVariantStorageTest {
+public class MongoVariantVcfExporterTest extends VariantVcfExporterTest implements MongoDBVariantStorageTest {
 }

@@ -49,6 +49,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.function.Function;
@@ -82,6 +83,10 @@ public class VariantStorageManager extends StorageManager {
     }
 
     public void exportData(String outputFile, String studyId, Query query, QueryOptions queryOptions, String sessionId) {
+        throw new UnsupportedOperationException();
+    }
+
+    public void exportData(OutputStream outputFile, String studyId, Query query, QueryOptions queryOptions, String sessionId) {
         throw new UnsupportedOperationException();
     }
 
