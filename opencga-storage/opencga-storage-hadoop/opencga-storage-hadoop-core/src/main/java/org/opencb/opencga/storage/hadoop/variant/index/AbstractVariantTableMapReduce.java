@@ -21,22 +21,19 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
-import org.apache.hadoop.hbase.HConstants;
-import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.client.Mutation;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.hadoop.variant.AbstractHBaseMapReduce;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.converters.HBaseToVariantConverter;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
@@ -49,75 +46,25 @@ import java.util.stream.Stream;
  *
  * @author Matthias Haimel mh719+git@cam.ac.uk
  */
-public abstract class AbstractVariantTableMapReduce extends TableMapper<ImmutableBytesWritable, Mutation> {
+public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapReduce<ImmutableBytesWritable, Mutation> {
     public static final String COUNTER_GROUP_NAME = "OPENCGA.HBASE";
     public static final String SPECIFIC_PUT = "opencga.storage.hadoop.hbase.merge.use_specific_put";
     public static final String ARCHIVE_GET_BATCH_SIZE = "opencga.storage.hadoop.hbase.merge.archive.scan.batchsize";
-    private Logger LOG = LoggerFactory.getLogger(this.getClass());
-
-    private VariantTableHelper helper;
-    protected StudyConfiguration studyConfiguration = null;
 
     protected ArchiveResultToVariantConverter resultConverter;
-
     protected VariantMerger variantMerger;
-    protected Set<String> indexedSamples;
     protected Set<String> currentIndexingSamples;
     protected Integer archiveBatchSize;
 
-    protected HBaseToVariantConverter hbaseToVariantConverter;
-    private SortedMap<Long, String> times = new TreeMap<>();
-    private long lastTime;
-    private Map<String, Long> timeSum = new HashMap<>();
-
-    protected long timestamp = HConstants.LATEST_TIMESTAMP;
-
-    protected Logger getLog() {
-        return LOG;
-    }
-
-    public VariantTableHelper getHelper() {
-        return helper;
-    }
-
-    protected void setHelper(VariantTableHelper helper) {
-        this.helper = helper;
-    }
 
     protected ArchiveResultToVariantConverter getResultConverter() {
         return resultConverter;
-    }
-
-    protected StudyConfiguration getStudyConfiguration() {
-        return studyConfiguration;
     }
 
     protected VariantMerger getVariantMerger() {
         return variantMerger;
     }
 
-    protected HBaseToVariantConverter getHbaseToVariantConverter() {
-        return hbaseToVariantConverter;
-    }
-
-    /**
-     * Sets the lastTime value to the {@link System#currentTimeMillis}.
-     */
-    protected void startTime() {
-        lastTime = System.nanoTime();
-    }
-
-    /**
-     * Calculates the delay between the last saved time and the current {@link System#currentTimeMillis}
-     * Resets the last time.
-     *
-     * @param name Name of the last code block
-     */
-    protected void endTime(String name) {
-        long time = System.nanoTime();
-        timeSum.put(name, time - lastTime);
-        lastTime = time;
-    }
 
     /**
      * Extracts file Ids from column names - ignoring _V columns.
@@ -134,17 +81,13 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
 
     protected List<Variant> parseCurrentVariantsRegion(List<Cell> variantCells, String chromosome)
             throws InvalidProtocolBufferException {
-
         List<VariantTableStudyRow> tableStudyRows = parseVariantStudyRowsFromArchive(variantCells, chromosome);
-
         HBaseToVariantConverter converter = getHbaseToVariantConverter();
-
         List<Variant> variants = new ArrayList<>(tableStudyRows.size());
         for (VariantTableStudyRow tableStudyRow : tableStudyRows) {
             variants.add(converter.convert(tableStudyRow));
         }
         return variants;
-
     }
 
     protected List<VariantTableStudyRow> parseVariantStudyRowsFromArchive(List<Cell> variantCells, String chr)
@@ -230,7 +173,7 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
         getLog().info("Store variants: " + tableStudyRows.size());
         Put put = new Put(rowKey);
         for (VariantTableStudyRow row : tableStudyRows) {
-            byte[] value = VariantTableStudyRow.toProto(Collections.singletonList(row), timestamp).toByteArray();
+            byte[] value = VariantTableStudyRow.toProto(Collections.singletonList(row), getTimestamp()).toByteArray();
             String column = GenomeHelper.getVariantcolumn(row);
             put.addColumn(getHelper().getColumnFamily(), Bytes.toBytes(column), value);
         }
@@ -242,21 +185,12 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
     @Override
     protected void setup(Context context) throws IOException,
             InterruptedException {
-        Thread.currentThread().setName(context.getTaskAttemptID().toString());
-        getLog().debug("Setup configuration");
-
+        super.setup(context);
         this.archiveBatchSize = context.getConfiguration().getInt(ARCHIVE_GET_BATCH_SIZE, 500);
-
-        // Setup configurationHBaseToVariantConverter// Setup configuration
-        helper = new VariantTableHelper(context.getConfiguration());
-        this.studyConfiguration = getHelper().loadMeta(); // Variant meta
 
         // Load VCF meta data for columns
         resultConverter = new ArchiveResultToVariantConverter(
-                studyConfiguration.getStudyId(), helper.getColumnFamily(), this.studyConfiguration);
-        hbaseToVariantConverter = new HBaseToVariantConverter(this.helper,
-                new HBaseStudyConfigurationManager(this.helper, this.helper.getOutputTableAsString(),
-                        this.helper.getConf(), new ObjectMap())).setFailOnEmptyVariants(true).setSimpleGenotypes(false);
+                getStudyConfiguration().getStudyId(), getHelper().getColumnFamily(), this.getStudyConfiguration());
         variantMerger = new VariantMerger(true);
 
         String[] toIdxFileIds = context.getConfiguration().getStrings(AbstractVariantTableDriver.CONFIG_VARIANT_FILE_IDS, new String[0]);
@@ -266,27 +200,17 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
         }
         Set<String> toIndexSampleNames = new HashSet<>();
         Set<Integer> toIndexFileIdSet = Arrays.stream(toIdxFileIds).map(id -> Integer.valueOf(id)).collect(Collectors.toSet());
-        BiMap<Integer, String> sampleIdToSampleName = StudyConfiguration.inverseMap(studyConfiguration.getSampleIds());
-        for (BiMap.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
+        BiMap<Integer, String> sampleIdToSampleName = StudyConfiguration.inverseMap(getStudyConfiguration().getSampleIds());
+        for (BiMap.Entry<Integer, LinkedHashSet<Integer>> entry : getStudyConfiguration().getSamplesInFiles().entrySet()) {
             if (toIndexFileIdSet.contains(entry.getKey())) {
                 entry.getValue().forEach(sid -> toIndexSampleNames.add(sampleIdToSampleName.get(sid)));
             }
         }
-
-        BiMap<String, Integer> loadedSamples = StudyConfiguration.getIndexedSamples(this.studyConfiguration);
-        this.indexedSamples = new HashSet<>(loadedSamples.keySet());
-        getVariantMerger().setExpectedSamples(loadedSamples.keySet());
+        getVariantMerger().setExpectedSamples(getIndexedSamples().keySet());
         // Add all samples which are currently being indexed.
 
         this.currentIndexingSamples = new HashSet<>(toIndexSampleNames);
         getVariantMerger().addExpectedSamples(toIndexSampleNames);
-
-        timestamp = context.getConfiguration().getLong(AbstractVariantTableDriver.TIMESTAMP, -1);
-        if (timestamp == -1) {
-            throw new IllegalArgumentException("Missing TimeStamp");
-        }
-
-        super.setup(context);
     }
 
     @Override
@@ -345,10 +269,10 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
         /* *********************************** */
 
         // Clean up of this slice
-        for (Entry<String, Long> entry : this.timeSum.entrySet()) {
+        for (Entry<String, Long> entry : this.getTimes().entrySet()) {
             context.getCounter(COUNTER_GROUP_NAME, "VCF_TIMER_" + entry.getKey().replace(' ', '_')).increment(entry.getValue());
         }
-        this.timeSum.clear();
+        this.getTimes().clear();
         getLog().info("Finished mapping key: " + Bytes.toString(key.get()));
     }
 

@@ -173,8 +173,8 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
             byte[] data = CellUtil.cloneValue(variantCells.get(0));
             VariantTableStudyRowsProto proto = VariantTableStudyRowsProto.parseFrom(data);
             getLog().info("Column _V: found " + variantCells.size()
-                    + " columns - check timestamp " + timestamp + " with " + proto.getTimestamp());
-            if (proto.getTimestamp() == timestamp) {
+                    + " columns - check timestamp " + getTimestamp() + " with " + proto.getTimestamp());
+            if (proto.getTimestamp() == getTimestamp()) {
                 ctx.context.getCounter(COUNTER_GROUP_NAME, "ALREADY_LOADED_SLICE").increment(1);
                 for (Cell cell : variantCells) {
                     VariantTableStudyRowsProto rows = VariantTableStudyRowsProto.parseFrom(CellUtil.cloneValue(cell));
@@ -210,7 +210,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         AtomicLong merge = new AtomicLong(0);
         // Reset expected set
         this.getVariantMerger().setExpectedSamples(this.currentIndexingSamples);
-        BiMap<Integer, String> id2name = StudyConfiguration.getIndexedSamples(this.studyConfiguration).inverse();
+        BiMap<Integer, String> id2name = StudyConfiguration.getIndexedSamples(this.getStudyConfiguration()).inverse();
         loadFromArchive(ctx.context, ctx.getCurrRowKey(), ctx.fileIds, (sampleIds, archiveOther) -> {
             getLog().info("Loaded " + archiveOther.size() + " variants for " + sampleIds.size() + " samples ... ");
             endTime("8 Load archive slice from hbase");
@@ -257,7 +257,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
 
     @Override
     protected void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException {
-        this.getVariantMerger().setExpectedSamples(this.indexedSamples);
+        this.getVariantMerger().setExpectedSamples(this.getIndexedSamples().keySet());
         this.getVariantMerger().addExpectedSamples(this.currentIndexingSamples);
         if (processVColumn(ctx)) {
             return; // All stored in V column already.
