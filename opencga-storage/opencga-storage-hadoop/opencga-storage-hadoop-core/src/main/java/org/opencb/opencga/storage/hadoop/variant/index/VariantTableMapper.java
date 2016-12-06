@@ -101,46 +101,9 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         getLog().info("Index ...");
         NavigableMap<Integer, List<Variant>> varPosRegister = indexAlts(archiveVar, (int) ctx.startPos, (int) ctx.nextStartPos);
         endTime("3 Unpack and convert input ARCHIVE variants");
-        { /* Update and submit Analysis Variants */
-            List<Cell> variantCells = GenomeHelper.getVariantColumns(ctx.getValue().rawCells());
-            getLog().info("Parse ...");
-            List<Variant> analysisVar = parseCurrentVariantsRegion(variantCells, ctx.getChromosome());
-            ctx.getContext().getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ANALYSIS").increment(analysisVar.size());
-            endTime("2 Unpack and convert input ANALYSIS variants (" + GenomeHelper.VARIANT_COLUMN_PREFIX + ")");
-            getLog().info("Filter ...");
-            // Variants of target type
-            List<Variant> archiveTarget = filterForVariant(archiveVar.stream(), TARGET_VARIANT_TYPE).collect(Collectors.toList());
-            if (!archiveTarget.isEmpty() && getLog().isDebugEnabled()) {
-                getLog().debug("Loaded variant from archive table: " + archiveTarget.get(0).toJson());
-            }
-            getLog().info("Loaded current: " + analysisVar.size()
-                    + "; archive: " + archiveVar.size()
-                    + "; target: " + archiveTarget.size());
-            ctx.context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ARCHIVE_TARGET").increment(archiveTarget.size());
-            endTime("4 Filter archive variants by target");
 
-            // Check if Archive covers all bases in Analysis
-            // TODO switched off at the moment down to removed variant calls from gVCF files (malformated variants)
-            //        checkArchiveConsistency(ctx.context, ctx.startPos, ctx.nextStartPos, archiveVar, analysisVar);
-            endTime("5 Check consistency -- skipped");
-
-            /* ******** Update Analysis Variants ************** */
-            analysisNew = getNewVariantsAsTemplates(ctx, analysisVar, archiveTarget, (int) ctx.startPos, (int) ctx.nextStartPos);
-            endTime("7 Create NEW variants");
-
-            List<VariantTableStudyRow> rows = new ArrayList<>();
-            // (2) and (3): Same, missing (and overlapping missing) variants
-            for (Variant var : analysisVar) {
-                ctx.getContext().progress(); // Call process to avoid timeouts
-                Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, varPosRegister);
-                this.getVariantMerger().merge(var, cleanList);
-                endTime("6 Merge same and missing");
-                updateOutputTable(ctx.context, Collections.singletonList(var), rows, ctx.sampleIds);
-                endTime("10 Update OUTPUT table");
-            }
-            updateArchiveTable(ctx.getCurrRowKey(), ctx.context, rows);
-            endTime("11 Update INPUT table");
-        }
+        /* Update and submit Analysis Variants */
+        analysisNew = processAnalysisVariants(ctx, archiveVar, varPosRegister);
         getLog().info("Merge {} new variants ", analysisNew.size());
         long overlap = 0;
         long merge = 0;
@@ -158,6 +121,49 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         }
         getLog().info("Merge 1 - overlap {}; merge {}; ns", overlap, merge);
         endTime("8 Merge NEW variants");
+        return analysisNew;
+    }
+
+    private Set<Variant> processAnalysisVariants(VariantMapReduceContext ctx, List<Variant> archiveVar, NavigableMap
+                <Integer, List<Variant>> varPosRegister) throws IOException, InterruptedException {
+        List<Cell> variantCells = GenomeHelper.getVariantColumns(ctx.getValue().rawCells());
+        getLog().info("Parse ...");
+        List<Variant> analysisVar = parseCurrentVariantsRegion(variantCells, ctx.getChromosome());
+        ctx.getContext().getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ANALYSIS").increment(analysisVar.size());
+        endTime("2 Unpack and convert input ANALYSIS variants (" + GenomeHelper.VARIANT_COLUMN_PREFIX + ")");
+        getLog().info("Filter ...");
+        // Variants of target type
+        List<Variant> archiveTarget = filterForVariant(archiveVar.stream(), TARGET_VARIANT_TYPE).collect(Collectors.toList());
+        if (!archiveTarget.isEmpty() && getLog().isDebugEnabled()) {
+            getLog().debug("Loaded variant from archive table: " + archiveTarget.get(0).toJson());
+        }
+        getLog().info("Loaded current: " + analysisVar.size()
+                + "; archive: " + archiveVar.size()
+                + "; target: " + archiveTarget.size());
+        ctx.context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ARCHIVE_TARGET").increment(archiveTarget.size());
+        endTime("4 Filter archive variants by target");
+
+        // Check if Archive covers all bases in Analysis
+        // TODO switched off at the moment down to removed variant calls from gVCF files (malformated variants)
+        //        checkArchiveConsistency(ctx.context, ctx.startPos, ctx.nextStartPos, archiveVar, analysisVar);
+        endTime("5 Check consistency -- skipped");
+
+        List<VariantTableStudyRow> rows = new ArrayList<>();
+        // (2) and (3): Same, missing (and overlapping missing) variants
+        for (Variant var : analysisVar) {
+            ctx.getContext().progress(); // Call process to avoid timeouts
+            Collection<Variant> cleanList = buildOverlappingNonRedundantSet(var, varPosRegister);
+            this.getVariantMerger().merge(var, cleanList);
+            endTime("6 Merge same and missing");
+            updateOutputTable(ctx.context, Collections.singletonList(var), rows, ctx.sampleIds);
+            endTime("10 Update OUTPUT table");
+        }
+        updateArchiveTable(ctx.getCurrRowKey(), ctx.context, rows);
+        endTime("11 Update INPUT table");
+
+        /* ******** Update Analysis Variants ************** */
+        Set<Variant> analysisNew = getNewVariantsAsTemplates(ctx, analysisVar, archiveTarget, (int) ctx.startPos, (int) ctx.nextStartPos);
+        endTime("7 Create NEW variants");
         return analysisNew;
     }
 
