@@ -227,8 +227,10 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
                         }
                     }
                 }
-                annotateLoadedFiles(outdirUri, inputFiles, results, getOptions());
-                calculateStatsForLoadedFiles(outdirUri, inputFiles, results, getOptions());
+                if (doMerge) {
+                    annotateLoadedFiles(outdirUri, inputFiles, results, getOptions());
+                    calculateStatsForLoadedFiles(outdirUri, inputFiles, results, getOptions());
+                }
             }
 
         } finally {

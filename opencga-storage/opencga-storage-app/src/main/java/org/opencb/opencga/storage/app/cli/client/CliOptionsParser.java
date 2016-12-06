@@ -593,7 +593,7 @@ public class CliOptionsParser extends OptionsParser {
                 ".core.StudyConfiguration", required = false, arity = 1)
         String studyConfigurationFile;
 
-        @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic or EVS (optional)", arity = 1)
+        @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
         VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
 
         @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
