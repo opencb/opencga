@@ -942,6 +942,19 @@ public abstract class VariantStorageETL implements StorageETL {
         }
     }
 
+
+    /**
+     *  see {@link #checkNewFile(StudyConfiguration, int, String, boolean)} with resume is set to false.
+     * @param studyConfiguration Study Configuration
+     * @param fileId    FileId to add. If negative, will generate a new one
+     * @param fileName  File name
+     * @return fileId related to that file.
+     * @throws StorageManagerException if the file is not valid for being loaded
+     */
+    protected int checkNewFile(StudyConfiguration studyConfiguration, int fileId, String fileName) throws StorageManagerException {
+        return checkNewFile(studyConfiguration, fileId, fileName, false);
+    }
+
     /**
      * Check if the file(name,id) can be added to the StudyConfiguration.
      *
@@ -953,10 +966,12 @@ public abstract class VariantStorageETL implements StorageETL {
      * @param studyConfiguration Study Configuration
      * @param fileId    FileId to add. If negative, will generate a new one
      * @param fileName  File name
+     * @param resume    resume a failed load
      * @return fileId related to that file.
      * @throws StorageManagerException if the file is not valid for being loaded
      */
-    protected int checkNewFile(StudyConfiguration studyConfiguration, int fileId, String fileName) throws StorageManagerException {
+    protected int checkNewFile(StudyConfiguration studyConfiguration, int fileId, String fileName, boolean resume)
+            throws StorageManagerException {
         Map<Integer, String> idFiles = StudyConfiguration.inverseMap(studyConfiguration.getFileIds());
 
         if (fileId < 0) {
@@ -983,10 +998,10 @@ public abstract class VariantStorageETL implements StorageETL {
                         + idFiles.get(fileId) + " (" + fileId + ")");
             }
         }
-        if (studyConfiguration.getIndexedFiles().contains(fileId)) {
+        // ignore if resume
+        if (!resume && studyConfiguration.getIndexedFiles().contains(fileId)) {
             throw StorageManagerException.alreadyLoaded(fileId, fileName);
         }
-
         return fileId;
     }
 

@@ -424,7 +424,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
                 }
 
                 Integer readFileId = Integer.parseInt(readSource.getFileId());
-                logger.info("Found source for file id {} with registered id {} ", loadedFileId, readFileId);
+                logger.debug("Found source for file id {} with registered id {} ", loadedFileId, readFileId);
                 if (!studyConfiguration.getFileIds().inverse().containsKey(readFileId)) {
                     checkNewFile(studyConfiguration, readFileId, readSource.getFileName());
                     studyConfiguration.getFileIds().put(readSource.getFileName(), readFileId);
@@ -437,18 +437,14 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
                     pendingFiles.add(readFileId);
                 }
             }
-
-//            //VariantSource source = readVariantSource(input, options);
-            fileId = checkNewFile(studyConfiguration, fileId, source.getFileName());
-
-
             logger.info("Found pending in DB: " + pendingFiles);
-//            if (missingFilesDetected) {
-//            }
+
+            boolean resume = options.getBoolean(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT_RESUME, false);
+            fileId = checkNewFile(studyConfiguration, fileId, source.getFileName(), resume);
 
             if (!loadArch) {
                 //If skip archive loading, input fileId must be already in archiveTable, so "pending to be loaded"
-                if (!pendingFiles.contains(fileId)) {
+                if (!resume && !pendingFiles.contains(fileId)) {
                     throw new StorageManagerException("File " + fileId + " is not loaded in archive table "
                             + getArchiveTableName(studyId, options) + "");
                 }
@@ -475,8 +471,6 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
             } else {
                 options.put(HADOOP_LOAD_VARIANT_PENDING_FILES, pendingFiles);
             }
-
-            boolean resume = options.getBoolean(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT_RESUME, false);
             BatchFileOperation op = addBatchOperation(studyConfiguration, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles, resume);
 
             options.put(HADOOP_LOAD_VARIANT_STATUS, op.currentStatus());
