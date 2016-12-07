@@ -351,13 +351,9 @@ public class GenomeHelper implements AutoCloseable {
     }
 
     public Variant extractVariantFromVariantRowKey(byte[] variantRowKey) {
-//        String[] strings = splitVariantRowkey(variantRowKey);
-//        return new Variant(extractChromosomeFromVariantRowKey(strings),
-//                extractPositionFromVariantRowKey(strings),
-//                extractReferenceFromVariantRowkey(strings),
-//                extractAlternateFromVariantRowkey(strings));
         int chrPosSeparator = ArrayUtils.indexOf(variantRowKey, (byte) 0);
         String chromosome = (String) PVarchar.INSTANCE.toObject(variantRowKey, 0, chrPosSeparator, PVarchar.INSTANCE);
+
         Integer intSize = PUnsignedInt.INSTANCE.getByteSize();
         int position = (Integer) PUnsignedInt.INSTANCE.toObject(variantRowKey, chrPosSeparator + 1, intSize, PUnsignedInt.INSTANCE);
         int referenceOffset = chrPosSeparator + 1 + intSize;
@@ -374,8 +370,13 @@ public class GenomeHelper implements AutoCloseable {
             alternate = (String) PVarchar.INSTANCE.toObject(variantRowKey, refAltSeparator + 1,
                     variantRowKey.length - (refAltSeparator + 1), PVarchar.INSTANCE);
         }
-
-        return new Variant(chromosome, position, reference, alternate);
+        try {
+            return new Variant(chromosome, position, reference, alternate);
+        } catch (RuntimeException e) {
+            throw new IllegalStateException("Problems creating variant using [chr:"
+                    + chromosome + ", pos:"+ position + ", ref:" + reference + ", alt:" + alternate +"];[hexstring:"
+                    + Bytes.toHex(variantRowKey) + "]", e);
+        }
     }
 
 
