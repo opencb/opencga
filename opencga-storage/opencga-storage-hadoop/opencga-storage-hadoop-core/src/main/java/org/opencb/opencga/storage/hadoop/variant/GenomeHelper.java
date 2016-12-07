@@ -374,7 +374,7 @@ public class GenomeHelper implements AutoCloseable {
             return new Variant(chromosome, position, reference, alternate);
         } catch (RuntimeException e) {
             throw new IllegalStateException("Problems creating variant using [chr:"
-                    + chromosome + ", pos:"+ position + ", ref:" + reference + ", alt:" + alternate +"];[hexstring:"
+                    + chromosome + ", pos:" + position + ", ref:" + reference + ", alt:" + alternate + "];[hexstring:"
                     + Bytes.toHex(variantRowKey) + "]", e);
         }
     }
