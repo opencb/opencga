@@ -138,19 +138,23 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
     protected VariantTableStudyRow updateOutputTable(Context context, int studyId, BiMap<String, Integer> idMapping,
                                                      Variant variant, Set<Integer> newSampleIds)
             throws IOException, InterruptedException {
-        VariantTableStudyRow row = new VariantTableStudyRow(variant, studyId, idMapping);
-        boolean specificPut = context.getConfiguration().getBoolean(SPECIFIC_PUT, true);
-        Put put = null;
-        if (specificPut && null != newSampleIds) {
-            put = row.createSpecificPut(getHelper(), newSampleIds);
-        } else {
-            put = row.createPut(getHelper());
+        try {
+            VariantTableStudyRow row = new VariantTableStudyRow(variant, studyId, idMapping);
+            boolean specificPut = context.getConfiguration().getBoolean(SPECIFIC_PUT, true);
+            Put put = null;
+            if (specificPut && null != newSampleIds) {
+                put = row.createSpecificPut(getHelper(), newSampleIds);
+            } else {
+                put = row.createPut(getHelper());
+            }
+            if (put != null) {
+                context.write(new ImmutableBytesWritable(getHelper().getOutputTable()), put);
+                context.getCounter(COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(1);
+            }
+            return row;
+        } catch (RuntimeException e) {
+            throw new IllegalStateException("Problems updating " + variant, e);
         }
-        if (put != null) {
-            context.write(new ImmutableBytesWritable(getHelper().getOutputTable()), put);
-            context.getCounter(COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(1);
-        }
-        return row;
     }
 
     protected void updateOutputTable(Context context, Collection<VariantTableStudyRow> variants) throws IOException, InterruptedException {

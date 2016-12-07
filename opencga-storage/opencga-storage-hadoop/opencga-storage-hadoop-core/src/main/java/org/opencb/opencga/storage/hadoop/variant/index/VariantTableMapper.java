@@ -210,11 +210,22 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         AtomicLong merge = new AtomicLong(0);
         // Reset expected set
         this.getVariantMerger().setExpectedSamples(this.currentIndexingSamples);
+        Map<Integer, LinkedHashSet<Integer>> samplesInFiles = this.getStudyConfiguration().getSamplesInFiles();
         BiMap<Integer, String> id2name = StudyConfiguration.getIndexedSamples(this.getStudyConfiguration()).inverse();
-        loadFromArchive(ctx.context, ctx.getCurrRowKey(), ctx.fileIds, (sampleIds, archiveOther) -> {
-            getLog().info("Loaded " + archiveOther.size() + " variants for " + sampleIds.size() + " samples ... ");
+        loadFromArchive(ctx.context, ctx.getCurrRowKey(), ctx.fileIds, (fileIds, archiveOther) -> {
+            Set<String> names = fileIds.stream().flatMap(fid -> samplesInFiles.get(fid).stream())
+                    .map(id -> {
+                        String name = id2name.get(id);
+                        if (name == null) {
+                            throw new IllegalStateException("No name for sample id " + id);
+                        }
+                        return name;
+                    }).collect(Collectors.toSet());
+            getLog().info("Loaded "
+                    + archiveOther.size() + " variants for "
+                    + fileIds.size() + " files for "
+                    + names.size() + " samples... ");
             endTime("8 Load archive slice from hbase");
-            Set<String> names = sampleIds.stream().map(id -> id2name.get(id)).collect(Collectors.toSet());
             this.getVariantMerger().addExpectedSamples(names); // add loaded names to merger
             if (archiveOther.isEmpty()) {
                 return;
@@ -473,9 +484,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         Set<String> archiveFileIds = indexedFiles.stream().filter(k -> !currFileIds.contains(k)).map(s -> s.toString())
                 .collect(Collectors.toSet());
         if (archiveFileIds.isEmpty()) {
-            if (getLog().isDebugEnabled()) {
-                getLog().debug("No files found to search for in archive table");
-            }
+            getLog().info("No files found to search for in archive table");
             merge.accept(Collections.emptySet(), Collections.emptyList());
             return; // done
         }

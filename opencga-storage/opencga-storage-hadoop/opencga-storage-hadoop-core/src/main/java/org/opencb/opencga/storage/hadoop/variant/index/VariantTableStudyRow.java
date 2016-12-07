@@ -682,6 +682,9 @@ public class VariantTableStudyRow {
 
             for (String sample : sampleSet) {
                 Integer sid = sampleIds.get(sample);
+                if (null == sid) {
+                    throw new IllegalStateException("Sample id found for " + sample);
+                }
                 // Work out Genotype
                 String gtStr = se.getSampleData(sample, GT_KEY);
                 List<Genotype> gtLst = Genotype.parse(gtStr);
