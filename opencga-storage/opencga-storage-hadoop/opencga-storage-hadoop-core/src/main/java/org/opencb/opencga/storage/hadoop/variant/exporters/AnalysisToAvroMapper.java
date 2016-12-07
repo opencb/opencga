@@ -12,6 +12,9 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableMapReduce;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Created by mh719 on 06/12/2016.
@@ -24,6 +27,15 @@ public class AnalysisToAvroMapper extends AbstractHBaseMapReduce<AvroKey<Variant
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
         studiesRow = getHelper().generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
+
+        List<String> returnedSamples = Collections.emptyList();
+        boolean withGenotype = context.getConfiguration().getBoolean(VariantTableExportDriver
+                .CONFIG_VARIANT_TABLE_EXPORT_AVRO_GENOTYPE, false);
+        if (withGenotype) {
+            returnedSamples = new ArrayList<>(this.getIndexedSamples().keySet());
+        }
+        getLog().info("Export Genotype [{}] of {} samples ... ", withGenotype, returnedSamples.size());
+        this.getHbaseToVariantConverter().setReturnedSamples(returnedSamples);
     }
 
     @Override
