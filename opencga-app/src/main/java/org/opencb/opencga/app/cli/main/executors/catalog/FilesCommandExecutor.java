@@ -200,22 +200,17 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<File> info() throws CatalogException, IOException {
         logger.debug("Getting file information");
         QueryOptions queryOptions = new QueryOptions();
-        if (StringUtils.isNotEmpty(filesCommandOptions.infoCommandOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, filesCommandOptions.infoCommandOptions.include);
-        }
+        queryOptions.putIfNotNull(FileDBAdaptor.QueryParams.STUDY_ID.key(), filesCommandOptions.infoCommandOptions.studyId);
+        queryOptions.putIfNotNull(QueryOptions.INCLUDE, filesCommandOptions.infoCommandOptions.include);
+        queryOptions.putIfNotNull(QueryOptions.EXCLUDE, filesCommandOptions.infoCommandOptions.exclude);
+        queryOptions.put("lazy", !filesCommandOptions.infoCommandOptions.noLazy);
 
-        if (StringUtils.isNotEmpty(filesCommandOptions.infoCommandOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, filesCommandOptions.infoCommandOptions.exclude);
-        }
-        if (filesCommandOptions.infoCommandOptions.noLazy) {
-            queryOptions.put("lazy", false);
-        }
         return openCGAClient.getFileClient().get(filesCommandOptions.infoCommandOptions.fileIds, queryOptions);
     }
 
     private QueryResponse download() throws CatalogException, IOException {
         logger.debug("Downloading file");
-        return openCGAClient.getFileClient().download(filesCommandOptions.downloadCommandOptions.id, new ObjectMap());
+        return openCGAClient.getFileClient().download(filesCommandOptions.downloadCommandOptions.fileId, new ObjectMap());
     }
 
     private QueryResponse grep() throws CatalogException, IOException {
@@ -223,8 +218,8 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap objectMap = new ObjectMap();
         objectMap.put("ignoreCase", filesCommandOptions.grepCommandOptions.ignoreCase);
         objectMap.put("multi", filesCommandOptions.grepCommandOptions.multi);
-        return openCGAClient.getFileClient().grep(filesCommandOptions.grepCommandOptions.id, filesCommandOptions.grepCommandOptions.pattern,
-                objectMap);
+        return openCGAClient.getFileClient().grep(filesCommandOptions.grepCommandOptions.fileId,
+                filesCommandOptions.grepCommandOptions.pattern, objectMap);
     }
 
     private QueryResponse search() throws CatalogException, IOException {
@@ -233,7 +228,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         Query query = new Query();
         QueryOptions queryOptions = new QueryOptions();
 
-        query.putIfNotEmpty(FileDBAdaptor.QueryParams.ID.key(), filesCommandOptions.searchCommandOptions.id);
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY_ID.key(), filesCommandOptions.searchCommandOptions.studyId);
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.NAME.key(), filesCommandOptions.searchCommandOptions.name);
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.PATH.key(), filesCommandOptions.searchCommandOptions.path);
@@ -241,7 +235,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotNull(FileDBAdaptor.QueryParams.BIOFORMAT.key(), filesCommandOptions.searchCommandOptions.bioformat);
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.FORMAT.key(), filesCommandOptions.searchCommandOptions.format);
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.STATUS.key(), filesCommandOptions.searchCommandOptions.status);
-        query.putIfNotEmpty(FileDBAdaptor.QueryParams.DIRECTORY.key(), filesCommandOptions.searchCommandOptions.directory);
+        query.putIfNotEmpty(FileDBAdaptor.QueryParams.DIRECTORY.key(), filesCommandOptions.searchCommandOptions.folder);
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.OWNER_ID.key(), filesCommandOptions.searchCommandOptions.ownerId);
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.CREATION_DATE.key(), filesCommandOptions.searchCommandOptions.creationDate);
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key(),
@@ -266,13 +260,19 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Listing files in folder");
 
         ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY_ID.key(), filesCommandOptions.listCommandOptions.studyId);
         params.putIfNotEmpty(QueryOptions.INCLUDE, filesCommandOptions.listCommandOptions.include);
         params.putIfNotEmpty(QueryOptions.EXCLUDE, filesCommandOptions.listCommandOptions.exclude);
         params.putIfNotEmpty(QueryOptions.LIMIT, filesCommandOptions.listCommandOptions.limit);
         params.putIfNotEmpty(QueryOptions.SKIP, filesCommandOptions.listCommandOptions.skip);
         params.put("count", filesCommandOptions.listCommandOptions.count);
 
-        return openCGAClient.getFileClient().list(filesCommandOptions.listCommandOptions.folderId, params);
+        String folder = ".";
+        if (StringUtils.isNotEmpty(filesCommandOptions.listCommandOptions.folderId)) {
+            folder = filesCommandOptions.listCommandOptions.folderId;
+        }
+
+        return openCGAClient.getFileClient().list(folder, params);
     }
 
     private QueryResponse<Job> index() throws CatalogException, IOException {
@@ -319,14 +319,14 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.putIfNotEmpty(QueryOptions.SKIP, filesCommandOptions.alignmentCommandOptions.skip);
             queryOptions.put("count", filesCommandOptions.alignmentCommandOptions.count);
 
-        return openCGAClient.getAlignmentClient().query(filesCommandOptions.alignmentCommandOptions.id, queryOptions);
+        return openCGAClient.getAlignmentClient().query(filesCommandOptions.alignmentCommandOptions.fileId, queryOptions);
     }
 
     private QueryResponse content() throws CatalogException, IOException {
         ObjectMap objectMap = new ObjectMap();
         objectMap.put("start", filesCommandOptions.contentCommandOptions.start);
         objectMap.put(QueryOptions.LIMIT, filesCommandOptions.contentCommandOptions.limit);
-        return openCGAClient.getFileClient().content(filesCommandOptions.contentCommandOptions.id, objectMap);
+        return openCGAClient.getFileClient().content(filesCommandOptions.contentCommandOptions.fileId, objectMap);
     }
     private QueryResponse fetch() throws CatalogException {
         logger.debug("File Fetch. [DEPRECATED]  Use .../files/{fileId}/[variants|alignments] or " +
@@ -348,7 +348,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         objectMap.putIfNotEmpty(FileDBAdaptor.QueryParams.PATH.key(), filesCommandOptions.updateCommandOptions.path);
         objectMap.putIfNotEmpty(FileDBAdaptor.QueryParams.NAME.key(), filesCommandOptions.updateCommandOptions.name);
 
-        return openCGAClient.getFileClient().update(filesCommandOptions.updateCommandOptions.id, objectMap);
+        return openCGAClient.getFileClient().update(filesCommandOptions.updateCommandOptions.fileId, objectMap);
 
     }
 
@@ -383,7 +383,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
                 .append("deleteExternal", filesCommandOptions.deleteCommandOptions.deleteExternal)
                 .append("skipTrash", filesCommandOptions.deleteCommandOptions.skipTrash);
 
-        return openCGAClient.getFileClient().delete(filesCommandOptions.deleteCommandOptions.id, objectMap);
+        return openCGAClient.getFileClient().delete(filesCommandOptions.deleteCommandOptions.fileId, objectMap);
     }
 
     private QueryResponse<File> link() throws CatalogException, IOException, URISyntaxException {
@@ -421,7 +421,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Change file location. Provided file must be either STAGED or an external file. [DEPRECATED]");
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put("calculateChecksum", filesCommandOptions.relinkCommandOptions.calculateChecksum);
-        return  openCGAClient.getFileClient().relink(filesCommandOptions.relinkCommandOptions.id,
+        return  openCGAClient.getFileClient().relink(filesCommandOptions.relinkCommandOptions.fileId,
                 filesCommandOptions.relinkCommandOptions.uri, queryOptions);
     }
 
@@ -444,12 +444,12 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 //
 //        QueryResponse<File> unlink = new QueryResponse<>(new QueryOptions(), Arrays.asList(unlinkQueryResult));
 
-        return openCGAClient.getFileClient().unlink(filesCommandOptions.unlinkCommandOptions.id, new ObjectMap());
+        return openCGAClient.getFileClient().unlink(filesCommandOptions.unlinkCommandOptions.fileId, new ObjectMap());
     }
 
     private QueryResponse refresh() throws CatalogException, IOException {
         logger.debug("Refreshing metadata from the selected file or folder. Print updated files.");
-        return openCGAClient.getFileClient().refresh(filesCommandOptions.refreshCommandOptions.id, new QueryOptions());
+        return openCGAClient.getFileClient().refresh(filesCommandOptions.refreshCommandOptions.fileId, new QueryOptions());
     }
 
 
@@ -561,7 +561,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         queryOptions.put("count", filesCommandOptions.variantsCommandOptions.count);
 
-        return openCGAClient.getFileClient().getVariants(filesCommandOptions.variantsCommandOptions.id, queryOptions);
+        return openCGAClient.getFileClient().getVariants(filesCommandOptions.variantsCommandOptions.fileId, queryOptions);
     }
 
 

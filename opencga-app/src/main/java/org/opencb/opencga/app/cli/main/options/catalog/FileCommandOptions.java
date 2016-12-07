@@ -101,12 +101,15 @@ public class FileCommandOptions {
     }
 
     public class BaseFileCommand {
-
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--id"}, description = "File id", required = true, arity = 1)
-        public String id;
+        @Parameter(names = {"--file"}, description = "File id, name or path.", required = true, arity = 1)
+        public String fileId;
+
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
+                + " alias.", arity = 1)
+        public String studyId;
     }
 
     @Deprecated
@@ -122,7 +125,8 @@ public class FileCommandOptions {
         @Parameter(names = {"-i","--input"}, description = "Input file", required = true, arity = 1)
         public String inputFile;
 
-        @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = true, arity = 1)
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
+                + " alias.", arity = 1)
         public String studyId;
 
         @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
@@ -147,10 +151,14 @@ public class FileCommandOptions {
     @Parameters(commandNames = {"create-folder"}, commandDescription = "Create Folder")
     public class CreateFolderCommandOptions {
 
-        @Parameter(names = {"-s", "--study-id"}, description = "Study Id", required = true, arity = 1)
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
+                + " alias.", arity = 1)
         public String studyId;
 
-        @Parameter(names = {"--folder"}, description = "Path where the folder is to be created", required = true, arity = 1)
+        @Parameter(names = {"--path"}, description = "Path where the folder will be created", required = true, arity = 1)
         public String folder = "";
 
         @Parameter(names = {"-P", "--parents"}, description = "Create the parent directories if they do not exist. Default: false",
@@ -161,8 +169,15 @@ public class FileCommandOptions {
     @Parameters(commandNames = {"info"}, commandDescription = "Get file information")
     public class InfoCommandOptions {
 
-        @Parameter(names = {"--file-ids"}, description = "Comma separated list of file ids", required = true, arity = 1)
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--file"}, description = "Comma separated list of file ids", required = true, arity = 1)
         public String fileIds;
+
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
+                + " alias.", arity = 1)
+        public String studyId;
 
         @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
         public String include;
@@ -198,10 +213,8 @@ public class FileCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--id"}, description = "Comma separated list of ids", arity = 1)
-        public String id;
-
-        @Parameter(names = {"-s", "--study-id"}, description = "Study id", required = true, arity = 1)
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
+                + " alias.", arity = 1)
         public String studyId;
 
         @Parameter(names = {"--name"}, description = "Comma separated list of file names", required = false, arity = 1)
@@ -222,9 +235,8 @@ public class FileCommandOptions {
         @Parameter(names = {"--status"}, description = "Status.", required = false, arity = 1)
         public String status;
 
-        @Parameter(names = {"--directory"}, description = "Directory under which we want to look for files or folders.", required = false,
-                arity = 1)
-        public String directory;
+        @Parameter(names = {"--folder"}, description = "Directory under which we want to look for files or folders.", arity = 1)
+        public String folder;
 
         @Parameter(names = {"--owner-id"}, description = "Owner id.", required = false, arity = 1)
         public String ownerId;
@@ -275,8 +287,12 @@ public class FileCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--folder-id"}, description = "Folder Id", arity = 1, required = true)
+        @Parameter(names = {"--folder"}, description = "Folder id, name or path.", arity = 1, required = false)
         public String folderId;
+
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
+                + " alias.", arity = 1)
+        public String studyId;
 
         @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
         public String include;
@@ -300,8 +316,12 @@ public class FileCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--id"}, description = "Comma separated list of file ids (files or directories)", required = true, arity = 1)
+        @Parameter(names = {"--file"}, description = "Comma separated list of file ids, names or paths.", required = true, arity = 1)
         public String fileIds;
+
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
+                + " alias.", arity = 1)
+        public String studyId;
 
 //        @Parameter(names = {"-s", "--study-id"}, description = "The study id or alias where you want to load the data", arity = 1)
 //        public String studyId;
@@ -321,7 +341,8 @@ public class FileCommandOptions {
         @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
         public String aggregated = "NONE";
 
-        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file", arity = 1)
+        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF "
+                + "file", arity = 1)
         public String aggregationMappingFile;
 //
 //        @Parameter(names = {"--gvcf"}, description = "The input file is in gvcf format")
@@ -484,10 +505,11 @@ public class FileCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--folder-id"}, description = "Folder id", required = true, arity = 1)
+        @Parameter(names = {"--folder"}, description = "Folder id, name or path.", required = true, arity = 1)
         public String folderId;
 
-        @Parameter(names = {"--study-id"}, description = "Study id or [[user@]projectAlias:]studyAlias", arity = 1, required = false)
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
+                + " alias.", arity = 1)
         public String studyStr;
 
         @Parameter(names = {"--max-Depth"}, description = "Maximum depth to get files from. Default: 5", required = false, arity = 1)
@@ -529,13 +551,16 @@ public class FileCommandOptions {
 //        @Parameter(names = {"-uri"}, description = "File location", required = true, arity = 1)
 //        public String uri;
 
-        @Parameter(names = {"-s", "--study-id"}, description = "Study where the file or folder will be associated to", required = true, arity = 1)
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
+                + " alias.", arity = 1)
         public String studyId;
 
-        @Parameter(names = {"--path"}, description = "Virtual path within catalog where the file or folder will be linked (root folder if empty)", required = false, arity = 1)
+        @Parameter(names = {"--path"}, description = "Virtual path within catalog where the file or folder will be linked (root folder "
+                + "if empty)", required = false, arity = 1)
         public String path;
 
-        @Parameter(names = {"-d", "--description"}, description = "Brief description that will be attached to the files in catalog", required = false, arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = "Brief description that will be attached to the files in catalog",
+                required = false, arity = 1)
         public String description;
 
         @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
@@ -548,39 +573,44 @@ public class FileCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-s", "--study-id"}, description = "Study where the file will be associated to", required = true, arity = 1)
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
+                + " alias.", arity = 1)
         public String studyId;
 
         @Parameter(names = {"-i","--input"}, description = "Input file", required = true, arity = 1)
         public String inputFile;
 
-        @Parameter(names = {"--file-format"}, description = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)", required = true, arity = 1)
+        @Parameter(names = {"--file-format"}, description = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)", required = true,
+                arity = 1)
         public String fileFormat;
 
-        @Parameter(names = {"--bioformat"}, description = "Bioformat of the file (VARIANT, ALIGNMENT, SEQUENCE, PEDIGREE...NONE)", required = true, arity = 1)
+        @Parameter(names = {"--bioformat"}, description = "Bioformat of the file (VARIANT, ALIGNMENT, SEQUENCE, PEDIGREE...NONE)",
+                required = true, arity = 1)
         public String bioformat;
 
-        @Parameter(names = {"--catalog-path"}, description = "Path within catalog where the file will be located (Default: root folder)", required = false, arity = 1)
+        @Parameter(names = {"--catalog-path"}, description = "Path within catalog where the file will be located (Default: root folder)",
+                required = false, arity = 1)
         public String catalogPath;
 
         @Parameter(names = {"--description"}, description = "Description of the file", required = false, arity = 1)
         public String description;
 
-        @Parameter(names = {"--file-name"}, description = "Name of the file by which it will be stored in catalog", required = false, arity = 1)
+        @Parameter(names = {"--file-name"}, description = "Name of the file by which it will be stored in catalog", required = false,
+                arity = 1)
         public String fileName;
 
         @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
         public boolean parents;
 
-        @Parameter(names = {"--replace"}, description = "[PENDING] Replace the existing attached file. ALERT: The existing file will be removed",
-                required = false, arity = 0)
+        @Parameter(names = {"--replace"}, description = "[PENDING] Replace the existing attached file. ALERT: The existing file will be "
+                + "removed", required = false, arity = 0)
         public boolean replace;
 
         @Parameter(names = {"-ch", "--checksum"}, description = "[PENDING] Calculate checksum", required = false, arity = 0)
         public boolean calculateChecksum;
     }
 
-    @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy cohort")
+    @Parameters(commandNames = {"group-by"}, commandDescription = "Group by fields in file")
     public class GroupByCommandOptions {
 
         @ParametersDelegate
@@ -589,10 +619,11 @@ public class FileCommandOptions {
         @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
         public String fields;
 
-        @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
+                + " alias.", arity = 1)
         public String studyId;
 
-        @Parameter(names = {"--id"}, description = "Comma separated list of ids.", required = false, arity = 1)
+        @Parameter(names = {"--file"}, description = "Comma separated list of ids, names or paths.", required = false, arity = 1)
         public String id;
 
         @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
