@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.stats;
 
 import com.google.common.collect.BiMap;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.MutablePair;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.client.Result;
@@ -46,6 +47,7 @@ public class AnalysisStatsMapper extends AbstractHBaseMapReduce<ImmutableBytesWr
                 .map(p -> new MutablePair<>(p.getKey(),
                         p.getValue().stream().map(i -> sampleIds.get(i)).collect(Collectors.toSet())))
                 .collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue()));
+        getLog().info("Calculate stats for cohorts: {} ", StringUtils.join(samples.keySet(), ","));
     }
 
     @Override
