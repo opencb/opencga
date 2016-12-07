@@ -1187,7 +1187,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testModifySample() throws CatalogException {
-        long studyId = catalogManager.getStudyId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyId("user@1000G:phase1", sessionIdUser);
         long sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
         long individualId = catalogManager.createIndividual(studyId, "Individual1", "", 0, 0, Individual.Sex.MALE, new QueryOptions(),
                 sessionIdUser).first().getId();

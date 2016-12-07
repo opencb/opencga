@@ -17,7 +17,6 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
-import org.opencb.biodata.formats.drug.drugbank.v43jaxb.KnownActionType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;

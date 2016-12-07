@@ -569,7 +569,7 @@ public class OpenCGAMainOld {
                             throw new FileNotFoundException("File " + uri + " not found");
                         }
 
-                        long fileId = catalogManager.getFileId(c.id, sessionId);
+                        long fileId = catalogManager.getFileId(c.id, null, sessionId);
                         File file = catalogManager.getFile(fileId, sessionId).first();
 
                         new CatalogFileUtils(catalogManager).link(file, c.calculateChecksum, uri, false, true, sessionId);

@@ -124,7 +124,7 @@ public class FileScannerTest {
         File file = catalogManager.createFile(study.getId(), File.Format.PLAIN, File.Bioformat.NONE, folder.getPath() + "file1.txt",
                 CatalogManagerTest.createDebugFile().toURI(), "", false, sessionIdUser).first();
 
-        catalogManager.getFileManager().delete(Long.toString(file.getId()), new QueryOptions(), sessionIdUser);
+        catalogManager.getFileManager().delete(Long.toString(file.getId()), null, new QueryOptions(), sessionIdUser);
 
         QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(new Query()
                         .append(FileDBAdaptor.QueryParams.ID.key(), file.getId())

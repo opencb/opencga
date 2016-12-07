@@ -17,11 +17,11 @@
 package org.opencb.opencga.storage.core.local;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
@@ -112,30 +112,13 @@ public abstract class StorageManager {
             throws CatalogException, IOException {
         StudyInfo studyInfo = new StudyInfo().setSessionId(sessionId);
 
-        String userId = catalogManager.getUserManager().getId(sessionId);
-        studyInfo.setUserId(userId);
-
-        long studyId = 0;
-        if (StringUtils.isNotEmpty(studyIdStr)) {
-            studyId = catalogManager.getStudyManager().getId(userId, studyIdStr);
-        }
+        AbstractManager.MyResourceIds resource = catalogManager.getFileManager().getIds(StringUtils.join(fileIdStrs, ","), studyIdStr,
+                sessionId);
+        studyInfo.setUserId(resource.getUser());
 
         List<FileInfo> fileInfos = new ArrayList<>(fileIdStrs.size());
-        for (String fileIdStr : fileIdStrs) {
+        for (long fileId: resource.getResourceIds()) {
             FileInfo fileInfo = new FileInfo();
-            long fileId;
-            if (studyId > 0) {
-                fileId = catalogManager.getFileManager().getId(fileIdStr, studyId, sessionId);
-                if (fileId <= 0) {
-                    throw new CatalogException("The id of file " + fileIdStr + " could not be found under study " + studyIdStr);
-                }
-            } else {
-                fileId = catalogManager.getFileManager().getId(userId, fileIdStr);
-                if (fileId <= 0) {
-                    throw new CatalogException("The id of file " + fileIdStr + " could not be found");
-                }
-                studyId = catalogManager.getFileManager().getStudyId(fileId);
-            }
             fileInfo.setFileId(fileId);
 
             // Get file path
@@ -164,10 +147,10 @@ public abstract class StorageManager {
 //        studyOptions.put(QueryOptions.INCLUDE,
 //                Arrays.asList(StudyDBAdaptor.QueryParams.URI.key(), StudyDBAdaptor.QueryParams.ALIAS.key(),
 //                        StudyDBAdaptor.QueryParams.DATASTORES.key()));
-        QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyId, studyOptions, sessionId);
+        QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(resource.getStudyId(), studyOptions, sessionId);
         if (studyQueryResult .getNumResults() != 1) {
-            logger.error("Critical error: Study {} not found in catalog.", studyId);
-            throw new CatalogException("Critical error: Study " + studyId + " not found in catalog");
+            logger.error("Critical error: Study {} not found in catalog.", resource.getStudyId());
+            throw new CatalogException("Critical error: Study " + resource.getStudyId() + " not found in catalog");
         }
         Study study = studyQueryResult.first();
         studyInfo.setStudy(study);
@@ -189,40 +172,6 @@ public abstract class StorageManager {
         studyInfo.setDataStores(dataStores);
 
         return studyInfo;
-    }
-
-    /**
-     * Given the file and study string, retrieve the corresponding long ids.
-     *
-     * @param studyIdStr study string.
-     * @param fileIdStr file string.
-     * @param sessionId session id.
-     * @return an objectMap containing the keys "fileId" and "studyId"
-     * @throws CatalogException catalog exception.
-     */
-    @Deprecated
-    protected ObjectMap getFileAndStudyId(@Nullable String studyIdStr, String fileIdStr, String sessionId) throws CatalogException {
-        String userId = catalogManager.getUserManager().getId(sessionId);
-        long studyId = 0;
-        if (StringUtils.isNotEmpty(studyIdStr)) {
-            studyId = catalogManager.getStudyManager().getId(userId, studyIdStr);
-        }
-
-        long fileId;
-        if (studyId > 0) {
-            fileId = catalogManager.getFileManager().getId(userId, studyId, fileIdStr);
-            if (fileId <= 0) {
-                throw new CatalogException("The id of file " + fileIdStr + " could not be found under study " + studyIdStr);
-            }
-        } else {
-            fileId = catalogManager.getFileManager().getId(userId, fileIdStr);
-            if (fileId <= 0) {
-                throw new CatalogException("The id of file " + fileIdStr + " could not be found");
-            }
-            studyId = catalogManager.getFileManager().getStudyId(fileId);
-        }
-
-        return new ObjectMap("fileId", fileId).append("studyId", studyId);
     }
 
     @Override

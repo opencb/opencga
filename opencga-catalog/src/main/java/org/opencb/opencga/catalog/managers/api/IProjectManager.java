@@ -24,6 +24,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -67,6 +68,18 @@ public interface IProjectManager extends ResourceManager<Long, Project> {
     QueryResult<Project> create(String name, String alias, String description, String organization, String scientificName,
                                 String commonName, String taxonomyCode, String assembly, QueryOptions options, String sessionId)
             throws CatalogException;
+
+    /**
+     * Delete entries from Catalog.
+     *
+     * @param ids       Comma separated list of ids corresponding to the objects to delete
+     * @param options   Deleting options.
+     * @param sessionId sessionId
+     * @return A list with the deleted objects
+     * @throws CatalogException CatalogException
+     * @throws IOException IOException.
+     */
+    List<QueryResult<Project>> delete(String ids, QueryOptions options, String sessionId) throws CatalogException, IOException;
 
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.

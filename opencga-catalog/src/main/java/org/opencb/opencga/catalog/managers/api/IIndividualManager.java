@@ -25,6 +25,7 @@ import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +74,18 @@ public interface IIndividualManager extends ResourceManager<Long, Individual>, I
                                    Individual.KaryotypicSex karyotypicSex, Individual.LifeStatus lifeStatus,
                                    Individual.AffectationStatus affectationStatus, QueryOptions options, String sessionId)
             throws CatalogException;
+
+    /**
+     * Delete entries from Catalog.
+     *
+     * @param ids       Comma separated list of ids corresponding to the objects to delete
+     * @param options   Deleting options.
+     * @param sessionId sessionId
+     * @return A list with the deleted objects
+     * @throws CatalogException CatalogException
+     * @throws IOException IOException.
+     */
+    List<QueryResult<Individual>> delete(String ids, QueryOptions options, String sessionId) throws CatalogException, IOException;
 
     QueryResult<Individual> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
 

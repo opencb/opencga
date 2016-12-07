@@ -76,6 +76,18 @@ public interface IUserManager extends ResourceManager<String, User> {
             throws CatalogException, NamingException;
 
     /**
+     * Delete entries from Catalog.
+     *
+     * @param ids       Comma separated list of ids corresponding to the objects to delete
+     * @param options   Deleting options.
+     * @param sessionId sessionId
+     * @return A list with the deleted objects
+     * @throws CatalogException CatalogException
+     * @throws IOException IOException.
+     */
+    List<QueryResult<User>> delete(String ids, QueryOptions options, String sessionId) throws CatalogException, IOException;
+
+    /**
      * Gets the user information.
      *
      * @param userId       User id

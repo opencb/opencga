@@ -145,17 +145,11 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.createStudyAcls(Long.toString(s1), memberUser, "", AuthorizationManager.ROLE_ANALYST, studyAdmin1SessionId);
         catalogManager.createStudyAcls(Long.toString(s1), externalUser, "", AuthorizationManager.ROLE_LOCKED, studyAdmin1SessionId);
 
-        catalogManager.createFileAcls(Long.toString(data_d1), externalUser, ALL_FILE_PERMISSIONS, ownerSessionId);
-        catalogManager.createFileAcls(Long.toString(data_d1), studyAdminUser1, ALL_FILE_PERMISSIONS, ownerSessionId);
-        catalogManager.createFileAcls(Long.toString(data_d1_d2_d3), externalUser, DENY_FILE_PERMISSIONS, ownerSessionId);
-        catalogManager.createFileAcls(Long.toString(data_d1_d2_d3_d4_txt), externalUser, ALL_FILE_PERMISSIONS, ownerSessionId);
-//        catalogManager.createFileAcls(Long.toString(data_d1), memberUser, new AclEntry(memberUser, true, true, true, true), ownerSessionId);
-//        catalogManager.createFileAcls(Long.toString(data_d1), "@" + groupAdmin, new AclEntry("@" + groupAdmin, false, false, false, false), ownerSessionId);
-//        catalogManager.createFileAcls(Long.toString(data_d1), studyAdminUser1, new AclEntry(studyAdminUser1, true, true, true, true), ownerSessionId);
-//        catalogManager.createFileAcls(Long.toString(data_d1_d2), "@" + groupAdmin, new AclEntry("@" + groupAdmin, false, false, false, false), ownerSessionId);
-//        catalogManager.createFileAcls(Long.toString(data_d1_d2_d3), memberUser, new AclEntry(memberUser, false, false, false, false), ownerSessionId);
-//        catalogManager.createFileAcls(Long.toString(data_d1_d2_d3_d4), "@" + groupAdmin, new AclEntry("@" + groupAdmin, true, true, true, true), ownerSessionId);
-//        catalogManager.createFileAcls(Long.toString(data_d1_d2_d3_d4_txt), memberUser, new AclEntry(memberUser, true, true, true, true), ownerSessionId);
+        catalogManager.createFileAcls(Long.toString(data_d1), Long.toString(s1), externalUser, ALL_FILE_PERMISSIONS, ownerSessionId);
+        catalogManager.createFileAcls(Long.toString(data_d1), Long.toString(s1), studyAdminUser1, ALL_FILE_PERMISSIONS, ownerSessionId);
+        catalogManager.createFileAcls(Long.toString(data_d1_d2_d3), Long.toString(s1), externalUser, DENY_FILE_PERMISSIONS, ownerSessionId);
+        catalogManager.createFileAcls(Long.toString(data_d1_d2_d3_d4_txt), Long.toString(s1), externalUser, ALL_FILE_PERMISSIONS,
+                ownerSessionId);
 
         smp1 = catalogManager.createSample(s1, "smp1", null, null, null, null, ownerSessionId).first().getId();
         smp2 = catalogManager.createSample(s1, "smp2", null, null, null, null, ownerSessionId).first().getId();
@@ -176,18 +170,6 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.createSampleAcls(Long.toString(smp2), studyAdminUser1, DENY_SAMPLE_PERMISSIONS, ownerSessionId);
         catalogManager.createSampleAcls(Long.toString(smp5), externalUser, DENY_SAMPLE_PERMISSIONS, ownerSessionId);
         catalogManager.createSampleAcls(Long.toString(smp6), "*", ALL_SAMPLE_PERMISSIONS, ownerSessionId);
-//        catalogManager.createSampleAcls(Long.toString(smp1), memberUser, new AclEntry(memberUser, true, true, true, true), ownerSessionId);
-//        catalogManager.createSampleAcls(Long.toString(smp3), memberUser, new AclEntry(memberUser, false, false, false, false),
-//                ownerSessionId);
-//        catalogManager.createSampleAcls(Long.toString(smp2), studyAdminUser1, new AclEntry(studyAdminUser1, false, false, false, false), ownerSessionId);
-//        catalogManager.createSampleAcls(Long.toString(smp4), "@" + groupMember,
-//                new AclEntry("@" + groupMember, true, true, true, true), ownerSessionId);
-//        catalogManager.createSampleAcls(Long.toString(smp5), "@" + groupMember,
-//                new AclEntry("@" + groupMember, true, true, true, true), ownerSessionId);
-//        catalogManager.createSampleAcls(Long.toString(smp5), memberUser, new AclEntry(memberUser, false, false, false, false),
-//                ownerSessionId);
-//        catalogManager.createSampleAcls(Long.toString(smp6), AclEntry.USER_OTHERS_ID,
-//                new AclEntry(AclEntry.USER_OTHERS_ID, true, true, true, true), ownerSessionId);
 
     }
 
@@ -333,7 +315,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void changeUserRole() throws CatalogException {
-        QueryResult<StudyAclEntry> studyAcls = catalogManager.getStudyAcls(Long.toString(s1), Arrays.asList(externalUser), studyAdmin1SessionId);
+        QueryResult<StudyAclEntry> studyAcls = catalogManager.getStudyAcls(Long.toString(s1), Arrays.asList(externalUser),
+                studyAdmin1SessionId);
         assertEquals(1, studyAcls.getNumResults());
         assertEquals(externalUser, studyAcls.first().getMember());
 
@@ -462,7 +445,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         QueryResult<File> file = catalogManager.getFile(data_d1, memberSessionId);
         assertEquals(1, file.getNumResults());
         // Set an ACL with no permissions
-        catalogManager.createFileAcls(Long.toString(data_d1), memberUser, "", ownerSessionId);
+        catalogManager.createFileAcls(Long.toString(data_d1), Long.toString(s1), memberUser, "", ownerSessionId);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getFile(data_d1, memberSessionId);
     }
@@ -518,14 +501,14 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         // Add the group to the locked role, so no permissions will be given
         catalogManager.createStudyAcls(Long.toString(s1), newGroup, "", AuthorizationManager.ROLE_LOCKED, ownerSessionId);
         // Specify all file permissions for that concrete file
-        catalogManager.createFileAcls(Long.toString(data_d1_d2_d3_d4), newGroup, ALL_FILE_PERMISSIONS, ownerSessionId);
+        catalogManager.createFileAcls(Long.toString(data_d1_d2_d3_d4), Long.toString(s1), newGroup, ALL_FILE_PERMISSIONS, ownerSessionId);
         catalogManager.getFile(data_d1_d2_d3_d4, sessionId);
     }
 
     @Test
     public void readFileForbiddenForGroup() throws CatalogException {
         // Remove all permissions to the admin group in that folder
-        catalogManager.createFileAcls(Long.toString(data_d1_d2), groupAdmin, DENY_FILE_PERMISSIONS, ownerSessionId);
+        catalogManager.createFileAcls(Long.toString(data_d1_d2), Long.toString(s1), groupAdmin, DENY_FILE_PERMISSIONS, ownerSessionId);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getFile(data_d1_d2, studyAdmin1SessionId);
     }
@@ -541,7 +524,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.createGroup(Long.toString(s1), newGroup, newUser, ownerSessionId);
         // Add the group to the locked role, so no permissions will be given
         catalogManager.createStudyAcls(Long.toString(s1), newGroup, "", AuthorizationManager.ROLE_LOCKED, ownerSessionId);
-        catalogManager.createFileAcls(Long.toString(data_d1_d2), newUser, ALL_FILE_PERMISSIONS, ownerSessionId);
+        catalogManager.createFileAcls(Long.toString(data_d1_d2), Long.toString(s1), newUser, ALL_FILE_PERMISSIONS, ownerSessionId);
         QueryResult<File> file = catalogManager.getFile(data_d1_d2, sessionId);
         assertEquals(1, file.getNumResults());
     }

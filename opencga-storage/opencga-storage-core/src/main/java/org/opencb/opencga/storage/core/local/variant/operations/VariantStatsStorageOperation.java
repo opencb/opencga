@@ -67,7 +67,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         String fileIdStr = options.getString(Options.FILE_ID.key(), null);
         boolean overwriteStats = options.getBoolean(Options.OVERWRITE_STATS.key(), false);
         boolean updateStats = options.getBoolean(Options.UPDATE_STATS.key(), false);
-        final Long fileId = fileIdStr == null ? null : catalogManager.getFileId(fileIdStr, sessionId);
+        final Long fileId = fileIdStr == null ? null : catalogManager.getFileId(fileIdStr, Long.toString(studyId), sessionId);
 
 
         // Outdir must be empty

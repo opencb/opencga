@@ -83,59 +83,121 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         return studyDBAdaptor.getProjectIdByStudyId(studyId);
     }
 
+    public List<Long> getIds(String userId, String studyStr) throws CatalogException {
+        if (StringUtils.isNumeric(studyStr)) {
+            long studyId = Long.parseLong(studyStr);
+            studyDBAdaptor.checkId(studyId);
+            return Arrays.asList(studyId);
+        }
+
+        Query query = new Query();
+        final QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ID.key());
+
+        if (StringUtils.isEmpty(studyStr)) {
+            // Obtain the projects of the user
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key());
+            QueryResult<Project> projectQueryResult = projectDBAdaptor.get(userId, options);
+            if (projectQueryResult.getNumResults() == 1) {
+                projectDBAdaptor.checkId(projectQueryResult.first().getId());
+                query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectQueryResult.first().getId());
+            } else {
+                if (projectQueryResult.getNumResults() == 0) {
+                    throw new CatalogException("No projects found for user " + userId);
+                } else {
+                    throw new CatalogException("More than one project found for user " + userId);
+                }
+            }
+
+            QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, queryOptions);
+            if (studyQueryResult.getNumResults() == 0) {
+                throw new CatalogException("No studies found for user " + userId);
+            } else {
+                return studyQueryResult.getResult().stream().map(study -> study.getId()).collect(Collectors.toList());
+            }
+
+        } else {
+
+            String[] split = studyStr.split(":");
+            long projectId;
+            if (split.length > 2) {
+                throw new CatalogException("More than one : separator found. Format: [[user@]project:]study");
+            }
+
+            String aliasStudy;
+            String aliasProject = null;
+            if (split.length == 2) {
+                aliasStudy = split[1];
+                aliasProject = split[0];
+            } else {
+                aliasStudy = studyStr;
+            }
+
+            List<Long> retStudies = new ArrayList<>();
+            List<String> aliasList = new ArrayList<>();
+            if (!aliasStudy.equals("*")) {
+                // Check if there is more than one study listed in aliasStudy
+                String[] split1 = aliasStudy.split(",");
+                for (String studyStrAux : split1) {
+                    if (StringUtils.isNumeric(studyStrAux)) {
+                        retStudies.add(Long.parseLong(studyStrAux));
+                    } else {
+                        aliasList.add(studyStrAux);
+                    }
+                }
+            }
+
+            if (aliasList.size() == 0 && retStudies.size() > 0) { // The list of provided studies were all long ids
+                return retStudies;
+            }
+
+            if (aliasProject != null) {
+                projectId = catalogManager.getProjectManager().getId(userId, aliasProject);
+                projectDBAdaptor.checkId(projectId);
+            } else {
+                // Obtain the projects of the user
+                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key());
+                QueryResult<Project> projectQueryResult = projectDBAdaptor.get(userId, options);
+                if (projectQueryResult.getNumResults() == 1) {
+                    projectId = projectQueryResult.first().getId();
+                } else {
+                    if (projectQueryResult.getNumResults() == 0) {
+                        throw new CatalogException("No projects found for user " + userId);
+                    } else {
+                        throw new CatalogException("More than one project found for user " + userId);
+                    }
+                }
+            }
+
+            query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId);
+            if (aliasList.size() > 0) {
+                // This if is justified by the fact that we might not have any alias or id but an *
+                query.put(StudyDBAdaptor.QueryParams.ALIAS.key(), aliasList);
+            }
+
+            QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, queryOptions);
+            if (studyQueryResult.getNumResults() == 0) {
+                throw new CatalogException("No studies found for user " + userId);
+            } else {
+                if (aliasList.size() > 0 && studyQueryResult.getNumResults() != aliasList.size()) {
+                    throw new CatalogException("Not all the studies were found. Found " + studyQueryResult.getNumResults() + " out of "
+                            + aliasList.size());
+                } else {
+                    return studyQueryResult.getResult().stream().map(study -> study.getId()).collect(Collectors.toList());
+                }
+            }
+        }
+    }
+
     @Override
     public Long getId(String userId, String studyStr) throws CatalogException {
-        if (StringUtils.isNumeric(studyStr)) {
-            return Long.parseLong(studyStr);
+        if (studyStr != null && studyStr.contains(",")) {
+            throw new CatalogException("Only one study is allowed. More than one study found in " + studyStr);
         }
-
-        String ownerId = userId;
-        String aliasProject = null;
-        String aliasStudy;
-
-        String[] split = studyStr.split("@");
-        if (split.length == 2) {
-            // user@project:study
-            ownerId = split[0];
-            studyStr = split[1];
-        }
-
-        split = studyStr.split(":", 2);
-        if (split.length == 2) {
-            aliasProject = split[0];
-            aliasStudy = split[1];
+        List<Long> ids = getIds(userId, studyStr);
+        if (ids.size() > 1) {
+            throw new CatalogException("More than one study was found");
         } else {
-            aliasStudy = studyStr;
-        }
-
-        List<Long> projectIds = new ArrayList<>();
-        if (aliasProject != null) {
-            long projectId = projectDBAdaptor.getId(ownerId, aliasProject);
-            if (projectId == -1) {
-                throw new CatalogException("Error: Could not retrieve any project for the user " + ownerId);
-            }
-            projectIds.add(projectId);
-        } else {
-            QueryResult<Project> allProjects = projectDBAdaptor.get(ownerId,
-                    new QueryOptions(QueryOptions.INCLUDE, "projects.id"));
-            if (allProjects.getNumResults() > 0) {
-                projectIds.addAll(allProjects.getResult().stream().map(Project::getId).collect(Collectors.toList()));
-            } else {
-                throw new CatalogException("Error: Could not retrieve any project for the user " + ownerId);
-            }
-        }
-
-        Query query = new Query(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectIds)
-                .append(StudyDBAdaptor.QueryParams.ALIAS.key(), aliasStudy);
-        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "projects.studies.id");
-
-        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, qOptions);
-        if (studyQueryResult.getNumResults() == 0) {
-            return -1L;
-        } else if (studyQueryResult.getNumResults() > 1) {
-            throw new CatalogException("Error: Found more than one study id based on " + studyStr);
-        } else {
-            return studyQueryResult.first().getId();
+            return ids.get(0);
         }
     }
 

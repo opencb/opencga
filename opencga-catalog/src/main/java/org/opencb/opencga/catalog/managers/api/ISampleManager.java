@@ -21,12 +21,10 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Annotation;
-import org.opencb.opencga.catalog.models.AnnotationSet;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +69,18 @@ public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotati
 
     QueryResult<Sample> create(long studyId, String name, String source, String description, Map<String, Object> attributes,
                                QueryOptions options, String sessionId) throws CatalogException;
+
+    /**
+     * Delete entries from Catalog.
+     *
+     * @param ids       Comma separated list of ids corresponding to the objects to delete
+     * @param options   Deleting options.
+     * @param sessionId sessionId
+     * @return A list with the deleted objects
+     * @throws CatalogException CatalogException
+     * @throws IOException IOException.
+     */
+    List<QueryResult<Sample>> delete(String ids, QueryOptions options, String sessionId) throws CatalogException, IOException;
 
     QueryResult<Annotation> load(File file) throws CatalogException;
 

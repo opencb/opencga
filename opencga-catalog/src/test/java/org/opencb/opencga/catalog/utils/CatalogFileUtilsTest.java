@@ -310,7 +310,7 @@ public class CatalogFileUtilsTest {
         // Now we try to unlink it
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Only previously linked files can be unlinked. Please, use delete instead.");
-        catalogManager.unlink(Long.toString(file.getId()), new QueryOptions(), userSessionId);
+        catalogManager.unlink(Long.toString(file.getId()), Long.toString(studyId), new QueryOptions(), userSessionId);
     }
 
     @Test
@@ -329,7 +329,7 @@ public class CatalogFileUtilsTest {
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(file.getUri());
         assertTrue(ioManager.exists(file.getUri()));
 
-        catalogManager.getFileManager().delete(Long.toString(file.getId()), null, userSessionId);
+        catalogManager.getFileManager().delete(Long.toString(file.getId()), null, null, userSessionId);
         assertTrue(ioManager.exists(file.getUri()));
 
 //        catalogFileUtils.delete(file.getId(), userSessionId);
@@ -345,7 +345,7 @@ public class CatalogFileUtilsTest {
             assertTrue(ioManager.exists(catalogManager.getFileUri(file)));
         }
 
-        catalogManager.getFileManager().delete(Long.toString(folder.getId()), null, userSessionId);
+        catalogManager.getFileManager().delete(Long.toString(folder.getId()), null, null, userSessionId);
         QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(new Query()
                         .append(FileDBAdaptor.QueryParams.ID.key(), folder.getId())
                         .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
@@ -376,14 +376,14 @@ public class CatalogFileUtilsTest {
         //Create deleted files inside the folder
         File toDelete = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toDelete.txt",
                 StringUtils.randomString(200).getBytes(), "", true, userSessionId).first();
-        catalogManager.getFileManager().delete(Long.toString(toDelete.getId()), null, userSessionId);
+        catalogManager.getFileManager().delete(Long.toString(toDelete.getId()), null, null, userSessionId);
 //        catalogFileUtils.delete(toDelete.getId(), userSessionId);
 
         File toTrash = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toTrash.txt",
                 StringUtils.randomString(200).getBytes(), "", true, userSessionId).first();
-        catalogManager.getFileManager().delete(Long.toString(toTrash.getId()), null, userSessionId);
+        catalogManager.getFileManager().delete(Long.toString(toTrash.getId()), null, null, userSessionId);
 
-        catalogManager.getFileManager().delete(Long.toString(folder.getId()), null, userSessionId);
+        catalogManager.getFileManager().delete(Long.toString(folder.getId()), null, null, userSessionId);
         QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(new Query()
                 .append(FileDBAdaptor.QueryParams.ID.key(), folder.getId())
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
@@ -456,7 +456,7 @@ public class CatalogFileUtilsTest {
         assertEquals(File.FileStatus.READY, returnedFile.getStatus().getName());
 
         /** Check TRASHED file with found file **/
-        catalogManager.getFileManager().delete(Long.toString(file.getId()), null, userSessionId);
+        catalogManager.getFileManager().delete(Long.toString(file.getId()), null, null, userSessionId);
         QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(new Query()
                         .append(FileDBAdaptor.QueryParams.ID.key(), file.getId())
                         .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)

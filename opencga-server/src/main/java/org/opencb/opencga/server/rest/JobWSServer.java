@@ -17,7 +17,6 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
@@ -110,7 +109,7 @@ public class JobWSServer extends OpenCGAWSServer {
                 jobStatus = new Job.JobStatus();
                 jobStatus.setMessage(job.statusMessage);
             }
-            long outDir = catalogManager.getFileId(job.outDirId, sessionId);
+            long outDir = catalogManager.getFileId(job.outDirId, Long.toString(studyId), sessionId);
             QueryResult<Job> result = catalogManager.createJob(studyId, job.name, job.toolName, job.description, job.execution, job.params,
                     job.commandLine, null, outDir, job.input, job.output, job.attributes, job.resourceManagerAttributes, jobStatus,
                     job.startTime, job.endTime, queryOptions, sessionId);

@@ -18,10 +18,7 @@ package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
@@ -103,7 +100,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "fileId", required = false) @QueryParam("fileId") String fileIdStr,
                                 @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") Long variableSetId) {
         try {
-            long fileId = catalogManager.getFileId(fileIdStr, sessionId);
+            long fileId = catalogManager.getFileId(fileIdStr, studyIdStr, sessionId);
             CatalogSampleAnnotationsLoader loader = new CatalogSampleAnnotationsLoader(catalogManager);
             File pedigreeFile = catalogManager.getFile(fileId, sessionId).first();
             QueryResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedigreeFile, variableSetId, sessionId);

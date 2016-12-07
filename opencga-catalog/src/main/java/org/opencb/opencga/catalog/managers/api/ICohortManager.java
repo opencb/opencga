@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.Study;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +68,18 @@ public interface ICohortManager extends ResourceManager<Long, Cohort>, IAnnotati
         }
         return cohortIds;
     }
+
+    /**
+     * Delete entries from Catalog.
+     *
+     * @param ids       Comma separated list of ids corresponding to the objects to delete
+     * @param options   Deleting options.
+     * @param sessionId sessionId
+     * @return A list with the deleted objects
+     * @throws CatalogException CatalogException
+     * @throws IOException IOException.
+     */
+    List<QueryResult<Cohort>> delete(String ids, QueryOptions options, String sessionId) throws CatalogException, IOException;
 
     /**
      * Groups the elements queried by the field(s) given.

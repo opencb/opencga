@@ -324,9 +324,9 @@ public class CatalogManager implements AutoCloseable {
         return fileManager.getId(id);
     }
 
-    public long getFileId(String fileId, String sessionId) throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        return fileManager.getId(userId, fileId);
+    public long getFileId(String fileIdStr, @Nullable String studyStr, String sessionId) throws CatalogException {
+        AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
+        return resource.getResourceId();
     }
 
     public List<Long> getFileIds(String fileIds, String sessionId) throws CatalogException {
@@ -866,61 +866,57 @@ public class CatalogManager implements AutoCloseable {
 //        return new QueryResult("unshareFile");
 //    }
 
-    public List<QueryResult<FileAclEntry>> getAllFileAcls(String fileIdsStr, String sessionId) throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        String[] fileNameSplit = fileIdsStr.split(",");
-        List<Long> fileIds = fileManager.getIds(userId, fileIdsStr);
-        List<QueryResult<FileAclEntry>> aclList = new ArrayList<>(fileIds.size());
-        for (int i = 0; i < fileIds.size(); i++) {
-            Long fileId = fileIds.get(i);
-            QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(userId, fileId);
-            allFileAcls.setId(fileNameSplit[i]);
+    public List<QueryResult<FileAclEntry>> getAllFileAcls(String fileIdsStr, @Nullable String studyStr, String sessionId)
+            throws CatalogException {
+        AbstractManager.MyResourceIds resource = fileManager.getIds(fileIdsStr, studyStr, sessionId);
+        List<QueryResult<FileAclEntry>> aclList = new ArrayList<>(resource.getResourceIds().size());
+        for (int i = 0; i < resource.getResourceIds().size(); i++) {
+            Long fileId = resource.getResourceIds().get(i);
+            QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(resource.getUser(), fileId);
+            allFileAcls.setId(Long.toString(resource.getResourceIds().get(i)));
             aclList.add(allFileAcls);
         }
         return aclList;
     }
 
-    public List<QueryResult<FileAclEntry>> createFileAcls(String fileIdsStr, String members, String permissions, String sessionId)
-            throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        String[] fileNameSplit = fileIdsStr.split(",");
-        List<Long> fileIds = fileManager.getIds(userId, fileIdsStr);
-        List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(fileIds.size());
-        for (int i = 0; i < fileIds.size(); i++) {
-            Long fileId = fileIds.get(i);
-            QueryResult<FileAclEntry> fileAcls = authorizationManager.createFileAcls(userId, fileId, members, permissions);
-            fileAcls.setId(fileNameSplit[i]);
+    public List<QueryResult<FileAclEntry>> createFileAcls(String fileIdsStr, @Nullable String studyStr, String members, String permissions,
+                                                          String sessionId) throws CatalogException {
+        AbstractManager.MyResourceIds resource = fileManager.getIds(fileIdsStr, studyStr, sessionId);
+        List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(resource.getResourceIds().size());
+        for (int i = 0; i < resource.getResourceIds().size(); i++) {
+            Long fileId = resource.getResourceIds().get(i);
+            QueryResult<FileAclEntry> fileAcls = authorizationManager.createFileAcls(resource.getUser(), fileId, members, permissions);
+            fileAcls.setId(Long.toString(resource.getResourceIds().get(i)));
             fileAclList.add(fileAcls);
         }
         return fileAclList;
     }
 
-    public List<QueryResult<FileAclEntry>> removeFileAcl(String fileIdsStr, String member, String sessionId) throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        String[] fileNameSplit = fileIdsStr.split(",");
-        List<Long> fileIds = fileManager.getIds(userId, fileIdsStr);
-        List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(fileIds.size());
-        for (int i = 0; i < fileIds.size(); i++) {
-            Long fileId = fileIds.get(i);
-            QueryResult<FileAclEntry> fileAcls = authorizationManager.removeFileAcl(userId, fileId, member);
-            fileAcls.setId(fileNameSplit[i]);
+    public List<QueryResult<FileAclEntry>> removeFileAcl(String fileIdsStr, @Nullable String studyStr, String member, String sessionId)
+            throws CatalogException {
+        AbstractManager.MyResourceIds resource = fileManager.getIds(fileIdsStr, studyStr, sessionId);
+        List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(resource.getResourceIds().size());
+        for (int i = 0; i < resource.getResourceIds().size(); i++) {
+            Long fileId = resource.getResourceIds().get(i);
+            QueryResult<FileAclEntry> fileAcls = authorizationManager.removeFileAcl(resource.getUser(), fileId, member);
+            fileAcls.setId(Long.toString(resource.getResourceIds().get(i)));
             fileAclList.add(fileAcls);
         }
         return fileAclList;
     }
 
-    public QueryResult<FileAclEntry> getFileAcl(String fileIdStr, String member, String sessionId) throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        long fileId = fileManager.getId(userId, fileIdStr);
-        return authorizationManager.getFileAcl(userId, fileId, member);
+    public QueryResult<FileAclEntry> getFileAcl(String fileIdStr, @Nullable String studyStr, String member, String sessionId)
+            throws CatalogException {
+        AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
+        return authorizationManager.getFileAcl(resource.getUser(), resource.getResourceId(), member);
     }
 
-    public QueryResult<FileAclEntry> updateFileAcl(String fileIdStr, String member, @Nullable String addPermissions,
-                                                   @Nullable String removePermissions, @Nullable String setPermissions, String sessionId)
-            throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        long fileId = fileManager.getId(userId, fileIdStr);
-        return authorizationManager.updateFileAcl(userId, fileId, member, addPermissions, removePermissions, setPermissions);
+    public QueryResult<FileAclEntry> updateFileAcl(String fileIdStr, @Nullable String studyStr, String member,
+                                                   @Nullable String addPermissions, @Nullable String removePermissions,
+                                                   @Nullable String setPermissions, String sessionId) throws CatalogException {
+        AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
+        return authorizationManager.updateFileAcl(resource.getUser(), resource.getResourceId(), member, addPermissions, removePermissions,
+                setPermissions);
 
     }
 
@@ -960,8 +956,9 @@ public class CatalogManager implements AutoCloseable {
         return fileManager.link(uriOrigin, pathDestiny, studyId, params, sessionId);
     }
 
-    public QueryResult<File> unlink(String fileIdStr, QueryOptions qOptions, String sessionId) throws CatalogException, IOException {
-        return fileManager.unlink(fileIdStr, qOptions, sessionId);
+    public QueryResult<File> unlink(String fileIdStr, @Nullable String studyStr, QueryOptions qOptions, String sessionId)
+            throws CatalogException, IOException {
+        return fileManager.unlink(fileIdStr, studyStr, qOptions, sessionId);
     }
 
 //    public QueryResult shareDatasets(String datasetIds, String members, List<String> permissions, String sessionId, boolean override)

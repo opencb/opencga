@@ -66,18 +66,6 @@ public interface ResourceManager<I, R> {
     QueryResult<R> update(I id, ObjectMap parameters, QueryOptions options, String sessionId) throws CatalogException;
 
     /**
-     * Delete entries from Catalog.
-     *
-     * @param ids       Comma separated list of ids corresponding to the objects to delete
-     * @param options   Deleting options.
-     * @param sessionId sessionId
-     * @return A list with the deleted objects
-     * @throws CatalogException CatalogException
-     * @throws IOException IOException.
-     */
-    List<QueryResult<R>> delete(String ids, QueryOptions options, String sessionId) throws CatalogException, IOException;
-
-    /**
      * Delete the entries satisfying the query.
      *
      * @param query     Query of the objects to be deleted.

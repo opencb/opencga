@@ -107,7 +107,7 @@ public class VariantFetcher {
         QueryResult result;
         long fileIdNum;
 
-        fileIdNum = catalogManager.getFileId(fileId, sessionId);
+        fileIdNum = catalogManager.getFileId(fileId, null, sessionId);
         File file = catalogManager.getFile(fileIdNum, sessionId).first();
 
         if (file.getIndex() == null || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {

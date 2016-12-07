@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,6 +66,18 @@ public interface IJobManager extends ResourceManager<Long, Job> {
         }
         return jobIds;
     }
+
+    /**
+     * Delete entries from Catalog.
+     *
+     * @param ids       Comma separated list of ids corresponding to the objects to delete
+     * @param options   Deleting options.
+     * @param sessionId sessionId
+     * @return A list with the deleted objects
+     * @throws CatalogException CatalogException
+     * @throws IOException IOException.
+     */
+    List<QueryResult<Job>> delete(String ids, QueryOptions options, String sessionId) throws CatalogException, IOException;
 
     /**
      * Retrieve the job Acls for the given members in the job.
