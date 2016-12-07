@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by jmmut on 3/03/15.
@@ -42,6 +43,9 @@ public class VariantDBReader implements VariantReader {
     private Query query;
     private QueryOptions options;
     private VariantDBIterator iterator;
+    private long timeFetching = 0;
+    private long timeConverting = 0;
+
     protected static Logger logger = LoggerFactory.getLogger(VariantDBReader.class);
 
     public VariantDBReader(VariantDBAdaptor variantDBAdaptor, Query query, QueryOptions options) {
@@ -119,9 +123,21 @@ public class VariantDBReader implements VariantReader {
         logger.debug("another batch of {} elements read. time: {}ms", variants.size(), System.currentTimeMillis() - start);
         logger.debug("time splitted: fetch = {}ms, convert = {}ms", iterator.getTimeFetching(), iterator.getTimeConverting());
 
+        timeFetching += iterator.getTimeFetching();
+        timeConverting += iterator.getTimeConverting();
+
         iterator.setTimeConverting(0);
         iterator.setTimeFetching(0);
 
         return variants;
     }
+
+    public long getTimeConverting(TimeUnit timeUnit) {
+        return timeUnit.convert(timeConverting, TimeUnit.NANOSECONDS);
+    }
+
+    public long getTimeFetching(TimeUnit timeUnit) {
+        return timeUnit.convert(timeFetching, TimeUnit.NANOSECONDS);
+    }
+
 }

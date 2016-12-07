@@ -40,16 +40,12 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.local.StorageManager;
 import org.opencb.opencga.storage.core.local.models.StudyInfo;
-import org.opencb.opencga.storage.core.local.variant.operations.StorageOperation;
-import org.opencb.opencga.storage.core.local.variant.operations.VariantAnnotationStorageOperation;
-import org.opencb.opencga.storage.core.local.variant.operations.VariantFileIndexerStorageOperation;
-import org.opencb.opencga.storage.core.local.variant.operations.VariantStatsStorageOperation;
+import org.opencb.opencga.storage.core.local.variant.operations.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.function.Function;
@@ -78,16 +74,32 @@ public class VariantStorageManager extends StorageManager {
         throw new UnsupportedOperationException();
     }
 
-    public void exportData(String outputFile, String studyId, String sessionId) {
-        throw new UnsupportedOperationException();
+    public List<File> exportData(String outDir, String catalogOutputFile, String outputFormat, String studyId, String sessionId)
+            throws URISyntaxException, StorageManagerException, CatalogException, IOException {
+        Query query = new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), studyId)
+                .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
+        return exportData(outDir, catalogOutputFile, outputFormat, query,
+                new QueryOptions(), sessionId);
     }
 
-    public void exportData(String outputFile, String studyId, Query query, QueryOptions queryOptions, String sessionId) {
-        throw new UnsupportedOperationException();
-    }
+    public List<File> exportData(String outDir, String catalogOutputFile, String outputFormat, Query query, QueryOptions queryOptions,
+                                 String sessionId)
+            throws CatalogException, IOException, StorageManagerException, URISyntaxException {
 
-    public void exportData(OutputStream outputFile, String studyId, Query query, QueryOptions queryOptions, String sessionId) {
-        throw new UnsupportedOperationException();
+        if (query == null) {
+            query = new Query();
+        }
+        VariantExportStorageOperation op = new VariantExportStorageOperation(catalogManager, storageConfiguration);
+
+        Set<Long> studies = checkSamplesPermissions(query, queryOptions, sessionId).keySet();
+
+        List<StudyInfo> studyInfos = new ArrayList<>(studies.size());
+        for (Long study : studies) {
+            studyInfos.add(getStudyInfo(String.valueOf(study), Collections.emptyList(), sessionId));
+        }
+
+        return op.exportData(studyInfos, query, outputFormat, outDir, catalogOutputFile, sessionId, queryOptions);
+
     }
 
     // --------------------------//
@@ -281,6 +293,14 @@ public class VariantStorageManager extends StorageManager {
             checkSamplesPermissions(query, null, dbAdaptor, sessionId);
 
             return supplier.apply(dbAdaptor);
+        }
+    }
+
+    private Map<Long, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, String sessionId)
+            throws CatalogException, StorageManagerException, IOException {
+        long studyId = getMainStudyId(query, sessionId);
+        try (VariantDBAdaptor dbAdaptor = getVariantDBAdaptor(studyId, sessionId)) {
+            return checkSamplesPermissions(query, queryOptions, dbAdaptor, sessionId);
         }
     }
 
