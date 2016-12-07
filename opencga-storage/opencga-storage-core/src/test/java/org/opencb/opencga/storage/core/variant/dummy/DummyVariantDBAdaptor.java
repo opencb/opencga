@@ -218,12 +218,6 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
         throw new UnsupportedOperationException();
     }
 
-
-    @Override
-    public QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
-        throw new UnsupportedOperationException();
-    }
-
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
         throw new UnsupportedOperationException();

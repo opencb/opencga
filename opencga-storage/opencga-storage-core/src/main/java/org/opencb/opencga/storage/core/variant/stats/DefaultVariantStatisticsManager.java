@@ -357,7 +357,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
         logger.info("starting stats loading from {} and {}", variantStatsUri, sourceStatsUri);
         long start = System.currentTimeMillis();
 
-        loadVariantStats(variantDBAdaptor, variantStatsUri, studyConfiguration, options);
+        loadVariantStats(variantStatsUri, studyConfiguration, options);
         loadSourceStats(variantDBAdaptor, sourceStatsUri, studyConfiguration, options);
 
         logger.info("finishing stats loading, time: {}ms", System.currentTimeMillis() - start);
@@ -366,10 +366,8 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
 
     }
 
-    public void loadVariantStats(VariantDBAdaptor variantDBAdaptor, URI uri, StudyConfiguration studyConfiguration, QueryOptions options)
+    public void loadVariantStats(URI uri, StudyConfiguration studyConfiguration, QueryOptions options)
             throws IOException, StorageManagerException {
-
-        variantDBAdaptor.preUpdateStats(studyConfiguration);
 
         /* Open input streams */
         Path variantInput = Paths.get(uri.getPath());

@@ -488,22 +488,14 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         throw new UnsupportedOperationException();
     }
 
-
-    @Override
     /**
      * Ensure that all the annotation fields exist are defined.
+     *
+     * @param studyConfiguration StudyConfiguration where the cohorts are defined
+     * @throws SQLException is there is any error with Phoenix
      */
-    public void preUpdateStats(StudyConfiguration studyConfiguration) throws IOException {
-        try {
-            phoenixHelper.updateStatsFields(getJdbcConnection(), variantTable, studyConfiguration);
-        } catch (SQLException e) {
-            throw new IOException(e);
-        }
-    }
-
-    @Override
-    public QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
-        return updateStats(variantStatsWrappers, studyName, queryOptions);
+    public void updateStatsColumns(StudyConfiguration studyConfiguration) throws SQLException {
+        phoenixHelper.updateStatsColumns(getJdbcConnection(), variantTable, studyConfiguration);
     }
 
     @Override
