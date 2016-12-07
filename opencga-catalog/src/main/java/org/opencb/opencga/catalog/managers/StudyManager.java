@@ -182,7 +182,8 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                     throw new CatalogException("Not all the studies were found. Found " + studyQueryResult.getNumResults() + " out of "
                             + aliasList.size());
                 } else {
-                    return studyQueryResult.getResult().stream().map(study -> study.getId()).collect(Collectors.toList());
+                    retStudies.addAll(studyQueryResult.getResult().stream().map(study -> study.getId()).collect(Collectors.toList()));
+                    return retStudies;
                 }
             }
         }
@@ -190,6 +191,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
     @Override
     public Long getId(String userId, String studyStr) throws CatalogException {
+        logger.info("user {}, study {}", userId, studyStr);
         if (studyStr != null && studyStr.contains(",")) {
             throw new CatalogException("Only one study is allowed. More than one study found in " + studyStr);
         }

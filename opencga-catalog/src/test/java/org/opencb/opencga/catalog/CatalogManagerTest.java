@@ -65,6 +65,8 @@ public class CatalogManagerTest extends GenericTest {
     protected String sessionIdUser2;
     protected String sessionIdUser3;
     private File testFolder;
+    private long project1;
+    private long project2;
     private long studyId;
     private long studyId2;
     private long s_1;
@@ -120,15 +122,15 @@ public class CatalogManagerTest extends GenericTest {
         sessionIdUser2 = catalogManager.login("user2", PASSWORD, "127.0.0.1").first().getString("sessionId");
         sessionIdUser3 = catalogManager.login("user3", PASSWORD, "127.0.0.1").first().getString("sessionId");
 
-        Project project1 = catalogManager.createProject("Project about some genomes", "1000G", "", "ACME", null, sessionIdUser)
-                .first();
-        Project project2 = catalogManager.createProject("Project Management Project", "pmp", "life art intelligent system",
-                "myorg", null, sessionIdUser2).first();
+        project1 = catalogManager.createProject("Project about some genomes", "1000G", "", "ACME", null, sessionIdUser)
+                .first().getId();
+        project2 = catalogManager.createProject("Project Management Project", "pmp", "life art intelligent system",
+                "myorg", null, sessionIdUser2).first().getId();
         Project project3 = catalogManager.createProject("project 1", "p1", "", "", null, sessionIdUser3).first();
 
-        studyId = catalogManager.createStudy(project1.getId(), "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser).first().getId();
-        studyId2 = catalogManager.createStudy(project1.getId(), "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser).first().getId();
-        catalogManager.createStudy(project2.getId(), "Study 1", "s1", Study.Type.CONTROL_SET, "", sessionIdUser2).first().getId();
+        studyId = catalogManager.createStudy(project1, "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser).first().getId();
+        studyId2 = catalogManager.createStudy(project1, "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser).first().getId();
+        catalogManager.createStudy(project2, "Study 1", "s1", Study.Type.CONTROL_SET, "", sessionIdUser2).first().getId();
 
         catalogManager.createFolder(studyId2, Paths.get("data/test/folder/"), true, null, sessionIdUser);
 
@@ -481,6 +483,44 @@ public class CatalogManagerTest extends GenericTest {
                 .map(Study::getAlias).collect(Collectors.toSet()));
         assertEquals(Collections.singleton("s1"), catalogManager.getAllStudies(new Query(), null, sessionIdUser2).getResult().stream()
                 .map(Study::getAlias).collect(Collectors.toSet()));
+    }
+
+    @Test
+    public void testGetId() throws CatalogException {
+        // Create another study with alias phase3
+        catalogManager.createStudy(project2, "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser2);
+
+        String userId = catalogManager.getUserManager().getId(sessionIdUser);
+        List<Long> ids = catalogManager.getStudyManager().getIds(userId, "*");
+        assertTrue(ids.contains(studyId) && ids.contains(studyId2));
+
+        ids = catalogManager.getStudyManager().getIds(userId, "");
+        assertTrue(ids.contains(studyId) && ids.contains(studyId2));
+
+        ids = catalogManager.getStudyManager().getIds(userId, null);
+        assertTrue(ids.contains(studyId) && ids.contains(studyId2));
+
+        ids = catalogManager.getStudyManager().getIds(userId, "1000G:*");
+        assertTrue(ids.contains(studyId) && ids.contains(studyId2));
+
+        ids = catalogManager.getStudyManager().getIds(userId, userId + "@1000G:*");
+        assertTrue(ids.contains(studyId) && ids.contains(studyId2));
+
+        ids = catalogManager.getStudyManager().getIds(userId, userId + "@1000G:phase1,phase3");
+        assertTrue(ids.contains(studyId) && ids.contains(studyId2));
+
+        ids = catalogManager.getStudyManager().getIds(userId, userId + "@1000G:phase3," + Long.toString(studyId));
+        assertTrue(ids.contains(studyId) && ids.contains(studyId2));
+
+        try {
+            catalogManager.getStudyManager().getId(userId, null);
+            fail("This method should fail because it should find several studies");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("More than one study"));
+        }
+
+        long id = catalogManager.getStudyManager().getId(userId, "phase3");
+        assertEquals(studyId2, id);
     }
 
     /**
