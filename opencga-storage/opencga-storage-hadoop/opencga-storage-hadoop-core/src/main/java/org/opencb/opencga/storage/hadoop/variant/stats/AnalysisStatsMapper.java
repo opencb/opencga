@@ -8,6 +8,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsCalculator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.variant.AbstractHBaseMapReduce;
@@ -36,8 +37,10 @@ public class AnalysisStatsMapper extends AbstractHBaseMapReduce<ImmutableBytesWr
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
+        this.getHbaseToVariantConverter().setSimpleGenotypes(true);
         studiesRow = getHelper().generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
         variantStatisticsCalculator = new VariantStatisticsCalculator(true);
+        this.variantStatisticsCalculator.setAggregationType(VariantSource.Aggregation.NONE, null);
         this.studyId = Integer.valueOf(this.getStudyConfiguration().getStudyId()).toString();
         BiMap<Integer, String> sampleIds = getStudyConfiguration().getSampleIds().inverse();
         variantStatsToHBaseConverter = new VariantStatsToHBaseConverter(this.getHelper(), this.getStudyConfiguration());
@@ -47,21 +50,27 @@ public class AnalysisStatsMapper extends AbstractHBaseMapReduce<ImmutableBytesWr
                 .map(p -> new MutablePair<>(p.getKey(),
                         p.getValue().stream().map(i -> sampleIds.get(i)).collect(Collectors.toSet())))
                 .collect(Collectors.toMap(p -> p.getKey(), p -> p.getValue()));
-        getLog().info("Calculate stats for cohorts: {} ", StringUtils.join(samples.keySet(), ","));
+        this.samples.forEach((k, v) -> getLog().info("Calculate {} stats for cohort {} with {}", studyId, k, StringUtils.join(v, ",")));
     }
 
     @Override
     protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
+        boolean done = false;
         if (!Bytes.startsWith(value.getRow(), this.studiesRow)) { // ignore _METADATA row
             Variant variant = this.getHbaseToVariantConverter().convert(value);
             List<VariantStatsWrapper> annotations = this.variantStatisticsCalculator.calculateBatch(
                     Collections.singletonList(variant), this.studyId, "notused", this.samples);
             for (VariantStatsWrapper annotation : annotations) {
                 Put convert = this.variantStatsToHBaseConverter.convert(annotation);
-                context.write(key, convert);
-                context.getCounter(AbstractVariantTableMapReduce.COUNTER_GROUP_NAME, "stats.put").increment(1);
+                if (null != convert) {
+                    context.write(key, convert);
+                    done = true;
+                    context.getCounter(AbstractVariantTableMapReduce.COUNTER_GROUP_NAME, "stats.put").increment(1);
+                }
             }
-            context.getCounter(AbstractVariantTableMapReduce.COUNTER_GROUP_NAME, "variants").increment(1);
+            if (done) {
+                context.getCounter(AbstractVariantTableMapReduce.COUNTER_GROUP_NAME, "variants").increment(1);
+            }
         }
     }
 }
