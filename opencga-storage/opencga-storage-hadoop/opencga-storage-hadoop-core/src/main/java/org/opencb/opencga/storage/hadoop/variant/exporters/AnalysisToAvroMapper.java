@@ -28,7 +28,7 @@ public class AnalysisToAvroMapper extends AbstractHBaseMapReduce<AvroKey<Variant
         super.setup(context);
         studiesRow = getHelper().generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
 
-        List<String> returnedSamples = Collections.emptyList();
+        List<String> returnedSamples = Collections.singletonList("."); // No GT data by default
         boolean withGenotype = context.getConfiguration().getBoolean(VariantTableExportDriver
                 .CONFIG_VARIANT_TABLE_EXPORT_AVRO_GENOTYPE, false);
         if (withGenotype) {
