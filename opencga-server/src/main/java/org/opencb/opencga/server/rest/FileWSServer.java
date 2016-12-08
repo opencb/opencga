@@ -1372,7 +1372,7 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "numerical attributes", required = false) @DefaultValue("") @QueryParam("nattributes")
                                         String nattributes) {
         try {
-            QueryResult result = fileManager.groupBy(studyStr, query, fields, queryOptions, sessionId);
+            QueryResult result = fileManager.groupBy(studyStr, query, queryOptions, fields, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

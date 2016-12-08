@@ -380,10 +380,6 @@ public class OpenCGAWSServer {
             query.remove("status");
         }
 
-//        if (query.containsKey("study")) {
-//            query.remove("study");
-//        }
-
         try {
             logger.info("URL: {}, query = {}, queryOptions = {}", uriInfo.getAbsolutePath().toString(),
                     jsonObjectWriter.writeValueAsString(query), jsonObjectWriter.writeValueAsString(queryOptions));

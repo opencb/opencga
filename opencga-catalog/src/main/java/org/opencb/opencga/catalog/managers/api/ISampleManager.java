@@ -16,16 +16,21 @@
 
 package org.opencb.opencga.catalog.managers.api;
 
+import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -67,24 +72,61 @@ public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotati
     @Deprecated
     Long getId(String fileId) throws CatalogException;
 
-    QueryResult<Sample> create(long studyId, String name, String source, String description, Map<String, Object> attributes,
+    QueryResult<Sample> create(String studyStr, String name, String source, String description, Map<String, Object> attributes,
                                QueryOptions options, String sessionId) throws CatalogException;
+
+    /**
+     * Obtains the resource java bean containing the requested ids.
+     *
+     * @param sampleStr Sample id in string format. Could be either the id or alias.
+     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param sessionId Session id of the user logged.
+     * @return the resource java bean containing the requested ids.
+     * @throws CatalogException when more than one sample id is found.
+     */
+    AbstractManager.MyResourceId getId(String sampleStr, @Nullable String studyStr, String sessionId) throws CatalogException;
+
+    /**
+     * Obtains the resource java bean containing the requested ids.
+     *
+     * @param sampleStr Sample id in string format. Could be either the id or alias.
+     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param sessionId Session id of the user logged.
+     * @return the resource java bean containing the requested ids.
+     * @throws CatalogException CatalogException.
+     */
+    AbstractManager.MyResourceIds getIds(String sampleStr, @Nullable String studyStr, String sessionId) throws CatalogException;
+
 
     /**
      * Delete entries from Catalog.
      *
      * @param ids       Comma separated list of ids corresponding to the objects to delete
+     * @param studyStr  Study string.
      * @param options   Deleting options.
      * @param sessionId sessionId
      * @return A list with the deleted objects
      * @throws CatalogException CatalogException
      * @throws IOException IOException.
      */
-    List<QueryResult<Sample>> delete(String ids, QueryOptions options, String sessionId) throws CatalogException, IOException;
+    List<QueryResult<Sample>> delete(String ids, @Nullable String studyStr, QueryOptions options, String sessionId)
+            throws CatalogException, IOException;
 
     QueryResult<Annotation> load(File file) throws CatalogException;
 
     QueryResult<Sample> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
+
+    /**
+     * Multi-study search of samples in catalog.
+     *
+     * @param studyStr Study string that can point to several studies of the same project.
+     * @param query    Query object.
+     * @param options  QueryOptions object.
+     * @param sessionId Session id.
+     * @return The list of samples matching the query.
+     * @throws CatalogException catalogException.
+     */
+    QueryResult<Sample> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
     /**
      * Retrieve the sample Acls for the given members in the sample.
@@ -140,46 +182,27 @@ public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotati
         return rank(studyId, query, field, numResults, asc, sessionId);
     }
 
-    /**
-     * Groups the elements queried by the field(s) given.
-     *
-     * @param studyId Study id.
-     * @param query   Query object containing the query that will be executed.
-     * @param field   Field by which the results will be grouped in.
-     * @param options QueryOptions object.
-     * @param sessionId  sessionId.
-     * @return        A QueryResult object containing the results of the query grouped by the field.
-     * @throws CatalogException CatalogException
-     */
-    QueryResult groupBy(long studyId, Query query, String field, QueryOptions options, String sessionId) throws CatalogException;
-
-    default QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        long studyId = query.getLong(SampleDBAdaptor.QueryParams.STUDY_ID.key());
-        if (studyId == 0L) {
-            throw new CatalogException("Sample[groupBy]: Study id not found in the query");
+    default QueryResult groupBy(@Nullable String studyStr, Query query, QueryOptions options, String fields, String sessionId)
+            throws CatalogException {
+        if (StringUtils.isEmpty(fields)) {
+            throw new CatalogException("Empty fields parameter.");
         }
-        return groupBy(studyId, query, field, options, sessionId);
+        return groupBy(studyStr, query, Arrays.asList(fields.split(",")), options, sessionId);
     }
 
-    /**
-     * Groups the elements queried by the field(s) given.
-     *
-     * @param studyId Study id.
-     * @param query   Query object containing the query that will be executed.
-     * @param fields  List of fields by which the results will be grouped in.
-     * @param options QueryOptions object.
-     * @param sessionId  sessionId.
-     * @return        A QueryResult object containing the results of the query grouped by the fields.
-     * @throws CatalogException CatalogException
-     */
-    QueryResult groupBy(long studyId, Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
+            throws CatalogException;
 
-    default QueryResult groupBy(Query query, List<String> field, QueryOptions options, String sessionId) throws CatalogException {
-        long studyId = query.getLong(SampleDBAdaptor.QueryParams.STUDY_ID.key());
-        if (studyId == 0L) {
-            throw new CatalogException("Sample[groupBy]: Study id not found in the query");
-        }
-        return groupBy(studyId, query, field, options, sessionId);
+    @Deprecated
+    @Override
+    default QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
+        throw new NotImplementedException("Group by has to be called passing the study string");
+    }
+
+    @Deprecated
+    @Override
+    default QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
+        throw new NotImplementedException("Group by has to be called passing the study string");
     }
 
 }

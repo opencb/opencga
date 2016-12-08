@@ -165,11 +165,11 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.modifySample(smp2, new QueryOptions(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), ind1), ownerSessionId);
         catalogManager.modifySample(smp2, new QueryOptions(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), ind2), ownerSessionId);
 
-        catalogManager.createSampleAcls(Long.toString(smp1), externalUser, ALL_SAMPLE_PERMISSIONS, ownerSessionId);
-        catalogManager.createSampleAcls(Long.toString(smp3), externalUser, DENY_SAMPLE_PERMISSIONS, ownerSessionId);
-        catalogManager.createSampleAcls(Long.toString(smp2), studyAdminUser1, DENY_SAMPLE_PERMISSIONS, ownerSessionId);
-        catalogManager.createSampleAcls(Long.toString(smp5), externalUser, DENY_SAMPLE_PERMISSIONS, ownerSessionId);
-        catalogManager.createSampleAcls(Long.toString(smp6), "*", ALL_SAMPLE_PERMISSIONS, ownerSessionId);
+        catalogManager.createSampleAcls(Long.toString(smp1), Long.toString(s1), externalUser, ALL_SAMPLE_PERMISSIONS, ownerSessionId);
+        catalogManager.createSampleAcls(Long.toString(smp3), Long.toString(s1), externalUser, DENY_SAMPLE_PERMISSIONS, ownerSessionId);
+        catalogManager.createSampleAcls(Long.toString(smp2), Long.toString(s1), studyAdminUser1, DENY_SAMPLE_PERMISSIONS, ownerSessionId);
+        catalogManager.createSampleAcls(Long.toString(smp5), Long.toString(s1), externalUser, DENY_SAMPLE_PERMISSIONS, ownerSessionId);
+        catalogManager.createSampleAcls(Long.toString(smp6), Long.toString(s1), "*", ALL_SAMPLE_PERMISSIONS, ownerSessionId);
 
     }
 
@@ -590,7 +590,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         assertEquals(1, sample.getNumResults());
 
         //Owner always have access
-        catalogManager.createSampleAcls(Long.toString(smp1), ownerUser, DENY_SAMPLE_PERMISSIONS, ownerSessionId);
+        catalogManager.createSampleAcls(Long.toString(smp1), Long.toString(s1), ownerUser, DENY_SAMPLE_PERMISSIONS, ownerSessionId);
         sample = catalogManager.getSample(smp1, null, ownerSessionId);
         assertEquals(1, sample.getNumResults());
     }
@@ -606,7 +606,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         QueryResult<Sample> sample = catalogManager.getSample(smp1, null, externalSessionId);
         assertEquals(1, sample.getNumResults());
 //        catalogManager.unshareSample(Long.toString(smp1), externalUser, null, ownerSessionId);
-        catalogManager.removeSampleAcl(Long.toString(smp1), externalUser, ownerSessionId);
+        catalogManager.removeSampleAcl(Long.toString(smp1), Long.toString(s1), externalUser, ownerSessionId);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getSample(smp1, null, externalSessionId);
     }
@@ -659,7 +659,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.createStudyAcls(Long.toString(s1), newGroup, "", AuthorizationManager.ROLE_LOCKED, ownerSessionId);
 
         // Share the sample with the group
-        catalogManager.createSampleAcls(Long.toString(smp4), newGroup, ALL_SAMPLE_PERMISSIONS, ownerSessionId);
+        catalogManager.createSampleAcls(Long.toString(smp4), Long.toString(s1), newGroup, ALL_SAMPLE_PERMISSIONS, ownerSessionId);
 
         QueryResult<Sample> sample = catalogManager.getSample(smp4, null, sessionId);
         assertEquals(1, sample.getNumResults());
@@ -685,7 +685,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void adminShareSampleWithOtherUser() throws CatalogException {
-        catalogManager.createSampleAcls(Long.toString(smp4), externalUser, ALL_SAMPLE_PERMISSIONS, studyAdmin1SessionId);
+        catalogManager.createSampleAcls(Long.toString(smp4), Long.toString(s1), externalUser, ALL_SAMPLE_PERMISSIONS, studyAdmin1SessionId);
         QueryResult<Sample> sample = catalogManager.getSample(smp4, null, externalSessionId);
         assertEquals(1, sample.getNumResults());
     }

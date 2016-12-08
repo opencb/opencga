@@ -623,61 +623,58 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.getAcls(studyStr, members, sessionId);
     }
 
-    public List<QueryResult<SampleAclEntry>> getAllSampleAcls(String sampleIdsStr, String sessionId) throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        String[] sampleNameSplit = sampleIdsStr.split(",");
-        List<Long> sampleIds = sampleManager.getIds(userId, sampleIdsStr);
-        List<QueryResult<SampleAclEntry>> sampleAclList = new ArrayList<>(sampleIds.size());
-        for (int i = 0; i < sampleIds.size(); i++) {
-            Long sampleId = sampleIds.get(i);
-            QueryResult<SampleAclEntry> allSampleAcls = authorizationManager.getAllSampleAcls(userId, sampleId);
-            allSampleAcls.setId(sampleNameSplit[i]);
+    public List<QueryResult<SampleAclEntry>> getAllSampleAcls(String sampleIdsStr, @Nullable String studyStr, String sessionId)
+            throws CatalogException {
+        AbstractManager.MyResourceIds resourceId = sampleManager.getIds(sampleIdsStr, studyStr, sessionId);
+        List<QueryResult<SampleAclEntry>> sampleAclList = new ArrayList<>(resourceId.getResourceIds().size());
+        for (int i = 0; i < resourceId.getResourceIds().size(); i++) {
+            Long sampleId = resourceId.getResourceIds().get(i);
+            QueryResult<SampleAclEntry> allSampleAcls = authorizationManager.getAllSampleAcls(resourceId.getUser(), sampleId);
+            allSampleAcls.setId(Long.toString(resourceId.getResourceIds().get(i)));
             sampleAclList.add(allSampleAcls);
         }
         return sampleAclList;
     }
 
-    public List<QueryResult<SampleAclEntry>> createSampleAcls(String sampleIdsStr, String members, String permissions, String sessionId)
+    public List<QueryResult<SampleAclEntry>> createSampleAcls(String sampleIdsStr, @Nullable String studyStr, String members,
+                                                              String permissions, String sessionId) throws CatalogException {
+        AbstractManager.MyResourceIds resourceId = sampleManager.getIds(sampleIdsStr, studyStr, sessionId);
+        List<QueryResult<SampleAclEntry>> sampleAclList = new ArrayList<>(resourceId.getResourceIds().size());
+        for (int i = 0; i < resourceId.getResourceIds().size(); i++) {
+            Long sampleId = resourceId.getResourceIds().get(i);
+            QueryResult<SampleAclEntry> sampleAcls = authorizationManager.createSampleAcls(resourceId.getUser(), sampleId, members,
+                    permissions);
+            sampleAcls.setId(Long.toString(sampleId));
+            sampleAclList.add(sampleAcls);
+        }
+        return sampleAclList;
+    }
+
+    public List<QueryResult<SampleAclEntry>> removeSampleAcl(String sampleIdsStr, @Nullable String studyStr, String member,
+                                                             String sessionId) throws CatalogException {
+        AbstractManager.MyResourceIds resourceId = sampleManager.getIds(sampleIdsStr, studyStr, sessionId);
+        List<QueryResult<SampleAclEntry>> sampleAclList = new ArrayList<>(resourceId.getResourceIds().size());
+        for (int i = 0; i < resourceId.getResourceIds().size(); i++) {
+            Long sampleId = resourceId.getResourceIds().get(i);
+            QueryResult<SampleAclEntry> sampleAcls = authorizationManager.removeSampleAcl(resourceId.getUser(), sampleId, member);
+            sampleAcls.setId(Long.toString(sampleId));
+            sampleAclList.add(sampleAcls);
+        }
+        return sampleAclList;
+    }
+
+    public QueryResult<SampleAclEntry> getSampleAcl(String sampleIdStr, @Nullable String studyStr, String member, String sessionId)
             throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        String[] sampleNameSplit = sampleIdsStr.split(",");
-        List<Long> sampleIds = sampleManager.getIds(userId, sampleIdsStr);
-        List<QueryResult<SampleAclEntry>> sampleAclList = new ArrayList<>(sampleIds.size());
-        for (int i = 0; i < sampleIds.size(); i++) {
-            Long sampleId = sampleIds.get(i);
-            QueryResult<SampleAclEntry> sampleAcls = authorizationManager.createSampleAcls(userId, sampleId, members, permissions);
-            sampleAcls.setId(sampleNameSplit[i]);
-            sampleAclList.add(sampleAcls);
-        }
-        return sampleAclList;
+        AbstractManager.MyResourceId resourceId = sampleManager.getId(sampleIdStr, studyStr, sessionId);
+        return authorizationManager.getSampleAcl(resourceId.getUser(), resourceId.getResourceId(), member);
     }
 
-    public List<QueryResult<SampleAclEntry>> removeSampleAcl(String sampleIdsStr, String member, String sessionId) throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        String[] sampleNameSplit = sampleIdsStr.split(",");
-        List<Long> sampleIds = sampleManager.getIds(userId, sampleIdsStr);
-        List<QueryResult<SampleAclEntry>> sampleAclList = new ArrayList<>(sampleIds.size());
-        for (int i = 0; i < sampleIds.size(); i++) {
-            Long sampleId = sampleIds.get(i);
-            QueryResult<SampleAclEntry> sampleAcls = authorizationManager.removeSampleAcl(userId, sampleId, member);
-            sampleAcls.setId(sampleNameSplit[i]);
-            sampleAclList.add(sampleAcls);
-        }
-        return sampleAclList;
-    }
-
-    public QueryResult<SampleAclEntry> getSampleAcl(String sampleIdStr, String member, String sessionId) throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        long sampleId = sampleManager.getId(userId, sampleIdStr);
-        return authorizationManager.getSampleAcl(userId, sampleId, member);
-    }
-
-    public QueryResult<SampleAclEntry> updateSampleAcl(String sampleIdStr, String member, @Nullable String addPermissions,
-                                                       @Nullable String removePermissions, @Nullable String setPermissions,
-                                                       String sessionId) throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        long sampleId = sampleManager.getId(userId, sampleIdStr);
-        return authorizationManager.updateSampleAcl(userId, sampleId, member, addPermissions, removePermissions, setPermissions);
+    public QueryResult<SampleAclEntry> updateSampleAcl(String sampleIdStr, @Nullable String studyStr, String member,
+                                                       @Nullable String addPermissions, @Nullable String removePermissions,
+                                                       @Nullable String setPermissions, String sessionId) throws CatalogException {
+        AbstractManager.MyResourceId resourceId = sampleManager.getId(sampleIdStr, studyStr, sessionId);
+        return authorizationManager.updateSampleAcl(resourceId.getUser(), resourceId.getResourceId(), member, addPermissions,
+                removePermissions, setPermissions);
 
     }
 
@@ -1254,10 +1251,11 @@ public class CatalogManager implements AutoCloseable {
      * ***************************
      */
 
+    @Deprecated
     public QueryResult<Sample> createSample(long studyId, String name, String source, String description,
                                             Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
-        return sampleManager.create(studyId, name, source, description, attributes, options, sessionId);
+        return sampleManager.create(Long.toString(studyId), name, source, description, attributes, options, sessionId);
     }
 
     public long getSampleId(String sampleId, String sessionId) throws CatalogException {
@@ -1333,47 +1331,6 @@ public class CatalogManager implements AutoCloseable {
             throws CatalogException {
         return sampleManager.updateAnnotation(sampleId, annotationSetName, annotations, sessionId);
     }
-
-    public QueryResult<AnnotationSet> createSampleAnnotationSet(String sampleIdStr, long variableSetId, String annotationSetName,
-                                                                Map<String, Object> annotations, Map<String, Object> attributes,
-                                                                String sessionId) throws CatalogException {
-        return sampleManager.createAnnotationSet(sampleIdStr, variableSetId, annotationSetName, annotations, attributes, sessionId);
-    }
-
-    public QueryResult<AnnotationSet> getAllSampleAnnotationSets(String sampleIdStr, String sessionId) throws CatalogException {
-        return sampleManager.getAllAnnotationSets(sampleIdStr, sessionId);
-    }
-
-    public QueryResult<AnnotationSet> getSampleAnnotationSet(String sampleIdStr, String annotationSetName, String sessionId)
-            throws CatalogException {
-        return sampleManager.getAnnotationSet(sampleIdStr, annotationSetName, sessionId);
-    }
-
-    public QueryResult<AnnotationSet> updateSampleAnnotationSet(String sampleIdStr, String annotationSetName,
-                                                                Map<String, Object> newAnnotations, String sessionId)
-            throws CatalogException {
-        return sampleManager.updateAnnotationSet(sampleIdStr, annotationSetName, newAnnotations, sessionId);
-    }
-
-    public QueryResult<AnnotationSet> deleteSampleAnnotationSet(String sampleIdStr, String annotationSetName, String sessionId)
-            throws CatalogException {
-        return sampleManager.deleteAnnotationSet(sampleIdStr, annotationSetName, sessionId);
-    }
-
-    public QueryResult<AnnotationSet> deleteSampleAnnotations(String sampleIdStr, String annotationSetName, String annotations,
-                                                              String sessionId) throws CatalogException {
-        return sampleManager.deleteAnnotations(sampleIdStr, annotationSetName, annotations, sessionId);
-    }
-
-    public QueryResult<AnnotationSet> searchSampleAnnotationSets(String sampleIdStr, long variableSetId,
-                                                                 @Nullable String annotation, String sessionId) throws CatalogException {
-        return sampleManager.searchAnnotationSet(sampleIdStr, variableSetId, annotation, sessionId);
-    }
-
-    public QueryResult sampleGroupBy(Query query, QueryOptions qOptions, String fields, String sessionId) throws CatalogException {
-        return sampleManager.groupBy(query, Arrays.asList(fields.split(",")), qOptions, sessionId);
-    }
-
 
     public QueryResult<AnnotationSet> annotateIndividual(long individualId, String annotationSetName, long variableSetId,
                                                          Map<String, Object> annotations,

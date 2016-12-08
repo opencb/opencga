@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.managers.api;
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -25,6 +26,7 @@ import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -186,4 +188,57 @@ public interface IIndividualManager extends ResourceManager<Long, Individual>, I
         return groupBy(studyId, query, field, options, sessionId);
     }
 
+    @Override
+    default QueryResult<AnnotationSet> createAnnotationSet(String id, @Nullable String studyStr, long variableSetId, String
+            annotationSetName, Map<String, Object> annotations, Map<String, Object> attributes, String sessionId) throws CatalogException {
+        return createAnnotationSet(id, variableSetId, annotationSetName, annotations, attributes, sessionId);
+    }
+
+    @Override
+    default QueryResult<AnnotationSet> getAllAnnotationSets(String id, @Nullable String studyStr, String sessionId)
+            throws CatalogException {
+        return getAllAnnotationSets(id, sessionId);
+    }
+
+    @Override
+    default QueryResult<ObjectMap> getAllAnnotationSetsAsMap(String id, @Nullable String studyStr, String sessionId)
+            throws CatalogException {
+        return getAllAnnotationSetsAsMap(id, sessionId);
+    }
+
+    @Override
+    default QueryResult<AnnotationSet> getAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
+            throws CatalogException {
+        return getAnnotationSet(id, annotationSetName, sessionId);
+    }
+
+    @Override
+    default QueryResult<ObjectMap> getAnnotationSetAsMap(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
+            throws CatalogException {
+        return getAnnotationSetAsMap(id, annotationSetName, sessionId);
+    }
+
+    @Override
+    default QueryResult<AnnotationSet> updateAnnotationSet(String id, @Nullable String studyStr, String annotationSetName,
+                                                           Map<String, Object> newAnnotations, String sessionId) throws CatalogException {
+        return updateAnnotationSet(id, annotationSetName, newAnnotations, sessionId);
+    }
+
+    @Override
+    default QueryResult<AnnotationSet> deleteAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String
+            sessionId) throws CatalogException {
+        return deleteAnnotationSet(id, annotationSetName, sessionId);
+    }
+
+    @Override
+    default QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, @Nullable String studyStr, long variableSetId, @Nullable String
+            annotation, String sessionId) throws CatalogException {
+        return searchAnnotationSetAsMap(id, variableSetId, annotation, sessionId);
+    }
+
+    @Override
+    default QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, long variableSetId, @Nullable String
+            annotation, String sessionId) throws CatalogException {
+        return searchAnnotationSet(id, variableSetId, annotation, sessionId);
+    }
 }

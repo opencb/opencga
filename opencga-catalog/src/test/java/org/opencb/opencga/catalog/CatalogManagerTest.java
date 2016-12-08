@@ -1269,7 +1269,7 @@ public class CatalogManagerTest extends GenericTest {
         long sampleId = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
 
         List<QueryResult<Sample>> queryResult = catalogManager.getSampleManager()
-                .delete(Long.toString(sampleId), new QueryOptions(), sessionIdUser);
+                .delete(Long.toString(sampleId), Long.toString(studyId), new QueryOptions(), sessionIdUser);
         assertEquals(sampleId, queryResult.get(0).first().getId());
 
         Query query = new Query()

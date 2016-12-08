@@ -191,7 +191,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
     @Override
     public Long getId(String userId, String studyStr) throws CatalogException {
-        logger.info("user {}, study {}", userId, studyStr);
+        logger.debug("user {}, study {}", userId, studyStr);
         if (studyStr != null && studyStr.contains(",")) {
             throw new CatalogException("Only one study is allowed. More than one study found in " + studyStr);
         }

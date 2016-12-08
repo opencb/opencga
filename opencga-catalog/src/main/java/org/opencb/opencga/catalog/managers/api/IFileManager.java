@@ -258,7 +258,7 @@ public interface IFileManager extends ResourceManager<Long, File> {
         return rank(studyId, query, field, numResults, asc, sessionId);
     }
 
-    default QueryResult groupBy(@Nullable String studyStr, Query query, String fields, QueryOptions options, String sessionId)
+    default QueryResult groupBy(@Nullable String studyStr, Query query, QueryOptions options, String fields, String sessionId)
             throws CatalogException {
         if (StringUtils.isEmpty(fields)) {
             throw new CatalogException("Empty fields parameter.");
