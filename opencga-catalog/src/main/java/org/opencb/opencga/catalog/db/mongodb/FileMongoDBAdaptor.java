@@ -665,6 +665,9 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
+            if (queryParam == null) {
+                continue;
+            }
             try {
                 switch (queryParam) {
                     case ID:
@@ -691,10 +694,41 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
-                    case STUDY:
+                    // Other parameter that can be queried.
+                    case NAME:
+                    case TYPE:
+                    case FORMAT:
+                    case BIOFORMAT:
+                    case URI:
+                    case PATH:
+                    case CREATION_DATE:
+                    case MODIFICATION_DATE:
+                    case DESCRIPTION:
+                    case EXTERNAL:
+                    case STATUS:
+                    case STATUS_NAME:
+                    case STATUS_MSG:
+                    case STATUS_DATE:
+                    case RELATED_FILES:
+                    case RELATED_FILES_RELATION:
+                    case DISK_USAGE:
+                    case EXPERIMENT_ID:
+                    case SAMPLE_IDS:
+                    case JOB_ID:
+                    case ACL:
+                    case ACL_MEMBER:
+                    case ACL_PERMISSIONS:
+                    case INDEX:
+                    case INDEX_USER_ID:
+                    case INDEX_CREATION_DATE:
+                    case INDEX_STATUS_NAME:
+                    case INDEX_STATUS_MESSAGE:
+                    case INDEX_JOB_ID:
+                    case INDEX_TRANSFORMED_FILE:
+                    case STATS:
+                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     default:
-                        addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                 }
             } catch (Exception e) {

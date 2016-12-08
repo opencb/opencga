@@ -74,22 +74,22 @@ public class OpenCGAWSServer {
     @ApiParam(name = "version", value = "OpenCGA major version", allowableValues = "v1", defaultValue = "v1")
     protected String version;
 
-//    @DefaultValue("")
+    //    @DefaultValue("")
 //    @QueryParam("exclude")
 //    @ApiParam(name = "exclude", value = "Fields excluded in response. Whole JSON path.")
     protected String exclude;
 
-//    @DefaultValue("")
+    //    @DefaultValue("")
 //    @QueryParam("include")
 //    @ApiParam(name = "include", value = "Only fields included in response. Whole JSON path.")
     protected String include;
 
-//    @DefaultValue("-1")
+    //    @DefaultValue("-1")
 //    @QueryParam("limit")
 //    @ApiParam(name = "limit", value = "Maximum number of documents to be returned.")
     protected int limit;
 
-//    @DefaultValue("0")
+    //    @DefaultValue("0")
 //    @QueryParam("skip")
 //    @ApiParam(name = "skip", value = "Number of documents to be skipped when querying for data.")
     protected long skip;
@@ -331,7 +331,7 @@ public class OpenCGAWSServer {
             }
         }
 
-         // Check version parameter, must be: v1, v2, ... If 'latest' then is converted to appropriate version.
+        // Check version parameter, must be: v1, v2, ... If 'latest' then is converted to appropriate version.
         if (version.equalsIgnoreCase("latest")) {
             logger.info("Version 'latest' detected, setting 'version' parameter to 'v1'");
             version = "v1";
@@ -379,6 +379,10 @@ public class OpenCGAWSServer {
             query.put("status.name", query.get("status"));
             query.remove("status");
         }
+
+//        if (query.containsKey("study")) {
+//            query.remove("study");
+//        }
 
         try {
             logger.info("URL: {}, query = {}, queryOptions = {}", uriInfo.getAbsolutePath().toString(),

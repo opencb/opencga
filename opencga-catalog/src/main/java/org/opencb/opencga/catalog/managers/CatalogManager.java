@@ -977,10 +977,6 @@ public class CatalogManager implements AutoCloseable {
 //        return new QueryResult("unshareDatasets");
 //    }
 
-    public QueryResult fileGroupBy(Query query, QueryOptions qOptions, String fields, String sessionId) throws CatalogException {
-        return fileManager.groupBy(query, Arrays.asList(fields.split(",")), qOptions, sessionId);
-    }
-
     /*
      * **************************
      * Job methods

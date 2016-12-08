@@ -274,6 +274,14 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     private Long smartResolutor(String fileName, long studyId) throws CatalogException {
+        if (StringUtils.isNumeric(fileName)) {
+            long fileId = Long.parseLong(fileName);
+            fileDBAdaptor.exists(fileId);
+            return fileId;
+        }
+
+        // This line is only just in case the files are being passed from the webservice. Paths cannot contain "/" when passed via the URLs
+        // so they should be passed as : instead. This is just to support that behaviour.
         fileName = fileName.replace(":", "/");
 
         if (fileName.startsWith("/")) {
@@ -961,7 +969,6 @@ public class FileManager extends AbstractManager implements IFileManager {
         return get(query.getInt("studyId", -1), query, options, sessionId);
     }
 
-    @Deprecated
     @Override
     public QueryResult<File> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
@@ -984,12 +991,33 @@ public class FileManager extends AbstractManager implements IFileManager {
         return queryResult;
     }
 
-    // TODO: Temporal solution. This method should replace the other deprecated get
     @Override
-    public QueryResult<File> get(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<File> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
         String userId = userManager.getId(sessionId);
-        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-        return get(studyId, query, options, sessionId);
+        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
+
+        // Check any permission in studies
+        for (Long studyId : studyIds) {
+            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
+        }
+
+        QueryResult<File> queryResult = null;
+        for (Long studyId : studyIds) {
+            query.append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+            QueryResult<File> queryResultAux = fileDBAdaptor.get(query, options);
+            authorizationManager.filterFiles(userId, studyId, queryResultAux.getResult());
+
+            if (queryResult == null) {
+                queryResult = queryResultAux;
+            } else {
+                queryResult.getResult().addAll(queryResultAux.getResult());
+                queryResult.setNumTotalResults(queryResult.getNumTotalResults() + queryResultAux.getNumTotalResults());
+                queryResult.setDbTime(queryResult.getDbTime() + queryResultAux.getDbTime());
+            }
+        }
+        queryResult.setNumResults(queryResult.getResult().size());
+
+        return queryResult;
     }
 
     @Override
@@ -2056,43 +2084,23 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult groupBy(long studyId, Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-        ParamUtils.checkObj(field, "field");
-        ParamUtils.checkObj(studyId, "studyId");
-        ParamUtils.checkObj(sessionId, "sessionId");
-
-        String userId = userManager.getId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_FILES);
-
-        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
-        boolean count = true;
-//        query.append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-        QueryResult queryResult = null;
-        if (count) {
-            // We do not need to check for permissions when we show the count of files
-            queryResult = fileDBAdaptor.groupBy(query, field, options);
-        }
-
-        return ParamUtils.defaultObject(queryResult, QueryResult::new);
-    }
-
-    @Override
-    public QueryResult groupBy(long studyId, Query query, List<String> fields, QueryOptions options, String sessionId)
+    public QueryResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        ParamUtils.checkObj(fields, "fields");
-        ParamUtils.checkObj(studyId, "studyId");
-        ParamUtils.checkObj(sessionId, "sessionId");
+        if (fields == null || fields.size() == 0) {
+            throw new CatalogException("Empty fields parameter.");
+        }
 
         String userId = userManager.getId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_FILES);
+
+        // Add study id to the query
+        query.put(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
-//        query.append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult queryResult = null;
         if (count) {
             // We do not need to check for permissions when we show the count of files
