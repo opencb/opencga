@@ -73,7 +73,7 @@ public class FileDaemon extends MonitorParentDaemon {
     private void checkDeletedFiles() throws CatalogException {
         QueryResult<File> files = catalogManager.searchFile(
                 -1,
-                new Query(FileDBAdaptor.QueryParams.FILE_STATUS.key(), File.FileStatus.TRASHED),
+                new Query(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED),
                 new QueryOptions(),
                 sessionId);
 
@@ -103,7 +103,7 @@ public class FileDaemon extends MonitorParentDaemon {
     private void checkPendingRemoveFiles() throws CatalogException {
         QueryResult<File> files = catalogManager.searchFile(
                 -1,
-                new Query(FileDBAdaptor.QueryParams.FILE_STATUS.key(), File.FileStatus.DELETED),
+                new Query(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED),
                 new QueryOptions(),
                 sessionId);
 

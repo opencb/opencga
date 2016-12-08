@@ -63,8 +63,8 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample, SampleAc
         ONTOLOGY_TERMS_AGE_OF_ONSET("ontologyTerms.ageOfOnset", TEXT, ""),
         ONTOLOGY_TERMS_MODIFIERS("ontologyTerms.modifiers", TEXT_ARRAY, ""),
 
-        ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSetId", INTEGER, ""),
+        ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         ANNOTATION_SET_NAME("annotationSetName", TEXT_ARRAY, ""),
         ANNOTATION("annotation", TEXT_ARRAY, "");
 

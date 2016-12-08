@@ -1215,14 +1215,13 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         AbstractManager.MyResourceIds resource = catalogManager.getFileManager().getIds(fileIdStr, studyStr, sessionId);
         String userId = resource.getUser();
+        long studyId = resource.getStudyId();
 
         // Check 1. No comma-separated values are valid, only one single File or Directory can be deleted.
         List<Long> fileIds = resource.getResourceIds();
         List<QueryResult<File>> queryResultList = new ArrayList<>(fileIds.size());
         // TODO: All the throws should be catched and put in the error field of queryResult
         for (Long fileId : fileIds) {
-            fileDBAdaptor.checkId(fileId);
-
             // Check 2. User has the proper permissions to delete the file.
             authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.DELETE);
 
@@ -1261,10 +1260,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
             // Check 6.
             // We cannot delete a folder containing files or folders with status missing or staged
-            long studyId = -1;
             if (file.getType().equals(File.Type.DIRECTORY)) {
-                studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
-
                 Query query = new Query()
                         .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                         .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")

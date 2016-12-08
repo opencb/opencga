@@ -143,7 +143,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     })
     public Response searchSamples(@ApiParam(value = "studyId", required = false) @DefaultValue("") @QueryParam("studyId") String studyIdStr,
                                   @ApiParam(value = "Study [[user@]project:]{study1,study2|*}  where studies and project can be either the id or"
-                                          + " alias.", required = false) @QueryParam("studyId") String studyStr,
+                                          + " alias.", required = false) @QueryParam("study") String studyStr,
                                   @ApiParam(value = "id") @QueryParam("id") String id,
                                   @ApiParam(value = "name") @QueryParam("name") String name,
                                   @ApiParam(value = "source") @QueryParam("source") String source,

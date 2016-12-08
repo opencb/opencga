@@ -495,7 +495,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             Map<String, URI> untrackedFiles = fileScanner.untrackedFiles(study, sessionId);
 
             /** Get missing files **/
-            List<File> missingFiles = catalogManager.getAllFiles(studyId, query.append(FileDBAdaptor.QueryParams.FILE_STATUS.key(),
+            List<File> missingFiles = catalogManager.getAllFiles(studyId, query.append(FileDBAdaptor.QueryParams.STATUS_NAME.key(),
                     File.FileStatus.MISSING), queryOptions, sessionId).getResult();
 
             ObjectMap fileStatus = new ObjectMap("untracked", untrackedFiles).append("found", found).append("missing", missingFiles);

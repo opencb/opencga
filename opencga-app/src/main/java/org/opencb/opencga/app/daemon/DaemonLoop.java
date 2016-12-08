@@ -216,7 +216,7 @@ public class DaemonLoop implements Runnable {
 
             logger.info("----- Pending deletions -----");
             try {
-                QueryResult<File> files = catalogManager.searchFile(-1, new Query(FileDBAdaptor.QueryParams.FILE_STATUS.key(),
+                QueryResult<File> files = catalogManager.searchFile(-1, new Query(FileDBAdaptor.QueryParams.STATUS_NAME.key(),
                         File.FileStatus.TRASHED), new QueryOptions(), sessionId);
                 long currentTimeMillis = System.currentTimeMillis();
                 for (File file : files.getResult()) {

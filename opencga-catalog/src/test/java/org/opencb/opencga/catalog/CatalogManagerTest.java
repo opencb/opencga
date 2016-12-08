@@ -1052,6 +1052,7 @@ public class CatalogManagerTest extends GenericTest {
 
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("annotation:nestedObject does not exist");
+        catalogManager.getSampleManager().search(Long.toString(studyId), query, null, sessionIdUser);
         catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
     }
 
@@ -1228,12 +1229,15 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testModifySample() throws CatalogException {
         long studyId = catalogManager.getStudyId("user@1000G:phase1", sessionIdUser);
-        long sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        long sampleId1 = catalogManager.getSampleManager()
+                .create("user@1000G:phase1", "SAMPLE_1", "", "", null, new QueryOptions(),
+                        sessionIdUser).first().getId();
         long individualId = catalogManager.createIndividual(studyId, "Individual1", "", 0, 0, Individual.Sex.MALE, new QueryOptions(),
                 sessionIdUser).first().getId();
 
         Sample sample = catalogManager.getSampleManager()
-                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId), null, sessionIdUser).first();
+                .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId), null, sessionIdUser)
+                .first();
 
         assertEquals(individualId, sample.getIndividual().getId());
     }

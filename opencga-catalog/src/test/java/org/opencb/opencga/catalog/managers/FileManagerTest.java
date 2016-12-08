@@ -958,13 +958,6 @@ public class FileManagerTest extends GenericTest {
     }
 
     @Test
-    public void testSearchFileFail2() throws CatalogException {
-        long studyId = catalogManager.getStudyId("user@1000G:phase1");
-        thrown.expect(CatalogDBException.class);
-        catalogManager.searchFile(studyId, new Query("badFilter", "badFilter"), sessionIdUser);
-    }
-
-    @Test
     public void testSearchFileFail3() throws CatalogException {
         long studyId = catalogManager.getStudyId("user@1000G:phase1");
         thrown.expect(CatalogDBException.class);
@@ -1104,7 +1097,7 @@ public class FileManagerTest extends GenericTest {
         assertEquals(6, numResults);
 
         // We delete it
-        catalogManager.getFileManager().delete(Long.toString(file.getId()), null, null, sessionIdUser);
+        catalogManager.getFileManager().delete(Long.toString(file.getId()), Long.toString(studyId), null, sessionIdUser);
 
         // The files should have been moved to trashed status
         numResults = catalogManager.searchFile(studyId, query, sessionIdUser).getNumResults();

@@ -412,7 +412,7 @@ public class OpenCGAMainOld {
 
                         /** Get missing files **/
                         List<File> missingFiles = catalogManager.getAllFiles(studyId,
-                                new Query(FileDBAdaptor.QueryParams.FILE_STATUS.key(), File.FileStatus.MISSING),
+                                new Query(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.MISSING),
                                 new QueryOptions(), sessionId).getResult();
                         int maxMissing = missingFiles.stream().map(f -> f.getPath().length()).max(Comparator.<Integer>naturalOrder()).orElse(0);
 

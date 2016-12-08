@@ -52,8 +52,6 @@ public interface FileDBAdaptor extends AclDBAdaptor<File, FileAclEntry> {
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
-        @Deprecated
-        FILE_STATUS("status.name", TEXT, ""),
         RELATED_FILES("relatedFiles", TEXT_ARRAY, ""),
         RELATED_FILES_RELATION("relatedFiles.relation", TEXT, ""),
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
