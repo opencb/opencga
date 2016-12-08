@@ -540,7 +540,7 @@ public class VariantTableStudyRow {
                             }
                         }
                         callMap.put(gt, value);
-                    } catch (SQLException e) {
+                    } catch (Exception e) {
                         //Impossible
                         throw new IllegalStateException(
                                 "Issue parsing " + gt + " for " + variant
