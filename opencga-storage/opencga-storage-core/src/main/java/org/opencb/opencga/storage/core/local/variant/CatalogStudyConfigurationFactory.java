@@ -131,8 +131,9 @@ public class CatalogStudyConfigurationFactory {
 //        studyConfiguration.getCohortIds().clear();
 //        studyConfiguration.getCohorts().clear();
 
-        if (study.getAttributes().containsKey(VariantStorageManager.Options.AGGREGATED_TYPE.key())) {
-            String aggregatedType = study.getAttributes().get(VariantStorageManager.Options.AGGREGATED_TYPE.key()).toString();
+        Object aggregationObj = study.getAttributes().get(VariantStorageManager.Options.AGGREGATED_TYPE.key());
+        if (aggregationObj != null) {
+            String aggregatedType = aggregationObj.toString();
             logger.debug("setting study aggregation to {}", aggregatedType);
             studyConfiguration.setAggregation(VariantSource.Aggregation.valueOf(
                     aggregatedType));
