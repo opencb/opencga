@@ -249,7 +249,7 @@ public class VariantPhoenixHelper {
         phoenixHelper.addMissingColumns(con, tableName, annotColumns, true);
     }
 
-    public void updateStatsFields(Connection con, String tableName, StudyConfiguration studyConfiguration) throws SQLException {
+    public void updateStatsColumns(Connection con, String tableName, StudyConfiguration studyConfiguration) throws SQLException {
         for (Integer cohortId : studyConfiguration.getCohortIds().values()) {
             for (Column column : getStatsColumns(studyConfiguration.getStudyId(), cohortId)) {
                 String sql = phoenixHelper.buildAlterAddColumn(tableName, column.column(), column.sqlType(), true);

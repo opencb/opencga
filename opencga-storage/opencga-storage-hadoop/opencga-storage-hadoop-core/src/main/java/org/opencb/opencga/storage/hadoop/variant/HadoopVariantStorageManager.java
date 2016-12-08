@@ -42,6 +42,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
@@ -52,6 +53,7 @@ import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationManager;
+import org.opencb.opencga.storage.hadoop.variant.stats.HadoopDefaultVariantStatisticsManager;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -282,6 +284,11 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     @Override
     protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator, VariantDBAdaptor dbAdaptor) {
         return new HadoopDefaultVariantAnnotationManager(annotator, dbAdaptor);
+    }
+
+    @Override
+    protected VariantStatisticsManager newVariantStatisticsManager(VariantDBAdaptor dbAdaptor) {
+        return new HadoopDefaultVariantStatisticsManager(dbAdaptor);
     }
 
     public AbstractHadoopVariantStorageETL newStorageETL(boolean connected, Map<? extends String, ?> extraOptions)

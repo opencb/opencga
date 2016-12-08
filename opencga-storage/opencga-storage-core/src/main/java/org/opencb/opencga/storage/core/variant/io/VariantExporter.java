@@ -13,6 +13,8 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -24,6 +26,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
 
 /**
@@ -39,6 +42,8 @@ public class VariantExporter {
     public static final String METADATA_FILE_EXTENSION = ".meta.json.gz";
     private final VariantDBAdaptor dbAdaptor;
     private final VariantWriterFactory variantWriterFactory;
+
+    private final Logger logger = LoggerFactory.getLogger(VariantExporter.class);
 
     public VariantExporter(VariantDBAdaptor dbAdaptor) {
         this.dbAdaptor = dbAdaptor;
@@ -117,6 +122,10 @@ public class VariantExporter {
         } catch (ExecutionException e) {
             throw new StorageManagerException("Error exporting variants", e);
         }
+
+        logger.info("Time fetching data: " + variantDBReader.getTimeFetching(TimeUnit.MILLISECONDS) / 1000.0 + "s");
+        logger.info("Time converting data: " + variantDBReader.getTimeConverting(TimeUnit.MILLISECONDS) / 1000.0 + "s");
+
     }
 
     protected void exportMetaData(Query query, List studies, String output) throws IOException {

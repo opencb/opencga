@@ -341,7 +341,11 @@ public class VariantStatsStorageOperation extends StorageOperation {
                 catalogManager.modifyStudy(studyId, parameters, sessionId);
             }
         } else {
-            aggregation = studyAggregation;
+            if (studyAggregation == null) {
+                aggregation = Aggregation.NONE;
+            } else {
+                aggregation = studyAggregation;
+            }
         }
         return aggregation;
     }

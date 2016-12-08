@@ -9,11 +9,14 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageManager;
-import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.file.Paths;
+import java.util.zip.GZIPInputStream;
 
 import static org.junit.Assert.assertTrue;
 
@@ -57,8 +60,21 @@ public class VariantExporterTest extends VariantStorageBaseTest {
         URI output = newOutputUri().resolve("variant.json.gz");
         variantStorageManager.exportData(output, "json.gz", DB_NAME, new Query(), new QueryOptions());
 
+        System.out.println("output = " + output);
         assertTrue(Paths.get(output).toFile().exists());
         assertTrue(Paths.get(output.getPath() + VariantExporter.METADATA_FILE_EXTENSION).toFile().exists());
+
+        // Check gzip format
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(output.getPath()))))) {
+            int i = 0;
+            while (true) {
+                String line = br.readLine();
+                if (line == null) {
+                    break;
+                }
+                System.out.println("[" + i++ + "]: " + line);
+            }
+        }
     }
 
 }

@@ -27,6 +27,7 @@ import java.util.zip.GZIPOutputStream;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES;
+import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat.*;
 
 /**
  * Created on 06/12/16.
@@ -43,56 +44,50 @@ public class VariantWriterFactory {
     }
 
     public enum VariantOutputFormat {
-        VCF(false),
-        JSON,
-        AVRO,
-        STATS(false),
-        CELLBASE;
-//        VCF(false),
-//        VCF_GZ(false),
-//        JSON,
-//        JSON_GZ,
-//        AVRO,
-//        AVRO_GZ,
-//        AVRO_SNAPPY,
-//        STATS(false),
-//        STATS_GZ(false),
-//        CELLBASE,
-//        CELLBASE_GZ;
+        VCF("vcf", false),
+        VCF_GZ("vcf.gz", false),
+        JSON("json"),
+        JSON_GZ("json.gz"),
+        AVRO("avro"),
+        AVRO_GZ("avro.gz"),
+        AVRO_SNAPPY("avro.snappy"),
+        STATS("stats.tsv", false),
+        STATS_GZ("stats.tsv.gz", false),
+        CELLBASE("frequencies.json"),
+        CELLBASE_GZ("frequencies.json.gz");
 
         private final boolean multiStudy;
+        private final String extension;
 
-        VariantOutputFormat() {
+        VariantOutputFormat(String extension) {
+            this.extension = extension;
             this.multiStudy = true;
         }
 
-        VariantOutputFormat(boolean multiStudy) {
+        VariantOutputFormat(String extension, boolean multiStudy) {
             this.multiStudy = multiStudy;
+            this.extension = extension;
+        }
+
+        public String getExtension() {
+            return extension;
         }
 
         public boolean isMultiStudyOutput() {
             return multiStudy;
         }
 
-        static boolean isGzip(String value) {
-            return value.endsWith(".gz");
+        boolean isGzip() {
+            return extension.endsWith(".gz");
         }
 
-        static boolean isSnappy(String value) {
-            return value.endsWith(".snappy");
+        boolean isSnappy() {
+            return extension.endsWith(".snappy");
         }
 
         static VariantOutputFormat safeValueOf(String value) {
-            int index = value.indexOf(".");
-            if (index >= 0) {
-                value = value.substring(0, index);
-            }
-            value = value.toUpperCase();
-//            if (isGzip(value)) {
-//                value += "_GZ";
-//            } else if (isSnappy(value)) {
-//                value += "_SNAPPY";
-//            }
+            value = value.replace(".", "_").toUpperCase();
+
             try {
                 return VariantOutputFormat.valueOf(value);
             } catch (IllegalArgumentException ignore) {
@@ -102,16 +97,38 @@ public class VariantWriterFactory {
 
     }
 
-    public static String checkOutput(@Nullable String output, String outputFormatStr) throws IOException {
+    public static String checkOutput(@Nullable String output, String outputFormat) throws IOException {
+        return checkOutput(output, safeValueOf(outputFormat));
+    }
+
+    public static String checkOutput(@Nullable String output, VariantOutputFormat outputFormat) throws IOException {
         if (isStandardOutput(output)) {
             // Standard output
             return null;
         }
-        if (VariantOutputFormat.isGzip(outputFormatStr)) {
-            if (!output.toLowerCase().endsWith(".gz")) {
-                output += ".gz";
+        if (output.endsWith("/")) {
+            throw new IllegalArgumentException("Invalid directory as output file name");
+        }
+        if (output.endsWith(".")) {
+            output = output.substring(0, output.length() - 1);
+        }
+        if (!output.endsWith(outputFormat.getExtension())) {
+            String[] split = outputFormat.getExtension().split("\\.");
+            int idx = 0;
+            for (int i = 0; i < split.length; i++) {
+                String s = split[i];
+                if (output.endsWith("." + s)) {
+                    idx = i + 1;
+                }
+            }
+            for (int i = idx; i < split.length; i++) {
+                String s = split[i];
+                if (!output.endsWith(s)) {
+                    output = output + "." + s;
+                }
             }
         }
+
         Path path = Paths.get(output);
         File file = path.toFile();
         if (file.isDirectory()) {
@@ -135,7 +152,7 @@ public class VariantWriterFactory {
             if (outputFormat == null) {
                 throw variantFormatNotSupported(outputFormatStr);
             } else {
-                gzip = VariantOutputFormat.isGzip(outputFormatStr);
+                gzip = outputFormat.isGzip();
             }
         } else {
             outputFormat = VariantOutputFormat.VCF;
@@ -163,20 +180,18 @@ public class VariantWriterFactory {
         return outputStream;
     }
 
-    public DataWriter<Variant> newDataWriter(VariantOutputFormat outputFormat, OutputStream outputStream, Query query,
-                                             QueryOptions queryOptions) {
-        return newDataWriter(outputFormat, outputFormat.toString(), outputStream, query, queryOptions);
+
+    public DataWriter<Variant> newDataWriter(String outputFormat, OutputStream outputStream, Query query, QueryOptions queryOptions)
+            throws IOException {
+        return newDataWriter(VariantOutputFormat.safeValueOf(outputFormat), outputStream, query, queryOptions);
     }
 
-    public DataWriter<Variant> newDataWriter(String outputFormat, OutputStream outputStream, Query query, QueryOptions queryOptions) {
-        return newDataWriter(VariantOutputFormat.safeValueOf(outputFormat), outputFormat, outputStream, query, queryOptions);
-    }
-
-    protected DataWriter<Variant> newDataWriter(VariantOutputFormat outputFormat, String outputFormatStr, OutputStream outputStream,
-                                                Query query, QueryOptions queryOptions) {
+    protected DataWriter<Variant> newDataWriter(VariantOutputFormat outputFormat, final OutputStream outputStream,
+                                                Query query, QueryOptions queryOptions) throws IOException {
         final DataWriter<Variant> exporter;
 
         switch (outputFormat) {
+            case VCF_GZ:
             case VCF:
                 StudyConfiguration studyConfiguration = getStudyConfiguration(query, dbAdaptor, true);
                 if (studyConfiguration != null) {
@@ -196,45 +211,39 @@ public class VariantWriterFactory {
                     throw new IllegalArgumentException("No study found named " + query.getAsStringList(RETURNED_STUDIES.key()).get(0));
                 }
                 break;
-            case JSON:
-//                exporter = batch -> {
-//                    batch.forEach(variant -> {
-//                        try {
-//                            outputStream.write(variant.toJson().getBytes());
-//                            outputStream.write('\n');
-//                        } catch (IOException e) {
-//                            throw new UncheckedIOException(e);
-//                        }
-//                    });
-//                    return true;
-//                };
-                exporter = new VariantJsonWriter(outputStream);
 
+            case JSON_GZ:
+            case JSON:
+                exporter = new VariantJsonWriter(outputStream);
                 break;
+
             case AVRO:
+            case AVRO_GZ:
+            case AVRO_SNAPPY:
                 String codecName = "";
-                if (VariantOutputFormat.isGzip(outputFormatStr)) {
+                if (outputFormat.isGzip()) {
                     codecName = "gzip";
-                } else {
-                    if (VariantOutputFormat.isSnappy(outputFormatStr)) {
-                        codecName = "snappy";
-                    }
+                } else if (outputFormat.isSnappy()) {
+                    codecName = "snappy";
                 }
                 exporter = new VariantAvroWriter(VariantAvro.getClassSchema(), codecName, outputStream);
-
                 break;
+
+            case STATS_GZ:
             case STATS:
                 StudyConfiguration sc = getStudyConfiguration(query, dbAdaptor, true);
                 List<String> cohorts = new ArrayList<>(sc.getCohortIds().keySet());
 
                 exporter = new VariantStatsTsvExporter(outputStream, sc.getStudyName(), cohorts);
-
                 break;
+
+            case CELLBASE_GZ:
             case CELLBASE:
                 exporter = new VariantStatsPopulationFrequencyExporter(outputStream);
                 break;
+
             default:
-                throw variantFormatNotSupported(outputFormatStr);
+                throw variantFormatNotSupported(outputFormat.toString());
         }
 
         return exporter;
