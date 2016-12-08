@@ -487,23 +487,23 @@ public class VariantTableStudyRow {
 
     public VariantTableStudyRow(Variant variant, Integer studyId, NavigableMap<byte[], byte[]> familyMap,
                 boolean skipOtherStudies) {
-            this(studyId, variant);
-            for (Entry<byte[], byte[]> entry : familyMap.entrySet()) {
-                if (entry.getValue() == null || entry.getValue().length == 0) {
-                    continue; // use default values, if no data for column exist
+        this(studyId, variant);
+        for (Entry<byte[], byte[]> entry : familyMap.entrySet()) {
+            if (entry.getValue() == null || entry.getValue().length == 0) {
+                continue; // use default values, if no data for column exist
+            }
+            String colStr = Bytes.toString(entry.getKey());
+            String[] colSplit = colStr.split("_", 2);
+            if (!colSplit[0].equals(studyId.toString())) { // check study ID for consistency check
+                if (skipOtherStudies) {
+                    continue;
+                } else {
+                    throw new IllegalStateException(String.format("Expected study id %s, but found %s in row %s",
+                            studyId.toString(), colSplit[0], colStr));
                 }
-                String colStr = Bytes.toString(entry.getKey());
-                String[] colSplit = colStr.split("_", 2);
-                if (!colSplit[0].equals(studyId.toString())) { // check study ID for consistency check
-                    if (skipOtherStudies) {
-                        continue;
-                    } else {
-                        throw new IllegalStateException(String.format("Expected study id %s, but found %s in row %s",
-                                studyId.toString(), colSplit[0], colStr));
-                    }
-                }
-                String gt = colSplit[1];
-                switch (gt) {
+            }
+            String gt = colSplit[1];
+            switch (gt) {
                 case HOM_REF:
                     homRefCount = parseCount(entry.getValue());
                     break;
@@ -550,10 +550,12 @@ public class VariantTableStudyRow {
                                         + "; hexstring:[" + Bytes.toHex(entry.getValue()) + "]", e);
                     }
                     break;
+                default:
                     // ignore otherwise
-                }
+                    break;
             }
         }
+    }
 
     public static List<VariantTableStudyRow> parse(Variant variant, ResultSet resultSet, GenomeHelper helper) throws SQLException {
         ResultSetMetaData metaData = resultSet.getMetaData();
