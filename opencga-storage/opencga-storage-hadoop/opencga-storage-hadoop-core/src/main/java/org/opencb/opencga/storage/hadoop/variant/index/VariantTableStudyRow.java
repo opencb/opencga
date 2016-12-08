@@ -529,7 +529,10 @@ public class VariantTableStudyRow {
                         throw new UncheckedIOException(e);
                     }
                     break;
-                default:
+                case NOCALL:
+                case HET_REF:
+                case HOM_VAR:
+                case OTHER:
                     try {
                         PhoenixArray phoenixArray = (PhoenixArray) PUnsignedIntArray.INSTANCE.toObject(entry.getValue());
                         HashSet<Integer> value = new HashSet<>();
@@ -541,12 +544,13 @@ public class VariantTableStudyRow {
                         }
                         callMap.put(gt, value);
                     } catch (Exception e) {
-                        //Impossible
+                        //possible!!!
                         throw new IllegalStateException(
-                                "Issue parsing " + gt + " for " + variant
+                                "Issue parsing " + gt + "(" + colStr + ")" + " for " + variant
                                         + "; hexstring:[" + Bytes.toHex(entry.getValue()) + "]", e);
                     }
                     break;
+                    // ignore otherwise
                 }
             }
         }
