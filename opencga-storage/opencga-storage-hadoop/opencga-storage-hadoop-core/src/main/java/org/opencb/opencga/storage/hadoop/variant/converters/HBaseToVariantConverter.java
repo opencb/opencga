@@ -329,13 +329,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
     private String getSimpleGenotype(String genotype) {
         if (genotype.contains(",")) {
-            String[] split = genotype.split(",");
-            for (String gt : split) {
-                if (gt.contains("1")) {
-                    return "1/.";
-                }
-            }
-            return "0/.";
+            return genotype.split(",")[0];
         } else {
             return genotype;
         }
