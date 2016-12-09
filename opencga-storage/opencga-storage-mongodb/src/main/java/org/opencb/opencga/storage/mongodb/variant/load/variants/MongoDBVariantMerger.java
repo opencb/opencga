@@ -970,11 +970,12 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         return studyConfiguration.getSamplesInFiles().get(fileId);
     }
 
-    protected Set<String> getSampleNamesInFile(Integer fileId) {
-        return getSamplesInFile(fileId)
-                .stream()
-                .map(sampleId -> studyConfiguration.getSampleIds().inverse().get(sampleId))
-                .collect(Collectors.toSet());
+    protected LinkedHashSet<String> getSampleNamesInFile(Integer fileId) {
+        LinkedHashSet<String> samples = new LinkedHashSet<>();
+        getSamplesInFile(fileId).forEach(sampleId -> {
+            samples.add(studyConfiguration.getSampleIds().inverse().get(sampleId));
+        });
+        return samples;
     }
 
     protected LinkedHashMap<String, Integer> getSamplesPosition(Integer fileId) {

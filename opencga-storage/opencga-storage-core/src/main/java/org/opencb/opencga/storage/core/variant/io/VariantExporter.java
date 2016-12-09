@@ -74,7 +74,7 @@ public class VariantExporter {
             exportData(os, outputFormat, query, queryOptions, logProgress);
         }
         if (!VariantWriterFactory.isStandardOutput(outputFile)) {
-            exportMetaData(query, studyIds, outputFile + METADATA_FILE_EXTENSION);
+            exportMetaData(query, queryOptions, studyIds, outputFile + METADATA_FILE_EXTENSION);
         }
     }
 
@@ -123,12 +123,12 @@ public class VariantExporter {
             throw new StorageManagerException("Error exporting variants", e);
         }
 
-        logger.info("Time fetching data: " + variantDBReader.getTimeFetching(TimeUnit.MILLISECONDS) / 1000.0 + "s");
-        logger.info("Time converting data: " + variantDBReader.getTimeConverting(TimeUnit.MILLISECONDS) / 1000.0 + "s");
+        logger.info("Time fetching data: " + variantDBReader.getTimeFetching(TimeUnit.MILLISECONDS) / 1000.0 + 's');
+        logger.info("Time converting data: " + variantDBReader.getTimeConverting(TimeUnit.MILLISECONDS) / 1000.0 + 's');
 
     }
 
-    protected void exportMetaData(Query query, List studies, String output) throws IOException {
+    protected void exportMetaData(Query query, QueryOptions queryOptions, List studies, String output) throws IOException {
         StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
 
         List<Integer> studyIds = dbAdaptor.getDBAdaptorUtils().getStudyIds(studies, QueryOptions.empty());
@@ -137,7 +137,7 @@ public class VariantExporter {
             studyConfigurations.add(scm.getStudyConfiguration(studyId, QueryOptions.empty()).first());
         }
 
-        ExportMetadata exportMetadata = new ExportMetadata(studyConfigurations, query);
+        ExportMetadata exportMetadata = new ExportMetadata(studyConfigurations, query, queryOptions);
 
         writeMetadata(exportMetadata, output);
 

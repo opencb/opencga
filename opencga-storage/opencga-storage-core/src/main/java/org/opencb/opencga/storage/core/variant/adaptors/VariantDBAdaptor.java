@@ -31,9 +31,9 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
@@ -308,11 +308,7 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
     QueryResult groupBy(Query query, List<String> fields, QueryOptions options);
 
     default List<Integer> getReturnedStudies(Query query, QueryOptions options) {
-        List<Integer> studyIds = getDBAdaptorUtils().getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options);
-        if (studyIds.isEmpty()) {
-            studyIds = getDBAdaptorUtils().getStudyIds(getStudyConfigurationManager().getStudyNames(options), options);
-        }
-        return studyIds;
+        return getDBAdaptorUtils().getReturnedStudies(query, options);
     }
     /**
      * Returns all the possible samples to be returned by an specific query.
@@ -322,25 +318,7 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
      * @return  Map key: StudyId, value: list of sampleIds
      */
     default Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
-        List<Integer> studyIds = getReturnedStudies(query, options);
-
-        List<String> returnedSamples = query.getAsStringList(VariantQueryParams.RETURNED_SAMPLES.key())
-                .stream().map(s -> s.contains(":") ? s.split(":")[1] : s).collect(Collectors.toList());
-        LinkedHashSet<String> returnedSamplesSet = new LinkedHashSet<>(returnedSamples);
-
-        Map<Integer, List<Integer>> samples = new HashMap<>(studyIds.size());
-        for (Integer studyId : studyIds) {
-            StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(studyId, options).first();
-            if (sc == null) {
-                continue;
-            }
-            LinkedHashMap<String, Integer> returnedSamplesPosition = StudyConfiguration.getReturnedSamplesPosition(sc, returnedSamplesSet);
-            List<Integer> sampleNames = Arrays.asList(new Integer[returnedSamplesPosition.size()]);
-            returnedSamplesPosition.forEach((sample, position) -> sampleNames.set(position, sc.getSampleIds().get(sample)));
-            samples.put(studyId, sampleNames);
-        }
-
-        return samples;
+        return getDBAdaptorUtils().getReturnedSamples(query, options);
     }
 
     @Deprecated
