@@ -38,6 +38,7 @@ public class OpencgaCliOptionsParser {
 
     private final GeneralOptions generalOptions;
     private final GeneralCliOptions.CommonCommandOptions commonCommandOptions;
+    private final GeneralCliOptions.DataModelOptions dataModelOptions;
 
     protected final UserAndPasswordOptions userAndPasswordOptions;
 
@@ -72,6 +73,7 @@ public class OpencgaCliOptionsParser {
         jCommander = new JCommander(generalOptions);
 
         commonCommandOptions = new GeneralCliOptions.CommonCommandOptions();
+        dataModelOptions = new GeneralCliOptions.DataModelOptions();
 
         userAndPasswordOptions = new UserAndPasswordOptions();
 //        commandShareResource = new CommandShareResource();
@@ -100,7 +102,7 @@ public class OpencgaCliOptionsParser {
         projectSubCommands.addCommand("delete", projectCommandOptions.deleteCommandOptions);
         projectSubCommands.addCommand("help", projectCommandOptions.helpCommandOptions);
 
-        studyCommandOptions = new StudyCommandOptions(this.commonCommandOptions, jCommander);
+        studyCommandOptions = new StudyCommandOptions(this.commonCommandOptions, this.dataModelOptions, jCommander);
         jCommander.addCommand("studies", studyCommandOptions);
         JCommander studySubCommands = jCommander.getCommands().get("studies");
         studySubCommands.addCommand("create", studyCommandOptions.createCommandOptions);

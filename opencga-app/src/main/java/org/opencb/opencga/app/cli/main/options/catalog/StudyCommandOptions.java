@@ -24,6 +24,8 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.catalog.commons.AclCommandOptions;
 
+import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
+
 /**
  * Created by pfurio on 13/06/16.
  */
@@ -59,13 +61,15 @@ public class StudyCommandOptions {
     public AclCommandOptions.AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
 
     public JCommander jCommander;
-    public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
+    public CommonCommandOptions commonCommandOptions;
+    public DataModelOptions commonDataModelOptions;
 
     private AclCommandOptions aclCommandOptions;
 
-    public StudyCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public StudyCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions, JCommander jCommander) {
 
         this.commonCommandOptions = commonCommandOptions;
+        this.commonDataModelOptions = dataModelOptions;
         this.jCommander = jCommander;
 
         this.createCommandOptions = new CreateCommandOptions();
@@ -98,29 +102,29 @@ public class StudyCommandOptions {
         this.aclsMemberUpdateCommandOptions = aclCommandOptions.getAclsMemberUpdateCommandOptions();
     }
 
-    public abstract class BaseStudyCommand {
+    public abstract class BaseStudyCommand extends StudyOption {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--id"}, description = "Study identifier", required = true, arity = 1)
-        public String id;
+//        @Parameter(names = {"--id"}, description = "Study identifier", required = true, arity = 1)
+//        public String study;
     }
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create new study")
     public class CreateCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"--project-id"}, description = "Project identifier", required = true, arity = 1)
-        public String projectId;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-n", "--name"}, description = "Study name", required = true, arity = 1)
         public String name;
 
         @Parameter(names = {"-a", "--alias"}, description = "Study alias", required = true, arity = 1)
         public String alias;
+
+        @Parameter(names = {"--project"}, description = "Project identifier", arity = 1)
+        public String project;
 
         @Parameter(names = {"-t", "--type"}, description = "Type of study, ej.CASE_CONTROL,CASE_SET,...", arity = 1)
         public String type = "CASE_CONTROL";
@@ -132,11 +136,14 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"info"}, commandDescription = "Get study information")
     public class InfoCommandOptions extends BaseStudyCommand {
 
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
 
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
+//        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+//        public String include;
+//
+//        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+//        public String exclude;
 
     }
 
@@ -144,25 +151,23 @@ public class StudyCommandOptions {
     public class SearchCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
 
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
+//        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+//        public String include;
+//
+//        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+//        public String exclude;
 
-        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
-        public String skip;
+        @Deprecated
+        @Parameter(names = {"--study"}, description = "Comma separated list of study ids", arity = 1)
+        public String studies;
 
-        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
-        public String limit;
-
-        @Parameter(names = {"--ids"}, description = "Comma separated list of study ids", arity = 1)
-        public String id;
-
-        @Parameter(names = {"--project-id"}, description = "Project Id.", arity = 1)
-        public String projectId;
+        @Parameter(names = {"--project"}, description = "Project Id.", arity = 1)
+        public String project;
 
         @Parameter(names = {"--name"}, description = "Study name.", arity = 1)
         public String name;
@@ -188,6 +193,12 @@ public class StudyCommandOptions {
         @Parameter(names = {"--battributes"}, description = "Boolean attributes.", arity = 0)
         public String battributes;
 
+        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
+        public String skip;
+
+        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
+        public String limit;
+
         @Parameter(names = {"--count"}, description = "Total number of results. Default = false", arity = 0)
         public boolean count;
 
@@ -208,8 +219,9 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"files"}, commandDescription = "Fetch files from a study")
     public class FilesCommandOptions extends BaseStudyCommand {
 
-        @Parameter(names = {"--file-id"}, description = "File id", arity = 1)
-        public String fileId;
+        @Deprecated
+        @Parameter(names = {"--file"}, description = "File id", arity = 1)
+        public String file;
 
         @Parameter(names = {"--name"}, description = "Name", arity = 1)
         public String name;
@@ -242,6 +254,7 @@ public class StudyCommandOptions {
         @Parameter(names = {"--modification-date"}, description = "Modification Date.", arity = 1)
         public String modificationDate;
 
+        @Deprecated
         @Parameter(names = {"--description"}, description = "Description", arity = 1)
         public String description;
 
@@ -263,11 +276,14 @@ public class StudyCommandOptions {
         @Parameter(names = {"-e", "--external"}, description = "Whether to fetch external linked files", arity = 0)
         public boolean external;
 
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
 
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
+//        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+//        public String include;
+//
+//        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+//        public String exclude;
 
         @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
         public String skip;
@@ -315,7 +331,8 @@ public class StudyCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"alignments"}, commandDescription = "Fetch alignments")
+    @Deprecated
+    @Parameters(commandNames = {"alignments"}, commandDescription = "[DEPRECATED] Fetch alignments")
     public class AlignmentsCommandOptions extends BaseStudyCommand {
 
         @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
@@ -329,6 +346,9 @@ public class StudyCommandOptions {
 
         @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
         public String limit;
+
+        @Parameter(names = {"--count"}, description = "Total number of results. Default = false", arity = 0)
+        public boolean count;
 
         @Parameter(names = {"--sample-id"}, description = "Sample id.", required = true, arity = 1)
         public String sampleId;
@@ -354,24 +374,28 @@ public class StudyCommandOptions {
         @Parameter(names = {"--interval"}, description = "Interval. Default = 2000", arity = 1)
         public Integer interval = 2000;
 
-        @Parameter(names = {"--count"}, description = "Total number of results. Default = false", arity = 0)
-        public boolean count;
     }
 
     @Parameters(commandNames = {"jobs"}, commandDescription = "Study jobs information")
     public class JobsCommandOptions extends BaseStudyCommand {
 
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
 
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
+//        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+//        public String include;
+//
+//        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+//        public String exclude;
 
         @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
         public String skip;
 
         @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
         public String limit;
+
+        @Parameter(names = {"--count"}, description = "Total number of results.", arity = 0)
+        public boolean count;
 
         @Parameter(names = {"--name"}, description = "Job name", arity = 1)
         public String name;
@@ -388,14 +412,14 @@ public class StudyCommandOptions {
         /*@Parameter(names = {"--date"}, description = "Creation date of the job", arity = 1)
         public String date;*/
 
+        @Deprecated
         @Parameter(names = {"--input-files"}, description = "Comma separated list of input file ids", arity = 1)
         public String inputFiles;
 
+        @Deprecated
         @Parameter(names = {"--output-files"}, description = "Comma separated list of output file ids", arity = 1)
         public String outputFiles;
 
-        @Parameter(names = {"--count"}, description = "Total number of results.", arity = 0)
-        public boolean count;
 
     }
 
@@ -411,8 +435,8 @@ public class StudyCommandOptions {
         /*@Parameter(names = {"--description"}, description = "Sample description", arity = 1)
         public String description;*/
 
-        @Parameter(names = {"--individual-id"}, description = "Individual id", arity = 1)
-        public String individualId;
+        @Parameter(names = {"--individual"}, description = "Individual id", arity = 1)
+        public String individual;
 
         @Parameter(names = {"--annotation-set-name"}, description = "AnnotationSetName", arity = 1)
         public String annotationSetName;
@@ -423,11 +447,14 @@ public class StudyCommandOptions {
         @Parameter(names = {"--annotation"}, description = "Annotation", arity = 1)
         public String annotation;
 
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
 
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
+//        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+//        public String include;
+//
+//        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+//        public String exclude;
 
         @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
         public String skip;
@@ -439,7 +466,8 @@ public class StudyCommandOptions {
         public boolean count;
     }
 
-    @Parameters(commandNames = {"variants"}, commandDescription = "Study variants information")
+    @Deprecated
+    @Parameters(commandNames = {"variants"}, commandDescription = "[DEPRECATED] Use analysis instead")
     public class VariantsCommandOptions extends BaseStudyCommand {
 
         @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
@@ -614,7 +642,7 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"help"}, commandDescription = "Help [PENDING]")
     public class HelpCommandOptions {
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
     }
 
     @Parameters(commandNames = {"groups-create"}, commandDescription = "Create a group")

@@ -78,4 +78,31 @@ public class GeneralCliOptions {
                 ".compression=snappy", hidden = false)
         public Map<String, String> params = new HashMap<>(); //Dynamic parameters must be initialized
     }
+
+    public static class StudyOption {
+
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
+                + " alias.", arity = 1)
+        public String study;
+
+    }
+
+    public static class StudiesOption {
+
+        @Parameter(names = {"-s", "--study"}, description = "Study list [[user@]project:]study where study and project can be either the id or"
+                + " alias.", arity = 1)
+        public String studies;
+
+    }
+
+    public static class DataModelOptions {
+
+        @Parameter(names = {"-I", "--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+        public String include;
+
+        @Parameter(names = {"-E", "--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+        public String exclude;
+
+    }
+
 }
