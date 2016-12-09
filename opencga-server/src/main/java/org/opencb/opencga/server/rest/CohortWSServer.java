@@ -295,7 +295,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                                                        long variableSetId,
                                            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
                                            @ApiParam(value = "Indicates whether to show the annotations as key-value",
-                                                   defaultValue = "true") @QueryParam("asMap") boolean asMap) {
+                                                   defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(cohortManager.searchAnnotationSetAsMap(cohortStr, studyStr, variableSetId, annotation, sessionId));
@@ -313,7 +313,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     public Response infoAnnotationSetGET(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortStr,
                                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or"
                                                  + " alias") @QueryParam("study") String studyStr,
-                                         @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "true")
+                                         @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false")
                                              @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
@@ -399,7 +399,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                                               + "alias") @QueryParam("study") String studyStr,
                                       @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName")
                                                   String annotationSetName,
-                                      @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "true")
+                                      @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "false")
                                           @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {

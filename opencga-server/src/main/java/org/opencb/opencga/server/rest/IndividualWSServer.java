@@ -287,7 +287,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                                        long variableSetId,
                                            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
                                            @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false,
-                                                   defaultValue = "true") @QueryParam("asMap") boolean asMap) {
+                                                   defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(individualManager.searchAnnotationSetAsMap(individualStr, studyStr, variableSetId, annotation,
@@ -308,7 +308,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
                                                  + "alias") @QueryParam("study") String studyStr,
                                          @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value",
-                                                 required = false, defaultValue = "true") @QueryParam("asMap") boolean asMap) {
+                                                 required = false, defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(individualManager.getAllAnnotationSetsAsMap(individualStr, studyStr, sessionId));
@@ -394,7 +394,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                       @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName")
                                                   String annotationSetName,
                                       @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false,
-                                              defaultValue = "true") @QueryParam("asMap") boolean asMap) {
+                                              defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(individualManager.getAnnotationSetAsMap(individualStr, studyStr, annotationSetName, sessionId));

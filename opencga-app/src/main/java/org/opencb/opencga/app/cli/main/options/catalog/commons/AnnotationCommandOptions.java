@@ -20,6 +20,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.main.options.catalog.StudyCommandOptions;
 
 /**
  * Created by pfurio on 27/07/16.
@@ -39,7 +40,8 @@ public class AnnotationCommandOptions {
         this.commonCommandOptions = commonCommandOptions;
     }
 
-    public class BaseCommandOptions {
+    public class BaseCommandOptions extends GeneralCliOptions.StudiesOption {
+
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
@@ -61,8 +63,6 @@ public class AnnotationCommandOptions {
 
     @Parameters(commandNames = {"annotation-sets-all-info"}, commandDescription = "Retrieve all the annotation sets from the resource")
     public class AnnotationSetsAllInfoCommandOptions extends BaseCommandOptions {
-        @Parameter(names = {"--as-map"}, description = "Boolean indicating whether to show the annotations as key-value pairs", arity = 0)
-        public boolean asMap;
     }
 
     @Parameters(commandNames = {"annotation-sets-search"}, commandDescription = "Search annotation sets from the resource")
@@ -73,9 +73,6 @@ public class AnnotationCommandOptions {
 
         @Parameter(names = {"--annotation"}, description = "Annotation",  arity = 1)
         public String annotation;
-
-        @Parameter(names = {"--as-map"}, description = "Boolean indicating whether to show the annotations as key-value pairs", arity = 0)
-        public boolean asMap;
     }
 
     @Parameters(commandNames = {"annotation-sets-delete"}, commandDescription = "Remove an entire annotation set or just some annotations")
@@ -94,9 +91,6 @@ public class AnnotationCommandOptions {
 
         @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name", required = true, arity = 1)
         public String annotationSetName;
-
-        @Parameter(names = {"--as-map"}, description = "Boolean indicating whether to show the annotations as key-value pairs", arity = 0)
-        public boolean asMap;
     }
 
     @Parameters(commandNames = {"annotation-sets-update"}, commandDescription = "Update the value of some annotations")

@@ -297,7 +297,8 @@ public class SampleWSServer extends OpenCGAWSServer {
                                                 @QueryParam("study") String studyStr,
                                            @ApiParam(value = "variableSetId") @QueryParam("variableSetId") long variableSetId,
                                            @ApiParam(value = "annotation") @QueryParam("annotation") String annotation,
-                                           @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "true") @QueryParam("asMap") boolean asMap) {
+                                           @ApiParam(value = "Indicates whether to show the annotations as key-value",
+                                                   defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(sampleManager.searchAnnotationSetAsMap(sampleStr, studyStr, variableSetId, annotation, sessionId));
@@ -315,7 +316,8 @@ public class SampleWSServer extends OpenCGAWSServer {
     public Response infoAnnotationSetGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
                                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                                 @QueryParam("study") String studyStr,
-                                         @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("asMap") boolean asMap) {
+                                         @ApiParam(value = "Indicates whether to show the annotations as key-value",
+                                                 defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(sampleManager.getAllAnnotationSetsAsMap(sampleStr, studyStr, sessionId));
@@ -393,7 +395,8 @@ public class SampleWSServer extends OpenCGAWSServer {
                                       @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                             @QueryParam("study") String studyStr,
                                         @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
-                                        @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("asMap") boolean asMap) {
+                                        @ApiParam(value = "Indicates whether to show the annotations as key-value",
+                                                defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(catalogManager.getSampleManager().getAnnotationSetAsMap(sampleStr, studyStr, annotationSetName,

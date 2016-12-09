@@ -1,6 +1,7 @@
 package org.opencb.opencga.app.cli.main.io;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.*;
@@ -66,6 +67,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
             case "VariableSet":
                 printVariableSet(queryResponse.getResponse());
                 break;
+            case "AnnotationSet":
+                printAnnotationSet(queryResponse.getResponse());
+                break;
             case "FileTree":
                 printTreeFile(queryResponse);
                 break;
@@ -108,9 +112,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
         for (QueryResult<User> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
-                sb.append("#(U) ID\tNAME\tE-MAIL\tORGANIZATION\tACCOUNT_TYPE\tDISK_USAGE\tDISK_QUOTA\n");
-                sb.append("#(P) \tALIAS\tNAME\tORGANIZATION\tDESCRIPTION\tID\tDISK_USAGE\n");
-                sb.append("#(S) \t\tALIAS\tNAME\tTYPE\tDESCRIPTION\tID\t#GROUPS\tDISK_USAGE\n");
+                sb.append("#(U)ID\tNAME\tE-MAIL\tORGANIZATION\tACCOUNT_TYPE\tDISK_USAGE\tDISK_QUOTA\n");
+                sb.append("#(P)\tALIAS\tNAME\tORGANIZATION\tDESCRIPTION\tID\tDISK_USAGE\n");
+                sb.append("#(S)\t\tALIAS\tNAME\tTYPE\tDESCRIPTION\tID\t#GROUPS\tDISK_USAGE\n");
             }
 
             for (User user : queryResult.getResult()) {
@@ -157,7 +161,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<Project> queryResult : queryResultList) {
             // Write header
-            sb.append("# ALIAS\tNAME\tID\tORGANIZATION\tORGANISM\tASSEMBLY\tDESCRIPTION\tDISK_USAGE\t#STUDIES\tSTATUS\n");
+            sb.append("#ALIAS\tNAME\tID\tORGANIZATION\tORGANISM\tASSEMBLY\tDESCRIPTION\tDISK_USAGE\t#STUDIES\tSTATUS\n");
 
             for (Project project : queryResult.getResult()) {
                 String organism = "NA";
@@ -184,7 +188,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<Study> queryResult : queryResultList) {
             // Write header
-            sb.append("# ALIAS\tNAME\tTYPE\tDESCRIPTION\tID\t#GROUPS\tDISK_USAGE\t#FILES\t#SAMPLES\t#COHORTS\t#INDIVIDUALS\t#JOBS\t")
+            sb.append("#ALIAS\tNAME\tTYPE\tDESCRIPTION\tID\t#GROUPS\tDISK_USAGE\t#FILES\t#SAMPLES\t#COHORTS\t#INDIVIDUALS\t#JOBS\t")
                     .append("#VARIABLE_SETS\tSTATUS\n");
 
             for (Study study : queryResult.getResult()) {
@@ -211,8 +215,8 @@ public class TextOutputWriter extends AbstractOutputWriter {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<File> queryResult : queryResultList) {
             // Write header
-            sb.append("# name\ttype\tformat\tbioformat\tdescription\tpath\tid\tstatus\tdiskUsage\tindexStatus\trelatedFiles\t"
-                    + "samples\n");
+            sb.append("#NAME\tTYPE\tFORMAT\tBIOFORMAT\tDESCRIPTION\tPATH\tID\tSTATUS\tSIZE\tINDEX_STATUS\tRELATED_FILES\t"
+                    + "SAMPLES\n");
 
             printFiles(queryResult.getResult(), sb, "");
         }
@@ -225,7 +229,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
         for (File file : files) {
             sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s\t%d\t%s\t%s\t%s\n", format, file.getName(), file.getType(),
                     file.getFormat(), file.getBioformat(), file.getDescription(), file.getPath(), file.getUri(), file.getId(),
-                    file.getStatus().getName(), file.getDiskUsage(), file.getIndex() != null ? file.getIndex().getStatus() : "NA",
+                    file.getStatus().getName(), file.getDiskUsage(), file.getIndex() != null ? file.getIndex().getStatus().getName() : "NA",
                     StringUtils.join(file.getRelatedFiles().stream().map(File.RelatedFile::getFileId).collect(Collectors.toList()), ", "),
                     StringUtils.join(file.getSampleIds().stream().collect(Collectors.toList()), ", ")));
         }
@@ -236,7 +240,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
         for (QueryResult<Sample> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
-                sb.append("# NAME\tID\tSOURCE\tDESCRIPTION\tSTATUS\tINDIVIDUAL_NAME\tINDIVIDUAL_ID\n");
+                sb.append("#NAME\tID\tSOURCE\tDESCRIPTION\tSTATUS\tINDIVIDUAL_NAME\tINDIVIDUAL_ID\n");
             }
 
             printSamples(queryResult.getResult(), sb, "");
@@ -268,7 +272,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
         for (QueryResult<Cohort> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
-                sb.append("# NAME\tID\tTYPE\tDESCRIPTION\tSTATUS\tTOTAL_SAMPLES\tSAMPLES\tFAMILY\n");
+                sb.append("#NAME\tID\tTYPE\tDESCRIPTION\tSTATUS\tTOTAL_SAMPLES\tSAMPLES\tFAMILY\n");
             }
 
             for (Cohort cohort : queryResult.getResult()) {
@@ -287,7 +291,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
         for (QueryResult<Individual> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
-                sb.append("# NAME\tID\tFAMILY\tAFFECTATION_STATUS\tSEX\tKARYOTYPIC_SEX\tETHNICITY\tPOPULATION\tSUBPOPULATION\tLIFE_STATUS")
+                sb.append("#NAME\tID\tFAMILY\tAFFECTATION_STATUS\tSEX\tKARYOTYPIC_SEX\tETHNICITY\tPOPULATION\tSUBPOPULATION\tLIFE_STATUS")
                         .append("\tSTATUS\tFATHER_ID\tMOTHER_ID\tCREATION_DATE\n");
             }
 
@@ -319,12 +323,30 @@ public class TextOutputWriter extends AbstractOutputWriter {
         for (QueryResult<VariableSet> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
-                sb.append("# NAME\tID\tDESCRIPTION\tVARIABLES\n");
+                sb.append("#NAME\tID\tDESCRIPTION\tVARIABLES\n");
             }
 
             for (VariableSet variableSet : queryResult.getResult()) {
                 sb.append(String.format("%s\t%s\t%s\t%s\n", variableSet.getName(), variableSet.getId(), variableSet.getDescription(),
                         variableSet.getVariables().stream().map(variable -> variable.getName()).collect(Collectors.joining(", "))));
+            }
+        }
+
+        ps.println(sb.toString());
+    }
+
+    private void printAnnotationSet(List<QueryResult<AnnotationSet>> queryResultList) {
+        StringBuilder sb = new StringBuilder();
+        for (QueryResult<AnnotationSet> queryResult : queryResultList) {
+            for (AnnotationSet annotationSet : queryResult.getResult()) {
+                // Write header
+                if (writerConfiguration.isHeader()) {
+                    sb.append("#KEY\tVALUE\n");
+                }
+
+                for (Annotation annotation : annotationSet.getAnnotations()) {
+                    sb.append(String.format("%s\t%s\n", annotation.getName(), annotation.getValue()));
+                }
             }
         }
 
