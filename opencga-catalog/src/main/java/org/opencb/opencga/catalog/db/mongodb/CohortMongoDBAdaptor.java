@@ -208,7 +208,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
 //    @Override
 //    public QueryResult<CohortAclEntry> setCohortAcl(long cohortId, CohortAclEntry acl, boolean override) throws CatalogDBException {
 //        long startTime = startQuery();
-//        long studyId = getStudyIdByCohortId(cohortId);
+//        long studyId = getStudyId(cohortId);
 //
 //        String member = acl.getMember();
 //
@@ -250,7 +250,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
 //    @Override
 //    public void unsetCohortAcl(long cohortId, List<String> members, List<String> permissions) throws CatalogDBException {
 //        // Check that all the members (users) are correct and exist.
-//        checkMembers(dbAdaptorFactory, getStudyIdByCohortId(cohortId), members);
+//        checkMembers(dbAdaptorFactory, getStudyId(cohortId), members);
 //
 //        // Remove the permissions the members might have had
 //        for (String member : members) {
@@ -298,7 +298,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
 //    }
 
     @Override
-    public long getStudyIdByCohortId(long cohortId) throws CatalogDBException {
+    public long getStudyId(long cohortId) throws CatalogDBException {
         checkId(cohortId);
         QueryResult queryResult = nativeGet(new Query(QueryParams.ID.key(), cohortId),
                 new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_STUDY_ID));

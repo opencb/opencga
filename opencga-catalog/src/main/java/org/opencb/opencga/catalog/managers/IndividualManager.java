@@ -682,38 +682,11 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
-    @Override
-    public QueryResult<AnnotationSet> createAnnotationSet(String id, long variableSetId, String annotationSetName,
-                                                          Map<String, Object> annotations, Map<String, Object> attributes,
-                                                          String sessionId) throws CatalogException {
-        throw new NotImplementedException("Use other method passing the study string");
-    }
-
-    @Override
-    public QueryResult<AnnotationSet> getAllAnnotationSets(String id, String sessionId) throws CatalogException {
-        throw new NotImplementedException("Use other method passing the study string");
-    }
-
-    @Override
-    public QueryResult<ObjectMap> getAllAnnotationSetsAsMap(String id, String sessionId) throws CatalogException {
-        throw new NotImplementedException("Use other method passing the study string");
-    }
-
     private long commonGetAllInvidualSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
         MyResourceId resource = getId(id, studyStr, sessionId);
         authorizationManager.checkIndividualPermission(resource.getResourceId(), resource.getUser(),
                 IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
         return resource.getResourceId();
-    }
-
-    @Override
-    public QueryResult<AnnotationSet> getAnnotationSet(String id, String annotationSetName, String sessionId) throws CatalogException {
-        throw new NotImplementedException("Use other method passing the study string");
-    }
-
-    @Override
-    public QueryResult<ObjectMap> getAnnotationSetAsMap(String id, String annotationSetName, String sessionId) throws CatalogException {
-        throw new NotImplementedException("Use other method passing the study string");
     }
 
     private long commonGetAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
@@ -723,29 +696,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         authorizationManager.checkIndividualPermission(resource.getResourceId(), resource.getUser(),
                 IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
         return resource.getResourceId();
-    }
-
-    @Override
-    public QueryResult<AnnotationSet> updateAnnotationSet(String id, String annotationSetName, Map<String, Object> newAnnotations,
-                                                          String sessionId) throws CatalogException {
-        throw new NotImplementedException("Use other method passing the study string");
-    }
-
-    @Override
-    public QueryResult<AnnotationSet> deleteAnnotationSet(String id, String annotationSetName, String sessionId) throws CatalogException {
-        throw new NotImplementedException("Use other method passing the study string");
-    }
-
-    @Override
-    public QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, long variableSetId, @Nullable String annotation, String sessionId)
-            throws CatalogException {
-        throw new NotImplementedException("Use other method passing the study string");
-    }
-
-    @Override
-    public QueryResult<AnnotationSet> searchAnnotationSet(String id, long variableSetId, @Nullable String annotation,
-                                                          String sessionId) throws CatalogException {
-        throw new NotImplementedException("Use other method passing the study string");
     }
 
     @Override

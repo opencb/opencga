@@ -506,33 +506,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
-//
-//    @GET
-//    @Path("/{individualIds}/share")
-//    @ApiOperation(value = "Share individuals with other members", position = 8)
-//    public Response share(@PathParam(value = "individualIds") String individualIds,
-//                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-//                          @ApiParam(value = "Comma separated list of individual permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
-//                          @ApiParam(value = "Boolean indicating whether to allow the change of of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
-//        try {
-//            return createOkResponse(catalogManager.shareIndividual(individualIds, members, Arrays.asList(permissions.split(",")), override, sessionId));
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
-//
-//    @GET
-//    @Path("/{individualIds}/unshare")
-//    @ApiOperation(value = "Remove the permissions for the list of members", position = 9)
-//    public Response unshare(@PathParam(value = "individualIds") String individualIds,
-//                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-//                            @ApiParam(value = "Comma separated list of individual permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions) {
-//        try {
-//            return createOkResponse(catalogManager.unshareIndividual(individualIds, members, permissions, sessionId));
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
 
     @GET
     @Path("/groupBy")
@@ -542,7 +515,6 @@ public class IndividualWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "(DEPRECATED) Use study instead", required = true) @QueryParam("studyId") String studyIdStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                 @QueryParam("study") String studyStr,
-                            //@ApiParam(value = "id", required = false) @QueryParam("id") String ids,
                             @ApiParam(value = "name", required = false) @QueryParam("name") String names,
                             @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") String fatherId,
                             @ApiParam(value = "motherId", required = false) @QueryParam("motherId") String motherId,

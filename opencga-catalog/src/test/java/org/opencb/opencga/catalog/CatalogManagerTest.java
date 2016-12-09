@@ -1417,7 +1417,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testDeleteCohort() throws CatalogException, IOException {
-        long studyId = catalogManager.getStudyId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyId("user@1000G:phase1", sessionIdUser);
 
         long sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
         long sampleId2 = catalogManager.createSample(studyId, "SAMPLE_2", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
@@ -1433,8 +1433,8 @@ public class CatalogManagerTest extends GenericTest {
         assertTrue(myCohort.getSamples().contains(sampleId2));
         assertTrue(myCohort.getSamples().contains(sampleId3));
 
-        Cohort myDeletedCohort = catalogManager.getCohortManager().delete(Long.toString(myCohort.getId()), null, sessionIdUser).get(0)
-                .first();
+        Cohort myDeletedCohort = catalogManager.getCohortManager().delete(Long.toString(myCohort.getId()), Long.toString(studyId), null,
+                sessionIdUser).get(0).first();
 
         assertEquals(myCohort.getId(), myDeletedCohort.getId());
 
