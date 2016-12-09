@@ -282,7 +282,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     }
 
     public void checkInUse(long individualId) throws CatalogDBException {
-        long studyId = getStudyIdByIndividualId(individualId);
+        long studyId = getStudyId(individualId);
         QueryResult<Individual> individuals = get(new Query(QueryParams.FATHER_ID.key(), individualId)
                 .append(QueryParams.STUDY_ID.key(), studyId), new QueryOptions());
         if (individuals.getNumResults() != 0) {
@@ -317,7 +317,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     }
 
     @Override
-    public long getStudyIdByIndividualId(long individualId) throws CatalogDBException {
+    public long getStudyId(long individualId) throws CatalogDBException {
         QueryResult<Document> result =
                 individualCollection.find(new Document(PRIVATE_ID, individualId), new Document(PRIVATE_STUDY_ID, 1), null);
 
@@ -424,7 +424,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
             if (individualParameters.containsKey("name")) {
                 String name = individualParameters.get("name").toString();
                 Query subquery = new Query(QueryParams.NAME.key(), name)
-                        .append(QueryParams.STUDY_ID.key(), getStudyIdByIndividualId(individual.getId()));
+                        .append(QueryParams.STUDY_ID.key(), getStudyId(individual.getId()));
                 if (!get(subquery, new QueryOptions()).getResult().isEmpty()) {
                     throw CatalogDBException.alreadyExists("Individual", "name", name);
                 }

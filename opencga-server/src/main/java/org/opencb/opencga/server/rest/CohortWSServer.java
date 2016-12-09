@@ -433,7 +433,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     public Response deleteAcl(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortIdStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
         try {
-            return createOkResponse(catalogManager.removeIndividualAcl(cohortIdStr, memberId, sessionId));
+            return createOkResponse(catalogManager.removeCohortAcl(cohortIdStr, memberId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

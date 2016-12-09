@@ -263,7 +263,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             userId = userManager.getId(sessionId);
         } else {
             if (sampleStr.contains(",")) {
-                throw new CatalogException("More than one file found");
+                throw new CatalogException("More than one sample found");
             }
 
             userId = userManager.getId(sessionId);
@@ -389,7 +389,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkParameter(sampleIdStr, "id");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        MyResourceIds resourceId = catalogManager.getSampleManager().getIds(sampleIdStr, studyStr, sessionId);
+        MyResourceIds resourceId = getIds(sampleIdStr, studyStr, sessionId);
 
         List<QueryResult<Sample>> queryResultList = new ArrayList<>(resourceId.getResourceIds().size());
         for (Long sampleId : resourceId.getResourceIds()) {

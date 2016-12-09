@@ -71,7 +71,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual, 
         return getAcl(individualId, Arrays.asList(member));
     }
 
-    long getStudyIdByIndividualId(long individualId) throws CatalogDBException;
+    long getStudyId(long individualId) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
         ID("id", DECIMAL, ""),

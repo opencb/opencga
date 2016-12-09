@@ -301,7 +301,7 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
     public void testGetStudyIdByIndividualId() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         long individualId = catalogIndividualDBAdaptor.insert(new Individual(), studyId, null).first().getId();
-        long studyIdByIndividualId = catalogIndividualDBAdaptor.getStudyIdByIndividualId(individualId);
+        long studyIdByIndividualId = catalogIndividualDBAdaptor.getStudyId(individualId);
         assertEquals(studyId, studyIdByIndividualId);
     }
 
