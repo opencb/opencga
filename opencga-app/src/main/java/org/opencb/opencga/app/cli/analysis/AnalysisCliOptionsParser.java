@@ -421,6 +421,9 @@ public class AnalysisCliOptionsParser {
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         public boolean overwriteAnnotations;
 
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation", arity = 0)
+        public boolean resume;
+
     }
 
     @Parameters(commandNames = {"stats"}, commandDescription = "Create and load stats into a database.")
@@ -482,7 +485,8 @@ public class AnalysisCliOptionsParser {
         @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
         public String aggregationMappingFile;
 
-
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed stats calculation", arity = 0)
+        public boolean resume;
     }
 
 

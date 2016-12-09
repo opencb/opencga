@@ -88,7 +88,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
 
     public URI preLoad(URI input, URI output) throws StorageManagerException {
         URI uri = super.preLoad(input, output);
-        if (options.getBoolean(STAGE_RESUME.key(), false)) {
+        if (isResumeStage(options)) {
             logger.info("Resume stage load.");
             // Clean stage collection?
         }
@@ -236,7 +236,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
             MongoDBVariantStageConverterTask converterTask = new MongoDBVariantStageConverterTask(progressLogger);
             MongoDBVariantStageLoader stageLoader =
                     new MongoDBVariantStageLoader(stageCollection, studyConfiguration.getStudyId(), fileId,
-                            options.getBoolean(STAGE_RESUME.key()));
+                            isResumeStage(options));
 
             ParallelTaskRunner<Variant, ?> ptr;
             ParallelTaskRunner.Config build = ParallelTaskRunner.Config.builder()
@@ -367,7 +367,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                 operation.addStatus(BatchFileOperation.Status.READY);
             }
         } else {
-            loadStageResume = options.getBoolean(STAGE_RESUME.key());
+            loadStageResume = isResumeStage(options);
 
             if (operation != null) {
                 switch (operation.currentStatus()) {
@@ -591,7 +591,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                 }
             }
 
-            boolean loadMergeResume = options.getBoolean(MERGE_RESUME.key());
+            boolean loadMergeResume = isResumeMerge(options);
 
             List<BatchFileOperation> batches = studyConfiguration.getBatches();
             BatchFileOperation operation = null;
@@ -654,7 +654,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
 
         MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stageCollection, studyConfiguration.getStudyId(),
                 chromosomeToLoad == null ? Collections.emptyList() : Collections.singletonList(chromosomeToLoad));
-        boolean resume = options.getBoolean(MERGE_RESUME.key(), false);
+        boolean resume = isResumeMerge(options);
         ProgressLogger progressLogger = new ProgressLogger("Write variants in VARIANTS collection:", reader::countNumVariants, 200);
         progressLogger.setApproximateTotalCount(reader.countAproxNumVariants());
 

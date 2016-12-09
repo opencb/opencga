@@ -1,9 +1,12 @@
 package org.opencb.opencga.storage.core.variant.dummy;
 
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.variant.VariantStorageETL;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
+import org.opencb.opencga.storage.core.variant.io.VariantExporter;
+import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -31,6 +34,21 @@ public class DummyVariantStorageManager extends VariantStorageManager {
     @Override
     public DummyVariantStorageETL newStorageETL(boolean connected) throws StorageManagerException {
         return new DummyVariantStorageETL(getConfiguration(), STORAGE_ENGINE_ID, LoggerFactory.getLogger(DummyVariantStorageETL.class), getDBAdaptor(), getVariantReaderUtils());
+    }
+
+    @Override
+    public VariantStatisticsManager newVariantStatisticsManager(VariantDBAdaptor dbAdaptor) {
+        return super.newVariantStatisticsManager(dbAdaptor);
+    }
+
+    @Override
+    public VariantExporter newVariantExporter(VariantDBAdaptor dbAdaptor) {
+        return super.newVariantExporter(dbAdaptor);
+    }
+
+    @Override
+    public VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator, VariantDBAdaptor dbAdaptor) {
+        return super.newVariantAnnotationManager(annotator, dbAdaptor);
     }
 
     @Override

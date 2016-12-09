@@ -378,7 +378,19 @@ public class StudyConfiguration {
     }
 
     /**
+     * Get a sorted list of the samples to be returned.
+     * The result can be used as SamplesPosition in {@link org.opencb.biodata.models.variant.StudyEntry#setSamplesPosition}
+     *
+     * @param studyConfiguration    Study configuration
+     * @return The samples IDs
+     */
+    public static LinkedHashMap<String, Integer> getSortedIndexedSamplesPosition(StudyConfiguration studyConfiguration) {
+        return getReturnedSamplesPosition(studyConfiguration, null, StudyConfiguration::getIndexedSamplesPosition);
+    }
+
+    /**
      * Get a list of the samples to be returned, given a study and a list of samples to be returned.
+     * The result can be used as SamplesPosition in {@link org.opencb.biodata.models.variant.StudyEntry#setSamplesPosition}
      *
      * @param studyConfiguration    Study configuration
      * @param returnedSamples       List of samples to be returned

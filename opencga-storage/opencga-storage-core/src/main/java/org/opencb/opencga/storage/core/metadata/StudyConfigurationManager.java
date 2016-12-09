@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
@@ -59,7 +60,10 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
     public long lockStudy(int studyId) throws StorageManagerException {
         try {
             return lockStudy(studyId, 10000, 20000);
-        } catch (InterruptedException | TimeoutException e) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new StorageManagerException("Unable to lock the Study " + studyId, e);
+        } catch (TimeoutException e) {
             throw new StorageManagerException("Unable to lock the Study " + studyId, e);
         }
     }
@@ -71,6 +75,24 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
 
     public void unLockStudy(int studyId, long lockId) {
         logger.warn("Ignoring unLock");
+    }
+
+    public StudyConfiguration lockAndUpdate(String studyName, Function<StudyConfiguration, StudyConfiguration> updater)
+            throws StorageManagerException {
+        Integer studyId = getStudies(QueryOptions.empty()).get(studyName);
+        return lockAndUpdate(studyId, updater);
+    }
+
+    public StudyConfiguration lockAndUpdate(int studyId, Function<StudyConfiguration, StudyConfiguration> updater)
+            throws StorageManagerException {
+        try (LockCloseable lock = closableLockStudy(studyId)) {
+            StudyConfiguration sc = getStudyConfiguration(studyId, new QueryOptions(CACHED, false)).first();
+
+            sc = updater.apply(sc);
+
+            updateStudyConfiguration(sc, QueryOptions.empty());
+            return sc;
+        }
     }
 
     protected abstract QueryResult internalUpdateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);

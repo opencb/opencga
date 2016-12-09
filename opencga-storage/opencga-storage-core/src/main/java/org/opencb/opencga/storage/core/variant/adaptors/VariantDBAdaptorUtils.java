@@ -29,6 +29,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -267,7 +268,7 @@ public class VariantDBAdaptorUtils {
         return sampleId;
     }
 
-    public Set<String> getReturnedFields(QueryOptions options) {
+    public static Set<String> getReturnedFields(QueryOptions options) {
         Set<String> returnedFields;
 
         List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
@@ -275,7 +276,12 @@ public class VariantDBAdaptorUtils {
 //            System.out.println("includeList = " + includeList);
             returnedFields = new HashSet<>();
             for (String include : includeList) {
-                returnedFields.add(PROJECT_FIELD_ALIAS.get(include));
+                String includeAlias = PROJECT_FIELD_ALIAS.get(include);
+                if (includeAlias != null) {
+                    returnedFields.add(includeAlias);
+                } else {
+                    returnedFields.add(include);
+                }
             }
             if (returnedFields.contains(STUDIES_FIELD)) {
                 returnedFields.add(SAMPLES_FIELD);
@@ -300,16 +306,51 @@ public class VariantDBAdaptorUtils {
         return returnedFields;
     }
 
-    public List<String> getReturnedSamples(Query query, QueryOptions options) {
+    public List<Integer> getReturnedStudies(Query query, QueryOptions options) {
+        List<Integer> studyIds = getStudyIds(query.getAsList(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key()), options);
+        if (studyIds.isEmpty()) {
+            studyIds = getStudyIds(getStudyConfigurationManager().getStudyNames(options), options);
+        }
+        return studyIds;
+    }
+
+    public Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
+        List<Integer> returnedStudies = getReturnedStudies(query, options);
+        return getReturnedSamples(query, options, returnedStudies, studyId -> getStudyConfigurationManager()
+                .getStudyConfiguration(studyId, options).first());
+
+    }
+
+    public static Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options, Collection<Integer> studyIds,
+                                                          Function<Integer, StudyConfiguration> studyProvider) {
+        List<String> returnedSamples = getReturnedSamplesList(query, options);
+        LinkedHashSet<String> returnedSamplesSet = new LinkedHashSet<>(returnedSamples);
+
+        Map<Integer, List<Integer>> samples = new HashMap<>(studyIds.size());
+        for (Integer studyId : studyIds) {
+            StudyConfiguration sc = studyProvider.apply(studyId);
+            if (sc == null) {
+                continue;
+            }
+            LinkedHashMap<String, Integer> returnedSamplesPosition = StudyConfiguration.getReturnedSamplesPosition(sc, returnedSamplesSet);
+            List<Integer> sampleNames = Arrays.asList(new Integer[returnedSamplesPosition.size()]);
+            returnedSamplesPosition.forEach((sample, position) -> sampleNames.set(position, sc.getSampleIds().get(sample)));
+            samples.put(studyId, sampleNames);
+        }
+
+        return samples;
+    }
+
+    public static List<String> getReturnedSamplesList(Query query, QueryOptions options) {
         if (!getReturnedFields(options).contains(SAMPLES_FIELD)) {
             return Collections.singletonList("none");
         } else {
             //Remove the studyName, if any
-            return getReturnedSamples(query);
+            return getReturnedSamplesList(query);
         }
     }
 
-    public List<String> getReturnedSamples(Query query) {
+    public static List<String> getReturnedSamplesList(Query query) {
         return query.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key())
                 .stream()
                 .map(s -> s.contains(":") ? s.split(":")[1] : s)

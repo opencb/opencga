@@ -67,6 +67,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         String fileIdStr = options.getString(Options.FILE_ID.key(), null);
         boolean overwriteStats = options.getBoolean(Options.OVERWRITE_STATS.key(), false);
         boolean updateStats = options.getBoolean(Options.UPDATE_STATS.key(), false);
+        boolean resume = options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue());
         final Long fileId = fileIdStr == null ? null : catalogManager.getFileId(fileIdStr, Long.toString(studyId), sessionId);
 
 
@@ -77,7 +78,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
 
         Aggregation aggregation = getAggregation(studyId, options, sessionId);
         List<Long> cohortIds = checkCohorts(studyId, aggregation, cohorts, options, sessionId);
-        Map<Long, Cohort> cohortsMap = checkCanCalculateCohorts(studyId, cohortIds, updateStats, sessionId);
+        Map<Long, Cohort> cohortsMap = checkCanCalculateCohorts(studyId, cohortIds, updateStats, resume, sessionId);
 
 
         String region = options.getString(VariantDBAdaptor.VariantQueryParams.REGION.key());
@@ -89,7 +90,8 @@ public class VariantStatsStorageOperation extends StorageOperation {
 //                .append(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 100)
 //                .append(VariantStorageManager.Options.LOAD_THREADS.key(), 6)
                 .append(Options.OVERWRITE_STATS.key(), overwriteStats)
-                .append(Options.UPDATE_STATS.key(), updateStats);
+                .append(Options.UPDATE_STATS.key(), updateStats)
+                .append(Options.RESUME.key(), resume);
         calculateStatsOptions.putIfNotNull(Options.FILE_ID.key(), fileId);
         calculateStatsOptions.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
 
@@ -252,23 +254,6 @@ public class VariantStatsStorageOperation extends StorageOperation {
         return cohortIds;
     }
 
-    static CatalogException differentCohortsThanMappingFile() throws CatalogException {
-        return new CatalogException("Given cohorts (if any) must match with cohorts in the aggregation mapping file.");
-    }
-
-    static CatalogException missingCohorts() throws CatalogException {
-        return new CatalogException("Cohort list null or empty");
-    }
-
-    static IllegalArgumentException missingAggregationMappingFile(Aggregation aggregation) {
-        return new IllegalArgumentException("Unable to calculate statistics for an aggregated study of type "
-                + "\"" + aggregation + "\" without an aggregation mapping file.");
-    }
-
-    static IllegalArgumentException nonAggregatedWithMappingFile() {
-        return new IllegalArgumentException("Unable to use an aggregation mapping file for non aggregated study");
-    }
-
     private List<Long> createCohortsByAggregationMapFile(long studyId, String aggregationMapFile, String sessionId)
             throws IOException, CatalogException {
         Properties tagmap = readAggregationMappingFile(aggregationMapFile);
@@ -356,11 +341,13 @@ public class VariantStatsStorageOperation extends StorageOperation {
      * @param studyId       Study id
      * @param cohortIds     Set of cohorts
      * @param updateStats   Update already existing stats
+     * @param resume        Resume statistics calculation
      * @param sessionId     User's sessionId
      * @return Map from cohortId to Cohort
      * @throws CatalogException if an error on Catalog
      */
-    protected Map<Long, Cohort> checkCanCalculateCohorts(long studyId, List<Long> cohortIds, boolean updateStats, String sessionId)
+    protected Map<Long, Cohort> checkCanCalculateCohorts(long studyId, List<Long> cohortIds,
+                                                         boolean updateStats, boolean resume, String sessionId)
             throws CatalogException {
         Set<Long> studyIdSet = new HashSet<>();
         Map<Long, Cohort> cohortMap = new HashMap<>(cohortIds.size());
@@ -376,11 +363,18 @@ public class VariantStatsStorageOperation extends StorageOperation {
                     if (updateStats) {
                         catalogManager.getCohortManager().setStatus(cohortId.toString(), Cohort.CohortStatus.INVALID, "", sessionId);
                         break;
+                    } else {
+                        // If not updating the stats or resuming, can't calculate statistics for a cohort READY
+                        if (!resume) {
+                            throw unableToCalculateCohortReady(cohort);
+                        }
                     }
+                    break;
                 case Cohort.CohortStatus.CALCULATING:
-                    throw new CatalogException("Unable to calculate stats for cohort "
-                            + "{ id: " + cohort.getId() + " name: \"" + cohort.getName() + "\" }"
-                            + " with status \"" + cohort.getStatus().getName() + "\"");
+                    if (!resume) {
+                        throw unableToCalculateCohortCalculating(cohort);
+                    }
+                    break;
                 default:
                     throw new IllegalStateException("Unknown status " + cohort.getStatus().getName());
             }
@@ -406,5 +400,36 @@ public class VariantStatsStorageOperation extends StorageOperation {
         }
     }
 
+    static CatalogException differentCohortsThanMappingFile() throws CatalogException {
+        return new CatalogException("Given cohorts (if any) must match with cohorts in the aggregation mapping file.");
+    }
+
+    static CatalogException missingCohorts() throws CatalogException {
+        return new CatalogException("Cohort list null or empty");
+    }
+
+    static IllegalArgumentException missingAggregationMappingFile(Aggregation aggregation) {
+        return new IllegalArgumentException("Unable to calculate statistics for an aggregated study of type "
+                + "\"" + aggregation + "\" without an aggregation mapping file.");
+    }
+
+    static IllegalArgumentException nonAggregatedWithMappingFile() {
+        return new IllegalArgumentException("Unable to use an aggregation mapping file for non aggregated study");
+    }
+
+
+    static CatalogException unableToCalculateCohortReady(Cohort cohort) {
+        return new CatalogException("Unable to calculate stats for cohort "
+                + "{ id: " + cohort.getId() + " name: \"" + cohort.getName() + "\" }"
+                + " with status \"" + cohort.getStatus().getName() + "\". "
+                + "Resume or update stats for continue calculation");
+    }
+
+    static CatalogException unableToCalculateCohortCalculating(Cohort cohort) {
+        return new CatalogException("Unable to calculate stats for cohort "
+                + "{ id: " + cohort.getId() + " name: \"" + cohort.getName() + "\" }"
+                + " with status \"" + cohort.getStatus().getName() + "\". "
+                + "Resume for continue calculation.");
+    }
 
 }

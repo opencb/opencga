@@ -196,6 +196,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         if (indexVariantsCommandOptions.studyConfigurationFile != null && !indexVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
             variantOptions.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, indexVariantsCommandOptions.studyConfigurationFile);
         }
+        variantOptions.put(VariantStorageManager.Options.RESUME.key(), indexVariantsCommandOptions.resume);
 
         if (indexVariantsCommandOptions.aggregationMappingFile != null) {
             // TODO move this options to new configuration.yml

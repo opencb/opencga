@@ -192,6 +192,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             queryOptions.put(VariantAnnotationManager.ANNOTATION_SOURCE, cliOptions.annotator);
         }
         queryOptions.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, cliOptions.overwriteAnnotations);
+        queryOptions.put(VariantStorageManager.Options.RESUME.key(), cliOptions.resume);
         queryOptions.putAll(cliOptions.commonOptions.params);
 
         org.opencb.opencga.storage.core.local.variant.VariantStorageManager variantManager =
@@ -213,7 +214,8 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 //                .append(AnalysisFileIndexer.LOAD, cliOptions.load)
                 .append(VariantStorageManager.Options.UPDATE_STATS.key(), cliOptions.updateStats)
                 .append(VariantStorageManager.Options.AGGREGATED_TYPE.key(), cliOptions.aggregated)
-                .append(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), cliOptions.aggregationMappingFile);
+                .append(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), cliOptions.aggregationMappingFile)
+                .append(VariantStorageManager.Options.RESUME.key(), cliOptions.resume);
         options.putIfNotEmpty(VariantStorageManager.Options.FILE_ID.key(), cliOptions.fileId);
 
         options.putAll(cliOptions.commonOptions.params);

@@ -39,6 +39,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
+import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
@@ -96,7 +97,9 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
         CALCULATE_STATS("calculateStats", false),          //Calculate stats on the postLoad step
         OVERWRITE_STATS("overwriteStats", false),          //Overwrite stats already present
         UPDATE_STATS("updateStats", false),                //Calculate missing stats
-        ANNOTATE("annotate", false);
+        ANNOTATE("annotate", false),
+
+        RESUME("resume", false);
 
         private final String key;
         private final Object value;
@@ -135,7 +138,14 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
     }
 
 
-    public void importData(String fileId, String studyId) {
+    public void importData(URI inputFile, String dbName, ObjectMap options) throws StorageManagerException, IOException {
+        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
+            VariantImporter variantImporter = newVariantImporter(dbAdaptor);
+            variantImporter.importData(inputFile);
+        }
+    }
+
+    protected VariantImporter newVariantImporter(VariantDBAdaptor dbAdaptor) {
         throw new UnsupportedOperationException();
     }
 
