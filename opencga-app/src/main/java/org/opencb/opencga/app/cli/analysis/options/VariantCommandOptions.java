@@ -79,6 +79,8 @@ public class VariantCommandOptions {
 //        @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations already present in variants")
 //        public boolean overwriteAnnotations;
 
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation", arity = 0)
+        public boolean resume;
     }
 
     @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed variants")

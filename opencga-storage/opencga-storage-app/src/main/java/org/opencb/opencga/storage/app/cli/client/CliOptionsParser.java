@@ -242,6 +242,9 @@ public class CliOptionsParser extends OptionsParser {
         @Deprecated
         @Parameter(names = {"--annotator-config"}, description = "Path to the file with the configuration of the annotator")
         public String annotatorConfigFile;
+
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation", arity = 0)
+        public boolean resume;
     }
 
 

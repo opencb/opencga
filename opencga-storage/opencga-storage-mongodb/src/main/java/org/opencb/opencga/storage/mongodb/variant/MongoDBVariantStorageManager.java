@@ -77,6 +77,16 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             this.value = value;
         }
 
+        public static boolean isResumeStage(ObjectMap options) {
+            return options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue())
+                    || options.getBoolean(STAGE_RESUME.key(), false);
+        }
+
+        public static boolean isResumeMerge(ObjectMap options) {
+            return options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue())
+                    || options.getBoolean(MERGE_RESUME.key(), false);
+        }
+
         public String key() {
             return key;
         }

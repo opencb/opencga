@@ -476,7 +476,8 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
                 options.put(HADOOP_LOAD_VARIANT_PENDING_FILES, pendingFiles);
             }
 
-            boolean resume = options.getBoolean(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT_RESUME, false);
+            boolean resume = options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue())
+                    || options.getBoolean(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT_RESUME, false);
             BatchFileOperation op = addBatchOperation(studyConfiguration, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles, resume,
                     BatchFileOperation.Type.LOAD);
 

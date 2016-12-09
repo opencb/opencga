@@ -76,6 +76,10 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     public static final String HADOOP_LOAD_ARCHIVE = "hadoop.load.archive";
     public static final String HADOOP_LOAD_VARIANT = "hadoop.load.variant";
     // Resume merge variants if the current status is RUNNING or DONE
+    /**
+     * @deprecated use {@link Options#RESUME}
+     */
+    @Deprecated
     public static final String HADOOP_LOAD_VARIANT_RESUME = "hadoop.load.variant.resume";
     // Merge variants operation status. Skip merge and run post-load/post-merge step if status is DONE
     public static final String HADOOP_LOAD_VARIANT_STATUS = "hadoop.load.variant.status";
@@ -353,7 +357,8 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             if (!studyConfiguration.getIndexedFiles().contains(fileId)) {
                 throw StorageManagerException.unableToExecute("File not indexed.", fileId, studyConfiguration);
             }
-            boolean resume = conf.getBoolean(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT_RESUME, false);
+            boolean resume = options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue())
+                    || options.getBoolean(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT_RESUME, false);
             BatchFileOperation operation =
                     etl.addBatchOperation(studyConfiguration, VariantTableDeletionDriver.JOB_OPERATION_NAME, fileList, resume,
                             BatchFileOperation.Type.REMOVE);

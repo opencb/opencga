@@ -96,7 +96,9 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
         CALCULATE_STATS("calculateStats", false),          //Calculate stats on the postLoad step
         OVERWRITE_STATS("overwriteStats", false),          //Overwrite stats already present
         UPDATE_STATS("updateStats", false),                //Calculate missing stats
-        ANNOTATE("annotate", false);
+        ANNOTATE("annotate", false),
+
+        RESUME("resume", false);
 
         private final String key;
         private final Object value;

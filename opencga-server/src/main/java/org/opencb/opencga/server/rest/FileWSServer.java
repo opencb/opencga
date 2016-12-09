@@ -46,6 +46,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.local.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.local.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -61,6 +62,8 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
+
+import static org.opencb.opencga.storage.core.variant.VariantStorageManager.Options.*;
 
 
 @Path("/{version}/files")
@@ -645,11 +648,11 @@ public class FileWSServer extends OpenCGAWSServer {
         addParamIfNotNull(params, "outdir", outDirStr);
         addParamIfTrue(params, "transform", transform);
         addParamIfTrue(params, "load", load);
-        addParamIfNotNull(params, "include-extra-fields", includeExtraFields);
-        addParamIfNotNull(params, "aggregated", aggregated);
-        addParamIfTrue(params, "calculate-stats", calculateStats);
-        addParamIfTrue(params, "annotate", annotate);
-        addParamIfTrue(params, "overwrite-annotations", overwriteAnnotations);
+        addParamIfNotNull(params, EXTRA_GENOTYPE_FIELDS.key(), includeExtraFields);
+        addParamIfNotNull(params, AGGREGATED_TYPE.key(), aggregated);
+        addParamIfTrue(params, CALCULATE_STATS.key(), calculateStats);
+        addParamIfTrue(params, ANNOTATE.key(), annotate);
+        addParamIfTrue(params, VariantAnnotationManager.OVERWRITE_ANNOTATIONS, overwriteAnnotations);
 
         Set<String> knownParams = new HashSet<>();
         knownParams.add("outDir");

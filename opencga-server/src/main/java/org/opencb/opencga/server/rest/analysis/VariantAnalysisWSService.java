@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.rest.FileWSServer;
 import org.opencb.opencga.storage.core.local.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -35,10 +36,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import static org.opencb.opencga.storage.core.variant.VariantStorageManager.Options.*;
 
 /**
  * Created by imedina on 17/08/16.
@@ -80,12 +80,33 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         addParamIfNotNull(params, "outdir", outDirStr);
         addParamIfTrue(params, "transform", transform);
         addParamIfTrue(params, "load", load);
-        addParamIfNotNull(params, "include-extra-fields", includeExtraFields);
-        addParamIfNotNull(params, "aggregated", aggregated);
-        addParamIfTrue(params, "calculate-stats", calculateStats);
-        addParamIfTrue(params, "annotate", annotate);
-        addParamIfTrue(params, "overwrite-annotations", overwriteAnnotations);
+        addParamIfNotNull(params, EXTRA_GENOTYPE_FIELDS.key(), includeExtraFields);
+        addParamIfNotNull(params, AGGREGATED_TYPE.key(), aggregated);
+        addParamIfTrue(params, CALCULATE_STATS.key(), calculateStats);
+        addParamIfTrue(params, ANNOTATE.key(), annotate);
+        addParamIfTrue(params, VariantAnnotationManager.OVERWRITE_ANNOTATIONS, overwriteAnnotations);
 
+        Set<String> knownParams = new HashSet<>();
+        knownParams.add("outDir");
+        knownParams.add("transform");
+        knownParams.add("load");
+        knownParams.add("includeExtraFields");
+        knownParams.add("aggregated");
+        knownParams.add("calculateStats");
+        knownParams.add("annotate");
+        knownParams.add("overwrite");
+        knownParams.add("sid");
+        knownParams.add("include");
+        knownParams.add("exclude");
+
+        // Add other params
+        query.forEach((key, value) -> {
+            if (!knownParams.contains(key)) {
+                if (value != null) {
+                    params.put(key, value.toString());
+                }
+            }
+        });
         logger.info("ObjectMap: {}", params);
 
         try {
