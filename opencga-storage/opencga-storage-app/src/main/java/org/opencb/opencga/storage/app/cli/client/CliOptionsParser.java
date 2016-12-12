@@ -60,6 +60,7 @@ public class CliOptionsParser extends OptionsParser {
         variantSubCommands.addCommand("index", variantCommandOptions.indexVariantsCommandOptions);
         variantSubCommands.addCommand("query", variantCommandOptions.queryVariantsCommandOptions);
         variantSubCommands.addCommand("query-grpc", variantCommandOptions.queryGrpCVariantsCommandOptions);
+        variantSubCommands.addCommand("import", variantCommandOptions.importVariantsCommandOptions);
         variantSubCommands.addCommand("annotation", variantCommandOptions.annotateVariantsCommandOptions);
         variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantsCommandOptions);
         variantSubCommands.addCommand("benchmark", variantCommandOptions.benchmarkCommandOptions);
@@ -102,6 +103,7 @@ public class CliOptionsParser extends OptionsParser {
         IndexVariantsCommandOptions indexVariantsCommandOptions;
         QueryVariantsCommandOptions queryVariantsCommandOptions;
         QueryGrpCVariantsCommandOptions queryGrpCVariantsCommandOptions;
+        ImportVariantsCommandOptions importVariantsCommandOptions;
         AnnotateVariantsCommandOptions annotateVariantsCommandOptions;
         StatsVariantsCommandOptions statsVariantsCommandOptions;
         BenchmarkCommandOptions benchmarkCommandOptions;
@@ -112,6 +114,7 @@ public class CliOptionsParser extends OptionsParser {
             this.indexVariantsCommandOptions = new IndexVariantsCommandOptions();
             this.queryVariantsCommandOptions = new QueryVariantsCommandOptions();
             this.queryGrpCVariantsCommandOptions = new QueryGrpCVariantsCommandOptions();
+            this.importVariantsCommandOptions = new ImportVariantsCommandOptions();
             this.annotateVariantsCommandOptions = new AnnotateVariantsCommandOptions();
             this.statsVariantsCommandOptions = new StatsVariantsCommandOptions();
             this.benchmarkCommandOptions = new BenchmarkCommandOptions();
@@ -452,6 +455,20 @@ public class CliOptionsParser extends OptionsParser {
 
         @Parameter(names = {"--port"}, description = "gRPC port to connect")
         public int port;
+
+    }
+
+    @Parameters(commandNames = {"import"}, commandDescription = "Import a variants dataset into an empty study")
+    public class ImportVariantsCommandOptions {
+
+        @ParametersDelegate
+        public CommonOptions commonOptions = CliOptionsParser.this.commonOptions;
+
+        @Parameter(names = {"-i", "--input"}, description = "File to import in the selected backend", required = true, variableArity = true)
+        public String input;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name to load the data", required = false, arity = 1)
+        public String dbName;
 
     }
 

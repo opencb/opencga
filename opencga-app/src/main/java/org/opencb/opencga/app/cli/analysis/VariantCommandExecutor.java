@@ -26,6 +26,7 @@ import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DataStore;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.local.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.local.variant.operations.VariantFileIndexerStorageOperation;
@@ -81,6 +82,9 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                 break;
             case "export-frequencies":
                 exportFrequencies();
+                break;
+            case "import":
+                importData();
                 break;
             case "index":
                 index();
@@ -164,6 +168,17 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         } else {
             variantManager.exportData(cliOptions.output, cliOptions.commonOptions.outputFormat, query, queryOptions, sessionId);
         }
+    }
+
+    private void importData() throws URISyntaxException, CatalogException, StorageManagerException, IOException {
+        AnalysisCliOptionsParser.ImportVariantCommandOptions importVariantOptions = variantCommandOptions.importVariantCommandOptions;
+
+
+        org.opencb.opencga.storage.core.local.variant.VariantStorageManager variantManager =
+                new org.opencb.opencga.storage.core.local.variant.VariantStorageManager(catalogManager, storageManagerFactory);
+
+        variantManager.importData(UriUtils.createUri(importVariantOptions.input), importVariantOptions.study, sessionId);
+
     }
 
     private void delete() {
