@@ -45,7 +45,7 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
                 LoggerFactory.getLogger(VariantAnnotationStorageOperation.class));
     }
 
-    public List<File> annotateVariants(StudyInfo studyInfo, Query query, String outdirStr, String catalogOutDir, String sessionId,
+    public List<File> annotateVariants(StudyInfo studyInfo, Query query, String outdirStr, String sessionId,
                                        ObjectMap options)
             throws CatalogException, StorageManagerException, URISyntaxException, IOException {
         if (options == null) {
@@ -71,7 +71,7 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
             List<Region> regions = Region.parseRegions(query.getString(VariantQueryParams.REGION.key()));
             String outputFileName = buildOutputFileName(study.getAlias(), regions);
 
-            Long catalogOutDirId = getCatalogOutdirId(studyId, catalogOutDir, sessionId);
+            Long catalogOutDirId = getCatalogOutdirId(studyId, options, sessionId);
 
             Query annotationQuery = new Query(query);
             if (!options.getBoolean(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, false)) {

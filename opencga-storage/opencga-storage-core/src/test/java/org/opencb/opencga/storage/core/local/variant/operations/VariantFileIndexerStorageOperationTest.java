@@ -31,7 +31,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
-import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.local.variant.AbstractVariantStorageOperationTest;
@@ -77,21 +76,19 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         QueryOptions queryOptions = new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false);
         queryOptions.put(VariantStorageManager.Options.CALCULATE_STATS.key(), false);
 
-        variantManager.index(String.valueOf(getFile(0).getId()), newTmpOutdir(),
-                String.valueOf(outputId), queryOptions, sessionId);
+        queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
+        variantManager.index(String.valueOf(getFile(0).getId()), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(500, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.NONE, getDefaultCohort(studyId).getStatus().getName());
         assertNotNull(catalogManager.getFile(getFile(0).getId(), sessionId).first().getStats().get(FileMetadataReader.VARIANT_STATS));
 
-        variantManager.index(String.valueOf(getFile(1).getId()), newTmpOutdir(),
-                String.valueOf(outputId), queryOptions, sessionId);
+        variantManager.index(String.valueOf(getFile(1).getId()), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(1000, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.NONE, getDefaultCohort(studyId).getStatus().getName());
         assertNotNull(catalogManager.getFile(getFile(1).getId(), sessionId).first().getStats().get(FileMetadataReader.VARIANT_STATS));
 
         queryOptions.put(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
-        variantManager.index(String.valueOf(getFile(2).getId()), newTmpOutdir(),
-                String.valueOf(outputId), queryOptions, sessionId);
+        variantManager.index(String.valueOf(getFile(2).getId()), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(1500, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
         checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getAllCohorts(studyId,
@@ -100,15 +97,13 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         assertNotNull(catalogManager.getFile(getFile(2).getId(), sessionId).first().getStats().get(FileMetadataReader.VARIANT_STATS));
 
         queryOptions.put(VariantStorageManager.Options.CALCULATE_STATS.key(), false);
-        variantManager.index(String.valueOf(getFile(3).getId()), newTmpOutdir(),
-                String.valueOf(outputId), queryOptions, sessionId);
+        variantManager.index(String.valueOf(getFile(3).getId()), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(2000, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.INVALID, getDefaultCohort(studyId).getStatus().getName());
         assertNotNull(catalogManager.getFile(getFile(3).getId(), sessionId).first().getStats().get(FileMetadataReader.VARIANT_STATS));
 
         queryOptions.put(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
-        variantManager.index(String.valueOf(getFile(4).getId()), newTmpOutdir(),
-                String.valueOf(outputId), queryOptions, sessionId);
+        variantManager.index(String.valueOf(getFile(4).getId()), newTmpOutdir(), queryOptions, sessionId);
         assertEquals(2504, getDefaultCohort(studyId).getSamples().size());
         assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
         assertNotNull(catalogManager.getFile(getFile(4).getId(), sessionId).first().getStats().get(FileMetadataReader.VARIANT_STATS));

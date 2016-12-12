@@ -44,6 +44,7 @@ import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.local.OpenCGATestExternalResource;
+import org.opencb.opencga.storage.core.local.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.local.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationManager;
@@ -124,7 +125,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
         DummyStudyConfigurationManager.clear();
 
-        variantManager = new org.opencb.opencga.storage.core.local.variant.VariantStorageManager(catalogManager, storageConfiguration);
+        variantManager = new org.opencb.opencga.storage.core.local.variant.VariantStorageManager(catalogManager, factory);
         clearDB(dbName);
 
         fileMetadataReader = FileMetadataReader.get(catalogManager);
@@ -193,6 +194,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
         queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, true);
         queryOptions.append(VariantFileIndexerStorageOperation.LOAD, false);
+        queryOptions.append(StorageOperation.CATALOG_PATH, "data/index/");
         boolean calculateStats = queryOptions.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key());
 
         long studyId = catalogManager.getStudyIdByFileId(inputFile.getId());
@@ -200,7 +202,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         //Default cohort should not be modified
         Cohort defaultCohort = getDefaultCohort(studyId);
         String outdir = opencga.createTmpOutdir(studyId, "_TRANSFORM_", sessionId);
-        variantManager.index(String.valueOf(inputFile.getId()), outdir, "data/index/", queryOptions, sessionId);
+        variantManager.index(String.valueOf(inputFile.getId()), outdir, queryOptions, sessionId);
         inputFile = catalogManager.getFile(inputFile.getId(), sessionId).first();
         assertEquals(FileIndex.IndexStatus.TRANSFORMED, inputFile.getIndex().getStatus().getName());
 
@@ -224,16 +226,16 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     }
 
     protected List<StorageETLResult> loadFiles(List<File> files, List<File> expectedLoadedFiles, QueryOptions queryOptions, long outputId) throws Exception {
-
         queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, false);
         queryOptions.append(VariantFileIndexerStorageOperation.LOAD, true);
+        queryOptions.append(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
         boolean calculateStats = queryOptions.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key());
 
         long studyId = catalogManager.getStudyIdByFileId(files.get(0).getId());
 
         List<String> fileIds = files.stream().map(File::getId).map(Object::toString).collect(Collectors.toList());
         String outdir = opencga.createTmpOutdir(studyId, "_LOAD_", sessionId);
-        List<StorageETLResult> etlResults = variantManager.index(fileIds, outdir, String.valueOf(outputId), queryOptions, sessionId);
+        List<StorageETLResult> etlResults = variantManager.index(fileIds, outdir, queryOptions, sessionId);
 
         assertEquals(expectedLoadedFiles.size(), etlResults.size());
         checkEtlResults(studyId, etlResults, FileIndex.IndexStatus.READY);
@@ -260,13 +262,15 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     protected List<StorageETLResult> indexFiles(List<File> files, List<File> expectedLoadedFiles, QueryOptions queryOptions, long outputId) throws Exception {
         queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, true);
         queryOptions.append(VariantFileIndexerStorageOperation.LOAD, true);
+        queryOptions.append(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
         boolean calculateStats = queryOptions.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key());
 
         long studyId = catalogManager.getStudyIdByFileId(files.get(0).getId());
 
         String outdir = opencga.createTmpOutdir(studyId, "_INDEX_", sessionId);
         List<String> fileIds = files.stream().map(File::getId).map(Object::toString).collect(Collectors.toList());
-        List<StorageETLResult> etlResults = variantManager.index(fileIds, outdir, String.valueOf(outputId), queryOptions, sessionId);
+
+        List<StorageETLResult> etlResults = variantManager.index(fileIds, outdir, queryOptions, sessionId);
 
         assertEquals(expectedLoadedFiles.size(), etlResults.size());
         checkEtlResults(studyId, etlResults, FileIndex.IndexStatus.READY);

@@ -245,7 +245,7 @@ public class OpenCGAWSServer {
             storageConfiguration = StorageConfiguration
                     .load(new FileInputStream(new File(configDir.toFile().getAbsolutePath() + "/storage-configuration.yml")));
             storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
-            variantManager = new VariantStorageManager(catalogManager, storageConfiguration);
+            variantManager = new VariantStorageManager(catalogManager, storageManagerFactory);
         } catch (IOException e) {
             e.printStackTrace();
         } catch (CatalogException e) {

@@ -41,7 +41,7 @@ public class VariantExportStorageOperation extends StorageOperation {
                 LoggerFactory.getLogger(VariantExportStorageOperation.class));
     }
 
-    public List<File> exportData(List<StudyInfo> studyInfos, Query query, String outputFormat, String outdirStr, String catalogOutDir,
+    public List<File> exportData(List<StudyInfo> studyInfos, Query query, String outputFormat, String outdirStr,
                                  String sessionId, ObjectMap options)
             throws IOException, StorageManagerException, URISyntaxException, CatalogException {
         if (options == null) {
@@ -90,7 +90,7 @@ public class VariantExportStorageOperation extends StorageOperation {
             }
 
 //            String outputFileName = buildOutputFileName(Collections.singletonList(study.getAlias()), regions, outputFormat);
-            Long catalogOutDirId = getCatalogOutdirId(studyInfos.get(0).getStudyId(), catalogOutDir, sessionId);
+            Long catalogOutDirId = getCatalogOutdirId(studyInfos.get(0).getStudyId(), options, sessionId);
 
             // TODO: Needed?
             for (StudyInfo studyInfo : studyInfos) {
@@ -131,7 +131,7 @@ public class VariantExportStorageOperation extends StorageOperation {
         if (regions == null || regions.size() != 1) {
             return studies + ".export";
         } else {
-            return studies + "." + regions.get(0).toString() + ".export";
+            return studies + '.' + regions.get(0).toString() + ".export";
         }
     }
 }

@@ -90,15 +90,14 @@ public class VariantDBAdaptorUtils {
         }
 
         public static VariantFields get(String field) {
-            getNamesMap();
-            return NAMES_MAP.get(field);
+            return getNamesMap().get(field);
         }
 
         public static List<String> valuesString() {
             return Arrays.stream(values()).map(VariantFields::fieldName).collect(Collectors.toList());
         }
 
-        private static void getNamesMap() {
+        private static Map<String, VariantFields> getNamesMap() {
             if (NAMES_MAP.isEmpty()) {
                 synchronized (NAMES_MAP) {
                     if (NAMES_MAP.isEmpty()) {
@@ -110,6 +109,7 @@ public class VariantDBAdaptorUtils {
                     }
                 }
             }
+            return NAMES_MAP;
         }
     }
 

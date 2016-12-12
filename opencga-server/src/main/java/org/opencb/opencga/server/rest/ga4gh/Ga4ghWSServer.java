@@ -185,7 +185,7 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
 
             SearchReadsResponse response = new SearchReadsResponse();
 
-            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageConfiguration);
+            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageManagerFactory);
 
             QueryResult<ReadAlignment> queryResult = alignmentStorageManager
                     .query("", request.getReadGroupIds().get(0), query, queryOptions, sessionId);

@@ -105,7 +105,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         String sessionId = cliOptions.commonOptions.sessionId;
 
         org.opencb.opencga.storage.core.local.AlignmentStorageManager alignmentStorageManager =
-                new org.opencb.opencga.storage.core.local.AlignmentStorageManager(catalogManager, storageConfiguration);
+                new org.opencb.opencga.storage.core.local.AlignmentStorageManager(catalogManager, storageManagerFactory);
         alignmentStorageManager.index(null, cliOptions.fileId, params, sessionId);
     }
 
