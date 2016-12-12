@@ -28,6 +28,7 @@ import org.opencb.opencga.storage.core.StorageManager;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
@@ -142,6 +143,14 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
         try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
             VariantImporter variantImporter = newVariantImporter(dbAdaptor);
             variantImporter.importData(inputFile);
+        }
+    }
+
+    public void importData(URI inputFile, ExportMetadata metadata, String dbName, ObjectMap options)
+            throws StorageManagerException, IOException {
+        try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
+            VariantImporter variantImporter = newVariantImporter(dbAdaptor);
+            variantImporter.importData(inputFile, metadata);
         }
     }
 

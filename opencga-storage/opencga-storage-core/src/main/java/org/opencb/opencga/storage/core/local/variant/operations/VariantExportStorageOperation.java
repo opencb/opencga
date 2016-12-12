@@ -7,17 +7,18 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.models.DataStore;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.local.models.StudyInfo;
+import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.io.VariantMetadataImporter;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -25,8 +26,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -61,19 +61,26 @@ public class VariantExportStorageOperation extends StorageOperation {
         URI outputFile = null;
         final Path outdir;
         if (StringUtils.isNoneEmpty(outdirStr)) {
-            URI outdirUri = UriUtils.createDirectoryUri(outdirStr);
+            URI outdirUri = UriUtils.createUri(outdirStr);
+            String outputFileName = null;
+            if (!Paths.get(outdirUri).toFile().exists()) {
+                outputFileName = outdirUri.resolve(".").relativize(outdirUri).toString();
+                outdirUri = outdirUri.resolve(".");
+            } else {
+                outdirUri = UriUtils.createDirectoryUri(outdirStr);
+                List<Region> regions = Region.parseRegions(query.getString(VariantDBAdaptor.VariantQueryParams.REGION.key()));
+                outputFileName = buildOutputFileName(studyInfos.stream().map(StudyInfo::getStudyAlias).collect(Collectors.toList()),
+                        regions, outputFormat);
+            }
+            outputFile = outdirUri.resolve(outputFileName);
             outdir = Paths.get(outdirUri);
+
             outdirMustBeEmpty(outdir);
 
             hook = buildHook(outdir);
             writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
             Runtime.getRuntime().addShutdownHook(hook);
 
-
-            List<Region> regions = Region.parseRegions(query.getString(VariantDBAdaptor.VariantQueryParams.REGION.key()));
-            String outputFileName = buildOutputFileName(studyInfos.stream().map(StudyInfo::getStudyAlias).collect(Collectors.toList()),
-                    regions, outputFormat);
-            outputFile = outdirUri.resolve(outputFileName);
         } else {
             outdir = null;
         }
@@ -126,12 +133,114 @@ public class VariantExportStorageOperation extends StorageOperation {
         return newFiles;
     }
 
+
+    public void importData(StudyInfo studyInfo, URI inputUri, String sessionId) throws IOException, StorageManagerException {
+
+        VariantMetadataImporter variantMetadataImporter;
+        variantMetadataImporter = new CatalogVariantMetadataImporter(studyInfo.getStudyId(), inputUri, sessionId);
+
+        try {
+            DataStore dataStore = studyInfo.getDataStores().get(File.Bioformat.VARIANT);
+            VariantStorageManager variantStorageManager = storageManagerFactory.getVariantStorageManager(dataStore.getStorageEngine());
+            ObjectMap options = variantStorageManager.getOptions()
+                    .append(VariantStorageManager.Options.DB_NAME.key(), dataStore.getDbName());
+            ExportMetadata exportMetadata;
+            try (StudyConfigurationManager scm = variantStorageManager.getStudyConfigurationManager(options)) {
+                exportMetadata = variantMetadataImporter.importMetaData(inputUri, scm);
+            }
+
+            variantStorageManager.importData(inputUri, exportMetadata, dataStore.getDbName(), options);
+
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+            throw new StorageManagerException("Error importing data", e);
+        }
+
+    }
+
+
     private String buildOutputFileName(List<String> studyNames, List<Region> regions, String format) {
         String studies = String.join("_", studyNames);
         if (regions == null || regions.size() != 1) {
             return studies + ".export";
         } else {
             return studies + '.' + regions.get(0).toString() + ".export";
+        }
+    }
+
+    private final class CatalogVariantMetadataImporter extends VariantMetadataImporter {
+        private final URI inputUri;
+        private final String sessionId;
+        private long studyId;
+
+        private CatalogVariantMetadataImporter(long studyId, URI inputUri, String sessionId) {
+            this.inputUri = inputUri;
+            this.sessionId = sessionId;
+            this.studyId = studyId;
+        }
+
+        @Override
+        protected void processStudyConfiguration(Map<Integer, List<Integer>> returnedSamples,
+                                                 StudyConfiguration studyConfiguration) {
+            super.processStudyConfiguration(returnedSamples, studyConfiguration);
+
+            studyConfiguration.setStudyId((int) studyId);
+
+            try {
+                // Create Samples
+                Map<String, Integer> samplesMap = new HashMap<>();
+                Map<Integer, Integer> samplesIdMap = new HashMap<>();
+                String source = inputUri.resolve(".").relativize(inputUri).getPath();
+                String description = "Sample data imported from " + source;
+                for (Map.Entry<String, Integer> entry : studyConfiguration.getSampleIds().entrySet()) {
+                    Sample sample = catalogManager.createSample(studyId, entry.getKey(), source, description,
+                            Collections.emptyMap(), QueryOptions.empty(), sessionId).first();
+                    samplesMap.put(sample.getName(), (int) sample.getId());
+                    samplesIdMap.put(entry.getValue(), (int) sample.getId());
+                }
+
+                // Create cohorts
+                Map<String, Integer> newCohortIds = new HashMap<>();
+                Map<Integer, Set<Integer>> newCohorts = new HashMap<>();
+
+                for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
+                    String cohortName = studyConfiguration.getCohortIds().inverse().get(cohortId);
+                    Set<Integer> sampleIds = studyConfiguration.getCohorts().get(cohortId);
+                    Set<Integer> newSampleIds = new HashSet<>(sampleIds.size());
+                    for (Integer sampleId : sampleIds) {
+                        if (samplesIdMap.containsKey(sampleId)) {
+                            newSampleIds.add(samplesIdMap.get(sampleId));
+                        }
+                    }
+                    Cohort cohort = catalogManager.createCohort(
+                            studyConfiguration.getStudyId(), cohortName, Study.Type.COLLECTION,
+                            "", newSampleIds.stream().map(Long::valueOf).collect(Collectors.toList()),
+                            Collections.emptyMap(), sessionId).first();
+                    newCohortIds.put(cohortName, (int) cohort.getId());
+                    newCohorts.put((int) cohort.getId(), newSampleIds);
+                }
+                studyConfiguration.setCohortIds(newCohortIds);
+                studyConfiguration.setCohorts(newCohorts);
+                studyConfiguration.setCalculatedStats(newCohorts.keySet());
+
+                // Create Files
+                //TODO
+
+                // Update Sample Ids
+                studyConfiguration.setSampleIds(samplesMap);
+                for (Map.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
+                    Set<Integer> samples = entry.getValue();
+                    LinkedHashSet<Integer> remappedSamples = new LinkedHashSet<>(samples.size());
+                    for (Integer sample : samples) {
+                        if (samplesIdMap.containsKey(sample)) {
+                            remappedSamples.add(samplesIdMap.get(sample));
+                        }
+                    }
+                    studyConfiguration.getSamplesInFiles().put(entry.getKey(), remappedSamples);
+                }
+
+            } catch (CatalogException e) {
+                throw new IllegalArgumentException(e);
+            }
         }
     }
 }

@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.core.local.variant.operations;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -39,7 +38,6 @@ import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageETL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -58,17 +56,6 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
     public ExpectedException thrown = ExpectedException.none();
 
     Logger logger = LoggerFactory.getLogger(VariantFileIndexerStorageOperationTest.class);
-    private List<File> files;
-    private final static String[] FILE_NAMES = {
-            "1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
-            "1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
-            "1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
-            "1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
-            "1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"};
-    @Before
-    public void beforeIndex() throws Exception {
-        files = Arrays.asList(new File[5]);
-    }
 
     @Test
     public void testIndexWithStats() throws Exception {
@@ -110,13 +97,6 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getAllCohorts(studyId,
                 new Query(CohortDBAdaptor.QueryParams.NAME.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()),
                 catalogManager, dbName, sessionId);
-    }
-
-    protected File getFile(int index) throws IOException, CatalogException {
-        if (files.get(index) == null) {
-            files.set(index, create(FILE_NAMES[index]));
-        }
-        return files.get(index);
     }
 
     String newTmpOutdir() throws CatalogException {

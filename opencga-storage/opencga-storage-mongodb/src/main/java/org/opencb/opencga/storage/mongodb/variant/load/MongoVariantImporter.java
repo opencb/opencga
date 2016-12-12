@@ -37,19 +37,16 @@ import java.util.stream.Collectors;
  */
 public class MongoVariantImporter extends VariantImporter {
 
-    private final VariantMongoDBAdaptor dbAdaptor;
     private final MongoDBCollection variantsCollection;
 
-
     public MongoVariantImporter(VariantMongoDBAdaptor dbAdaptor) {
-        this.dbAdaptor = dbAdaptor;
+        super(dbAdaptor);
         this.variantsCollection = dbAdaptor.getVariantsCollection();
     }
 
-    @Override
-    public void importData(URI inputUri) throws StorageManagerException, IOException {
 
-        ExportMetadata exportMetadata = importMetaData(inputUri, dbAdaptor.getStudyConfigurationManager());
+    @Override
+    public void importData(URI inputUri, ExportMetadata exportMetadata) throws StorageManagerException, IOException {
 
         Path input = Paths.get(inputUri.getPath());
 
