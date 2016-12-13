@@ -595,6 +595,9 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
+            if (queryParam == null) {
+                continue;
+            }
             try {
                 switch (queryParam) {
                     case ID:
@@ -630,8 +633,22 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
                     case ANNOTATION_SET_NAME:
                         addOrQuery("name", queryParam.key(), query, queryParam.type(), annotationList);
                         break;
-                    default:
+                    case NAME:
+                    case TYPE:
+                    case CREATION_DATE:
+                    case STATUS_NAME:
+                    case STATUS_MSG:
+                    case STATUS_DATE:
+                    case DESCRIPTION:
+                    case ACL:
+                    case ACL_MEMBER:
+                    case ACL_PERMISSIONS:
+                    case SAMPLES:
+                    case ANNOTATION_SETS:
+                    case VARIABLE_NAME:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    default:
                         break;
                 }
             } catch (Exception e) {

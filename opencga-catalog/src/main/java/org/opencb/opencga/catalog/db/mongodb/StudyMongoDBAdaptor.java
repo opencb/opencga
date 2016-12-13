@@ -1551,6 +1551,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
+            if (queryParam == null) {
+                continue;
+            }
             try {
                 switch (queryParam) {
                     case ID:
@@ -1570,9 +1573,47 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
-
-                    default:
+                    case NAME:
+                    case ALIAS:
+                    case CREATION_DATE:
+                    case DESCRIPTION:
+                    case CIPHER:
+                    case STATUS_NAME:
+                    case STATUS_MSG:
+                    case STATUS_DATE:
+                    case LAST_MODIFIED:
+                    case DATASTORES:
+                    case DISK_USAGE:
+                    case URI:
+                    case ACL:
+                    case ACL_MEMBER:
+                    case ACL_PERMISSIONS:
+                    case STATS:
+                    case TYPE:
+                    case GROUPS:
+                    case GROUP_NAME:
+                    case GROUP_USER_IDS:
+                    case ROLES:
+                    case ROLES_ID:
+                    case ROLES_USERS:
+                    case ROLES_PERMISSIONS:
+                    case EXPERIMENT_ID:
+                    case EXPERIMENT_NAME:
+                    case EXPERIMENT_TYPE:
+                    case EXPERIMENT_PLATFORM:
+                    case EXPERIMENT_MANUFACTURER:
+                    case EXPERIMENT_DATE:
+                    case EXPERIMENT_LAB:
+                    case EXPERIMENT_CENTER:
+                    case EXPERIMENT_RESPONSIBLE:
+                    case COHORTS:
+                    case VARIABLE_SET:
+                    case VARIABLE_SET_ID:
+                    case VARIABLE_SET_NAME:
+                    case VARIABLE_SET_DESCRIPTION:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    default:
                         break;
                 }
             } catch (Exception e) {
