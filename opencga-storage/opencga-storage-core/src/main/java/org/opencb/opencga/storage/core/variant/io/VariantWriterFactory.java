@@ -85,20 +85,26 @@ public class VariantWriterFactory {
             return extension.endsWith(".snappy");
         }
 
-        static VariantOutputFormat safeValueOf(String value) {
-            value = value.replace(".", "_").toUpperCase();
-
-            try {
-                return VariantOutputFormat.valueOf(value);
-            } catch (IllegalArgumentException ignore) {
-                return null;
-            }
-        }
-
     }
 
-    public static String checkOutput(@Nullable String output, String outputFormat) throws IOException {
-        return checkOutput(output, safeValueOf(outputFormat));
+    /**
+     * Transform the string to a valid output format.
+     * If none, VCF by default.
+     *
+     * @param outputFormatStr   Output format as String
+     * @param output            Output file
+     * @return                  Valid VariantOutputFormat
+     * @throws                  IllegalArgumentException if the outputFormatStr is not valid
+     */
+    public static VariantOutputFormat toOutputFormat(String outputFormatStr, String output) {
+        if (!StringUtils.isEmpty(outputFormatStr)) {
+            outputFormatStr = outputFormatStr.replace('.', '_');
+            return VariantOutputFormat.valueOf(outputFormatStr.toUpperCase());
+        } else if (isStandardOutput(output)) {
+            return VCF;
+        } else {
+            return VCF_GZ;
+        }
     }
 
     public static String checkOutput(@Nullable String output, VariantOutputFormat outputFormat) throws IOException {
@@ -117,14 +123,14 @@ public class VariantWriterFactory {
             int idx = 0;
             for (int i = 0; i < split.length; i++) {
                 String s = split[i];
-                if (output.endsWith("." + s)) {
+                if (output.endsWith('.' + s)) {
                     idx = i + 1;
                 }
             }
             for (int i = idx; i < split.length; i++) {
                 String s = split[i];
                 if (!output.endsWith(s)) {
-                    output = output + "." + s;
+                    output = output + '.' + s;
                 }
             }
         }
@@ -142,21 +148,12 @@ public class VariantWriterFactory {
     }
 
     public static OutputStream getOutputStream(String output, String outputFormatStr) throws IOException {
-        /*
-         * Output parameters
-         */
-        boolean gzip = true;
-        VariantOutputFormat outputFormat;
-        if (StringUtils.isNotEmpty(outputFormatStr)) {
-            outputFormat = VariantOutputFormat.safeValueOf(outputFormatStr);
-            if (outputFormat == null) {
-                throw variantFormatNotSupported(outputFormatStr);
-            } else {
-                gzip = outputFormat.isGzip();
-            }
-        } else {
-            outputFormat = VariantOutputFormat.VCF;
-        }
+        VariantOutputFormat outputFormat = toOutputFormat(outputFormatStr, output);
+        return getOutputStream(output, outputFormat);
+    }
+
+    public static OutputStream getOutputStream(String output, VariantOutputFormat outputFormat) throws IOException {
+        boolean gzip = outputFormat.isGzip();
 
         // output format has priority over output name
         OutputStream outputStream;
@@ -180,12 +177,6 @@ public class VariantWriterFactory {
         return outputStream;
     }
 
-
-    public DataWriter<Variant> newDataWriter(String outputFormat, OutputStream outputStream, Query query, QueryOptions queryOptions)
-            throws IOException {
-        return newDataWriter(VariantOutputFormat.safeValueOf(outputFormat), outputStream, query, queryOptions);
-    }
-
     protected DataWriter<Variant> newDataWriter(VariantOutputFormat outputFormat, final OutputStream outputStream,
                                                 Query query, QueryOptions queryOptions) throws IOException {
         final DataWriter<Variant> exporter;
@@ -199,11 +190,6 @@ public class VariantWriterFactory {
                     if (query.containsKey(RETURNED_SAMPLES.key())) {
                         queryOptions.put(RETURNED_SAMPLES.key(), query.get(RETURNED_SAMPLES.key()));
                     }
-
-                    // TODO:
-//                    if (cliOptions.annotations != null) {
-//                        queryOptions.add("annotations", cliOptions.annotations);
-//                    }
 
                     VariantSourceDBAdaptor sourceDBAdaptor = dbAdaptor.getVariantSourceDBAdaptor();
                     exporter = new VariantVcfExporter(studyConfiguration, sourceDBAdaptor, outputStream, queryOptions);

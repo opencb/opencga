@@ -42,6 +42,7 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.slf4j.LoggerFactory;
@@ -138,7 +139,18 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
         logger = LoggerFactory.getLogger(VariantStorageManager.class);
     }
 
-
+    /**
+     * Loads the given file into an empty database.
+     *
+     * The input file should have, in the same directory, a metadata file, with the same name ended with
+     * {@link VariantExporter#METADATA_FILE_EXTENSION}
+     *
+     * @param inputFile     Variants input file in avro format.
+     * @param dbName        Database name where to load the variants
+     * @param options       Other options
+     * @throws IOException      if there is any I/O error
+     * @throws StorageManagerException  if there si any error loading the variants
+     * */
     public void importData(URI inputFile, String dbName, ObjectMap options) throws StorageManagerException, IOException {
         try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
             VariantImporter variantImporter = newVariantImporter(dbAdaptor);
@@ -146,6 +158,16 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
         }
     }
 
+    /**
+     * Loads the given file into an empty database.
+     *
+     * @param inputFile     Variants input file in avro format.
+     * @param metadata      Metadata related with the data to be loaded.
+     * @param dbName        Database name where to load the variants
+     * @param options       Other options
+     * @throws IOException      if there is any I/O error
+     * @throws StorageManagerException  if there si any error loading the variants
+     * */
     public void importData(URI inputFile, ExportMetadata metadata, String dbName, ObjectMap options)
             throws StorageManagerException, IOException {
         try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
@@ -154,6 +176,14 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
         }
     }
 
+    /**
+     * Creates a new {@link VariantImporter} for the current backend.
+     *
+     * There is no default VariantImporter.
+     *
+     * @param dbAdaptor     DBAdaptor to the current database
+     * @return              new VariantImporter
+     */
     protected VariantImporter newVariantImporter(VariantDBAdaptor dbAdaptor) {
         throw new UnsupportedOperationException();
     }
@@ -161,22 +191,28 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
     /**
      * Exports the result of the given query and the associated metadata.
      * @param outputFile    Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
-     * @param outputFormat  Output format.
+     * @param outputFormat  Variant output format
      * @param dbName        DBName for reading the variants
      * @param query         Query with the variants to export
      * @param queryOptions  Query options
      * @throws IOException  If there is any IO error
      * @throws StorageManagerException  If there is any error exporting variants
      */
-    public void exportData(URI outputFile, String outputFormat, String dbName, Query query, QueryOptions queryOptions)
+    public void exportData(URI outputFile, VariantOutputFormat outputFormat, String dbName, Query query, QueryOptions queryOptions)
             throws IOException, StorageManagerException {
-
         try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
             VariantExporter exporter = newVariantExporter(dbAdaptor);
             exporter.export(outputFile, outputFormat, query, queryOptions);
         }
     }
 
+    /**
+     * Creates a new {@link VariantExporter} for the current backend.
+     * The default implementation iterates locally through the database.
+     *
+     * @param dbAdaptor     DBAdaptor to the current database
+     * @return              new VariantExporter
+     */
     protected VariantExporter newVariantExporter(VariantDBAdaptor dbAdaptor) {
         return new VariantExporter(dbAdaptor);
     }

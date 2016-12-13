@@ -12,6 +12,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,13 +54,13 @@ public class VariantExporter {
     /**
      * Exports the result of the given query and the associated metadata.
      * @param outputFileUri Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
-     * @param outputFormat  Output format.
+     * @param outputFormat  Variant Output format.
      * @param query         Query with the variants to export
      * @param queryOptions  Query options
      * @throws IOException  If there is any IO error
      * @throws StorageManagerException  If there is any error exporting variants
      */
-    public void export(@Nullable URI outputFileUri, String outputFormat, Query query, QueryOptions queryOptions)
+    public void export(@Nullable URI outputFileUri, VariantOutputFormat outputFormat, Query query, QueryOptions queryOptions)
             throws IOException, StorageManagerException {
 
         String outputFile = null;
@@ -78,7 +79,7 @@ public class VariantExporter {
         }
     }
 
-    protected void exportData(OutputStream outputStream, String outputFormat, Query query, QueryOptions queryOptions,
+    protected void exportData(OutputStream outputStream, VariantOutputFormat outputFormat, Query query, QueryOptions queryOptions,
                               boolean logProgress)
             throws StorageManagerException, IOException {
         if (query == null) {

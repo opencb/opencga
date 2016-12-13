@@ -458,16 +458,16 @@ public class CliOptionsParser extends OptionsParser {
 
     }
 
-    @Parameters(commandNames = {"import"}, commandDescription = "Import a variants dataset into an empty study")
+    @Parameters(commandNames = {"import"}, commandDescription = "Import a variants dataset into an empty database")
     public class ImportVariantsCommandOptions {
 
         @ParametersDelegate
         public CommonOptions commonOptions = CliOptionsParser.this.commonOptions;
 
-        @Parameter(names = {"-i", "--input"}, description = "File to import in the selected backend", required = true, variableArity = true)
+        @Parameter(names = {"-i", "--input"}, description = "File to import in the selected backend", required = true)
         public String input;
 
-        @Parameter(names = {"-d", "--database"}, description = "DataBase name to load the data", required = false, arity = 1)
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name to load the data", arity = 1)
         public String dbName;
 
     }

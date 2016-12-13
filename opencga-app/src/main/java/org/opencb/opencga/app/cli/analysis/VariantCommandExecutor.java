@@ -35,6 +35,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
 import java.io.IOException;
@@ -166,7 +167,12 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             QueryResult rank = variantManager.rank(query, cliOptions.rank, 10, true, sessionId);
             System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rank));
         } else {
-            variantManager.exportData(cliOptions.output, cliOptions.commonOptions.outputFormat, query, queryOptions, sessionId);
+            if (cliOptions.annotations != null) {
+                queryOptions.add("annotations", cliOptions.annotations);
+            }
+            VariantWriterFactory.VariantOutputFormat outputFormat = VariantWriterFactory
+                    .toOutputFormat(cliOptions.commonOptions.outputFormat, cliOptions.output);
+            variantManager.exportData(cliOptions.output, outputFormat, query, queryOptions, sessionId);
         }
     }
 

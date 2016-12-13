@@ -754,10 +754,10 @@ public class AnalysisCliOptionsParser {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study", required = false)
+        @Parameter(names = {"-s", "--study"}, description = "Study where to load the variants", required = true)
         public String study;
 
-        @Parameter(names = {"-i", "--input"}, description = "File", required = true, variableArity = true)
+        @Parameter(names = {"-i", "--input"}, description = "Variants input file in avro format", required = true)
         public String input;
 
     }

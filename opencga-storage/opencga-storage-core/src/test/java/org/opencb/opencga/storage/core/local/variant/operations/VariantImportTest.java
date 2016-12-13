@@ -53,8 +53,7 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
         Query query = new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), studyId)
                 .append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), someSamples);
         QueryOptions queryOptions = new QueryOptions();
-        variantManager.exportData(export, "avro", query,
-                queryOptions, sessionId);
+        variantManager.exportData(export, "avro", query, queryOptions, sessionId);
 
         clearDB(dbName);
 
