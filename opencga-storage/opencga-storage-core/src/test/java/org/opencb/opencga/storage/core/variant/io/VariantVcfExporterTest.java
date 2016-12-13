@@ -120,7 +120,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
                 .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), 0)
                 .append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), returnedSamples);
         Path outputVcf = getTmpRootDir().resolve("hts_sf_" + EXPORTED_FILE_NAME);
-        int failedVariants = VariantVcfExporter.htsExport(dbAdaptor.iterator(query, new QueryOptions(QueryOptions.SORT, true)),
+        int failedVariants = VariantVcfDataWriter.htsExport(dbAdaptor.iterator(query, new QueryOptions(QueryOptions.SORT, true)),
                 studyConfiguration, dbAdaptor.getVariantSourceDBAdaptor()
                 , new GZIPOutputStream(new FileOutputStream(outputVcf.toFile())), new QueryOptions(VariantDBAdaptor.VariantQueryParams
                         .RETURNED_SAMPLES.key(), returnedSamples));
@@ -137,7 +137,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
         query.append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), STUDY_NAME);
 //                .append(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
         Path outputVcf = getTmpRootDir().resolve("hts_mf_" + EXPORTED_FILE_NAME);
-        int failedVariants = VariantVcfExporter.htsExport(dbAdaptor.iterator(query, null), studyConfiguration,
+        int failedVariants = VariantVcfDataWriter.htsExport(dbAdaptor.iterator(query, null), studyConfiguration,
                 dbAdaptor.getVariantSourceDBAdaptor(),
                 new GZIPOutputStream(new FileOutputStream(outputVcf.toFile())), null);
 
@@ -167,7 +167,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
         QueryOptions queryOptions = new QueryOptions();
         List<String> include = Arrays.asList("chromosome", "start", "end", "alternative", "reference", "ids", "sourceEntries");
         queryOptions.add("include", include);
-        VariantVcfExporter.vcfExport(dbAdaptor, studyConfiguration, new URI(EXPORTED_FILE_NAME), new Query(), queryOptions);
+        VariantVcfDataWriter.vcfExport(dbAdaptor, studyConfiguration, new URI(EXPORTED_FILE_NAME), new Query(), queryOptions);
 
         // compare VCF_TEST_FILE_NAME and EXPORTED_FILE_NAME
     }

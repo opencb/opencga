@@ -23,5 +23,5 @@ import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
  *
  * @author Jose Miguel Mut Lopez &lt;jmmut@ebi.ac.uk&gt;
  */
-public class MongoVariantVcfExporterTest extends VariantVcfExporterTest implements MongoDBVariantStorageTest {
+public class MongoVariantVcfDataWriterTest extends VariantVcfExporterTest implements MongoDBVariantStorageTest {
 }

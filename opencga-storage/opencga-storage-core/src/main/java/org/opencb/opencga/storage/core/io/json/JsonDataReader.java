@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.core.variant.io.json;
+package org.opencb.opencga.storage.core.io.json;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;

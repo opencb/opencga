@@ -159,7 +159,7 @@ public class VariantWriterFactory {
         OutputStream outputStream;
         if (isStandardOutput(output)) {
             // Unclosable OutputStream
-            outputStream = new VariantVcfExporter.UnclosableOutputStream(System.out);
+            outputStream = new VariantVcfDataWriter.UnclosableOutputStream(System.out);
         } else {
             outputStream = new FileOutputStream(output);
             logger.debug("writing to %s", output);
@@ -192,7 +192,7 @@ public class VariantWriterFactory {
                     }
 
                     VariantSourceDBAdaptor sourceDBAdaptor = dbAdaptor.getVariantSourceDBAdaptor();
-                    exporter = new VariantVcfExporter(studyConfiguration, sourceDBAdaptor, outputStream, queryOptions);
+                    exporter = new VariantVcfDataWriter(studyConfiguration, sourceDBAdaptor, outputStream, queryOptions);
                 } else {
                     throw new IllegalArgumentException("No study found named " + query.getAsStringList(RETURNED_STUDIES.key()).get(0));
                 }
