@@ -270,8 +270,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
-    public Response search(@ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
-                           @ApiParam(value = "DEPRECATED: studyId") @QueryParam("studyId") String studyId,
+    public Response search(@ApiParam(value = "DEPRECATED: studyId") @QueryParam("studyId") String studyId,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                @QueryParam("study") String studyStr,
                            @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
@@ -316,7 +315,8 @@ public class JobWSServer extends OpenCGAWSServer {
     @Path("/{jobIds}/delete")
     @ApiOperation(value = "Delete job", position = 4)
     public Response delete(@ApiParam(value = "Comma separated list of job ids", required = true) @PathParam("jobIds") String jobIds,
-                           @ApiParam(value = "deleteFiles", required = false) @DefaultValue("true") @QueryParam("deleteFiles") boolean deleteFiles) {
+                           @ApiParam(value = "deleteFiles", required = false) @DefaultValue("true")
+                                @QueryParam("deleteFiles") boolean deleteFiles) {
         try {
             QueryOptions options = new QueryOptions(JobManager.DELETE_FILES, deleteFiles);
             List<QueryResult<Job>> delete = catalogManager.getJobManager().delete(jobIds, options, sessionId);
@@ -339,13 +339,16 @@ public class JobWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "path", required = false) @DefaultValue("") @QueryParam("path") String path,
                             @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") File.FileStatus status,
                             @ApiParam(value = "ownerId", required = false) @DefaultValue("") @QueryParam("ownerId") String ownerId,
-                            @ApiParam(value = "creationDate", required = false) @DefaultValue("") @QueryParam("creationDate") String creationDate,
+                            @ApiParam(value = "creationDate", required = false) @DefaultValue("")
+                                @QueryParam("creationDate") String creationDate,
 //                            @ApiParam(value = "modificationDate", required = false) @DefaultValue("")
 //                              @QueryParam("modificationDate") String modificationDate,
-                            @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description,
-                            @ApiParam(value = "attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes) {
+                            @ApiParam(value = "description", required = false) @DefaultValue("")
+                                @QueryParam("description") String description,
+                            @ApiParam(value = "attributes", required = false) @DefaultValue("")
+                                @QueryParam("attributes") String attributes) {
         try {
-            QueryResult result = catalogManager.jobGroupBy(query, queryOptions, fields, sessionId);
+            QueryResult result = catalogManager.jobGroupBy(studyStr, query, queryOptions, fields, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -368,8 +371,10 @@ public class JobWSServer extends OpenCGAWSServer {
     @Path("/{jobIds}/acl/create")
     @ApiOperation(value = "Define a set of permissions for a list of members", position = 19)
     public Response createRole(@ApiParam(value = "Comma separated list of job ids", required = true) @PathParam("jobIds") String jobIdsStr,
-                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
-                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
+                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list",
+                                       required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
+                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
+                                       required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
             return createOkResponse(catalogManager.createJobAcls(jobIdsStr, members, permissions, sessionId));
         } catch (Exception e) {
@@ -401,7 +406,8 @@ public class JobWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "Comma separated list of permissions to set", required = false)
                                   @PathParam("setPermissions") String setPermissions) {
         try {
-            return createOkResponse(catalogManager.updateJobAcl(jobIdStr, memberId, addPermissions, removePermissions, setPermissions, sessionId));
+            return createOkResponse(catalogManager.updateJobAcl(jobIdStr, memberId, addPermissions, removePermissions, setPermissions,
+                    sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

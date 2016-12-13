@@ -115,9 +115,6 @@ public class JobCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--ids"}, description = "Comma separated list of job ids", arity = 1)
-        public String id;
-
         @Parameter(names = {"-s","--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 

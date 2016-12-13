@@ -1030,8 +1030,12 @@ public class CatalogManager implements AutoCloseable {
         return jobManager.update(jobId, parameters, null, sessionId); //TODO: Add query options
     }
 
-    public QueryResult jobGroupBy(Query query, QueryOptions qOptions, String fields, String sessionId) throws CatalogException {
-        return jobManager.groupBy(query, Arrays.asList(fields.split(",")), qOptions, sessionId);
+    public QueryResult jobGroupBy(@Nullable String studyStr, Query query, QueryOptions qOptions, String fields, String sessionId)
+            throws CatalogException {
+        if (StringUtils.isEmpty(fields)) {
+            throw new CatalogException("Empty fields parameter.");
+        }
+        return jobManager.groupBy(studyStr, query, Arrays.asList(fields.split(",")), qOptions, sessionId);
     }
 
     public List<QueryResult<JobAclEntry>> getAllJobAcls(String jobIdsStr, String sessionId) throws CatalogException {
