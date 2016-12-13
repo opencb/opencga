@@ -42,7 +42,6 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRes
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
@@ -105,33 +104,37 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             fileIndexed = true;
             Integer indexedFileId = studyConfiguration.getIndexedFiles().iterator().next();
 
-            DefaultVariantStatisticsManager vsm = new DefaultVariantStatisticsManager(dbAdaptor);
-
-            QueryOptions options = new QueryOptions(VariantStorageManager.Options.STUDY_ID.key(), STUDY_ID)
-                .append(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 100);
-            Iterator<Integer> iterator = studyConfiguration.getSamplesInFiles().get(indexedFileId).iterator();
-
-            /** Create cohorts **/
-            HashSet<String> cohort1 = new HashSet<>();
-            cohort1.add(studyConfiguration.getSampleIds().inverse().get(iterator.next()));
-            cohort1.add(studyConfiguration.getSampleIds().inverse().get(iterator.next()));
-
-            HashSet<String> cohort2 = new HashSet<>();
-            cohort2.add(studyConfiguration.getSampleIds().inverse().get(iterator.next()));
-            cohort2.add(studyConfiguration.getSampleIds().inverse().get(iterator.next()));
-
-            Map<String, Set<String>> cohorts = new HashMap<>();
-            Map<String, Integer> cohortIds = new HashMap<>();
-            cohorts.put("cohort1", cohort1);
-            cohorts.put("cohort2", cohort2);
-            cohortIds.put("cohort1", 10);
-            cohortIds.put("cohort2", 11);
 
             //Calculate stats
             if (getOtherParams().getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key(), true)) {
-                URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort1.cohort2.stats"), cohorts, cohortIds, studyConfiguration,
-                        options);
-                vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
+                QueryOptions options = new QueryOptions(VariantStorageManager.Options.STUDY_ID.key(), STUDY_ID)
+                        .append(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 100)
+                        .append(DefaultVariantStatisticsManager.OUTPUT, outputUri)
+                        .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, "cohort1.cohort2.stats");
+                Iterator<Integer> iterator = studyConfiguration.getSamplesInFiles().get(indexedFileId).iterator();
+
+                /** Create cohorts **/
+                HashSet<Integer> cohort1 = new HashSet<>();
+                cohort1.add(iterator.next());
+                cohort1.add(iterator.next());
+
+                HashSet<Integer> cohort2 = new HashSet<>();
+                cohort2.add(iterator.next());
+                cohort2.add(iterator.next());
+
+                Map<String, Integer> cohortIds = new HashMap<>();
+                cohortIds.put("cohort1", 10);
+                cohortIds.put("cohort2", 11);
+
+                studyConfiguration.getCohortIds().putAll(cohortIds);
+                studyConfiguration.getCohorts().put(10, cohort1);
+                studyConfiguration.getCohorts().put(11, cohort2);
+
+                dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, QueryOptions.empty());
+
+                variantStorageManager.calculateStats(studyConfiguration.getStudyName(),
+                        new ArrayList<>(cohortIds.keySet()), DB_NAME, options);
+
             }
 
             for (int i = 0; i < 30  ; i++) {

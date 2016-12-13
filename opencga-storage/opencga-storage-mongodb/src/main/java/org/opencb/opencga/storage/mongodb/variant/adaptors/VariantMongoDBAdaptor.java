@@ -1491,8 +1491,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        logger.info("Projection: {}", projection);
-        System.out.println("projection = " + projection);
+        logger.debug("Projection: {}", projection);
         return projection;
     }
 

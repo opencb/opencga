@@ -74,6 +74,7 @@ public class AnalysisCliOptionsParser {
         variantSubCommands.addCommand("annotate", variantCommandOptions.annotateVariantCommandOptions);
         variantSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);
         variantSubCommands.addCommand("export-frequencies", variantCommandOptions.exportVariantStatsCommandOptions);
+        variantSubCommands.addCommand("import", variantCommandOptions.importVariantCommandOptions);
         variantSubCommands.addCommand("ibs", variantCommandOptions.ibsVariantCommandOptions);
 
         alignmentCommandOptions = new AlignmentCommandOptions(commonCommandOptions, jCommander);
@@ -214,6 +215,7 @@ public class AnalysisCliOptionsParser {
         final AnnotateVariantCommandOptions annotateVariantCommandOptions;
         final QueryVariantCommandOptions queryVariantCommandOptions;
         final ExportVariantStatsCommandOptions exportVariantStatsCommandOptions;
+        final ImportVariantCommandOptions importVariantCommandOptions;
         final IbsVariantCommandOptions ibsVariantCommandOptions;
         final DeleteVariantCommandOptions deleteVariantCommandOptions;
 
@@ -225,6 +227,7 @@ public class AnalysisCliOptionsParser {
             this.annotateVariantCommandOptions = new AnnotateVariantCommandOptions();
             this.queryVariantCommandOptions = new QueryVariantCommandOptions();
             this.exportVariantStatsCommandOptions = new ExportVariantStatsCommandOptions();
+            this.importVariantCommandOptions = new ImportVariantCommandOptions();
             this.ibsVariantCommandOptions = new IbsVariantCommandOptions();
             this.deleteVariantCommandOptions = new DeleteVariantCommandOptions();
         }
@@ -742,6 +745,20 @@ public class AnalysisCliOptionsParser {
 
         @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be returned", required = false)
         public String studies;
+
+    }
+
+    @Parameters(commandNames = {"import"}, commandDescription = "Import a variants dataset into an empty study")
+    public class ImportVariantCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+
+        @Parameter(names = {"-s", "--study"}, description = "Study", required = false)
+        public String study;
+
+        @Parameter(names = {"-i", "--input"}, description = "File", required = true, variableArity = true)
+        public String input;
 
     }
 

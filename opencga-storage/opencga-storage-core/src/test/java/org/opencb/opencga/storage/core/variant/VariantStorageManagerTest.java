@@ -38,7 +38,6 @@ import org.opencb.opencga.storage.core.search.SearchManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
-import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
@@ -443,6 +442,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
                 new ObjectMap(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GL", "DS"))
                         .append(VariantStorageManager.Options.FILE_ID.key(), 2)
                         .append(VariantStorageManager.Options.ANNOTATE.key(), false)
+                        .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
         );
 
         VariantSource source = VariantReaderUtils.readVariantSource(Paths.get(etlResult.getTransformResult().getPath()), null);
@@ -450,11 +450,9 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
         checkLoadedVariants(dbAdaptor, studyConfiguration, true, false, getExpectedNumLoadedVariants(source));
 
-        VariantReader reader = new VariantJsonReader(new VariantSource("", "2", STUDY_NAME, STUDY_NAME),
-                etlResult.getTransformResult().getPath(), etlResult.getTransformResult().getPath().replace("variants", "file"));
-//        VariantReader reader = new VariantAvroReader(Paths.get(etlResult.getTransformResult().getPath()).toFile(),
-// Paths.get(etlResult.getTransformResult().getPath().replace("variants.avro", "file.json")).toFile(),
-// new VariantSource("", "2", STUDY_NAME, STUDY_NAME));
+        VariantReader reader = VariantReaderUtils.getVariantReader(Paths.get(etlResult.getTransformResult().getPath()),
+                new VariantSource("", "2", STUDY_NAME, STUDY_NAME));
+
         reader.open();
         reader.pre();
         for (Variant variant : reader.read(999)) {
@@ -466,8 +464,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
             studyEntry.getFiles().get(0).setFileId("2");
             variant.setStudies(Collections.singletonList(studyEntry));
 
-            Variant loadedVariant = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(),
-                    variant.getChromosome() + ":" + variant.getStart() + "-" + variant.getEnd()), new QueryOptions()).first();
+            Variant loadedVariant = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.ID.key(), variant), new QueryOptions()).first();
 
             loadedVariant.setAnnotation(null);                                          //Remove annotation
             loadedVariant.getStudy(STUDY_NAME).setStats(Collections.emptyMap());        //Remove calculated stats
@@ -476,7 +473,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
                 while (values.get(2).length() < 5) values.set(2, values.get(2) + "0");   //Set lost zeros
             });
             variant.resetLength();
-            assertEquals("\n" + variant.toJson() + "\n" + loadedVariant.toJson(), variant.toJson(), loadedVariant.toJson());
+            assertEquals("\n" + variant.toJson() + "\n" + loadedVariant.toJson(), variant, loadedVariant);
 
         }
         dbAdaptor.close();

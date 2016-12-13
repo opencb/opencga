@@ -47,28 +47,73 @@ public class VariantDBAdaptorUtils {
     public static final String AND = ";";
     public static final String IS = ":";
     public static final String STUDY_POP_FREQ_SEPARATOR = ":";
-    public static final Map<String, String> PROJECT_FIELD_ALIAS;
+//    public static final Map<String, String> PROJECT_FIELD_ALIAS;
 
-    public static final String SAMPLES_FIELD = "samples";
-    public static final String STUDIES_FIELD = "studies";
-    public static final String STATS_FIELD = "stats";
-    public static final String ANNOTATION_FIELD = "annotation";
-    private static final int GENE_EXTRA_REGION = 5000;
+    public static final String SAMPLES_FIELD = VariantFields.SAMPLES.fieldName();
+    public static final String STUDIES_FIELD = VariantFields.STUDIES.fieldName();
+    public static final String STATS_FIELD = VariantFields.STATS.fieldName();
+    public static final String ANNOTATION_FIELD = VariantFields.ANNOTATION.fieldName();
 
-    static {
-        Map<String, String> map =  new HashMap<>();
-        map.put("studies.samplesData", SAMPLES_FIELD);
-        map.put("samplesData", SAMPLES_FIELD);
-        map.put(SAMPLES_FIELD, SAMPLES_FIELD);
-        map.put("sourceEntries", STUDIES_FIELD);
-        map.put("studies.cohortStats", STATS_FIELD);
-        map.put("studies.stats", STATS_FIELD);
-        map.put("sourceEntries.stats", STATS_FIELD);
-        map.put(STATS_FIELD, STATS_FIELD);
-        map.put(STUDIES_FIELD, STUDIES_FIELD);
-        map.put(ANNOTATION_FIELD, ANNOTATION_FIELD);
-        PROJECT_FIELD_ALIAS = Collections.unmodifiableMap(map);
+    public enum VariantFields {
+        IDS,
+        CHROMOSOME,
+        START,
+        END,
+        REFERENCE,
+        ALTERNATE,
+        LENGTH,
+        TYPE,
+        HGVS,
+        STUDIES("studies", "sourceEntries"),
+        SAMPLES("samples", "studies.samplesData", "samplesData"),
+        STATS("stats", "studies.cohortStats", "studies.stats", "sourceEntries.stats"),
+        ANNOTATION("annotation");
+
+        private final List<String> names;
+        private static final Map<String, VariantFields> NAMES_MAP = new HashMap<>();
+
+        VariantFields(String ... names) {
+            if (names.length == 0) {
+                this.names = Collections.singletonList(name().toLowerCase());
+            } else {
+                this.names = Collections.unmodifiableList(Arrays.asList(names));
+            }
+        }
+
+        public String fieldName() {
+            return names.get(0);
+        }
+
+        @Override
+        public String toString() {
+            return fieldName();
+        }
+
+        public static VariantFields get(String field) {
+            return getNamesMap().get(field);
+        }
+
+        public static List<String> valuesString() {
+            return Arrays.stream(values()).map(VariantFields::fieldName).collect(Collectors.toList());
+        }
+
+        private static Map<String, VariantFields> getNamesMap() {
+            if (NAMES_MAP.isEmpty()) {
+                synchronized (NAMES_MAP) {
+                    if (NAMES_MAP.isEmpty()) {
+                        for (VariantFields variantFields : VariantFields.values()) {
+                            for (String name : variantFields.names) {
+                                NAMES_MAP.put(name, variantFields);
+                            }
+                        }
+                    }
+                }
+            }
+            return NAMES_MAP;
+        }
     }
+
+    private static final int GENE_EXTRA_REGION = 5000;
 
     private VariantDBAdaptor adaptor;
 
@@ -276,7 +321,7 @@ public class VariantDBAdaptorUtils {
 //            System.out.println("includeList = " + includeList);
             returnedFields = new HashSet<>();
             for (String include : includeList) {
-                String includeAlias = PROJECT_FIELD_ALIAS.get(include);
+                String includeAlias = VariantFields.get(include).fieldName();
                 if (includeAlias != null) {
                     returnedFields.add(includeAlias);
                 } else {
@@ -294,12 +339,12 @@ public class VariantDBAdaptorUtils {
             List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
             if (excludeList != null && !excludeList.isEmpty()) {
 //                System.out.println("excludeList = " + excludeList);
-                returnedFields = new HashSet<>(PROJECT_FIELD_ALIAS.values());
+                returnedFields = new HashSet<>(VariantFields.valuesString());
                 for (String exclude : excludeList) {
-                    returnedFields.remove(PROJECT_FIELD_ALIAS.get(exclude));
+                    returnedFields.remove(VariantFields.get(exclude).fieldName());
                 }
             } else {
-                returnedFields = new HashSet<>(PROJECT_FIELD_ALIAS.values());
+                returnedFields = new HashSet<>(VariantFields.valuesString());
             }
         }
 //        System.out.println("returnedFields = " + returnedFields);

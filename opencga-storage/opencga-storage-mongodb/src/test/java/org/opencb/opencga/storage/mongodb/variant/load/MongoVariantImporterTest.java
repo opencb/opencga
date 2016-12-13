@@ -13,8 +13,10 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
 import java.net.URI;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 
@@ -58,6 +60,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
 
         System.out.println("outputFile = " + outputFile);
         List<String> samples = new LinkedList<>(studyConfiguration.getSampleIds().keySet()).subList(1, 3);
+        Set<String> samplesSet = new HashSet<>(samples);
         Query query = new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), samples);
         variantStorageManager.exportData(outputFile, "avro", DB_NAME, query, new QueryOptions());
 
@@ -67,7 +70,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
 
         for (Variant variant : variantStorageManager.getDBAdaptor(DB_NAME)) {
             assertEquals(2, variant.getStudies().get(0).getSamplesData().size());
-            assertEquals(samples, variant.getStudies().get(0).getSamplesName());
+            assertEquals(samplesSet, variant.getStudies().get(0).getSamplesName());
         }
     }
 

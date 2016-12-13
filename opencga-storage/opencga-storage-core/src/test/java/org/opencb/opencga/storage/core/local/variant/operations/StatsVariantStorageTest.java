@@ -78,7 +78,8 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
                     sampleIds.subList(sampleIds.size() / coh.length * i, sampleIds.size() / coh.length * (i + 1)), null, sessionId).first().getId();
         }
         QueryOptions queryOptions = new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false);
-        variantManager.index(String.valueOf(file.getId()), createTmpOutdir(file), String.valueOf(outputId), queryOptions, sessionId);
+        queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
+        variantManager.index(String.valueOf(file.getId()), createTmpOutdir(file), queryOptions, sessionId);
 
 
         all = catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), DEFAULT_COHORT),
@@ -101,7 +102,8 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 //        coh0 = catalogManager.createCohort(studyId, "coh0", Cohort.Type.CONTROL_SET, "", file1.getSampleIds(), null, sessionId).first().getId();
 
         QueryOptions queryOptions = new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false);
-        variantManager.index(String.valueOf(file1.getId()), createTmpOutdir(file1), String.valueOf(outputId), queryOptions, sessionId);
+        queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
+        variantManager.index(String.valueOf(file1.getId()), createTmpOutdir(file1), queryOptions, sessionId);
         return file1;
     }
 
@@ -179,8 +181,8 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
     public void calculateStats(long cohortId, QueryOptions options) throws Exception {
         String tmpOutdir = createTmpOutdir("_STATS_" + cohortId);
         List<String> cohortIds = Collections.singletonList(String.valueOf(cohortId));
-        variantManager.stats(String.valueOf(catalogManager.getStudyIdByCohortId(cohortId)), cohortIds, tmpOutdir, String.valueOf(outputId),
-                options, sessionId);
+        options.put(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
+        variantManager.stats(String.valueOf(catalogManager.getStudyIdByCohortId(cohortId)), cohortIds, tmpOutdir, options, sessionId);
     }
 
     public void calculateStats(QueryOptions options, Long... cohortIds) throws Exception {
@@ -189,7 +191,8 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
     public void calculateStats(QueryOptions options, List<String> cohorts) throws Exception {
         String tmpOutdir = createTmpOutdir("_STATS_" + cohorts.stream().collect(Collectors.joining("_")));
-        variantManager.stats(String.valueOf(studyId), cohorts, tmpOutdir, String.valueOf(outputId), options, sessionId);
+        options.put(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
+        variantManager.stats(String.valueOf(studyId), cohorts, tmpOutdir, options, sessionId);
     }
 
     @Test

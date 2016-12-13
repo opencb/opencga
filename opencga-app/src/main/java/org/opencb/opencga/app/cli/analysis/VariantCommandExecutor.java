@@ -26,7 +26,9 @@ import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DataStore;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.local.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.local.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -80,6 +82,9 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                 break;
             case "export-frequencies":
                 exportFrequencies();
+                break;
+            case "import":
+                importData();
                 break;
             case "index":
                 index();
@@ -146,7 +151,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         QueryOptions queryOptions = VariantQueryCommandUtils.parseQueryOptions(cliOptions);
 
         org.opencb.opencga.storage.core.local.variant.VariantStorageManager variantManager =
-                new org.opencb.opencga.storage.core.local.variant.VariantStorageManager(catalogManager, storageConfiguration);
+                new org.opencb.opencga.storage.core.local.variant.VariantStorageManager(catalogManager, storageManagerFactory);
 
         if (cliOptions.count) {
             QueryResult<Long> result = variantManager.count(query, sessionId);
@@ -161,8 +166,19 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             QueryResult rank = variantManager.rank(query, cliOptions.rank, 10, true, sessionId);
             System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rank));
         } else {
-            variantManager.exportData(cliOptions.output, null, cliOptions.commonOptions.outputFormat, query, queryOptions, sessionId);
+            variantManager.exportData(cliOptions.output, cliOptions.commonOptions.outputFormat, query, queryOptions, sessionId);
         }
+    }
+
+    private void importData() throws URISyntaxException, CatalogException, StorageManagerException, IOException {
+        AnalysisCliOptionsParser.ImportVariantCommandOptions importVariantOptions = variantCommandOptions.importVariantCommandOptions;
+
+
+        org.opencb.opencga.storage.core.local.variant.VariantStorageManager variantManager =
+                new org.opencb.opencga.storage.core.local.variant.VariantStorageManager(catalogManager, storageManagerFactory);
+
+        variantManager.importData(UriUtils.createUri(importVariantOptions.input), importVariantOptions.study, sessionId);
+
     }
 
     private void delete() {
@@ -184,7 +200,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         queryOptions.put(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), cliOptions.aggregationMappingFile);
         queryOptions.put(VariantStorageManager.Options.GVCF.key(), cliOptions.gvcf);
 
-        queryOptions.putIfNotNull(VariantFileIndexerStorageOperation.CATALOG_PATH, cliOptions.catalogPath);
+        queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, cliOptions.catalogPath);
         queryOptions.putIfNotNull(VariantFileIndexerStorageOperation.TRANSFORMED_FILES, cliOptions.transformedPaths);
 
         queryOptions.put(VariantStorageManager.Options.ANNOTATE.key(), cliOptions.annotate);
@@ -196,8 +212,9 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         queryOptions.putAll(cliOptions.commonOptions.params);
 
         org.opencb.opencga.storage.core.local.variant.VariantStorageManager variantManager =
-                new org.opencb.opencga.storage.core.local.variant.VariantStorageManager(catalogManager, storageConfiguration);
-        variantManager.index(cliOptions.fileId, cliOptions.outdir, cliOptions.catalogPath, queryOptions, sessionId);
+                new org.opencb.opencga.storage.core.local.variant.VariantStorageManager(catalogManager, storageManagerFactory);
+
+        variantManager.index(cliOptions.fileId, cliOptions.outdir, queryOptions, sessionId);
 
     }
 
@@ -206,7 +223,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         AnalysisCliOptionsParser.StatsVariantCommandOptions cliOptions = variantCommandOptions.statsVariantCommandOptions;
 
         org.opencb.opencga.storage.core.local.variant.VariantStorageManager variantManager =
-                new org.opencb.opencga.storage.core.local.variant.VariantStorageManager(catalogManager, storageConfiguration);
+                new org.opencb.opencga.storage.core.local.variant.VariantStorageManager(catalogManager, storageManagerFactory);
 
         QueryOptions options = new QueryOptions()
                 .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, cliOptions.fileName)
@@ -215,7 +232,8 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                 .append(VariantStorageManager.Options.UPDATE_STATS.key(), cliOptions.updateStats)
                 .append(VariantStorageManager.Options.AGGREGATED_TYPE.key(), cliOptions.aggregated)
                 .append(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), cliOptions.aggregationMappingFile)
-                .append(VariantStorageManager.Options.RESUME.key(), cliOptions.resume);
+                .append(VariantStorageManager.Options.RESUME.key(), cliOptions.resume)
+                .append(StorageOperation.CATALOG_PATH, cliOptions.catalogPath);
         options.putIfNotEmpty(VariantStorageManager.Options.FILE_ID.key(), cliOptions.fileId);
 
         options.putAll(cliOptions.commonOptions.params);
@@ -227,7 +245,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             cohorts = Collections.emptyList();
         }
 
-        variantManager.stats(cliOptions.studyId, cohorts, cliOptions.outdir, cliOptions.catalogPath, options, sessionId);
+        variantManager.stats(cliOptions.studyId, cohorts, cliOptions.outdir, options, sessionId);
     }
 
     private void annotate() throws StorageManagerException, IOException, URISyntaxException, VariantAnnotatorException, CatalogException,
@@ -235,7 +253,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 
         AnalysisCliOptionsParser.AnnotateVariantCommandOptions cliOptions = variantCommandOptions.annotateVariantCommandOptions;
         org.opencb.opencga.storage.core.local.variant.VariantStorageManager variantManager =
-                new org.opencb.opencga.storage.core.local.variant.VariantStorageManager(catalogManager, storageConfiguration);
+                new org.opencb.opencga.storage.core.local.variant.VariantStorageManager(catalogManager, storageManagerFactory);
 
 
         long studyId = catalogManager.getStudyId(cliOptions.studyId, sessionId);
@@ -261,9 +279,10 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         options.putIfNotEmpty(VariantAnnotationManager.LOAD_FILE, cliOptions.load);
         options.putIfNotEmpty(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, cliOptions.customAnnotationKey);
         options.putIfNotEmpty(DefaultVariantAnnotationManager.FILE_NAME, cliOptions.fileName);
+        options.put(StorageOperation.CATALOG_PATH, catalogOutDirId);
         options.putAll(cliOptions.commonOptions.params);
 
-        variantManager.annotate(cliOptions.studyId, query, cliOptions.outdir, catalogOutDirId, options, sessionId);
+        variantManager.annotate(cliOptions.studyId, query, cliOptions.outdir, options, sessionId);
 
     }
 

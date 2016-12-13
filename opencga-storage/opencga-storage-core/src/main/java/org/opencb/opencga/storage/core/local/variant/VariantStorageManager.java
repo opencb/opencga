@@ -36,7 +36,7 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.local.StorageManager;
 import org.opencb.opencga.storage.core.local.models.StudyInfo;
@@ -46,6 +46,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.function.Function;
@@ -55,10 +56,8 @@ public class VariantStorageManager extends StorageManager {
     public static final int LIMIT_DEFAULT = 1000;
     public static final int LIMIT_MAX = 5000;
 
-
-    public VariantStorageManager(CatalogManager catalogManager, StorageConfiguration storageConfiguration) {
-        super(catalogManager, storageConfiguration);
-
+    public VariantStorageManager(CatalogManager catalogManager, StorageManagerFactory storageManagerFactory) {
+        super(catalogManager, storageManagerFactory);
     }
 
     public void clearCache(String studyId, String type, String sessionId) throws CatalogException {
@@ -70,22 +69,26 @@ public class VariantStorageManager extends StorageManager {
     //   Import/Export methods  //
     // -------------------------//
 
-    public void importData(String fileId, String studyId, String sessionId) {
-        throw new UnsupportedOperationException();
+    public void importData(URI inputUri, String studyId, String sessionId)
+            throws CatalogException, IOException, StorageManagerException {
+
+        VariantExportStorageOperation op = new VariantExportStorageOperation(catalogManager, storageConfiguration);
+        StudyInfo studyInfo = getStudyInfo(studyId, Collections.emptyList(), sessionId);
+        op.importData(studyInfo, inputUri, sessionId);
+
     }
 
-    public List<File> exportData(String outDir, String catalogOutputFile, String outputFormat, String studyId, String sessionId)
+
+    public List<File> exportData(String outDir, String outputFormat, String studyId, String sessionId)
             throws URISyntaxException, StorageManagerException, CatalogException, IOException {
         Query query = new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), studyId)
                 .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
-        return exportData(outDir, catalogOutputFile, outputFormat, query,
-                new QueryOptions(), sessionId);
+        return exportData(outDir, outputFormat, query, new QueryOptions(), sessionId);
     }
 
-    public List<File> exportData(String outDir, String catalogOutputFile, String outputFormat, Query query, QueryOptions queryOptions,
+    public List<File> exportData(String outDir, String outputFormat, Query query, QueryOptions queryOptions,
                                  String sessionId)
             throws CatalogException, IOException, StorageManagerException, URISyntaxException {
-
         if (query == null) {
             query = new Query();
         }
@@ -98,25 +101,23 @@ public class VariantStorageManager extends StorageManager {
             studyInfos.add(getStudyInfo(String.valueOf(study), Collections.emptyList(), sessionId));
         }
 
-        return op.exportData(studyInfos, query, outputFormat, outDir, catalogOutputFile, sessionId, queryOptions);
-
+        return op.exportData(studyInfos, query, outputFormat, outDir, sessionId, queryOptions);
     }
 
     // --------------------------//
     //   Data Operation methods  //
     // --------------------------//
 
-    public List<StorageETLResult> index(String fileId, String outDir, String catalogOutDir, ObjectMap config, String sessionId)
+    public List<StorageETLResult> index(String fileId, String outDir, ObjectMap config, String sessionId)
             throws CatalogException, StorageManagerException, IOException, URISyntaxException {
-        return index(Arrays.asList(fileId.split(",")), outDir, catalogOutDir, config, sessionId);
+        return index(Arrays.asList(fileId.split(",")), outDir, config, sessionId);
     }
 
-    public List<StorageETLResult> index(List<String> files, String outDir, String catalogOutDir, ObjectMap config, String sessionId)
+    public List<StorageETLResult> index(List<String> files, String outDir, ObjectMap config, String sessionId)
             throws CatalogException, StorageManagerException, IOException, URISyntaxException {
         VariantFileIndexerStorageOperation indexOperation = new VariantFileIndexerStorageOperation(catalogManager, storageConfiguration);
 
         QueryOptions options = new QueryOptions(config);
-        options.putIfNotNull(VariantFileIndexerStorageOperation.CATALOG_PATH, catalogOutDir);
         StudyInfo studyInfo = getStudyInfo(null, files, sessionId);
         return indexOperation.index(studyInfo, outDir, options, sessionId);
     }
@@ -129,24 +130,24 @@ public class VariantStorageManager extends StorageManager {
         throw new UnsupportedOperationException();
     }
 
-    public List<File> annotate(String study, Query query, String outDir, String catalogOutDir, ObjectMap config, String sessionId)
+    public List<File> annotate(String study, Query query, String outDir, ObjectMap config, String sessionId)
             throws CatalogException, StorageManagerException, IOException, URISyntaxException {
         VariantAnnotationStorageOperation annotOperation = new VariantAnnotationStorageOperation(catalogManager, storageConfiguration);
 
         StudyInfo studyInfo = getStudyInfo(study, Collections.emptyList(), sessionId);
-        return annotOperation.annotateVariants(studyInfo, query, outDir, catalogOutDir, sessionId, config);
+        return annotOperation.annotateVariants(studyInfo, query, outDir, sessionId, config);
     }
 
     public void deleteAnnotation(String annotationId, String studyId, String sessionId) {
         throw new UnsupportedOperationException();
     }
 
-    public void stats(String study, List<String> cohorts, String outDir, String catalogOutDir, ObjectMap config, String sessionId)
+    public void stats(String study, List<String> cohorts, String outDir, ObjectMap config, String sessionId)
             throws CatalogException, StorageManagerException, IOException, URISyntaxException {
         VariantStatsStorageOperation statsOperation = new VariantStatsStorageOperation(catalogManager, storageConfiguration);
 
         long studyId = catalogManager.getStudyId(study, sessionId);
-        statsOperation.calculateStats(studyId, cohorts, outDir, catalogOutDir, new QueryOptions(config), sessionId);
+        statsOperation.calculateStats(studyId, cohorts, outDir, new QueryOptions(config), sessionId);
     }
 
     public void deleteStats(List<String> cohorts, String studyId, String sessionId) {

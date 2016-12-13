@@ -387,6 +387,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
                     dataReader,
                     () -> {
                         VariantStatsDBWriter dbWriter = newVariantStatisticsDBWriter(dbAdaptor, studyConfiguration, options);
+                        dbWriter.pre();
                         dbWriter.setProgressLogger(progressLogger);
                         writers.add(dbWriter);
                         return (batch -> {

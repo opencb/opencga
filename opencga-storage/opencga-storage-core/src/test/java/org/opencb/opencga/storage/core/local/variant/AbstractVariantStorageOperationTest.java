@@ -44,6 +44,7 @@ import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.local.OpenCGATestExternalResource;
+import org.opencb.opencga.storage.core.local.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.local.variant.operations.VariantFileIndexerStorageOperation;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationManager;
@@ -57,6 +58,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -92,6 +94,14 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     protected long studyId2;
     protected long outputId2;
 
+    private List<File> files;
+    private final static String[] FILE_NAMES = {
+            "1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+            "1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+            "1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+            "1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+            "1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"};
+
     protected FileMetadataReader fileMetadataReader;
     protected CatalogFileUtils catalogFileUtils;
     protected org.opencb.opencga.storage.core.local.variant.VariantStorageManager variantManager;
@@ -102,11 +112,14 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     protected static final String STORAGE_ENGINE_HADOOP = "hadoop";
     private Logger logger = LoggerFactory.getLogger(AbstractVariantStorageOperationTest.class);
 
+
+
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
     @Rule
     public OpenCGATestExternalResource opencga = new OpenCGATestExternalResource(getStorageEngine().equals(STORAGE_ENGINE_HADOOP));
+    private File smallFile;
 
     @Before
     public final void setUpAbstract() throws Exception {
@@ -124,7 +137,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
         DummyStudyConfigurationManager.clear();
 
-        variantManager = new org.opencb.opencga.storage.core.local.variant.VariantStorageManager(catalogManager, storageConfiguration);
+        variantManager = new org.opencb.opencga.storage.core.local.variant.VariantStorageManager(catalogManager, factory);
         clearDB(dbName);
 
         fileMetadataReader = FileMetadataReader.get(catalogManager);
@@ -149,6 +162,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
                 null, sessionId).first().getId();
         outputId2 = catalogManager.createFolder(studyId2, Paths.get("data", "index"), true, null, sessionId).first().getId();
 
+        files = Arrays.asList(new File[5]);
     }
 
     @After
@@ -162,11 +176,25 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
     protected abstract VariantSource.Aggregation getAggregation();
 
-    private void clearDB(String dbName) {
+    protected void clearDB(String dbName) {
         logger.info("Cleaning MongoDB {}" , dbName);
         MongoDataStoreManager mongoManager = new MongoDataStoreManager("localhost", 27017);
         MongoDataStore mongoDataStore = mongoManager.get(dbName);
         mongoManager.drop(dbName);
+    }
+
+    protected File getFile(int index) throws IOException, CatalogException {
+        if (files.get(index) == null) {
+            files.set(index, create(FILE_NAMES[index]));
+        }
+        return files.get(index);
+    }
+
+    protected File getSmallFileFile() throws IOException, CatalogException {
+        if (smallFile == null) {
+            smallFile = create("variant-test-file.vcf.gz");
+        }
+        return smallFile;
     }
 
     protected File create(String resourceName) throws IOException, CatalogException {
@@ -193,6 +221,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
         queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, true);
         queryOptions.append(VariantFileIndexerStorageOperation.LOAD, false);
+        queryOptions.append(StorageOperation.CATALOG_PATH, "data/index/");
         boolean calculateStats = queryOptions.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key());
 
         long studyId = catalogManager.getStudyIdByFileId(inputFile.getId());
@@ -200,7 +229,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         //Default cohort should not be modified
         Cohort defaultCohort = getDefaultCohort(studyId);
         String outdir = opencga.createTmpOutdir(studyId, "_TRANSFORM_", sessionId);
-        variantManager.index(String.valueOf(inputFile.getId()), outdir, "data/index/", queryOptions, sessionId);
+        variantManager.index(String.valueOf(inputFile.getId()), outdir, queryOptions, sessionId);
         inputFile = catalogManager.getFile(inputFile.getId(), sessionId).first();
         assertEquals(FileIndex.IndexStatus.TRANSFORMED, inputFile.getIndex().getStatus().getName());
 
@@ -224,16 +253,16 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     }
 
     protected List<StorageETLResult> loadFiles(List<File> files, List<File> expectedLoadedFiles, QueryOptions queryOptions, long outputId) throws Exception {
-
         queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, false);
         queryOptions.append(VariantFileIndexerStorageOperation.LOAD, true);
+        queryOptions.append(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
         boolean calculateStats = queryOptions.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key());
 
         long studyId = catalogManager.getStudyIdByFileId(files.get(0).getId());
 
         List<String> fileIds = files.stream().map(File::getId).map(Object::toString).collect(Collectors.toList());
         String outdir = opencga.createTmpOutdir(studyId, "_LOAD_", sessionId);
-        List<StorageETLResult> etlResults = variantManager.index(fileIds, outdir, String.valueOf(outputId), queryOptions, sessionId);
+        List<StorageETLResult> etlResults = variantManager.index(fileIds, outdir, queryOptions, sessionId);
 
         assertEquals(expectedLoadedFiles.size(), etlResults.size());
         checkEtlResults(studyId, etlResults, FileIndex.IndexStatus.READY);
@@ -260,13 +289,15 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     protected List<StorageETLResult> indexFiles(List<File> files, List<File> expectedLoadedFiles, QueryOptions queryOptions, long outputId) throws Exception {
         queryOptions.append(VariantFileIndexerStorageOperation.TRANSFORM, true);
         queryOptions.append(VariantFileIndexerStorageOperation.LOAD, true);
+        queryOptions.append(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
         boolean calculateStats = queryOptions.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key());
 
         long studyId = catalogManager.getStudyIdByFileId(files.get(0).getId());
 
         String outdir = opencga.createTmpOutdir(studyId, "_INDEX_", sessionId);
         List<String> fileIds = files.stream().map(File::getId).map(Object::toString).collect(Collectors.toList());
-        List<StorageETLResult> etlResults = variantManager.index(fileIds, outdir, String.valueOf(outputId), queryOptions, sessionId);
+
+        List<StorageETLResult> etlResults = variantManager.index(fileIds, outdir, queryOptions, sessionId);
 
         assertEquals(expectedLoadedFiles.size(), etlResults.size());
         checkEtlResults(studyId, etlResults, FileIndex.IndexStatus.READY);

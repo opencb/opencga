@@ -1,13 +1,18 @@
 package org.opencb.opencga.storage.core.variant.dummy;
 
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantExporter;
+import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.URI;
 
 /**
  * Created on 28/11/16.
@@ -44,6 +49,15 @@ public class DummyVariantStorageManager extends VariantStorageManager {
     @Override
     public VariantExporter newVariantExporter(VariantDBAdaptor dbAdaptor) {
         return super.newVariantExporter(dbAdaptor);
+    }
+
+    @Override
+    protected VariantImporter newVariantImporter(VariantDBAdaptor dbAdaptor) {
+        return new VariantImporter(dbAdaptor) {
+            @Override
+            public void importData(URI input, ExportMetadata metadata) throws StorageManagerException, IOException {
+            }
+        };
     }
 
     @Override

@@ -60,7 +60,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         super(catalogManager, StorageManagerFactory.get(storageConfiguration), LoggerFactory.getLogger(VariantStatsStorageOperation.class));
     }
 
-    public void calculateStats(long studyId, List<String> cohorts, String outdirStr, String catalogOutDirIdStr,
+    public void calculateStats(long studyId, List<String> cohorts, String outdirStr,
                                QueryOptions options, String sessionId)
             throws CatalogException, IOException, URISyntaxException, StorageManagerException {
         Job.Type step = Job.Type.COHORT_STATS;
@@ -84,7 +84,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         String region = options.getString(VariantDBAdaptor.VariantQueryParams.REGION.key());
         String outputFileName = buildOutputFileName(cohortIds, options, cohortsMap, region);
 
-        Long catalogOutDirId = getCatalogOutdirId(studyId, catalogOutDirIdStr, sessionId);
+        Long catalogOutDirId = getCatalogOutdirId(studyId, options, sessionId);
 
         QueryOptions calculateStatsOptions = new QueryOptions(options)
 //                .append(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 100)
