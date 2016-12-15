@@ -45,14 +45,14 @@ public class JobClient extends CatalogClient<Job, JobAclEntry> {
     public QueryResponse<Job> create(String studyId, String jobName, String toolId, ObjectMap params) throws CatalogException, IOException {
 
         if (params.containsKey("method") && params.get("method").equals("GET")) {
-            params = addParamsToObjectMap(params, "studyId", studyId, "name", jobName, "toolId", toolId);
+            params = addParamsToObjectMap(params, "study", studyId, "name", jobName, "toolId", toolId);
             return execute(JOBS_URL, "create", params, GET, Job.class);
         }
         params = addParamsToObjectMap(params, "name", jobName, "toolId", toolId);
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(params);
         ObjectMap p = new ObjectMap("body", json);
-        p.append("studyId", studyId);
+        p.append("study", studyId);
         return execute(JOBS_URL, "create", p, POST, Job.class);
     }
 
@@ -60,7 +60,7 @@ public class JobClient extends CatalogClient<Job, JobAclEntry> {
         return execute(JOBS_URL, jobId, "visit", options, GET, Job.class);
     }
     public QueryResponse<Job> groupBy(String studyId, String fields, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "studyId", studyId, "fields", fields);
+        params = addParamsToObjectMap(params, "study", studyId, "fields", fields);
         return execute(JOBS_URL, "groupBy", params, GET, Job.class);
     }
 
