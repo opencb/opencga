@@ -97,7 +97,7 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
         ObjectMapper mapper = new ObjectMapper();
         ObjectMap variables = mapper.readValue(new File(variableCommandOptions.createCommandOptions.jsonFile), ObjectMap.class);
 
-        return openCGAClient.getVariableClient().create(variableCommandOptions.createCommandOptions.studyId,
+        return openCGAClient.getVariableClient().create(variableCommandOptions.createCommandOptions.study,
                 variableCommandOptions.createCommandOptions.name, variables.get("variables"), queryOptions);
     }
 
@@ -113,11 +113,10 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Searching variable");
         Query query = new Query();
 
-        query.put(SampleDBAdaptor.QueryParams.STUDY_ID.key(),variableCommandOptions.searchCommandOptions.studyId);
+        query.put(SampleDBAdaptor.QueryParams.STUDY.key(),variableCommandOptions.searchCommandOptions.study);
 
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotNull("id", variableCommandOptions.searchCommandOptions.id);
         queryOptions.putIfNotNull("name", variableCommandOptions.searchCommandOptions.name);
         queryOptions.putIfNotNull("description", variableCommandOptions.searchCommandOptions.description);
         queryOptions.putIfNotNull("attributes", variableCommandOptions.searchCommandOptions.attributes);

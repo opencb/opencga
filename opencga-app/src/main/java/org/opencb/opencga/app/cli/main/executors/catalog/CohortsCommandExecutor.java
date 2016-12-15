@@ -134,7 +134,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
     private QueryResponse<Cohort> create() throws CatalogException, IOException {
         logger.debug("Creating a new cohort");
-        String studyId = cohortsCommandOptions.createCommandOptions.studyId;
+        String studyId = cohortsCommandOptions.createCommandOptions.study;
         String cohortName = cohortsCommandOptions.createCommandOptions.name;
         String description = cohortsCommandOptions.createCommandOptions.description;
         String variableSetId = cohortsCommandOptions.createCommandOptions.variableSetId;
@@ -229,7 +229,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.ATTRIBUTES.key(), cohortsCommandOptions.groupByCommandOptions.attributes);
         objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.NATTRIBUTES.key(), cohortsCommandOptions.groupByCommandOptions.nattributes);
 
-        return openCGAClient.getCohortClient().groupBy(cohortsCommandOptions.groupByCommandOptions.studyId,
+        return openCGAClient.getCohortClient().groupBy(cohortsCommandOptions.groupByCommandOptions.study,
                 cohortsCommandOptions.groupByCommandOptions.fields,objectMap);
     }
 

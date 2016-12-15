@@ -90,18 +90,19 @@ public class IndividualCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--id"}, description = "Individual id", required = true, arity = 1)
+        @Parameter(names = {"--individual"}, description = "Individual name or id", required = true, arity = 1)
         public String id;
+
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
+                + " alias.", arity = 1)
+        public String studyId;
     }
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create individual.")
-    public class CreateCommandOptions {
+    public class CreateCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-s", "--study-id"}, description = "StudyId", required = true, arity = 1)
-        public String studyId;
 
         @Parameter(names = {"-n", "--name"}, description = "Name", required = true, arity = 1)
         public String name;
@@ -160,7 +161,7 @@ public class IndividualCommandOptions {
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search for individuals")
-    public class SearchCommandOptions {
+    public class SearchCommandOptions extends GeneralCliOptions.StudyOption {
 
         @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
         public String include;
@@ -173,12 +174,6 @@ public class IndividualCommandOptions {
 
         @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
         public String limit;
-
-        @Parameter(names = {"--ids"}, description = "Comma separated list of individual ids", required = false, arity = 1)
-        public String id;
-
-        @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = true, arity = 1)
-        public String studyId;
 
         @Parameter(names = {"--name"}, description = "name", required = false, arity = 1)
         public String name;
@@ -302,16 +297,13 @@ public class IndividualCommandOptions {
     }
 
     @Parameters(commandNames = {"group-by"}, commandDescription = "Group individuals by several fields")
-    public class GroupByCommandOptions {
+    public class GroupByCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
         public String fields;
-
-        @Parameter(names = {"-s", "--study-id"}, description = "Study id", required = true, arity = 1)
-        public String studyId;
 
         @Parameter(names = {"--ids"}, description = "Comma separated list of ids.", required = false, arity = 1)
         public String id;

@@ -72,18 +72,19 @@ public class JobCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--id"}, description = "Job id", required = true, arity = 1)
+        @Parameter(names = {"--job"}, description = "Job id", required = true, arity = 1)
         public String id;
+
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
+                + " alias.", arity = 1)
+        public String study;
     }
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create a job")
-    public class CreateCommandOptions {
+    public class CreateCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-s","--study-id"}, description = "Study id", required = true, arity = 1)
-        public String studyId;
 
         @Parameter(names = {"--name"}, description = "Job name", required = true, arity = 1)
         public String name;
@@ -110,13 +111,10 @@ public class JobCommandOptions {
 
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search job")
-    public class SearchCommandOptions {
+    public class SearchCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-s","--study-id"}, description = "Study id", required = true, arity = 1)
-        public String studyId;
 
         @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
         public String name;
@@ -169,16 +167,13 @@ public class JobCommandOptions {
     }
 
     @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy job")
-    public class GroupByCommandOptions {
+    public class GroupByCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
         public String fields;
-
-        @Parameter(names = {"-s", "--study-id"}, description = "Study id", required = true, arity = 1)
-        public String studyId;
 
         @Parameter(names = {"--ids"}, description = "Comma separated list of ids.", required = false, arity = 1)
         public String id;

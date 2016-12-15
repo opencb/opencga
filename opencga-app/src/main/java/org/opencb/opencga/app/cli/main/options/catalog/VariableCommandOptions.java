@@ -62,19 +62,20 @@ public class VariableCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--id"}, description = "VariableSet id", required = true, arity = 1)
+        @Parameter(names = {"--variable-set"}, description = "VariableSet id", required = true, arity = 1)
         public String id;
+
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
+                + " alias.", arity = 1)
+        public String studyId;
     }
 
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create a variable set.")
-    public class CreateCommandOptions {
+    public class CreateCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-s", "--study-id"}, description = "StudyId", required = true, arity = 1)
-        public String studyId;
 
         @Parameter(names = {"-n", "--name"}, description = "Name", required = true, arity = 1)
         public String name;
@@ -101,7 +102,7 @@ public class VariableCommandOptions {
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search for variable sets")
-    public class SearchCommandOptions {
+    public class SearchCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -117,12 +118,6 @@ public class VariableCommandOptions {
 
         @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
         public String limit;
-
-        @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = true, arity = 1)
-        public String studyId;
-
-        @Parameter(names = {"--id"}, description = "Comma separated list of variableSetIds", required = false, arity = 1)
-        public String id;
 
         @Parameter(names = {"--name"}, description = "name", required = false, arity = 1)
         public String name;

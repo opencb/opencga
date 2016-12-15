@@ -111,6 +111,7 @@ public interface IndividualDBAdaptor extends AnnotationSetDBAdaptor<Individual, 
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
         STUDY_ID("studyId", DECIMAL, ""),
+        STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSetId", DECIMAL, ""),
         ANNOTATION_SET_NAME("annotationSetName", TEXT, ""),
