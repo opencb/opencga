@@ -229,16 +229,6 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         return LOG;
     }
 
-//    public static void main(String[] args) throws Exception {
-//        try {
-//            System.exit(privateMain(args, null, new AbstractVariantTableDriver()));
-//        } catch (Exception e) {
-//            LOG.error("Problems", e);
-//            e.printStackTrace();
-//            System.exit(1);
-//        }
-//    }
-
      public static int privateMain(String[] args, Configuration conf, AbstractAnalysisTableDriver driver) throws Exception {
         // info https://code.google.com/p/temapred/wiki/HbaseWithJava
         if (conf == null) {
