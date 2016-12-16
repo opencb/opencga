@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.annotation;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -35,6 +36,10 @@ public class AnalysisAnnotateMapper extends AbstractHBaseMapReduce<NullWritable,
     private VariantAnnotationToHBaseConverter annotationConverter;
     private VariantPhoenixHelper.VariantColumn[] columnsOrdered;
 
+//    static { // get Driver log
+//        DriverManager.setLogWriter(new PrintWriter(System.err));
+//    }
+
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
@@ -61,18 +66,31 @@ public class AnalysisAnnotateMapper extends AbstractHBaseMapReduce<NullWritable,
     @Override
     protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException,
             InterruptedException {
-        if (!Bytes.startsWith(value.getRow(), this.studiesRow)) { // ignore _METADATA row
-            Variant variant = this.getHbaseToVariantConverter().convert(value);
-            if (!requireAnnotation(variant)) {
-                return; // No annotation needed
+        String hexBytes = Bytes.toHex(key.get());
+        Cell[] cells = value.rawCells();
+        try {
+            if (cells.length < 2) {
+                context.getCounter("opencga", "row.empty").increment(1);
+                return;
             }
-            List<VariantAnnotation> annotate = this.variantAnnotator.annotate(Collections.singletonList(variant));
-            for (VariantAnnotation annotation : annotate) {
-                Map<PhoenixHelper.Column, ?> columnMap = annotationConverter.convert(annotation);
-                List<Object> orderedValues = toOrderedList(columnMap);
-                PhoenixVariantAnnotationWritable writeable = new PhoenixVariantAnnotationWritable(orderedValues);
-                context.write(NullWritable.get(), writeable);
+            if (!Bytes.startsWith(value.getRow(), this.studiesRow)) { // ignore _METADATA row
+                context.getCounter("opencga", "variant.read").increment(1);
+                Variant variant = this.getHbaseToVariantConverter().convert(value);
+                if (!requireAnnotation(variant)) {
+                    context.getCounter("opencga", "variant.no-annotation-required").increment(1);
+                    return; // No annotation needed
+                }
+                List<VariantAnnotation> annotate = this.variantAnnotator.annotate(Collections.singletonList(variant));
+                for (VariantAnnotation annotation : annotate) {
+                    Map<PhoenixHelper.Column, ?> columnMap = annotationConverter.convert(annotation);
+                    List<Object> orderedValues = toOrderedList(columnMap);
+                    PhoenixVariantAnnotationWritable writeable = new PhoenixVariantAnnotationWritable(orderedValues);
+                    context.getCounter("opencga", "variant.annotate.submit").increment(1);
+                    context.write(NullWritable.get(), writeable);
+                }
             }
+        } catch (Exception e) {
+            throw new IllegalStateException("Problems with row [hex:" + hexBytes + "] for cells " + cells.length, e);
         }
     }
 

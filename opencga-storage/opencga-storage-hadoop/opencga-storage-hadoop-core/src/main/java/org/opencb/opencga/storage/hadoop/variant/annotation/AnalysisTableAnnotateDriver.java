@@ -7,6 +7,7 @@ import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.phoenix.mapreduce.PhoenixOutputFormat;
 import org.apache.phoenix.mapreduce.util.PhoenixMapReduceUtil;
+import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn;
 
@@ -32,13 +33,6 @@ public class AnalysisTableAnnotateDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected Scan createScan() {
-        Scan scan = super.createScan();
-        scan.setMaxResultSize(100);
-        return scan;
-    }
-
-    @Override
     protected Class<? extends TableMapper> getMapperClass() {
         return AnalysisAnnotateMapper.class;
     }
@@ -47,8 +41,7 @@ public class AnalysisTableAnnotateDriver extends AbstractAnalysisTableDriver {
     protected void initMapReduceJob(String inTable, Job job, Scan scan, boolean addDependencyJar) throws IOException {
         super.initMapReduceJob(inTable, job, scan, addDependencyJar);
         String[] fieldNames = Arrays.stream(VariantColumn.values()).map(v -> v.toString()).toArray(String[]::new);
-        PhoenixMapReduceUtil.setOutput(job, inTable, fieldNames);
-
+        PhoenixMapReduceUtil.setOutput(job, SchemaUtil.getEscapedFullTableName(inTable), fieldNames);
         job.setOutputFormatClass(PhoenixOutputFormat.class);
         job.setOutputKeyClass(NullWritable.class);
         job.setOutputValueClass(PhoenixVariantAnnotationWritable.class);
