@@ -76,7 +76,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
     @Test
     public void calculateStatsMultiCohortsTest() throws Exception {
         //Calculate stats for 2 cohorts at one time
-        DefaultVariantStatisticsManager vsm = new DefaultVariantStatisticsManager(dbAdaptor);
+        DefaultVariantStatisticsManager vsm = (DefaultVariantStatisticsManager) variantStorageManager.newVariantStatisticsManager(dbAdaptor);
 
         checkCohorts(dbAdaptor, studyConfiguration);
 
@@ -112,7 +112,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
     @Test
     public void calculateStatsSeparatedCohortsTest() throws Exception {
         //Calculate stats for 2 cohorts separately
-        DefaultVariantStatisticsManager vsm = new DefaultVariantStatisticsManager(dbAdaptor);
+        DefaultVariantStatisticsManager vsm = (DefaultVariantStatisticsManager) variantStorageManager.newVariantStatisticsManager(dbAdaptor);
 
         int studyId = studyConfiguration.getStudyId();
         String studyName = studyConfiguration.getStudyName();

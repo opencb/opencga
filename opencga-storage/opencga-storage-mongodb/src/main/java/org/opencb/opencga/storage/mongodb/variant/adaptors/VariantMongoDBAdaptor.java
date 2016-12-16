@@ -1442,7 +1442,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 if (key != null) {
                     projection.put(key, 1);
                 } else {
-                    logger.warn("Unknown include field: {}", s);
+                    if (!s.equals(VariantFields.FILES.toString()) && !s.equals(VariantFields.SAMPLES.toString())) {
+                        logger.warn("Unknown include field: {}", s);
+                    }
                 }
             }
         }

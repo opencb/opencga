@@ -66,6 +66,7 @@ public class VariantDBAdaptorUtils {
         HGVS,
         STUDIES("studies", "sourceEntries"),
         SAMPLES("samples", "studies.samplesData", "samplesData"),
+        FILES("files", "studies.files"),
         STATS("stats", "studies.cohortStats", "studies.stats", "sourceEntries.stats"),
         ANNOTATION("annotation");
 

@@ -190,7 +190,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         return files.get(index);
     }
 
-    protected File getSmallFileFile() throws IOException, CatalogException {
+    protected File getSmallFile() throws IOException, CatalogException {
         if (smallFile == null) {
             smallFile = create("variant-test-file.vcf.gz");
         }

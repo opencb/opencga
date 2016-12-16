@@ -398,7 +398,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
      * @param dbAdaptor     VariantDBAdaptor
      * @return              A new instance of VariantAnnotationManager
      */
-    protected VariantStatisticsManager newVariantStatisticsManager(VariantDBAdaptor dbAdaptor) {
+    public VariantStatisticsManager newVariantStatisticsManager(VariantDBAdaptor dbAdaptor) {
         return new DefaultVariantStatisticsManager(dbAdaptor);
     }
 
