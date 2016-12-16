@@ -99,9 +99,9 @@ public class JobWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Register an executed job with POST method", position = 1,
             notes = "Registers a job that has been previously run outside catalog into catalog. <br>"
                     + "Required values: [name, toolName, commandLine, outDirId]", response = Job.class)
-    public Response createJobPOST(@ApiParam(value = "DEPRECATED: studyId", required = true) @QueryParam("studyId") String studyIdStr,
-                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                        @QueryParam("study") String studyStr,
+    public Response createJobPOST(@ApiParam(value = "DEPRECATED: studyId") @QueryParam("studyId") String studyIdStr,
+                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
+                                          required = true) @QueryParam("study") String studyStr,
                                   @ApiParam(value = "job", required = true) InputJob job) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {

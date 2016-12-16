@@ -64,6 +64,9 @@ public class TextOutputWriter extends AbstractOutputWriter {
             case "Individual":
                 printIndividual(queryResponse.getResponse());
                 break;
+            case "Job":
+                printJob(queryResponse.getResponse());
+                break;
             case "VariableSet":
                 printVariableSet(queryResponse.getResponse());
                 break;
@@ -312,6 +315,26 @@ public class TextOutputWriter extends AbstractOutputWriter {
                         individual.getLifeStatus(), individual.getStatus().getName(),
                         individual.getFatherId() > 0 ? Long.toString(individual.getFatherId()) : "NA",
                         individual.getMotherId() > 0 ? Long.toString(individual.getMotherId()) : "NA", individual.getCreationDate()));
+            }
+        }
+
+        ps.println(sb.toString());
+    }
+
+    private void printJob(List<QueryResult<Job>> queryResultList) {
+        StringBuilder sb = new StringBuilder();
+        for (QueryResult<Job> queryResult : queryResultList) {
+            // Write header
+            if (writerConfiguration.isHeader()) {
+                sb.append("#NAME\tID\tTYPE\tTOOL_NAME\tCREATION_DATE\tEXECUTABLE\tEXECUTION\t#VISITS\tSTATUS\tINPUT")
+                        .append("\tOUTPUT\tOUTPUT_DIRECTORY\n");
+            }
+
+            for (Job job : queryResult.getResult()) {
+                sb.append(String.format("%s\t%d\t%s\t%s\t%s\t%s\t%s\t%d\t%s\t%s\t%s\t%d\n",
+                        job.getName(), job.getId(), job.getType(), job.getToolName(), job.getCreationDate(), job.getExecutable(),
+                        job.getExecution(), job.getVisits(), job.getStatus().getName(), StringUtils.join(job.getInput(), ", "),
+                        StringUtils.join(job.getOutput(), ", "), job.getOutDirId()));
             }
         }
 
