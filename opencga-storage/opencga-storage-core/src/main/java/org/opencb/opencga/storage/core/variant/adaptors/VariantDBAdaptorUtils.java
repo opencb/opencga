@@ -316,7 +316,7 @@ public class VariantDBAdaptorUtils {
     public static Set<String> getReturnedFields(QueryOptions options) {
         Set<String> returnedFields;
 
-        List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
+        List<String> includeList = options == null ? Collections.emptyList() : options.getAsStringList(QueryOptions.INCLUDE);
         if (includeList != null && !includeList.isEmpty()) {
 //            System.out.println("includeList = " + includeList);
             returnedFields = new HashSet<>();
@@ -336,7 +336,7 @@ public class VariantDBAdaptorUtils {
             }
 
         } else {
-            List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
+            List<String> excludeList = options == null ? Collections.emptyList() : options.getAsStringList(QueryOptions.EXCLUDE);
             if (excludeList != null && !excludeList.isEmpty()) {
 //                System.out.println("excludeList = " + excludeList);
                 returnedFields = new HashSet<>(VariantFields.valuesString());
