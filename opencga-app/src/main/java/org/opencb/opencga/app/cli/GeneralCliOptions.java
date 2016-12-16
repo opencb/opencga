@@ -105,4 +105,17 @@ public class GeneralCliOptions {
 
     }
 
+    public static class NumericOptions {
+
+        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
+        public String skip;
+
+        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
+        public String limit;
+
+        @Parameter(names = {"--count"}, description = "Total number of results. Default = false", arity = 0)
+        public boolean count;
+
+    }
+
 }
