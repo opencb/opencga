@@ -131,7 +131,7 @@ public class OpencgaCliOptionsParser {
         studySubCommands.addCommand("acl-member-info", studyCommandOptions.aclsMemberInfoCommandOptions);
         studySubCommands.addCommand("acl-member-update", studyCommandOptions.aclsMemberUpdateCommandOptions);
 
-        fileCommandOptions = new FileCommandOptions(this.commonCommandOptions,jCommander);
+        fileCommandOptions = new FileCommandOptions(this.commonCommandOptions,dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("files", fileCommandOptions);
         JCommander fileSubCommands = jCommander.getCommands().get("files");
         fileSubCommands.addCommand("copy", fileCommandOptions.copyCommandOptions);

@@ -21,10 +21,13 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
 import org.opencb.opencga.app.cli.main.options.catalog.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.models.File;
 
 import java.util.List;
+
+import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
 /**
  * Created by sgallego on 6/14/16.
@@ -61,13 +64,18 @@ public class FileCommandOptions {
     public AclCommandOptions.AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
 
     public JCommander jCommander;
-    public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
+    public CommonCommandOptions commonCommandOptions;
+    public DataModelOptions commonDataModelOptions;
+    public NumericOptions commonNumericOptions;
 
     private AclCommandOptions aclCommandOptions;
 
-    public FileCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public FileCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions, NumericOptions numericOptions,
+                              JCommander jCommander) {
 
         this.commonCommandOptions = commonCommandOptions;
+        this.commonDataModelOptions = dataModelOptions;
+        this.commonNumericOptions = numericOptions;
         this.jCommander = jCommander;
 
         this.copyCommandOptions = new CopyCommandOptions();
@@ -100,34 +108,28 @@ public class FileCommandOptions {
         this.aclsMemberUpdateCommandOptions = aclCommandOptions.getAclsMemberUpdateCommandOptions();
     }
 
-    public class BaseFileCommand {
+    public class BaseFileCommand extends StudyOption {
+
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--file"}, description = "File id, name or path.", required = true, arity = 1)
-        public String fileId;
+        @Parameter(names = {"--file"}, description = "File id, name or path", required = true, arity = 1)
+        public String file;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
-                + " alias.", arity = 1)
-        public String studyId;
     }
 
     @Deprecated
     @Parameters(commandNames = {"copy"}, commandDescription = "(DEPRECATED) Copy a file or folder")
-    public class CopyCommandOptions {
+    public class CopyCommandOptions extends StudyOption {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--path"}, description = "Directory where to create the file", required = false, arity = 1)
         public String path;
 
-        @Parameter(names = {"-i","--input"}, description = "Input file", required = true, arity = 1)
+        @Parameter(names = {"-i", "--input"}, description = "Input file", required = true, arity = 1)
         public String inputFile;
-
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
-                + " alias.", arity = 1)
-        public String studyId;
 
         @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
         public String description;
@@ -149,41 +151,29 @@ public class FileCommandOptions {
     }
 
     @Parameters(commandNames = {"create-folder"}, commandDescription = "Create Folder")
-    public class CreateFolderCommandOptions {
+    public class CreateFolderCommandOptions extends StudyOption {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
-                + " alias.", arity = 1)
-        public String studyId;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--path"}, description = "Path where the folder will be created", required = true, arity = 1)
         public String folder = "";
 
-        @Parameter(names = {"-P", "--parents"}, description = "Create the parent directories if they do not exist. Default: false",
-                required = false, arity = 0)
-        public boolean parents = false;
+        @Parameter(names = {"-P", "--parents"}, description = "Create the parent directories if they do not exist. Default: false", arity = 0)
+        public boolean parents;
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get file information")
-    public class InfoCommandOptions {
+    public class InfoCommandOptions extends StudyOption {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
 
         @Parameter(names = {"--file"}, description = "Comma separated list of file ids", required = true, arity = 1)
-        public String fileIds;
-
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
-                + " alias.", arity = 1)
-        public String studyId;
-
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
-
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
+        public String files;
 
         @Parameter(names = {"--no-lazy"}, description = "Obtain the entire related job and experiment objects", arity = 0)
         public boolean noLazy;
@@ -200,22 +190,25 @@ public class FileCommandOptions {
         @Parameter(names = {"--pattern"}, description = "Pattern", required = false, arity = 1)
         public String pattern = ".*";
 
-        @Parameter(names = {"--ignore-case"}, description = "Do a case insensitive search", required = false, arity = 0)
+        @Parameter(names = {"-i", "--ignore-case"}, description = "Do a case insensitive search", required = false, arity = 0)
         public boolean ignoreCase;
 
         @Parameter(names = {"-m", "--multi"}, description = "Return multiple matches. Default = true", required = false, arity = 0)
         public boolean multi = true;
+
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search files")
-    public class SearchCommandOptions {
+    public class SearchCommandOptions extends StudyOption {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
-                + " alias.", arity = 1)
-        public String studyId;
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
+
+        @ParametersDelegate
+        public NumericOptions numericOptions = commonNumericOptions;
 
         @Parameter(names = {"--name"}, description = "Comma separated list of file names", required = false, arity = 1)
         public String name;
@@ -254,7 +247,7 @@ public class FileCommandOptions {
         public String diskUsage;
 
         @Parameter(names = {"--sample-ids"}, description = "Sample ids", required = false, arity = 1)
-        public String sampleIds;
+        public String samples;
 
         @Parameter(names = {"--job-id"}, description = "Job id", required = false, arity = 1)
         public String jobId;
@@ -265,66 +258,30 @@ public class FileCommandOptions {
         @Parameter(names = {"--nattributes"}, description = "numerical attributes", required = false, arity = 1)
         public String nattributes;
 
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
-
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
-
-        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
-        public String skip;
-
-        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
-        public String limit;
-
-        @Parameter(names = {"--count"}, description = "Total number of results.", arity = 0)
-        public boolean count;
     }
 
     @Parameters(commandNames = {"list"}, commandDescription = "List files in folder")
-    public class ListCommandOptions {
+    public class ListCommandOptions extends StudyOption {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
+
+        @ParametersDelegate
+        public NumericOptions numericOptions = commonNumericOptions;
 
         @Parameter(names = {"--folder"}, description = "Folder id, name or path.", arity = 1, required = false)
         public String folderId;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
-                + " alias.", arity = 1)
-        public String studyId;
-
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
-
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
-
-        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
-        public String skip;
-
-        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
-        public String limit;
-
-        @Parameter(names = {"--count"}, description = "Total number of results.", arity = 0)
-        public boolean count;
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index file in the selected StorageEngine")
-    public class IndexCommandOptions {
+    public class IndexCommandOptions extends BaseFileCommand {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"--file"}, description = "Comma separated list of file ids, names or paths.", required = true, arity = 1)
-        public String fileIds;
-
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
-                + " alias.", arity = 1)
-        public String studyId;
-
-//        @Parameter(names = {"-s", "--study-id"}, description = "The study id or alias where you want to load the data", arity = 1)
-//        public String studyId;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
         public boolean transform;
@@ -391,29 +348,23 @@ public class FileCommandOptions {
     @Parameters(commandNames = {"alignments"}, commandDescription = "Fetch alignments from a BAM file")
     public class AlignmentCommandOptions extends BaseFileCommand {
 
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
 
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
+        @ParametersDelegate
+        public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
-        public String skip;
-
-        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
-        public String limit;
-
-        @Parameter(names = {"--count"}, description = "Total number of results.", arity = 0)
-        public boolean count;
     }
 
     @Parameters(commandNames = {"content"}, commandDescription = "Show the content of a file (up to a limit)")
     public class ContentCommandOptions extends BaseFileCommand{
+
         @Parameter(names = {"--start"}, description = "Start", arity = 1)
-        public Integer start = -1;
+        public int start = -1;
 
         @Parameter(names = {"--limit"}, description = "Limit", arity = 1)
-        public Integer limit = -1;
+        public int limit = -1;
+
     }
 
     @Deprecated
@@ -503,30 +454,19 @@ public class FileCommandOptions {
     }
 
     @Parameters(commandNames = {"tree"}, commandDescription = "Obtain a tree view of the files and folders within a folder")
-    public class TreeCommandOptions {
+    public class TreeCommandOptions extends StudyOption{
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
 
         @Parameter(names = {"--folder"}, description = "Folder id, name or path.", required = true, arity = 1)
         public String folderId;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
-                + " alias.", arity = 1)
-        public String studyStr;
-
         @Parameter(names = {"--max-Depth"}, description = "Maximum depth to get files from. Default: 5", required = false, arity = 1)
         public Integer maxDepth = 5;
-
-        @Parameter(names = {"--include"}, description = "Fields included in the response, whole JSON path must be provided",
-                required = false, arity = 0)
-        public String include;
-
-        @Parameter(names = {"--exclude"}, description = "Fields excluded in the response, whole JSON path must be provided", arity = 1)
-        public String exclude;
-
-        /*@Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
-        public String skip;*/
 
         @Parameter(names = {"--limit"}, description = "[TO BE IMPLEMENTED] Number of results to be returned in the queries", arity = 1)
         public String limit;
@@ -544,26 +484,21 @@ public class FileCommandOptions {
     }
 
     @Parameters(commandNames = {"link"}, commandDescription = "Link an external file or folder into catalog.")
-    public class LinkCommandOptions {
+    public class LinkCommandOptions extends StudyOption {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
-         @Parameter(names = {"-i", "--input"}, description = "File or folder location", required = true, variableArity = true)
-         public List<String> inputs;
+        @Parameter(names = {"-i", "--input"}, description = "File or folder location", required = true, variableArity = true)
+        public List<String> inputs;
+
 //        @Parameter(names = {"-uri"}, description = "File location", required = true, arity = 1)
 //        public String uri;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
-                + " alias.", arity = 1)
-        public String studyId;
-
-        @Parameter(names = {"--path"}, description = "Virtual path within catalog where the file or folder will be linked (root folder "
-                + "if empty)", required = false, arity = 1)
+        @Parameter(names = {"--path"}, description = "Virtual path within catalog where the file or folder will be linked (root folder if empty)", arity = 1)
         public String path;
 
-        @Parameter(names = {"-d", "--description"}, description = "Brief description that will be attached to the files in catalog",
-                required = false, arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = "Brief description that will be attached to the files in catalog", arity = 1)
         public String description;
 
         @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
@@ -571,14 +506,10 @@ public class FileCommandOptions {
     }
     //---- POST ---//
     @Parameters(commandNames = {"upload"}, commandDescription = "Upload a physical local file to catalog.")
-    public class UploadCommandOptions {
+    public class UploadCommandOptions extends StudyOption {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
-                + " alias.", arity = 1)
-        public String studyId;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-i","--input"}, description = "Input file", required = true, arity = 1)
         public String inputFile;
@@ -614,18 +545,15 @@ public class FileCommandOptions {
     }
 
     @Parameters(commandNames = {"group-by"}, commandDescription = "Group by fields in file")
-    public class GroupByCommandOptions {
+    public class GroupByCommandOptions extends StudyOption {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
         public String fields;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
-                + " alias.", arity = 1)
-        public String studyId;
-
+        @Deprecated
         @Parameter(names = {"--file"}, description = "Comma separated list of ids, names or paths.", required = false, arity = 1)
         public String id;
 
@@ -638,7 +566,7 @@ public class FileCommandOptions {
         @Parameter(names = {"--type"}, description = "Comma separated Type values.", required = false, arity = 1)
         public String type;
 
-        @Parameter(names = {"--bioformat"}, description = "Comma separated Bioformat values.", required = false, arity = 1)
+        @Parameter(names = {"--bioformat"}, description = "Comma separated bioformat values.", required = false, arity = 1)
         public String bioformat;
 
         @Parameter(names = {"--format"}, description = "Comma separated Format values.", required = false, arity = 1)
@@ -662,14 +590,14 @@ public class FileCommandOptions {
         @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
         public String description;
 
-        @Parameter(names = {"--disk-usage"}, description = "diskUsage.", required = false, arity = 1)
+        @Parameter(names = {"--disk-usage"}, description = "Filter by size", required = false, arity = 1)
         public String diskUsage;
 
         @Parameter(names = {"--sample-ids"}, description = "Sample ids", required = false, arity = 1)
         public String sampleIds;
 
-        @Parameter(names = {"--job-id"}, description = "Job id", required = false, arity = 1)
-        public String jobId;
+        @Parameter(names = {"--job"}, description = "Job id", required = false, arity = 1)
+        public String job;
 
         @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
         public String attributes;
@@ -843,7 +771,5 @@ public class FileCommandOptions {
         public boolean count;
 
     }
-
-
 
 }
