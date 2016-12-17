@@ -116,7 +116,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{study}/update")
     @ApiOperation(value = "Study modify", position = 3, response = Study.class)
-    public Response update(@ApiParam(value = "DEPRECATED: studyId") @QueryParam("studyId") String studyIdStr,
+    public Response update(@ApiParam(value = "[DEPRECATED]") @QueryParam("studyId") String studyIdStr,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
                                    required = true) @PathParam("study") String studyStr,
                            @ApiParam(value = "name") @QueryParam("name") String name,
@@ -327,9 +327,10 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
+    @Deprecated
     @GET
     @Path("/{study}/variants")
-    @ApiOperation(value = "Fetch variants data from the selected study", position = 10, response = Variant[].class)
+    @ApiOperation(value = "[DEPRECATED]: use analysis/variant/query instead", position = 10, response = Variant[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
                     example = "name,attributes", dataType = "string", paramType = "query"),
@@ -452,9 +453,10 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
+    @Deprecated
     @GET
     @Path("/{study}/alignments")
-    @ApiOperation(value = "Fetch alignments. [PENDING]", position = 11, response = Alignment[].class)
+    @ApiOperation(value = "[DEPCRATED]: use analysis/alignment/query instead", position = 11, response = Alignment[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
                     example = "name,attributes", dataType = "string", paramType = "query"),

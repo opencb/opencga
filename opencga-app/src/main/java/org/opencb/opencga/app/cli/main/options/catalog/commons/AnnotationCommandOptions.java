@@ -20,7 +20,6 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.app.cli.main.options.catalog.StudyCommandOptions;
 
 /**
  * Created by pfurio on 27/07/16.
@@ -40,7 +39,7 @@ public class AnnotationCommandOptions {
         this.commonCommandOptions = commonCommandOptions;
     }
 
-    public class BaseCommandOptions extends GeneralCliOptions.StudiesOption {
+    public class BaseCommandOptions extends GeneralCliOptions.StudyListOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;

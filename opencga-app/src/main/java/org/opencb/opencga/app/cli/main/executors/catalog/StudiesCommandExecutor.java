@@ -94,9 +94,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             case "files":
                 queryResponse = files();
                 break;
-            case "alignments":
-                queryResponse = alignments();
-                break;
             case "samples":
                 queryResponse = samples();
                 break;
@@ -147,60 +144,51 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         }
 
         createOutput(queryResponse);
-
     }
 
     /**********************************************  Administration Commands  ***********************************************/
 
     private QueryResponse<Study> create() throws CatalogException, IOException {
-
         logger.debug("Creating a new study");
-        String alias = studiesCommandOptions.createCommandOptions.alias;
         String name = studiesCommandOptions.createCommandOptions.name;
+        String alias = studiesCommandOptions.createCommandOptions.alias;
         String projectId = studiesCommandOptions.createCommandOptions.project;
-        String description = studiesCommandOptions.createCommandOptions.description;
         String type = studiesCommandOptions.createCommandOptions.type;
 
-        //ObjectMap o = new ObjectMap("method", "GET");
-        ObjectMap o = new ObjectMap();
-
-        if (description != null) {
-            o.append(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), description);
-        }
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.createCommandOptions.description);
         if (type != null) {
             try {
-                o.append(StudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(type));
+                params.append(StudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(type));
             } catch (IllegalArgumentException e) {
                 logger.error("{} not recognized as a proper study type", type);
                 return null;
             }
         }
 
-        return openCGAClient.getStudyClient().create(projectId, name, alias, o);
+        return openCGAClient.getStudyClient().create(projectId, name, alias, params);
     }
 
     private QueryResponse<Study> info() throws CatalogException, IOException {
-
         logger.debug("Getting the study info");
-        return openCGAClient.getStudyClient().get(studiesCommandOptions.infoCommandOptions.study, null);
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.infoCommandOptions.dataModelOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.infoCommandOptions.dataModelOptions.exclude);
+        return openCGAClient.getStudyClient().get(studiesCommandOptions.infoCommandOptions.study, queryOptions);
     }
 
     private QueryResponse<Study> update() throws CatalogException, IOException {
-
         logger.debug("Updating the study");
-
         ObjectMap params = new ObjectMap();
         params.putIfNotNull(StudyDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.updateCommandOptions.name);
         params.putIfNotNull(StudyDBAdaptor.QueryParams.TYPE.key(), studiesCommandOptions.updateCommandOptions.type);
         params.putIfNotNull(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.updateCommandOptions.description);
         params.putIfNotNull(StudyDBAdaptor.QueryParams.STATS.key(), studiesCommandOptions.updateCommandOptions.stats);
         params.putIfNotNull(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), studiesCommandOptions.updateCommandOptions.attributes);
-
         return openCGAClient.getStudyClient().update(studiesCommandOptions.updateCommandOptions.study, params);
     }
 
     private QueryResponse<Study> delete() throws CatalogException, IOException {
-
         logger.debug("Deleting a study");
         ObjectMap objectMap = new ObjectMap();
         return openCGAClient.getStudyClient().delete(studiesCommandOptions.deleteCommandOptions.study, objectMap);
@@ -209,14 +197,12 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     /************************************************  Summary and help Commands  ***********************************************/
 
     private QueryResponse<StudySummary> summary() throws CatalogException, IOException {
-
         logger.debug("Doing summary with the general stats of a study");
         QueryOptions queryOptions = new QueryOptions();
         return openCGAClient.getStudyClient().getSummary(studiesCommandOptions.summaryCommandOptions.study, queryOptions);
     }
 
     private QueryResponse<Study> help() throws CatalogException, IOException {
-
         logger.debug("Helping");
         /*QueryOptions queryOptions = new QueryOptions();
         QueryResponse<Study> study =
@@ -229,29 +215,21 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     /************************************************  Search Commands  ***********************************************/
 
     private QueryResponse<Study> search() throws CatalogException, IOException {
-
         logger.debug("Searching study");
-
 
         Query query = new Query();
         QueryOptions queryOptions = new QueryOptions();
 
-        String projectId = studiesCommandOptions.searchCommandOptions.project;
-        String name = studiesCommandOptions.searchCommandOptions.name;
-        String alias = studiesCommandOptions.searchCommandOptions.alias;
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), studiesCommandOptions.searchCommandOptions.project);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.searchCommandOptions.name);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), studiesCommandOptions.searchCommandOptions.alias);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.CREATION_DATE.key(), studiesCommandOptions.searchCommandOptions.creationDate);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.STATUS_NAME.key(), studiesCommandOptions.searchCommandOptions.status);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), studiesCommandOptions.searchCommandOptions.attributes);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.NATTRIBUTES.key(), studiesCommandOptions.searchCommandOptions.nattributes);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.BATTRIBUTES.key(), studiesCommandOptions.searchCommandOptions.battributes);
+
         String type = studiesCommandOptions.searchCommandOptions.type;
-        String creationDate = studiesCommandOptions.searchCommandOptions.creationDate;
-        String status = studiesCommandOptions.searchCommandOptions.status;
-        String attributes = studiesCommandOptions.searchCommandOptions.attributes;
-        String nattributes = studiesCommandOptions.searchCommandOptions.nattributes;
-        String battributes = studiesCommandOptions.searchCommandOptions.battributes;
-//        String groups = studiesCommandOptions.searchCommandOptions.groups;
-//        String groupsUsers = studiesCommandOptions.searchCommandOptions.groupsUsers;
-
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId);
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.NAME.key(), name);
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), alias);
-
         if (StringUtils.isNotEmpty(type)) {
             try {
                 query.append(StudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(type));
@@ -260,17 +238,12 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                 return null;
             }
         }
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.CREATION_DATE.key(), creationDate);
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.STATUS_NAME.key(), status);
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.NATTRIBUTES.key(), nattributes);
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.BATTRIBUTES.key(), battributes);
+
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.searchCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.searchCommandOptions.dataModelOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, studiesCommandOptions.searchCommandOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, studiesCommandOptions.searchCommandOptions.skip);
-
-        queryOptions.put("count", studiesCommandOptions.searchCommandOptions.count);
+        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, studiesCommandOptions.searchCommandOptions.numericOptions.limit);
+        queryOptions.putIfNotEmpty(QueryOptions.SKIP, studiesCommandOptions.searchCommandOptions.numericOptions.skip);
+        queryOptions.put("count", studiesCommandOptions.searchCommandOptions.numericOptions.count);
 
         return openCGAClient.getStudyClient().search(query, queryOptions);
     }
@@ -286,7 +259,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private QueryResponse<File> files() throws CatalogException, IOException {
-
         logger.debug("Listing files of a study [PENDING]");
 
         QueryOptions queryOptions = new QueryOptions();
@@ -343,25 +315,24 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.nattributes)) {
             queryOptions.put(FileDBAdaptor.QueryParams.NATTRIBUTES.key(), studiesCommandOptions.filesCommandOptions.nattributes);
         }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.dataModelOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, studiesCommandOptions.jobsCommandOptions.dataModelOptions.include);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.dataModelOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, studiesCommandOptions.filesCommandOptions.dataModelOptions.include);
         }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.dataModelOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, studiesCommandOptions.jobsCommandOptions.dataModelOptions.exclude);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.dataModelOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, studiesCommandOptions.filesCommandOptions.dataModelOptions.exclude);
         }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.jobsCommandOptions.limit);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.numericOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.filesCommandOptions.numericOptions.limit);
         }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.jobsCommandOptions.skip);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.numericOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.filesCommandOptions.numericOptions.skip);
         }
-        queryOptions.put("count", studiesCommandOptions.jobsCommandOptions.count);
+        queryOptions.put("count", studiesCommandOptions.filesCommandOptions.numericOptions.count);
 
         return openCGAClient.getStudyClient().getFiles(studiesCommandOptions.filesCommandOptions.study, queryOptions);
     }
 
     private QueryResponse<Job> jobs() throws CatalogException, IOException {
-
         logger.debug("Listing jobs of a study. [PENDING]");
 
         QueryOptions queryOptions = new QueryOptions();
@@ -397,56 +368,18 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put(QueryOptions.EXCLUDE, studiesCommandOptions.jobsCommandOptions.dataModelOptions.exclude);
         }
 
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.jobsCommandOptions.limit);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.numericOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.jobsCommandOptions.numericOptions.limit);
         }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.jobsCommandOptions.skip);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.numericOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.jobsCommandOptions.numericOptions.skip);
         }
 
-        queryOptions.put("count", studiesCommandOptions.jobsCommandOptions.count);
+        queryOptions.put("count", studiesCommandOptions.jobsCommandOptions.numericOptions.count);
 
         return openCGAClient.getStudyClient().getJobs(studiesCommandOptions.jobsCommandOptions.study, queryOptions);
     }
 
-    private QueryResponse alignments() throws CatalogException, IOException {
-
-        //TODO
-        logger.debug("Listing alignments of a study. [PENDING]");
-        return null;
-
-/*
-        QueryOptions queryOptions = new QueryOptions();
-        if (StringUtils.isNotEmpty(studiesCommandOptions.alignmentsCommandOptions.sampleId)) {
-            queryOptions.put(CatalogStudyDBAdaptor.QueryParams.SAMPLE_ID.key(), studiesCommandOptions.alignmentsCommandOptions.sampleId);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.alignmentsCommandOptions.fileId)) {
-            queryOptions.put(CatalogStudyDBAdaptor.QueryParams.FILE_ID.key(), studiesCommandOptions.alignmentsCommandOptions.fileId);
-        }
-        if (studiesCommandOptions.alignmentsCommandOptions.view_as_pairs) {
-            queryOptions.put(CatalogStudyDBAdaptor.QueryParams.VIEW_AS_PAIRS.key(), studiesCommandOptions.alignmentsCommandOptions.view_as_pairs);
-        }
-        if (studiesCommandOptions.alignmentsCommandOptions.include_coverage) {
-            queryOptions.put(CatalogStudyDBAdaptor.QueryParams.INCLUDE_COVERAGE.key(), studiesCommandOptions.alignmentsCommandOptions.include_coverage);
-        }
-        if (studiesCommandOptions.alignmentsCommandOptions.process_differences) {
-            queryOptions.put(CatalogStudyDBAdaptor.QueryParams.PROCESS_DIFFERENCES.key(), studiesCommandOptions.alignmentsCommandOptions.process_differences);
-        }
-
-        if (studiesCommandOptions.alignmentsCommandOptions.process_differences) {
-            queryOptions.put(CatalogStudyDBAdaptor.QueryParams.HISTOGRAM.key(), studiesCommandOptions.alignmentsCommandOptions.histogram);
-        }
-
-        if (studiesCommandOptions.alignmentsCommandOptions.process_differences) {
-            queryOptions.put(CatalogStudyDBAdaptor.QueryParams.INTERVAL.key(), studiesCommandOptions.alignmentsCommandOptions.interval);
-        }
-
-        Query query = new Query();
-        QueryResponse<Alignment> alignments = openCGAClient.getStudyClient().getAlignments(studiesCommandOptions.alignmentsCommandOptions.id,
-                studiesCommandOptions.alignmentsCommandOptions.sampleId, studiesCommandOptions.alignmentsCommandOptions.fileId,
-                studiesCommandOptions.alignmentsCommandOptions.region, query, queryOptions);
-        System.out.println(alignments.toString());*/
-    }
 
     private QueryResponse<Sample> samples() throws CatalogException, IOException {
 
@@ -483,17 +416,18 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.dataModelOptions.exclude)) {
             queryOptions.put(QueryOptions.EXCLUDE, studiesCommandOptions.samplesCommandOptions.dataModelOptions.exclude);
         }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.samplesCommandOptions.limit);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.numericOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.samplesCommandOptions.numericOptions.limit);
         }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.samplesCommandOptions.skip);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.numericOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.samplesCommandOptions.numericOptions.skip);
         }
-        queryOptions.put("count", studiesCommandOptions.samplesCommandOptions.count);
+        queryOptions.put("count", studiesCommandOptions.samplesCommandOptions.numericOptions.count);
 
         return openCGAClient.getStudyClient().getSamples(studiesCommandOptions.samplesCommandOptions.study, queryOptions);
     }
 
+    @Deprecated
     private QueryResponse variants() throws CatalogException, IOException {
 
         logger.debug("Listing variants of a study.");
@@ -596,7 +530,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private QueryResponse<ObjectMap> groupsCreate() throws CatalogException,IOException {
-
         logger.debug("Creating groups");
         QueryOptions queryOptions = new QueryOptions();
         return openCGAClient.getStudyClient().createGroup(studiesCommandOptions.groupsCreateCommandOptions.study,

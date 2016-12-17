@@ -39,6 +39,7 @@ public class OpencgaCliOptionsParser {
     private final GeneralOptions generalOptions;
     private final GeneralCliOptions.CommonCommandOptions commonCommandOptions;
     private final GeneralCliOptions.DataModelOptions dataModelOptions;
+    private final GeneralCliOptions.NumericOptions numericOptions;
 
     protected final UserAndPasswordOptions userAndPasswordOptions;
 
@@ -74,6 +75,7 @@ public class OpencgaCliOptionsParser {
 
         commonCommandOptions = new GeneralCliOptions.CommonCommandOptions();
         dataModelOptions = new GeneralCliOptions.DataModelOptions();
+        numericOptions = new GeneralCliOptions.NumericOptions();
 
         userAndPasswordOptions = new UserAndPasswordOptions();
 //        commandShareResource = new CommandShareResource();
@@ -102,7 +104,7 @@ public class OpencgaCliOptionsParser {
         projectSubCommands.addCommand("delete", projectCommandOptions.deleteCommandOptions);
         projectSubCommands.addCommand("help", projectCommandOptions.helpCommandOptions);
 
-        studyCommandOptions = new StudyCommandOptions(this.commonCommandOptions, this.dataModelOptions, jCommander);
+        studyCommandOptions = new StudyCommandOptions(this.commonCommandOptions, this.dataModelOptions, this.numericOptions, jCommander);
         jCommander.addCommand("studies", studyCommandOptions);
         JCommander studySubCommands = jCommander.getCommands().get("studies");
         studySubCommands.addCommand("create", studyCommandOptions.createCommandOptions);
@@ -115,7 +117,6 @@ public class OpencgaCliOptionsParser {
         studySubCommands.addCommand("resync-files", studyCommandOptions.resyncFilesCommandOptions);
         studySubCommands.addCommand("files", studyCommandOptions.filesCommandOptions);
         studySubCommands.addCommand("jobs", studyCommandOptions.jobsCommandOptions);
-        studySubCommands.addCommand("alignments", studyCommandOptions.alignmentsCommandOptions);
         studySubCommands.addCommand("samples", studyCommandOptions.samplesCommandOptions);
         studySubCommands.addCommand("variants", studyCommandOptions.variantsCommandOptions);
         studySubCommands.addCommand("help", studyCommandOptions.helpCommandOptions);
