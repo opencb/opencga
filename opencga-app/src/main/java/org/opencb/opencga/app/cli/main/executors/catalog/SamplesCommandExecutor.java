@@ -148,17 +148,17 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         objectMap.putIfNotEmpty("fileId", samplesCommandOptions.loadCommandOptions.fileId);
         objectMap.putIfNotEmpty(SampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), samplesCommandOptions.loadCommandOptions.variableSetId);
 
-        return openCGAClient.getSampleClient().loadFromPed(samplesCommandOptions.loadCommandOptions.studyId, objectMap);
+        return openCGAClient.getSampleClient().loadFromPed(samplesCommandOptions.loadCommandOptions.study, objectMap);
     }
 
     private QueryResponse<Sample> info() throws CatalogException, IOException  {
         logger.debug("Getting samples information");
         QueryOptions queryOptions = new QueryOptions();
-        if (StringUtils.isNotEmpty(samplesCommandOptions.infoCommandOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, samplesCommandOptions.infoCommandOptions.include);
+        if (StringUtils.isNotEmpty(samplesCommandOptions.infoCommandOptions.dataModelOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, samplesCommandOptions.infoCommandOptions.dataModelOptions.include);
         }
-        if (StringUtils.isNotEmpty(samplesCommandOptions.infoCommandOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, samplesCommandOptions.infoCommandOptions.exclude);
+        if (StringUtils.isNotEmpty(samplesCommandOptions.infoCommandOptions.dataModelOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, samplesCommandOptions.infoCommandOptions.dataModelOptions.exclude);
         }
         if (samplesCommandOptions.infoCommandOptions.noLazy) {
             queryOptions.put("lazy", false);
@@ -175,19 +175,17 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(),samplesCommandOptions.searchCommandOptions.study);
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.NAME.key(), samplesCommandOptions.searchCommandOptions.name);
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.searchCommandOptions.source);
-        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(),
-                samplesCommandOptions.searchCommandOptions.individualId);
+        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), samplesCommandOptions.searchCommandOptions.individual);
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
                 samplesCommandOptions.searchCommandOptions.annotationSetName);
-        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
-                samplesCommandOptions.searchCommandOptions.variableSetId);
+        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), samplesCommandOptions.searchCommandOptions.variableSetId);
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.ANNOTATION.key(), samplesCommandOptions.searchCommandOptions.annotation);
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, samplesCommandOptions.searchCommandOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, samplesCommandOptions.searchCommandOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, samplesCommandOptions.searchCommandOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, samplesCommandOptions.searchCommandOptions.skip);
 
-        queryOptions.put("count", samplesCommandOptions.searchCommandOptions.count);
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, samplesCommandOptions.searchCommandOptions.dataModelOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, samplesCommandOptions.searchCommandOptions.dataModelOptions.exclude);
+        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, samplesCommandOptions.searchCommandOptions.numericOptions.limit);
+        queryOptions.putIfNotEmpty(QueryOptions.SKIP, samplesCommandOptions.searchCommandOptions.numericOptions.skip);
+        queryOptions.put("count", samplesCommandOptions.searchCommandOptions.numericOptions.count);
 
         return openCGAClient.getSampleClient().search(query, queryOptions);
     }
@@ -199,9 +197,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         objectMap.putIfNotEmpty(SampleDBAdaptor.QueryParams.NAME.key(), samplesCommandOptions.updateCommandOptions.name);
         objectMap.putIfNotEmpty(SampleDBAdaptor.QueryParams.DESCRIPTION.key(), samplesCommandOptions.updateCommandOptions.description);
         objectMap.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.updateCommandOptions.source);
-        objectMap.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), samplesCommandOptions.updateCommandOptions.individualId);
-
-
+        objectMap.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), samplesCommandOptions.updateCommandOptions.individual);
         return openCGAClient.getSampleClient().update(samplesCommandOptions.updateCommandOptions.id, objectMap);
     }
 
@@ -225,8 +221,8 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(samplesCommandOptions.groupByCommandOptions.source)) {
             objectMap.put(SampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.groupByCommandOptions.source);
         }
-        if (StringUtils.isNotEmpty(samplesCommandOptions.groupByCommandOptions.individualId)) {
-            objectMap.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), samplesCommandOptions.groupByCommandOptions.individualId);
+        if (StringUtils.isNotEmpty(samplesCommandOptions.groupByCommandOptions.individual)) {
+            objectMap.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), samplesCommandOptions.groupByCommandOptions.individual);
         }
         if (StringUtils.isNotEmpty(samplesCommandOptions.groupByCommandOptions.annotationSetName)) {
             objectMap.put(SampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),

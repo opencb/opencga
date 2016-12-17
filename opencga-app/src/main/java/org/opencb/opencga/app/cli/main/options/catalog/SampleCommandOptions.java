@@ -24,6 +24,8 @@ import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.catalog.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.catalog.commons.AnnotationCommandOptions;
 
+import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
+
 /**
  * Created by sgallego on 6/14/16.
  */
@@ -52,13 +54,19 @@ public class SampleCommandOptions {
     public AnnotationCommandOptions.AnnotationSetsUpdateCommandOptions annotationUpdateCommandOptions;
 
     public JCommander jCommander;
-    public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
+    public CommonCommandOptions commonCommandOptions;
+    public DataModelOptions commonDataModelOptions;
+    public NumericOptions commonNumericOptions;
 
     private AclCommandOptions aclCommandOptions;
     private AnnotationCommandOptions annotationCommandOptions;
 
-    public SampleCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public SampleCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions, NumericOptions numericOptions,
+                                JCommander jCommander) {
+
         this.commonCommandOptions = commonCommandOptions;
+        this.commonDataModelOptions = dataModelOptions;
+        this.commonNumericOptions = numericOptions;
         this.jCommander = jCommander;
 
         this.createCommandOptions = new CreateCommandOptions();
@@ -85,117 +93,86 @@ public class SampleCommandOptions {
         this.aclsMemberUpdateCommandOptions = aclCommandOptions.getAclsMemberUpdateCommandOptions();
     }
 
-    public class BaseSampleCommand {
+    public class BaseSampleCommand extends StudyOption {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--sample"}, description = "Sample alias or id", required = true, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Sample id or name", required = true, arity = 1)
         public String id;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
-                + " alias.", arity = 1)
-        public String studyId;
+    }
+
+    @Parameters(commandNames = {"info"}, commandDescription = "Get samples information")
+    public class InfoCommandOptions extends BaseSampleCommand {
+
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
+
+        @Parameter(names = {"--no-lazy"}, description = "Obtain the entire related job and experiment objects", arity = 0)
+        public boolean noLazy;
     }
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create a sample")
-    public class CreateCommandOptions extends GeneralCliOptions.StudyOption {
+    public class CreateCommandOptions extends StudyOption {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--name"}, description = "Sample name", required = true, arity = 1)
+        @Parameter(names = {"--name"}, description = "Name for the sample, this must be unique in the study", required = true, arity = 1)
         public String name;
 
-        @Parameter(names = {"--source"}, description = "Source", required = false, arity = 1)
+        @Parameter(names = {"--source"}, description = "Source from which this sample is created such as VCF file", arity = 1)
         public String source;
 
-        @Parameter(names = {"--description"}, description = "Sample description", required = false, arity = 1)
+        @Parameter(names = {"--description"}, description = "Description of the sample", arity = 1)
         public String description;
+
     }
 
     @Parameters(commandNames = {"load"}, commandDescription = "Load samples from a pedigree file")
-    public class LoadCommandOptions {
+    public class LoadCommandOptions extends StudyOption {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
-                + " alias.", arity = 1)
-        public String studyId;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--file"}, description = "File id already loaded in OpenCGA", required = true, arity = 1)
         public String fileId;
 
         @Parameter(names = {"--variable-set-id"}, description = "VariableSetId that represents the pedigree file", arity = 1)
         public String variableSetId;
-    }
 
-    @Parameters(commandNames = {"info"}, commandDescription = "Get samples information")
-    public class InfoCommandOptions extends BaseSampleCommand {
-
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
-
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
-
-        @Parameter(names = {"--no-lazy"}, description = "Obtain the entire related job and experiment objects", arity = 0)
-        public boolean noLazy;
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search samples")
-    public class SearchCommandOptions extends GeneralCliOptions.StudyOption {
+    public class SearchCommandOptions extends StudyOption {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
 
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
+        @ParametersDelegate
+        public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
-        public String skip;
-
-        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
-        public String limit;
-
-        @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
+        @Parameter(names = {"--name"}, description = "List of id or names separated by commas", required = false, arity = 1)
         public String name;
 
-        @Parameter(names = {"--source"}, description = "Source.", required = false, arity = 1)
+        @Parameter(names = {"--source"}, description = "Filter by the sample source such as the VCF file name from which this sample was created", arity = 1)
         public String source;
 
-        @Parameter(names = {"--indivual-id"}, description = "Individual id.", required = false, arity = 1)
-        public String individualId;
+        @Parameter(names = {"--individual"}, description = "Filter by id or name of the individual", required = false, arity = 1)
+        public String individual;
+
+        @Parameter(names = {"-a", "--annotation"}, description = "SampleAnnotations values. <variableName>:<annotationValue>(,<annotationValue>)*", arity = 1)
+        public String annotation;
 
         @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 1)
         public String annotationSetName;
 
         @Parameter(names = {"--variable-set-id"}, description = "Variable set id.", required = false, arity = 1)
         public String variableSetId;
-
-        @Parameter(names = {"--annotation"}, description = "Annotation.", required = false, arity = 1)
-        public String annotation;
-
-        @Parameter(names = {"--count"}, description = "Total number of results.", required = false, arity = 0)
-        public boolean count;
-
-    /*    @Parameter(names = {"--variable-set-id"}, description = "VariableSetId", required = false, arity = 1)
-        String variableSetId;
-
-        @Parameter(names = {"--name"}, description = "Sample names (CSV)", required = false, arity = 1)
-        String sampleNames;
-
-        @Parameter(names = {"-id", "--sample-id"}, description = "Sample ids (CSV)", required = false, arity = 1)
-        String sampleIds;
-
-        @Parameter(names = {"-a", "--annotation"},
-                description = "SampleAnnotations values. <variableName>:<annotationValue>(,<annotationValue>)*",
-                required = false, arity = 1, splitter = SemiColonParameterSplitter.class)
-        List<String> annotation;*/
     }
 
 
@@ -205,29 +182,34 @@ public class SampleCommandOptions {
         @Parameter(names = {"--name"}, description = "Cohort set name.", required = false, arity = 1)
         public String name;
 
-        @Parameter(names = {"--source"}, description = "Source", required = true, arity = 1)
+        @Parameter(names = {"--individual"}, description = "Individual id or name", required = false, arity = 1)
+        public String individual;
+
+        @Parameter(names = {"--source"}, description = "Source", required = false, arity = 1)
         public String source;
 
-        @Parameter(names = {"--description"}, description = "Description", required = true, arity = 0)
+        @Parameter(names = {"--description"}, description = "Description", required = false, arity = 1)
         public String description;
-
-        @Parameter(names = {"--individual-id"}, description = "Individual id", required = true, arity = 0)
-        public String individualId;
 
     }
 
+    @Parameters(commandNames = {"delete"}, commandDescription = "Delete the selected sample")
+    public class DeleteCommandOptions extends BaseSampleCommand {
+
+    }
 
     @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy cohort")
-    public class GroupByCommandOptions extends GeneralCliOptions.StudyOption {
+    public class GroupByCommandOptions extends StudyOption {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Deprecated
+        @Parameter(names = {"--ids"}, description = "Comma separated list of ids.", required = false, arity = 1)
+        public String id;
 
         @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
         public String fields;
-
-        @Parameter(names = {"--ids"}, description = "Comma separated list of ids.", required = false, arity = 1)
-        public String id;
 
         @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 0)
         public String name;
@@ -235,21 +217,17 @@ public class SampleCommandOptions {
         @Parameter(names = {"--source"}, description = "Source.", required = false, arity = 0)
         public String source;
 
-        @Parameter(names = {"--individual-id"}, description = "Individual id.", required = false, arity = 0)
-        public String individualId;
+        @Parameter(names = {"--individual"}, description = "Individual id or name", required = false, arity = 0)
+        public String individual;
+
+        @Parameter(names = {"--annotation"}, description = "Annotation", required = false, arity = 1)
+        public String annotation;
 
         @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 0)
         public String annotationSetName;
 
         @Parameter(names = {"--variable-set-id"}, description = "Variable set ids", required = false, arity = 1)
         public String variableSetId;
-
-        @Parameter(names = {"--annotation"}, description = "Annotation", required = false, arity = 1)
-        public String annotation;
     }
 
-    @Parameters(commandNames = {"delete"}, commandDescription = "Deletes the selected sample")
-    public class DeleteCommandOptions extends BaseSampleCommand {
-
-    }
 }

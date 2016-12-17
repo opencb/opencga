@@ -202,7 +202,7 @@ public class OpencgaCliOptionsParser {
         individualSubCommands.addCommand("annotation-sets-update", individualCommandOptions.annotationUpdateCommandOptions);
         individualSubCommands.addCommand("annotation-sets-delete", individualCommandOptions.annotationDeleteCommandOptions);
 
-        sampleCommandOptions = new SampleCommandOptions(this.commonCommandOptions, jCommander);
+        sampleCommandOptions = new SampleCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("samples", sampleCommandOptions);
         JCommander sampleSubCommands = jCommander.getCommands().get("samples");
         sampleSubCommands.addCommand("create", sampleCommandOptions.createCommandOptions);
