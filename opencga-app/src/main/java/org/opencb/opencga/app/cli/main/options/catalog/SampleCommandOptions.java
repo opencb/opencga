@@ -90,18 +90,19 @@ public class SampleCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--id"}, description = "Sample id", required = true, arity = 1)
+        @Parameter(names = {"--sample"}, description = "Sample alias or id", required = true, arity = 1)
         public String id;
+
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
+                + " alias.", arity = 1)
+        public String studyId;
     }
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create a sample")
-    public class CreateCommandOptions {
+    public class CreateCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
-        public String studyId;
 
         @Parameter(names = {"--name"}, description = "Sample name", required = true, arity = 1)
         public String name;
@@ -119,10 +120,11 @@ public class SampleCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
+                + " alias.", arity = 1)
         public String studyId;
 
-        @Parameter(names = {"--file-id"}, description = "File id already loaded in OpenCGA", required = true, arity = 1)
+        @Parameter(names = {"--file"}, description = "File id already loaded in OpenCGA", required = true, arity = 1)
         public String fileId;
 
         @Parameter(names = {"--variable-set-id"}, description = "VariableSetId that represents the pedigree file", arity = 1)
@@ -143,7 +145,7 @@ public class SampleCommandOptions {
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search samples")
-    public class SearchCommandOptions {
+    public class SearchCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -160,19 +162,13 @@ public class SampleCommandOptions {
         @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
         public String limit;
 
-        @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
-        public String studyId;
-
-        @Parameter(names = {"--ids"}, description = "Comma separated list of ids.", required = false, arity = 1)
-        public String id;
-
         @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
         public String name;
 
         @Parameter(names = {"--source"}, description = "Source.", required = false, arity = 1)
         public String source;
 
-        @Parameter(names = {"--indivual-id"}, description = "Indivudual id.", required = false, arity = 1)
+        @Parameter(names = {"--indivual-id"}, description = "Individual id.", required = false, arity = 1)
         public String individualId;
 
         @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 1)
@@ -215,23 +211,20 @@ public class SampleCommandOptions {
         @Parameter(names = {"--description"}, description = "Description", required = true, arity = 0)
         public String description;
 
-        @Parameter(names = {"--individual-id"}, description = "Indivudual id", required = true, arity = 0)
+        @Parameter(names = {"--individual-id"}, description = "Individual id", required = true, arity = 0)
         public String individualId;
 
     }
 
 
     @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy cohort")
-    public class GroupByCommandOptions {
+    public class GroupByCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
         public String fields;
-
-        @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
-        public String studyId;
 
         @Parameter(names = {"--ids"}, description = "Comma separated list of ids.", required = false, arity = 1)
         public String id;

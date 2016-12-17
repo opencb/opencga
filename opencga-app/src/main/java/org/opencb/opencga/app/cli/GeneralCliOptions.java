@@ -89,9 +89,9 @@ public class GeneralCliOptions {
 
     public static class StudiesOption {
 
-        @Parameter(names = {"-s", "--study"}, description = "Study list [[user@]project:]study where study and project can be either the id or"
-                + " alias.", arity = 1)
-        public String studies;
+        @Parameter(names = {"-s", "--study"}, description = "Study list [[user@]project:]study where study and project can be either the id"
+                + " or alias.", arity = 1)
+        public String study;
 
     }
 

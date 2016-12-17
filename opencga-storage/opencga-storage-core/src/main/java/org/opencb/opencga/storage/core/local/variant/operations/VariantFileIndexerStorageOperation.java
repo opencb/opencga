@@ -66,7 +66,6 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
     public static final String TRANSFORM = "transform";
     public static final String LOAD = "load";
 
-    public static final String CATALOG_PATH = "catalogPath";
     // FIXME : Needed?
     public static final String TRANSFORMED_FILES = "transformedFiles";
 
@@ -168,7 +167,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         }
 
         // Check catalog path
-        Long catalogOutDirId = getCatalogOutdirId(studyIdByInputFileId, options.getString(CATALOG_PATH), sessionId);
+        Long catalogOutDirId = getCatalogOutdirId(studyIdByInputFileId, options, sessionId);
 
         logger.debug("Index - Number of files to be indexed: {}, list of files: {}", inputFiles.size(),
                 inputFiles.stream().map(File::getName).collect(Collectors.toList()));

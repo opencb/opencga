@@ -29,10 +29,13 @@ import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.metadata.MongoDBStudyConfigurationManager;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
+import org.opencb.opencga.storage.mongodb.variant.load.MongoVariantImporter;
 
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -77,6 +80,16 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             this.value = value;
         }
 
+        public static boolean isResumeStage(ObjectMap options) {
+            return options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue())
+                    || options.getBoolean(STAGE_RESUME.key(), false);
+        }
+
+        public static boolean isResumeMerge(ObjectMap options) {
+            return options.getBoolean(Options.RESUME.key(), Options.RESUME.defaultValue())
+                    || options.getBoolean(MERGE_RESUME.key(), false);
+        }
+
         public String key() {
             return key;
         }
@@ -103,6 +116,12 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             logger.error("Connection to database '{}' failed", dbName);
             throw new StorageManagerException("Database connection test failed");
         }
+    }
+
+    @Override
+    protected VariantImporter newVariantImporter(VariantDBAdaptor dbAdaptor) {
+        VariantMongoDBAdaptor mongoDBAdaptor = (VariantMongoDBAdaptor) dbAdaptor;
+        return new MongoVariantImporter(mongoDBAdaptor);
     }
 
     @Override

@@ -139,7 +139,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort, CohortAc
         return getAcl(cohortId, Arrays.asList(member));
     }
 
-    long getStudyIdByCohortId(long cohortId) throws CatalogDBException;
+    long getStudyId(long cohortId) throws CatalogDBException;
 
     /**
      * Remove all the Acls defined for the member in the resource.

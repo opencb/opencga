@@ -122,6 +122,10 @@ public class VariantCommandExecutor extends CommandExecutor {
                 configure(variantCommandOptions.queryVariantsCommandOptions.commonOptions);
                 queryGrpc();
                 break;
+            case "import":
+                configure(variantCommandOptions.importVariantsCommandOptions.commonOptions);
+                importData();
+                break;
             case "annotation":
                 configure(variantCommandOptions.annotateVariantsCommandOptions.commonOptions);
                 annotation();
@@ -196,6 +200,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         if (indexVariantsCommandOptions.studyConfigurationFile != null && !indexVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
             variantOptions.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, indexVariantsCommandOptions.studyConfigurationFile);
         }
+        variantOptions.put(VariantStorageManager.Options.RESUME.key(), indexVariantsCommandOptions.resume);
 
         if (indexVariantsCommandOptions.aggregationMappingFile != null) {
             // TODO move this options to new configuration.yml
@@ -346,6 +351,16 @@ public class VariantCommandExecutor extends CommandExecutor {
         // Close open resources
         printStream.close();
         channel.shutdown().awaitTermination(2, TimeUnit.SECONDS);
+    }
+
+    private void importData() throws URISyntaxException, StorageManagerException, IOException {
+        CliOptionsParser.ImportVariantsCommandOptions importVariantsOptions = variantCommandOptions.importVariantsCommandOptions;
+
+        URI uri = UriUtils.createUri(importVariantsOptions.input);
+        ObjectMap options = new ObjectMap();
+        options.putAll(variantCommandOptions.commonOptions.params);
+        variantStorageManager.importData(uri, importVariantsOptions.dbName, options);
+
     }
 
     private void annotation() throws StorageManagerException, IOException, URISyntaxException, VariantAnnotatorException {

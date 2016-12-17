@@ -100,7 +100,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Job> create() throws CatalogException, IOException {
         logger.debug("Creating a new job");
 
-        String studyId = jobsCommandOptions.createCommandOptions.studyId;
+        String studyId = jobsCommandOptions.createCommandOptions.study;
         String name = jobsCommandOptions.createCommandOptions.name;
         String toolId = jobsCommandOptions.createCommandOptions.toolId;
         String execution = jobsCommandOptions.createCommandOptions.execution;
@@ -121,7 +121,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Job> search() throws CatalogException, IOException {
         logger.debug("Searching job");
 
-        String studyId = jobsCommandOptions.searchCommandOptions.studyId;
+        String studyId = jobsCommandOptions.searchCommandOptions.study;
         String name = jobsCommandOptions.searchCommandOptions.name;
         String toolName = jobsCommandOptions.searchCommandOptions.toolName;
         String status = jobsCommandOptions.searchCommandOptions.status;
@@ -136,7 +136,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         Query query = new Query();
         QueryOptions queryOptions = new QueryOptions();
 
-        query.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId );
+        query.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), studyId );
         query.putIfNotEmpty(JobDBAdaptor.QueryParams.NAME.key(), name);
         query.putIfNotEmpty(JobDBAdaptor.QueryParams.TOOL_NAME.key(), toolName);
         query.putIfNotEmpty(JobDBAdaptor.QueryParams.STATUS_NAME.key(), status);
@@ -182,7 +182,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         objectMap.putIfNotEmpty(JobDBAdaptor.QueryParams.DESCRIPTION.key(), jobsCommandOptions.groupByCommandOptions.description);
         objectMap.putIfNotEmpty(JobDBAdaptor.QueryParams.ATTRIBUTES.key(), jobsCommandOptions.groupByCommandOptions.attributes);
 
-        return openCGAClient.getJobClient().groupBy(jobsCommandOptions.groupByCommandOptions.studyId,
+        return openCGAClient.getJobClient().groupBy(jobsCommandOptions.groupByCommandOptions.study,
                 jobsCommandOptions.groupByCommandOptions.fields,objectMap);
     }
 

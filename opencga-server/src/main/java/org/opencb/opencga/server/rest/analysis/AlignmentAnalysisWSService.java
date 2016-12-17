@@ -119,7 +119,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.MD_FIELD.key(), mdField);
             queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.BIN_QUALITIES.key(), binQualities);
 
-            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageConfiguration);
+            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageManagerFactory);
             return createOkResponse(
                     alignmentStorageManager.query(studyId, fileIdStr, query, queryOptions, sessionId)
             );
@@ -146,7 +146,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             QueryOptions queryOptions = new QueryOptions();
             queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
 
-            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageConfiguration);
+            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageManagerFactory);
             return createOkResponse(
                     alignmentStorageManager.stats(studyId, fileIdStr, query, queryOptions, sessionId));
 //
@@ -196,7 +196,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             QueryOptions queryOptions = new QueryOptions();
             queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
 
-            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageConfiguration);
+            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageManagerFactory);
 
             return createOkResponse(
                     alignmentStorageManager.coverage(studyId, fileIdStr, query, queryOptions, sessionId)

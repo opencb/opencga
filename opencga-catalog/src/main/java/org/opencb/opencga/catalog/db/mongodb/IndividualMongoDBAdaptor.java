@@ -282,7 +282,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     }
 
     public void checkInUse(long individualId) throws CatalogDBException {
-        long studyId = getStudyIdByIndividualId(individualId);
+        long studyId = getStudyId(individualId);
         QueryResult<Individual> individuals = get(new Query(QueryParams.FATHER_ID.key(), individualId)
                 .append(QueryParams.STUDY_ID.key(), studyId), new QueryOptions());
         if (individuals.getNumResults() != 0) {
@@ -317,7 +317,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     }
 
     @Override
-    public long getStudyIdByIndividualId(long individualId) throws CatalogDBException {
+    public long getStudyId(long individualId) throws CatalogDBException {
         QueryResult<Document> result =
                 individualCollection.find(new Document(PRIVATE_ID, individualId), new Document(PRIVATE_STUDY_ID, 1), null);
 
@@ -424,7 +424,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
             if (individualParameters.containsKey("name")) {
                 String name = individualParameters.get("name").toString();
                 Query subquery = new Query(QueryParams.NAME.key(), name)
-                        .append(QueryParams.STUDY_ID.key(), getStudyIdByIndividualId(individual.getId()));
+                        .append(QueryParams.STUDY_ID.key(), getStudyId(individual.getId()));
                 if (!get(subquery, new QueryOptions()).getResult().isEmpty()) {
                     throw CatalogDBException.alreadyExists("Individual", "name", name);
                 }
@@ -690,6 +690,9 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
+            if (queryParam == null) {
+                continue;
+            }
             try {
                 switch (queryParam) {
                     case ID:
@@ -727,8 +730,37 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
                     case ANNOTATION_SET_NAME:
                         addOrQuery("name", queryParam.key(), query, queryParam.type(), annotationList);
                         break;
-                    default:
+                    case NAME:
+                    case FATHER_ID:
+                    case MOTHER_ID:
+                    case FAMILY:
+                    case SEX:
+                    case ETHNICITY:
+                    case STATUS_NAME:
+                    case STATUS_MSG:
+                    case STATUS_DATE:
+                    case SPECIES:
+                    case SPECIES_TAXONOMY_CODE:
+                    case SPECIES_SCIENTIFIC_NAME:
+                    case SPECIES_COMMON_NAME:
+                    case POPULATION_NAME:
+                    case POPULATION_SUBPOPULATION:
+                    case POPULATION_DESCRIPTION:
+                    case KARYOTYPIC_SEX:
+                    case LIFE_STATUS:
+                    case AFFECTATION_STATUS:
+                    case ACL:
+                    case ACL_MEMBER:
+                    case ACL_PERMISSIONS:
+                    case ANNOTATION_SETS:
+                    case ONTOLOGY_TERMS_ID:
+                    case ONTOLOGY_TERMS_NAME:
+                    case ONTOLOGY_TERMS_SOURCE:
+                    case ONTOLOGY_TERMS_AGE_OF_ONSET:
+                    case ONTOLOGY_TERMS_MODIFIERS:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    default:
                         break;
                 }
             } catch (Exception e) {

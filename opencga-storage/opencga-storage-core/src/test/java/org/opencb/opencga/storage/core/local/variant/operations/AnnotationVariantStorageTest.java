@@ -102,8 +102,8 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
     }
 
     List<File> annotate(Query query, QueryOptions config) throws CatalogException, StorageManagerException, IOException, URISyntaxException {
-        return variantManager.annotate(studyStr, query,
-                opencga.createTmpOutdir(studyId, "_ANNOT_", sessionId), outputStr, config, sessionId);
+        config.put(StorageOperation.CATALOG_PATH, outputStr);
+        return variantManager.annotate(studyStr, query, opencga.createTmpOutdir(studyId, "_ANNOT_", sessionId), config, sessionId);
     }
 
     @Test
@@ -119,8 +119,8 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
         QueryOptions options = new QueryOptions()
                 .append(VariantAnnotationManager.LOAD_FILE, file.getId())
                 .append(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, "myAnnot");
-        variantManager.annotate(String.valueOf(studyId), new Query(), opencga.createTmpOutdir(studyId, "annot", sessionId),
-                String.valueOf(outputId), options, sessionId);
+        options.put(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
+        variantManager.annotate(String.valueOf(studyId), new Query(), opencga.createTmpOutdir(studyId, "annot", sessionId), options, sessionId);
 
         verify(dbAdaptor, atLeastOnce()).updateCustomAnnotations(any(), matches("myAnnot"), any(), any());
 
@@ -128,8 +128,8 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
         options = new QueryOptions()
                 .append(VariantAnnotationManager.LOAD_FILE, file.getId())
                 .append(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, "myAnnot2");
-        variantManager.annotate(String.valueOf(studyId), new Query(), opencga.createTmpOutdir(studyId, "annot", sessionId),
-                String.valueOf(outputId), options, sessionId);
+        options.put(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
+        variantManager.annotate(String.valueOf(studyId), new Query(), opencga.createTmpOutdir(studyId, "annot", sessionId), options, sessionId);
 
         verify(dbAdaptor, atLeastOnce()).updateCustomAnnotations(any(), matches("myAnnot2"), any(), any());
     }

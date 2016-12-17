@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 
 import java.io.IOException;
 import java.net.URI;
@@ -231,7 +232,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         Query query = new Query();
         QueryOptions queryOptions = new QueryOptions();
 
-        query.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY_ID.key(), filesCommandOptions.searchCommandOptions.studyId);
+        query.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.searchCommandOptions.studyId);
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.NAME.key(), filesCommandOptions.searchCommandOptions.name);
         query.putIfNotEmpty(FileDBAdaptor.QueryParams.PATH.key(), filesCommandOptions.searchCommandOptions.path);
         query.putIfNotNull(FileDBAdaptor.QueryParams.TYPE.key(), filesCommandOptions.searchCommandOptions.type);
@@ -294,6 +295,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         o.putIfNotNull("annotate", filesCommandOptions.indexCommandOptions.annotate);
         o.putIfNotNull("overwrite", filesCommandOptions.indexCommandOptions.overwriteAnnotations);
         o.putIfNotNull(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.indexCommandOptions.studyId);
+        o.putIfNotNull(VariantStorageManager.Options.RESUME.key(), filesCommandOptions.indexCommandOptions.resume);
         o.putAll(filesCommandOptions.commonCommandOptions.params);
 
         return openCGAClient.getFileClient().index(fileIds, o);
@@ -497,7 +499,8 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         queryOptions.putIfNotEmpty("ids", filesCommandOptions.variantsCommandOptions.ids);
         queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.variantsCommandOptions.studyId);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.REGION.key(), filesCommandOptions.variantsCommandOptions.region);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.REGION.key(),
+                filesCommandOptions.variantsCommandOptions.region);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(),
                 filesCommandOptions.variantsCommandOptions.chromosome);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.GENE.key(), filesCommandOptions.variantsCommandOptions.gene);
@@ -512,9 +515,12 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
                 filesCommandOptions.variantsCommandOptions.returnedSamples);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(),
                 filesCommandOptions.variantsCommandOptions.returnedFiles);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.FILES.key(), filesCommandOptions.variantsCommandOptions.files);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), filesCommandOptions.variantsCommandOptions.maf);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.STATS_MGF.key(), filesCommandOptions.variantsCommandOptions.mgf);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.FILES.key(),
+                filesCommandOptions.variantsCommandOptions.files);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.STATS_MAF.key(),
+                filesCommandOptions.variantsCommandOptions.maf);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.STATS_MGF.key(),
+                filesCommandOptions.variantsCommandOptions.mgf);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.MISSING_ALLELES.key(),
                 filesCommandOptions.variantsCommandOptions.missingAlleles);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.MISSING_GENOTYPES.key(),

@@ -236,7 +236,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         Query query = new Query();
         QueryOptions queryOptions = new QueryOptions();
 
-        String id = studiesCommandOptions.searchCommandOptions.studies;
         String projectId = studiesCommandOptions.searchCommandOptions.project;
         String name = studiesCommandOptions.searchCommandOptions.name;
         String alias = studiesCommandOptions.searchCommandOptions.alias;
@@ -248,7 +247,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         String battributes = studiesCommandOptions.searchCommandOptions.battributes;
 //        String groups = studiesCommandOptions.searchCommandOptions.groups;
 //        String groupsUsers = studiesCommandOptions.searchCommandOptions.groupsUsers;
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), id );
 
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId);
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.NAME.key(), name);

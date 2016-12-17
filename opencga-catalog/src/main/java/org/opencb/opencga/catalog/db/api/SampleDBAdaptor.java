@@ -50,6 +50,7 @@ public interface SampleDBAdaptor extends AnnotationSetDBAdaptor<Sample, SampleAc
         STATUS_DATE("status.date", TEXT, ""),
 
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
+        STUDY("study", INTEGER_ARRAY, ""), // Alias to studyId in the database. Only for the webservices.
 
         ACL("acl", TEXT_ARRAY, ""),
         ACL_MEMBER("acl.member", TEXT_ARRAY, ""),

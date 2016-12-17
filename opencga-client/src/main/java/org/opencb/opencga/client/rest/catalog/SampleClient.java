@@ -41,7 +41,7 @@ public class SampleClient extends AnnotationClient<Sample, SampleAclEntry> {
     }
 
     public QueryResponse<Sample> create(String studyId, String sampleName, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "studyId", studyId, "name", sampleName);
+        params = addParamsToObjectMap(params, "study", studyId, "name", sampleName);
         return execute(SAMPLES_URL, "create", params, GET, Sample.class);
     }
 
@@ -51,12 +51,12 @@ public class SampleClient extends AnnotationClient<Sample, SampleAclEntry> {
     }
 
     public QueryResponse<Sample> loadFromPed(String studyId, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "studyId", studyId);
+        params = addParamsToObjectMap(params, "study", studyId);
         return execute(SAMPLES_URL, "load", params, GET, Sample.class);
     }
 
     public QueryResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "studyId", studyId, "fields", fields);
+        params = addParamsToObjectMap(params, "study", studyId, "fields", fields);
         return execute(SAMPLES_URL, "groupBy", params, GET, ObjectMap.class);
     }
 

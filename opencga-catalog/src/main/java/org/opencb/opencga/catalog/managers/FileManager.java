@@ -2424,7 +2424,16 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (outDirPath != null && !StringUtils.isNumeric(outDirPath) && outDirPath.contains("/") && !outDirPath.endsWith("/")) {
             outDirPath = outDirPath + "/";
         }
-        long outDirId = getId(userId, outDirPath);
+
+        long outDirId = 0;
+        try {
+            outDirId = getId(outDirPath, Long.toString(studyId), sessionId).getResourceId();
+        } catch (CatalogException e) {
+            logger.warn("{} does not exist. Trying to create the output directory.");
+            QueryResult<File> folder = createFolder(studyId, outDirPath, new File.FileStatus(), true, "", new QueryOptions(), sessionId);
+            outDirId = folder.first().getId();
+        }
+
         if (outDirId > 0) {
             authorizationManager.checkFilePermission(outDirId, userId, FileAclEntry.FilePermissions.CREATE);
             if (fileDBAdaptor.getStudyIdByFileId(outDirId) != studyId) {

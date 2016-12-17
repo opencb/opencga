@@ -37,6 +37,7 @@ public class AnnotationCommandExecutor<T,U> {
 
         ObjectMapper mapper = new ObjectMapper();
         ObjectMap obj = mapper.readValue(new File(createCommandOptions.annotations), ObjectMap.class);
+        obj.putIfNotNull("study", createCommandOptions.study);
         return client.createAnnotationSet(createCommandOptions.id, createCommandOptions.variableSetId,
                 createCommandOptions.annotationSetName, obj);
     }
@@ -46,7 +47,7 @@ public class AnnotationCommandExecutor<T,U> {
             throws IOException {
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull("asMap", infoCommandOptions.asMap);
+        params.putIfNotNull("study", infoCommandOptions.study);
         return client.getAllAnnotationSets(infoCommandOptions.id, params);
     }
 
@@ -54,7 +55,7 @@ public class AnnotationCommandExecutor<T,U> {
                                      AnnotationClient<T,U> client) throws IOException {
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull("asMap", infoCommandOptions.asMap);
+        params.putIfNotNull("study", infoCommandOptions.study);
         return client.getAnnotationSet(infoCommandOptions.id, infoCommandOptions.annotationSetName, params);
     }
 
@@ -64,7 +65,7 @@ public class AnnotationCommandExecutor<T,U> {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("variableSetId", searchCommandOptions.variableSetId);
         params.putIfNotNull("annotation", searchCommandOptions.annotation);
-        params.putIfNotNull("asMap", searchCommandOptions.asMap);
+        params.putIfNotNull("study", searchCommandOptions.study);
         return client.searchAnnotationSets(searchCommandOptions.id, params);
     }
 
@@ -73,6 +74,7 @@ public class AnnotationCommandExecutor<T,U> {
             throws IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("annotations", deleteCommandOptions.annotations);
+        params.putIfNotNull("study", deleteCommandOptions.study);
         return client.deleteAnnotationSet(deleteCommandOptions.id, deleteCommandOptions.annotationSetName, params);
     }
 
@@ -82,6 +84,7 @@ public class AnnotationCommandExecutor<T,U> {
 
         ObjectMapper mapper = new ObjectMapper();
         ObjectMap obj = mapper.readValue(new File(updateCommandOptions.annotations), ObjectMap.class);
+        obj.putIfNotNull("study", updateCommandOptions.study);
 
         return client.updateAnnotationSet(updateCommandOptions.id, updateCommandOptions.annotationSetName, obj);
     }

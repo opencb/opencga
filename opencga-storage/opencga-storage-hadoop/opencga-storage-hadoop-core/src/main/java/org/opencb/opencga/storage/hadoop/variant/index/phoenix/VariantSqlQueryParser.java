@@ -151,7 +151,7 @@ public class VariantSqlQueryParser {
             return sb.append(" COUNT(*) ");
         } else {
 
-            Set<String> returnedFields = utils.getReturnedFields(options);
+            Set<String> returnedFields = getReturnedFields(options);
 
             List<Integer> studyIds = utils.getStudyIds(options.getAsList(RETURNED_STUDIES.key()), options);
             if (studyIds == null || studyIds.isEmpty()) {

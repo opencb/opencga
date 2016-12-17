@@ -162,10 +162,6 @@ public class StudyCommandOptions {
 //        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
 //        public String exclude;
 
-        @Deprecated
-        @Parameter(names = {"--study"}, description = "Comma separated list of study ids", arity = 1)
-        public String studies;
-
         @Parameter(names = {"--project"}, description = "Project Id.", arity = 1)
         public String project;
 

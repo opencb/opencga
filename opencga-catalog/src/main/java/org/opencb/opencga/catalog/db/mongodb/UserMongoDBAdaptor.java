@@ -776,6 +776,9 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
+            if (queryParam == null) {
+                continue;
+            }
             try {
                 switch (queryParam) {
                     case ID:
@@ -792,9 +795,37 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
-
-                    default:
+                    case NAME:
+                    case EMAIL:
+                    case PASSWORD:
+                    case ORGANIZATION:
+                    case STATUS_NAME:
+                    case STATUS_MSG:
+                    case STATUS_DATE:
+                    case LAST_MODIFIED:
+                    case DISK_USAGE:
+                    case DISK_QUOTA:
+                    case PROJECTS:
+                    case PROJECT_ID:
+                    case PROJECT_NAME:
+                    case PROJECT_ALIAS:
+                    case PROJECT_ORGANIZATION:
+                    case PROJECT_STATUS:
+                    case PROJECT_LAST_MODIFIED:
+                    case TOOL_ID:
+                    case TOOL_NAME:
+                    case TOOL_ALIAS:
+                    case SESSIONS:
+                    case SESSION_ID:
+                    case SESSION_IP:
+                    case SESSION_LOGIN:
+                    case SESSION_LOGOUT:
+                    case CONFIGS:
+                    case CONFIGS_FILTERS:
+                    case CONFIGS_FILTERS_NAME:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    default:
                         break;
                 }
             } catch (Exception e) {

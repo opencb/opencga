@@ -20,19 +20,21 @@ package org.opencb.opencga.catalog.managers.api;
  * Created by pfurio on 06/07/16.
  */
 
-import org.opencb.commons.datastore.core.ObjectMap;
+import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.AnnotationSet;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.Study;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -73,57 +75,63 @@ public interface ICohortManager extends ResourceManager<Long, Cohort>, IAnnotati
     }
 
     /**
+     * Obtains the resource java bean containing the requested ids.
+     *
+     * @param cohortStr Cohort id in string format. Could be either the id or name.
+     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param sessionId Session id of the user logged.
+     * @return the resource java bean containing the requested ids.
+     * @throws CatalogException when more than one cohort id is found.
+     */
+    AbstractManager.MyResourceId getId(String cohortStr, @Nullable String studyStr, String sessionId) throws CatalogException;
+
+    /**
+     * Obtains the resource java bean containing the requested ids.
+     *
+     * @param cohortStr Cohort id in string format. Could be either the id or alias.
+     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param sessionId Session id of the user logged.
+     * @return the resource java bean containing the requested ids.
+     * @throws CatalogException CatalogException.
+     */
+    AbstractManager.MyResourceIds getIds(String cohortStr, @Nullable String studyStr, String sessionId) throws CatalogException;
+
+
+    /**
      * Delete entries from Catalog.
      *
      * @param ids       Comma separated list of ids corresponding to the objects to delete
+     * @param studyStr  Study string.
      * @param options   Deleting options.
      * @param sessionId sessionId
-     * @return A list with the deleted objects
+     * @return A list with the deleted objects.
      * @throws CatalogException CatalogException
      * @throws IOException IOException.
      */
-    List<QueryResult<Cohort>> delete(String ids, QueryOptions options, String sessionId) throws CatalogException, IOException;
+    List<QueryResult<Cohort>> delete(String ids, @Nullable String studyStr, QueryOptions options, String sessionId)
+            throws CatalogException, IOException;
 
-    /**
-     * Groups the elements queried by the field(s) given.
-     *
-     * @param studyId Study id.
-     * @param query   Query object containing the query that will be executed.
-     * @param field   Field by which the results will be grouped in.
-     * @param options QueryOptions object.
-     * @param sessionId  sessionId.
-     * @return        A QueryResult object containing the results of the query grouped by the field.
-     * @throws CatalogException CatalogException
-     */
-    QueryResult groupBy(long studyId, Query query, String field, QueryOptions options, String sessionId) throws CatalogException;
-
-    default QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        long studyId = query.getLong(CohortDBAdaptor.QueryParams.STUDY_ID.key());
-        if (studyId == 0L) {
-            throw new CatalogException("Cohort[groupBy]: Study id not found in the query");
+    default QueryResult groupBy(@Nullable String studyStr, Query query, QueryOptions options, String fields, String sessionId)
+            throws CatalogException {
+        if (StringUtils.isEmpty(fields)) {
+            throw new CatalogException("Empty fields parameter.");
         }
-        return groupBy(studyId, query, field, options, sessionId);
+        return groupBy(studyStr, query, Arrays.asList(fields.split(",")), options, sessionId);
     }
 
-    /**
-     * Groups the elements queried by the field(s) given.
-     *
-     * @param studyId Study id.
-     * @param query   Query object containing the query that will be executed.
-     * @param fields  List of fields by which the results will be grouped in.
-     * @param options QueryOptions object.
-     * @param sessionId  sessionId.
-     * @return        A QueryResult object containing the results of the query grouped by the fields.
-     * @throws CatalogException CatalogException
-     */
-    QueryResult groupBy(long studyId, Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
+            throws CatalogException;
 
-    default QueryResult groupBy(Query query, List<String> field, QueryOptions options, String sessionId) throws CatalogException {
-        long studyId = query.getLong(CohortDBAdaptor.QueryParams.STUDY_ID.key());
-        if (studyId == 0L) {
-            throw new CatalogException("Cohort[groupBy]: Study id not found in the query");
-        }
-        return groupBy(studyId, query, field, options, sessionId);
+    @Deprecated
+    @Override
+    default QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
+        throw new NotImplementedException("Group by has to be called passing the study string");
+    }
+
+    @Deprecated
+    @Override
+    default QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
+        throw new NotImplementedException("Group by has to be called passing the study string");
     }
 
     /**
@@ -148,57 +156,4 @@ public interface ICohortManager extends ResourceManager<Long, Cohort>, IAnnotati
         return rank(studyId, query, field, numResults, asc, sessionId);
     }
 
-    @Override
-    default QueryResult<AnnotationSet> createAnnotationSet(String id, @Nullable String studyStr, long variableSetId, String
-            annotationSetName, Map<String, Object> annotations, Map<String, Object> attributes, String sessionId) throws CatalogException {
-        return createAnnotationSet(id, variableSetId, annotationSetName, annotations, attributes, sessionId);
-    }
-
-    @Override
-    default QueryResult<AnnotationSet> getAllAnnotationSets(String id, @Nullable String studyStr, String sessionId)
-            throws CatalogException {
-        return getAllAnnotationSets(id, sessionId);
-    }
-
-    @Override
-    default QueryResult<ObjectMap> getAllAnnotationSetsAsMap(String id, @Nullable String studyStr, String sessionId)
-            throws CatalogException {
-        return getAllAnnotationSetsAsMap(id, sessionId);
-    }
-
-    @Override
-    default QueryResult<AnnotationSet> getAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
-            throws CatalogException {
-        return getAnnotationSet(id, annotationSetName, sessionId);
-    }
-
-    @Override
-    default QueryResult<ObjectMap> getAnnotationSetAsMap(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
-            throws CatalogException {
-        return getAnnotationSetAsMap(id, annotationSetName, sessionId);
-    }
-
-    @Override
-    default QueryResult<AnnotationSet> updateAnnotationSet(String id, @Nullable String studyStr, String annotationSetName,
-                                                           Map<String, Object> newAnnotations, String sessionId) throws CatalogException {
-        return updateAnnotationSet(id, annotationSetName, newAnnotations, sessionId);
-    }
-
-    @Override
-    default QueryResult<AnnotationSet> deleteAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String
-            sessionId) throws CatalogException {
-        return deleteAnnotationSet(id, annotationSetName, sessionId);
-    }
-
-    @Override
-    default QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, @Nullable String studyStr, long variableSetId, @Nullable String
-            annotation, String sessionId) throws CatalogException {
-        return searchAnnotationSetAsMap(id, variableSetId, annotation, sessionId);
-    }
-
-    @Override
-    default QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, long variableSetId, @Nullable String
-            annotation, String sessionId) throws CatalogException {
-        return searchAnnotationSet(id, variableSetId, annotation, sessionId);
-    }
 }

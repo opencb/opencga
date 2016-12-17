@@ -169,7 +169,7 @@ public class VariantWriterFactory {
         }
 
         // If compressed a GZip output stream is used
-        if (gzip && outputFormat != VariantOutputFormat.AVRO) {
+        if (gzip && outputFormat != VariantOutputFormat.AVRO_GZ) {
             outputStream = new GZIPOutputStream(outputStream);
         } else {
             outputStream = new BufferedOutputStream(outputStream);

@@ -1435,32 +1435,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 options.remove(QueryOptions.SORT);
             }
         }
-        Set<String> returnedFields = utils.getReturnedFields(options);
-        List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
-        if (!includeList.isEmpty()) { //Include some
-            for (String s : includeList) {
+        Set<String> returnedFields = getReturnedFields(options);
+        if (!returnedFields.isEmpty()) { //Include some
+            for (String s : returnedFields) {
                 String key = DocumentToVariantConverter.toShortFieldName(s);
                 if (key != null) {
                     projection.put(key, 1);
                 } else {
                     logger.warn("Unknown include field: {}", s);
-                }
-            }
-        } else { //Include all
-            for (String field : DocumentToVariantConverter.FIELDS_MAP.values()) {
-                if (field != null) {
-                    projection.put(field, 1);
-                }
-            }
-            if (options.containsKey(QueryOptions.EXCLUDE)) { // Exclude some
-                List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
-                for (String s : excludeList) {
-                    String key = DocumentToVariantConverter.toShortFieldName(s);
-                    if (key != null) {
-                        projection.remove(key);
-                    } else {
-                        logger.warn("Unknown exclude field: {}", s);
-                    }
                 }
             }
         }
@@ -1828,7 +1810,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             samplesConverter.setReturnedUnknownGenotype(query.getString(VariantQueryParams.UNKNOWN_GENOTYPE.key()));
         }
 
-        samplesConverter.setReturnedSamples(utils.getReturnedSamples(query, options));
+        samplesConverter.setReturnedSamples(getReturnedSamplesList(query, options));
 
         DocumentToStudyVariantEntryConverter studyEntryConverter;
         Collection<Integer> returnedFiles;

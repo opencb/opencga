@@ -263,7 +263,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             userId = userManager.getId(sessionId);
         } else {
             if (sampleStr.contains(",")) {
-                throw new CatalogException("More than one file found");
+                throw new CatalogException("More than one sample found");
             }
 
             userId = userManager.getId(sessionId);
@@ -389,7 +389,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkParameter(sampleIdStr, "id");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        MyResourceIds resourceId = catalogManager.getSampleManager().getIds(sampleIdStr, studyStr, sessionId);
+        MyResourceIds resourceId = getIds(sampleIdStr, studyStr, sessionId);
 
         List<QueryResult<Sample>> queryResultList = new ArrayList<>(resourceId.getResourceIds().size());
         for (Long sampleId : resourceId.getResourceIds()) {
@@ -661,39 +661,12 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
-    @Override
-    public QueryResult<AnnotationSet> createAnnotationSet(String id, long variableSetId, String annotationSetName,
-                                                          Map<String, Object> annotations, Map<String, Object> attributes,
-                                                          String sessionId) throws CatalogException {
-        throw new NotImplementedException("Use other method passing the study string");
-    }
-
-    @Override
-    public QueryResult<AnnotationSet> getAllAnnotationSets(String id, String sessionId) throws CatalogException {
-        throw new NotImplementedException("Use other method passing the study string");
-    }
-
-    @Override
-    public QueryResult<ObjectMap> getAllAnnotationSetsAsMap(String id, String sessionId) throws CatalogException {
-        throw new NotImplementedException("Use other method passing the study string");
-    }
-
     private long commonGetAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
         MyResourceId resourceId = catalogManager.getSampleManager().getId(id, studyStr, sessionId);
         authorizationManager.checkSamplePermission(resourceId.getResourceId(), resourceId.getUser(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
         return resourceId.getResourceId();
-    }
-
-    @Override
-    public QueryResult<AnnotationSet> getAnnotationSet(String id, String annotationSetName, String sessionId) throws CatalogException {
-        throw new NotImplementedException("Use other method passing the study string");
-    }
-
-    @Override
-    public QueryResult<ObjectMap> getAnnotationSetAsMap(String id, String annotationSetName, String sessionId) throws CatalogException {
-        throw new NotImplementedException("Use other method passing the study string");
     }
 
     private long commonGetAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
@@ -704,31 +677,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         authorizationManager.checkSamplePermission(resourceId.getResourceId(), resourceId.getUser(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
         return resourceId.getResourceId();
-    }
-
-    @Override
-    public QueryResult<AnnotationSet> updateAnnotationSet(String id, String annotationSetName, Map<String, Object> newAnnotations,
-                                                          String sessionId) throws CatalogException {
-        throw new NotImplementedException("Use other method passing the study string");
-    }
-
-    @Override
-    public QueryResult<AnnotationSet> deleteAnnotationSet(String id, String annotationSetName, String sessionId) throws CatalogException {
-        throw new NotImplementedException("Use other method passing the study string");
-    }
-
-    @Deprecated
-    @Override
-    public QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, long variableSetId, @Nullable String annotation, String sessionId)
-            throws CatalogException {
-        throw new NotImplementedException("Use other method passing the study string");
-    }
-
-    @Deprecated
-    @Override
-    public QueryResult<AnnotationSet> searchAnnotationSet(String id, long variableSetId, @Nullable String annotation,
-                                                          String sessionId) throws CatalogException {
-        throw new NotImplementedException("Use other method passing the study string");
     }
 
     @Override

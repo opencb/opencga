@@ -20,6 +20,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.FileTree;
@@ -46,7 +47,7 @@ public class FileClient extends CatalogClient<File, FileAclEntry> {
     }
 
     public QueryResponse<File> createFolder(String studyId, String paths, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "studyId", studyId, "folders", paths);
+        params = addParamsToObjectMap(params, FileDBAdaptor.QueryParams.STUDY.key(), studyId, "folders", paths);
         return execute(FILES_URL, "create-folder", params, GET, File.class);
     }
 
@@ -56,7 +57,7 @@ public class FileClient extends CatalogClient<File, FileAclEntry> {
     }
 
 //    public QueryResponse<File> link(String studyId, String uri, String studyPath, ObjectMap params) throws CatalogException, IOException {
-//        params = addParamsToObjectMap(params, "studyId", studyId, "uri", uri, "path", studyPath);
+//        params = addParamsToObjectMap(params, FileDBAdaptor.QueryParams.STUDY.key(), studyId, "uri", uri, "path", studyPath);
 //        return execute(FILES_URL, "link", params, GET, File.class);
 //    }
 
@@ -106,12 +107,12 @@ public class FileClient extends CatalogClient<File, FileAclEntry> {
     }
 
     public QueryResponse<File> upload(String studyId, String filePath, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "studyId", studyId, "file", filePath);
+        params = addParamsToObjectMap(params, FileDBAdaptor.QueryParams.STUDY.key(), studyId, "file", filePath);
         return execute(FILES_URL, "upload", params, POST, File.class);
     }
 
     public QueryResponse<File> groupBy(String studyId, String fields, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "studyId", studyId, "fields", fields);
+        params = addParamsToObjectMap(params, FileDBAdaptor.QueryParams.STUDY.key(), studyId, "fields", fields);
         return execute(FILES_URL, "groupBy", params, GET, File.class);
     }
 

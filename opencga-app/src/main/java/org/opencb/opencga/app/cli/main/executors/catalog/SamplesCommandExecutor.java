@@ -137,7 +137,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         objectMap.putIfNotEmpty(SampleDBAdaptor.QueryParams.DESCRIPTION.key(), samplesCommandOptions.createCommandOptions.description);
         objectMap.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.createCommandOptions.source);
 
-        return openCGAClient.getSampleClient().create(samplesCommandOptions.createCommandOptions.studyId,
+        return openCGAClient.getSampleClient().create(samplesCommandOptions.createCommandOptions.study,
                 samplesCommandOptions.createCommandOptions.name, objectMap);
     }
 
@@ -172,8 +172,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         Query query = new Query();
         QueryOptions queryOptions = new QueryOptions();
 
-        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY_ID.key(),samplesCommandOptions.searchCommandOptions.studyId);
-        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.ID.key(), samplesCommandOptions.searchCommandOptions.id);
+        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(),samplesCommandOptions.searchCommandOptions.study);
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.NAME.key(), samplesCommandOptions.searchCommandOptions.name);
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.searchCommandOptions.source);
         query.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(),
@@ -241,7 +240,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             objectMap.put(SampleDBAdaptor.QueryParams.ANNOTATION.key(),
                     samplesCommandOptions.groupByCommandOptions.annotation);
         }
-        return openCGAClient.getSampleClient().groupBy(samplesCommandOptions.groupByCommandOptions.studyId,
+        return openCGAClient.getSampleClient().groupBy(samplesCommandOptions.groupByCommandOptions.study,
                 samplesCommandOptions.groupByCommandOptions.fields,objectMap);
     }
 

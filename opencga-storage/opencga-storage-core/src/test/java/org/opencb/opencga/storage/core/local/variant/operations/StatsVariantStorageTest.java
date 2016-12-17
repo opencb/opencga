@@ -27,8 +27,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.mongodb.MongoDataStore;
-import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -38,9 +36,11 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.local.variant.AbstractVariantStorageOperationTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,10 +49,16 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
+import static org.junit.internal.matchers.ThrowableMessageMatcher.hasMessage;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doThrow;
 import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
 import static org.opencb.opencga.storage.core.variant.VariantStorageBaseTest.getResourceUri;
 /**
+ *
  * Created by hpccoll1 on 08/07/15.
  */
 public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest {
@@ -60,9 +66,6 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
     Logger logger = LoggerFactory.getLogger(StatsVariantStorageTest.class);
     private long all;
     private long[] coh = new long[5];
-
-    private final String userId = "user";
-    private final String dbName = "opencga_variants_test";
 
     public void before () throws Exception {
 
@@ -75,7 +78,8 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
                     sampleIds.subList(sampleIds.size() / coh.length * i, sampleIds.size() / coh.length * (i + 1)), null, sessionId).first().getId();
         }
         QueryOptions queryOptions = new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false);
-        variantManager.index(String.valueOf(file.getId()), createTmpOutdir(file), String.valueOf(outputId), queryOptions, sessionId);
+        queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
+        variantManager.index(String.valueOf(file.getId()), createTmpOutdir(file), queryOptions, sessionId);
 
 
         all = catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), DEFAULT_COHORT),
@@ -98,7 +102,8 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 //        coh0 = catalogManager.createCohort(studyId, "coh0", Cohort.Type.CONTROL_SET, "", file1.getSampleIds(), null, sessionId).first().getId();
 
         QueryOptions queryOptions = new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false);
-        variantManager.index(String.valueOf(file1.getId()), createTmpOutdir(file1), String.valueOf(outputId), queryOptions, sessionId);
+        queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
+        variantManager.index(String.valueOf(file1.getId()), createTmpOutdir(file1), queryOptions, sessionId);
         return file1;
     }
 
@@ -132,13 +137,6 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
     @Override
     protected VariantSource.Aggregation getAggregation() {
         return VariantSource.Aggregation.NONE;
-    }
-
-    private void clearDB(String dbName) {
-        logger.info("Cleaning MongoDB {}" , dbName);
-        MongoDataStoreManager mongoManager = new MongoDataStoreManager("localhost", 27017);
-        MongoDataStore mongoDataStore = mongoManager.get(dbName);
-        mongoManager.drop(dbName);
     }
 
     @After
@@ -183,8 +181,8 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
     public void calculateStats(long cohortId, QueryOptions options) throws Exception {
         String tmpOutdir = createTmpOutdir("_STATS_" + cohortId);
         List<String> cohortIds = Collections.singletonList(String.valueOf(cohortId));
-        variantManager.stats(String.valueOf(catalogManager.getStudyIdByCohortId(cohortId)), cohortIds, tmpOutdir, String.valueOf(outputId),
-                options, sessionId);
+        options.put(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
+        variantManager.stats(String.valueOf(catalogManager.getStudyIdByCohortId(cohortId)), cohortIds, tmpOutdir, options, sessionId);
     }
 
     public void calculateStats(QueryOptions options, Long... cohortIds) throws Exception {
@@ -193,7 +191,8 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
     public void calculateStats(QueryOptions options, List<String> cohorts) throws Exception {
         String tmpOutdir = createTmpOutdir("_STATS_" + cohorts.stream().collect(Collectors.joining("_")));
-        variantManager.stats(String.valueOf(studyId), cohorts, tmpOutdir, String.valueOf(outputId), options, sessionId);
+        options.put(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
+        variantManager.stats(String.valueOf(studyId), cohorts, tmpOutdir, options, sessionId);
     }
 
     @Test
@@ -212,7 +211,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
             calculateStats(new QueryOptions(), all, coh[3], -coh[4]);
             fail();
         } catch (CatalogException e) {
-            logger.info("received expected exception. this is OK, there is no cohort " + (-coh[4]) + "\n");
+            logger.info("received expected exception. this is OK, there is no cohort " + (-coh[4]) + '\n');
         }
         assertEquals(Cohort.CohortStatus.NONE, catalogManager.getCohort(all, null, sessionId).first().getStatus().getName());
         assertEquals(Cohort.CohortStatus.NONE, catalogManager.getCohort(coh[3], null, sessionId).first().getStatus().getName());
@@ -254,6 +253,52 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getCohort(coh[0], null, sessionId).first().getStatus().getName());
         cohorts.put("coh0", catalogManager.getCohort(coh[0], null, sessionId).first());
         checkCalculatedStats(cohorts);
+    }
+
+
+    @Test
+    public void testCalculateInvalidStats() throws Exception {
+        before();
+
+        calculateStats(coh[0]);
+
+        DummyVariantStorageManager vsm = mockVariantStorageManager();
+        String message = "Error";
+        doThrow(new StorageManagerException(message)).when(vsm).calculateStats(any(), any(), any(), any());
+
+        try {
+            calculateStats(coh[1]);
+            fail();
+        } catch (StorageManagerException e) {
+            assertEquals(message, e.getCause().getMessage());
+        }
+
+        Cohort coh1 = catalogManager.getCohort(coh[1], null, sessionId).first();
+        assertEquals(Cohort.CohortStatus.INVALID, coh1.getStatus().getName());
+
+        vsm = mockVariantStorageManager();
+        calculateStats(coh[1]);
+    }
+
+    @Test
+    public void testResumeCalculateStats() throws Exception {
+        before();
+
+        calculateStats(coh[0]);
+
+        catalogManager.getCohortManager().setStatus(String.valueOf(coh[1]), Cohort.CohortStatus.CALCULATING, "", sessionId);
+        Cohort coh1 = catalogManager.getCohort(coh[1], null, sessionId).first();
+        Exception expected = VariantStatsStorageOperation.unableToCalculateCohortCalculating(coh1);
+        try {
+            calculateStats(coh[1]);
+            fail();
+        } catch (Exception e) {
+            assertThat(e, instanceOf(expected.getClass()));
+            assertThat(e, hasMessage(is(expected.getMessage())));
+        }
+
+        calculateStats(coh[1], new QueryOptions(VariantStorageManager.Options.RESUME.key(), true));
+
     }
 
     @Test

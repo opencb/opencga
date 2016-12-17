@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.local.variant.operations;
 
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -47,6 +48,8 @@ import static org.opencb.opencga.catalog.monitor.executors.AbstractExecutor.*;
  * Created by pfurio on 23/08/16.
  */
 public abstract class StorageOperation {
+
+    public static final String CATALOG_PATH = "catalogPath";
 
     protected final CatalogManager catalogManager;
     protected final StorageManagerFactory storageManagerFactory;
@@ -78,9 +81,10 @@ public abstract class StorageOperation {
         }
     }
 
-    protected Long getCatalogOutdirId(long studyId, String catalogOutDirIdStr, String sessionId) throws CatalogException {
+    protected Long getCatalogOutdirId(long studyId, ObjectMap options, String sessionId) throws CatalogException {
         Long catalogOutDirId;
-        if (catalogOutDirIdStr != null) {
+        if (options != null && StringUtils.isNoneEmpty(options.getString(CATALOG_PATH))) {
+            String catalogOutDirIdStr = options.getString(CATALOG_PATH);
             catalogOutDirId = catalogManager.getFileManager().getId(catalogOutDirIdStr, Long.toString(studyId), sessionId).getResourceId();
             if (catalogOutDirId <= 0) {
                 throw new CatalogException("Output directory " + catalogOutDirIdStr + " could not be found within catalog.");

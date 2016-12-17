@@ -644,6 +644,9 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
+            if (queryParam == null) {
+                continue;
+            }
             try {
                 switch (queryParam) {
                     case ID:
@@ -663,8 +666,32 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                         mongoKey = "projects." + entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
-                    default:
+                    case NAME:
+                    case ALIAS:
+                    case CREATION_DATE:
+                    case DESCRIPTION:
+                    case ORGANIZATION:
+                    case ORGANISM:
+                    case ORGANISM_SCIENTIFIC_NAME:
+                    case ORGANISM_COMMON_NAME:
+                    case ORGANISM_TAXONOMY_CODE:
+                    case ORGANISM_ASSEMBLY:
+                    case STATUS_NAME:
+                    case STATUS_MSG:
+                    case STATUS_DATE:
+                    case LAST_MODIFIED:
+                    case DISK_USAGE:
+                    case DATASTORES:
+                    case STUDY_ID:
+                    case STUDY_NAME:
+                    case STUDY_ALIAS:
+                    case STUDY_CREATOR_ID:
+                    case STUDY_STATUS:
+                    case STUDY_LAST_MODIFIED:
+                    case ACL_USER_ID:
                         addAutoOrQuery("projects." + queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    default:
                         break;
                 }
             } catch (Exception e) {

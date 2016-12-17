@@ -324,7 +324,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void checkIndividualPermission(long individualId, String userId, IndividualAclEntry.IndividualPermissions permission)
             throws CatalogException {
-        long studyId = individualDBAdaptor.getStudyIdByIndividualId(individualId);
+        long studyId = individualDBAdaptor.getStudyId(individualId);
         if (isStudyOwner(studyId, userId)) {
             return;
         }
@@ -471,7 +471,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkCohortPermission(long cohortId, String userId, CohortAclEntry.CohortPermissions permission) throws CatalogException {
-        long studyId = cohortDBAdaptor.getStudyIdByCohortId(cohortId);
+        long studyId = cohortDBAdaptor.getStudyId(cohortId);
         if (isStudyOwner(studyId, userId)) {
             return;
         }
@@ -1403,7 +1403,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.SHARE);
 
         // Check if all the members have a permission already set at the study level.
-        long studyId = individualDBAdaptor.getStudyIdByIndividualId(individualId);
+        long studyId = individualDBAdaptor.getStudyId(individualId);
         for (String member : members) {
             if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
                 throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
@@ -1459,7 +1459,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public QueryResult<IndividualAclEntry> getIndividualAcl(String userId, long individualId, String member) throws CatalogException {
         individualDBAdaptor.checkId(individualId);
 
-        long studyId = individualDBAdaptor.getStudyIdByIndividualId(individualId);
+        long studyId = individualDBAdaptor.getStudyId(individualId);
         checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
 
         try {
@@ -1499,7 +1499,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         individualDBAdaptor.checkId(individualId);
         checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.SHARE);
 
-        long studyId = individualDBAdaptor.getStudyIdByIndividualId(individualId);
+        long studyId = individualDBAdaptor.getStudyId(individualId);
         checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
 
         // Obtain the ACLs the member had
@@ -1522,7 +1522,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         individualDBAdaptor.checkId(individualId);
         checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.SHARE);
 
-        long studyId = individualDBAdaptor.getStudyIdByIndividualId(individualId);
+        long studyId = individualDBAdaptor.getStudyId(individualId);
         checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
 
         // Check that the member has permissions
@@ -1571,7 +1571,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.SHARE);
 
         // Check if all the members have a permission already set at the study level.
-        long studyId = cohortDBAdaptor.getStudyIdByCohortId(cohortId);
+        long studyId = cohortDBAdaptor.getStudyId(cohortId);
         for (String member : members) {
             if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
                 throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
@@ -1626,7 +1626,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public QueryResult<CohortAclEntry> getCohortAcl(String userId, long cohortId, String member) throws CatalogException {
         cohortDBAdaptor.checkId(cohortId);
 
-        long studyId = cohortDBAdaptor.getStudyIdByCohortId(cohortId);
+        long studyId = cohortDBAdaptor.getStudyId(cohortId);
         checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
 
         try {
@@ -1666,7 +1666,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         cohortDBAdaptor.checkId(cohortId);
         checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.SHARE);
 
-        long studyId = cohortDBAdaptor.getStudyIdByCohortId(cohortId);
+        long studyId = cohortDBAdaptor.getStudyId(cohortId);
         checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
 
         // Obtain the ACLs the member had
@@ -1689,7 +1689,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         cohortDBAdaptor.checkId(cohortId);
         checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.SHARE);
 
-        long studyId = cohortDBAdaptor.getStudyIdByCohortId(cohortId);
+        long studyId = cohortDBAdaptor.getStudyId(cohortId);
         checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
 
         // Check that the member has permissions

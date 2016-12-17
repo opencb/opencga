@@ -71,6 +71,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.getReturnedSamplesList;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.BIOTYPE;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.GENES;
 
@@ -431,7 +432,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 Statement statement = getJdbcConnection().createStatement();
                 statement.setFetchSize(options.getInt("batchSize", -1));
                 ResultSet resultSet = statement.executeQuery(sql);
-                List<String> returnedSamples = getDBAdaptorUtils().getReturnedSamples(query, options);
+                List<String> returnedSamples = getReturnedSamplesList(query, options);
                 VariantHBaseResultSetIterator iterator = new VariantHBaseResultSetIterator(
                         resultSet, genomeHelper, getStudyConfigurationManager(), options, returnedSamples);
 

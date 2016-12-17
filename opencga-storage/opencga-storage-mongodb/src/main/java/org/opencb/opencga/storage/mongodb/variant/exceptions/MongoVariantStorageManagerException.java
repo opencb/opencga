@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.mongodb.variant.exceptions;
 
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
-import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager.MongoDBVariantOptions;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 
 import java.util.List;
 
@@ -47,12 +47,12 @@ public class MongoVariantStorageManagerException extends StorageManagerException
     public static MongoVariantStorageManagerException filesBeingMergedException(List<Integer> fileIds) {
         return new MongoVariantStorageManagerException(
                 "Files " + fileIds + " are already being loaded in the variants collection "
-                        + "right now. To ignore this, relaunch with " + MongoDBVariantOptions.MERGE_RESUME.key() + "=true");
+                        + "right now. To ignore this, relaunch with " + VariantStorageManager.Options.RESUME.key() + "=true");
     }
 
     public static MongoVariantStorageManagerException fileBeingStagedException(int fileId, String fileName) {
         return new MongoVariantStorageManagerException(
                 "File \"" + fileName + "\" (" + fileId + ") is already being loaded in the stage collection "
-                        + "right now. To ignore this, relaunch with " + MongoDBVariantOptions.STAGE_RESUME.key() + "=true");
+                        + "right now. To ignore this, relaunch with " + VariantStorageManager.Options.RESUME.key() + "=true");
     }
 }
