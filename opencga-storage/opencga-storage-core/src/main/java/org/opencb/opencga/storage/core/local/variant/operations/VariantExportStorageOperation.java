@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.core.local.variant.operations;
 
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -8,6 +7,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -19,9 +20,11 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantMetadataImporter;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -41,36 +44,42 @@ public class VariantExportStorageOperation extends StorageOperation {
                 LoggerFactory.getLogger(VariantExportStorageOperation.class));
     }
 
-    public List<File> exportData(List<StudyInfo> studyInfos, Query query, String outputFormat, String outdirStr,
-                                 String sessionId, ObjectMap options)
-            throws IOException, StorageManagerException, URISyntaxException, CatalogException {
+    public List<URI> exportData(List<StudyInfo> studyInfos, Query query, VariantOutputFormat outputFormat, String outputStr,
+                                String sessionId, ObjectMap options)
+            throws IOException, StorageManagerException, CatalogException {
         if (options == null) {
             options = new ObjectMap();
         }
 
-        // Outdir must be empty
-        List<File> newFiles;
-
+        List<URI> newFiles = new ArrayList<>();
 
         if (studyInfos.isEmpty()) {
             logger.warn("Nothing to do!");
             return Collections.emptyList();
         }
-
         Thread hook = null;
         URI outputFile = null;
         final Path outdir;
-        if (StringUtils.isNoneEmpty(outdirStr)) {
-            URI outdirUri = UriUtils.createUri(outdirStr);
+        if (!VariantWriterFactory.isStandardOutput(outputStr)) {
+            URI outdirUri = null;
+            try {
+                outdirUri = UriUtils.createUri(outputStr);
+            } catch (URISyntaxException e) {
+                throw new IllegalArgumentException(e);
+            }
             String outputFileName = null;
             if (!Paths.get(outdirUri).toFile().exists()) {
                 outputFileName = outdirUri.resolve(".").relativize(outdirUri).toString();
                 outdirUri = outdirUri.resolve(".");
             } else {
-                outdirUri = UriUtils.createDirectoryUri(outdirStr);
+                try {
+                    outdirUri = UriUtils.createDirectoryUri(outputStr);
+                } catch (URISyntaxException e) {
+                    throw new IllegalArgumentException(e);
+                }
                 List<Region> regions = Region.parseRegions(query.getString(VariantDBAdaptor.VariantQueryParams.REGION.key()));
                 outputFileName = buildOutputFileName(studyInfos.stream().map(StudyInfo::getStudyAlias).collect(Collectors.toList()),
-                        regions, outputFormat);
+                        regions);
             }
             outputFile = outdirUri.resolve(outputFileName);
             outdir = Paths.get(outdirUri);
@@ -80,7 +89,6 @@ public class VariantExportStorageOperation extends StorageOperation {
             hook = buildHook(outdir);
             writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
             Runtime.getRuntime().addShutdownHook(hook);
-
         } else {
             outdir = null;
         }
@@ -96,7 +104,7 @@ public class VariantExportStorageOperation extends StorageOperation {
                 }
             }
 
-//            String outputFileName = buildOutputFileName(Collections.singletonList(study.getAlias()), regions, outputFormat);
+//            String outputFileName = buildOutputFileName(Collections.singletonList(study.getAlias()), regions, outputFormatStr);
             Long catalogOutDirId = getCatalogOutdirId(studyInfos.get(0).getStudyId(), options, sessionId);
 
             // TODO: Needed?
@@ -108,9 +116,15 @@ public class VariantExportStorageOperation extends StorageOperation {
             variantStorageManager.exportData(outputFile, outputFormat, dataStore.getDbName(), query, new QueryOptions(options));
 
             if (catalogOutDirId != null && outdir != null) {
-                newFiles = copyResults(outdir, catalogOutDirId, sessionId);
-            } else {
-                newFiles = Collections.emptyList();
+                copyResults(outdir, catalogOutDirId, sessionId).stream().map(File::getUri);
+            }
+            if (outdir != null) {
+                java.io.File[] files = outdir.toFile().listFiles((dir, name) -> !name.equals(AbstractExecutor.JOB_STATUS_FILE));
+                if (files != null) {
+                    for (java.io.File file : files) {
+                        newFiles.add(file.toURI());
+                    }
+                }
             }
 
             if (outdir != null) {
@@ -158,7 +172,7 @@ public class VariantExportStorageOperation extends StorageOperation {
     }
 
 
-    private String buildOutputFileName(List<String> studyNames, List<Region> regions, String format) {
+    private String buildOutputFileName(List<String> studyNames, List<Region> regions) {
         String studies = String.join("_", studyNames);
         if (regions == null || regions.size() != 1) {
             return studies + ".export";

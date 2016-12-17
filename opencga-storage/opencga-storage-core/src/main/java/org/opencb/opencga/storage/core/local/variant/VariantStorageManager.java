@@ -44,6 +44,7 @@ import org.opencb.opencga.storage.core.local.variant.operations.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 
 import java.io.IOException;
 import java.net.URI;
@@ -69,26 +70,62 @@ public class VariantStorageManager extends StorageManager {
     //   Import/Export methods  //
     // -------------------------//
 
-    public void importData(URI inputUri, String studyId, String sessionId)
+    /**
+     * Loads the given file into an empty study.
+     *
+     * The input file should have, in the same directory, a metadata file, with the same name ended with
+     * {@link org.opencb.opencga.storage.core.variant.io.VariantExporter#METADATA_FILE_EXTENSION}
+     *
+     *
+     * @param inputUri      Variants input file in avro format.
+     * @param study         Study where to load the variants
+     * @param sessionId     User's session id
+     * @throws CatalogException if there is any error with Catalog
+     * @throws IOException      if there is any I/O error
+     * @throws StorageManagerException  if there si any error loading the variants
+     */
+    public void importData(URI inputUri, String study, String sessionId)
             throws CatalogException, IOException, StorageManagerException {
 
         VariantExportStorageOperation op = new VariantExportStorageOperation(catalogManager, storageConfiguration);
-        StudyInfo studyInfo = getStudyInfo(studyId, Collections.emptyList(), sessionId);
+        StudyInfo studyInfo = getStudyInfo(study, Collections.emptyList(), sessionId);
         op.importData(studyInfo, inputUri, sessionId);
 
     }
 
-
-    public List<File> exportData(String outDir, String outputFormat, String studyId, String sessionId)
-            throws URISyntaxException, StorageManagerException, CatalogException, IOException {
-        Query query = new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), studyId)
-                .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
-        return exportData(outDir, outputFormat, query, new QueryOptions(), sessionId);
+    /**
+     * Exports the result of the given query and the associated metadata.
+     * @param outputFile    Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
+     * @param outputFormat  Output format.
+     * @param study         Study to export
+     * @param sessionId     User's session id
+     * @return              List of generated files
+     * @throws CatalogException if there is any error with Catalog
+     * @throws IOException  If there is any IO error
+     * @throws StorageManagerException  If there is any error exporting variants
+     */
+    public List<URI> exportData(String outputFile, VariantOutputFormat outputFormat, String study, String sessionId)
+            throws StorageManagerException, CatalogException, IOException {
+        Query query = new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), study)
+                .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), study);
+        return exportData(outputFile, outputFormat, query, new QueryOptions(), sessionId);
     }
 
-    public List<File> exportData(String outDir, String outputFormat, Query query, QueryOptions queryOptions,
-                                 String sessionId)
-            throws CatalogException, IOException, StorageManagerException, URISyntaxException {
+    /**
+     * Exports the result of the given query and the associated metadata.
+     * @param outputFile    Optional output file. If null or empty, will print into the Standard output. Won't export any metadata.
+     * @param outputFormat  Variant Output format.
+     * @param query         Query with the variants to export
+     * @param queryOptions  Query options
+     * @param sessionId     User's session id
+     * @return              List of generated files
+     * @throws CatalogException if there is any error with Catalog
+     * @throws IOException  If there is any IO error
+     * @throws StorageManagerException  If there is any error exporting variants
+     */
+    public List<URI> exportData(String outputFile, VariantOutputFormat outputFormat, Query query, QueryOptions queryOptions,
+                                String sessionId)
+            throws CatalogException, IOException, StorageManagerException {
         if (query == null) {
             query = new Query();
         }
@@ -101,7 +138,7 @@ public class VariantStorageManager extends StorageManager {
             studyInfos.add(getStudyInfo(String.valueOf(study), Collections.emptyList(), sessionId));
         }
 
-        return op.exportData(studyInfos, query, outputFormat, outDir, sessionId, queryOptions);
+        return op.exportData(studyInfos, query, outputFormat, outputFile, sessionId, queryOptions);
     }
 
     // --------------------------//

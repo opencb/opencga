@@ -48,6 +48,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 import org.opencb.opencga.storage.server.grpc.GenericServiceModel;
 import org.opencb.opencga.storage.server.grpc.VariantProto;
@@ -258,17 +259,16 @@ public class VariantCommandExecutor extends CommandExecutor {
             QueryResult groupBy = variantDBAdaptor.groupBy(query, queryVariantsCommandOptions.groupBy, options);
             System.out.println("groupBy = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(groupBy));
         } else {
-            String outputFormat;
-            if (StringUtils.isNotEmpty(queryVariantsCommandOptions.outputFormat)) {
-                outputFormat = queryVariantsCommandOptions.outputFormat;
-            } else {
-                outputFormat = "vcf.gz";
-            }
             URI uri = StringUtils.isEmpty(queryVariantsCommandOptions.output)
                     ? null
                     : UriUtils.createUri(queryVariantsCommandOptions.output);
 
-            variantStorageManager.exportData(uri, outputFormat, queryVariantsCommandOptions.dbName, query, options);
+            if (queryVariantsCommandOptions.annotations != null) {
+                options.add("annotations", queryVariantsCommandOptions.annotations);
+            }
+            VariantWriterFactory.VariantOutputFormat of = VariantWriterFactory
+                    .toOutputFormat(queryVariantsCommandOptions.outputFormat, queryVariantsCommandOptions.output);
+            variantStorageManager.exportData(uri, of, queryVariantsCommandOptions.dbName, query, options);
         }
     }
 

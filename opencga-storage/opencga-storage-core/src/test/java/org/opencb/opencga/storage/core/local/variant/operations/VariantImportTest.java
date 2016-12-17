@@ -14,6 +14,8 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
+
 /**
  * Created on 12/12/16.
  *
@@ -33,7 +35,7 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
 
         String export = Paths.get(opencga.createTmpOutdir(studyId, "_EXPORT_", sessionId)).resolve("export.avro.gz").toString();
 
-        variantManager.exportData(export, "avro.gz", String.valueOf(studyId), sessionId);
+        variantManager.exportData(export, VariantOutputFormat.AVRO_GZ, String.valueOf(studyId), sessionId);
 
         clearDB(dbName);
 
@@ -53,8 +55,7 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
         Query query = new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), studyId)
                 .append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), someSamples);
         QueryOptions queryOptions = new QueryOptions();
-        variantManager.exportData(export, "avro", query,
-                queryOptions, sessionId);
+        variantManager.exportData(export, VariantOutputFormat.AVRO, query, queryOptions, sessionId);
 
         clearDB(dbName);
 

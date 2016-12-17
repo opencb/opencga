@@ -9,6 +9,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageManager;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -49,7 +50,7 @@ public class VariantExporterTest extends VariantStorageBaseTest {
 
     @Test
     public void exportStudyTest() throws Exception {
-        variantStorageManager.exportData(null, "vcf", DB_NAME, new Query(), new QueryOptions());
+        variantStorageManager.exportData(null, VariantOutputFormat.VCF, DB_NAME, new Query(), new QueryOptions());
         // It may happen that the VcfExporter closes the StandardOutput.
         // Check System.out is not closed
         System.out.println(getClass().getSimpleName() + ": System out not closed!");
@@ -58,7 +59,7 @@ public class VariantExporterTest extends VariantStorageBaseTest {
     @Test
     public void exportStudyJsonTest() throws Exception {
         URI output = newOutputUri().resolve("variant.json.gz");
-        variantStorageManager.exportData(output, "json.gz", DB_NAME, new Query(), new QueryOptions());
+        variantStorageManager.exportData(output, VariantOutputFormat.JSON_GZ, DB_NAME, new Query(), new QueryOptions());
 
         System.out.println("output = " + output);
         assertTrue(Paths.get(output).toFile().exists());

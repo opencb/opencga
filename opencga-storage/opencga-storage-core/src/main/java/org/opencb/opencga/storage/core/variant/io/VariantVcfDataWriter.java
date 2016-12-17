@@ -25,7 +25,6 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.*;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfDataWriter;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -60,11 +59,11 @@ import java.util.stream.Collectors;
  *
  * @author Jose Miguel Mut Lopez &lt;jmmut@ebi.ac.uk&gt;
  */
-public class VariantVcfExporter implements DataWriter<Variant> {
+public class VariantVcfDataWriter implements DataWriter<Variant> {
 
     private static final DecimalFormat DECIMAL_FORMAT_7 = new DecimalFormat("#.#######");
     private static final DecimalFormat DECIMAL_FORMAT_3 = new DecimalFormat("#.###");
-    private final Logger logger = LoggerFactory.getLogger(VariantVcfExporter.class);
+    private final Logger logger = LoggerFactory.getLogger(VariantVcfDataWriter.class);
 
 
     private static final String DEFAULT_ANNOTATIONS = "allele|gene|ensemblGene|ensemblTranscript|biotype|consequenceType|phastCons|phylop"
@@ -81,8 +80,8 @@ public class VariantVcfExporter implements DataWriter<Variant> {
     private List<String> annotations;
     private int failedVariants;
 
-    public VariantVcfExporter(StudyConfiguration studyConfiguration, VariantSourceDBAdaptor sourceDBAdaptor, OutputStream outputStream,
-                              QueryOptions queryOptions) {
+    public VariantVcfDataWriter(StudyConfiguration studyConfiguration, VariantSourceDBAdaptor sourceDBAdaptor, OutputStream outputStream,
+                                QueryOptions queryOptions) {
         this.studyConfiguration = studyConfiguration;
         this.sourceDBAdaptor = sourceDBAdaptor;
         this.outputStream = outputStream;
@@ -115,7 +114,8 @@ public class VariantVcfExporter implements DataWriter<Variant> {
 
         // Default objects
         VariantDBReader reader = new VariantDBReader(studyConfiguration, adaptor, query, options);
-        VariantVcfDataWriter writer = new VariantVcfDataWriter(reader, outputUri.getPath());
+        org.opencb.biodata.formats.variant.vcf4.io.VariantVcfDataWriter writer =
+                new org.opencb.biodata.formats.variant.vcf4.io.VariantVcfDataWriter(reader, outputUri.getPath());
         int batchSize = 100;
 
         // user tuning
@@ -151,7 +151,7 @@ public class VariantVcfExporter implements DataWriter<Variant> {
     public static int htsExport(VariantDBIterator iterator, StudyConfiguration studyConfiguration, VariantSourceDBAdaptor sourceDBAdaptor,
                                 OutputStream outputStream, QueryOptions queryOptions) {
 
-        VariantVcfExporter exporter = new VariantVcfExporter(studyConfiguration, sourceDBAdaptor, outputStream, queryOptions);
+        VariantVcfDataWriter exporter = new VariantVcfDataWriter(studyConfiguration, sourceDBAdaptor, outputStream, queryOptions);
 
         exporter.open();
         exporter.pre();
