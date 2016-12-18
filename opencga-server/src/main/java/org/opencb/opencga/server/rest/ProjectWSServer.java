@@ -31,7 +31,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -67,16 +67,16 @@ public class ProjectWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{projectId}/info")
+    @Path("/{projects}/info")
     @ApiOperation(value = "Project information", position = 2, response = Project.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
     })
-    public Response info(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdsStr) {
+    public Response info(@ApiParam(value = "Comma separated list of project ID or alias", required = true) @PathParam("projects") String projectsStr) {
         try {
-            List<QueryResult<Project>> queryResults = new LinkedList<>();
-            List<Long> projectIds = catalogManager.getProjectIds(projectIdsStr, sessionId);
+            List<Long> projectIds = catalogManager.getProjectIds(projectsStr, sessionId);
+            List<QueryResult<Project>> queryResults = new ArrayList<>(projectIds.size());
             for (Long projectId : projectIds) {
                 queryResults.add(catalogManager.getProject(projectId, queryOptions, sessionId));
             }
@@ -87,7 +87,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{projectId}/studies")
+    @Path("/{projects}/studies")
     @ApiOperation(value = "Get all studies the from a project", position = 3, response = Study[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
@@ -95,11 +95,11 @@ public class ProjectWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query")
     })
-    public Response getAllStudies(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdsStr) {
+    public Response getAllStudies(@ApiParam(value = "Comma separated list of project ID or alias", required = true) @PathParam("projects") String projectsStr) {
         try {
-            List<QueryResult<Study>> results = new LinkedList<>();
-            List<Long> projectIds = catalogManager.getProjectIds(projectIdsStr, sessionId);
-            String[] splittedProjectNames = projectIdsStr.split(",");
+            List<Long> projectIds = catalogManager.getProjectIds(projectsStr, sessionId);
+            List<QueryResult<Study>> results = new ArrayList<>(projectIds.size());
+            String[] splittedProjectNames = projectsStr.split(",");
             for (int i = 0; i < projectIds.size(); i++) {
                 Long projectId = projectIds.get(i);
                 QueryResult<Study> allStudiesInProject = catalogManager.getAllStudiesInProject(projectId, queryOptions, sessionId);
@@ -114,9 +114,9 @@ public class ProjectWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{projectId}/update")
+    @Path("/{project}/update")
     @ApiOperation(value = "Project update", position = 4)
-    public Response update(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdStr,
+    public Response update(@ApiParam(value = "Project ID or alias", required = true) @PathParam("project") String projectStr,
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "alias", required = false) @QueryParam("alias") String alias,
                            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
@@ -127,19 +127,19 @@ public class ProjectWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Organism taxonomy code", required = false) @QueryParam("organism.taxonomyCode") String taxonomyCode,
                            @ApiParam(value = "Organism assembly", required = false) @QueryParam("organism.assembly") String assembly) throws IOException {
         try {
-            ObjectMap objectMap = new ObjectMap();
-            objectMap.putIfNotNull("name", name);
-            objectMap.putIfNotNull("alias", alias);
-            objectMap.putIfNotNull("description", description);
-            objectMap.putIfNotNull("organization", organization);
-            objectMap.putIfNotNull("attributes", attributes);
-            objectMap.putIfNotNull("organism.scientificName", scientificName);
-            objectMap.putIfNotNull("organism.commonName", commonName);
-            objectMap.putIfNotNull("organism.taxonomyCode", taxonomyCode);
-            objectMap.putIfNotNull("organism.assembly", assembly);
+            ObjectMap params = new ObjectMap();
+            params.putIfNotNull("name", name);
+            params.putIfNotNull("alias", alias);
+            params.putIfNotNull("description", description);
+            params.putIfNotNull("organization", organization);
+            params.putIfNotNull("attributes", attributes);
+            params.putIfNotNull("organism.scientificName", scientificName);
+            params.putIfNotNull("organism.commonName", commonName);
+            params.putIfNotNull("organism.taxonomyCode", taxonomyCode);
+            params.putIfNotNull("organism.assembly", assembly);
 
-            long projectId = catalogManager.getProjectId(projectIdStr);
-            QueryResult result = catalogManager.modifyProject(projectId, objectMap, sessionId);
+            long projectId = catalogManager.getProjectId(projectStr);
+            QueryResult result = catalogManager.modifyProject(projectId, params, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -147,14 +147,14 @@ public class ProjectWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{projectId}/update")
+    @Path("/{project}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update by POST [NO TESTED]", position = 4, response = Project.class)
-    public Response updateByPost(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdStr,
+    public Response updateByPost(@ApiParam(value = "Project ID or alias", required = true) @PathParam("project") String projectStr,
                                  @ApiParam(value = "params", required = true) Map<String, Object> params) throws IOException {
         try {
             ObjectMap objectMap = new ObjectMap(params);
-            long projectId = catalogManager.getProjectId(projectIdStr);
+            long projectId = catalogManager.getProjectId(projectStr);
             QueryResult result = catalogManager.getProjectManager().update(projectId, objectMap, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -163,9 +163,9 @@ public class ProjectWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{projectId}/delete")
+    @Path("/{project}/delete")
     @ApiOperation(value = "Delete a project [PENDING]", position = 5)
-    public Response delete(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectId) {
+    public Response delete(@ApiParam(value = "Project ID or alias", required = true) @PathParam("project") String projectId) {
         return createErrorResponse("delete", "PENDING");
     }
 

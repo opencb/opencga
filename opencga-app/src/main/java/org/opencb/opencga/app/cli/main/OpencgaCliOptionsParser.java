@@ -94,7 +94,7 @@ public class OpencgaCliOptionsParser {
         userSubCommands.addCommand("reset-password", usersCommandOptions.resetPasswordCommandOptions);
         // TODO: "password" -> Allow to change
 
-        projectCommandOptions = new ProjectCommandOptions(this.commonCommandOptions, jCommander);
+        projectCommandOptions = new ProjectCommandOptions(this.commonCommandOptions, this.dataModelOptions, this.numericOptions, jCommander);
         jCommander.addCommand("projects", projectCommandOptions);
         JCommander projectSubCommands = jCommander.getCommands().get("projects");
         projectSubCommands.addCommand("create", projectCommandOptions.createCommandOptions);
@@ -102,7 +102,6 @@ public class OpencgaCliOptionsParser {
         projectSubCommands.addCommand("studies", projectCommandOptions.studiesCommandOptions);
         projectSubCommands.addCommand("update", projectCommandOptions.updateCommandOptions);
         projectSubCommands.addCommand("delete", projectCommandOptions.deleteCommandOptions);
-        projectSubCommands.addCommand("help", projectCommandOptions.helpCommandOptions);
 
         studyCommandOptions = new StudyCommandOptions(this.commonCommandOptions, this.dataModelOptions, this.numericOptions, jCommander);
         jCommander.addCommand("studies", studyCommandOptions);

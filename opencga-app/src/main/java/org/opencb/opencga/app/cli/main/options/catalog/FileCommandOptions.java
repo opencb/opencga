@@ -280,9 +280,6 @@ public class FileCommandOptions {
     @Parameters(commandNames = {"index"}, commandDescription = "Index file in the selected StorageEngine")
     public class IndexCommandOptions extends BaseFileCommand {
 
-        @ParametersDelegate
-        public CommonCommandOptions commonOptions = commonCommandOptions;
-
         @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
         public boolean transform;
 
