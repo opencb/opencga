@@ -20,7 +20,6 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.catalog.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.catalog.commons.AnnotationCommandOptions;
 
@@ -99,7 +98,7 @@ public class SampleCommandOptions {
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--sample"}, description = "Sample id or name", required = true, arity = 1)
-        public String id;
+        public String sample;
 
     }
 
@@ -119,13 +118,13 @@ public class SampleCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--name"}, description = "Name for the sample, this must be unique in the study", required = true, arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "Name for the sample, this must be unique in the study", required = true, arity = 1)
         public String name;
 
         @Parameter(names = {"--source"}, description = "Source from which this sample is created such as VCF file", arity = 1)
         public String source;
 
-        @Parameter(names = {"--description"}, description = "Description of the sample", arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = "Description of the sample", arity = 1)
         public String description;
 
     }
@@ -136,8 +135,8 @@ public class SampleCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--file"}, description = "File id already loaded in OpenCGA", required = true, arity = 1)
-        public String fileId;
+        @Parameter(names = {"--ped-file"}, description = "Pedigree file id already loaded in OpenCGA", required = true, arity = 1)
+        public String pedFile;
 
         @Parameter(names = {"--variable-set-id"}, description = "VariableSetId that represents the pedigree file", arity = 1)
         public String variableSetId;
@@ -156,7 +155,7 @@ public class SampleCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"--name"}, description = "List of id or names separated by commas", required = false, arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "List of id or names separated by commas", required = false, arity = 1)
         public String name;
 
         @Parameter(names = {"--source"}, description = "Filter by the sample source such as the VCF file name from which this sample was created", arity = 1)
@@ -179,7 +178,7 @@ public class SampleCommandOptions {
     @Parameters(commandNames = {"update"}, commandDescription = "Update cohort")
     public class UpdateCommandOptions extends BaseSampleCommand {
 
-        @Parameter(names = {"--name"}, description = "Cohort set name.", required = false, arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "Cohort set name.", required = false, arity = 1)
         public String name;
 
         @Parameter(names = {"--individual"}, description = "Individual id or name", required = false, arity = 1)
@@ -188,7 +187,7 @@ public class SampleCommandOptions {
         @Parameter(names = {"--source"}, description = "Source", required = false, arity = 1)
         public String source;
 
-        @Parameter(names = {"--description"}, description = "Description", required = false, arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
         public String description;
 
     }
@@ -208,10 +207,10 @@ public class SampleCommandOptions {
         @Parameter(names = {"--ids"}, description = "[DEPRECATED] Comma separated list of ids.", required = false, arity = 1)
         public String id;
 
-        @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
+        @Parameter(names = {"-f", "--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
         public String fields;
 
-        @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 0)
+        @Parameter(names = {"-n", "--name"}, description = "Comma separated list of names.", required = false, arity = 0)
         public String name;
 
         @Parameter(names = {"--source"}, description = "Source.", required = false, arity = 0)
