@@ -79,8 +79,7 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
                 .collect(Collectors.toSet());
     }
 
-    protected List<Variant> parseCurrentVariantsRegion(List<Cell> variantCells, String chromosome)
-            throws InvalidProtocolBufferException {
+    protected List<Variant> parseCurrentVariantsRegion(List<Cell> variantCells, String chromosome) {
         List<VariantTableStudyRow> tableStudyRows = parseVariantStudyRowsFromArchive(variantCells, chromosome);
         HBaseToVariantConverter converter = getHbaseToVariantConverter();
         List<Variant> variants = new ArrayList<>(tableStudyRows.size());
@@ -90,15 +89,13 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
         return variants;
     }
 
-    protected List<VariantTableStudyRow> parseVariantStudyRowsFromArchive(List<Cell> variantCells, String chr)
-            throws InvalidProtocolBufferException {
+    protected List<VariantTableStudyRow> parseVariantStudyRowsFromArchive(List<Cell> variantCells, String chr) {
         return variantCells.stream().flatMap(c -> {
             try {
                 byte[] protoData = CellUtil.cloneValue(c);
                 if (protoData != null && protoData.length > 0) {
-                    VariantTableStudyRowsProto proto = null;
-                        proto = VariantTableStudyRowsProto.parseFrom(protoData);
-                    List<VariantTableStudyRow> tableStudyRows = parseVariantStudyRowsFromArchive(chr, proto);
+                    List<VariantTableStudyRow> tableStudyRows =
+                            parseVariantStudyRowsFromArchive(chr, VariantTableStudyRowsProto.parseFrom(protoData));
                     return tableStudyRows.stream();
                 }
                 return Stream.empty();
@@ -122,11 +119,9 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
      * @param analysisVar Analysis variants
      * @param rows Variant Table rows
      * @param newSampleIds Sample Ids currently processed
-     * @throws IOException IOException
-     * @throws InterruptedException InterruptedException
      */
     protected void updateOutputTable(Context context, Collection<Variant> analysisVar,
-            List<VariantTableStudyRow> rows, Set<Integer> newSampleIds) throws IOException, InterruptedException {
+            List<VariantTableStudyRow> rows, Set<Integer> newSampleIds) {
         int studyId = getStudyConfiguration().getStudyId();
         BiMap<String, Integer> idMapping = getStudyConfiguration().getSampleIds();
         for (Variant variant : analysisVar) {
@@ -136,8 +131,7 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
     }
 
     protected VariantTableStudyRow updateOutputTable(Context context, int studyId, BiMap<String, Integer> idMapping,
-                                                     Variant variant, Set<Integer> newSampleIds)
-            throws IOException, InterruptedException {
+                                                     Variant variant, Set<Integer> newSampleIds) {
         try {
             VariantTableStudyRow row = new VariantTableStudyRow(variant, studyId, idMapping);
             boolean specificPut = context.getConfiguration().getBoolean(SPECIFIC_PUT, true);
@@ -152,24 +146,27 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
                 context.getCounter(COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(1);
             }
             return row;
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | InterruptedException | IOException e) {
             throw new IllegalStateException("Problems updating " + variant, e);
         }
     }
 
-    protected void updateOutputTable(Context context, Collection<VariantTableStudyRow> variants) throws IOException, InterruptedException {
+    protected void updateOutputTable(Context context, Collection<VariantTableStudyRow> variants) {
 
         for (VariantTableStudyRow variant : variants) {
             Put put = variant.createPut(getHelper());
             if (put != null) {
-                context.write(new ImmutableBytesWritable(getHelper().getOutputTable()), put);
+                try {
+                    context.write(new ImmutableBytesWritable(getHelper().getOutputTable()), put);
+                } catch (IOException | InterruptedException e) {
+                    throw new IllegalStateException(e);
+                }
                 context.getCounter(COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(1);
             }
         }
     }
 
-    protected void updateArchiveTable(byte[] rowKey, Context context, List<VariantTableStudyRow> tableStudyRows)
-            throws IOException, InterruptedException {
+    protected void updateArchiveTable(byte[] rowKey, Context context, List<VariantTableStudyRow> tableStudyRows) {
         if (tableStudyRows.isEmpty()) {
             getLog().info("No new data - tableStudyRows emtpy");
             return;
@@ -181,7 +178,11 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
             String column = GenomeHelper.getVariantcolumn(row);
             put.addColumn(getHelper().getColumnFamily(), Bytes.toBytes(column), value);
         }
-        context.write(new ImmutableBytesWritable(getHelper().getIntputTable()), put);
+        try {
+            context.write(new ImmutableBytesWritable(getHelper().getIntputTable()), put);
+        } catch (IOException | InterruptedException e) {
+            throw new IllegalStateException(e);
+        }
         context.getCounter(COUNTER_GROUP_NAME, "ARCHIVE_TABLE_ROW_PUT").increment(1);
         context.getCounter(COUNTER_GROUP_NAME, "ARCHIVE_TABLE_ROWS_IN_PUT").increment(tableStudyRows.size());
     }

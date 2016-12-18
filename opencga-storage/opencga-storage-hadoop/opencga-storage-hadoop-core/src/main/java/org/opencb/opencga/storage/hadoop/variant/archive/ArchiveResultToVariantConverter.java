@@ -20,6 +20,7 @@
 package org.opencb.opencga.storage.hadoop.variant.archive;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -33,7 +34,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -45,6 +52,7 @@ public class ArchiveResultToVariantConverter {
     private final StudyConfiguration sc;
     private byte[] columnFamily;
     private Map<Integer, VcfSliceToVariantListConverter> fileidToConverter = new HashMap<Integer, VcfSliceToVariantListConverter>();
+    private ForkJoinPool parallelPool = null;
 
     public ArchiveResultToVariantConverter(int studyId, byte[] columnFamily, StudyConfiguration sc) {
         this.studyId = studyId;
@@ -52,14 +60,12 @@ public class ArchiveResultToVariantConverter {
         this.sc = sc;
     }
 
-    public List<Variant> convert(Result value, Long start, Long end, boolean resolveConflict) throws InvalidProtocolBufferException {
-        return filter(convert(value, resolveConflict), start, end);
+    public void setParallelPool(ForkJoinPool parallelPool) {
+        this.parallelPool = parallelPool;
     }
 
-    private List<Variant> filter(List<Variant> variantList, Long start, Long end) {
-        return variantList.stream() // only keep variants in
-                // overlapping this region
-                .filter(v -> variantCoveringRegion(v, start, end, true)).collect(Collectors.toList());
+    public List<Variant> convert(Result value, Long start, Long end, boolean resolveConflict) throws IllegalStateException {
+        return convert(value, resolveConflict, var -> variantCoveringRegion(var, start, end, true));
     }
 
     public static boolean variantCoveringRegion(Variant v, Long start, Long end, boolean inclusive) {
@@ -72,27 +78,44 @@ public class ArchiveResultToVariantConverter {
         }
     }
 
-    public List<Variant> convert(Result value, boolean resolveConflict) throws InvalidProtocolBufferException {
-        return Arrays.stream(value.rawCells()).filter(c -> Bytes.equals(CellUtil.cloneFamily(c), columnFamily))
-                .filter(c -> !Bytes.startsWith(CellUtil.cloneQualifier(c), GenomeHelper.VARIANT_COLUMN_B_PREFIX))
-                .flatMap(c -> {
-                    try {
-                        List<Variant> variants = archiveCellToVariants(
-                                CellUtil.cloneQualifier(c),
-                                CellUtil.cloneValue(c));
-                        if (resolveConflict) {
-                            variants = resolveConflicts(variants);
-                        }
-                        if (LOG.isDebugEnabled()) {
-                            LOG.debug(String.format("For Column %s found %s entries",
-                                    ArchiveHelper.getFileIdFromColumnName(CellUtil.cloneQualifier(c)),
-                                    c.getValueLength()));
-                        }
-                        return variants.stream();
-                    } catch (InvalidProtocolBufferException e) {
-                        throw new IllegalStateException(e);
-                    }
-                }).collect(Collectors.toList());
+    public List<Variant> convert(Result value, boolean resolveConflict) throws IllegalStateException {
+        return convert(value, resolveConflict, Variant -> true); // Default -> use all
+    }
+
+    public List<Variant> convert(Result value, boolean resolveConflict, Predicate<Variant> positionFilter) throws IllegalStateException {
+        Stream<Cell> cellStream =
+                Arrays.stream(value.rawCells()).filter(c -> Bytes.equals(CellUtil.cloneFamily(c), columnFamily))
+                        .filter(c -> !Bytes.startsWith(CellUtil.cloneQualifier(c), GenomeHelper.VARIANT_COLUMN_B_PREFIX));
+
+        Function<Cell, Stream<? extends Variant>> cellStreamFunction = c -> {
+            try {
+                List<Variant> variants = archiveCellToVariants(
+                        CellUtil.cloneQualifier(c),
+                        CellUtil.cloneValue(c));
+                if (resolveConflict) {
+                    variants = resolveConflicts(variants);
+                }
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug(String.format(
+                            "For Column %s found %s entries",
+                            ArchiveHelper.getFileIdFromColumnName(CellUtil.cloneQualifier(c)),
+                            c.getValueLength()));
+                }
+                return variants.stream().filter(positionFilter);
+            } catch (InvalidProtocolBufferException e) {
+                throw new IllegalStateException(e);
+            }
+        };
+        Collector<Variant, ?, List<Variant>> toList = Collectors.toList();
+        if (null != this.parallelPool) { // if parallel
+            try {
+                return this.parallelPool.submit(
+                        () -> cellStream.parallel().flatMap(cellStreamFunction).collect(toList)).get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        return cellStream.flatMap(cellStreamFunction).collect(toList);
     }
 
     private List<Variant> archiveCellToVariants(byte[] key, byte[] value) throws InvalidProtocolBufferException {
