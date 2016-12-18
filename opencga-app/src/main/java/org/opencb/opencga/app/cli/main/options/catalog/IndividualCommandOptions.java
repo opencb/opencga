@@ -20,10 +20,11 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.catalog.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.catalog.commons.AnnotationCommandOptions;
 import org.opencb.opencga.catalog.models.Individual;
+
+import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
 /**
  * Created by sgallego on 6/14/16.
@@ -52,14 +53,19 @@ public class IndividualCommandOptions {
     public AnnotationCommandOptions.AnnotationSetsUpdateCommandOptions annotationUpdateCommandOptions;
 
     public JCommander jCommander;
-    public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
+    public CommonCommandOptions commonCommandOptions;
+    public DataModelOptions commonDataModelOptions;
+    public NumericOptions commonNumericOptions;
 
     private AclCommandOptions aclCommandOptions;
     private AnnotationCommandOptions annotationCommandOptions;
 
-    public IndividualCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public IndividualCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions, NumericOptions numericOptions,
+                                    JCommander jCommander) {
 
         this.commonCommandOptions = commonCommandOptions;
+        this.commonDataModelOptions = dataModelOptions;
+        this.commonNumericOptions = numericOptions;
         this.jCommander = jCommander;
 
         this.createCommandOptions = new CreateCommandOptions();
@@ -85,30 +91,27 @@ public class IndividualCommandOptions {
         this.aclsMemberUpdateCommandOptions = aclCommandOptions.getAclsMemberUpdateCommandOptions();
     }
 
-    public class BaseIndividualsCommand {
+    public class BaseIndividualsCommand extends StudyOption {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--individual"}, description = "Individual name or id", required = true, arity = 1)
-        public String id;
+        @Parameter(names = {"--individual"}, description = "Individual ID or name", required = true, arity = 1)
+        public String individual;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
-                + " alias.", arity = 1)
-        public String studyId;
     }
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create individual.")
-    public class CreateCommandOptions extends GeneralCliOptions.StudyOption {
+    public class CreateCommandOptions extends StudyOption {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-n", "--name"}, description = "Name", required = true, arity = 1)
         public String name;
 
         @Parameter(names = {"--family"}, description = "Family", required = false, arity = 1)
-        public String family = "";
+        public String family;
 
         @Parameter(names = {"--father-id"}, description = "FatherId", required = false, arity = 1)
         public String fatherId;
@@ -153,27 +156,19 @@ public class IndividualCommandOptions {
     @Parameters(commandNames = {"info"}, commandDescription = "Get individual information")
     public class InfoCommandOptions extends BaseIndividualsCommand {
 
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
 
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search for individuals")
-    public class SearchCommandOptions extends GeneralCliOptions.StudyOption {
+    public class SearchCommandOptions extends StudyOption {
 
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
 
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
-
-        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
-        public String skip;
-
-        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
-        public String limit;
+        @ParametersDelegate
+        public NumericOptions numericOptions = commonNumericOptions;
 
         @Parameter(names = {"--name"}, description = "name", required = false, arity = 1)
         public String name;
@@ -194,11 +189,11 @@ public class IndividualCommandOptions {
         public String ethnicity;
 
         @Deprecated
-        @Parameter(names = {"--species"}, description = "species", required = false, arity = 1)
+        @Parameter(names = {"--species"}, description = "[DEPRECATED] species", required = false, arity = 1)
         public String species;
 
         @Deprecated
-        @Parameter(names = {"--population"}, description = "population", required = false, arity = 1)
+        @Parameter(names = {"--population"}, description = "[DEPRECATED] population", required = false, arity = 1)
         public String population;
 
         @Parameter(names = {"--species-taxonomy-code"}, description = "Taxonomy code of the species", required = false, arity = 1)
@@ -237,8 +232,6 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--annotation"}, description = "annotation", required = false, arity = 1)
         public String annotation;
 
-        @Parameter(names = {"--count"}, description = "Total number of results.", required = false, arity = 0)
-        public boolean count;
     }
 
     @Parameters(commandNames = {"update"}, commandDescription = "Update individual information")
@@ -297,16 +290,17 @@ public class IndividualCommandOptions {
     }
 
     @Parameters(commandNames = {"group-by"}, commandDescription = "Group individuals by several fields")
-    public class GroupByCommandOptions extends GeneralCliOptions.StudyOption {
+    public class GroupByCommandOptions extends StudyOption {
 
         @ParametersDelegate
-        GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Deprecated
+        @Parameter(names = {"--ids"}, description = "[DEPRECATED] Comma separated list of ids.", required = false, arity = 1)
+        public String id;
 
         @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
         public String fields;
-
-        @Parameter(names = {"--ids"}, description = "Comma separated list of ids.", required = false, arity = 1)
-        public String id;
 
         @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 0)
         public String name;
@@ -327,11 +321,11 @@ public class IndividualCommandOptions {
         public String ethnicity;
 
         @Deprecated
-        @Parameter(names = {"--species"}, description = "species", required = false, arity = 1)
+        @Parameter(names = {"--species"}, description = "[DEPRECATED] species", required = false, arity = 1)
         public String species;
 
         @Deprecated
-        @Parameter(names = {"--population"}, description = "population", required = false, arity = 1)
+        @Parameter(names = {"--population"}, description = "[DEPRECATED] population", required = false, arity = 1)
         public String population;
 
         @Parameter(names = {"--species-taxonomy-code"}, description = "Taxonomy code of the species", required = false, arity = 1)
@@ -370,4 +364,5 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--annotation"}, description = "Annotation", required = false, arity = 1)
         public String annotation;
     }
+
 }

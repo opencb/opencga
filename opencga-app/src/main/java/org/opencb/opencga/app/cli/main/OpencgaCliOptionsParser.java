@@ -180,7 +180,7 @@ public class OpencgaCliOptionsParser {
        // jobSubCommands.addCommand("run", jobCommandOptions.runJobCommandOptions);
 
 
-        individualCommandOptions = new IndividualCommandOptions(this.commonCommandOptions, jCommander);
+        individualCommandOptions = new IndividualCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("individuals", individualCommandOptions);
         JCommander individualSubCommands = jCommander.getCommands().get("individuals");
         individualSubCommands.addCommand("create", individualCommandOptions.createCommandOptions);

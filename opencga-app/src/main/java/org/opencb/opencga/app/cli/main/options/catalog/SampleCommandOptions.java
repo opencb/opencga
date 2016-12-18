@@ -198,14 +198,14 @@ public class SampleCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy cohort")
+    @Parameters(commandNames = {"group-by"}, commandDescription = "Group samples")
     public class GroupByCommandOptions extends StudyOption {
 
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Deprecated
-        @Parameter(names = {"--ids"}, description = "Comma separated list of ids.", required = false, arity = 1)
+        @Parameter(names = {"--ids"}, description = "[DEPRECATED] Comma separated list of ids.", required = false, arity = 1)
         public String id;
 
         @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)

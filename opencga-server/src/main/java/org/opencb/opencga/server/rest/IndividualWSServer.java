@@ -108,7 +108,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{individualIds}/info")
+    @Path("/{individuals}/info")
     @ApiOperation(value = "Get individual information", position = 2, response = Individual.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
@@ -117,7 +117,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     example = "id,status", dataType = "string", paramType = "query"),
     })
     public Response infoIndividual(@ApiParam(value = "Comma separated list of individual names or ids", required = true)
-                                       @PathParam("individualIds") String individualStr,
+                                       @PathParam("individuals") String individualStr,
                                    @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                         @QueryParam("study") String studyStr) {
         try {
@@ -150,7 +150,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                                   String studyIdStr,
                                       @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
                                               + "alias") @QueryParam("study") String studyStr,
-                                      @ApiParam(value = "id", required = false) @QueryParam("id") String id,
+                                      @ApiParam(value = "DEPRECATED: id", required = false) @QueryParam("id") String id,
                                       @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                                       @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") String fatherId,
                                       @ApiParam(value = "motherId", required = false) @QueryParam("motherId") String motherId,
@@ -192,10 +192,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
     @Deprecated
     @POST
-    @Path("/{individualId}/annotate")
+    @Path("/{individual}/annotate")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Annotate an individual [DEPRECATED]", position = 4)
-    public Response annotateSamplePOST(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
+    public Response annotateSamplePOST(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                        @ApiParam(value = "Annotation set name. Must be unique for the individual", required = true)
                                        @QueryParam("annotateSetName") String annotateSetName,
                                        @ApiParam(value = "VariableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
@@ -226,10 +226,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @Deprecated
     @GET
-    @Path("/{individualId}/annotate")
+    @Path("/{individual}/annotate")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Annotate an individual [DEPRECATED]", position = 5)
-    public Response annotateSampleGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
+    public Response annotateSampleGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                       @ApiParam(value = "Annotation set name. Must be unique", required = true)
                                       @QueryParam("annotateSetName") String annotateSetName,
                                       @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
@@ -277,9 +277,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{individualId}/annotationSets/search")
+    @Path("/{individual}/annotationSets/search")
     @ApiOperation(value = "Search annotation sets [NOT TESTED]", position = 11)
-    public Response searchAnnotationSetGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId")
+    public Response searchAnnotationSetGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual")
                                                        String individualStr,
                                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
                                                    + "alias") @QueryParam("study") String studyStr,
@@ -302,9 +302,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{individualId}/annotationSets/info")
+    @Path("/{individual}/annotationSets/info")
     @ApiOperation(value = "Return all the annotation sets of the individual [NOT TESTED]", position = 12)
-    public Response infoAnnotationSetGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
+    public Response infoAnnotationSetGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
                                                  + "alias") @QueryParam("study") String studyStr,
                                          @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value",
@@ -321,10 +321,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{individualId}/annotationSets/create")
+    @Path("/{individual}/annotationSets/create")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create an annotation set for the individual [NOT TESTED]", position = 13)
-    public Response annotateSamplePOST(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
+    public Response annotateSamplePOST(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                        @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
                                                + "alias") @QueryParam("study") String studyStr,
                                        @ApiParam(value = "VariableSetId of the new annotation", required = true)
@@ -342,9 +342,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{individualId}/annotationSets/{annotationSetName}/delete")
+    @Path("/{individual}/annotationSets/{annotationSetName}/delete")
     @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [NOT TESTED]", position = 14)
-    public Response deleteAnnotationGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
+    public Response deleteAnnotationGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
                                                 + "alias") @QueryParam("study") String studyStr,
                                         @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName")
@@ -365,10 +365,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{individualId}/annotationSets/{annotationSetName}/update")
+    @Path("/{individual}/annotationSets/{annotationSetName}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update the annotations [NOT TESTED]", position = 15)
-    public Response updateAnnotationGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
+    public Response updateAnnotationGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or"
                                                 + " alias") @QueryParam("study") String studyStr,
                                         @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName")
@@ -386,9 +386,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{individualId}/annotationSets/{annotationSetName}/info")
+    @Path("/{individual}/annotationSets/{annotationSetName}/info")
     @ApiOperation(value = "Return the annotation set [NOT TESTED]", position = 16)
-    public Response infoAnnotationGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
+    public Response infoAnnotationGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                       @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
                                               + "alias") @QueryParam("study") String studyStr,
                                       @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName")
@@ -408,9 +408,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
 
     @GET
-    @Path("/{individualId}/update")
+    @Path("/{individual}/update")
     @ApiOperation(value = "Update individual information", position = 6, response = Individual.class)
-    public Response updateIndividual(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
+    public Response updateIndividual(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                             @QueryParam("study") String studyStr,
                                      @ApiParam(value = "name", required = false) @QueryParam("name") String name,
@@ -475,10 +475,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{individualId}/update")
+    @Path("/{individual}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some individual attributes using POST method", position = 6)
-    public Response updateByPost(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
+    public Response updateByPost(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                         @QueryParam("study") String studyStr,
                                  @ApiParam(value = "params", required = true) UpdateIndividual updateParams) {
@@ -493,10 +493,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{individualIds}/delete")
+    @Path("/{individuals}/delete")
     @ApiOperation(value = "Delete individual information", position = 7)
-    public Response deleteIndividual(@ApiParam(value = "Comma separated list of individual ids", required = true)
-                                         @PathParam ("individualIds") String individualIds,
+    public Response deleteIndividual(@ApiParam(value = "Comma separated list of individual IDs or names", required = true)
+                                         @PathParam ("individuals") String individualIds,
                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                             @QueryParam("study") String studyStr) {
         try {
