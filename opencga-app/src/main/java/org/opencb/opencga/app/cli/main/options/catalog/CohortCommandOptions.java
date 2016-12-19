@@ -25,6 +25,8 @@ import org.opencb.opencga.app.cli.main.options.catalog.commons.AclCommandOptions
 import org.opencb.opencga.app.cli.main.options.catalog.commons.AnnotationCommandOptions;
 import org.opencb.opencga.catalog.models.Study;
 
+import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
+
 /**
  * Created by sgallego on 6/14/16.
  */
@@ -53,14 +55,19 @@ public class CohortCommandOptions {
     public AnnotationCommandOptions.AnnotationSetsUpdateCommandOptions annotationUpdateCommandOptions;
 
     public JCommander jCommander;
-    public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
+    public CommonCommandOptions commonCommandOptions;
+    public DataModelOptions commonDataModelOptions;
+    public NumericOptions commonNumericOptions;
 
     private AclCommandOptions aclCommandOptions;
     private AnnotationCommandOptions annotationCommandOptions;
 
-    public CohortCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public CohortCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions, NumericOptions numericOptions,
+                                JCommander jCommander) {
 
         this.commonCommandOptions = commonCommandOptions;
+        this.commonDataModelOptions = dataModelOptions;
+        this.commonNumericOptions = numericOptions;
         this.jCommander = jCommander;
 
         this.createCommandOptions = new CreateCommandOptions();
@@ -87,26 +94,23 @@ public class CohortCommandOptions {
         this.aclsMemberUpdateCommandOptions = aclCommandOptions.getAclsMemberUpdateCommandOptions();
     }
 
-    public class BaseCohortsCommand {
+    public class BaseCohortsCommand extends StudyOption {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--cohort"}, description = "Cohort id", required = true, arity = 1)
-        public String id;
+        public String cohort;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
-                + " alias.", arity = 1)
-        public String studyId;
     }
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create a cohort")
-    public class CreateCommandOptions extends GeneralCliOptions.StudyOption {
+    public class CreateCommandOptions extends StudyOption {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--name"}, description = "cohort name. This parameter is required when you create the cohort from samples",
+        @Parameter(names = {"-n", "--name"}, description = "cohort name. This parameter is required when you create the cohort from samples",
                 required = false, arity = 1)
         public String name;
 
@@ -116,7 +120,7 @@ public class CohortCommandOptions {
         @Parameter(names = {"--variable-set-id"}, description = "VariableSetId", required = false, arity = 1)
         public String variableSetId;
 
-        @Parameter(names = {"--description"}, description = "cohort description", required = false, arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = "cohort description", required = false, arity = 1)
         public String description;
 
         @Parameter(names = {"--sample-ids"}, description = "Sample ids for the cohort (CSV)", required = false, arity = 1)
@@ -130,31 +134,20 @@ public class CohortCommandOptions {
     @Parameters(commandNames = {"info"}, commandDescription = "Get cohort information")
     public class InfoCommandOptions extends BaseCohortsCommand {
 
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
-
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
 
     }
 
     @Parameters(commandNames = {"samples"}, commandDescription = "List samples belonging to a cohort")
     public class SamplesCommandOptions extends BaseCohortsCommand {
 
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
 
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
+        @ParametersDelegate
+        public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
-        public String skip;
-
-        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
-        public String limit;
-
-        @Parameter(names = {"--count"}, description = "Total number of results.", required = false, arity = 0)
-        public boolean count;
     }
 
     @Parameters(commandNames = {"stats"}, commandDescription = "Calculate variant stats for a set of cohorts.")
@@ -177,13 +170,13 @@ public class CohortCommandOptions {
     @Parameters(commandNames = {"update"}, commandDescription = "Update cohort")
     public class UpdateCommandOptions extends BaseCohortsCommand {
 
-        @Parameter(names = {"--name"}, description = "New cohort name.", required = false, arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "New cohort name.", required = false, arity = 1)
         public String name;
 
         @Parameter(names = {"--creation-date"}, description = "Creation date", required = false, arity = 1)
         public String creationDate;
 
-        @Parameter(names = {"--description"}, description = "Description", required = false, arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
         public String description;
 
         @Parameter(names = {"--samples"}, description = "Comma separated values of sampleIds. Will replace all existing sampleIds",
@@ -197,18 +190,19 @@ public class CohortCommandOptions {
     }
 
     @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy cohort")
-    public class GroupByCommandOptions extends GeneralCliOptions.StudyOption {
+    public class GroupByCommandOptions extends StudyOption {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
+        @Parameter(names = {"-f", "--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
         public String fields;
 
-        @Parameter(names = {"--id"}, description = "Comma separated list of ids.", required = false, arity = 1)
+        @Deprecated
+        @Parameter(names = {"--id"}, description = "[DEPRECATED] Comma separated list of ids.", required = false, arity = 1)
         public String id;
 
-        @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "Comma separated list of names.", required = false, arity = 1)
         public String name;
 
         @Parameter(names = {"--type"}, description = "Comma separated Type values.", required = false, arity = 1)

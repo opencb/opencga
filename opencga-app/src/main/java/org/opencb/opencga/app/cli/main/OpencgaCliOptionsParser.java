@@ -235,7 +235,7 @@ public class OpencgaCliOptionsParser {
         variableSubCommands.addCommand("field-delete", variableCommandOptions.fieldDeleteCommandOptions);
         variableSubCommands.addCommand("field-rename", variableCommandOptions.fieldRenameCommandOptions);
 
-        cohortCommandOptions = new CohortCommandOptions(this.commonCommandOptions, jCommander);
+        cohortCommandOptions = new CohortCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("cohorts", cohortCommandOptions);
         JCommander cohortSubCommands = jCommander.getCommands().get("cohorts");
         cohortSubCommands.addCommand("create", cohortCommandOptions.createCommandOptions);

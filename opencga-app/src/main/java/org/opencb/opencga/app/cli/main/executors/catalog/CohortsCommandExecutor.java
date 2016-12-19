@@ -128,109 +128,107 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         }
 
         createOutput(queryResponse);
-
     }
 
 
     private QueryResponse<Cohort> create() throws CatalogException, IOException {
         logger.debug("Creating a new cohort");
+
         String studyId = cohortsCommandOptions.createCommandOptions.study;
         String cohortName = cohortsCommandOptions.createCommandOptions.name;
-        String description = cohortsCommandOptions.createCommandOptions.description;
         String variableSetId = cohortsCommandOptions.createCommandOptions.variableSetId;
         String sampleIds = cohortsCommandOptions.createCommandOptions.sampleIds;
         String variable = cohortsCommandOptions.createCommandOptions.variable;
 
-        ObjectMap o = new ObjectMap();
-        o.append(CohortDBAdaptor.QueryParams.TYPE.key(), cohortsCommandOptions.createCommandOptions.type);
-        o.append(CohortDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),variableSetId);
-        o.append(CohortDBAdaptor.QueryParams.DESCRIPTION.key(),description);
-        o.append("sampleIds", sampleIds);
-        o.append("variable", variable);
+        ObjectMap params = new ObjectMap();
+        params.append(CohortDBAdaptor.QueryParams.TYPE.key(), cohortsCommandOptions.createCommandOptions.type);
+        params.append(CohortDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), cohortsCommandOptions.createCommandOptions.variableSetId);
+        params.append(CohortDBAdaptor.QueryParams.DESCRIPTION.key(), cohortsCommandOptions.createCommandOptions.description);
+        params.append("sampleIds", sampleIds);
+        params.append("variable", variable);
+
         if (cohortName == null){
-            if( sampleIds != null) {
-                System.out.println("Error: The name parameter is required when you create the cohort from samples");
+            if(sampleIds != null) {
+                logger.warn("Error: The name parameter is required when you create the cohort from samples");
                 return null;
             }else if (variableSetId != null && variable != null){
                 cohortName = "Cohort";
             }else{
-                System.out.println("Error: Please, Insert the corrects params for create the cohort.");
+                logger.warn("Error: Please, Insert the corrects params for create the cohort.");
                 return null;
             }
         }
-        return openCGAClient.getCohortClient().create(studyId, cohortName, o);
+        return openCGAClient.getCohortClient().create(studyId, cohortName, params);
     }
 
     private QueryResponse<Cohort> info() throws CatalogException, IOException {
         logger.debug("Getting cohort information");
+
         QueryOptions queryOptions = new QueryOptions();
-
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, cohortsCommandOptions.infoCommandOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, cohortsCommandOptions.infoCommandOptions.exclude);
-
-        return openCGAClient.getCohortClient().get(cohortsCommandOptions.infoCommandOptions.id, queryOptions);
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, cohortsCommandOptions.infoCommandOptions.dataModelOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, cohortsCommandOptions.infoCommandOptions.dataModelOptions.exclude);
+        return openCGAClient.getCohortClient().get(cohortsCommandOptions.infoCommandOptions.cohort, queryOptions);
     }
 
     private QueryResponse<Sample> samples() throws CatalogException, IOException {
         logger.debug("Listing samples belonging to a cohort");
-        QueryOptions queryOptions = new QueryOptions();
 
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, cohortsCommandOptions.samplesCommandOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, cohortsCommandOptions.samplesCommandOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, cohortsCommandOptions.samplesCommandOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, cohortsCommandOptions.samplesCommandOptions.skip);
-        queryOptions.put("count", cohortsCommandOptions.samplesCommandOptions.count);
-        return openCGAClient.getCohortClient().getSamples(cohortsCommandOptions.samplesCommandOptions.id, queryOptions);
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, cohortsCommandOptions.samplesCommandOptions.dataModelOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, cohortsCommandOptions.samplesCommandOptions.dataModelOptions.exclude);
+        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, cohortsCommandOptions.samplesCommandOptions.numericOptions.limit);
+        queryOptions.putIfNotEmpty(QueryOptions.SKIP, cohortsCommandOptions.samplesCommandOptions.numericOptions.skip);
+        queryOptions.put("count", cohortsCommandOptions.samplesCommandOptions.numericOptions.count);
+        return openCGAClient.getCohortClient().getSamples(cohortsCommandOptions.samplesCommandOptions.cohort, queryOptions);
     }
 
     private QueryResponse<Cohort> update() throws CatalogException, IOException {
         logger.debug("Updating cohort");
 
-        ObjectMap objectMap = new ObjectMap();
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.NAME.key(), cohortsCommandOptions.updateCommandOptions.name);
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.CREATION_DATE.key(), cohortsCommandOptions.updateCommandOptions.creationDate);
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.DESCRIPTION.key(), cohortsCommandOptions.updateCommandOptions.description);
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.updateCommandOptions.samples);
 
-        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.NAME.key(), cohortsCommandOptions.updateCommandOptions.name);
-        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.CREATION_DATE.key(), cohortsCommandOptions.updateCommandOptions.creationDate);
-        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.DESCRIPTION.key(), cohortsCommandOptions.updateCommandOptions.description);
-        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.updateCommandOptions.samples);
-
-        return openCGAClient.getCohortClient().update(cohortsCommandOptions.updateCommandOptions.id, objectMap);
+        return openCGAClient.getCohortClient().update(cohortsCommandOptions.updateCommandOptions.cohort, params);
     }
 
     private QueryResponse<Cohort> delete() throws CatalogException, IOException {
         logger.debug("Deleting cohort");
         ObjectMap objectMap = new ObjectMap();
-        return openCGAClient.getCohortClient().delete(cohortsCommandOptions.deleteCommandOptions.id, objectMap);
+        return openCGAClient.getCohortClient().delete(cohortsCommandOptions.deleteCommandOptions.cohort, objectMap);
     }
 
     private QueryResponse<Object> stats() throws CatalogException, IOException {
         logger.debug("Calculating variant stats for a set of cohorts");
-        QueryOptions queryOptions = new QueryOptions();
+
         Query query = new Query();
+        QueryOptions queryOptions = new QueryOptions();
         queryOptions.put("calculate", cohortsCommandOptions.statsCommandOptions.calculate);
         queryOptions.put("delete", cohortsCommandOptions.statsCommandOptions.delete);
         queryOptions.putIfNotEmpty("log", cohortsCommandOptions.statsCommandOptions.log);
         queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.OUT_DIR_ID.key(), cohortsCommandOptions.statsCommandOptions.outdirId);
 
 
-        return openCGAClient.getCohortClient().getStats(cohortsCommandOptions.statsCommandOptions.id, query, queryOptions);
+        return openCGAClient.getCohortClient().getStats(cohortsCommandOptions.statsCommandOptions.cohort, query, queryOptions);
     }
 
     private QueryResponse<ObjectMap> groupBy() throws CatalogException, IOException {
         logger.debug("Group by cohorts");
 
-        ObjectMap objectMap = new ObjectMap();
-
-        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.ID.key(), cohortsCommandOptions.groupByCommandOptions.id);
-        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.NAME.key(), cohortsCommandOptions.groupByCommandOptions.name);
-        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.TYPE.key(), cohortsCommandOptions.groupByCommandOptions.type);
-        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), cohortsCommandOptions.groupByCommandOptions.status);
-        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.CREATION_DATE.key(), cohortsCommandOptions.groupByCommandOptions.creationDate);
-        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.groupByCommandOptions.sampleIds);
-        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.ATTRIBUTES.key(), cohortsCommandOptions.groupByCommandOptions.attributes);
-        objectMap.putIfNotEmpty(CohortDBAdaptor.QueryParams.NATTRIBUTES.key(), cohortsCommandOptions.groupByCommandOptions.nattributes);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.ID.key(), cohortsCommandOptions.groupByCommandOptions.id);
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.NAME.key(), cohortsCommandOptions.groupByCommandOptions.name);
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.TYPE.key(), cohortsCommandOptions.groupByCommandOptions.type);
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.STATUS_NAME.key(), cohortsCommandOptions.groupByCommandOptions.status);
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.CREATION_DATE.key(), cohortsCommandOptions.groupByCommandOptions.creationDate);
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.groupByCommandOptions.sampleIds);
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.ATTRIBUTES.key(), cohortsCommandOptions.groupByCommandOptions.attributes);
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.NATTRIBUTES.key(), cohortsCommandOptions.groupByCommandOptions.nattributes);
 
         return openCGAClient.getCohortClient().groupBy(cohortsCommandOptions.groupByCommandOptions.study,
-                cohortsCommandOptions.groupByCommandOptions.fields,objectMap);
+                cohortsCommandOptions.groupByCommandOptions.fields,params);
     }
 
 }
