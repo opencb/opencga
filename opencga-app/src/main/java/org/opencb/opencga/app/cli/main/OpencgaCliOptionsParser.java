@@ -160,7 +160,7 @@ public class OpencgaCliOptionsParser {
         fileSubCommands.addCommand("acl-member-update", fileCommandOptions.aclsMemberUpdateCommandOptions);
 
 
-        jobCommandOptions = new JobCommandOptions(this.commonCommandOptions, jCommander);
+        jobCommandOptions = new JobCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("jobs", jobCommandOptions);
         JCommander jobSubCommands = jCommander.getCommands().get("jobs");
         jobSubCommands.addCommand("create", jobCommandOptions.createCommandOptions);

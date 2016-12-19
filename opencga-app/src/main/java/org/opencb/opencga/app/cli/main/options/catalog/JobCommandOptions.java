@@ -23,6 +23,8 @@ import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.catalog.commons.AclCommandOptions;
 
+import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
+
 /**
  * Created by sgallego on 6/14/16.
  */
@@ -43,13 +45,18 @@ public class JobCommandOptions {
     public AclCommandOptions.AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
 
     public JCommander jCommander;
-    public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
+    public CommonCommandOptions commonCommandOptions;
+    public DataModelOptions commonDataModelOptions;
+    public NumericOptions commonNumericOptions;
 
     private AclCommandOptions aclCommandOptions;
 
-    public JobCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public JobCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions, NumericOptions numericOptions,
+                             JCommander jCommander) {
 
         this.commonCommandOptions = commonCommandOptions;
+        this.commonDataModelOptions = dataModelOptions;
+        this.commonNumericOptions = numericOptions;
         this.jCommander = jCommander;
 
         this.createCommandOptions = new CreateCommandOptions();
@@ -67,26 +74,23 @@ public class JobCommandOptions {
         this.aclsMemberUpdateCommandOptions = aclCommandOptions.getAclsMemberUpdateCommandOptions();
     }
 
-    public class BaseJobCommand {
+    public class BaseJobCommand extends StudyOption {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--job"}, description = "Job id", required = true, arity = 1)
-        public String id;
+        public String job;
 
-        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
-                + " alias.", arity = 1)
-        public String study;
     }
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create a job")
-    public class CreateCommandOptions extends GeneralCliOptions.StudyOption {
+    public class CreateCommandOptions extends StudyOption {
 
         @ParametersDelegate
-        GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--name"}, description = "Job name", required = true, arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "Job name", required = true, arity = 1)
         public String name;
 
         @Parameter(names = {"--tool-id"}, description = "Tool Id", required = true, arity = 1)
@@ -95,28 +99,32 @@ public class JobCommandOptions {
         @Parameter(names = {"--execution"}, description = "Execution", required = false, arity = 1)
         public String execution;
 
-        @Parameter(names = {"--description"}, description = "Job description", required = false, arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = "Job description", required = false, arity = 1)
         public String description;
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get job information")
     public class InfoCommandOptions extends BaseJobCommand {
 
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
 
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
     }
 
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search job")
-    public class SearchCommandOptions extends GeneralCliOptions.StudyOption {
+    public class SearchCommandOptions extends StudyOption {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
+
+        @ParametersDelegate
+        public NumericOptions numericOptions = commonNumericOptions;
+
+        @Parameter(names = {"-n", "--name"}, description = "Comma separated list of names.", required = false, arity = 1)
         public String name;
 
         @Parameter(names = {"--tool-name"}, description = "Tool name.", required = false, arity = 1)
@@ -137,21 +145,6 @@ public class JobCommandOptions {
         @Parameter(names = {"--output-files"}, description = "Comma separated list of output file ids.", required = false, arity = 1)
         public String outputFiles;
 
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
-
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
-
-        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
-        public String skip;
-
-        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
-        public String limit;
-
-        @Parameter(names = {"--count"}, description = "Total number of results.", required = false, arity = 0)
-        public boolean count;
-
     }
 
     @Parameters(commandNames = {"visit"}, commandDescription = "Increment job visits")
@@ -167,18 +160,19 @@ public class JobCommandOptions {
     }
 
     @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy job")
-    public class GroupByCommandOptions extends GeneralCliOptions.StudyOption {
+    public class GroupByCommandOptions extends StudyOption {
 
         @ParametersDelegate
-        GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
+        @Parameter(names = {"-f", "--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
         public String fields;
 
-        @Parameter(names = {"--ids"}, description = "Comma separated list of ids.", required = false, arity = 1)
+        @Deprecated
+        @Parameter(names = {"--ids"}, description = "[DEPRECATED] Comma separated list of ids.", required = false, arity = 1)
         public String id;
 
-        @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "Comma separated list of names.", required = false, arity = 1)
         public String name;
 
         @Parameter(names = {"--path"}, description = "Path.", required = false, arity = 1)
@@ -193,6 +187,7 @@ public class JobCommandOptions {
         @Parameter(names = {"--creation-date"}, description = "Creation date.", required = false, arity = 1)
         public String creationDate;
 
+        @Deprecated
         @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
         public String description;
 
