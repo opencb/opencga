@@ -87,6 +87,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     })
     public Response variableSetInfo(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") long variableSetId) {
         try {
+            // TODO: read param VariableSetParams.STUDY_ID.key()
             QueryResult<VariableSet> queryResult = catalogManager.getVariableSet(variableSetId, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {

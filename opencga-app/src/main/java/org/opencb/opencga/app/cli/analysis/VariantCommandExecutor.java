@@ -284,6 +284,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         options.put(VariantAnnotationManager.CREATE, cliOptions.create);
         options.putIfNotEmpty(VariantAnnotationManager.LOAD_FILE, cliOptions.load);
         options.putIfNotEmpty(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, cliOptions.customAnnotationKey);
+        options.putIfNotNull(VariantAnnotationManager.ANNOTATION_SOURCE, cliOptions.annotator);
         options.putIfNotEmpty(DefaultVariantAnnotationManager.FILE_NAME, cliOptions.fileName);
         options.put(StorageOperation.CATALOG_PATH, catalogOutDirId);
         options.putAll(cliOptions.commonOptions.params);

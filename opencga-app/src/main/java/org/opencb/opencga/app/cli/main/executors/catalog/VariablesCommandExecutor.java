@@ -25,6 +25,8 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.catalog.VariableCommandOptions;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor.VariableSetParams;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.VariableSet;
 
@@ -91,8 +93,8 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
 
         QueryOptions queryOptions = new QueryOptions();
 
-        queryOptions.putIfNotNull("unique", variableCommandOptions.createCommandOptions.unique);
-        queryOptions.putIfNotNull("description", variableCommandOptions.createCommandOptions.description);
+        queryOptions.putIfNotNull(VariableSetParams.UNIQUE.key(), variableCommandOptions.createCommandOptions.unique);
+        queryOptions.putIfNotNull(VariableSetParams.DESCRIPTION.key(), variableCommandOptions.createCommandOptions.description);
 
         ObjectMapper mapper = new ObjectMapper();
         ObjectMap variables = mapper.readValue(new File(variableCommandOptions.createCommandOptions.jsonFile), ObjectMap.class);
@@ -106,6 +108,7 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotNull(QueryOptions.INCLUDE, variableCommandOptions.infoCommandOptions.include);
         queryOptions.putIfNotNull(QueryOptions.EXCLUDE, variableCommandOptions.infoCommandOptions.exclude);
+        queryOptions.putIfNotNull(VariableSetParams.STUDY_ID.key(), variableCommandOptions.infoCommandOptions.studyId);
         return openCGAClient.getVariableClient().get(variableCommandOptions.infoCommandOptions.id, queryOptions);
     }
 
@@ -117,9 +120,9 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
 
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotNull("name", variableCommandOptions.searchCommandOptions.name);
-        queryOptions.putIfNotNull("description", variableCommandOptions.searchCommandOptions.description);
-        queryOptions.putIfNotNull("attributes", variableCommandOptions.searchCommandOptions.attributes);
+        queryOptions.putIfNotNull(VariableSetParams.NAME.key(), variableCommandOptions.searchCommandOptions.name);
+        queryOptions.putIfNotNull(VariableSetParams.DESCRIPTION.key(), variableCommandOptions.searchCommandOptions.description);
+        queryOptions.putIfNotNull(VariableSetParams.ATTRIBUTES.key(), variableCommandOptions.searchCommandOptions.attributes);
         queryOptions.putIfNotNull(QueryOptions.INCLUDE, variableCommandOptions.searchCommandOptions.include);
         queryOptions.putIfNotNull(QueryOptions.EXCLUDE, variableCommandOptions.searchCommandOptions.exclude);
         queryOptions.putIfNotNull(QueryOptions.LIMIT, variableCommandOptions.searchCommandOptions.limit);
@@ -133,8 +136,8 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<VariableSet> update() throws CatalogException, IOException {
         logger.debug("Updating variable");
         ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotNull("name", variableCommandOptions.updateCommandOptions.name);
-        objectMap.putIfNotNull("description", variableCommandOptions.updateCommandOptions.description);
+        objectMap.putIfNotNull(VariableSetParams.NAME.key(), variableCommandOptions.updateCommandOptions.name);
+        objectMap.putIfNotNull(VariableSetParams.DESCRIPTION.key(), variableCommandOptions.updateCommandOptions.description);
 
         Object variables = null;
         if (variableCommandOptions.updateCommandOptions.jsonFile != null
