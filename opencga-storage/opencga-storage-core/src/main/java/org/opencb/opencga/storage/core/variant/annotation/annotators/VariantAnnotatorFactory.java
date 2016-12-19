@@ -39,11 +39,10 @@ public final class VariantAnnotatorFactory {
             storageOptions.putAll(options);
         }
         options = storageOptions;
-        AnnotationSource annotationSource = AnnotationSource.valueOf(
-                options.getString(ANNOTATION_SOURCE, options.containsKey(VARIANT_ANNOTATOR_CLASSNAME)
-                        ? AnnotationSource.OTHER.name()
-                        : AnnotationSource.CELLBASE_REST.name()).toUpperCase()
-        );
+        String defaultValue = options.containsKey(VARIANT_ANNOTATOR_CLASSNAME)
+                ? AnnotationSource.OTHER.name()
+                : AnnotationSource.CELLBASE_REST.name();
+        AnnotationSource annotationSource = AnnotationSource.valueOf(options.getString(ANNOTATION_SOURCE, defaultValue).toUpperCase());
 
         logger.info("Annotating with {}", annotationSource);
 
@@ -51,7 +50,7 @@ public final class VariantAnnotatorFactory {
             case CELLBASE_DB_ADAPTOR:
                 return new CellBaseDirectVariantAnnotator(configuration, options);
             case CELLBASE_REST:
-                return new CellBaseDirectVariantAnnotator(configuration, options);
+                return new CellBaseRestVariantAnnotator(configuration, options);
             case VEP:
                 return VepVariantAnnotator.buildVepAnnotator();
             case OTHER:
