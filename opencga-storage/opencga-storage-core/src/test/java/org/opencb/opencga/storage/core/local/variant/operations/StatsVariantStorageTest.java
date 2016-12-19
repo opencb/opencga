@@ -79,7 +79,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
         }
         QueryOptions queryOptions = new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false);
         queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
-        variantManager.index(String.valueOf(file.getId()), createTmpOutdir(file), queryOptions, sessionId);
+        variantManager.index(null, String.valueOf(file.getId()), createTmpOutdir(file), queryOptions, sessionId);
 
 
         all = catalogManager.getAllCohorts(studyId, new Query(CohortDBAdaptor.QueryParams.NAME.key(), DEFAULT_COHORT),
@@ -103,7 +103,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
 
         QueryOptions queryOptions = new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false);
         queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
-        variantManager.index(String.valueOf(file1.getId()), createTmpOutdir(file1), queryOptions, sessionId);
+        variantManager.index(null, String.valueOf(file1.getId()), createTmpOutdir(file1), queryOptions, sessionId);
         return file1;
     }
 

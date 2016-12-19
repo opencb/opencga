@@ -220,7 +220,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         org.opencb.opencga.storage.core.local.variant.VariantStorageManager variantManager =
                 new org.opencb.opencga.storage.core.local.variant.VariantStorageManager(catalogManager, storageManagerFactory);
 
-        variantManager.index(cliOptions.fileId, cliOptions.outdir, queryOptions, sessionId);
+        variantManager.index(cliOptions.study, cliOptions.fileId, cliOptions.outdir, queryOptions, sessionId);
 
     }
 

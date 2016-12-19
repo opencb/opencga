@@ -23,6 +23,7 @@ import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.main.options.analysis.RestVariantCommandOptions;
+import org.opencb.opencga.app.cli.main.options.catalog.StudyCommandOptions;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 
@@ -349,7 +350,7 @@ public class AnalysisCliOptionsParser {
      */
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
-    public class IndexVariantCommandOptions extends CatalogDatabaseCommandOptions {
+    public class IndexVariantCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;

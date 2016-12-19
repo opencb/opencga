@@ -229,7 +229,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         //Default cohort should not be modified
         Cohort defaultCohort = getDefaultCohort(studyId);
         String outdir = opencga.createTmpOutdir(studyId, "_TRANSFORM_", sessionId);
-        variantManager.index(String.valueOf(inputFile.getId()), outdir, queryOptions, sessionId);
+        variantManager.index(null, String.valueOf(inputFile.getId()), outdir, queryOptions, sessionId);
         inputFile = catalogManager.getFile(inputFile.getId(), sessionId).first();
         assertEquals(FileIndex.IndexStatus.TRANSFORMED, inputFile.getIndex().getStatus().getName());
 
@@ -262,7 +262,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
 
         List<String> fileIds = files.stream().map(File::getId).map(Object::toString).collect(Collectors.toList());
         String outdir = opencga.createTmpOutdir(studyId, "_LOAD_", sessionId);
-        List<StorageETLResult> etlResults = variantManager.index(fileIds, outdir, queryOptions, sessionId);
+        List<StorageETLResult> etlResults = variantManager.index(null, fileIds, outdir, queryOptions, sessionId);
 
         assertEquals(expectedLoadedFiles.size(), etlResults.size());
         checkEtlResults(studyId, etlResults, FileIndex.IndexStatus.READY);
@@ -297,7 +297,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         String outdir = opencga.createTmpOutdir(studyId, "_INDEX_", sessionId);
         List<String> fileIds = files.stream().map(File::getId).map(Object::toString).collect(Collectors.toList());
 
-        List<StorageETLResult> etlResults = variantManager.index(fileIds, outdir, queryOptions, sessionId);
+        List<StorageETLResult> etlResults = variantManager.index(null, fileIds, outdir, queryOptions, sessionId);
 
         assertEquals(expectedLoadedFiles.size(), etlResults.size());
         checkEtlResults(studyId, etlResults, FileIndex.IndexStatus.READY);

@@ -303,7 +303,7 @@ public class IndexDaemon extends MonitorParentDaemon {
             Set<String> knownParams = new HashSet<>(Arrays.asList(
                     "aggregated", "aggregation-mapping-file", "annotate", "annotator", "bgzip", "calculate-stats",
                     "exclude-genotypes", "file-id", "gvcf", "h", "help", "include-extra-fields", "load", "log-file",
-                    "L", "log-level", "o", "outdir", "overwrite-annotations", "path", "queue", "sid", "session-id",
+                    "L", "log-level", "o", "outdir", "overwrite-annotations", "path", "queue", "s", "study", "S", "sid", "session-id",
                     "transform", "transformed-files"));
             for (Map.Entry<String, String> param : job.getParams().entrySet()) {
                 commandLine.append(' ');

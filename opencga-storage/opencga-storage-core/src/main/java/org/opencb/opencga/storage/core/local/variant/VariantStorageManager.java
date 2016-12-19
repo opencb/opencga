@@ -147,17 +147,17 @@ public class VariantStorageManager extends StorageManager {
     //   Data Operation methods  //
     // --------------------------//
 
-    public List<StorageETLResult> index(String fileId, String outDir, ObjectMap config, String sessionId)
+    public List<StorageETLResult> index(String study, String fileId, String outDir, ObjectMap config, String sessionId)
             throws CatalogException, StorageManagerException, IOException, URISyntaxException {
-        return index(Arrays.asList(fileId.split(",")), outDir, config, sessionId);
+        return index(study, Arrays.asList(fileId.split(",")), outDir, config, sessionId);
     }
 
-    public List<StorageETLResult> index(List<String> files, String outDir, ObjectMap config, String sessionId)
+    public List<StorageETLResult> index(String study, List<String> files, String outDir, ObjectMap config, String sessionId)
             throws CatalogException, StorageManagerException, IOException, URISyntaxException {
         VariantFileIndexerStorageOperation indexOperation = new VariantFileIndexerStorageOperation(catalogManager, storageConfiguration);
 
         QueryOptions options = new QueryOptions(config);
-        StudyInfo studyInfo = getStudyInfo(null, files, sessionId);
+        StudyInfo studyInfo = getStudyInfo(study, files, sessionId);
         return indexOperation.index(studyInfo, outDir, options, sessionId);
     }
 
