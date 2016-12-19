@@ -888,8 +888,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         try {
             String userId = catalogManager.getUserManager().getId(sessionId);
             projectId = catalogManager.getProjectManager().getId(userId, projectIdStr);
-        } catch (CatalogException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
         for (Study study : studies) {
