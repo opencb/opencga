@@ -424,13 +424,17 @@ public class OpenCGAWSServer {
         logger.error("Catch error: " + e.getMessage(), e);
 
         // Now we prepare the response to client
-        QueryResponse queryResponse = new QueryResponse();
+        QueryResponse<ObjectMap> queryResponse = new QueryResponse<>();
         queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
         queryResponse.setApiVersion(version);
         queryResponse.setQueryOptions(queryOptions);
-        queryResponse.setError(e.getMessage());
+        if (StringUtils.isEmpty(e.getMessage())) {
+            queryResponse.setError(e.toString());
+        } else {
+            queryResponse.setError(e.getMessage());
+        }
 
-        QueryResult<ObjectMap> result = new QueryResult();
+        QueryResult<ObjectMap> result = new QueryResult<>();
         result.setWarningMsg("Future errors will ONLY be shown in the QueryResponse body");
         result.setErrorMsg("DEPRECATED: " + e.toString());
         queryResponse.setResponse(Arrays.asList(result));
