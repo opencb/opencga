@@ -31,7 +31,7 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
     @Test
     public void testExportImport() throws Exception {
 
-        indexFile(getSmallFileFile(), new QueryOptions(VariantStorageManager.Options.CALCULATE_STATS.key(), true), outputId);
+        indexFile(getSmallFile(), new QueryOptions(VariantStorageManager.Options.CALCULATE_STATS.key(), true), outputId);
 
         String export = Paths.get(opencga.createTmpOutdir(studyId, "_EXPORT_", sessionId)).resolve("export.avro.gz").toString();
 
@@ -46,7 +46,7 @@ public class VariantImportTest extends AbstractVariantStorageOperationTest {
     @Test
     public void testExportSomeSamplesImport() throws Exception {
 
-        indexFile(getSmallFileFile(), new QueryOptions(VariantStorageManager.Options.CALCULATE_STATS.key(), true), outputId);
+        indexFile(getSmallFile(), new QueryOptions(VariantStorageManager.Options.CALCULATE_STATS.key(), true), outputId);
 
         String export = Paths.get(opencga.createTmpOutdir(studyId, "_EXPORT_", sessionId)).resolve("export.avro").toString();
 

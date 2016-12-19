@@ -16,25 +16,19 @@
 
 package org.opencb.opencga.storage.hadoop.mr;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.mrunit.mapreduce.MapDriver;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
+//import org.apache.hadoop.mrunit.mapreduce.MapDriver;
 
 public class GenomeVariantTransformMapperTest {
-    private VariantTableMapper mapper;
-    private MapDriver<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put> mapDriver;
-
-    public static class TestHelper extends VariantTableHelper {
-
-        public TestHelper(Configuration conf) {
-            super(conf);
-        }
-
-    }
+//    private VariantTableMapper mapper;
+//    private MapDriver<ImmutableBytesWritable, Result, ImmutableBytesWritable, Put> mapDriver;
+//
+//    public static class TestHelper extends VariantTableHelper {
+//
+//        public TestHelper(Configuration conf) {
+//            super(conf);
+//        }
+//
+//    }
 
 
 //    @Before

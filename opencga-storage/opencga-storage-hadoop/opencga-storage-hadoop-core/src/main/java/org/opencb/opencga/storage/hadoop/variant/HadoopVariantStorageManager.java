@@ -291,7 +291,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    protected VariantStatisticsManager newVariantStatisticsManager(VariantDBAdaptor dbAdaptor) {
+    public VariantStatisticsManager newVariantStatisticsManager(VariantDBAdaptor dbAdaptor) {
         return new HadoopDefaultVariantStatisticsManager(dbAdaptor);
     }
 

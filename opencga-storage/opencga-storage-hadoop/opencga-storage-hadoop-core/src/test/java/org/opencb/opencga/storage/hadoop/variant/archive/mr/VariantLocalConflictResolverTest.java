@@ -29,13 +29,12 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static htsjdk.variant.vcf.VCFConstants.*;
 import static org.junit.Assert.*;
-import static org.opencb.biodata.models.variant.VariantVcfFactory.FILTER;
-import static org.opencb.biodata.models.variant.VariantVcfFactory.QUAL;
+import static org.opencb.biodata.models.variant.StudyEntry.QUAL;
+import static org.opencb.biodata.models.variant.StudyEntry.FILTER;
+
 import static org.opencb.biodata.models.variant.avro.VariantType.*;
 
 /**

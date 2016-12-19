@@ -65,6 +65,7 @@ import java.util.stream.IntStream;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
+import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariants;
 import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariantsFromArchiveTable;
 import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariantsFromVariantsTable;
 
@@ -122,7 +123,8 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         VariantSource source2 = loadFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());
         checkArchiveTableTimeStamp(dbAdaptor);
-        printVariantsFromArchiveTable(dbAdaptor, studyConfiguration);
+//        printVariantsFromArchiveTable(dbAdaptor, studyConfiguration);
+        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
 
 
         checkLoadedFilesS1S2(studyConfiguration, dbAdaptor);

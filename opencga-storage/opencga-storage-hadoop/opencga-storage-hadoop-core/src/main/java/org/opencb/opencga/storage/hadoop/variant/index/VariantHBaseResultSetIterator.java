@@ -55,11 +55,14 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
         this.resultSet = resultSet;
         this.genomeHelper = genomeHelper;
         this.scm = scm;
+        if (options == null) {
+            options = QueryOptions.empty();
+        }
         converter = new HBaseToVariantConverter(this.genomeHelper, this.scm)
                 .setReturnedSamples(returnedSamples)
                 .setMutableSamplesPosition(false)
                 .setStudyNameAsStudyId(true)
-                .setSimpleGenotypes(true);
+                .setSimpleGenotypes(options.getBoolean("simpleGenotypes", true));
         hasNext = fetch(resultSet::next);
     }
 
