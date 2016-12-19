@@ -455,6 +455,9 @@ public class OpenCGAWSServer {
         return buildResponse(Response.ok("{\"error\":\"Error parsing json error\"}", MediaType.APPLICATION_JSON_TYPE));
     }
 
+    // TODO: Change signature
+    //    protected <T> Response createOkResponse(QueryResult<T> result)
+    //    protected <T> Response createOkResponse(List<QueryResult<T>> results)
     protected Response createOkResponse(Object obj) {
         QueryResponse queryResponse = new QueryResponse();
         queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
@@ -467,7 +470,11 @@ public class OpenCGAWSServer {
             list = (List) obj;
         } else {
             list = new ArrayList();
-            list.add(obj);
+            if (!(obj instanceof QueryResult)) {
+                list.add(new QueryResult<>("", 0, 1, 1, "", "", Collections.singletonList(obj)));
+            } else {
+                list.add(obj);
+            }
         }
         queryResponse.setResponse(list);
 
