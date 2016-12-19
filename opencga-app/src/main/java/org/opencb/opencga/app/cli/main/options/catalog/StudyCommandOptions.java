@@ -115,14 +115,14 @@ public class StudyCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @Parameter(names = {"-p", "--project"}, description = "Project identifier, this parameter is optional when only one project exist", arity = 1)
+        public String project;
+
         @Parameter(names = {"-n", "--name"}, description = "Study name", required = true, arity = 1)
         public String name;
 
         @Parameter(names = {"-a", "--alias"}, description = "Study alias", required = true, arity = 1)
         public String alias;
-
-        @Parameter(names = {"--project"}, description = "Project identifier, this parameter is optional when only one project exist", arity = 1)
-        public String project;
 
         @Parameter(names = {"-t", "--type"}, description = "Type of study, ej.CASE_CONTROL,CASE_SET,...", arity = 1)
         public String type = "CASE_CONTROL";
@@ -150,13 +150,13 @@ public class StudyCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"--project"}, description = "Project Id.", arity = 1)
+        @Parameter(names = {"-p", "--project"}, description = "Project ID or alias", arity = 1)
         public String project;
 
-        @Parameter(names = {"--name"}, description = "Study name.", arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "Study name.", arity = 1)
         public String name;
 
-        @Parameter(names = {"--alias"}, description = "Study alias.", arity = 1)
+        @Parameter(names = {"-a", "--alias"}, description = "Study alias.", arity = 1)
         public String alias;
 
         @Parameter(names = {"-t", "--type"}, description = "Type of study, ej.CASE_CONTROL,CASE_SET,...", arity = 1)
@@ -202,13 +202,14 @@ public class StudyCommandOptions {
         public NumericOptions numericOptions = commonNumericOptions;
 
         @Deprecated
-        @Parameter(names = {"--file"}, description = "File id", arity = 1)
+        @Parameter(names = {"--file"}, description = "[DEPRECATED] File id", arity = 1)
         public String file;
 
-        @Parameter(names = {"--name"}, description = "Name", arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "Name", arity = 1)
         public String name;
 
-        @Parameter(names = {"--path"}, description = "Path", arity = 1)
+        @Deprecated
+        @Parameter(names = {"--path"}, description = "[DEPRECATED] Path", arity = 1)
         public String path;
 
         @Parameter(names = {"-t", "--file-type"}, description = "Comma separated Type values. For existing Types see files/help", arity = 1)
@@ -240,7 +241,7 @@ public class StudyCommandOptions {
         @Parameter(names = {"--description"}, description = "Description", arity = 1)
         public String description;
 
-        @Parameter(names = {"--disk-usage"}, description = "DiskUsage", arity = 1)
+        @Parameter(names = {"--size"}, description = "Filter by size of the file", arity = 1)
         public String diskUsage;
 
         @Parameter(names = {"--sample-ids"}, description = "Comma separated sampleIds", arity = 1)
@@ -304,7 +305,7 @@ public class StudyCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"--name"}, description = "Job name", arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "Job name", arity = 1)
         public String name;
 
         @Parameter(names = {"--tool-name"}, description = "Tool name", arity = 1)
@@ -320,13 +321,12 @@ public class StudyCommandOptions {
         public String date;*/
 
         @Deprecated
-        @Parameter(names = {"--input-files"}, description = "Comma separated list of input file ids", arity = 1)
+        @Parameter(names = {"--input-files"}, description = "[DEPRECATED] Comma separated list of input file ids", arity = 1)
         public String inputFiles;
 
         @Deprecated
-        @Parameter(names = {"--output-files"}, description = "Comma separated list of output file ids", arity = 1)
+        @Parameter(names = {"--output-files"}, description = "[DEPRECATED] Comma separated list of output file ids", arity = 1)
         public String outputFiles;
-
 
     }
 
@@ -339,14 +339,14 @@ public class StudyCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"--name"}, description = "Sample name", arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "Sample name", arity = 1)
         public String name;
 
         @Parameter(names = {"--source"}, description = "Source of the sample", arity = 1)
         public String source;
 
-        /*@Parameter(names = {"--description"}, description = "Sample description", arity = 1)
-        public String description;*/
+        @Parameter(names = {"-d", "--description"}, description = "Sample description", arity = 1)
+        public String description;
 
         @Parameter(names = {"--individual"}, description = "Individual id", arity = 1)
         public String individual;
@@ -359,6 +359,7 @@ public class StudyCommandOptions {
 
         @Parameter(names = {"--annotation"}, description = "Annotation", arity = 1)
         public String annotation;
+
     }
 
     @Deprecated
@@ -536,8 +537,10 @@ public class StudyCommandOptions {
 
     @Parameters(commandNames = {"help"}, commandDescription = "Help [PENDING]")
     public class HelpCommandOptions {
+
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
+
     }
 
     @Parameters(commandNames = {"groups-create"}, commandDescription = "Create a group")
@@ -546,9 +549,9 @@ public class StudyCommandOptions {
         @Parameter(names = {"--group-id"}, description = "Group id, group id corresponds to the name of the group", required = true, arity = 1)
         public String groupId;
 
-        @Parameter(names = {"--users"}, description = "Comma separated list of members that will form the group",
-                required = true, arity = 1)
+        @Parameter(names = {"--users"}, description = "Comma separated list of members that will form the group", required = true, arity = 1)
         public String users;
+
     }
 
     @Parameters(commandNames = {"groups-delete"}, commandDescription = "Delete group")
@@ -564,6 +567,7 @@ public class StudyCommandOptions {
 
         @Parameter(names = {"--group-id"}, description = "Group id, group id corresponds to the name of the group", required = true, arity = 1)
         public String groupId;
+
     }
 
     @Parameters(commandNames = {"groups-update"}, commandDescription = "Updates the members of the group")
