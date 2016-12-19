@@ -98,12 +98,19 @@ public abstract class StorageManager {
             throws CatalogException, IOException {
         StudyInfo studyInfo = new StudyInfo().setSessionId(sessionId);
 
-        AbstractManager.MyResourceIds resource = catalogManager.getFileManager().getIds(StringUtils.join(fileIdStrs, ","), studyIdStr,
-                sessionId);
-        studyInfo.setUserId(resource.getUser());
-
+        List<Long> fileIds;
+        Long studyId;
+        if (fileIdStrs.isEmpty()) {
+            fileIds = Collections.emptyList();
+            studyId = catalogManager.getStudyId(studyIdStr, sessionId);
+        } else {
+            AbstractManager.MyResourceIds resource = catalogManager.getFileManager().getIds(StringUtils.join(fileIdStrs, ","), studyIdStr,
+                    sessionId);
+            fileIds = resource.getResourceIds();
+            studyId = resource.getStudyId();
+        }
         List<FileInfo> fileInfos = new ArrayList<>(fileIdStrs.size());
-        for (long fileId: resource.getResourceIds()) {
+        for (long fileId : fileIds) {
             FileInfo fileInfo = new FileInfo();
             fileInfo.setFileId(fileId);
 
@@ -133,10 +140,10 @@ public abstract class StorageManager {
 //        studyOptions.put(QueryOptions.INCLUDE,
 //                Arrays.asList(StudyDBAdaptor.QueryParams.URI.key(), StudyDBAdaptor.QueryParams.ALIAS.key(),
 //                        StudyDBAdaptor.QueryParams.DATASTORES.key()));
-        QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(resource.getStudyId(), studyOptions, sessionId);
+        QueryResult<Study> studyQueryResult = catalogManager.getStudyManager().get(studyId, studyOptions, sessionId);
         if (studyQueryResult .getNumResults() != 1) {
-            logger.error("Critical error: Study {} not found in catalog.", resource.getStudyId());
-            throw new CatalogException("Critical error: Study " + resource.getStudyId() + " not found in catalog");
+            logger.error("Critical error: Study {} not found in catalog.", studyId);
+            throw new CatalogException("Critical error: Study " + studyId + " not found in catalog");
         }
         Study study = studyQueryResult.first();
         studyInfo.setStudy(study);
@@ -145,7 +152,8 @@ public abstract class StorageManager {
         studyInfo.setProjectId(project.getId());
         studyInfo.setProjectAlias(project.getAlias());
         studyInfo.setOrganism(project.getOrganism());
-
+        String user = catalogManager.getUserIdByProjectId(project.getId());
+        studyInfo.setUserId(user);
 
 //        Path workspace = Paths.get(study.getUri().getRawPath()).resolve(".opencga").resolve("alignments");
 //        if (!workspace.toFile().exists()) {
