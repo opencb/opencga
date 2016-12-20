@@ -6,7 +6,6 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.phoenix.schema.types.PDataType;
 import org.apache.phoenix.schema.types.PhoenixArray;
 import org.opencb.biodata.models.variant.Variant;
@@ -23,7 +22,10 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHel
 
 import java.io.IOException;
 import java.sql.Array;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -94,7 +96,7 @@ public class AnalysisAnnotateMapper extends AbstractHBaseMapReduce<NullWritable,
     public void run(Context context) throws IOException, InterruptedException {
         this.setup(context);
         try {
-            while(context.nextKeyValue()) {
+            while (context.nextKeyValue()) {
                 this.map(context.getCurrentKey(), context.getCurrentValue(), context);
                 annotateVariants(context, false);
             }

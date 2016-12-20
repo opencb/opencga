@@ -14,6 +14,7 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
@@ -100,6 +101,8 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         boolean addDependencyJar = conf.getBoolean(GenomeHelper.CONFIG_HBASE_ADD_DEPENDENCY_JARS, true);
         initMapReduceJob(variantTable, job, scan, addDependencyJar);
 
+        preExecution();
+
         boolean succeed = executeJob(job);
         if (!succeed) {
             getLog().error("error with job!");
@@ -110,7 +113,11 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         return succeed ? 0 : 1;
     }
 
-    protected void postExecution(boolean succeed) {
+    protected void preExecution() throws IOException, StorageManagerException {
+        // do nothing
+    }
+
+    protected void postExecution(boolean succeed) throws IOException, StorageManagerException {
         // do nothing
     }
 

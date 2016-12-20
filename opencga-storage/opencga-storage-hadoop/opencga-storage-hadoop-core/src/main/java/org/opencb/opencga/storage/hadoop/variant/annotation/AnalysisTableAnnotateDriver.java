@@ -6,7 +6,6 @@ import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.phoenix.mapreduce.PhoenixOutputFormat;
 import org.apache.phoenix.mapreduce.util.PhoenixMapReduceUtil;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
@@ -31,7 +30,7 @@ public class AnalysisTableAnnotateDriver extends AbstractAnalysisTableDriver {
     protected void parseAndValidateParameters() {
         int parallel = getConf().getInt(CONFIG_VARIANT_TABLE_ANNOTATE_PARALLEL, 5);
         getConf().setInt("mapreduce.job.running.map.limit", parallel);
-        getConf().setLong("phoenix.upsert.batch.size", 200l);
+        getConf().setLong("phoenix.upsert.batch.size", 200L);
     }
 
     @Override
