@@ -75,12 +75,18 @@ public class AnalysisAnnotateMapper extends AbstractHBaseMapReduce<NullWritable,
             }
             if (!Bytes.startsWith(value.getRow(), this.studiesRow)) { // ignore _METADATA row
                 context.getCounter("opencga", "variant.read").increment(1);
+                getLog().info("Convert ... ");
+                long start = System.nanoTime();
                 Variant variant = this.getHbaseToVariantConverter().convert(value);
                 if (!requireAnnotation(variant)) {
                     context.getCounter("opencga", "variant.no-annotation-required").increment(1);
                     return; // No annotation needed
                 }
+                getLog().info("Annotate {} [convert time: {}] ... ", variant, System.nanoTime() - start);
+                start = System.nanoTime();
                 List<VariantAnnotation> annotate = this.variantAnnotator.annotate(Collections.singletonList(variant));
+                getLog().info("Submit {} [annot time: {}] ... ", annotate.size(), System.nanoTime() - start);
+                start = System.nanoTime();
                 for (VariantAnnotation annotation : annotate) {
                     Map<PhoenixHelper.Column, ?> columnMap = annotationConverter.convert(annotation);
                     List<Object> orderedValues = toOrderedList(columnMap);
@@ -88,6 +94,7 @@ public class AnalysisAnnotateMapper extends AbstractHBaseMapReduce<NullWritable,
                     context.getCounter("opencga", "variant.annotate.submit").increment(1);
                     context.write(NullWritable.get(), writeable);
                 }
+                getLog().info("Done [submit time: {}] ... ", System.nanoTime() - start);
             }
         } catch (Exception e) {
             throw new IllegalStateException("Problems with row [hex:" + hexBytes + "] for cells " + cells.length, e);
