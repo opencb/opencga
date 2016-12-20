@@ -180,13 +180,6 @@
                     <extraJvmArguments>-Xms256m -Xmx2048m</extraJvmArguments>
                     <environmentSetupFileName>${opencga.env.file}</environmentSetupFileName>
                     <programs>
-                        <!--<program>-->
-                            <!--<name>opencga-old.sh</name>-->
-                            <!--<mainClass>org.opencb.opencga.app.cli.main.OpenCGAMainOld</mainClass>-->
-                            <!--<platforms>-->
-                                <!--<platform>unix</platform>-->
-                            <!--</platforms>-->
-                        <!--</program>-->
                         <program>
                             <id>opencga.sh</id>
                             <mainClass>org.opencb.opencga.app.cli.main.OpencgaMain</mainClass>
@@ -202,8 +195,8 @@
                             </platforms>
                         </program>
                         <program>
-                            <mainClass>org.opencb.opencga.app.cli.analysis.AnalysisMain</mainClass>
                             <id>opencga-analysis.sh</id>
+                            <mainClass>org.opencb.opencga.app.cli.analysis.AnalysisMain</mainClass>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>

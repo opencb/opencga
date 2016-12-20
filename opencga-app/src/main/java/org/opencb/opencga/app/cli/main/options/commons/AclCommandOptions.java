@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.main.options.catalog.commons;
+package org.opencb.opencga.app.cli.main.options.commons;
 
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;

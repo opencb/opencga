@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.main.options.catalog;
+package org.opencb.opencga.app.cli.main.options;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.opencga.app.cli.main.options.catalog.commons.AclCommandOptions;
-import org.opencb.opencga.app.cli.main.options.catalog.commons.AnnotationCommandOptions;
+import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
+import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
 import org.opencb.opencga.catalog.models.Individual;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
