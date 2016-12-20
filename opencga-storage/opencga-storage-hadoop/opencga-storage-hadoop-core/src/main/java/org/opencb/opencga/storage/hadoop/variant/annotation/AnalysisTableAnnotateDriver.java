@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.annotation;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Job;
@@ -30,6 +31,7 @@ public class AnalysisTableAnnotateDriver extends AbstractAnalysisTableDriver {
     protected void parseAndValidateParameters() {
         int parallel = getConf().getInt(CONFIG_VARIANT_TABLE_ANNOTATE_PARALLEL, 5);
         getConf().setInt("mapreduce.job.running.map.limit", parallel);
+        getConf().setLong("phoenix.upsert.batch.size", 200l);
     }
 
     @Override
@@ -39,10 +41,11 @@ public class AnalysisTableAnnotateDriver extends AbstractAnalysisTableDriver {
 
     @Override
     protected void initMapReduceJob(String inTable, Job job, Scan scan, boolean addDependencyJar) throws IOException {
+        TableMapReduceUtil.setScannerCaching(job, 200);
+
         super.initMapReduceJob(inTable, job, scan, addDependencyJar);
         String[] fieldNames = Arrays.stream(VariantColumn.values()).map(v -> v.toString()).toArray(String[]::new);
         PhoenixMapReduceUtil.setOutput(job, SchemaUtil.getEscapedFullTableName(inTable), fieldNames);
-        job.setOutputFormatClass(PhoenixOutputFormat.class);
         job.setOutputKeyClass(NullWritable.class);
         job.setOutputValueClass(PhoenixVariantAnnotationWritable.class);
         job.setNumReduceTasks(0);

@@ -105,8 +105,13 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
             getLog().error("error with job!");
         }
 
+        postExecution(succeed);
         getStudyConfigurationManager().close();
         return succeed ? 0 : 1;
+    }
+
+    protected void postExecution(boolean succeed) {
+        // do nothing
     }
 
     protected abstract void parseAndValidateParameters();

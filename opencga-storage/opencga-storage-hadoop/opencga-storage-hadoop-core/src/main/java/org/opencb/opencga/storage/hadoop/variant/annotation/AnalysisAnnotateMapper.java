@@ -6,6 +6,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.phoenix.schema.types.PDataType;
 import org.apache.phoenix.schema.types.PhoenixArray;
 import org.opencb.biodata.models.variant.Variant;
@@ -23,6 +24,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHel
 import java.io.IOException;
 import java.sql.Array;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Created by mh719 on 15/12/2016.
@@ -62,6 +64,45 @@ public class AnalysisAnnotateMapper extends AbstractHBaseMapReduce<NullWritable,
             throw new IllegalStateException("Problems loading storage configuration from " + configFile, e);
         }
     }
+    private final CopyOnWriteArrayList<Variant> variantsToAnnotate = new CopyOnWriteArrayList<>();
+
+    private void annotateVariants(Context context, boolean force) throws IOException, InterruptedException {
+        if (this.variantsToAnnotate.isEmpty()) {
+            return;
+        }
+        // not enough data
+        if (this.variantsToAnnotate.size() < 200 && !force) {
+            return;
+        }
+        long start = System.nanoTime();
+        getLog().info("Annotate {} variants ... ", this.variantsToAnnotate.size());
+        List<VariantAnnotation> annotate = this.variantAnnotator.annotate(this.variantsToAnnotate);
+        getLog().info("Submit {} [annot time: {}] ... ", annotate.size(), System.nanoTime() - start);
+        start = System.nanoTime();
+        for (VariantAnnotation annotation : annotate) {
+            Map<PhoenixHelper.Column, ?> columnMap = annotationConverter.convert(annotation);
+            List<Object> orderedValues = toOrderedList(columnMap);
+            PhoenixVariantAnnotationWritable writeable = new PhoenixVariantAnnotationWritable(orderedValues);
+            context.getCounter("opencga", "variant.annotate.submit").increment(1);
+            context.write(NullWritable.get(), writeable);
+        }
+        getLog().info("Done [submit time: {}] ... ", System.nanoTime() - start);
+        this.variantsToAnnotate.clear();
+    }
+
+    @Override
+    public void run(Context context) throws IOException, InterruptedException {
+        this.setup(context);
+        try {
+            while(context.nextKeyValue()) {
+                this.map(context.getCurrentKey(), context.getCurrentValue(), context);
+                annotateVariants(context, false);
+            }
+            annotateVariants(context, true);
+        } finally {
+            this.cleanup(context);
+        }
+    }
 
     @Override
     protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException,
@@ -82,19 +123,9 @@ public class AnalysisAnnotateMapper extends AbstractHBaseMapReduce<NullWritable,
                     context.getCounter("opencga", "variant.no-annotation-required").increment(1);
                     return; // No annotation needed
                 }
-                getLog().info("Annotate {} [convert time: {}] ... ", variant, System.nanoTime() - start);
-                start = System.nanoTime();
-                List<VariantAnnotation> annotate = this.variantAnnotator.annotate(Collections.singletonList(variant));
-                getLog().info("Submit {} [annot time: {}] ... ", annotate.size(), System.nanoTime() - start);
-                start = System.nanoTime();
-                for (VariantAnnotation annotation : annotate) {
-                    Map<PhoenixHelper.Column, ?> columnMap = annotationConverter.convert(annotation);
-                    List<Object> orderedValues = toOrderedList(columnMap);
-                    PhoenixVariantAnnotationWritable writeable = new PhoenixVariantAnnotationWritable(orderedValues);
-                    context.getCounter("opencga", "variant.annotate.submit").increment(1);
-                    context.write(NullWritable.get(), writeable);
-                }
-                getLog().info("Done [submit time: {}] ... ", System.nanoTime() - start);
+                getLog().info("Add to annotate set {} [convert time: {}] ... ", variant, System.nanoTime() - start);
+                variantsToAnnotate.add(variant);
+
             }
         } catch (Exception e) {
             throw new IllegalStateException("Problems with row [hex:" + hexBytes + "] for cells " + cells.length, e);
