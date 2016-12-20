@@ -95,23 +95,22 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         }
 
         createOutput(queryResponse);
-
     }
 
     private void create() throws CatalogException, IOException {
         logger.debug("Creating user...");
 
         ObjectMap params = new ObjectMap()
-                .append(UserDBAdaptor.QueryParams.NAME.key(), usersCommandOptions.createCommandOptions.userName)
-                .append(UserDBAdaptor.QueryParams.EMAIL.key(), usersCommandOptions.createCommandOptions.userEmail)
-                .append(UserDBAdaptor.QueryParams.PASSWORD.key(), usersCommandOptions.createCommandOptions.userPassword);
+                .append(UserDBAdaptor.QueryParams.NAME.key(), usersCommandOptions.createCommandOptions.name)
+                .append(UserDBAdaptor.QueryParams.EMAIL.key(), usersCommandOptions.createCommandOptions.email)
+                .append(UserDBAdaptor.QueryParams.PASSWORD.key(), usersCommandOptions.createCommandOptions.password);
 
-        if (usersCommandOptions.createCommandOptions.userOrganization != null) {
-            params.append(UserDBAdaptor.QueryParams.ORGANIZATION.key(), usersCommandOptions.createCommandOptions.userOrganization);
+        if (usersCommandOptions.createCommandOptions.organization != null) {
+            params.append(UserDBAdaptor.QueryParams.ORGANIZATION.key(), usersCommandOptions.createCommandOptions.organization);
         }
 
         QueryResponse<User> userQueryResponse = openCGAClient.getUserClient().create(usersCommandOptions.createCommandOptions.user,
-                usersCommandOptions.createCommandOptions.userPassword, params);
+                usersCommandOptions.createCommandOptions.password, params);
 
         if (userQueryResponse != null && userQueryResponse.first().getNumResults() == 1) {
             logger.info("User {} successfully created", usersCommandOptions.createCommandOptions.user);
@@ -121,7 +120,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
             return;
         }
 
-        openCGAClient.login(usersCommandOptions.createCommandOptions.user, usersCommandOptions.createCommandOptions.userPassword);
+        openCGAClient.login(usersCommandOptions.createCommandOptions.user, usersCommandOptions.createCommandOptions.password);
 
         logger.info("Creating project...");
 
@@ -153,10 +152,10 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
     private QueryResponse<User> info() throws CatalogException, IOException {
         logger.debug("User info");
-        QueryOptions queryOptions = new QueryOptions();
 
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, usersCommandOptions.infoCommandOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, usersCommandOptions.infoCommandOptions.exclude);
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, usersCommandOptions.infoCommandOptions.dataModelOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, usersCommandOptions.infoCommandOptions.dataModelOptions.exclude);
         queryOptions.putIfNotEmpty(UserDBAdaptor.QueryParams.LAST_MODIFIED.key(), usersCommandOptions.infoCommandOptions.lastModified);
         queryOptions.putIfNotNull("userId", userId);
 
@@ -178,13 +177,18 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
     private QueryResponse<Project> projects() throws CatalogException, IOException {
         logger.debug("List all projects and studies of user");
-        QueryOptions queryOptions = new QueryOptions();
 
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, usersCommandOptions.projectsCommandOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, usersCommandOptions.projectsCommandOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, usersCommandOptions.projectsCommandOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, usersCommandOptions.projectsCommandOptions.skip);
-        queryOptions.putIfNotEmpty("userId", usersCommandOptions.projectsCommandOptions.user);
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, usersCommandOptions.projectsCommandOptions.dataModelOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, usersCommandOptions.projectsCommandOptions.dataModelOptions.exclude);
+        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, usersCommandOptions.projectsCommandOptions.numericOptions.limit);
+        queryOptions.putIfNotEmpty(QueryOptions.SKIP, usersCommandOptions.projectsCommandOptions.numericOptions.skip);
+
+        if (StringUtils.isNotEmpty(usersCommandOptions.projectsCommandOptions.user)) {
+            queryOptions.putIfNotEmpty("userId", usersCommandOptions.projectsCommandOptions.user);
+        } else {
+            queryOptions.putIfNotEmpty("userId", openCGAClient.getUserId());
+        }
         queryOptions.put("shared", usersCommandOptions.projectsCommandOptions.shared);
 
         return openCGAClient.getUserClient().getProjects(queryOptions);
@@ -243,20 +247,19 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<User> update() throws CatalogException, IOException {
         logger.debug("Updating user");
 
-        ObjectMap objectMap = new ObjectMap();
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(UserDBAdaptor.QueryParams.NAME.key(), usersCommandOptions.updateCommandOptions.name);
+        params.putIfNotEmpty(UserDBAdaptor.QueryParams.EMAIL.key(), usersCommandOptions.updateCommandOptions.email);
+        params.putIfNotEmpty(UserDBAdaptor.QueryParams.ORGANIZATION.key(), usersCommandOptions.updateCommandOptions.organization);
+        params.putIfNotEmpty(UserDBAdaptor.QueryParams.ATTRIBUTES.key(), usersCommandOptions.updateCommandOptions.attributes);
+        params.putIfNotEmpty("configs", usersCommandOptions.updateCommandOptions.configs);
 
-        objectMap.putIfNotEmpty(UserDBAdaptor.QueryParams.NAME.key(), usersCommandOptions.updateCommandOptions.name);
-        objectMap.putIfNotEmpty(UserDBAdaptor.QueryParams.EMAIL.key(), usersCommandOptions.updateCommandOptions.email);
-        objectMap.putIfNotEmpty(UserDBAdaptor.QueryParams.ORGANIZATION.key(), usersCommandOptions.updateCommandOptions.organization);
-        objectMap.putIfNotEmpty(UserDBAdaptor.QueryParams.ATTRIBUTES.key(), usersCommandOptions.updateCommandOptions.attributes);
-        objectMap.putIfNotEmpty("configs", usersCommandOptions.updateCommandOptions.configs);
-
-        return openCGAClient.getUserClient().update(usersCommandOptions.updateCommandOptions.user, objectMap);
+        return openCGAClient.getUserClient().update(usersCommandOptions.updateCommandOptions.user, params);
     }
 
     private QueryResponse<User> changePassword () throws CatalogException, IOException {
-        return openCGAClient.getUserClient().changePassword(usersCommandOptions.changePaswordCommandOptions.password,
-                usersCommandOptions.changePaswordCommandOptions.npassword, new ObjectMap());
+        return openCGAClient.getUserClient().changePassword(usersCommandOptions.changePasswordCommandOptions.password,
+                usersCommandOptions.changePasswordCommandOptions.npassword, new ObjectMap());
     }
 
 }

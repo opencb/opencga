@@ -20,7 +20,10 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
+
+import static org.opencb.opencga.app.cli.GeneralCliOptions.CommonCommandOptions;
+import static org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 
 /**
  * Created by pfurio on 13/06/16.
@@ -31,24 +34,30 @@ public class UserCommandOptions {
     public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
-    public ChangePaswordCommandOptions changePaswordCommandOptions;
+    public ChangePasswordCommandOptions changePasswordCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
     public ProjectsCommandOptions projectsCommandOptions;
     public LoginCommandOptions loginCommandOptions;
     public LogoutCommandOptions logoutCommandOptions;
     public ResetPasswordCommandOptions resetPasswordCommandOptions;
+
     public JCommander jCommander;
+    public CommonCommandOptions commonCommandOptions;
+    public DataModelOptions commonDataModelOptions;
+    public NumericOptions commonNumericOptions;
 
-    public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
+    public UserCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions, NumericOptions numericOptions,
+                              JCommander jCommander) {
 
-    public UserCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, JCommander jCommander) {
         this.commonCommandOptions = commonCommandOptions;
+        this.commonDataModelOptions = dataModelOptions;
+        this.commonNumericOptions = numericOptions;
         this.jCommander = jCommander;
 
         this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
-        this.changePaswordCommandOptions = new ChangePaswordCommandOptions();
+        this.changePasswordCommandOptions = new ChangePasswordCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.projectsCommandOptions = new ProjectsCommandOptions();
         this.loginCommandOptions = new LoginCommandOptions();
@@ -61,10 +70,11 @@ public class UserCommandOptions {
     }
 
     public class BaseUserCommand {
-        @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--id"}, description = "User id",  required = true, arity = 1)
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-u", "--user"}, description = "User id, this must be unique in this OpenCGA installation",  required = true, arity = 1)
         public String user;
 
     }
@@ -72,17 +82,17 @@ public class UserCommandOptions {
     @Parameters(commandNames = {"create"}, commandDescription = "Create a new user")
     public class CreateCommandOptions extends BaseUserCommand {
 
-        @Parameter(names = {"--user-name"}, description = "User name", required = true, arity = 1)
-        public String userName;
+        @Parameter(names = {"-n", "name"}, description = "User name", required = true, arity = 1)
+        public String name;
 
-        @Parameter(names = {"--user-password"}, description = "User password", required = true,  password = true, arity = 1)
-        public String userPassword;
+        @Parameter(names = {"-p", "--password"}, description = "User password", required = true,  password = true, arity = 1)
+        public String password;
 
-        @Parameter(names = {"--user-email"}, description = "User email", required = true, arity = 1)
-        public String userEmail;
+        @Parameter(names = {"-e", "--email"}, description = "User email", required = true, arity = 1)
+        public String email;
 
-        @Parameter(names = {"--user-organization"}, description = "User organization", required = false, arity = 1)
-        public String userOrganization;
+        @Parameter(names = {"-o", "--organization"}, description = "User organization", required = false, arity = 1)
+        public String organization;
 
         @Parameter(names = {"--project-name"}, description = "Project name. Default: Default", required = false, arity = 1)
         public String projectName;
@@ -103,15 +113,13 @@ public class UserCommandOptions {
     public class InfoCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
 
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
-
-        @Parameter(names = {"--last-modified"}, description = "If matches with the user's last activity, return " +
+        @Deprecated
+        @Parameter(names = {"--last-modified"}, description = "[DEPRECATED] If matches with the user's last activity, return " +
                 "an empty QueryResult", arity = 1, required = false)
         public String lastModified;
     }
@@ -119,13 +127,13 @@ public class UserCommandOptions {
     @Parameters(commandNames = {"update"}, commandDescription = "Update some user attributes using GET method")
     public class UpdateCommandOptions extends BaseUserCommand {
 
-        @Parameter(names = {"--name"}, description = "Name", arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "Name", arity = 1)
         public String name;
 
-        @Parameter(names = {"--email"}, description = "Email", arity = 1)
+        @Parameter(names = {"-e", "--email"}, description = "Email", arity = 1)
         public String email;
 
-        @Parameter(names = {"--organization"}, description = "Organization", arity = 1)
+        @Parameter(names = {"-o", "--organization"}, description = "Organization", arity = 1)
         public String organization;
 
         @Parameter(names = {"--attributes"}, description = "Attributes", arity = 1)
@@ -136,7 +144,7 @@ public class UserCommandOptions {
 
     }
     @Parameters(commandNames = {"change-password"}, commandDescription = "Update some user attributes using GET method")
-    public class ChangePaswordCommandOptions{
+    public class ChangePasswordCommandOptions {
 
         @Parameter(names = {"--password"}, description = "password", arity = 1, required = true)
         public String password;
@@ -151,62 +159,44 @@ public class UserCommandOptions {
     }
 
     @Parameters(commandNames = {"projects"}, commandDescription = "List all projects and studies belonging to the selected user")
-    public class ProjectsCommandOptions extends BaseUserCommand {
+    public class ProjectsCommandOptions {
 
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
 
-        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
-        public String skip;
+        @ParametersDelegate
+        public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
-        public String limit;
+        @Parameter(names = {"-u", "--user"}, description = "User id, this must be unique in this OpenCGA installation",  required = false, arity = 1)
+        public String user;
 
         @Parameter(names = {"--shared"}, description = "Show only the projects and studies shared with the user.", arity = 0)
         public boolean shared;
-//        @ParametersDelegate
-//        public OpencgaCommonCommandOptions commonOptions = UserCommandOptions.this.commonCommandOptions;
-//
-//        @Parameter(names = {"--level"}, description = "Descend only level directories deep.", arity = 1)
-//        public int level = Integer.MAX_VALUE;
-//
-//        @Parameter(names = {"-R", "--recursive"}, description = "List subdirectories recursively", arity = 0)
-//        public boolean recursive = false;
-//
-//        @Parameter(names = {"-U", "--show-uris"}, description = "Show uris from linked files and folders", arity = 0)
-//        public boolean uris = false;
 
     }
 
     @Parameters(commandNames = {"login"}, commandDescription = "Login as a user")
-    public class LoginCommandOptions {
-
-        @Parameter(names = {"-u", "--user"}, description = "UserId", required = true, arity = 1)
-        public String user;
+    public class LoginCommandOptions extends BaseUserCommand {
 
         @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, required = true, password = true)
         public String password;
 
-//        @Parameter(names = {"-S","--session-id"}, description = "SessionId", arity = 1, required = false, hidden = true)
-//        public String sessionId;
-
-        @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = UserCommandOptions.this.commonCommandOptions;
     }
 
     @Parameters(commandNames = {"logout"}, commandDescription = "End user session")
     public class LogoutCommandOptions {
-        @Parameter(names = {"--session-id", "-S"}, description = "SessionId", required = false, arity = 1, hidden = true)
+
+        @Parameter(names = {"-S", "--session-id"}, description = "SessionId", required = false, arity = 1, hidden = true)
         public String sessionId;
+
     }
 
     @Parameters(commandNames = {"reset-password"}, commandDescription = "Reset password")
     public class ResetPasswordCommandOptions extends BaseUserCommand {
 
     }
-
 
 }

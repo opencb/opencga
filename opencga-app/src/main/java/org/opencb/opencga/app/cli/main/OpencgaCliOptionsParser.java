@@ -80,13 +80,13 @@ public class OpencgaCliOptionsParser {
         userAndPasswordOptions = new UserAndPasswordOptions();
 //        commandShareResource = new CommandShareResource();
 
-        usersCommandOptions = new UserCommandOptions(this.commonCommandOptions, this.jCommander);
+        usersCommandOptions = new UserCommandOptions(this.commonCommandOptions, this.dataModelOptions, this.numericOptions, this.jCommander);
         jCommander.addCommand("users", usersCommandOptions);
         JCommander userSubCommands = jCommander.getCommands().get("users");
         userSubCommands.addCommand("create", usersCommandOptions.createCommandOptions);
         userSubCommands.addCommand("info", usersCommandOptions.infoCommandOptions);
         userSubCommands.addCommand("update", usersCommandOptions.updateCommandOptions);
-        userSubCommands.addCommand("change-password", usersCommandOptions.changePaswordCommandOptions);
+        userSubCommands.addCommand("change-password", usersCommandOptions.changePasswordCommandOptions);
         userSubCommands.addCommand("delete", usersCommandOptions.deleteCommandOptions);
         userSubCommands.addCommand("projects", usersCommandOptions.projectsCommandOptions);
         userSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);
