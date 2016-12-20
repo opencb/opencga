@@ -231,6 +231,7 @@ public class VariantExportStorageOperation extends StorageOperation {
                             Collections.emptyMap(), sessionId).first();
                     newCohortIds.put(cohortName, (int) cohort.getId());
                     newCohorts.put((int) cohort.getId(), newSampleIds);
+                    catalogManager.getCohortManager().setStatus(String.valueOf(cohort.getId()), Cohort.CohortStatus.READY, "", sessionId);
                 }
                 studyConfiguration.setCohortIds(newCohortIds);
                 studyConfiguration.setCohorts(newCohorts);
