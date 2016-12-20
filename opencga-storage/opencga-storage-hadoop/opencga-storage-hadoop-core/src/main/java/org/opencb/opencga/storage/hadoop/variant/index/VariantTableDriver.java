@@ -19,6 +19,7 @@
  */
 package org.opencb.opencga.storage.hadoop.variant.index;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
@@ -51,6 +52,16 @@ public class VariantTableDriver extends AbstractVariantTableDriver {
         getConf().setStrings(CONFIG_VARIANT_FILE_IDS, args[4].split(","));
         for (int i = fixedSizeArgs; i < args.length; i = i + 2) {
             getConf().set(args[i], args[i + 1]);
+        }
+
+        // Set parallel pool size
+        Integer vCores = getConf().getInt("mapreduce.map.cpu.vcores", 1);
+        String opts = getConf().get("mapreduce.map.java.opts", StringUtils.EMPTY);
+        String key = "java.util.concurrent.ForkJoinPool.common.parallelism";
+        if (vCores > 1) {
+            String pool = " -D" + key + "=" + vCores;
+            getConf().set("mapreduce.map.java.opts", opts + pool);
+            getLog().info("Set ForkJoinPool to {}", pool);
         }
         return super.run(args);
     }

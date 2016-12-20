@@ -40,6 +40,7 @@ import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStu
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -52,22 +53,23 @@ import java.util.stream.Stream;
  */
 public class VariantTableMapper extends AbstractVariantTableMapReduce {
 
-    private ForkJoinPool forkJoinPool;
 
-    public void setForkJoinPool(ForkJoinPool forkJoinPool) {
-        this.forkJoinPool = forkJoinPool;
+    private final AtomicBoolean parallel = new AtomicBoolean(false);
+
+
+    private boolean isParallel() {
+        return this.parallel.get();
     }
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
-        int vcores = context.getConfiguration().getInt(MRJobConfig.MAP_CPU_VCORES, 1);
-        getLog().info("Setting ForkJoinPool to {} ... ", vcores);
-        if (vcores > 1) {
-            this.forkJoinPool = createForkJoinPool(context.getTaskAttemptID().toString(), vcores);
-            this.getResultConverter().setParallelPool(this.forkJoinPool);
-        } else {
-            this.forkJoinPool = null;
+        int cores = context.getConfiguration().getInt(MRJobConfig.MAP_CPU_VCORES, 1);
+        int parallelism = ForkJoinPool.getCommonPoolParallelism();
+        this.parallel.set(cores == parallelism); // has to match
+        if (isParallel()) {
+            getLog().info("Using ForkJoinPool of {} ... ", cores);
+            this.getResultConverter().setParallel(true);
         }
     }
 
@@ -82,9 +84,6 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
         super.cleanup(context);
-        if (null != forkJoinPool) {
-            forkJoinPool.shutdownNow();
-        }
     }
 
     protected static final VariantType[] TARGET_VARIANT_TYPE = new VariantType[] {
@@ -131,7 +130,6 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
             int to = toPosition(var, false);
             return from <= ctx.nextStartPos && to >= ctx.startPos;
         });
-        getLog().info("Complete Alternates ...");
         ctx.context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ARCHIVE").increment(archiveVar.size());
         return archiveVar;
     }
@@ -172,17 +170,6 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         List<Variant> analysisVar = parseCurrentVariantsRegion(variantCells, ctx.getChromosome());
         ctx.getContext().getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ANALYSIS").increment(analysisVar.size());
         endTime("2 Unpack and convert input ANALYSIS variants (" + GenomeHelper.VARIANT_COLUMN_PREFIX + ")");
-        getLog().info("Filter ...");
-        // Variants of target type
-        List<Variant> archiveTarget = filterForVariant(archiveVar.stream(), TARGET_VARIANT_TYPE).collect(Collectors.toList());
-        if (!archiveTarget.isEmpty() && getLog().isDebugEnabled()) {
-            getLog().debug("Loaded variant from archive table: " + archiveTarget.get(0).toJson());
-        }
-        getLog().info("Loaded current: " + analysisVar.size()
-                + "; archive: " + archiveVar.size()
-                + "; target: " + archiveTarget.size());
-        ctx.context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ARCHIVE_TARGET").increment(archiveTarget.size());
-        endTime("4 Filter archive variants by target");
 
         // Check if Archive covers all bases in Analysis
         // TODO switched off at the moment down to removed variant calls from gVCF files (malformated variants)
@@ -203,23 +190,32 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         updateArchiveTable(ctx.getCurrRowKey(), ctx.context, rows);
         endTime("11 Update INPUT table");
 
+        getLog().info("Filter ...");
+        endTime("4 Filter archive variants by target");
+        List<Variant> archiveTarget = filterForVariant(archiveVar.stream(), TARGET_VARIANT_TYPE).collect(Collectors.toList());
+        if (!archiveTarget.isEmpty()) {
+            getLog().info("Loaded variant from archive table: " + archiveTarget.size());
+        }
+        ctx.context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ARCHIVE_TARGET").increment(archiveTarget.size());
+        getLog().info("Loaded current: " + analysisVar.size()
+                + "; archive: " + archiveVar.size()
+                + "; target: " + archiveTarget.size());
+
         /* ******** Update Analysis Variants ************** */
+        // Variants of target type
         Set<Variant> analysisNew = getNewVariantsAsTemplates(ctx, analysisVar, archiveTarget, (int) ctx.startPos, (int) ctx.nextStartPos);
         endTime("7 Create NEW variants");
         return analysisNew;
     }
 
     private void processVariants(Collection<Variant> variants, Consumer<Variant> variantConsumer) {
-        if (null != this.forkJoinPool) {
-            try {
-                this.forkJoinPool.submit(() -> variants.parallelStream().forEach(variantConsumer)).get();
-            } catch (InterruptedException | ExecutionException e) {
-                throw new IllegalStateException(e);
-            }
+        if (isParallel()) {
+            variants.parallelStream().forEach(variantConsumer);
         } else {
             variants.forEach(variantConsumer);
         }
     }
+
 
     private boolean processVColumn(VariantMapReduceContext ctx) throws IOException, InterruptedException {
         List<Cell> variantCells = GenomeHelper.getVariantColumns(ctx.getValue().rawCells());
@@ -388,12 +384,8 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
 
     private void completeAlternateCoordinates(List<Variant> variants) {
         Consumer<Variant> variantConsumer = variant -> completeAlternateCoordinates(variant);
-        if (null != this.forkJoinPool) {
-            try {
-                this.forkJoinPool.submit(() -> variants.parallelStream().forEach(variantConsumer)).get();
-            } catch (InterruptedException | ExecutionException e) {
-                throw new IllegalStateException(e);
-            }
+        if (isParallel()) {
+            variants.parallelStream().forEach(variantConsumer);
         } else {
             variants.stream().forEach(variantConsumer);
         }
@@ -635,8 +627,8 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
     }
 
     protected Stream<Variant> filterForVariant(Stream<Variant> variants, VariantType ... types) {
-        Set<VariantType> whileList = new HashSet<>(Arrays.asList(types));
-        return variants.filter(v -> whileList.contains(v.getType()));
+        Set<VariantType> whiteList = new HashSet<>(Arrays.asList(types));
+        return variants.filter(v -> whiteList.contains(v.getType()));
     }
 
 }

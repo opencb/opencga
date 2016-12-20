@@ -34,8 +34,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collector;
@@ -51,8 +52,8 @@ public class ArchiveResultToVariantConverter {
     private final int studyId;
     private final StudyConfiguration sc;
     private byte[] columnFamily;
-    private Map<Integer, VcfSliceToVariantListConverter> fileidToConverter = new HashMap<Integer, VcfSliceToVariantListConverter>();
-    private ForkJoinPool parallelPool = null;
+    private ConcurrentHashMap<Integer, VcfSliceToVariantListConverter> fileidToConverter = new ConcurrentHashMap<>();
+    private final AtomicBoolean parallel = new AtomicBoolean(false);
 
     public ArchiveResultToVariantConverter(int studyId, byte[] columnFamily, StudyConfiguration sc) {
         this.studyId = studyId;
@@ -60,8 +61,12 @@ public class ArchiveResultToVariantConverter {
         this.sc = sc;
     }
 
-    public void setParallelPool(ForkJoinPool parallelPool) {
-        this.parallelPool = parallelPool;
+    public void setParallel(boolean parallel) {
+        this.parallel.set(parallel);
+    }
+
+    public boolean isParallel() {
+        return parallel.get();
     }
 
     public List<Variant> convert(Result value, Long start, Long end, boolean resolveConflict) throws IllegalStateException {
@@ -89,31 +94,20 @@ public class ArchiveResultToVariantConverter {
 
         Function<Cell, Stream<? extends Variant>> cellStreamFunction = c -> {
             try {
-                List<Variant> variants = archiveCellToVariants(
+                final List<Variant> variants = archiveCellToVariants(
                         CellUtil.cloneQualifier(c),
                         CellUtil.cloneValue(c));
                 if (resolveConflict) {
-                    variants = resolveConflicts(variants);
-                }
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug(String.format(
-                            "For Column %s found %s entries",
-                            ArchiveHelper.getFileIdFromColumnName(CellUtil.cloneQualifier(c)),
-                            c.getValueLength()));
+                   return resolveConflicts(variants).stream().filter(positionFilter);
                 }
                 return variants.stream().filter(positionFilter);
             } catch (InvalidProtocolBufferException e) {
                 throw new IllegalStateException(e);
             }
         };
-        Collector<Variant, ?, List<Variant>> toList = Collectors.toList();
-        if (null != this.parallelPool) { // if parallel
-            try {
-                return this.parallelPool.submit(
-                        () -> cellStream.parallel().flatMap(cellStreamFunction).collect(toList)).get();
-            } catch (InterruptedException | ExecutionException e) {
-                throw new IllegalStateException(e);
-            }
+        Collector<Variant, ?, List<Variant>> toList = Collectors.toCollection(CopyOnWriteArrayList::new);
+        if (this.isParallel()) { // if parallel
+            return cellStream.parallel().flatMap(cellStreamFunction).collect(toList);
         }
         return cellStream.flatMap(cellStreamFunction).collect(toList);
     }
@@ -126,18 +120,16 @@ public class ArchiveResultToVariantConverter {
     }
 
     private VcfSliceToVariantListConverter loadConverter(int fileId) {
-        VcfSliceToVariantListConverter converter = fileidToConverter.get(fileId);
-        if (converter == null) {
+        return fileidToConverter.computeIfAbsent(fileId, key -> {
             LinkedHashSet<Integer> sampleIds = sc.getSamplesInFiles().get(fileId);
             Map<String, Integer> thisFileSamplePositions = new LinkedHashMap<>();
             for (Integer sampleId : sampleIds) {
                 String sampleName = sc.getSampleIds().inverse().get(sampleId);
                 thisFileSamplePositions.put(sampleName, thisFileSamplePositions.size());
             }
-            converter = new VcfSliceToVariantListConverter(thisFileSamplePositions, Integer.toString(fileId), Integer.toString(studyId));
-            fileidToConverter.put(fileId, converter);
-        }
-        return converter;
+            return new VcfSliceToVariantListConverter(
+                    thisFileSamplePositions, Integer.toString(fileId), Integer.toString(studyId));
+        });
     }
 
     /**
