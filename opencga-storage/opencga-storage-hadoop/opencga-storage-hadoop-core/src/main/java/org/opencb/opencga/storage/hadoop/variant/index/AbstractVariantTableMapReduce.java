@@ -194,9 +194,10 @@ public abstract class AbstractVariantTableMapReduce extends AbstractHBaseMapRedu
         this.archiveBatchSize = context.getConfiguration().getInt(ARCHIVE_GET_BATCH_SIZE, 500);
 
         // Load VCF meta data for columns
-        resultConverter = new ArchiveResultToVariantConverter(
-                getStudyConfiguration().getStudyId(), getHelper().getColumnFamily(), this.getStudyConfiguration());
+        int studyId = getStudyConfiguration().getStudyId();
+        resultConverter = new ArchiveResultToVariantConverter(studyId, getHelper().getColumnFamily(), this.getStudyConfiguration());
         variantMerger = new VariantMerger(true);
+        variantMerger.setStudyId(Integer.toString(studyId));
 
         String[] toIdxFileIds = context.getConfiguration().getStrings(AbstractVariantTableDriver.CONFIG_VARIANT_FILE_IDS, new String[0]);
         if (toIdxFileIds.length == 0) {
