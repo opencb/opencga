@@ -421,7 +421,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         Set<String> analysisVarSet = analysisVar.stream().map(Variant::toString).collect(Collectors.toSet());
         analysisVarSet.addAll(analysisVar.stream().flatMap(v -> v.getStudy(studyId).getSecondaryAlternates().stream())
                 .map(a -> toVariantString(a)).collect(Collectors.toSet()));
-        Set<Variant> analysisNew = new HashSet<>();
+        Set<Variant> analysisNew = new ConcurrentSkipListSet<>(); // for later parallel processing
         Set<String> archiveTargetSet = new HashSet<>();
         Set<String> secAltTargetSet = new HashSet<>();
 

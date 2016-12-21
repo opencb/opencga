@@ -37,6 +37,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collector;
@@ -50,15 +51,15 @@ import java.util.stream.Stream;
 public class ArchiveResultToVariantConverter {
     private final Logger LOG = LoggerFactory.getLogger(ArchiveResultToVariantConverter.class);
     private final int studyId;
-    private final StudyConfiguration sc;
+    private final AtomicReference<StudyConfiguration> sc = new AtomicReference<>();
     private byte[] columnFamily;
-    private ConcurrentHashMap<Integer, VcfSliceToVariantListConverter> fileidToConverter = new ConcurrentHashMap<>();
+    private volatile ConcurrentHashMap<Integer, VcfSliceToVariantListConverter> fileidToConverter = new ConcurrentHashMap<>();
     private final AtomicBoolean parallel = new AtomicBoolean(false);
 
     public ArchiveResultToVariantConverter(int studyId, byte[] columnFamily, StudyConfiguration sc) {
         this.studyId = studyId;
         this.columnFamily = columnFamily;
-        this.sc = sc;
+        this.sc.set(sc);
     }
 
     public void setParallel(boolean parallel) {
@@ -67,6 +68,10 @@ public class ArchiveResultToVariantConverter {
 
     public boolean isParallel() {
         return parallel.get();
+    }
+
+    public StudyConfiguration getSc() {
+        return sc.get();
     }
 
     public List<Variant> convert(Result value, Long start, Long end, boolean resolveConflict) throws IllegalStateException {
@@ -121,14 +126,16 @@ public class ArchiveResultToVariantConverter {
 
     private VcfSliceToVariantListConverter loadConverter(int fileId) {
         return fileidToConverter.computeIfAbsent(fileId, key -> {
-            LinkedHashSet<Integer> sampleIds = sc.getSamplesInFiles().get(fileId);
+            LinkedHashSet<Integer> sampleIds = getSc().getSamplesInFiles().get(fileId);
             Map<String, Integer> thisFileSamplePositions = new LinkedHashMap<>();
             for (Integer sampleId : sampleIds) {
-                String sampleName = sc.getSampleIds().inverse().get(sampleId);
+                String sampleName = getSc().getSampleIds().inverse().get(sampleId);
                 thisFileSamplePositions.put(sampleName, thisFileSamplePositions.size());
             }
-            return new VcfSliceToVariantListConverter(
+            VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(
                     thisFileSamplePositions, Integer.toString(fileId), Integer.toString(studyId));
+            converter.setCreateMapCopy(this.isParallel()); // create copy when run in parallel
+            return converter;
         });
     }
 
