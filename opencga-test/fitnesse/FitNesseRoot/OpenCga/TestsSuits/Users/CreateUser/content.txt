@@ -1,9 +1,3 @@
-!define TEST_SYSTEM {slim}
-
-!path dependencies/*.jar
-
-!|import|
-|smartrics.rest.fitnesse.fixture|
 
 !3 Creare User
 

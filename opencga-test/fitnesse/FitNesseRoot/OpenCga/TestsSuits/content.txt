@@ -1,2 +1,2 @@
-!1 OpenCGA Test Suit
+!1 OpenCGA Test Suite
 !contents -R2 -g -p -f -h

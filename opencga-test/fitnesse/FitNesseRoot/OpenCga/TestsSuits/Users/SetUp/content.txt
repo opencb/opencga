@@ -1,0 +1,4 @@
+!define TEST_SYSTEM {slim}
+!define user {hgva}
+!define baseURL {http://bioinfodev.hpc.cam.ac.uk/${user}/webservices/rest/}
+

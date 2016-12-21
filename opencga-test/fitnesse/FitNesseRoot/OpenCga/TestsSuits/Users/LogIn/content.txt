@@ -1,15 +1,3 @@
-!define TEST_SYSTEM {slim}
-!define user {hgva}
-!define baseURL {http://bioinfodev.hpc.cam.ac.uk/${user}/webservices/rest/}
-!path dependencies/*.jar
-
-
-!|import|
-|smartrics.rest.fitnesse.fixture|
-
-!|Table: Rest Fixture Config|
-|restfixture.display.toggle.for.cells.larger.than|200|
-|http.client.connection.timeout| 100000|
 
 !3 Login User Test
 !|Table: Rest Fixture | ${baseURL} |
