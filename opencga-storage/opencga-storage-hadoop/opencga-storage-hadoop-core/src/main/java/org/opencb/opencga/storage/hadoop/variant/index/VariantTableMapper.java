@@ -135,7 +135,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
     }
 
     private void checkVariants(Collection<Variant> variantCollection) {
-        variantCollection.forEach(variant -> {
+/*        variantCollection.forEach(variant -> {
             StudyEntry se = variant.getStudies().get(0);
             Set<String> samplesName = se.getSamplesName();
             if (samplesName.isEmpty()) {
@@ -147,7 +147,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
                     throw new IllegalStateException("No GT data ...");
                 }
             });
-        });
+        }); */
     }
 
     private Set<Variant> processScanVariants(VariantMapReduceContext ctx) {
