@@ -18,7 +18,6 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 
 import java.io.IOException;
-import java.nio.file.Paths;
 
 /**
  * Created by mh719 on 21/11/2016.
@@ -68,7 +67,7 @@ public class VariantTableExportDriver extends AbstractAnalysisTableDriver {
         ObjectMapper objectMapper = new ObjectMapper();
         Path path = new Path(output);
         FileSystem fs = FileSystem.get(getConf());
-        try(FSDataOutputStream fos = fs.create(path)){
+        try (FSDataOutputStream fos = fs.create(path)) {
             objectMapper.writeValue(fos, studyConfiguration);
         }
     }
