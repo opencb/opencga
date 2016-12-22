@@ -467,18 +467,10 @@ public class VariantTableStudyRow {
     }
 
     public static List<VariantTableStudyRow> parse(Result result, GenomeHelper helper) {
-//        String sid = Integer.toString(helper.getStudyId());
-//        String prefix = sid + COLUMN_KEY_SEPARATOR;
         NavigableMap<byte[], byte[]> familyMap = result.getFamilyMap(helper.getColumnFamily());
         Set<Integer> studyIds = familyMap.entrySet().stream()
                 .filter(entry -> entry.getValue() != null && entry.getValue().length > 0)
-                .map(entry -> {
-                    Integer id = extractStudyId(Bytes.toString(entry.getKey()), false);
-                    if (id != null && !id.equals(Integer.valueOf(helper.getStudyId()))) {
-                        throw new IllegalStateException("Issue with column name :" + Bytes.toString(entry.getKey()));
-                    }
-                    return id;
-                })
+                .map(entry -> extractStudyId(Bytes.toString(entry.getKey()), false))
                 .filter(integer -> integer != null)
                 .collect(Collectors.toSet());
 

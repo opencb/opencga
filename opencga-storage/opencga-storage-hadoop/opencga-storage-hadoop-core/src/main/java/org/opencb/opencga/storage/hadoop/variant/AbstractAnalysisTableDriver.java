@@ -160,6 +160,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
 //        getLog().info("Scan set Caching to " + caching);
 //        scan.setCaching(caching);        // 1 is the default in Scan, 200 caused timeout issues.
         scan.setCacheBlocks(false);  // don't set to true for MR jobs
+        scan.addFamily(getHelper().getColumnFamily()); // Ignore PHOENIX columns!!!
         return scan;
     }
 

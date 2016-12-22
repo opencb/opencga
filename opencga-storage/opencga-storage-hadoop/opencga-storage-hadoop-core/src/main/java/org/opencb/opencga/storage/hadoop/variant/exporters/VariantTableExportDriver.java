@@ -8,28 +8,18 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.phoenix.mapreduce.util.PhoenixMapReduceUtil;
-import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
-import org.opencb.opencga.storage.hadoop.variant.annotation.PhoenixVariantAnnotationWritable;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Objects;
-
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager
-        .OPENCGA_STORAGE_HADOOP_MAPREDUCE_SCANNER_TIMEOUT;
 
 /**
  * Created by mh719 on 21/11/2016.
@@ -73,33 +63,12 @@ public class VariantTableExportDriver extends AbstractAnalysisTableDriver {
 
     @Override
     protected Class<? extends TableMapper> getMapperClass() {
-        return null;
-    }
-
-    private Class<? extends Mapper> getPhoenixMapperClass() {
         return AnalysisToFileMapper.class;
-    }
-
-    protected Job createJob(String variantTable, List<Integer> files) throws IOException {
-        Job job = Job.getInstance(getConf(), "opencga: Export files " + files
-                + " from VariantTable '" + variantTable + "'");
-        job.getConfiguration().set("mapreduce.job.user.classpath.first", "true");
-        job.setJarByClass(getPhoenixMapperClass());    // class that contains mapper
-
-        int scannerTimeout = getConf().getInt(OPENCGA_STORAGE_HADOOP_MAPREDUCE_SCANNER_TIMEOUT,
-                getConf().getInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, HConstants.DEFAULT_HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD));
-        getLog().info("Set Scanner timeout to " + scannerTimeout + " ...");
-        job.getConfiguration().setInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, scannerTimeout);
-        return job;
     }
 
     @Override
     protected void initMapReduceJob(String inTable, Job job, Scan scan, boolean addDependencyJar) throws IOException {
-        String phoenixInputTable = SchemaUtil.getEscapedFullTableName(inTable);
-//        final String selectQuery = "SELECT * FROM " + phoenixInputTable; // default -> retrieve all data.
-
-        PhoenixMapReduceUtil.setInput(job, PhoenixVariantAnnotationWritable.class, phoenixInputTable, StringUtils.EMPTY);
-        job.setMapperClass(getPhoenixMapperClass());
+        super.initMapReduceJob(inTable, job, scan, addDependencyJar);
 
         FileOutputFormat.setOutputPath(job, new Path(this.outFile)); // set Path
         FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class); // compression
@@ -115,7 +84,6 @@ public class VariantTableExportDriver extends AbstractAnalysisTableDriver {
                 throw new IllegalStateException("Type not known: " + this.type);
         }
         job.setNumReduceTasks(0);
-        TableMapReduceUtil.addDependencyJars(job);
     }
 
     @Override

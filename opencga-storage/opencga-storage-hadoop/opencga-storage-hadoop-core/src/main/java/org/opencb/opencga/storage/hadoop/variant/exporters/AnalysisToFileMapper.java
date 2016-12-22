@@ -1,14 +1,16 @@
 package org.opencb.opencga.storage.hadoop.variant.exporters;
 
 import org.apache.avro.mapred.AvroKey;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.NullWritable;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.opencga.storage.hadoop.variant.AbstractPhoenisMapReduce;
-import org.opencb.opencga.storage.hadoop.variant.annotation.PhoenixVariantAnnotationWritable;
+import org.opencb.opencga.storage.hadoop.variant.AbstractHBaseMapReduce;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableMapReduce;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -20,13 +22,15 @@ import static org.opencb.opencga.storage.hadoop.variant.exporters.VariantTableEx
  * Created by mh719 on 06/12/2016.
  * @author Matthias Haimel
  */
-public class AnalysisToFileMapper extends AbstractPhoenisMapReduce<PhoenixVariantAnnotationWritable, Object, Object> {
+public class AnalysisToFileMapper extends AbstractHBaseMapReduce<Object, Object> {
 
+    private byte[] studiesRow;
     private VariantTableExportDriver.ExportType type;
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
+        studiesRow = getHelper().generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
 
         List<String> returnedSamples = Collections.singletonList("."); // No GT data by default
         boolean withGenotype = context.getConfiguration().getBoolean(VariantTableExportDriver
@@ -45,11 +49,10 @@ public class AnalysisToFileMapper extends AbstractPhoenisMapReduce<PhoenixVarian
     }
 
     @Override
-    protected void map(NullWritable key, PhoenixVariantAnnotationWritable value, Context context) throws IOException,
+    protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException,
             InterruptedException {
-        try {
-            context.getCounter(AbstractVariantTableMapReduce.COUNTER_GROUP_NAME, this.type.name()).increment(1);
-            Variant variant = this.getHbaseToVariantConverter().convert(value.getResultSet());
+        if (!Bytes.startsWith(value.getRow(), this.studiesRow)) { // ignore _METADATA row
+            Variant variant = this.getHbaseToVariantConverter().convert(value);
             switch (this.type) {
                 case AVRO:
                     context.write(new AvroKey<>(variant.getImpl()), NullWritable.get());
@@ -60,8 +63,7 @@ public class AnalysisToFileMapper extends AbstractPhoenisMapReduce<PhoenixVarian
                 default:
                     throw new IllegalStateException("Type not supported: " + this.type);
             }
-        } catch (SQLException e) {
-            throw new IOException(e);
+            context.getCounter(AbstractVariantTableMapReduce.COUNTER_GROUP_NAME, this.type.name()).increment(1);
         }
     }
 }

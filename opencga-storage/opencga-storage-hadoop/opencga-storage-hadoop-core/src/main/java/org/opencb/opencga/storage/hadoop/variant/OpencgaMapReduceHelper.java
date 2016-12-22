@@ -58,6 +58,10 @@ public class OpencgaMapReduceHelper {
         return helper;
     }
 
+    public void setHelper(VariantTableHelper helper) {
+        this.helper = helper;
+    }
+
     public void cleanup() throws IOException {
         if (null != this.getHelper()) {
             this.getHelper().close();
