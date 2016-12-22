@@ -6,4 +6,5 @@
 
 !|Table: Rest Fixture Config|
 |restfixture.display.toggle.for.cells.larger.than|200|
+|restfixture.display.actual.on.right | false |
 |http.client.connection.timeout| 100000|

@@ -1,2 +1,2 @@
-!1 Test suite X
+!1 Projects suite X
 !contents -R2 -g -p -f -h

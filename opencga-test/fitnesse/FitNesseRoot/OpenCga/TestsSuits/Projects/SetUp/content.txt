@@ -1,0 +1,7 @@
+!define TEST_SYSTEM {slim}
+!define user {hgva}
+!define baseURL {http://bioinfodev.hpc.cam.ac.uk/${user}/webservices/rest/}
+
+
+!|Table: Rest Fixture | ${baseURL} |
+|let|projectName|js|Math.floor(Math.random()*10000000000000)+""||
