@@ -10,12 +10,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Created by mh719 on 15/12/2016.
  */
 public class PhoenixVariantAnnotationWritable implements DBWritable, Writable {
     private final List<Object> orderedValues;
+    private final AtomicReference<ResultSet> resultSet = new AtomicReference<>();
 
     public PhoenixVariantAnnotationWritable(final List<Object> orderedValues) {
         this.orderedValues = orderedValues;
@@ -41,6 +43,10 @@ public class PhoenixVariantAnnotationWritable implements DBWritable, Writable {
 
     @Override
     public void readFields(ResultSet resultSet) throws SQLException {
-        // do nothing
+        this.resultSet.set(resultSet);
+    }
+
+    public ResultSet getResultSet() {
+        return resultSet.get();
     }
 }

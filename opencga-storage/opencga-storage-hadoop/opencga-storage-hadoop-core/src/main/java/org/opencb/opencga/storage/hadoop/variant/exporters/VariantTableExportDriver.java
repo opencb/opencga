@@ -12,11 +12,15 @@ import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.phoenix.mapreduce.util.PhoenixMapReduceUtil;
+import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.annotation.PhoenixVariantAnnotationWritable;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -63,12 +67,20 @@ public class VariantTableExportDriver extends AbstractAnalysisTableDriver {
 
     @Override
     protected Class<? extends TableMapper> getMapperClass() {
+        return null;
+    }
+
+    private Class<? extends Mapper> getPhoenixMapperClass() {
         return AnalysisToFileMapper.class;
     }
 
     @Override
     protected void initMapReduceJob(String inTable, Job job, Scan scan, boolean addDependencyJar) throws IOException {
-        super.initMapReduceJob(inTable, job, scan, addDependencyJar);
+        String phoenixInputTable = SchemaUtil.getEscapedFullTableName(inTable);
+//        final String selectQuery = "SELECT * FROM " + phoenixInputTable; // default -> retrieve all data.
+
+        PhoenixMapReduceUtil.setInput(job, PhoenixVariantAnnotationWritable.class, phoenixInputTable, StringUtils.EMPTY);
+        job.setMapperClass(getPhoenixMapperClass());
 
         FileOutputFormat.setOutputPath(job, new Path(this.outFile)); // set Path
         FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class); // compression

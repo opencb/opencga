@@ -40,10 +40,6 @@ public class AnalysisAnnotateMapper extends AbstractHBaseMapReduce<NullWritable,
     private VariantAnnotationToHBaseConverter annotationConverter;
     private VariantPhoenixHelper.VariantColumn[] columnsOrdered;
 
-//    static { // get Driver log
-//        DriverManager.setLogWriter(new PrintWriter(System.err));
-//    }
-
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
@@ -138,14 +134,18 @@ public class AnalysisAnnotateMapper extends AbstractHBaseMapReduce<NullWritable,
         List<Object> orderedValues = new ArrayList<>(columnsOrdered.length);
         for (VariantPhoenixHelper.VariantColumn column : columnsOrdered) {
             Object columnValue = columnMap.get(column);
-            if (column.getPDataType().isArrayType()) {
-                if (columnValue instanceof Collection) {
-                    columnValue = toArray(column.getPDataType(), (Collection) columnValue);
-                } else {
-                    throw new IllegalArgumentException("Column " + column + " is not a collection " + columnValue);
+            if (columnValue != null) {
+                if (column.getPDataType().isArrayType()) {
+                    if (columnValue instanceof Collection) {
+                        columnValue = toArray(column.getPDataType(), (Collection) columnValue);
+                    } else {
+                        throw new IllegalArgumentException("Column " + column + " is not a collection " + columnValue);
+                    }
                 }
+                orderedValues.add(columnValue);
+            } else {
+                orderedValues.add(column.getPDataType().getSqlType());
             }
-            orderedValues.add(columnValue);
         }
         return orderedValues;
     }
