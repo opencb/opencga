@@ -22,7 +22,6 @@ import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 
 /**
  * Created by mh719 on 21/12/2016.
@@ -42,7 +41,7 @@ public class HadoopVcfOutputFormat extends FileOutputFormat<Variant, NullWritabl
         boolean isCompressed = getCompressOutput(job);
         CompressionCodec codec = null;
         String extension = "";
-        if(isCompressed) {
+        if (isCompressed) {
             Class file = getOutputCompressorClass(job, GzipCodec.class);
             codec = (CompressionCodec) ReflectionUtils.newInstance(file, conf);
             extension = codec.getDefaultExtension();
@@ -50,7 +49,7 @@ public class HadoopVcfOutputFormat extends FileOutputFormat<Variant, NullWritabl
         Path file1 = this.getDefaultWorkFile(job, extension);
         FileSystem fs = file1.getFileSystem(conf);
         FSDataOutputStream fileOut = fs.create(file1, false);
-        if(!isCompressed) {
+        if (!isCompressed) {
             return new HadoopVcfOutputFormat.VcfRecordWriter(configureWriter(job, fileOut));
         } else {
             DataOutputStream out = new DataOutputStream(codec.createOutputStream(fileOut));
@@ -63,7 +62,7 @@ public class HadoopVcfOutputFormat extends FileOutputFormat<Variant, NullWritabl
         final Configuration conf = job.getConfiguration();
         boolean withGenotype = conf.getBoolean(VariantTableExportDriver.CONFIG_VARIANT_TABLE_EXPORT_GENOTYPE, false);
 
-        try(VariantTableHelper helper = new VariantTableHelper(conf)) {
+        try (VariantTableHelper helper = new VariantTableHelper(conf)) {
             StudyConfiguration sc = helper.loadMeta();
             VariantSourceDBAdaptor source = new HadoopVariantSourceDBAdaptor(helper);
             QueryOptions options = QueryOptions.empty();
@@ -81,17 +80,7 @@ public class HadoopVcfOutputFormat extends FileOutputFormat<Variant, NullWritabl
     }
 
     protected static class VcfRecordWriter extends RecordWriter<Variant, NullWritable> {
-        private static final String utf8 = "UTF-8";
-        private static final byte[] newline;
         private final VariantVcfExporter writer;
-
-        static {
-            try {
-                newline = "\n".getBytes("UTF-8");
-            } catch (UnsupportedEncodingException var1) {
-                throw new IllegalArgumentException("can\'t find UTF-8 encoding");
-            }
-        }
 
         public VcfRecordWriter(VariantVcfExporter writer) {
             this.writer = writer;

@@ -86,7 +86,7 @@ public class VariantVcfExporter implements DataWriter<Variant> {
     private int failedVariants;
     private final List<String> sampleNames = new ArrayList<>();
     private final Map<String, String> sampleNameMapping = new ConcurrentHashMap<>();
-    private final AtomicReference<BiConsumer<Variant, RuntimeException>> converterErrorListener = new AtomicReference<>((v, r) -> {});
+    private final AtomicReference<BiConsumer<Variant, RuntimeException>> converterErrorListener = new AtomicReference<>((v, r) -> { });
     private final AtomicBoolean exportGenotype = new AtomicBoolean(false);
 
     public VariantVcfExporter(StudyConfiguration studyConfiguration, VariantSourceDBAdaptor sourceDBAdaptor, OutputStream outputStream,
@@ -211,7 +211,9 @@ public class VariantVcfExporter implements DataWriter<Variant> {
         if (sampleNames.isEmpty()) {
             builder.setOption(Options.DO_NOT_WRITE_GENOTYPES);
         }
-        writer = builder.build();
+        if (!this.exportGenotype.get()) {
+            builder.setOption(Options.DO_NOT_WRITE_GENOTYPES);
+        }
         writer.writeHeader(header);
         return true;
     }
