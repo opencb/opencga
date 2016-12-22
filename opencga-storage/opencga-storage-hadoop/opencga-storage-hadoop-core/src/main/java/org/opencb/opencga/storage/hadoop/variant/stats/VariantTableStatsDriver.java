@@ -37,6 +37,13 @@ public class VariantTableStatsDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
+    protected Scan createScan() {
+        Scan scan = super.createScan();
+        scan.addFamily(getHelper().getColumnFamily());
+        return scan;
+    }
+
+    @Override
     protected void initMapReduceJob(String inTable, Job job, Scan scan, boolean addDependencyJar) throws IOException {
         super.initMapReduceJob(inTable, job, scan, addDependencyJar);
         TableMapReduceUtil.initTableReducerJob(
