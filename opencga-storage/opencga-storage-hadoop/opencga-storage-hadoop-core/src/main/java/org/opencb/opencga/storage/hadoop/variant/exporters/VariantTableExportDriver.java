@@ -9,6 +9,7 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.hadoop.mapreduce.Job;
@@ -96,6 +97,7 @@ public class VariantTableExportDriver extends AbstractAnalysisTableDriver {
                 throw new IllegalStateException("Type not known: " + this.type);
         }
         job.setNumReduceTasks(0);
+        TableMapReduceUtil.addDependencyJars(job);
     }
 
     @Override
