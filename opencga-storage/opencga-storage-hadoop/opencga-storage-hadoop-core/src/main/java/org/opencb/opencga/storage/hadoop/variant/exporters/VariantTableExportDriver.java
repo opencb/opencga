@@ -12,20 +12,32 @@ import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 
 import java.io.IOException;
+import java.util.Objects;
 
 /**
  * Created by mh719 on 21/11/2016.
+ * @author Matthias Haimel
  */
 public class VariantTableExportDriver extends AbstractAnalysisTableDriver {
+    @Deprecated
     public static final String CONFIG_VARIANT_TABLE_EXPORT_AVRO_PATH = "opencga.variant.table.export.avro.path";
+    @Deprecated
     public static final String CONFIG_VARIANT_TABLE_EXPORT_AVRO_GENOTYPE = "opencga.variant.table.export.avro.genotype";
+
+    public static final String CONFIG_VARIANT_TABLE_EXPORT_PATH = "opencga.variant.table.export.path";
+    public static final String CONFIG_VARIANT_TABLE_EXPORT_TYPE = "opencga.variant.table.export.type";
+    public static final String CONFIG_VARIANT_TABLE_EXPORT_GENOTYPE = "opencga.variant.table.export.genotype";
     private String outFile;
+    private ExportType type;
+
+    public enum ExportType {AVRO, VCF};
 
     public VariantTableExportDriver() { /* nothing */ }
 
@@ -35,24 +47,42 @@ public class VariantTableExportDriver extends AbstractAnalysisTableDriver {
 
     @Override
     protected void parseAndValidateParameters() {
-        outFile = getConf().get(CONFIG_VARIANT_TABLE_EXPORT_AVRO_PATH, StringUtils.EMPTY);
+        outFile = null;
+        if (!Objects.isNull(getConf().get(CONFIG_VARIANT_TABLE_EXPORT_AVRO_PATH, null))) {
+            outFile = getConf().get(CONFIG_VARIANT_TABLE_EXPORT_AVRO_PATH);
+        }
+
+        String typeString = getConf().get(CONFIG_VARIANT_TABLE_EXPORT_TYPE, ExportType.AVRO.name());
+        this.type = ExportType.valueOf(typeString);
+
+        outFile = getConf().get(CONFIG_VARIANT_TABLE_EXPORT_PATH, outFile);
         if (StringUtils.isEmpty(outFile)) {
-            throw new IllegalArgumentException("No AVRO output file specified!!!");
+            throw new IllegalArgumentException("No output file specified!!!");
         }
     }
 
     @Override
     protected Class<? extends TableMapper> getMapperClass() {
-        return AnalysisToAvroMapper.class;
+        return AnalysisToFileMapper.class;
     }
 
     @Override
     protected void initMapReduceJob(String inTable, Job job, Scan scan, boolean addDependencyJar) throws IOException {
         super.initMapReduceJob(inTable, job, scan, addDependencyJar);
-        job.setOutputFormatClass(AvroKeyOutputFormat.class);
-        AvroKeyOutputFormat.setOutputPath(job, new Path(this.outFile)); // set Path
-        AvroJob.setOutputKeySchema(job, VariantAvro.getClassSchema()); // Set schema
-        AvroKeyOutputFormat.setOutputCompressorClass(job, GzipCodec.class); // compression
+
+        FileOutputFormat.setOutputPath(job, new Path(this.outFile)); // set Path
+        FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class); // compression
+        switch (this.type) {
+            case AVRO:
+                job.setOutputFormatClass(AvroKeyOutputFormat.class);
+                AvroJob.setOutputKeySchema(job, VariantAvro.getClassSchema()); // Set schema
+                break;
+            case VCF:
+                job.setOutputFormatClass(HadoopVcfOutputFormat.class);
+                break;
+            default:
+                throw new IllegalStateException("Type not known: " + this.type);
+        }
         job.setNumReduceTasks(0);
     }
 
