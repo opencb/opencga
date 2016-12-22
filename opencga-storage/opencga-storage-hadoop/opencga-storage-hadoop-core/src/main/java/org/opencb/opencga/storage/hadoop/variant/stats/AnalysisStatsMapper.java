@@ -57,19 +57,23 @@ public class AnalysisStatsMapper extends AbstractHBaseMapReduce<ImmutableBytesWr
     protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
         boolean done = false;
         if (!Bytes.startsWith(value.getRow(), this.studiesRow)) { // ignore _METADATA row
-            Variant variant = this.getHbaseToVariantConverter().convert(value);
-            List<VariantStatsWrapper> annotations = this.variantStatisticsCalculator.calculateBatch(
-                    Collections.singletonList(variant), this.studyId, "notused", this.samples);
-            for (VariantStatsWrapper annotation : annotations) {
-                Put convert = this.variantStatsToHBaseConverter.convert(annotation);
-                if (null != convert) {
-                    context.write(key, convert);
-                    done = true;
-                    context.getCounter(AbstractVariantTableMapReduce.COUNTER_GROUP_NAME, "stats.put").increment(1);
+            try {
+                Variant variant = this.getHbaseToVariantConverter().convert(value);
+                List<VariantStatsWrapper> annotations = this.variantStatisticsCalculator.calculateBatch(
+                        Collections.singletonList(variant), this.studyId, "notused", this.samples);
+                for (VariantStatsWrapper annotation : annotations) {
+                    Put convert = this.variantStatsToHBaseConverter.convert(annotation);
+                    if (null != convert) {
+                        context.write(key, convert);
+                        done = true;
+                        context.getCounter(AbstractVariantTableMapReduce.COUNTER_GROUP_NAME, "stats.put").increment(1);
+                    }
                 }
-            }
-            if (done) {
-                context.getCounter(AbstractVariantTableMapReduce.COUNTER_GROUP_NAME, "variants").increment(1);
+                if (done) {
+                    context.getCounter(AbstractVariantTableMapReduce.COUNTER_GROUP_NAME, "variants").increment(1);
+                }
+            } catch (IllegalStateException e) {
+                throw new IllegalStateException("Problem with row [hex:" + Bytes.toHex(key.copyBytes()) + "]", e);
             }
         }
     }
