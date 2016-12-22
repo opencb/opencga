@@ -32,10 +32,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.StoragePipelineResult;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
@@ -61,7 +61,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
     private VariantHadoopDBAdaptor dbAdaptor;
     private static StudyConfiguration studyConfiguration;
     private static VariantSource source;
-    private static StorageETLResult etlResult = null;
+    private static StoragePipelineResult etlResult = null;
 
     @ClassRule
     public static HadoopExternalResource externalResource = new HadoopExternalResource();
@@ -69,7 +69,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
 
     @BeforeClass
     public static void beforeClass() throws Exception {
-        HadoopVariantStorageManager variantStorageManager = externalResource.getVariantStorageManager();
+        HadoopVariantStorageEngine variantStorageManager = externalResource.getVariantStorageManager();
         externalResource.clearDB(variantStorageManager.getVariantTableName(DB_NAME));
         externalResource.clearDB(variantStorageManager.getArchiveTableName(STUDY_ID));
 
@@ -82,9 +82,9 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
                         .append(Options.FILE_ID.key(), FILE_ID)
                         .append(Options.ANNOTATE.key(), true)
                         .append(Options.CALCULATE_STATS.key(), false)
-                        .append(HadoopVariantStorageManager.HADOOP_LOAD_DIRECT, false)
-                        .append(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, true)
-                        .append(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, true)
+                        .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, false)
+                        .append(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE, true)
+                        .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT, true)
         );
 
         source = variantStorageManager.readVariantSource(etlResult.getTransformResult());
@@ -100,7 +100,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
     @Before
     @Override
     public void before() throws Exception {
-        dbAdaptor = ((HadoopVariantStorageManager) variantStorageManager).getDBAdaptor(DB_NAME);
+        dbAdaptor = ((HadoopVariantStorageEngine) variantStorageManager).getDBAdaptor(DB_NAME);
 
         if (allVariantsQueryResult == null) {
             allVariantsQueryResult = dbAdaptor.get(new Query(), new QueryOptions());
@@ -113,7 +113,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
     }
 
     @Test
-    public void testConnection() throws StorageManagerException {
+    public void testConnection() throws StorageEngineException {
         variantStorageManager.testConnection();
     }
 

@@ -24,7 +24,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.local.variant.operations.StorageOperation;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -33,7 +34,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
@@ -89,14 +89,14 @@ public class VariantFetcher {
     }
 
     public Map<Long, List<Sample>> getSamplesMetadata(long studyId, Query query, QueryOptions queryOptions, String sessionId)
-            throws CatalogException, StorageManagerException, IOException {
+            throws CatalogException, StorageEngineException, IOException {
         try (VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(studyId, sessionId)) {
             return checkSamplesPermissions(query, queryOptions, variantDBAdaptor, sessionId);
         }
     }
 
     public StudyConfiguration getStudyConfiguration(long studyId, QueryOptions options, String sessionId)
-            throws CatalogException, StorageManagerException, IOException {
+            throws CatalogException, StorageEngineException, IOException {
         try (VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(studyId, sessionId)) {
             return variantDBAdaptor.getStudyConfigurationManager().getStudyConfiguration((int) studyId, options).first();
         }
@@ -192,7 +192,7 @@ public class VariantFetcher {
         }
     }
 
-    public VariantDBIterator iterator(Query query, QueryOptions queryOptions, String sessionId) throws CatalogException, StorageManagerException {
+    public VariantDBIterator iterator(Query query, QueryOptions queryOptions, String sessionId) throws CatalogException, StorageEngineException {
 
         long studyId = getMainStudyId(query, sessionId);
 
@@ -204,7 +204,7 @@ public class VariantFetcher {
         return dbAdaptor.iterator(query, queryOptions);
     }
 
-    public QueryResult<Long> countByFile(long fileId, QueryOptions params, String sessionId) throws CatalogException, StorageManagerException, IOException {
+    public QueryResult<Long> countByFile(long fileId, QueryOptions params, String sessionId) throws CatalogException, StorageEngineException, IOException {
         Query query = getVariantQuery(params);
         if (getMainStudyId(query, VariantDBAdaptor.VariantQueryParams.STUDIES.key(), sessionId) == null) {
             long studyId = catalogManager.getStudyIdByFileId(fileId);
@@ -214,7 +214,7 @@ public class VariantFetcher {
         return count(query, sessionId);
     }
 
-    public QueryResult<Long> count(long studyId, QueryOptions params, String sessionId) throws CatalogException, StorageManagerException, IOException {
+    public QueryResult<Long> count(long studyId, QueryOptions params, String sessionId) throws CatalogException, StorageEngineException, IOException {
         Query query = getVariantQuery(params);
         if (getMainStudyId(query, VariantDBAdaptor.VariantQueryParams.STUDIES.key(), sessionId) == null) {
             query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
@@ -222,7 +222,7 @@ public class VariantFetcher {
         return count(query, sessionId);
     }
 
-    public QueryResult<Long> count(Query query, String sessionId) throws CatalogException, StorageManagerException, IOException {
+    public QueryResult<Long> count(Query query, String sessionId) throws CatalogException, StorageEngineException, IOException {
 
         long studyId = getMainStudyId(query, sessionId);
 
@@ -325,7 +325,7 @@ public class VariantFetcher {
         return samplesMap;
     }
 
-    protected VariantDBAdaptor getVariantDBAdaptor(long studyId, String sessionId) throws CatalogException, StorageManagerException {
+    protected VariantDBAdaptor getVariantDBAdaptor(long studyId, String sessionId) throws CatalogException, StorageEngineException {
         DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
 
         String storageEngine = dataStore.getStorageEngine();
@@ -335,7 +335,7 @@ public class VariantFetcher {
         try {
             return storageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            throw new StorageManagerException("Unable to get VariantDBAdaptor", e);
+            throw new StorageEngineException("Unable to get VariantDBAdaptor", e);
         }
     }
 
@@ -358,7 +358,7 @@ public class VariantFetcher {
         return query;
     }
 
-    public VariantSourceDBAdaptor getSourceDBAdaptor(int studyId, String sessionId) throws CatalogException, StorageManagerException {
+    public VariantSourceDBAdaptor getSourceDBAdaptor(int studyId, String sessionId) throws CatalogException, StorageEngineException {
         return getVariantDBAdaptor(studyId, sessionId).getVariantSourceDBAdaptor();
     }
 

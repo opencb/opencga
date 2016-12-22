@@ -34,7 +34,7 @@ import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
 import java.io.IOException;
 import java.net.URI;
@@ -299,7 +299,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotNull("annotate", filesCommandOptions.indexCommandOptions.annotate);
         params.putIfNotNull("overwrite", filesCommandOptions.indexCommandOptions.overwriteAnnotations);
         params.putIfNotNull(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.indexCommandOptions.study);
-        params.putIfNotNull(VariantStorageManager.Options.RESUME.key(), filesCommandOptions.indexCommandOptions.resume);
+        params.putIfNotNull(VariantStorageEngine.Options.RESUME.key(), filesCommandOptions.indexCommandOptions.resume);
         params.putAll(filesCommandOptions.commonCommandOptions.params);
 
         return openCGAClient.getFileClient().index(fileIds, params);

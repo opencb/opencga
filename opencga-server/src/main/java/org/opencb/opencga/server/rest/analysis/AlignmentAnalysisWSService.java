@@ -28,7 +28,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.rest.FileWSServer;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
-import org.opencb.opencga.storage.core.local.AlignmentStorageManager;
+import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -169,7 +169,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 //            }
 //            String path = fileQueryResult.first().getUri().getRawPath();
 //
-//            AlignmentStorageManager alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager();
+//            AlignmentStorageEngine alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager();
 //            AlignmentGlobalStats stats = alignmentStorageManager.getDBAdaptor().stats(path, query, queryOptions);
 //            QueryResult<AlignmentGlobalStats> queryResult = new QueryResult<>("get stats", -1, 1, 1, "", "", Arrays.asList(stats));
 //            return createOkResponse(queryResult);

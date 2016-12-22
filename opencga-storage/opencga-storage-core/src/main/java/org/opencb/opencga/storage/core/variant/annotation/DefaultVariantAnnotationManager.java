@@ -36,7 +36,7 @@ import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.core.common.ProgressLogger;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.avro.AvroDataReader;
 import org.opencb.opencga.storage.core.io.avro.AvroDataWriter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -89,7 +89,7 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
     }
 
     @Override
-    public void annotate(Query query, QueryOptions options) throws VariantAnnotatorException, IOException, StorageManagerException {
+    public void annotate(Query query, QueryOptions options) throws VariantAnnotatorException, IOException, StorageEngineException {
 
         String annotationFileStr = options.getString(LOAD_FILE);
         boolean doCreate = options.getBoolean(CREATE);
@@ -201,7 +201,7 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
     }
 
 
-    public void loadAnnotation(URI uri, QueryOptions options) throws IOException, StorageManagerException {
+    public void loadAnnotation(URI uri, QueryOptions options) throws IOException, StorageEngineException {
         Path path = Paths.get(uri);
         String fileName = path.getFileName().toString().toLowerCase();
         if (VariantReaderUtils.isAvro(fileName) || VariantReaderUtils.isJson(fileName)) {
@@ -267,9 +267,9 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
      * @param uri     URI of the annotation file
      * @param options Specific options.
      * @throws IOException IOException thrown
-     * @throws StorageManagerException if there is a problem creating or running the {@link ParallelTaskRunner}
+     * @throws StorageEngineException if there is a problem creating or running the {@link ParallelTaskRunner}
      */
-    public void loadCustomAnnotation(URI uri, QueryOptions options) throws IOException, StorageManagerException {
+    public void loadCustomAnnotation(URI uri, QueryOptions options) throws IOException, StorageEngineException {
 
         final int batchSize = options.getInt(BATCH_SIZE, 100);
         final int numConsumers = options.getInt(NUM_WRITERS, 6);
@@ -304,7 +304,7 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
                 try {
                     ptr.run();
                 } catch (ExecutionException e) {
-                    throw new StorageManagerException("Error executing ParallelTaskRunner", e);
+                    throw new StorageEngineException("Error executing ParallelTaskRunner", e);
                 }
             } catch (NoSuchMethodException e) {
                 throw new RuntimeException(e); // This should never happen!
@@ -329,7 +329,7 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
                 try {
                     ptr.run();
                 } catch (ExecutionException e) {
-                    throw new StorageManagerException("Error executing ParallelTaskRunner", e);
+                    throw new StorageEngineException("Error executing ParallelTaskRunner", e);
                 }
             } catch (NoSuchMethodException e) {
                 throw new RuntimeException(e); // This should never happen!
@@ -355,10 +355,10 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
             try {
                 ptr.run();
             } catch (ExecutionException e) {
-                throw new StorageManagerException("Error executing ParallelTaskRunner", e);
+                throw new StorageEngineException("Error executing ParallelTaskRunner", e);
             }
         } else {
-            throw new StorageManagerException("Unknown format file : " + path);
+            throw new StorageEngineException("Unknown format file : " + path);
         }
     }
 

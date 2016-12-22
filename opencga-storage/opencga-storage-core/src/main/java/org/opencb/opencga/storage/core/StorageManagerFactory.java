@@ -17,10 +17,10 @@
 package org.opencb.opencga.storage.core;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 
 /**
  * Creates StorageManagers by reflexion.
- * The StorageManager's className is read from <opencga-home>/conf/storage-configuration.yml
+ * The StorageEngine's className is read from <opencga-home>/conf/storage-configuration.yml
  */
 public final class StorageManagerFactory {
 
@@ -40,8 +40,8 @@ public final class StorageManagerFactory {
     private static StorageConfiguration storageConfigurationDefault;
     private StorageConfiguration storageConfiguration;
 
-    private Map<String, AlignmentStorageManager> alignmentStorageManagerMap = new HashMap<>();
-    private Map<String, VariantStorageManager> variantStorageManagerMap = new HashMap<>();
+    private Map<String, AlignmentStorageEngine> alignmentStorageManagerMap = new HashMap<>();
+    private Map<String, VariantStorageEngine> variantStorageManagerMap = new HashMap<>();
     protected static Logger logger = LoggerFactory.getLogger(StorageConfiguration.class);
 
     private StorageManagerFactory(StorageConfiguration storageConfiguration) {
@@ -82,29 +82,29 @@ public final class StorageManagerFactory {
         return storageManagerFactory;
     }
 
-    public AlignmentStorageManager getAlignmentStorageManager()
+    public AlignmentStorageEngine getAlignmentStorageManager()
             throws IllegalAccessException, InstantiationException, ClassNotFoundException {
         return getAlignmentStorageManager(null);
     }
 
-    public AlignmentStorageManager getAlignmentStorageManager(String storageEngineName)
+    public AlignmentStorageEngine getAlignmentStorageManager(String storageEngineName)
             throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         return getStorageManager("ALIGNMENT", storageEngineName, alignmentStorageManagerMap);
     }
 
 
-    public VariantStorageManager getVariantStorageManager()
+    public VariantStorageEngine getVariantStorageManager()
             throws IllegalAccessException, InstantiationException, ClassNotFoundException {
         return getVariantStorageManager(null);
     }
 
-    public VariantStorageManager getVariantStorageManager(String storageEngineName)
+    public VariantStorageEngine getVariantStorageManager(String storageEngineName)
             throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         return getStorageManager("VARIANT", storageEngineName, variantStorageManagerMap);
     }
 
 
-    private <T extends StorageManager> T getStorageManager(String bioformat, String storageEngineName, Map<String, T> storageManagerMap)
+    private <T extends StorageEngine> T getStorageManager(String bioformat, String storageEngineName, Map<String, T> storageManagerMap)
             throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         /*
          * This new block of code use new StorageConfiguration system, it must replace older one
@@ -168,19 +168,19 @@ public final class StorageManagerFactory {
 //        }
 //    }
 
-    public void registerStorageManager(VariantStorageManager variantStorageManager) {
+    public void registerStorageManager(VariantStorageEngine variantStorageManager) {
         variantStorageManagerMap.put(variantStorageManager.getStorageEngineId(), variantStorageManager);
     }
 
-    public VariantStorageManager unregisterVariantStorageManager(String storageEngineId) {
+    public VariantStorageEngine unregisterVariantStorageManager(String storageEngineId) {
         return variantStorageManagerMap.remove(storageEngineId);
     }
 
-    public void registerStorageManager(AlignmentStorageManager alignmentStorageManager) {
+    public void registerStorageManager(AlignmentStorageEngine alignmentStorageManager) {
         alignmentStorageManagerMap.put(alignmentStorageManager.getStorageEngineId(), alignmentStorageManager);
     }
 
-    public AlignmentStorageManager unregisterAlignmentStorageManager(String storageEngineId) {
+    public AlignmentStorageEngine unregisterAlignmentStorageManager(String storageEngineId) {
         return alignmentStorageManagerMap.remove(storageEngineId);
     }
 }

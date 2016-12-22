@@ -19,9 +19,9 @@ package org.opencb.opencga.storage.hadoop.variant.adaptors;
 import org.junit.*;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 
@@ -57,15 +57,15 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
 
 //    @Override
 //    protected ObjectMap getOtherParams() {
-//        return new ObjectMap(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "proto")
-//                .append(HadoopVariantStorageManager.HADOOP_LOAD_DIRECT, true)
-//                .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false);
+//        return new ObjectMap(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto")
+//                .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true)
+//                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
 //    }
     @Override
     protected ObjectMap getOtherParams() {
-        return new ObjectMap(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "avro")
-                .append(HadoopVariantStorageManager.HADOOP_LOAD_DIRECT, false)
-                .append(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
+        return new ObjectMap(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
+                .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, false)
+                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
     }
 
 

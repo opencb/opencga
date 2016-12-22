@@ -22,7 +22,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 
 import java.io.IOException;
@@ -63,7 +63,7 @@ public interface VariantSourceDBAdaptor extends AutoCloseable {
 
     QueryResult<Long> count();
 
-    void updateVariantSource(VariantSource variantSource) throws StorageManagerException;
+    void updateVariantSource(VariantSource variantSource) throws StorageEngineException;
 
     Iterator<VariantSource> iterator(Query query, QueryOptions options) throws IOException;
 

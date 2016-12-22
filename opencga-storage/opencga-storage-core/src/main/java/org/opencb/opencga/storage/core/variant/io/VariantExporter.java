@@ -7,7 +7,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.core.common.ProgressLogger;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.ExportMetadata;
@@ -58,10 +58,10 @@ public class VariantExporter {
      * @param query         Query with the variants to export
      * @param queryOptions  Query options
      * @throws IOException  If there is any IO error
-     * @throws StorageManagerException  If there is any error exporting variants
+     * @throws StorageEngineException  If there is any error exporting variants
      */
     public void export(@Nullable URI outputFileUri, VariantOutputFormat outputFormat, Query query, QueryOptions queryOptions)
-            throws IOException, StorageManagerException {
+            throws IOException, StorageEngineException {
 
         String outputFile = null;
         if (outputFileUri != null) {
@@ -81,7 +81,7 @@ public class VariantExporter {
 
     protected void exportData(OutputStream outputStream, VariantOutputFormat outputFormat, Query query, QueryOptions queryOptions,
                               boolean logProgress)
-            throws StorageManagerException, IOException {
+            throws StorageEngineException, IOException {
         if (query == null) {
             query = new Query();
         }
@@ -121,7 +121,7 @@ public class VariantExporter {
         try {
             ptr.run();
         } catch (ExecutionException e) {
-            throw new StorageManagerException("Error exporting variants", e);
+            throw new StorageEngineException("Error exporting variants", e);
         }
 
         logger.info("Time fetching data: " + variantDBReader.getTimeFetching(TimeUnit.MILLISECONDS) / 1000.0 + 's');

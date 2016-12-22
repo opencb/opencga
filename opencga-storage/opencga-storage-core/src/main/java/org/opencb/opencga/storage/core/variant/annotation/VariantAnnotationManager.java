@@ -2,7 +2,7 @@ package org.opencb.opencga.storage.core.variant.annotation;
 
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import java.io.IOException;
 
@@ -23,6 +23,6 @@ public interface VariantAnnotationManager {
     String LOAD_FILE = "annotation.load.file";
     String CUSTOM_ANNOTATION_KEY = "custom_annotation_key";
 
-    void annotate(Query query, QueryOptions options) throws VariantAnnotatorException, IOException, StorageManagerException;
+    void annotate(Query query, QueryOptions options) throws VariantAnnotatorException, IOException, StorageEngineException;
 
 }
