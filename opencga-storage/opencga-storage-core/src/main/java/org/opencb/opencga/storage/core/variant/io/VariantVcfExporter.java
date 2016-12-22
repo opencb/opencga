@@ -208,12 +208,11 @@ public class VariantVcfExporter implements DataWriter<Variant> {
                 .setOutputStream(outputStream)
                 .setReferenceDictionary(sequenceDictionary)
                 .unsetOption(Options.INDEX_ON_THE_FLY);
-        if (sampleNames.isEmpty()) {
+        if (sampleNames.isEmpty() || !this.exportGenotype.get()) {
             builder.setOption(Options.DO_NOT_WRITE_GENOTYPES);
         }
-        if (!this.exportGenotype.get()) {
-            builder.setOption(Options.DO_NOT_WRITE_GENOTYPES);
-        }
+
+        writer = builder.build();
         writer.writeHeader(header);
         return true;
     }
