@@ -359,7 +359,7 @@ public class VariantVcfExporter implements DataWriter<Variant> {
         List<String> alleles = new ArrayList<>(secAlts.size() + 2);
         Integer origStart = variant.getStart();
         Integer origEnd = variant.getEnd();
-        Integer adjustedStart = adjust ? origStart -1 : origStart;
+        Integer adjustedStart = adjust ? origStart - 1 : origStart;
         alleles.add(buildAllele(variant.getChromosome(), origStart, reference, adjustedStart));
         alleles.add(buildAllele(variant.getChromosome(), origStart, alternate, adjustedStart));
         secAlts.forEach(alt -> {
