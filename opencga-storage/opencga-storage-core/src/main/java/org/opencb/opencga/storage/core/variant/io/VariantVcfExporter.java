@@ -54,6 +54,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Created by jmmut on 2015-06-25.
@@ -356,20 +357,33 @@ public class VariantVcfExporter implements DataWriter<Variant> {
         String alternate = variant.getAlternate();
         List<AlternateCoordinate> secAlts = variant.getStudy(this.studyIdString).getSecondaryAlternates();
         List<String> alleles = new ArrayList<>(secAlts.size() + 2);
-        alleles.add(buildAllele(variant.getChromosome(), variant.getStart(), reference, adjust));
-        alleles.add(buildAllele(variant.getChromosome(), variant.getStart(), alternate, adjust));
-        secAlts.forEach(alt -> alleles.add(buildAllele(variant.getChromosome(), variant.getStart(), alt.getAlternate(), adjust)));
+        Integer origStart = variant.getStart();
+        Integer origEnd = variant.getEnd();
+        Integer adjustedStart = adjust ? origStart -1 : origStart;
+        alleles.add(buildAllele(variant.getChromosome(), origStart, reference, adjustedStart));
+        alleles.add(buildAllele(variant.getChromosome(), origStart, alternate, adjustedStart));
+        secAlts.forEach(alt -> {
+            if (origStart.equals(alt.getStart()) && origEnd.equals(alt.getEnd())) {
+                alleles.add(buildAllele(variant.getChromosome(), origStart, alt.getAlternate(), adjustedStart));
+            } else if (adjustedStart.equals(alt.getStart()) && origEnd.equals(alt.getEnd())) {
+                // By chance the alt matches the adjusted start
+                alleles.add(buildAllele(variant.getChromosome(), adjustedStart, alt.getAlternate(), adjustedStart));
+            } else {
+                // different position as ref variant
+                alleles.add(Character.toString(VCFConstants.NO_CALL_ALLELE));
+            }
+        });
         return alleles;
     }
 
-    public String buildAllele(String chromosome, Integer originalPosition, String allele, boolean adjust) {
-        if (!adjust) {
+    public String buildAllele(String chromosome, Integer originalPosition, String allele, Integer adjustedStart) {
+        if (originalPosition.equals(adjustedStart)) {
             return allele;
         }
         if (StringUtils.startsWith(allele, "*")) {
             return allele;
         }
-        return getReferenceBase(chromosome, originalPosition - 1) + allele;
+        return getReferenceBase(chromosome, adjustedStart) + allele;
     }
 
     private String getReferenceBase(String chromosome, Integer position) {
@@ -377,6 +391,7 @@ public class VariantVcfExporter implements DataWriter<Variant> {
     }
 
     public VariantContext convertVariantToVariantContext(Variant variant, List<String> annotations) { //, StudyConfiguration
+        final String noCallAllele = String.valueOf(VCFConstants.NO_CALL_ALLELE);
         VariantContextBuilder variantContextBuilder = new VariantContextBuilder();
         int start = variant.getStart();
         int end = variant.getEnd();
@@ -386,6 +401,11 @@ public class VariantVcfExporter implements DataWriter<Variant> {
             start -= 1;
         }
         List<String> allelesArray = buildAlleles(variant, adjustStart);
+        Set<Integer> nocallAlleles = IntStream.range(0,  allelesArray.size()).boxed()
+                .filter(i -> {
+                    return noCallAllele.equals(allelesArray.get(i));
+                })
+                .collect(Collectors.toSet());
         String filter = "PASS";
         String prk = "PR";
         String crk = "CR";
@@ -431,15 +451,15 @@ public class VariantVcfExporter implements DataWriter<Variant> {
             String genotypeFilter = studyEntry.getSampleData(sampleName, "FT");
 
             if (Objects.isNull(gtStr)) {
-                gtStr = ".";
-                genotypeFilter = ".";
+                gtStr = noCallAllele;
+                genotypeFilter = noCallAllele;
             }
 
             List<String> gtSplit = new ArrayList<>(Arrays.asList(gtStr.split(",")));
             List<String> ftSplit = new ArrayList<>(Arrays.asList(
-                    (StringUtils.isBlank(genotypeFilter) ? "." : genotypeFilter).split(",")));
+                    (StringUtils.isBlank(genotypeFilter) ? noCallAllele : genotypeFilter).split(",")));
             while (gtSplit.size() > 1) {
-                int idx = gtSplit.indexOf(".");
+                int idx = gtSplit.indexOf(noCallAllele);
                 if (idx < 0) {
                     idx = gtSplit.indexOf("0/0");
                 }
@@ -456,10 +476,10 @@ public class VariantVcfExporter implements DataWriter<Variant> {
                     new org.opencb.biodata.models.feature.Genotype(gt, refAllele, allelesArray.subList(1, allelesArray.size()));
             List<Allele> alleles = new ArrayList<>();
             for (int gtIdx : genotype.getAllelesIdx()) {
-                if (gtIdx < allelesArray.size() && gtIdx >= 0) {
+                if (gtIdx < allelesArray.size() && gtIdx >= 0 && !nocallAlleles.contains(gtIdx)) { // .. AND NOT a nocall allele
                     alleles.add(Allele.create(allelesArray.get(gtIdx), gtIdx == 0)); // allele is ref. if the alleleIndex is 0
                 } else {
-                    alleles.add(Allele.create(".", false)); // genotype of a secondary alternate, or an actual missing
+                    alleles.add(Allele.create(noCallAllele, false)); // genotype of a secondary alternate, or an actual missing
                 }
             }
 
@@ -496,7 +516,7 @@ public class VariantVcfExporter implements DataWriter<Variant> {
         if (type.equals(VariantType.NO_VARIATION) && allelesArray.get(1).isEmpty()) {
             variantContextBuilder.alleles(refAllele);
         } else {
-            variantContextBuilder.alleles(allelesArray);
+            variantContextBuilder.alleles(allelesArray.stream().filter(a -> !a.equals(noCallAllele)).collect(Collectors.toList()));
         }
 
         // if asked variant annotations are exported
