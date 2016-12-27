@@ -74,7 +74,7 @@ public class UserCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-u", "--user"}, description = "User id, this must be unique in this OpenCGA installation",  required = true, arity = 1)
+        @Parameter(names = {"-u", "--user"}, description = "User id, this must be unique in OpenCGA",  required = true, arity = 1)
         public String user;
 
     }

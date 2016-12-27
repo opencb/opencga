@@ -27,10 +27,14 @@ import org.opencb.opencga.app.cli.main.options.UserCommandOptions;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
+import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.User;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -97,6 +101,52 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         createOutput(queryResponse);
     }
 
+    private void login() throws CatalogException, IOException {
+        logger.debug("Login");
+
+        String user = usersCommandOptions.loginCommandOptions.user;
+        String password = usersCommandOptions.loginCommandOptions.password;
+
+        if (StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(password)) {
+            String sessionId = openCGAClient.login(user, password);
+            if (StringUtils.isNotEmpty(sessionId)) {
+//                openCGAClient.login(user, password);
+
+                Map<String, List<String>> studies = new HashMap<>();
+                QueryResponse<Project> projects = openCGAClient.getUserClient().getProjects(QueryOptions.empty());
+                for (Project project : projects.getResponse().get(0).getResult()) {
+                    if (!studies.containsKey(project.getAlias())) {
+                        studies.put(project.getAlias(), new ArrayList<>());
+                    }
+
+                    for (Study study : project.getStudies()) {
+                        studies.get(project.getAlias()).add(study.getAlias());
+                    }
+                }
+                // write CLI session file
+                saveCliSessionFile(user, sessionId, studies);
+                System.out.println("You have been logged correctly. This is your new session id " + sessionId);
+            }
+        } else {
+            String sessionId = usersCommandOptions.commonCommandOptions.sessionId;
+            if (StringUtils.isNotEmpty(sessionId)) {
+                openCGAClient.setSessionId(sessionId);
+                System.out.println("You have been logged correctly. This is your new session id " + sessionId);
+            } else {
+                // load user session file
+
+//                openCGAClient.setSessionId(sessionId);
+            }
+        }
+    }
+
+    private void logout() throws IOException {
+        logger.debug("Logout");
+        openCGAClient.logout();
+        logoutCliSessionFile();
+//        logoutSession();
+    }
+
     private void create() throws CatalogException, IOException {
         logger.debug("Creating user...");
 
@@ -157,7 +207,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, usersCommandOptions.infoCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, usersCommandOptions.infoCommandOptions.dataModelOptions.exclude);
         queryOptions.putIfNotEmpty(UserDBAdaptor.QueryParams.LAST_MODIFIED.key(), usersCommandOptions.infoCommandOptions.lastModified);
-        queryOptions.putIfNotNull("userId", userId);
+        queryOptions.putIfNotNull("userId", cliSession.getUserId());
 
         QueryResponse<User> userQueryResponse = openCGAClient.getUserClient().get(queryOptions);
         if (userQueryResponse.getResponse().size() == 1 && userQueryResponse.getResponse().get(0).getNumResults() == 1) {
@@ -187,49 +237,11 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(usersCommandOptions.projectsCommandOptions.user)) {
             queryOptions.putIfNotEmpty("userId", usersCommandOptions.projectsCommandOptions.user);
         } else {
-            queryOptions.putIfNotEmpty("userId", openCGAClient.getUserId());
+            queryOptions.putIfNotEmpty("userId", cliSession.getUserId());
         }
         queryOptions.put("shared", usersCommandOptions.projectsCommandOptions.shared);
 
         return openCGAClient.getUserClient().getProjects(queryOptions);
-    }
-
-    private void login() throws CatalogException, IOException {
-        logger.debug("Login");
-
-        String user = usersCommandOptions.loginCommandOptions.user;
-        String password = usersCommandOptions.loginCommandOptions.password;
-
-        if (StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(password)) {
-            String session = openCGAClient.login(user, password);
-            saveSessionFile(user, session);
-            System.out.println("You have been logged correctly. This is your new session id " + session);
-            // write session file
-
-//            try {
-//                Thread.sleep(1000);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-
-        } else {
-            String sessionId = usersCommandOptions.commonCommandOptions.sessionId;
-            if (StringUtils.isNotEmpty(sessionId)) {
-                openCGAClient.setSessionId(sessionId);
-                System.out.println("You have been logged correctly. This is your new session id " + sessionId);
-            } else {
-                // load user session file
-
-//                openCGAClient.setSessionId(sessionId);
-            }
-        }
-    }
-
-    private void logout() throws IOException {
-        logger.debug("Logout");
-        openCGAClient.logout();
-        logoutSessionFile();
-//        logoutSession();
     }
 
     private void resetPasword() throws CatalogException, IOException {
@@ -252,8 +264,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(UserDBAdaptor.QueryParams.EMAIL.key(), usersCommandOptions.updateCommandOptions.email);
         params.putIfNotEmpty(UserDBAdaptor.QueryParams.ORGANIZATION.key(), usersCommandOptions.updateCommandOptions.organization);
         params.putIfNotEmpty(UserDBAdaptor.QueryParams.ATTRIBUTES.key(), usersCommandOptions.updateCommandOptions.attributes);
-        params.putIfNotEmpty("configs", usersCommandOptions.updateCommandOptions.configs);
-
+        params.putIfNotEmpty(UserDBAdaptor.QueryParams.CONFIGS.key(), usersCommandOptions.updateCommandOptions.configs);
         return openCGAClient.getUserClient().update(usersCommandOptions.updateCommandOptions.user, params);
     }
 

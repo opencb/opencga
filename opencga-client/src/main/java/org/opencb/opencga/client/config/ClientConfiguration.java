@@ -31,6 +31,8 @@ public class ClientConfiguration {
     private String version;
     private int sessionDuration;
 
+    private String defaultStudy;
+
     private RestConfig rest;
     private GrpcConfig grpc;
 
@@ -71,12 +73,44 @@ public class ClientConfiguration {
         jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOutputStream, this);
     }
 
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("ClientConfiguration{");
+        sb.append("version='").append(version).append('\'');
+        sb.append(", sessionDuration=").append(sessionDuration);
+        sb.append(", defaultStudy='").append(defaultStudy).append('\'');
+        sb.append(", rest=").append(rest);
+        sb.append(", grpc=").append(grpc);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public ClientConfiguration setVersion(String version) {
+        this.version = version;
+        return this;
+    }
+
     public int getSessionDuration() {
         return sessionDuration;
     }
 
-    public void setSessionDuration(int sessionDuration) {
+    public ClientConfiguration setSessionDuration(int sessionDuration) {
         this.sessionDuration = sessionDuration;
+        return this;
+    }
+
+    public String getDefaultStudy() {
+        return defaultStudy;
+    }
+
+    public ClientConfiguration setDefaultStudy(String defaultStudy) {
+        this.defaultStudy = defaultStudy;
+        return this;
     }
 
     public RestConfig getRest() {

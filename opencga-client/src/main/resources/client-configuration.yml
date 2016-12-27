@@ -1,6 +1,7 @@
 ---
-## number of seconds that session remain open
+## number of seconds that session remains open
 sessionDuration: 12000
+defaultStudy: ""
 
 ## REST client configuration options
 rest:

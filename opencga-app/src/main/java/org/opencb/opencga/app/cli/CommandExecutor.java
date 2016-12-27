@@ -21,8 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.*;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.app.cli.analysis.AnalysisCliOptionsParser;
-import org.opencb.opencga.app.cli.main.SessionFile;
+import org.opencb.opencga.app.cli.main.CliSession;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.common.Config;
@@ -36,6 +35,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by imedina on 19/04/16.
@@ -49,8 +50,11 @@ public abstract class CommandExecutor {
     protected String appHome;
     protected String conf;
 
+    @Deprecated
     protected String userId;
+    @Deprecated
     protected String sessionId;
+    protected CliSession cliSession;
 
     /** Use {@link #getOpenCGAConfiguration()} */
     private Configuration configuration;
@@ -63,8 +67,7 @@ public abstract class CommandExecutor {
     private static final String SESSION_FILENAME = "session.json";
 
     public CommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
-//        init(options);
-        init(options.logLevel, options.verbose, options.conf);
+        this(options.logLevel, options.verbose, options.conf);
     }
 
     public CommandExecutor(String logLevel, boolean verbose, String conf) {
@@ -82,7 +85,7 @@ public abstract class CommandExecutor {
         this.conf = conf;
 
         /**
-         * System property 'app.home' is automatically set up in opencga-storage.sh. If by any reason
+         * System property 'app.home' is automatically set up in opencga.sh. If by any reason
          * this is 'null' then OPENCGA_HOME environment variable is used instead.
          */
         this.appHome = System.getProperty("app.home", System.getenv("OPENCGA_HOME"));
@@ -104,27 +107,25 @@ public abstract class CommandExecutor {
         }
 
         try {
-            SessionFile sessionFile = loadSessionFile();
-            if (sessionFile != null) {
-                this.sessionId = sessionFile.getSessionId();
-                this.userId = sessionFile.getUserId();
+            loadCliSessionFile();
+            logger.debug("CLI session file is: {}", this.cliSession);
+            if (cliSession != null) {
+                this.sessionId = cliSession.getSessionId();
+                this.userId = cliSession.getUserId();
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
 
 
-        // This updated the timestamp every time the command is finished
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                try {
-                    updateSessionTimestamp();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+        // Update the timestamp every time one executed command finishes
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                updateCliSessionFileTimestamp();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        });
+        }));
 
         try {
             loadClientConfiguration();
@@ -301,42 +302,41 @@ public abstract class CommandExecutor {
     }
 
 
-    protected void saveSessionFile(String user, String session) throws IOException {
+    protected void loadCliSessionFile() throws IOException {
+        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
+        if (Files.exists(sessionPath)) {
+            this.cliSession = new ObjectMapper().readValue(sessionPath.toFile(), CliSession.class);
+        }
+    }
+
+    protected void saveCliSessionFile(String user, String session, Map<String, List<String>> studies) throws IOException {
         Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga");
         // check if ~/.opencga folder exists
         if (!Files.exists(sessionPath)) {
             Files.createDirectory(sessionPath);
         }
         sessionPath = sessionPath.resolve(SESSION_FILENAME);
-        new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), new SessionFile(user, session));
+        new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), new CliSession(user, session, studies));
     }
 
-    protected SessionFile loadSessionFile() throws IOException {
-        Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
-        if (Files.exists(sessionPath)) {
-            return new ObjectMapper().readValue(sessionPath.toFile(), SessionFile.class);
-        } else {
-            return null;
-        }
-    }
-
-    protected void updateSessionTimestamp() throws IOException {
+    protected void updateCliSessionFileTimestamp() throws IOException {
         Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
         if (Files.exists(sessionPath)) {
             ObjectMapper objectMapper = new ObjectMapper();
-            SessionFile sessionFile = objectMapper.readValue(sessionPath.toFile(), SessionFile.class);
-            sessionFile.setTimestamp(System.currentTimeMillis());
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), sessionFile);
+            CliSession cliSession = objectMapper.readValue(sessionPath.toFile(), CliSession.class);
+            cliSession.setTimestamp(System.currentTimeMillis());
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), cliSession);
         }
     }
 
-    protected void logoutSessionFile() throws IOException {
+    protected void logoutCliSessionFile() throws IOException {
         Path sessionPath = Paths.get(System.getProperty("user.home"), ".opencga", SESSION_FILENAME);
         if (Files.exists(sessionPath)) {
             ObjectMapper objectMapper = new ObjectMapper();
-            SessionFile sessionFile = objectMapper.readValue(sessionPath.toFile(), SessionFile.class);
-            sessionFile.setLogout(LocalDateTime.now().toString());
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), sessionFile);
+            CliSession cliSession = objectMapper.readValue(sessionPath.toFile(), CliSession.class);
+            cliSession.setLogout(LocalDateTime.now().toString());
+            cliSession.setProjectsAndStudies(null);
+            objectMapper.writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), cliSession);
         }
     }
 
@@ -404,4 +404,5 @@ public abstract class CommandExecutor {
     public Logger getLogger() {
         return logger;
     }
+
 }

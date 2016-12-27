@@ -19,42 +19,52 @@ package org.opencb.opencga.app.cli.main;
 import java.time.Instant;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by imedina on 13/07/15.
  */
-public class SessionFile {
+public class CliSession {
 
     private String userId;
     private String sessionId;
     private String login;
     private String logout;
     private long timestamp;
+    private Map<String, List<String>> projectsAndStudies;
 
-
-    public SessionFile() {
+    public CliSession() {
     }
 
-    public SessionFile(String userId, String sessionId) {
-        this(userId, sessionId, LocalDateTime.now().toString(), null, Instant.now().toEpochMilli());
+    public CliSession(String userId, String sessionId) {
+        this(userId, sessionId, LocalDateTime.now().toString(), null, Instant.now().toEpochMilli(), new HashMap<>());
     }
 
-    public SessionFile(String userId, String sessionId, String login, String logout, long timestamp) {
+    public CliSession(String userId, String sessionId, Map<String, List<String>> projectsAndStudies) {
+        this(userId, sessionId, LocalDateTime.now().toString(), null, Instant.now().toEpochMilli(), projectsAndStudies);
+    }
+
+    public CliSession(String userId, String sessionId, String login, String logout, long timestamp, Map<String,
+            List<String>> projectsAndStudies) {
         this.userId = userId;
         this.sessionId = sessionId;
         this.login = login;
         this.logout = logout;
         this.timestamp = timestamp;
+        this.projectsAndStudies = projectsAndStudies;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("UserConfigFile{");
+        final StringBuilder sb = new StringBuilder("CliSession{");
         sb.append("userId='").append(userId).append('\'');
         sb.append(", sessionId='").append(sessionId).append('\'');
-        sb.append(", login=").append(login);
-        sb.append(", logout=").append(logout);
+        sb.append(", login='").append(login).append('\'');
+        sb.append(", logout='").append(logout).append('\'');
         sb.append(", timestamp=").append(timestamp);
+        sb.append(", projects=").append(projectsAndStudies);
         sb.append('}');
         return sb.toString();
     }
@@ -63,7 +73,7 @@ public class SessionFile {
         return userId;
     }
 
-    public SessionFile setUserId(String userId) {
+    public CliSession setUserId(String userId) {
         this.userId = userId;
         return this;
     }
@@ -72,7 +82,7 @@ public class SessionFile {
         return sessionId;
     }
 
-    public SessionFile setSessionId(String sessionId) {
+    public CliSession setSessionId(String sessionId) {
         this.sessionId = sessionId;
         return this;
     }
@@ -81,7 +91,7 @@ public class SessionFile {
         return login;
     }
 
-    public SessionFile setLogin(String login) {
+    public CliSession setLogin(String login) {
         this.login = login;
         return this;
     }
@@ -90,7 +100,7 @@ public class SessionFile {
         return logout;
     }
 
-    public SessionFile setLogout(String logout) {
+    public CliSession setLogout(String logout) {
         this.logout = logout;
         return this;
     }
@@ -99,8 +109,17 @@ public class SessionFile {
         return timestamp;
     }
 
-    public SessionFile setTimestamp(long timestamp) {
+    public CliSession setTimestamp(long timestamp) {
         this.timestamp = timestamp;
+        return this;
+    }
+
+    public Map<String, List<String>> getProjectsAndStudies() {
+        return projectsAndStudies;
+    }
+
+    public CliSession setProjectsAndStudies(Map<String, List<String>> projectsAndStudies) {
+        this.projectsAndStudies = projectsAndStudies;
         return this;
     }
 }

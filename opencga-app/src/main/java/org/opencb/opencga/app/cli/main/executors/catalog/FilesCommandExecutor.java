@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
