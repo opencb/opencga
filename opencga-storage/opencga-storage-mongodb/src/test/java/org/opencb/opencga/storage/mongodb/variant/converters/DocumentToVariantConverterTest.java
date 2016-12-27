@@ -26,8 +26,8 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
 
 import java.util.*;
@@ -120,8 +120,8 @@ public class DocumentToVariantConverterTest {
         studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(Arrays.asList(0, 1)));
         studyConfiguration.getSampleIds().put("NA001", 0);
         studyConfiguration.getSampleIds().put("NA002", 1);
-        studyConfiguration.getAttributes().put(MongoDBVariantStorageManager.MongoDBVariantOptions.DEFAULT_GENOTYPE.key(), "0/0");
-        studyConfiguration.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Collections.singletonList("DP"));
+        studyConfiguration.getAttributes().put(MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE.key(), "0/0");
+        studyConfiguration.getAttributes().put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), Collections.singletonList("DP"));
 
         DocumentToVariantConverter converter = new DocumentToVariantConverter(
                 new DocumentToStudyVariantEntryConverter(

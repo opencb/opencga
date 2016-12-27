@@ -37,7 +37,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
@@ -120,7 +120,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
 
         // user tuning
 //        if (options != null) {
-//            batchSize = options.getInt(VariantStorageManager.BATCH_SIZE, batchSize);
+//            batchSize = options.getInt(VariantStorageEngine.BATCH_SIZE, batchSize);
 //        }
 
         // setup
@@ -287,7 +287,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         String fileHeader;
         if (headers.isEmpty()) {
             Iterator<VariantSource> iterator = sourceDBAdaptor.iterator(
-                    new Query(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId()),
+                    new Query(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId()),
                     new QueryOptions());
             if (iterator.hasNext()) {
                 VariantSource source = iterator.next();

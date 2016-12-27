@@ -33,7 +33,7 @@ import org.opencb.commons.io.DataReader;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.core.common.ProgressLogger;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
@@ -59,8 +59,8 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import static org.opencb.biodata.models.variant.VariantSource.Aggregation.isAggregated;
-import static org.opencb.opencga.storage.core.variant.VariantStorageETL.checkStudyConfiguration;
-import static org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
+import static org.opencb.opencga.storage.core.variant.VariantStoragePipeline.checkStudyConfiguration;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 
 /**
  * Created by jmmut on 12/02/15.
@@ -89,7 +89,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
     }
 
     @Override
-    public void calculateStatistics(String study, List<String> cohorts, QueryOptions options) throws IOException, StorageManagerException {
+    public void calculateStatistics(String study, List<String> cohorts, QueryOptions options) throws IOException, StorageEngineException {
 
         URI output;
         try {
@@ -130,7 +130,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
     }
 
     public URI createStats(VariantDBAdaptor variantDBAdaptor, URI output, String study, List<String> cohorts,
-                           QueryOptions options) throws IOException, StorageManagerException {
+                           QueryOptions options) throws IOException, StorageEngineException {
 
         StudyConfigurationManager studyConfigurationManager = variantDBAdaptor.getStudyConfigurationManager();
         StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, options).first();
@@ -160,11 +160,11 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
      * @param options          (mandatory) fileId, (optional) filters to the query, batch size, number of threads to use...
      * @return outputUri prefix for the file names (without the "._type_.stats.json.gz")
      * @throws IOException If any error occurs
-     * @throws StorageManagerException If any error occurs
+     * @throws StorageEngineException If any error occurs
      */
     public URI createStats(VariantDBAdaptor variantDBAdaptor, URI output, Map<String, Set<String>> cohorts,
                            Map<String, Integer> cohortIds, StudyConfiguration studyConfiguration, QueryOptions options)
-            throws IOException, StorageManagerException {
+            throws IOException, StorageEngineException {
 //        String fileId;
         if (options == null) {
             options = new QueryOptions();
@@ -176,7 +176,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
         boolean overwrite = options.getBoolean(Options.OVERWRITE_STATS.key(), false);
         boolean updateStats = options.getBoolean(Options.UPDATE_STATS.key(), false);
         Properties tagmap = options.get(Options.AGGREGATION_MAPPING_PROPERTIES.key(), Properties.class, null);
-//            fileId = options.getString(VariantStorageManager.Options.FILE_ID.key());
+//            fileId = options.getString(VariantStorageEngine.Options.FILE_ID.key());
 
         // if no cohorts provided and the study is aggregated: try to get the cohorts from the tagMap
         if (cohorts == null || isAggregated(studyConfiguration.getAggregation()) && tagmap != null) {
@@ -246,7 +246,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
             runner.run();
             logger.info("finishing stats creation, time: {}ms", System.currentTimeMillis() - start);
         } catch (ExecutionException e) {
-            throw new StorageManagerException("Unable to calculate statistics.", e);
+            throw new StorageEngineException("Unable to calculate statistics.", e);
         }
         // source stats
         Path fileSourcePath = Paths.get(output.getPath() + SOURCE_STATS_SUFFIX);
@@ -341,14 +341,14 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
     }
 
     public void loadStats(VariantDBAdaptor variantDBAdaptor, URI uri, String study, QueryOptions options) throws
-            IOException, StorageManagerException {
+            IOException, StorageEngineException {
         StudyConfigurationManager studyConfigurationManager = variantDBAdaptor.getStudyConfigurationManager();
         StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, options).first();
         loadStats(variantDBAdaptor, uri, studyConfiguration, options);
     }
 
     public void loadStats(VariantDBAdaptor variantDBAdaptor, URI uri, StudyConfiguration studyConfiguration, QueryOptions options) throws
-            IOException, StorageManagerException {
+            IOException, StorageEngineException {
 
         URI variantStatsUri = Paths.get(uri.getPath() + VARIANT_STATS_SUFFIX).toUri();
         URI sourceStatsUri = Paths.get(uri.getPath() + SOURCE_STATS_SUFFIX).toUri();
@@ -369,7 +369,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
     }
 
     public void loadVariantStats(URI uri, StudyConfiguration studyConfiguration, QueryOptions options)
-            throws IOException, StorageManagerException {
+            throws IOException, StorageEngineException {
 
         /* Open input streams */
         Path variantInput = Paths.get(uri.getPath());
@@ -419,7 +419,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
         try {
             ptr.run();
         } catch (ExecutionException e) {
-            throw new StorageManagerException("Error loading stats", e);
+            throw new StorageEngineException("Error loading stats", e);
         }
 
         Long writes = writers.stream().map(VariantStatsDBWriter::getNumWrites).reduce((a, b) -> a + b).orElse(0L);
@@ -489,7 +489,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
                                                           Map<String, Set<String>> cohorts,
                                                           Map<String, Integer> cohortIds,
                                                           boolean overwrite, boolean updateStats)
-            throws StorageManagerException {
+            throws StorageEngineException {
         List<Integer> cohortIdList = new ArrayList<>();
 
         for (Map.Entry<String, Set<String>> entry : cohorts.entrySet()) {
@@ -512,7 +512,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
             } else {
                 if (!cohortIds.containsKey(cohortName)) {
                     //ERROR Missing cohortId
-                    throw new StorageManagerException("Missing cohortId for the cohort : " + cohortName);
+                    throw new StorageEngineException("Missing cohortId for the cohort : " + cohortName);
                 }
                 cohortId = cohortIds.get(entry.getKey());
             }
@@ -521,13 +521,13 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
             if (studyConfiguration.getCohortIds().containsKey(cohortName)) {
                 if (!studyConfiguration.getCohortIds().get(cohortName).equals(cohortId)) {
                     //ERROR Duplicated cohortName
-                    throw new StorageManagerException("Duplicated cohortName " + cohortName + ":" + cohortId
+                    throw new StorageEngineException("Duplicated cohortName " + cohortName + ":" + cohortId
                             + ". Appears in the StudyConfiguration as "
                             + cohortName + ":" + studyConfiguration.getCohortIds().get(cohortName));
                 }
             } else if (studyConfiguration.getCohortIds().containsValue(cohortId)) {
                 //ERROR Duplicated cohortId
-                throw new StorageManagerException("Duplicated cohortId " + cohortName + ":" + cohortId
+                throw new StorageEngineException("Duplicated cohortId " + cohortName + ":" + cohortId
                         + ". Appears in the StudyConfiguration as "
                         + StudyConfiguration.inverseMap(studyConfiguration.getCohortIds()).get(cohortId) + ":" + cohortId);
             }
@@ -544,7 +544,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
 //                if (sampleIds == null || (sampleIds.isEmpty()
 //                        && VariantSource.Aggregation.NONE.equals(studyConfiguration.getAggregation()))) {
                         //ERROR: StudyConfiguration does not have samples for this cohort, and it is not an aggregated study
-                        throw new StorageManagerException("Cohort \"" + cohortName + "\" is empty");
+                        throw new StorageEngineException("Cohort \"" + cohortName + "\" is empty");
                     }
                     samples = new HashSet<>();
                     Map<Integer, String> idSamples = StudyConfiguration.inverseMap(studyConfiguration.getSampleIds());
@@ -558,20 +558,20 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
                 for (String sample : samples) {
                     if (!studyConfiguration.getSampleIds().containsKey(sample)) {
                         //ERROR Sample not found
-                        throw new StorageManagerException("Sample " + sample + " not found in the StudyConfiguration");
+                        throw new StorageEngineException("Sample " + sample + " not found in the StudyConfiguration");
                     } else {
                         sampleIds.add(studyConfiguration.getSampleIds().get(sample));
                     }
                 }
                 if (sampleIds.size() != samples.size()) {
-                    throw new StorageManagerException("Duplicated samples in cohort " + cohortName + ":" + cohortId);
+                    throw new StorageEngineException("Duplicated samples in cohort " + cohortName + ":" + cohortId);
                 }
                 if (studyConfiguration.getCohorts().get(cohortId) != null
                         && !sampleIds.equals(studyConfiguration.getCohorts().get(cohortId))) {
                     if (!studyConfiguration.getInvalidStats().contains(cohortId)
                             && studyConfiguration.getCalculatedStats().contains(cohortId)) {
                         //If provided samples are different than the stored in the StudyConfiguration, and the cohort was not invalid.
-                        throw new StorageManagerException("Different samples in cohort " + cohortName + ":" + cohortId + ". "
+                        throw new StorageEngineException("Different samples in cohort " + cohortName + ":" + cohortId + ". "
                                 + "Samples in the StudyConfiguration: " + studyConfiguration.getCohorts().get(cohortId).size() + ". "
                                 + "Samples provided " + samples.size() + ". Invalidate stats to continue.");
                     }
@@ -588,7 +588,7 @@ public class DefaultVariantStatisticsManager implements VariantStatisticsManager
                 } else if (updateStats) {
                     logger.debug("Cohort \"" + cohortName + "\" stats already calculated. Calculate only for missing positions");
                 } else {
-                    throw new StorageManagerException("Cohort \"" + cohortName + "\" stats already calculated");
+                    throw new StorageEngineException("Cohort \"" + cohortName + "\" stats already calculated");
                 }
             }
 

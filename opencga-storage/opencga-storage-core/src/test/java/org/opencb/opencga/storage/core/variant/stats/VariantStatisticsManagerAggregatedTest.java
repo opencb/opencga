@@ -29,7 +29,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.io.IOException;
@@ -61,8 +61,8 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
         clearDB(DB_NAME);
         inputUri = getInputUri();
         runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration,
-                new ObjectMap(VariantStorageManager.Options.ANNOTATE.key(), false)
-                        .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false));
+                new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false)
+                        .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false));
         dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
     }
 
@@ -86,10 +86,10 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
         checkAggregatedCohorts(dbAdaptor, studyConfiguration);
 
         Integer fileId = studyConfiguration.getFileIds().get(Paths.get(inputUri).getFileName().toString());
-        QueryOptions options = new QueryOptions(VariantStorageManager.Options.FILE_ID.key(), fileId);
-        options.put(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 100);
+        QueryOptions options = new QueryOptions(VariantStorageEngine.Options.FILE_ID.key(), fileId);
+        options.put(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100);
         if (getAggregationMappingFile() != null) {
-            options.put(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), getAggregationMappingFile());
+            options.put(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), getAggregationMappingFile());
         }
 
 

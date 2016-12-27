@@ -36,7 +36,7 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.config.CellBaseConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -46,8 +46,8 @@ import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseStudyConfigurationManager;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseResultSetIterator;
@@ -102,7 +102,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         this.configuration = conf;
         this.genomeHelper = new GenomeHelper(this.configuration, connection);
         this.variantTable = credentials.getTable();
-        StorageEngineConfiguration storageEngine = configuration.getStorageEngine(HadoopVariantStorageManager.STORAGE_ENGINE_ID);
+        StorageEngineConfiguration storageEngine = configuration.getStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
         this.studyConfigurationManager.set(
                 new HBaseStudyConfigurationManager(genomeHelper, credentials.getTable(), conf, storageEngine.getVariant().getOptions()));
         this.variantSourceDBAdaptor = new HadoopVariantSourceDBAdaptor(this.genomeHelper);
@@ -151,10 +151,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         return configuration;
     }
 
-    public ArchiveHelper getArchiveHelper(int studyId, int fileId) throws StorageManagerException, IOException {
+    public ArchiveHelper getArchiveHelper(int studyId, int fileId) throws StorageEngineException, IOException {
         VcfMeta vcfMeta = getVcfMeta(studyId, fileId, null);
         if (vcfMeta == null) {
-            throw new StorageManagerException("File '" + fileId + "' not found in study '" + studyId + "'");
+            throw new StorageEngineException("File '" + fileId + "' not found in study '" + studyId + "'");
         }
         return new ArchiveHelper(genomeHelper, vcfMeta);
 
@@ -371,7 +371,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             ArchiveHelper archiveHelper;
             try {
                 archiveHelper = getArchiveHelper(studyId, fileId);
-            } catch (IOException | StorageManagerException e) {
+            } catch (IOException | StorageEngineException e) {
                 throw new RuntimeException(e);
             }
 
@@ -379,7 +379,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             scan.addColumn(archiveHelper.getColumnFamily(), Bytes.toBytes(ArchiveHelper.getColumnName(fileId)));
             addArchiveRegionFilter(scan, region, archiveHelper);
             scan.setMaxResultSize(options.getInt("limit"));
-            String tableName = HadoopVariantStorageManager.getArchiveTableName(studyId, genomeHelper.getConf());
+            String tableName = HadoopVariantStorageEngine.getArchiveTableName(studyId, genomeHelper.getConf());
 
             logger.debug("Creating {} iterator", VariantHadoopArchiveDBIterator.class);
             logger.debug("Table name = " + tableName);

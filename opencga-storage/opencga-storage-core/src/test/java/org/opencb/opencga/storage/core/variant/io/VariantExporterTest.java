@@ -6,9 +6,9 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyStudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageManager;
+import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 
 import java.io.BufferedReader;
@@ -34,11 +34,11 @@ public class VariantExporterTest extends VariantStorageBaseTest {
     }
 
     @Override
-    public VariantStorageManager getVariantStorageManager() throws Exception {
-        try (InputStream is = DummyVariantStorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml")) {
+    public VariantStorageEngine getVariantStorageManager() throws Exception {
+        try (InputStream is = DummyVariantStorageEngine.class.getClassLoader().getResourceAsStream("storage-configuration.yml")) {
             StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
-            DummyVariantStorageManager storageManager = new DummyVariantStorageManager();
-            storageManager.setConfiguration(storageConfiguration, DummyVariantStorageManager.STORAGE_ENGINE_ID);
+            DummyVariantStorageEngine storageManager = new DummyVariantStorageEngine();
+            storageManager.setConfiguration(storageConfiguration, DummyVariantStorageEngine.STORAGE_ENGINE_ID);
             return storageManager;
         }
     }

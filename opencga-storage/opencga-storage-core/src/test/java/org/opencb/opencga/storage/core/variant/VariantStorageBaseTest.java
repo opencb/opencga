@@ -25,9 +25,9 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.storage.core.StorageETLResult;
+import org.opencb.opencga.storage.core.StoragePipelineResult;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.slf4j.Logger;
@@ -91,7 +91,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     protected static URI smallInputUri;
     protected static URI corruptedInputUri;
     protected static URI outputUri;
-    protected VariantStorageManager variantStorageManager;
+    protected VariantStorageEngine variantStorageManager;
     public static Logger logger;
     private static Path rootDir = null;
     private static AtomicInteger count = new AtomicInteger(0);
@@ -208,56 +208,56 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     /* ---------------------------------------------------- */
 
 
-    public static StorageETLResult runETL(VariantStorageManager variantStorageManager, ObjectMap options)
-            throws IOException, FileFormatException, StorageManagerException {
+    public static StoragePipelineResult runETL(VariantStorageEngine variantStorageManager, ObjectMap options)
+            throws IOException, FileFormatException, StorageEngineException {
         return runETL(variantStorageManager, options, true, true, true);
     }
 
-    public static StorageETLResult runETL(VariantStorageManager variantStorageManager, ObjectMap options,
-                                   boolean doExtract,
-                                   boolean doTransform,
-                                   boolean doLoad)
-            throws IOException, FileFormatException, StorageManagerException {
+    public static StoragePipelineResult runETL(VariantStorageEngine variantStorageManager, ObjectMap options,
+                                               boolean doExtract,
+                                               boolean doTransform,
+                                               boolean doLoad)
+            throws IOException, FileFormatException, StorageEngineException {
         return runETL(variantStorageManager, inputUri, outputUri, options, options, options, options, options, options, options,
                 doExtract, doTransform, doLoad);
     }
 
-    public static StorageETLResult runDefaultETL(VariantStorageManager variantStorageManager, StudyConfiguration studyConfiguration)
-            throws URISyntaxException, IOException, FileFormatException, StorageManagerException {
+    public static StoragePipelineResult runDefaultETL(VariantStorageEngine variantStorageManager, StudyConfiguration studyConfiguration)
+            throws URISyntaxException, IOException, FileFormatException, StorageEngineException {
         return runDefaultETL(inputUri, variantStorageManager, studyConfiguration);
     }
 
-    public static StorageETLResult runDefaultETL(URI inputUri, VariantStorageManager variantStorageManager, StudyConfiguration studyConfiguration)
-            throws URISyntaxException, IOException, FileFormatException, StorageManagerException {
+    public static StoragePipelineResult runDefaultETL(URI inputUri, VariantStorageEngine variantStorageManager, StudyConfiguration studyConfiguration)
+            throws URISyntaxException, IOException, FileFormatException, StorageEngineException {
         return runDefaultETL(inputUri, variantStorageManager, studyConfiguration, new ObjectMap());
     }
 
-    public static StorageETLResult runDefaultETL(URI inputUri, VariantStorageManager variantStorageManager,
-                                                 StudyConfiguration studyConfiguration, ObjectMap params)
-            throws URISyntaxException, IOException, FileFormatException, StorageManagerException {
+    public static StoragePipelineResult runDefaultETL(URI inputUri, VariantStorageEngine variantStorageManager,
+                                                      StudyConfiguration studyConfiguration, ObjectMap params)
+            throws URISyntaxException, IOException, FileFormatException, StorageEngineException {
         return runDefaultETL(inputUri, variantStorageManager, studyConfiguration, params, true, true);
     }
 
-    public static StorageETLResult runDefaultETL(URI inputUri, VariantStorageManager variantStorageManager,
-                                                 StudyConfiguration studyConfiguration, ObjectMap params, boolean doTransform, boolean doLoad)
-            throws URISyntaxException, IOException, FileFormatException, StorageManagerException {
+    public static StoragePipelineResult runDefaultETL(URI inputUri, VariantStorageEngine variantStorageManager,
+                                                      StudyConfiguration studyConfiguration, ObjectMap params, boolean doTransform, boolean doLoad)
+            throws URISyntaxException, IOException, FileFormatException, StorageEngineException {
 
         ObjectMap newParams = new ObjectMap(params);
 
-        newParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-        newParams.putIfAbsent(VariantStorageManager.Options.AGGREGATED_TYPE.key(), studyConfiguration.getAggregation());
-        newParams.putIfAbsent(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
-        newParams.putIfAbsent(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
-        newParams.putIfAbsent(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
-        newParams.putIfAbsent(VariantStorageManager.Options.FILE_ID.key(), FILE_ID);
+        newParams.put(VariantStorageEngine.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        newParams.putIfAbsent(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), studyConfiguration.getAggregation());
+        newParams.putIfAbsent(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
+        newParams.putIfAbsent(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
+        newParams.putIfAbsent(VariantStorageEngine.Options.DB_NAME.key(), DB_NAME);
+        newParams.putIfAbsent(VariantStorageEngine.Options.FILE_ID.key(), FILE_ID);
         // Default value is already avro
-//        newParams.putIfAbsent(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "avro");
-        newParams.putIfAbsent(VariantStorageManager.Options.ANNOTATE.key(), true);
+//        newParams.putIfAbsent(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro");
+        newParams.putIfAbsent(VariantStorageEngine.Options.ANNOTATE.key(), true);
         newParams.putIfAbsent(VariantAnnotationManager.SPECIES, "hsapiens");
         newParams.putIfAbsent(VariantAnnotationManager.ASSEMBLY, "GRc37");
-        newParams.putIfAbsent(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
+        newParams.putIfAbsent(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
 
-        StorageETLResult storageETLResult = runETL(variantStorageManager, inputUri, outputUri, newParams, newParams, newParams,
+        StoragePipelineResult storagePipelineResult = runETL(variantStorageManager, inputUri, outputUri, newParams, newParams, newParams,
                 newParams, newParams, newParams, newParams, true, doTransform, doLoad);
 
         try (VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME)) {
@@ -267,17 +267,17 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
             }
         }
 
-        return storageETLResult;
+        return storagePipelineResult;
     }
 
-    public static StorageETLResult runETL(VariantStorageManager variantStorageManager, URI inputUri, URI outputUri,
-                                   ObjectMap extractParams,
-                                   ObjectMap preTransformParams, ObjectMap transformParams, ObjectMap postTransformParams,
-                                   ObjectMap preLoadParams, ObjectMap loadParams, ObjectMap postLoadParams,
-                                   boolean doExtract,
-                                   boolean doTransform,
-                                   boolean doLoad)
-            throws IOException, FileFormatException, StorageManagerException {
+    public static StoragePipelineResult runETL(VariantStorageEngine variantStorageManager, URI inputUri, URI outputUri,
+                                               ObjectMap extractParams,
+                                               ObjectMap preTransformParams, ObjectMap transformParams, ObjectMap postTransformParams,
+                                               ObjectMap preLoadParams, ObjectMap loadParams, ObjectMap postLoadParams,
+                                               boolean doExtract,
+                                               boolean doTransform,
+                                               boolean doLoad)
+            throws IOException, FileFormatException, StorageEngineException {
         ObjectMap params = new ObjectMap();
         params.putAll(extractParams);
         params.putAll(preTransformParams);
@@ -289,29 +289,29 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         return runETL(variantStorageManager, inputUri, outputUri, params, doExtract, doTransform, doLoad);
     }
 
-    public static StorageETLResult runETL(VariantStorageManager variantStorageManager, URI inputUri, URI outputUri,
-                                   ObjectMap params,
-                                   boolean doExtract,
-                                   boolean doTransform,
-                                   boolean doLoad)
-            throws IOException, FileFormatException, StorageManagerException {
+    public static StoragePipelineResult runETL(VariantStorageEngine variantStorageManager, URI inputUri, URI outputUri,
+                                               ObjectMap params,
+                                               boolean doExtract,
+                                               boolean doTransform,
+                                               boolean doLoad)
+            throws IOException, FileFormatException, StorageEngineException {
 
 
-        params.putIfAbsent(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
+        params.putIfAbsent(VariantStorageEngine.Options.DB_NAME.key(), DB_NAME);
         variantStorageManager.getConfiguration()
                 .getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions().putAll(params);
-        StorageETLResult storageETLResult =
+        StoragePipelineResult storagePipelineResult =
                 variantStorageManager.index(Collections.singletonList(inputUri), outputUri, doExtract, doTransform, doLoad).get(0);
 
-        checkFileExists(storageETLResult.getExtractResult());
-        checkFileExists(storageETLResult.getPreTransformResult());
-        checkFileExists(storageETLResult.getTransformResult());
-        checkFileExists(storageETLResult.getPostTransformResult());
-        checkFileExists(storageETLResult.getPreLoadResult());
-        checkFileExists(storageETLResult.getLoadResult());
-        checkFileExists(storageETLResult.getPostLoadResult());
+        checkFileExists(storagePipelineResult.getExtractResult());
+        checkFileExists(storagePipelineResult.getPreTransformResult());
+        checkFileExists(storagePipelineResult.getTransformResult());
+        checkFileExists(storagePipelineResult.getPostTransformResult());
+        checkFileExists(storagePipelineResult.getPreLoadResult());
+        checkFileExists(storagePipelineResult.getLoadResult());
+        checkFileExists(storagePipelineResult.getPostLoadResult());
 
-        return storageETLResult;
+        return storagePipelineResult;
     }
 
     public static void checkFileExists(URI uri) {

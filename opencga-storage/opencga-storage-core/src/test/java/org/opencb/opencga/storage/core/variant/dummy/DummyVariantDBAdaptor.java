@@ -15,7 +15,7 @@ import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -251,7 +251,7 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
             }
 
             @Override
-            public void updateVariantSource(VariantSource variantSource) throws StorageManagerException {
+            public void updateVariantSource(VariantSource variantSource) throws StorageEngineException {
 
             }
 

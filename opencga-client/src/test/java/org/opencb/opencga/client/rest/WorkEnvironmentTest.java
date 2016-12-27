@@ -29,7 +29,7 @@ import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.server.RestServer;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -127,13 +127,13 @@ public class WorkEnvironmentTest extends ExternalResource {
         }
     }
 
-    protected void loadTestPedigreeFile() throws CatalogException, StorageManagerException {
+    protected void loadTestPedigreeFile() throws CatalogException, StorageEngineException {
         AnalysisDemo.insertPedigreeFile(catalogManager, 6L, opencgaHome.resolve("examples/20130606_g1k.ped"),
                 openCGAClient.getSessionId());
     }
 
     protected void loadTestVariantFile()
-            throws StorageManagerException, AnalysisExecutionException, CatalogException, JsonProcessingException {
+            throws StorageEngineException, AnalysisExecutionException, CatalogException, JsonProcessingException {
         AnalysisDemo.insertVariantFile(catalogManager, 6L,
                 opencgaHome.resolve("examples/1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
                 openCGAClient.getSessionId());

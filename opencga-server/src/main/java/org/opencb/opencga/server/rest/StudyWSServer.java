@@ -33,10 +33,10 @@ import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
-import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.local.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.local.variant.operations.StorageOperation;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import javax.servlet.http.HttpServletRequest;
@@ -566,9 +566,9 @@ public class StudyWSServer extends OpenCGAWSServer {
             AlignmentDBAdaptor dbAdaptor;
             try {
 
-                AlignmentStorageManager alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
+                AlignmentStorageEngine alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
                 dbAdaptor = alignmentStorageManager.getDBAdaptor(dbName);
-            } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
+            } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageEngineException e) {
                 return createErrorResponse(e);
             }
 

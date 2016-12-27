@@ -26,7 +26,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.rest.FileWSServer;
-import org.opencb.opencga.storage.core.local.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import javax.servlet.http.HttpServletRequest;
@@ -38,7 +38,7 @@ import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.util.*;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageManager.Options.*;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 
 /**
  * Created by imedina on 17/08/16.

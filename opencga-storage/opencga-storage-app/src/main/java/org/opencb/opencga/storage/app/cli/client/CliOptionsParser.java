@@ -23,7 +23,7 @@ import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.storage.app.cli.OptionsParser;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 
 import java.util.HashMap;
@@ -184,10 +184,10 @@ public class CliOptionsParser extends OptionsParser {
         public String study;
 
         @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = false, arity = 1)
-        public String studyId = VariantStorageManager.Options.STUDY_ID.defaultValue().toString();
+        public String studyId = VariantStorageEngine.Options.STUDY_ID.defaultValue().toString();
 
         @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = false, arity = 1)
-        public String fileId = VariantStorageManager.Options.FILE_ID.defaultValue().toString();
+        public String fileId = VariantStorageEngine.Options.FILE_ID.defaultValue().toString();
 
         @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
         public String pedigree;
@@ -290,7 +290,7 @@ public class CliOptionsParser extends OptionsParser {
         public String credentials;
 
         @Deprecated
-        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase " +
+        @Parameter(names = {"-b", "--backend"}, description = "StorageEngine plugin used to index files into: mongodb (default), hbase " +
                 "(pending)", required = false, arity = 1)
         public String backend = "mongodb";
 

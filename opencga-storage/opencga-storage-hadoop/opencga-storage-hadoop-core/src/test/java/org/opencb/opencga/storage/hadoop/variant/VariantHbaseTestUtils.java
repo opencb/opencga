@@ -38,10 +38,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.storage.core.StorageETLResult;
+import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
@@ -80,7 +80,7 @@ public class VariantHbaseTestUtils {
     public static VariantHadoopDBAdaptor printVariantsFromArchiveTable(VariantHadoopDBAdaptor dbAdaptor,
                                                                        StudyConfiguration studyConfiguration, Path output) throws Exception {
         if (output.toFile().isDirectory()) {
-            String archiveTableName = HadoopVariantStorageManager.getArchiveTableName(studyConfiguration.getStudyId(), dbAdaptor.getConfiguration());
+            String archiveTableName = HadoopVariantStorageEngine.getArchiveTableName(studyConfiguration.getStudyId(), dbAdaptor.getConfiguration());
             output = output.resolve("archive._V." + archiveTableName + "." + TimeUtils.getTimeMillis() + ".txt");
         }
 
@@ -92,7 +92,7 @@ public class VariantHbaseTestUtils {
     public static VariantHadoopDBAdaptor printVariantsFromArchiveTable(VariantHadoopDBAdaptor dbAdaptor,
                                                                        StudyConfiguration studyConfiguration, PrintStream out) throws Exception {
         GenomeHelper helper = dbAdaptor.getGenomeHelper();
-        helper.getHBaseManager().act(HadoopVariantStorageManager.getArchiveTableName(studyConfiguration.getStudyId(), dbAdaptor.getConfiguration()), table -> {
+        helper.getHBaseManager().act(HadoopVariantStorageEngine.getArchiveTableName(studyConfiguration.getStudyId(), dbAdaptor.getConfiguration()), table -> {
             for (Result result : table.getScanner(helper.getColumnFamily())) {
                 GenomeHelper.getVariantColumns(result.rawCells()).stream()
                         .filter(c -> Bytes.startsWith(CellUtil.cloneFamily(c), helper.getColumnFamily()))
@@ -118,7 +118,7 @@ public class VariantHbaseTestUtils {
     }
 
     public static void printVariantsFromVariantsTable(VariantHadoopDBAdaptor dbAdaptor, Path dir) throws IOException {
-        String tableName = HadoopVariantStorageManager.getVariantTableName(VariantStorageBaseTest.DB_NAME, dbAdaptor.getConfiguration());
+        String tableName = HadoopVariantStorageEngine.getVariantTableName(VariantStorageBaseTest.DB_NAME, dbAdaptor.getConfiguration());
         HBaseManager hm = new HBaseManager(configuration.get());
         if (!hm.tableExists(tableName)) {
             System.out.println("Table " + tableName + " does not exist!");
@@ -198,7 +198,7 @@ public class VariantHbaseTestUtils {
     }
 
     private static void printVariantsFromDBAdaptor(VariantHadoopDBAdaptor dbAdaptor, Path dir) throws IOException {
-        String tableName = HadoopVariantStorageManager.getVariantTableName(VariantStorageBaseTest.DB_NAME, dbAdaptor.getConfiguration());
+        String tableName = HadoopVariantStorageEngine.getVariantTableName(VariantStorageBaseTest.DB_NAME, dbAdaptor.getConfiguration());
         Path outputFile;
         if (dir.toFile().isDirectory()) {
             outputFile = dir.resolve("variant." + tableName + "." + TimeUtils.getTimeMillis() + ".json");
@@ -221,7 +221,7 @@ public class VariantHbaseTestUtils {
     }
 
     public static void printArchiveTable(StudyConfiguration studyConfiguration, VariantHadoopDBAdaptor dbAdaptor, Path outDir) throws Exception {
-        String archiveTableName = HadoopVariantStorageManager.getArchiveTableName(studyConfiguration.getStudyId(), dbAdaptor.getConfiguration());
+        String archiveTableName = HadoopVariantStorageEngine.getArchiveTableName(studyConfiguration.getStudyId(), dbAdaptor.getConfiguration());
         for (Integer fileId : studyConfiguration.getIndexedFiles()) {
             try (OutputStream os = new FileOutputStream(outDir.resolve("archive." + fileId + "." + archiveTableName + "." + TimeUtils.getTimeMillis() + ".txt").toFile())) {
                 printArchiveTable(dbAdaptor, studyConfiguration, fileId, os);
@@ -275,11 +275,11 @@ public class VariantHbaseTestUtils {
         printArchiveTable(studyConfiguration, dbAdaptor, outDir);
     }
 
-    public static void removeFile(HadoopVariantStorageManager variantStorageManager, String dbName, int fileId,
+    public static void removeFile(HadoopVariantStorageEngine variantStorageManager, String dbName, int fileId,
                                   StudyConfiguration studyConfiguration, Map<? extends String, ?> otherParams) throws Exception {
-        ObjectMap params = new ObjectMap(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration)
-                .append(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId())
-                .append(VariantStorageManager.Options.DB_NAME.key(), dbName);
+        ObjectMap params = new ObjectMap(VariantStorageEngine.Options.STUDY_CONFIGURATION.key(), studyConfiguration)
+                .append(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId())
+                .append(VariantStorageEngine.Options.DB_NAME.key(), dbName);
         if (otherParams != null) {
             params.putAll(otherParams);
         }
@@ -296,41 +296,41 @@ public class VariantHbaseTestUtils {
 //        return variantStorageManager.readVariantSource(etlResult.getTransformResult(), new ObjectMap());
     }
 
-    public static VariantSource loadFile(HadoopVariantStorageManager variantStorageManager, String dbName, URI outputUri,
+    public static VariantSource loadFile(HadoopVariantStorageEngine variantStorageManager, String dbName, URI outputUri,
                                          String resourceName, int fileId, StudyConfiguration studyConfiguration, Map<? extends String, ?> otherParams, boolean doTransform, boolean loadArchive, boolean loadVariant) throws Exception {
         URI fileInputUri = VariantStorageBaseTest.getResourceUri(resourceName);
 
-        ObjectMap params = new ObjectMap(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "proto")
-                .append(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration)
-                .append(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId())
-                .append(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName())
-                .append(VariantStorageManager.Options.DB_NAME.key(), dbName).append(VariantStorageManager.Options.ANNOTATE.key(), false)
+        ObjectMap params = new ObjectMap(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto")
+                .append(VariantStorageEngine.Options.STUDY_CONFIGURATION.key(), studyConfiguration)
+                .append(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId())
+                .append(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName())
+                .append(VariantStorageEngine.Options.DB_NAME.key(), dbName).append(VariantStorageEngine.Options.ANNOTATE.key(), false)
                 .append(VariantAnnotationManager.SPECIES, "hsapiens").append(VariantAnnotationManager.ASSEMBLY, "GRc37")
-                .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
-                .append(HadoopVariantStorageManager.HADOOP_LOAD_DIRECT, true)
-                .append(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, loadArchive)
-                .append(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, loadVariant);
+                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
+                .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true)
+                .append(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE, loadArchive)
+                .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT, loadVariant);
 
         if (otherParams != null) {
             params.putAll(otherParams);
         }
         if (fileId > 0) {
-            params.append(VariantStorageManager.Options.FILE_ID.key(), fileId);
+            params.append(VariantStorageEngine.Options.FILE_ID.key(), fileId);
         }
-        StorageETLResult etlResult = VariantStorageBaseTest.runETL(variantStorageManager, fileInputUri, outputUri, params, doTransform, doTransform, true);
+        StoragePipelineResult etlResult = VariantStorageBaseTest.runETL(variantStorageManager, fileInputUri, outputUri, params, doTransform, doTransform, true);
         StudyConfiguration updatedStudyConfiguration = variantStorageManager.getDBAdaptor().getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         studyConfiguration.copy(updatedStudyConfiguration);
 
         return variantStorageManager.readVariantSource(doTransform ? etlResult.getTransformResult() : etlResult.getInput());
     }
 
-    public static VariantSource loadFile(HadoopVariantStorageManager variantStorageManager, String dbName, URI outputUri,
-            String resourceName, int fileId, StudyConfiguration studyConfiguration) throws Exception {
+    public static VariantSource loadFile(HadoopVariantStorageEngine variantStorageManager, String dbName, URI outputUri,
+                                         String resourceName, int fileId, StudyConfiguration studyConfiguration) throws Exception {
         return loadFile(variantStorageManager, dbName, outputUri, resourceName, fileId, studyConfiguration, null, true, true, true);
     }
 
-    public static VariantSource loadFile(HadoopVariantStorageManager variantStorageManager, String dbName, URI outputUri,
-            String resourceName, StudyConfiguration studyConfiguration, Map<? extends String, ?> otherParams) throws Exception {
+    public static VariantSource loadFile(HadoopVariantStorageEngine variantStorageManager, String dbName, URI outputUri,
+                                         String resourceName, StudyConfiguration studyConfiguration, Map<? extends String, ?> otherParams) throws Exception {
         return loadFile(variantStorageManager, dbName, outputUri, resourceName, -1, studyConfiguration, otherParams, true, true, true);
     }
 }

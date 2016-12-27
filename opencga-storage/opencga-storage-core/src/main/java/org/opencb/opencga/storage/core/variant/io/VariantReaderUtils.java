@@ -22,7 +22,7 @@ import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 
@@ -56,9 +56,9 @@ public class VariantReaderUtils {
      * @param input Stream Input variant file (avro, json, vcf)
      * @param source Optional VariantSource
      * @return  VariantReader
-     * @throws StorageManagerException if the format is not valid or there is an error reading
+     * @throws StorageEngineException if the format is not valid or there is an error reading
      */
-    public static VariantReader getVariantReader(Path input, VariantSource source) throws StorageManagerException {
+    public static VariantReader getVariantReader(Path input, VariantSource source) throws StorageEngineException {
         String fileName = input.getFileName().toString();
         if (isJson(fileName)) {
             return getVariantJsonReader(input, source);
@@ -71,11 +71,11 @@ public class VariantReaderUtils {
         }
     }
 
-    public static StorageManagerException variantInputNotSupported(Path input) {
-        return new StorageManagerException("Variants input file format not supported for file: " + input);
+    public static StorageEngineException variantInputNotSupported(Path input) {
+        return new StorageEngineException("Variants input file format not supported for file: " + input);
     }
 
-    protected static VariantJsonReader getVariantJsonReader(Path input, VariantSource source) throws StorageManagerException {
+    protected static VariantJsonReader getVariantJsonReader(Path input, VariantSource source) throws StorageEngineException {
         VariantJsonReader variantJsonReader;
         if (isJson(input.toString())) {
             String sourceFile = getMetaFromTransformedFile(input.toAbsolutePath().toString());
@@ -86,7 +86,7 @@ public class VariantReaderUtils {
         return variantJsonReader;
     }
 
-    protected static VariantAvroReader getVariantAvroReader(Path input, VariantSource source) throws StorageManagerException {
+    protected static VariantAvroReader getVariantAvroReader(Path input, VariantSource source) throws StorageEngineException {
         VariantAvroReader variantAvroReader;
         if (isAvro(input.toString())) {
             String sourceFile = getMetaFromTransformedFile(input.toAbsolutePath().toString());
@@ -142,11 +142,11 @@ public class VariantReaderUtils {
         return source;
     }
 
-    public VariantSource readVariantSource(URI input) throws StorageManagerException {
+    public VariantSource readVariantSource(URI input) throws StorageEngineException {
         if (input.getScheme() == null || input.getScheme().startsWith("file")) {
             return readVariantSource(Paths.get(input.getPath()), null);
         } else {
-            throw new StorageManagerException("Can not read files from " + input.getScheme());
+            throw new StorageEngineException("Can not read files from " + input.getScheme());
         }
     }
 
@@ -158,9 +158,9 @@ public class VariantReaderUtils {
      * @param input Input variant file (avro, json, vcf)
      * @param source VariantSource to fill. Can be null
      * @return Read VariantSource
-     * @throws StorageManagerException if the format is not valid or there is an error reading
+     * @throws StorageEngineException if the format is not valid or there is an error reading
      */
-    public static VariantSource readVariantSource(Path input, VariantSource source) throws StorageManagerException {
+    public static VariantSource readVariantSource(Path input, VariantSource source) throws StorageEngineException {
         if (source == null) {
             source = new VariantSource(input.getFileName().toString(), "", "", "");
         }
@@ -170,7 +170,7 @@ public class VariantReaderUtils {
             try (InputStream inputStream = FileUtils.newInputStream(input)) {
                 return VariantReaderUtils.readVariantSource(inputStream);
             } catch (IOException | RuntimeException e) {
-                throw new StorageManagerException("Unable to read VariantSource", e);
+                throw new StorageEngineException("Unable to read VariantSource", e);
             }
         }
 
@@ -178,7 +178,7 @@ public class VariantReaderUtils {
         try {
             source = VariantFileUtils.readVariantSource(reader, source);
         } catch (IOException e) {
-            throw new StorageManagerException("Unable to read VariantSource", e);
+            throw new StorageEngineException("Unable to read VariantSource", e);
         }
 
         return source;

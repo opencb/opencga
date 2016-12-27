@@ -22,8 +22,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.io.IOException;
@@ -64,7 +64,7 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
             responseObserver.onNext(LongResponse.newBuilder().setValue(queryResult.getResult().get(0)).build());
             responseObserver.onCompleted();
             variantDBAdaptor.close();
-        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | StorageManagerException e) {
+        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | StorageEngineException e) {
             e.printStackTrace();
 //        } catch (NotAuthorizedHostException | NotAuthorizedUserException e) {
 //            e.printStackTrace();
@@ -96,7 +96,7 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
             }
             responseObserver.onCompleted();
             variantDBAdaptor.close();
-        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | StorageManagerException e) {
+        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | StorageEngineException e) {
             e.printStackTrace();
 //        } catch (NotAuthorizedHostException e) {
 //            e.printStackTrace();
@@ -130,7 +130,7 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
     }
 
     private VariantDBAdaptor getVariantDBAdaptor(Request request)
-            throws IllegalAccessException, InstantiationException, ClassNotFoundException, StorageManagerException {
+            throws IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
         // Setting storageEngine and database parameters. If the storageEngine is not provided then the server default is used
         String storageEngine = genericGrpcService.getDefaultStorageEngine();
         if (StringUtils.isNotEmpty(request.getStorageEngine())) {
@@ -145,7 +145,7 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
 
         // Creating the VariantDBAdaptor to the parsed storageEngine and database
         long start = System.currentTimeMillis();
-        VariantStorageManager variantStorageManager = genericGrpcService.storageManagerFactory.getVariantStorageManager(storageEngine);
+        VariantStorageEngine variantStorageManager = genericGrpcService.storageManagerFactory.getVariantStorageManager(storageEngine);
         VariantDBAdaptor variantDBAdaptor = variantStorageManager.getDBAdaptor(database);
 //        logger.debug("Connection to {}:{} in {}ms", storageEngine, database, System.currentTimeMillis() - start);
 

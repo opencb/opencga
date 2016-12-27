@@ -11,7 +11,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.core.common.ProgressLogger;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
@@ -46,7 +46,7 @@ public class MongoVariantImporter extends VariantImporter {
 
 
     @Override
-    public void importData(URI inputUri, ExportMetadata exportMetadata) throws StorageManagerException, IOException {
+    public void importData(URI inputUri, ExportMetadata exportMetadata) throws StorageEngineException, IOException {
 
         Path input = Paths.get(inputUri.getPath());
 
@@ -74,7 +74,7 @@ public class MongoVariantImporter extends VariantImporter {
         try {
             ptr.run();
         } catch (ExecutionException e) {
-            throw new StorageManagerException("", e);
+            throw new StorageEngineException("", e);
         }
     }
 

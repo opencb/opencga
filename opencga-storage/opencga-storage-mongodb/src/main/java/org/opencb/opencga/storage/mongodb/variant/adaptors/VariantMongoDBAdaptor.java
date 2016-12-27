@@ -55,7 +55,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
@@ -63,7 +63,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
-import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
@@ -84,8 +84,8 @@ import java.util.stream.Collectors;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.MULTI;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.UPSERT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
-import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager.MongoDBVariantOptions.COLLECTION_STAGE;
-import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager.MongoDBVariantOptions.DEFAULT_GENOTYPE;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_STAGE;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -144,7 +144,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         variantsCollection = db.getCollection(collectionName);
         this.studyConfigurationManager = studyConfigurationManager;
         cellbaseConfiguration = storageConfiguration.getCellbase();
-        this.storageEngineConfiguration = storageConfiguration.getStorageEngine(MongoDBVariantStorageManager.STORAGE_ENGINE_ID);
+        this.storageEngineConfiguration = storageConfiguration.getStorageEngine(MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
         this.configuration = storageEngineConfiguration == null || this.storageEngineConfiguration.getVariant().getOptions() == null
                 ? new ObjectMap()
                 : this.storageEngineConfiguration.getVariant().getOptions();
@@ -181,16 +181,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public QueryResult insert(List<Variant> variants, String studyName, QueryOptions options) {
         StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyName, options).first();
         // TODO FILE_ID must be in QueryOptions?
-        int fileId = options.getInt(VariantStorageManager.Options.FILE_ID.key());
-        boolean includeStats = options.getBoolean(VariantStorageManager.Options.INCLUDE_STATS.key(), VariantStorageManager.Options
+        int fileId = options.getInt(VariantStorageEngine.Options.FILE_ID.key());
+        boolean includeStats = options.getBoolean(VariantStorageEngine.Options.INCLUDE_STATS.key(), VariantStorageEngine.Options
                 .INCLUDE_STATS.defaultValue());
-//        boolean includeSrc = options.getBoolean(VariantStorageManager.Options.INCLUDE_SRC.key(), VariantStorageManager.Options
+//        boolean includeSrc = options.getBoolean(VariantStorageEngine.Options.INCLUDE_SRC.key(), VariantStorageEngine.Options
 //                .INCLUDE_SRC.defaultValue());
-//        boolean includeGenotypes = options.getBoolean(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), VariantStorageManager
+//        boolean includeGenotypes = options.getBoolean(VariantStorageEngine.Options.INCLUDE_GENOTYPES.key(), VariantStorageEngine
 //                .Options.INCLUDE_GENOTYPES.defaultValue());
-//        boolean compressGenotypes = options.getBoolean(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), VariantStorageManager
+//        boolean compressGenotypes = options.getBoolean(VariantStorageEngine.Options.COMPRESS_GENOTYPES.key(), VariantStorageEngine
 // .Options.COMPRESS_GENOTYPES.defaultValue());
-//        String defaultGenotype = options.getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "0|0");
+//        String defaultGenotype = options.getString(MongoDBVariantStorageEngine.DEFAULT_GENOTYPE, "0|0");
 
         DocumentToVariantConverter variantConverter = new DocumentToVariantConverter(null, includeStats ? new
                 DocumentToVariantStatsConverter(studyConfigurationManager) : null);
@@ -706,9 +706,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         long start = System.nanoTime();
         DocumentToVariantStatsConverter statsConverter = new DocumentToVariantStatsConverter(studyConfigurationManager);
-//        VariantSource variantSource = queryOptions.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
+//        VariantSource variantSource = queryOptions.get(VariantStorageEngine.VARIANT_SOURCE, VariantSource.class);
         DocumentToVariantConverter variantConverter = getDocumentToVariantConverter(new Query(), options);
-        boolean overwrite = options.getBoolean(VariantStorageManager.Options.OVERWRITE_STATS.key(), false);
+        boolean overwrite = options.getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(), false);
         //TODO: Use the StudyConfiguration to change names to ids
 
         // TODO make unset of 'st' if already present?
@@ -1530,10 +1530,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         Multiset<String> nonInsertedVariants = HashMultiset.create();
         String fileIdStr = Integer.toString(fileId);
 
-//        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS
+//        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS
 //                .key());
-        boolean excludeGenotypes = studyConfiguration.getAttributes().getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(),
-                VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue());
+        boolean excludeGenotypes = studyConfiguration.getAttributes().getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(),
+                VariantStorageEngine.Options.EXCLUDE_GENOTYPES.defaultValue());
 
         long nanoTime = System.nanoTime();
         Map missingSamples = Collections.emptyMap();
@@ -1726,14 +1726,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // } }
         if (studyConfiguration.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key(), "")
                 .equals(Collections.singletonList(DocumentToSamplesConverter.UNKNOWN_GENOTYPE))
-//                && studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key()).isEmpty()
+//                && studyConfiguration.getAttributes().getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key()).isEmpty()
                 ) {
             // Check if the default genotype is the unknown genotype. In that case, is not required to fill missing genotypes.
             // Previously, also checks if there where EXTRA_GENOTYPE_FIELDS like DP:AD,... . In that case, those arrays had to be filled.
             logger.debug("Do not need fill gaps. DefaultGenotype is UNKNOWN_GENOTYPE({}).", DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
             return new QueryResult<>();
-        } else if (studyConfiguration.getAttributes().getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(),
-                VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue())) {
+        } else if (studyConfiguration.getAttributes().getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(),
+                VariantStorageEngine.Options.EXCLUDE_GENOTYPES.defaultValue())) {
             // Check if the genotypes are not required. In that case, no fillGaps is needed
             logger.debug("Do not need fill gaps. Exclude genotypes.");
             return new QueryResult<>();
@@ -1774,7 +1774,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //            missingOtherValues.add(DBObjectToSamplesConverter.UNKNOWN_FIELD);
 //        }
 //        List<String> extraFields = studyConfiguration.getAttributes()
-//                .getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
+//                .getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key());
 //        for (String extraField : extraFields) {
 //            push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + extraField.toLowerCase(),
 //                    new Document("$each", missingOtherValues).append("$position", loadedSamples.size())

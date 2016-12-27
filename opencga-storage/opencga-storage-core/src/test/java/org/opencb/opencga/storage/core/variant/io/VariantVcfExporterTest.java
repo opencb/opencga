@@ -31,9 +31,9 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.StorageETLResult;
+import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
@@ -66,7 +66,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
 
     public static final String EXPORTED_FILE_NAME = "exported-variant-test-file.vcf.gz";
     private static URI[] inputUri;
-    private static StorageETLResult[] etlResult;
+    private static StoragePipelineResult[] etlResult;
     private VariantDBAdaptor dbAdaptor;
     protected QueryOptions options;
     protected QueryResult<Variant> queryResult;
@@ -75,7 +75,7 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
     @BeforeClass
     public static void beforeClass() throws IOException {
         inputUri = new URI[VCF_TEST_FILE_NAMES.length];
-        etlResult = new StorageETLResult[VCF_TEST_FILE_NAMES.length];
+        etlResult = new StoragePipelineResult[VCF_TEST_FILE_NAMES.length];
         for (int i = 0; i < VCF_TEST_FILE_NAMES.length; i++) {
             etlResult[i] = null;
             inputUri[i] = getResourceUri(VCF_TEST_FILE_NAMES[i]);
@@ -92,9 +92,9 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
         for (int i = 0; i < VCF_TEST_FILE_NAMES.length; i++) {
             if (etlResult[i] == null) {
                 etlResult[i] = runDefaultETL(inputUri[i], getVariantStorageManager(), studyConfiguration,
-                        new ObjectMap(VariantStorageManager.Options.ANNOTATE.key(), false)
-                                .append(VariantStorageManager.Options.FILE_ID.key(), i)
-                                .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false));
+                        new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false)
+                                .append(VariantStorageEngine.Options.FILE_ID.key(), i)
+                                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false));
             }
         }
         dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);

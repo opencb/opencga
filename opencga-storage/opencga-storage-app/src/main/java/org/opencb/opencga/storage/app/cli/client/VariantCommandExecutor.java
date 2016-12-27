@@ -37,10 +37,10 @@ import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.benchmark.BenchmarkManager;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
@@ -70,7 +70,7 @@ import java.util.stream.Collectors;
 public class VariantCommandExecutor extends CommandExecutor {
 
     private StorageEngineConfiguration storageConfiguration;
-    private VariantStorageManager variantStorageManager;
+    private VariantStorageEngine variantStorageManager;
 
     private CliOptionsParser.VariantCommandOptions variantCommandOptions;
 
@@ -84,7 +84,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         this.logFile = commonOptions.logFile;
 
         /**
-         * Getting VariantStorageManager
+         * Getting VariantStorageEngine
          * We need to find out the Storage Engine Id to be used
          * If not storage engine is passed then the default is taken from storage-configuration.yml file
          **/
@@ -146,7 +146,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 
     }
 
-    private void index() throws URISyntaxException, IOException, StorageManagerException, FileFormatException {
+    private void index() throws URISyntaxException, IOException, StorageEngineException, FileFormatException {
         CliOptionsParser.IndexVariantsCommandOptions indexVariantsCommandOptions = variantCommandOptions.indexVariantsCommandOptions;
         List<URI> inputUris = new LinkedList<>();
         for (String uri : indexVariantsCommandOptions.input) {
@@ -179,21 +179,21 @@ public class VariantCommandExecutor extends CommandExecutor {
 
         /** Add CLi options to the variant options **/
         ObjectMap variantOptions = storageConfiguration.getVariant().getOptions();
-        variantOptions.put(VariantStorageManager.Options.STUDY_NAME.key(), indexVariantsCommandOptions.study);
-        variantOptions.put(VariantStorageManager.Options.STUDY_ID.key(), indexVariantsCommandOptions.studyId);
-        variantOptions.put(VariantStorageManager.Options.FILE_ID.key(), indexVariantsCommandOptions.fileId);
-        variantOptions.put(VariantStorageManager.Options.SAMPLE_IDS.key(), indexVariantsCommandOptions.sampleIds);
-        variantOptions.put(VariantStorageManager.Options.CALCULATE_STATS.key(), indexVariantsCommandOptions.calculateStats);
-        variantOptions.put(VariantStorageManager.Options.INCLUDE_STATS.key(), indexVariantsCommandOptions.includeStats);
-//        variantOptions.put(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), indexVariantsCommandOptions.includeGenotype);
-        variantOptions.put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), indexVariantsCommandOptions.extraFields);
-//        variantOptions.put(VariantStorageManager.Options.INCLUDE_SRC.key(), indexVariantsCommandOptions.includeSrc);
-//        variantOptions.put(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), indexVariantsCommandOptions.compressGenotypes);
-        variantOptions.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), indexVariantsCommandOptions.aggregated);
+        variantOptions.put(VariantStorageEngine.Options.STUDY_NAME.key(), indexVariantsCommandOptions.study);
+        variantOptions.put(VariantStorageEngine.Options.STUDY_ID.key(), indexVariantsCommandOptions.studyId);
+        variantOptions.put(VariantStorageEngine.Options.FILE_ID.key(), indexVariantsCommandOptions.fileId);
+        variantOptions.put(VariantStorageEngine.Options.SAMPLE_IDS.key(), indexVariantsCommandOptions.sampleIds);
+        variantOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), indexVariantsCommandOptions.calculateStats);
+        variantOptions.put(VariantStorageEngine.Options.INCLUDE_STATS.key(), indexVariantsCommandOptions.includeStats);
+//        variantOptions.put(VariantStorageEngine.Options.INCLUDE_GENOTYPES.key(), indexVariantsCommandOptions.includeGenotype);
+        variantOptions.put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), indexVariantsCommandOptions.extraFields);
+//        variantOptions.put(VariantStorageEngine.Options.INCLUDE_SRC.key(), indexVariantsCommandOptions.includeSrc);
+//        variantOptions.put(VariantStorageEngine.Options.COMPRESS_GENOTYPES.key(), indexVariantsCommandOptions.compressGenotypes);
+        variantOptions.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), indexVariantsCommandOptions.aggregated);
         if (indexVariantsCommandOptions.dbName != null) {
-            variantOptions.put(VariantStorageManager.Options.DB_NAME.key(), indexVariantsCommandOptions.dbName);
+            variantOptions.put(VariantStorageEngine.Options.DB_NAME.key(), indexVariantsCommandOptions.dbName);
         }
-        variantOptions.put(VariantStorageManager.Options.ANNOTATE.key(), indexVariantsCommandOptions.annotate);
+        variantOptions.put(VariantStorageEngine.Options.ANNOTATE.key(), indexVariantsCommandOptions.annotate);
         if (indexVariantsCommandOptions.annotator != null) {
             variantOptions.put(VariantAnnotationManager.ANNOTATION_SOURCE, indexVariantsCommandOptions.annotator);
         }
@@ -201,14 +201,14 @@ public class VariantCommandExecutor extends CommandExecutor {
         if (indexVariantsCommandOptions.studyConfigurationFile != null && !indexVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
             variantOptions.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, indexVariantsCommandOptions.studyConfigurationFile);
         }
-        variantOptions.put(VariantStorageManager.Options.RESUME.key(), indexVariantsCommandOptions.resume);
+        variantOptions.put(VariantStorageEngine.Options.RESUME.key(), indexVariantsCommandOptions.resume);
 
         if (indexVariantsCommandOptions.aggregationMappingFile != null) {
             // TODO move this options to new configuration.yml
             Properties aggregationMappingProperties = new Properties();
             try {
                 aggregationMappingProperties.load(new FileInputStream(indexVariantsCommandOptions.aggregationMappingFile));
-                variantOptions.put(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), aggregationMappingProperties);
+                variantOptions.put(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), aggregationMappingProperties);
             } catch (FileNotFoundException e) {
                 logger.error("Aggregation mapping file {} not found. Population stats won't be parsed.", indexVariantsCommandOptions
                         .aggregationMappingFile);
@@ -353,7 +353,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         channel.shutdown().awaitTermination(2, TimeUnit.SECONDS);
     }
 
-    private void importData() throws URISyntaxException, StorageManagerException, IOException {
+    private void importData() throws URISyntaxException, StorageEngineException, IOException {
         CliOptionsParser.ImportVariantsCommandOptions importVariantsOptions = variantCommandOptions.importVariantsCommandOptions;
 
         URI uri = UriUtils.createUri(importVariantsOptions.input);
@@ -363,7 +363,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 
     }
 
-    private void annotation() throws StorageManagerException, IOException, URISyntaxException, VariantAnnotatorException {
+    private void annotation() throws StorageEngineException, IOException, URISyntaxException, VariantAnnotatorException {
         CliOptionsParser.AnnotateVariantsCommandOptions annotateVariantsCommandOptions
                 = variantCommandOptions.annotateVariantsCommandOptions;
 
@@ -447,20 +447,20 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
     }
 
-    private void stats() throws IOException, URISyntaxException, StorageManagerException, IllegalAccessException, InstantiationException,
+    private void stats() throws IOException, URISyntaxException, StorageEngineException, IllegalAccessException, InstantiationException,
             ClassNotFoundException {
         CliOptionsParser.StatsVariantsCommandOptions statsVariantsCommandOptions = variantCommandOptions.statsVariantsCommandOptions;
 
         ObjectMap options = storageConfiguration.getVariant().getOptions();
         if (statsVariantsCommandOptions.dbName != null && !statsVariantsCommandOptions.dbName.isEmpty()) {
-            options.put(VariantStorageManager.Options.DB_NAME.key(), statsVariantsCommandOptions.dbName);
+            options.put(VariantStorageEngine.Options.DB_NAME.key(), statsVariantsCommandOptions.dbName);
         }
-        options.put(VariantStorageManager.Options.OVERWRITE_STATS.key(), statsVariantsCommandOptions.overwriteStats);
-        options.put(VariantStorageManager.Options.UPDATE_STATS.key(), statsVariantsCommandOptions.updateStats);
+        options.put(VariantStorageEngine.Options.OVERWRITE_STATS.key(), statsVariantsCommandOptions.overwriteStats);
+        options.put(VariantStorageEngine.Options.UPDATE_STATS.key(), statsVariantsCommandOptions.updateStats);
         if (statsVariantsCommandOptions.fileId != 0) {
-            options.put(VariantStorageManager.Options.FILE_ID.key(), statsVariantsCommandOptions.fileId);
+            options.put(VariantStorageEngine.Options.FILE_ID.key(), statsVariantsCommandOptions.fileId);
         }
-        options.put(VariantStorageManager.Options.STUDY_ID.key(), statsVariantsCommandOptions.studyId);
+        options.put(VariantStorageEngine.Options.STUDY_ID.key(), statsVariantsCommandOptions.studyId);
         if (statsVariantsCommandOptions.studyConfigurationFile != null && !statsVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
             options.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, statsVariantsCommandOptions.studyConfigurationFile);
         }
@@ -481,13 +481,13 @@ public class VariantCommandExecutor extends CommandExecutor {
             }
         }
 
-        options.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), statsVariantsCommandOptions.aggregated);
+        options.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), statsVariantsCommandOptions.aggregated);
 
         if (statsVariantsCommandOptions.aggregationMappingFile != null) {
             Properties aggregationMappingProperties = new Properties();
             try {
                 aggregationMappingProperties.load(new FileInputStream(statsVariantsCommandOptions.aggregationMappingFile));
-                options.put(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), aggregationMappingProperties);
+                options.put(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), aggregationMappingProperties);
             } catch (FileNotFoundException e) {
                 logger.error("Aggregation mapping file {} not found. Population stats won't be parsed.", statsVariantsCommandOptions
                         .aggregationMappingFile);
@@ -497,7 +497,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         /**
          * Create DBAdaptor
          */
-        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(options.getString(VariantStorageManager.Options.DB_NAME.key()));
+        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(options.getString(VariantStorageEngine.Options.DB_NAME.key()));
 //        dbAdaptor.setConstantSamples(Integer.toString(statsVariantsCommandOptions.fileId));    // TODO jmmut: change to studyId when we
 // remove fileId
         StudyConfiguration studyConfiguration = dbAdaptor.getStudyConfigurationManager()
@@ -510,7 +510,7 @@ public class VariantCommandExecutor extends CommandExecutor {
          */
         URI outputUri = UriUtils.createUri(statsVariantsCommandOptions.fileName == null ? "" : statsVariantsCommandOptions.fileName);
         URI directoryUri = outputUri.resolve(".");
-        String filename = outputUri.equals(directoryUri) ? VariantStorageManager.buildFilename(studyConfiguration.getStudyName(),
+        String filename = outputUri.equals(directoryUri) ? VariantStorageEngine.buildFilename(studyConfiguration.getStudyName(),
                 statsVariantsCommandOptions.fileId)
                 : Paths.get(outputUri.getPath()).getFileName().toString();
 //        assertDirectoryExists(directoryUri);
@@ -579,7 +579,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
     }
 
-    private void benchmark() throws StorageManagerException, InterruptedException, ExecutionException, InstantiationException,
+    private void benchmark() throws StorageEngineException, InterruptedException, ExecutionException, InstantiationException,
             IllegalAccessException, ClassNotFoundException {
         CliOptionsParser.BenchmarkCommandOptions benchmarkCommandOptions = variantCommandOptions.benchmarkCommandOptions;
 

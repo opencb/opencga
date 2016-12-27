@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.io.IOException;
@@ -78,7 +78,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         o.putIfNotNull("aggregated", variantCommandOptions.indexCommandOptions.aggregated);
         o.putIfNotNull("calculateStats", variantCommandOptions.indexCommandOptions.calculateStats);
         o.putIfNotNull("annotate", variantCommandOptions.indexCommandOptions.annotate);
-        o.putIfNotNull(VariantStorageManager.Options.RESUME.key(), variantCommandOptions.indexCommandOptions.resume);
+        o.putIfNotNull(VariantStorageEngine.Options.RESUME.key(), variantCommandOptions.indexCommandOptions.resume);
 //        o.putIfNotNull("overwrite", variantCommandOptions.indexCommandOptions.overwriteAnnotations);
         o.putAll(variantCommandOptions.commonCommandOptions.params);
 
