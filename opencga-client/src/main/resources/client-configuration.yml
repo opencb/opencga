@@ -1,6 +1,8 @@
 ---
-## number of seconds that session remains open
-sessionDuration: 12000
+logLevel: "INFO"
+logFile: null
+
+sessionDuration: 12000  # number of seconds that session remains open
 defaultStudy: ""
 
 ## REST client configuration options

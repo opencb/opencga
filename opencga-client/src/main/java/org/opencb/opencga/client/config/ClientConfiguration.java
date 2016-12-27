@@ -28,6 +28,9 @@ import java.io.OutputStream;
  */
 public class ClientConfiguration {
 
+    private String logLevel;
+    private String logFile;
+
     private String version;
     private int sessionDuration;
 
@@ -77,13 +80,33 @@ public class ClientConfiguration {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ClientConfiguration{");
-        sb.append("version='").append(version).append('\'');
+        sb.append("logLevel='").append(logLevel).append('\'');
+        sb.append(", logFile='").append(logFile).append('\'');
+        sb.append(", version='").append(version).append('\'');
         sb.append(", sessionDuration=").append(sessionDuration);
         sb.append(", defaultStudy='").append(defaultStudy).append('\'');
         sb.append(", rest=").append(rest);
         sb.append(", grpc=").append(grpc);
         sb.append('}');
         return sb.toString();
+    }
+
+    public String getLogLevel() {
+        return logLevel;
+    }
+
+    public ClientConfiguration setLogLevel(String logLevel) {
+        this.logLevel = logLevel;
+        return this;
+    }
+
+    public String getLogFile() {
+        return logFile;
+    }
+
+    public ClientConfiguration setLogFile(String logFile) {
+        this.logFile = logFile;
+        return this;
     }
 
     public String getVersion() {
