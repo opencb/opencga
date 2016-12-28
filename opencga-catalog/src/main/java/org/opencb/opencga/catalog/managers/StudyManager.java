@@ -94,18 +94,25 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         final QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ID.key());
 
         if (StringUtils.isEmpty(studyStr)) {
-            // Obtain the projects of the user
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key());
-            QueryResult<Project> projectQueryResult = projectDBAdaptor.get(userId, options);
-            if (projectQueryResult.getNumResults() == 1) {
-                projectDBAdaptor.checkId(projectQueryResult.first().getId());
-                query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectQueryResult.first().getId());
-            } else {
-                if (projectQueryResult.getNumResults() == 0) {
-                    throw new CatalogException("No projects found for user " + userId);
+            if (!userId.equals("anonymous")) {
+                // Obtain the projects of the user
+                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key());
+                QueryResult<Project> projectQueryResult = projectDBAdaptor.get(userId, options);
+                if (projectQueryResult.getNumResults() == 1) {
+                    projectDBAdaptor.checkId(projectQueryResult.first().getId());
+                    query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectQueryResult.first().getId());
                 } else {
-                    throw new CatalogException("More than one project found for user " + userId);
+                    if (projectQueryResult.getNumResults() == 0) {
+                        throw new CatalogException("No projects found for user " + userId);
+                    } else {
+                        throw new CatalogException("More than one project found for user " + userId);
+                    }
                 }
+            } else {
+                // Anonymous user
+                // 1. Check if the anonymous user has been given permissions in any study
+                query.append(StudyDBAdaptor.QueryParams.ACL_MEMBER.key(), "anonymous");
+                query.append(StudyDBAdaptor.QueryParams.ACL_PERMISSIONS.key(), StudyAclEntry.StudyPermissions.VIEW_STUDY);
             }
 
             QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, queryOptions);
@@ -150,25 +157,37 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 return retStudies;
             }
 
-            if (aliasProject != null) {
-                projectId = catalogManager.getProjectManager().getId(userId, aliasProject);
-                projectDBAdaptor.checkId(projectId);
-            } else {
-                // Obtain the projects of the user
-                QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key());
-                QueryResult<Project> projectQueryResult = projectDBAdaptor.get(userId, options);
-                if (projectQueryResult.getNumResults() == 1) {
-                    projectId = projectQueryResult.first().getId();
+            if (!userId.equals("anonymous")) {
+                if (aliasProject != null) {
+                    projectId = catalogManager.getProjectManager().getId(userId, aliasProject);
+                    projectDBAdaptor.checkId(projectId);
                 } else {
-                    if (projectQueryResult.getNumResults() == 0) {
-                        throw new CatalogException("No projects found for user " + userId);
+                    // Obtain the projects of the user
+                    QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key());
+                    QueryResult<Project> projectQueryResult = projectDBAdaptor.get(userId, options);
+                    if (projectQueryResult.getNumResults() == 1) {
+                        projectId = projectQueryResult.first().getId();
                     } else {
-                        throw new CatalogException("More than one project found for user " + userId);
+                        if (projectQueryResult.getNumResults() == 0) {
+                            throw new CatalogException("No projects found for user " + userId);
+                        } else {
+                            throw new CatalogException("More than one project found for user " + userId);
+                        }
                     }
                 }
+                query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId);
+            } else {
+                // Anonymous user
+                if (aliasProject != null) {
+                    List<Long> projectIds = catalogManager.getProjectManager().getIds(userId, aliasProject);
+                    query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectIds);
+                }
+
+                // Add permissions for user anonymous in the query
+                query.append(StudyDBAdaptor.QueryParams.ACL_MEMBER.key(), "anonymous");
+                query.append(StudyDBAdaptor.QueryParams.ACL_PERMISSIONS.key(), StudyAclEntry.StudyPermissions.VIEW_STUDY);
             }
 
-            query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId);
             if (aliasList.size() > 0) {
                 // This if is justified by the fact that we might not have any alias or id but an *
                 query.put(StudyDBAdaptor.QueryParams.ALIAS.key(), aliasList);
@@ -181,6 +200,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 if (aliasList.size() > 0 && studyQueryResult.getNumResults() != aliasList.size()) {
                     throw new CatalogException("Not all the studies were found. Found " + studyQueryResult.getNumResults() + " out of "
                             + aliasList.size());
+
                 } else {
                     retStudies.addAll(studyQueryResult.getResult().stream().map(study -> study.getId()).collect(Collectors.toList()));
                     return retStudies;

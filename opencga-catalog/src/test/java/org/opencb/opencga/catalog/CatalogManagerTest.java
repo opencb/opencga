@@ -32,6 +32,7 @@ import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManag
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.summaries.FeatureCount;
@@ -521,6 +522,50 @@ public class CatalogManagerTest extends GenericTest {
 
         long id = catalogManager.getStudyManager().getId(userId, "phase3");
         assertEquals(studyId2, id);
+    }
+
+    @Test
+    public void testGetOnlyStudyUserAnonymousCanSee() throws CatalogException {
+        IStudyManager studyManager = catalogManager.getStudyManager();
+
+        try {
+            studyManager.getIds("anonymous", null);
+            fail("This should throw an exception. No studies should be found for user anonymous");
+        } catch (CatalogException e) {
+        }
+
+        // Create another study with alias phase3
+        QueryResult<Study> study = catalogManager.createStudy(project2, "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser2);
+        try {
+            studyManager.getIds("anonymous", null);
+            fail("This should throw an exception. No studies should be found for user anonymous");
+        } catch (CatalogException e) {
+        }
+
+        catalogManager.createStudyAcls("phase3", "anonymous", "VIEW_STUDY", null, sessionIdUser2);
+
+        List<Long> ids = studyManager.getIds("anonymous", null);
+        assertEquals(1, ids.size());
+        assertEquals(study.first().getId(), (long) ids.get(0));
+    }
+
+    @Test
+    public void testGetSelectedStudyUserAnonymousCanSee() throws CatalogException {
+        IStudyManager studyManager = catalogManager.getStudyManager();
+
+        try {
+            studyManager.getIds("anonymous", "phase3");
+            fail("This should throw an exception. No studies should be found for user anonymous");
+        } catch (CatalogException e) {
+        }
+
+        // Create another study with alias phase3
+        QueryResult<Study> study = catalogManager.createStudy(project2, "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser2);
+        catalogManager.createStudyAcls("phase3", "anonymous", "VIEW_STUDY", null, sessionIdUser2);
+
+        List<Long> ids = studyManager.getIds("anonymous", "phase3");
+        assertEquals(1, ids.size());
+        assertEquals(study.first().getId(), (long) ids.get(0));
     }
 
     /**
