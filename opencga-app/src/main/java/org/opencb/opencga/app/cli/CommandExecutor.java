@@ -21,7 +21,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.*;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.app.cli.main.CliSession;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.config.Configuration;
@@ -81,7 +80,6 @@ public abstract class CommandExecutor {
 
     @Deprecated
     public CommandExecutor(String logLevel, boolean verbose, String conf) {
-//        init(options);
         init(logLevel, verbose, conf, true);
     }
 
@@ -349,6 +347,7 @@ public abstract class CommandExecutor {
      * @return OpenCGAConfiguration
      * @throws IOException if an error reading the configuration
      */
+    @Deprecated
     public Configuration getOpenCGAConfiguration() throws IOException {
         if (configuration == null) {
             loadOpencgaConfiguration();
@@ -356,7 +355,7 @@ public abstract class CommandExecutor {
         return configuration;
     }
 
-    public static String getParsedSubCommand(JCommander jCommander) {
+    protected static String getParsedSubCommand(JCommander jCommander) {
         String parsedCommand = jCommander.getParsedCommand();
         if (jCommander.getCommands().containsKey(parsedCommand)) {
             String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();

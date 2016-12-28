@@ -110,8 +110,6 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(password)) {
             String sessionId = openCGAClient.login(user, password);
             if (StringUtils.isNotEmpty(sessionId)) {
-//                openCGAClient.login(user, password);
-
                 Map<String, List<String>> studies = new HashMap<>();
                 QueryResponse<Project> projects = openCGAClient.getUserClient().getProjects(QueryOptions.empty());
                 for (Project project : projects.getResponse().get(0).getResult()) {
@@ -144,20 +142,16 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Logout");
         openCGAClient.logout();
         logoutCliSessionFile();
-//        logoutSession();
     }
 
     private void create() throws CatalogException, IOException {
         logger.debug("Creating user...");
 
-        ObjectMap params = new ObjectMap()
-                .append(UserDBAdaptor.QueryParams.NAME.key(), usersCommandOptions.createCommandOptions.name)
-                .append(UserDBAdaptor.QueryParams.EMAIL.key(), usersCommandOptions.createCommandOptions.email)
-                .append(UserDBAdaptor.QueryParams.PASSWORD.key(), usersCommandOptions.createCommandOptions.password);
-
-        if (usersCommandOptions.createCommandOptions.organization != null) {
-            params.append(UserDBAdaptor.QueryParams.ORGANIZATION.key(), usersCommandOptions.createCommandOptions.organization);
-        }
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(UserDBAdaptor.QueryParams.NAME.key(), usersCommandOptions.createCommandOptions.name);
+        params.putIfNotEmpty(UserDBAdaptor.QueryParams.EMAIL.key(), usersCommandOptions.createCommandOptions.email);
+        params.putIfNotEmpty(UserDBAdaptor.QueryParams.PASSWORD.key(), usersCommandOptions.createCommandOptions.password);
+        params.putIfNotEmpty(UserDBAdaptor.QueryParams.ORGANIZATION.key(), usersCommandOptions.createCommandOptions.organization);
 
         QueryResponse<User> userQueryResponse = openCGAClient.getUserClient().create(usersCommandOptions.createCommandOptions.user,
                 usersCommandOptions.createCommandOptions.password, params);
@@ -204,10 +198,10 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("User info");
 
         QueryOptions queryOptions = new QueryOptions();
+        queryOptions.putIfNotEmpty("userId", cliSession.getUserId());
+        queryOptions.putIfNotEmpty(UserDBAdaptor.QueryParams.LAST_MODIFIED.key(), usersCommandOptions.infoCommandOptions.lastModified);
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, usersCommandOptions.infoCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, usersCommandOptions.infoCommandOptions.dataModelOptions.exclude);
-        queryOptions.putIfNotEmpty(UserDBAdaptor.QueryParams.LAST_MODIFIED.key(), usersCommandOptions.infoCommandOptions.lastModified);
-        queryOptions.putIfNotNull("userId", cliSession.getUserId());
 
         QueryResponse<User> userQueryResponse = openCGAClient.getUserClient().get(queryOptions);
         if (userQueryResponse.getResponse().size() == 1 && userQueryResponse.getResponse().get(0).getNumResults() == 1) {
@@ -246,6 +240,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
     private void resetPasword() throws CatalogException, IOException {
         logger.debug("Resetting the user password and sending a new one to the e-mail stored in catalog.");
+
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("userId", usersCommandOptions.resetPasswordCommandOptions.user);
         openCGAClient.getUserClient().resetPassword(params);
@@ -253,6 +248,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
     private void delete() throws CatalogException, IOException {
         logger.debug("Deleting user");
+
         openCGAClient.getUserClient().delete(usersCommandOptions.deleteCommandOptions.user, new ObjectMap());
     }
 

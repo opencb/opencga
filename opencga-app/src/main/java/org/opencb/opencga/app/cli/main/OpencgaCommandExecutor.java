@@ -16,14 +16,13 @@
 
 package org.opencb.opencga.app.cli.main;
 
-import com.beust.jcommander.JCommander;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.io.*;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 
 import java.io.IOException;
@@ -37,7 +36,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
     protected OpenCGAClient openCGAClient;
     protected CatalogManager catalogManager;
-//    protected ClientConfiguration clientConfiguration;
+
     protected AbstractOutputWriter writer;
 
     public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
@@ -50,8 +49,8 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     }
 
     private void init(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) {
-        try {
 
+        try {
             WriterConfiguration writerConfiguration = new WriterConfiguration();
             writerConfiguration.setMetadata(options.metadata);
             writerConfiguration.setHeader(!options.noHeader);
@@ -129,13 +128,4 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         }
     }
 
-    public static String getParsedSubCommand(JCommander jCommander) {
-        String parsedCommand = jCommander.getParsedCommand();
-        if (jCommander.getCommands().containsKey(parsedCommand)) {
-            String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
-            return subCommand != null ? subCommand: "";
-        } else {
-            return "";
-        }
-    }
 }

@@ -188,21 +188,15 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Study> create() throws CatalogException, IOException {
         logger.debug("Creating a new study");
 
-        String projectId = studiesCommandOptions.createCommandOptions.project;
+        String project = studiesCommandOptions.createCommandOptions.project;
         String name = studiesCommandOptions.createCommandOptions.name;
         String alias = studiesCommandOptions.createCommandOptions.alias;
 
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.createCommandOptions.description);
-        try {
-//            params.append(StudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(type));
-            params.putIfNotNull(StudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(studiesCommandOptions.createCommandOptions.type));
-        } catch (IllegalArgumentException e) {
-            logger.warn("{} not recognized as a proper study type", studiesCommandOptions.createCommandOptions.type);
-//            return null;
-        }
+        params.putIfNotNull(StudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(studiesCommandOptions.createCommandOptions.type));
 
-        return openCGAClient.getStudyClient().create(projectId, name, alias, params);
+        return openCGAClient.getStudyClient().create(project, name, alias, params);
     }
 
     private QueryResponse<Study> info() throws CatalogException, IOException {
@@ -231,14 +225,15 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
     private QueryResponse<Study> delete() throws CatalogException, IOException {
         logger.debug("Deleting a study");
-        ObjectMap objectMap = new ObjectMap();
-        return openCGAClient.getStudyClient().delete(studiesCommandOptions.deleteCommandOptions.study, objectMap);
+
+        return openCGAClient.getStudyClient().delete(studiesCommandOptions.deleteCommandOptions.study, new ObjectMap());
     }
 
     /************************************************  Summary and help Commands  ***********************************************/
 
     private QueryResponse<StudySummary> summary() throws CatalogException, IOException {
         logger.debug("Doing summary with the general stats of a study");
+
         return openCGAClient.getStudyClient().getSummary(studiesCommandOptions.summaryCommandOptions.study, QueryOptions.empty());
     }
 
@@ -284,11 +279,13 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
     private QueryResponse scanFiles() throws CatalogException, IOException {
         logger.debug("Scan the study folder to find changes.\n");
+
         return openCGAClient.getStudyClient().scanFiles(studiesCommandOptions.scanFilesCommandOptions.study, null);
     }
 
     private QueryResponse resyncFiles() throws CatalogException, IOException {
         logger.debug("Scan the study folder to find changes.\n");
+
         return openCGAClient.getStudyClient().resyncFiles(studiesCommandOptions.resyncFilesCommandOptions.study, null);
     }
 

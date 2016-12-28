@@ -77,12 +77,12 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Creating a new project");
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.createCommandOptions.description);
-        params.putIfNotNull(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), projectsCommandOptions.createCommandOptions.organization);
-        params.putIfNotNull(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(), projectsCommandOptions.createCommandOptions.scientificName);
-        params.putIfNotNull(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(), projectsCommandOptions.createCommandOptions.commonName);
-        params.putIfNotNull(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(), projectsCommandOptions.createCommandOptions.taxonomyCode);
-        params.putIfNotNull(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), projectsCommandOptions.createCommandOptions.assembly);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.createCommandOptions.description);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), projectsCommandOptions.createCommandOptions.organization);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(), projectsCommandOptions.createCommandOptions.scientificName);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(), projectsCommandOptions.createCommandOptions.commonName);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(), projectsCommandOptions.createCommandOptions.taxonomyCode);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), projectsCommandOptions.createCommandOptions.assembly);
 
         return openCGAClient.getProjectClient().create(projectsCommandOptions.createCommandOptions.name,
                 projectsCommandOptions.createCommandOptions.alias, params);
@@ -101,17 +101,17 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Updating project");
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull(ProjectDBAdaptor.QueryParams.NAME.key(), projectsCommandOptions.updateCommandOptions.name);
-        params.putIfNotNull(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.updateCommandOptions.description);
-        params.putIfNotNull(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), projectsCommandOptions.updateCommandOptions.organization);
-        params.putIfNotNull(ProjectDBAdaptor.QueryParams.ATTRIBUTES.key(), projectsCommandOptions.updateCommandOptions.attributes);
-        params.putIfNotNull(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(),
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.NAME.key(), projectsCommandOptions.updateCommandOptions.name);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.updateCommandOptions.description);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), projectsCommandOptions.updateCommandOptions.organization);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ATTRIBUTES.key(), projectsCommandOptions.updateCommandOptions.attributes);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(),
                 projectsCommandOptions.updateCommandOptions.scientificName);
-        params.putIfNotNull(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(),
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(),
                 projectsCommandOptions.updateCommandOptions.commonName);
-        params.putIfNotNull(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(),
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(),
                 projectsCommandOptions.updateCommandOptions.taxonomyCode);
-        params.putIfNotNull(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), projectsCommandOptions.updateCommandOptions.assembly);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), projectsCommandOptions.updateCommandOptions.assembly);
 
         return openCGAClient.getProjectClient().update(projectsCommandOptions.updateCommandOptions.project, params);
     }
@@ -119,18 +119,17 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Project> delete() throws CatalogException, IOException {
         logger.debug("Deleting project ");
 
-        ObjectMap objectMap = new ObjectMap();
-        return openCGAClient.getProjectClient().delete(projectsCommandOptions.deleteCommandOptions.project, objectMap);
+        return openCGAClient.getProjectClient().delete(projectsCommandOptions.deleteCommandOptions.project, new ObjectMap());
     }
 
     private QueryResponse<Study> studies() throws CatalogException, IOException {
         logger.debug("Getting all studies the from a project ");
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotNull(QueryOptions.INCLUDE, projectsCommandOptions.studiesCommandOptions.dataModelOptions.include);
-        queryOptions.putIfNotNull(QueryOptions.EXCLUDE,projectsCommandOptions.studiesCommandOptions.dataModelOptions.exclude);
-        queryOptions.putIfNotNull(QueryOptions.LIMIT, projectsCommandOptions.studiesCommandOptions.numericOptions.limit);
-        queryOptions.putIfNotNull(QueryOptions.SKIP, projectsCommandOptions.studiesCommandOptions.numericOptions.skip);
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, projectsCommandOptions.studiesCommandOptions.dataModelOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE,projectsCommandOptions.studiesCommandOptions.dataModelOptions.exclude);
+        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, projectsCommandOptions.studiesCommandOptions.numericOptions.limit);
+        queryOptions.putIfNotEmpty(QueryOptions.SKIP, projectsCommandOptions.studiesCommandOptions.numericOptions.skip);
         return openCGAClient.getProjectClient().getStudies(projectsCommandOptions.studiesCommandOptions.project, queryOptions);
     }
 

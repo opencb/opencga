@@ -69,7 +69,6 @@ public class ToolsCommandExecutor extends OpencgaCommandExecutor {
         }
 
         createOutput(queryResponse);
-
     }
 
     private QueryResponse help() throws CatalogException, IOException {
@@ -80,23 +79,24 @@ public class ToolsCommandExecutor extends OpencgaCommandExecutor {
 
     private QueryResponse<Tool> info() throws CatalogException, IOException {
         logger.debug("Getting tool information");
-        QueryOptions queryOptions = new QueryOptions();
 
+        QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty("id", toolsCommandOptions.infoCommandOptions.id);
         queryOptions.putIfNotEmpty("execution", toolsCommandOptions.infoCommandOptions.execution);
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, toolsCommandOptions.infoCommandOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, toolsCommandOptions.infoCommandOptions.exclude);
-
         return openCGAClient.getToolClient().get(toolsCommandOptions.infoCommandOptions.id, queryOptions);
     }
 
     private QueryResponse<Tool> search() throws CatalogException, IOException {
         logger.debug("Searching tool");
+
         Query query = new Query();
-        QueryOptions queryOptions = new QueryOptions();
         query.putIfNotEmpty("id", toolsCommandOptions.searchCommandOptions.id);
         query.putIfNotEmpty("userId", toolsCommandOptions.searchCommandOptions.userId);
         query.putIfNotEmpty("alias", toolsCommandOptions.searchCommandOptions.alias);
+
+        QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, toolsCommandOptions.searchCommandOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, toolsCommandOptions.searchCommandOptions.exclude);
         queryOptions.putIfNotEmpty(QueryOptions.LIMIT, toolsCommandOptions.searchCommandOptions.limit);
@@ -107,14 +107,14 @@ public class ToolsCommandExecutor extends OpencgaCommandExecutor {
 
     private QueryResponse<Tool> update() throws CatalogException, IOException {
         logger.debug("Updating tool");
-        QueryOptions queryOptions = new QueryOptions();
-        return openCGAClient.getToolClient().update(toolsCommandOptions.updateCommandOptions.id, queryOptions);
+
+        return openCGAClient.getToolClient().update(toolsCommandOptions.updateCommandOptions.id, QueryOptions.empty());
     }
 
     private QueryResponse<Tool> delete() throws CatalogException, IOException {
         logger.debug("Deleting tool");
-        QueryOptions queryOptions = new QueryOptions();
-        return openCGAClient.getToolClient().delete(toolsCommandOptions.deleteCommandOptions.id, queryOptions);
+
+        return openCGAClient.getToolClient().delete(toolsCommandOptions.deleteCommandOptions.id, QueryOptions.empty());
     }
 
 

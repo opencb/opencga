@@ -190,14 +190,13 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.CREATION_DATE.key(), cohortsCommandOptions.updateCommandOptions.creationDate);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.DESCRIPTION.key(), cohortsCommandOptions.updateCommandOptions.description);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.updateCommandOptions.samples);
-
         return openCGAClient.getCohortClient().update(cohortsCommandOptions.updateCommandOptions.cohort, params);
     }
 
     private QueryResponse<Cohort> delete() throws CatalogException, IOException {
         logger.debug("Deleting cohort");
-        ObjectMap objectMap = new ObjectMap();
-        return openCGAClient.getCohortClient().delete(cohortsCommandOptions.deleteCommandOptions.cohort, objectMap);
+
+        return openCGAClient.getCohortClient().delete(cohortsCommandOptions.deleteCommandOptions.cohort, new ObjectMap());
     }
 
     private QueryResponse<Object> stats() throws CatalogException, IOException {
@@ -209,8 +208,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.put("delete", cohortsCommandOptions.statsCommandOptions.delete);
         queryOptions.putIfNotEmpty("log", cohortsCommandOptions.statsCommandOptions.log);
         queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.OUT_DIR_ID.key(), cohortsCommandOptions.statsCommandOptions.outdirId);
-
-
         return openCGAClient.getCohortClient().getStats(cohortsCommandOptions.statsCommandOptions.cohort, query, queryOptions);
     }
 
@@ -226,7 +223,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.groupByCommandOptions.sampleIds);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.ATTRIBUTES.key(), cohortsCommandOptions.groupByCommandOptions.attributes);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.NATTRIBUTES.key(), cohortsCommandOptions.groupByCommandOptions.nattributes);
-
         return openCGAClient.getCohortClient().groupBy(cohortsCommandOptions.groupByCommandOptions.study,
                 cohortsCommandOptions.groupByCommandOptions.fields,params);
     }
