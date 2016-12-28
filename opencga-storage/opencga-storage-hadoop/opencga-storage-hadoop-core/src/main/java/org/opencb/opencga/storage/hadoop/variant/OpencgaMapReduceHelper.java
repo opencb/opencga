@@ -14,7 +14,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created by mh719 on 22/12/2016.
@@ -29,7 +31,7 @@ public class OpencgaMapReduceHelper {
     private long timestamp = HConstants.LATEST_TIMESTAMP;
     private volatile BiMap<String, Integer> indexedSamples;
     private final Map<String, Long> timeSum = new ConcurrentHashMap<>();
-    private long lastTime;
+    private final AtomicLong lastTime = new AtomicLong(0);
 
 
     public OpencgaMapReduceHelper(Mapper.Context context) {
@@ -104,7 +106,7 @@ public class OpencgaMapReduceHelper {
      * Sets the lastTime value to the {@link System#currentTimeMillis}.
      */
     public void startTime() {
-        lastTime = System.nanoTime();
+        lastTime.set(System.nanoTime());
     }
 
     /**
@@ -115,8 +117,12 @@ public class OpencgaMapReduceHelper {
      */
     public void endTime(String name) {
         long time = System.nanoTime();
-        timeSum.put(name, time - lastTime);
-        lastTime = time;
+        registerRuntime(name, time - lastTime.get());
+        lastTime.set(time);
+    }
+
+    public void registerRuntime(String name, long runtime) {
+        timeSum.compute(name, (k, v) -> Objects.isNull(v) ? runtime : v + runtime);
     }
 
     public Map<String, Long> getTimes() {

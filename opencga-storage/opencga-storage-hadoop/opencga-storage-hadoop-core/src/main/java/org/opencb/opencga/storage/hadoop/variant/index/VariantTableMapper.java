@@ -299,12 +299,12 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
                         return name;
                     }).collect(Collectors.toSet());
 
-            endTime("8 Load archive slice from hbase");
             this.getVariantMerger().addExpectedSamples(names); // add loaded names to merger
             if (null == res || res.isEmpty()) {
                 getLog().info("No variants found for {} files for {} samples...", fileIds.size(), names.size());
                 return;
             }
+            long startTime = System.nanoTime();
             // Uses ForkJoinPool !!!
             // only load variants which have overlap.
             List<Variant> archiveOther = getResultConverter().convert(res, true, var -> {
@@ -314,12 +314,13 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
                 int max = toPosition(var, false);
                 return IntStream.range(min, max + 1).boxed().anyMatch(i -> coveredPositions.contains(i));
             });
-
+            registerRuntime("8a Convert to Variants", System.nanoTime() - startTime);
             getLog().info("Loaded "
                     + archiveOther.size() + " variants for "
                     + fileIds.size() + " files for "
                     + names.size() + " samples... ");
 
+            startTime = System.nanoTime();
             checkVariants(archiveOther); // Check consistency
             final NavigableMap<Integer, List<Variant>> varPosSortedOther =
                     indexAlts(archiveOther, (int)ctx.startPos, (int)ctx.nextStartPos);
@@ -342,7 +343,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
                 merge.addAndGet(System.nanoTime() - mid);
             });
             getLog().info("Merge 2 - overlap {}; merge {}; ns", overlap, merge);
-            endTime("9 Merge NEW with archive slice");
+            registerRuntime("9 Merge NEW with archive slice", System.nanoTime() - startTime);
             ctx.getContext().progress(); // Call process to avoid timeouts
         });
     }
@@ -575,6 +576,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         }
         getLog().info("Search archive for " + archiveFileIds.size() + " files in total in batches of " + this.archiveBatchSize  + " ... ");
         while (!archiveFileIds.isEmpty()) {
+            Long startTime = System.nanoTime();
             // create batch
             Set<String> batch = new HashSet<>();
             for (String e : archiveFileIds) {
@@ -594,6 +596,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
             batch.forEach(e -> get.addColumn(cf, Bytes.toBytes(e)));
             Set<Integer> batchIds = batch.stream().map(e -> Integer.valueOf(e)).collect(Collectors.toSet());
             Result res = getHelper().getHBaseManager().act(getHelper().getIntputTable(), table -> table.get(get));
+            registerRuntime("8 Load archive slice from hbase", System.nanoTime() - startTime);
             if (res.isEmpty()) {
                 getLog().warn("No data found in archive table!!!");
                 merge.accept(batchIds, null);
