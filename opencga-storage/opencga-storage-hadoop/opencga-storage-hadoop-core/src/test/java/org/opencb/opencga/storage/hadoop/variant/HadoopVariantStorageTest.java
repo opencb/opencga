@@ -104,8 +104,8 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
     AtomicReference<HBaseTestingUtility> utility = new AtomicReference<>(null);
     AtomicReference<Configuration> configuration = new AtomicReference<>(null);
-//    Set<HadoopVariantStorageManager> managers = new ConcurrentHashSet<>();
-    AtomicReference<HadoopVariantStorageManager> manager = new AtomicReference<>();
+//    Set<HadoopVariantStorageEngine> managers = new ConcurrentHashSet<>();
+    AtomicReference<HadoopVariantStorageEngine> manager = new AtomicReference<>();
 
     class HadoopExternalResource extends ExternalResource implements HadoopVariantStorageTest {
 
@@ -238,7 +238,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         public void after() {
             try {
                 logger.info("Closing HBaseTestingUtility");
-//                for (HadoopVariantStorageManager manager : managers) {
+//                for (HadoopVariantStorageEngine manager : managers) {
 //                    manager.close();
 //                }
                 if (manager.get() != null) {
@@ -303,20 +303,20 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
     }
 
     @Override
-    default HadoopVariantStorageManager getVariantStorageManager() throws Exception {
+    default HadoopVariantStorageEngine getVariantStorageManager() throws Exception {
         synchronized (manager) {
             if (manager.get() == null) {
-                manager.set(new HadoopVariantStorageManager());
+                manager.set(new HadoopVariantStorageEngine());
             }
         }
-        HadoopVariantStorageManager manager = HadoopVariantStorageTest.manager.get();
+        HadoopVariantStorageEngine manager = HadoopVariantStorageTest.manager.get();
 
         //Make a copy of the configuration
         Configuration conf = new Configuration(false);
         HBaseConfiguration.merge(conf, HadoopVariantStorageTest.configuration.get());
         StorageConfiguration storageConfiguration = getStorageConfiguration(conf);
 
-        manager.setConfiguration(storageConfiguration, HadoopVariantStorageManager.STORAGE_ENGINE_ID);
+        manager.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
         manager.mrExecutor = new TestMRExecutor(conf);
         manager.conf = conf;
         return manager;
@@ -331,11 +331,11 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
     }
 
     static StorageConfiguration updateStorageConfiguration(StorageConfiguration storageConfiguration, Configuration conf) throws IOException {
-        storageConfiguration.setDefaultStorageEngineId(HadoopVariantStorageManager.STORAGE_ENGINE_ID);
-        StorageEtlConfiguration variantConfiguration = storageConfiguration.getStorageEngine(HadoopVariantStorageManager.STORAGE_ENGINE_ID).getVariant();
+        storageConfiguration.setDefaultStorageEngineId(HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
+        StorageEtlConfiguration variantConfiguration = storageConfiguration.getStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getVariant();
         ObjectMap options = variantConfiguration.getOptions();
 
-        options.put(HadoopVariantStorageManager.EXTERNAL_MR_EXECUTOR, TestMRExecutor.class);
+        options.put(HadoopVariantStorageEngine.EXTERNAL_MR_EXECUTOR, TestMRExecutor.class);
         TestMRExecutor.setStaticConfiguration(conf);
 
         options.put(GenomeHelper.CONFIG_HBASE_ADD_DEPENDENCY_JARS, false);
@@ -350,9 +350,9 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
         FileSystem fs = FileSystem.get(HadoopVariantStorageTest.configuration.get());
         String intermediateDirectory = fs.getHomeDirectory().toUri().resolve("opencga_test/").toString();
-        System.out.println(HadoopVariantStorageManager.OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY + " = " + intermediateDirectory);
+        System.out.println(HadoopVariantStorageEngine.OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY + " = " + intermediateDirectory);
         options.put(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY, conf.get(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY));
-        options.put(HadoopVariantStorageManager.OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY, intermediateDirectory);
+        options.put(HadoopVariantStorageEngine.OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY, intermediateDirectory);
 
         variantConfiguration.getDatabase().setHosts(Collections.singletonList("hbase://" + HadoopVariantStorageTest.configuration.get().get(HConstants.ZOOKEEPER_QUORUM)));
         return storageConfiguration;

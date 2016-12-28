@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.storage.hadoop.exceptions;
 
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 /**
  * Any exception produced by the StorageHadoop plugin.
@@ -25,7 +25,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class StorageHadoopException extends StorageManagerException {
+public class StorageHadoopException extends StorageEngineException {
     public StorageHadoopException(String message, Throwable cause) {
         super(message, cause);
     }

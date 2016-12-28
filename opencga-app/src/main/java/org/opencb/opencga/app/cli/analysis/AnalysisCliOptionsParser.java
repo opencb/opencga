@@ -22,8 +22,6 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
-import org.opencb.opencga.app.cli.main.options.analysis.RestVariantCommandOptions;
-import org.opencb.opencga.app.cli.main.options.catalog.StudyCommandOptions;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 

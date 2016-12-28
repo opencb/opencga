@@ -47,8 +47,8 @@ public class GeneralCliOptions {
         @Parameter(names = {"-h", "--help"}, description = "Print this help", help = true)
         public boolean help;
 
-        @Parameter(names = {"-L", "--log-level"}, description = "One of the following: 'error', 'warn', 'info', 'debug', 'trace'")
-        public String logLevel = "info";
+        @Parameter(names = {"-L", "--log-level"}, description = "One of the following: 'error', 'warn', 'info', 'debug', 'trace' [info]")
+        public String logLevel;
 
         @Parameter(names = {"--log-file"}, description = "Set the file to write the log")
         public String logFile;

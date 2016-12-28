@@ -33,10 +33,10 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.StorageETLResult;
+import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
@@ -92,13 +92,13 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             studyConfiguration = newStudyConfiguration();
 //            variantSource = new VariantSource(smallInputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
             clearDB(DB_NAME);
-            ObjectMap params = new ObjectMap(VariantStorageManager.Options.STUDY_TYPE.key(), VariantStudy.StudyType.FAMILY)
-                    .append(VariantStorageManager.Options.ANNOTATE.key(), true)
+            ObjectMap params = new ObjectMap(VariantStorageEngine.Options.STUDY_TYPE.key(), VariantStudy.StudyType.FAMILY)
+                    .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
                     .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, CellBaseRestVariantAnnotator.class.getName())
-                    .append(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json")
-                    .append(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
+                    .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "json")
+                    .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
             params.putAll(getOtherParams());
-            StorageETLResult etlResult = runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration, params);
+            StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration, params);
             source = variantStorageManager.getVariantReaderUtils().readVariantSource(Paths.get(etlResult.getTransformResult().getPath()).toUri());
             NUM_VARIANTS = getExpectedNumLoadedVariants(source);
             fileIndexed = true;
@@ -106,9 +106,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
 
             //Calculate stats
-            if (getOtherParams().getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key(), true)) {
-                QueryOptions options = new QueryOptions(VariantStorageManager.Options.STUDY_ID.key(), STUDY_ID)
-                        .append(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 100)
+            if (getOtherParams().getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)) {
+                QueryOptions options = new QueryOptions(VariantStorageEngine.Options.STUDY_ID.key(), STUDY_ID)
+                        .append(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100)
                         .append(DefaultVariantStatisticsManager.OUTPUT, outputUri)
                         .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, "cohort1.cohort2.stats");
                 Iterator<Integer> iterator = studyConfiguration.getSamplesInFiles().get(indexedFileId).iterator();
@@ -158,7 +158,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                     break;
                 }
             }
-            if (params.getBoolean(VariantStorageManager.Options.ANNOTATE.key())) {
+            if (params.getBoolean(VariantStorageEngine.Options.ANNOTATE.key())) {
                 assertEquals(dbAdaptor.count(new Query(ANNOTATION_EXISTS.key(), true)).first(), dbAdaptor.count(new Query()).first());
             }
         }

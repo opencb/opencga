@@ -16,10 +16,6 @@
 
 package org.opencb.opencga.app.cli.analysis;
 
-import ga4gh.Reads;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
-import org.apache.commons.lang3.time.StopWatch;
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
@@ -34,10 +30,7 @@ import org.opencb.opencga.server.grpc.ServiceTypesModel;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created on 09/05/16
@@ -47,7 +40,7 @@ import java.util.concurrent.TimeUnit;
 public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
 
     private final AlignmentCommandOptions alignmentCommandOptions;
-//    private AlignmentStorageManager alignmentStorageManager;
+//    private AlignmentStorageEngine alignmentStorageManager;
 
     public AlignmentCommandExecutor(AlignmentCommandOptions options) {
         super(options.analysisCommonOptions);
@@ -104,13 +97,13 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
 
         String sessionId = cliOptions.commonOptions.sessionId;
 
-        org.opencb.opencga.storage.core.local.AlignmentStorageManager alignmentStorageManager =
-                new org.opencb.opencga.storage.core.local.AlignmentStorageManager(catalogManager, storageManagerFactory);
+        org.opencb.opencga.storage.core.manager.AlignmentStorageManager alignmentStorageManager =
+                new org.opencb.opencga.storage.core.manager.AlignmentStorageManager(catalogManager, storageManagerFactory);
         alignmentStorageManager.index(null, cliOptions.fileId, params, sessionId);
     }
 
 //    @Deprecated
-//    private void index(Job job) throws CatalogException, IllegalAccessException, ClassNotFoundException, InstantiationException, StorageManagerException {
+//    private void index(Job job) throws CatalogException, IllegalAccessException, ClassNotFoundException, InstantiationException, StorageEngineException {
 //
 //        AnalysisCliOptionsParser.IndexAlignmentCommandOptions cliOptions = alignmentCommandOptions.indexAlignmentCommandOptions;
 //
@@ -118,12 +111,12 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
 //        String sessionId = cliOptions.commonOptions.sessionId;
 //        long inputFileId = catalogManager.getFileId(cliOptions.fileId);
 //
-//        // 1) Initialize VariantStorageManager
+//        // 1) Initialize VariantStorageEngine
 //        long studyId = catalogManager.getStudyIdByFileId(inputFileId);
 //        Study study = catalogManager.getStudy(studyId, sessionId).first();
 //
 //        /*
-//         * Getting VariantStorageManager
+//         * Getting VariantStorageEngine
 //         * We need to find out the Storage Engine Id to be used from Catalog
 //         */
 //        DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.ALIGNMENT, sessionId);
@@ -134,29 +127,29 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
 ////        ObjectMap alignmentOptions = alignmentStorageManager.getOptions();
 //        ObjectMap alignmentOptions = new ObjectMap();
 //        if (Integer.parseInt(cliOptions.fileId) != 0) {
-//            alignmentOptions.put(AlignmentStorageManagerOld.Options.FILE_ID.key(), cliOptions.fileId);
+//            alignmentOptions.put(AlignmentStorageEngineOld.Options.FILE_ID.key(), cliOptions.fileId);
 //        }
 //
-//        alignmentOptions.put(AlignmentStorageManagerOld.Options.DB_NAME.key(), dataStore.getDbName());
+//        alignmentOptions.put(AlignmentStorageEngineOld.Options.DB_NAME.key(), dataStore.getDbName());
 //
 //        if (cliOptions.commonOptions.params != null) {
 //            alignmentOptions.putAll(cliOptions.commonOptions.params);
 //        }
 //
-//        alignmentOptions.put(AlignmentStorageManagerOld.Options.PLAIN.key(), false);
-//        alignmentOptions.put(AlignmentStorageManagerOld.Options.INCLUDE_COVERAGE.key(), cliOptions.calculateCoverage);
+//        alignmentOptions.put(AlignmentStorageEngineOld.Options.PLAIN.key(), false);
+//        alignmentOptions.put(AlignmentStorageEngineOld.Options.INCLUDE_COVERAGE.key(), cliOptions.calculateCoverage);
 //        if (cliOptions.meanCoverage != null && !cliOptions.meanCoverage.isEmpty()) {
-//            alignmentOptions.put(AlignmentStorageManagerOld.Options.MEAN_COVERAGE_SIZE_LIST.key(), cliOptions.meanCoverage);
+//            alignmentOptions.put(AlignmentStorageEngineOld.Options.MEAN_COVERAGE_SIZE_LIST.key(), cliOptions.meanCoverage);
 //        }
-//        alignmentOptions.put(AlignmentStorageManagerOld.Options.COPY_FILE.key(), false);
-//        alignmentOptions.put(AlignmentStorageManagerOld.Options.ENCRYPT.key(), "null");
+//        alignmentOptions.put(AlignmentStorageEngineOld.Options.COPY_FILE.key(), false);
+//        alignmentOptions.put(AlignmentStorageEngineOld.Options.ENCRYPT.key(), "null");
 //        logger.debug("Configuration options: {}", alignmentOptions.toJson());
 //
 //
 //        final boolean doExtract;
 //        final boolean doTransform;
 //        final boolean doLoad;
-//        StorageETLResult storageETLResult = null;
+//        StoragePipelineResult storageETLResult = null;
 //        Exception exception = null;
 //
 //        File file = catalogManager.getFile(inputFileId, sessionId).first();
@@ -183,7 +176,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
 //        try {
 //            storageETLResult = alignmentStorageManager.index(Collections.singletonList(inputUri), outdirUri, doExtract, doTransform, doLoad).get(0);
 //
-//        } catch (StorageETLException e) {
+//        } catch (StoragePipelineException e) {
 //            storageETLResult = e.getResults().get(0);
 //            exception = e;
 //            e.printStackTrace();
@@ -225,7 +218,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         }
     }
 
-//    private void query() throws FileFormatException, ClassNotFoundException, InstantiationException, CatalogException, IllegalAccessException, StorageManagerException, IOException, NoSuchMethodException {
+//    private void query() throws FileFormatException, ClassNotFoundException, InstantiationException, CatalogException, IllegalAccessException, StorageEngineException, IOException, NoSuchMethodException {
 //
 //
 //        AnalysisCliOptionsParser.QueryAlignmentCommandOptions cliOptions = alignmentCommandOptions.queryAlignmentCommandOptions;
@@ -249,7 +242,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
 //        }
 //
 //        /*
-//         * Getting VariantStorageManager
+//         * Getting VariantStorageEngine
 //         * We need to find out the Storage Engine Id to be used from Catalog
 //         */
 //        DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.ALIGNMENT, sessionId);

@@ -43,7 +43,7 @@ import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.local.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenotypeJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantSourceJsonMixin;

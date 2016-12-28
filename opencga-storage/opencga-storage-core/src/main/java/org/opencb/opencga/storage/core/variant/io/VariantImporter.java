@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.core.variant.io;
 
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
@@ -20,13 +20,13 @@ public abstract class VariantImporter {
         this.dbAdaptor = dbAdaptor;
     }
 
-    public void importData(URI inputUri) throws StorageManagerException, IOException {
+    public void importData(URI inputUri) throws StorageEngineException, IOException {
         VariantMetadataImporter metadataImporter = new VariantMetadataImporter();
         ExportMetadata exportMetadata = metadataImporter.importMetaData(inputUri, dbAdaptor.getStudyConfigurationManager());
 
         importData(inputUri, exportMetadata);
     }
 
-    public abstract void importData(URI input, ExportMetadata metadata) throws StorageManagerException, IOException;
+    public abstract void importData(URI input, ExportMetadata metadata) throws StorageEngineException, IOException;
 
 }

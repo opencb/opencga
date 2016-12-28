@@ -32,7 +32,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
@@ -998,12 +998,12 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         if (!excludeGenotypes) {
             format.add(VariantMerger.GT_KEY);
         }
-        format.addAll(studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key()));
+        format.addAll(studyConfiguration.getAttributes().getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key()));
         return format;
     }
 
     public boolean getExcludeGenotypes(StudyConfiguration studyConfiguration) {
-        return studyConfiguration.getAttributes().getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(),
-                VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue());
+        return studyConfiguration.getAttributes().getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(),
+                VariantStorageEngine.Options.EXCLUDE_GENOTYPES.defaultValue());
     }
 }

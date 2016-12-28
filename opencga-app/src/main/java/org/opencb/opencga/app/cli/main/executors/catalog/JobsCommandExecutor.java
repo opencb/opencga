@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.catalog.JobCommandOptions;
+import org.opencb.opencga.app.cli.main.options.JobCommandOptions;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
@@ -124,8 +124,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Searching job");
 
         Query query = new Query();
-        QueryOptions queryOptions = new QueryOptions();
-
         query.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), jobsCommandOptions.searchCommandOptions.study);
         query.putIfNotEmpty(JobDBAdaptor.QueryParams.NAME.key(), jobsCommandOptions.searchCommandOptions.name);
         query.putIfNotEmpty(JobDBAdaptor.QueryParams.TOOL_NAME.key(), jobsCommandOptions.searchCommandOptions.toolName);
@@ -135,6 +133,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(JobDBAdaptor.QueryParams.INPUT.key(), jobsCommandOptions.searchCommandOptions.inputFiles);
         query.putIfNotEmpty(JobDBAdaptor.QueryParams.OUTPUT.key(), jobsCommandOptions.searchCommandOptions.outputFiles);
 
+        QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, jobsCommandOptions.searchCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, jobsCommandOptions.searchCommandOptions.dataModelOptions.exclude);
         queryOptions.putIfNotEmpty(QueryOptions.LIMIT, jobsCommandOptions.searchCommandOptions.numericOptions.limit);
@@ -157,7 +156,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.put("deleteFiles", jobsCommandOptions.deleteCommandOptions.deleteFiles);
         return openCGAClient.getJobClient().delete(jobsCommandOptions.deleteCommandOptions.job, queryOptions);
     }
-
 
     private QueryResponse<Job> groupBy() throws CatalogException, IOException {
         logger.debug("Group by job");

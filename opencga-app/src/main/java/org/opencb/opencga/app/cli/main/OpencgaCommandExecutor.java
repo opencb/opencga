@@ -16,13 +16,13 @@
 
 package org.opencb.opencga.app.cli.main;
 
-import com.beust.jcommander.JCommander;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.io.*;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 
 import java.io.IOException;
@@ -36,7 +36,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
     protected OpenCGAClient openCGAClient;
     protected CatalogManager catalogManager;
-//    protected ClientConfiguration clientConfiguration;
+
     protected AbstractOutputWriter writer;
 
     public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
@@ -44,13 +44,13 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     }
 
     public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) {
-        super(options);
+        super(options, true);
         init(options, skipDuration);
     }
 
     private void init(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) {
-        try {
 
+        try {
             WriterConfiguration writerConfiguration = new WriterConfiguration();
             writerConfiguration.setMetadata(options.metadata);
             writerConfiguration.setHeader(!options.noHeader);
@@ -71,37 +71,38 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
             }
 
 //            loadClientConfiguration();
-            loadCatalogConfiguration();
+//            loadCatalogConfiguration();
 
-            SessionFile sessionFile = loadSessionFile();
-            logger.debug("sessionFile = " + sessionFile);
-            if (sessionFile != null) {
-                if (sessionFile.getLogout() == null) {
+//            CliSession cliSession = loadCliSessionFile();
+            logger.debug("sessionFile = " + cliSession);
+            if (cliSession != null) {
+                // 'logout' field is only null or empty while no logout is executed
+                if (StringUtils.isEmpty(cliSession.getLogout())) {
+                    // no timeout checks
                     if (skipDuration) {
-                        openCGAClient = new OpenCGAClient(sessionFile.getSessionId(), clientConfiguration);
-                        openCGAClient.setUserId(sessionFile.getUserId());
+                        openCGAClient = new OpenCGAClient(cliSession.getSessionId(), clientConfiguration);
+                        openCGAClient.setUserId(cliSession.getUserId());
                         if (options.sessionId == null) {
-                            options.sessionId = sessionFile.getSessionId();
+                            options.sessionId = cliSession.getSessionId();
                         }
                     } else {
                         int sessionDuration = clientConfiguration.getSessionDuration() * 1000;
-                        long timestamp = sessionFile.getTimestamp();
+                        long timestamp = cliSession.getTimestamp();
                         long now = System.currentTimeMillis();
                         if ((now - timestamp) >= sessionDuration) {
                             logger.warn("Session expired, too much time with not action");
-                            openCGAClient = new OpenCGAClient(sessionFile.getSessionId(), clientConfiguration);
-                            openCGAClient.setUserId(sessionFile.getUserId());
+                            openCGAClient = new OpenCGAClient(cliSession.getSessionId(), clientConfiguration);
+                            openCGAClient.setUserId(cliSession.getUserId());
                             openCGAClient.logout();
-                            logoutSessionFile();
-//                        logoutSession();
+                            logoutCliSessionFile();
                         } else {
                             logger.debug("Session ok!!");
-                            this.sessionId = sessionFile.getSessionId();
-                            openCGAClient = new OpenCGAClient(sessionFile.getSessionId(), clientConfiguration);
-                            openCGAClient.setUserId(sessionFile.getUserId());
+//                            this.sessionId = cliSession.getSessionId();
+                            openCGAClient = new OpenCGAClient(cliSession.getSessionId(), clientConfiguration);
+                            openCGAClient.setUserId(cliSession.getUserId());
 
                             if (options.sessionId == null) {
-                                options.sessionId = sessionFile.getSessionId();
+                                options.sessionId = cliSession.getSessionId();
                             }
                             // Some operations such as copy and link are run in the server side and need Catalog Manager
                             catalogManager = new CatalogManager(catalogConfiguration);
@@ -115,31 +116,11 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                 logger.debug("No Session file");
                 openCGAClient = new OpenCGAClient(clientConfiguration);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (CatalogException e) {
+        } catch (IOException | CatalogException e) {
             e.printStackTrace();
         }
     }
 
-//    /**
-//     * This method attempts to first data configuration from CLI parameter, if not present then uses
-//     * the configuration from installation directory, if not exists then loads JAR storage-configuration.yml.
-//     *
-//     * @throws IOException If any IO problem occurs
-//     */
-//    public void loadClientConfiguration() throws IOException {
-//        // We load configuration file either from app home folder or from the JAR
-//        Path path = Paths.get(this.conf).resolve("client-configuration.yml");
-//        if (path != null && Files.exists(path)) {
-//            logger.debug("Loading configuration from '{}'", path.toAbsolutePath());
-//            this.clientConfiguration = ClientConfiguration.load(new FileInputStream(path.toFile()));
-//        } else {
-//            logger.debug("Loading configuration from JAR file");
-//            this.clientConfiguration = ClientConfiguration
-//                    .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("client-configuration.yml"));
-//        }
-//    }
 
     public void createOutput(QueryResponse queryResponse) {
         if (queryResponse != null) {
@@ -147,38 +128,4 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         }
     }
 
-    @Deprecated
-    protected void checkSessionValid() throws Exception {
-        SessionFile sessionFile = loadSessionFile();
-        if (sessionFile == null || sessionFile.getLogout() != null) {
-            System.out.println("No logged, please login first");
-        } else {
-            int sessionDuration = clientConfiguration.getSessionDuration();
-            long timestamp = sessionFile.getTimestamp();
-            long now = System.currentTimeMillis();
-            if ((now - timestamp) >= sessionDuration * 1000) {
-                System.out.println("Too much time with not action");
-                logoutSession();
-                throw new Exception("Logged out");
-            }
-        }
-    }
-
-    @Deprecated
-    protected void logoutSession() throws IOException {
-        SessionFile sessionFile = loadSessionFile();
-        openCGAClient.logout();
-
-        super.logoutSessionFile();
-    }
-
-    public static String getParsedSubCommand(JCommander jCommander) {
-        String parsedCommand = jCommander.getParsedCommand();
-        if (jCommander.getCommands().containsKey(parsedCommand)) {
-            String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
-            return subCommand != null ? subCommand: "";
-        } else {
-            return "";
-        }
-    }
 }

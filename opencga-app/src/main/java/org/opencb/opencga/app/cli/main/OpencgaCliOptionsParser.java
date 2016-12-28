@@ -16,15 +16,16 @@
 
 package org.opencb.opencga.app.cli.main;
 
-import com.beust.jcommander.*;
-import com.beust.jcommander.converters.IParameterSplitter;
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.ParameterException;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
-import org.opencb.opencga.app.cli.main.options.catalog.*;
+import org.opencb.opencga.app.cli.main.options.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.*;
@@ -36,14 +37,12 @@ public class OpencgaCliOptionsParser {
 
     private final JCommander jCommander;
 
-    private final GeneralOptions generalOptions;
+    private final GeneralCliOptions.GeneralOptions generalOptions;
     private final GeneralCliOptions.CommonCommandOptions commonCommandOptions;
     private final GeneralCliOptions.DataModelOptions dataModelOptions;
     private final GeneralCliOptions.NumericOptions numericOptions;
 
-    protected final UserAndPasswordOptions userAndPasswordOptions;
-
-    // Catalog
+    // Catalog commands
     private UserCommandOptions usersCommandOptions;
     private ProjectCommandOptions projectCommandOptions;
     private StudyCommandOptions studyCommandOptions;
@@ -56,20 +55,19 @@ public class OpencgaCliOptionsParser {
     private PanelCommandOptions panelCommandOptions;
     private ToolCommandOptions toolCommandOptions;
 
-    // Analysis
+    // Analysis commands
     private AlignmentCommandOptions alignmentCommandOptions;
     private VariantCommandOptions variantCommandOptions;
-//    private RestVariantCommandOptions variantCommandOptions;
 
+    enum OutputFormat {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}
 
-//    public final CommandShareResource commandShareResource;
 
     public OpencgaCliOptionsParser() {
         this(false);
     }
 
     public OpencgaCliOptionsParser(boolean interactive) {
-        generalOptions = new GeneralOptions();
+        generalOptions = new GeneralCliOptions.GeneralOptions();
 
         jCommander = new JCommander(generalOptions);
 
@@ -77,22 +75,18 @@ public class OpencgaCliOptionsParser {
         dataModelOptions = new GeneralCliOptions.DataModelOptions();
         numericOptions = new GeneralCliOptions.NumericOptions();
 
-        userAndPasswordOptions = new UserAndPasswordOptions();
-//        commandShareResource = new CommandShareResource();
-
-        usersCommandOptions = new UserCommandOptions(this.commonCommandOptions, this.jCommander);
+        usersCommandOptions = new UserCommandOptions(this.commonCommandOptions, this.dataModelOptions, this.numericOptions, this.jCommander);
         jCommander.addCommand("users", usersCommandOptions);
         JCommander userSubCommands = jCommander.getCommands().get("users");
         userSubCommands.addCommand("create", usersCommandOptions.createCommandOptions);
         userSubCommands.addCommand("info", usersCommandOptions.infoCommandOptions);
         userSubCommands.addCommand("update", usersCommandOptions.updateCommandOptions);
-        userSubCommands.addCommand("change-password", usersCommandOptions.changePaswordCommandOptions);
+        userSubCommands.addCommand("change-password", usersCommandOptions.changePasswordCommandOptions);
         userSubCommands.addCommand("delete", usersCommandOptions.deleteCommandOptions);
         userSubCommands.addCommand("projects", usersCommandOptions.projectsCommandOptions);
         userSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);
         userSubCommands.addCommand("logout", usersCommandOptions.logoutCommandOptions);
         userSubCommands.addCommand("reset-password", usersCommandOptions.resetPasswordCommandOptions);
-        // TODO: "password" -> Allow to change
 
         projectCommandOptions = new ProjectCommandOptions(this.commonCommandOptions, this.dataModelOptions, this.numericOptions, jCommander);
         jCommander.addCommand("projects", projectCommandOptions);
@@ -159,7 +153,6 @@ public class OpencgaCliOptionsParser {
         fileSubCommands.addCommand("acl-member-info", fileCommandOptions.aclsMemberInfoCommandOptions);
         fileSubCommands.addCommand("acl-member-update", fileCommandOptions.aclsMemberUpdateCommandOptions);
 
-
         jobCommandOptions = new JobCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("jobs", jobCommandOptions);
         JCommander jobSubCommands = jCommander.getCommands().get("jobs");
@@ -174,11 +167,7 @@ public class OpencgaCliOptionsParser {
         jobSubCommands.addCommand("acl-member-delete", jobCommandOptions.aclsMemberDeleteCommandOptions);
         jobSubCommands.addCommand("acl-member-info", jobCommandOptions.aclsMemberInfoCommandOptions);
         jobSubCommands.addCommand("acl-member-update", jobCommandOptions.aclsMemberUpdateCommandOptions);
-
-       // jobSubCommands.addCommand("finished", jobCommandOptions.doneJobCommandOptions);
        // jobSubCommands.addCommand("status", jobCommandOptions.statusCommandOptions);
-       // jobSubCommands.addCommand("run", jobCommandOptions.runJobCommandOptions);
-
 
         individualCommandOptions = new IndividualCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("individuals", individualCommandOptions);
@@ -257,7 +246,6 @@ public class OpencgaCliOptionsParser {
         cohortSubCommands.addCommand("annotation-sets-update", cohortCommandOptions.annotationUpdateCommandOptions);
         cohortSubCommands.addCommand("annotation-sets-delete", cohortCommandOptions.annotationDeleteCommandOptions);
 
-
         toolCommandOptions = new ToolCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("tools", toolCommandOptions);
         JCommander toolSubCommands = jCommander.getCommands().get("tools");
@@ -278,6 +266,7 @@ public class OpencgaCliOptionsParser {
         panelSubCommands.addCommand("acl-member-info", panelCommandOptions.aclsMemberInfoCommandOptions);
         panelSubCommands.addCommand("acl-member-update", panelCommandOptions.aclsMemberUpdateCommandOptions);
 
+
         alignmentCommandOptions = new AlignmentCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("alignments", alignmentCommandOptions);
         JCommander alignmentSubCommands = jCommander.getCommands().get("alignments");
@@ -292,10 +281,6 @@ public class OpencgaCliOptionsParser {
         variantSubCommands.addCommand("index", variantCommandOptions.indexCommandOptions);
         variantSubCommands.addCommand("query", variantCommandOptions.queryCommandOptions);
 
-        if (interactive) { //Add interactive commands
-//            jCommander.addCommand(new HelpCommands());
-            jCommander.addCommand(new ExitCommands());
-        }
     }
 
 
@@ -330,165 +315,6 @@ public class OpencgaCliOptionsParser {
     }
 
 
-
-
-    public class GeneralOptions {
-        @Parameter(names = {"-h", "--help"}, help = true)
-        public boolean help;
-
-        @Parameter(names = {"-V", "--version"})
-        public boolean version;
-
-        @Parameter(names = {"-i", "--interactive"})
-        public boolean interactive;
-    }
-
-    /**
-     * This class contains all those parameters available for all 'commands'
-     */
-    public class CommandOptions {
-
-//        @Parameter(names = {"-h", "--help"},  description = "This parameter prints this help", help = true)
-//        public boolean help;
-
-        public JCommander getSubCommand() {
-            return jCommander.getCommands().get(getCommand()).getCommands().get(getSubCommand());
-        }
-
-        public String getParsedSubCommand() {
-            String parsedCommand = jCommander.getParsedCommand();
-            if (jCommander.getCommands().containsKey(parsedCommand)) {
-                String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
-                return subCommand != null ? subCommand: "";
-            } else {
-                return "";
-            }
-        }
-    }
-
-    public class UserAndPasswordOptions {
-
-        @Parameter(names = {"-u", "--user"}, description = "UserId", required = false, arity = 1)
-        public String user;
-
-        @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, required = false,  password = true)
-        public String password;
-
-        @Deprecated
-        @Parameter(names = {"-hp", "--hidden-password"}, description = "Password", arity = 1, required = false,  password = true)
-        public String hiddenPassword;
-
-        @Parameter(names = {"-sid", "--session-id"}, description = "SessionId", arity = 1, required = false, hidden = true)
-        public String sessionId;
-    }
-
-    enum OutputFormat {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}
-
-    @Deprecated
-    public static class OpencgaCommonCommandOptions extends GeneralCliOptions.CommonCommandOptions {
-
-//        @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
-//        public Map<String, String> params = new HashMap<>();
-
-        @Parameter(names = {"--metadata"}, description = "Include metadata information", required = false, arity = 1)
-        public boolean metadata = false;
-
-//        @Parameter(names = {"--output-format"}, description = "Output format. one of {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, "
-//                + "PLAIN_JSON}", required = false, arity = 1)
-//        OutputFormat outputFormat = OutputFormat.PRETTY_JSON;
-
-        QueryOptions getQueryOptions() {
-            return new QueryOptions(params, false);
-        }
-    }
-
-    @Deprecated
-    public static class OpencgaIncludeExcludeCommonCommandOptions extends OpencgaCommonCommandOptions {
-
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
-
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
-
-        @Override
-        QueryOptions getQueryOptions() {
-            QueryOptions queryOptions = super.getQueryOptions();
-            queryOptions.putIfNotNull("include", include);
-            queryOptions.putIfNotNull("exclude", exclude);
-            return queryOptions;
-        }
-
-    }
-
-    @Deprecated
-    public static class OpencgaQueryOptionsCommonCommandOptions extends OpencgaIncludeExcludeCommonCommandOptions {
-
-        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
-        public String skip;
-
-        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
-        public String limit;
-
-        @Override
-        QueryOptions getQueryOptions() {
-            QueryOptions queryOptions = super.getQueryOptions();
-            queryOptions.putIfNotNull("skip", skip);
-            queryOptions.putIfNotNull("limit", limit);
-            return queryOptions;
-        }
-    }
-
-
-    class BasicCommand {
-    }
-
-    @Parameters(commandNames = {"help"}, commandDescription = "Description")
-    class HelpCommands {
-    }
-
-    @Parameters(commandNames = {"exit"}, commandDescription = "Description")
-    class ExitCommands {
-    }
-
-
-
-    public static class NoSplitter implements IParameterSplitter {
-
-        public List<String> split(String value) {
-            return Arrays.asList(value.split(";"));
-        }
-
-    }
-
-
-    @Parameters(commandNames = {"share"}, commandDescription = "Share resource")
-    class CommandShareResource {
-        @ParametersDelegate
-        UserAndPasswordOptions up = userAndPasswordOptions;
-
-        @ParametersDelegate
-        GeneralCliOptions.CommonCommandOptions cOpt = commonCommandOptions;
-
-        @Parameter(names = {"-id"}, description = "Unique identifier", required = true, arity = 1)
-        public String id;
-
-        @Parameter(names = {"-U"}, description = "User to share", required = true, arity = 1)
-        public String user;
-
-        @Parameter(names = {"-r"}, description = "Read", required = true, arity = 1)
-        public boolean read;
-
-        @Parameter(names = {"-w"}, description = "Write", required = true, arity = 1)
-        public boolean write;
-
-        @Parameter(names = {"-x"}, description = "Execute", required = true, arity = 1)
-        public boolean execute;
-
-        @Parameter(names = {"-d"}, description = "Delete", required = true, arity = 1)
-        public boolean delete;
-    }
-
     public void printUsage() {
         String parsedCommand = getCommand();
         if (parsedCommand.isEmpty()) {
@@ -500,7 +326,6 @@ public class OpencgaCliOptionsParser {
             System.err.println("");
             System.err.println("Usage:       opencga.sh [-h|--help] [--version] <command> [options]");
             System.err.println("");
-//            System.err.println("Commands:");
             printMainUsage();
             System.err.println("");
         } else {
@@ -527,17 +352,17 @@ public class OpencgaCliOptionsParser {
     private void printMainUsage() {
         Set<String> analysisCommands = new HashSet<>(Arrays.asList("alignments", "variant"));
         System.err.println("Catalog commands:");
-        for (String s : jCommander.getCommands().keySet()) {
-            if (!analysisCommands.contains(s)) {
-                System.err.printf("%14s  %s\n", s, jCommander.getCommandDescription(s));
+        for (String command : jCommander.getCommands().keySet()) {
+            if (!analysisCommands.contains(command)) {
+                System.err.printf("%14s  %s\n", command, jCommander.getCommandDescription(command));
             }
         }
 
         System.err.println("");
         System.err.println("Analysis commands:");
-        for (String s : jCommander.getCommands().keySet()) {
-            if (analysisCommands.contains(s)) {
-                System.err.printf("%14s  %s\n", s, jCommander.getCommandDescription(s));
+        for (String command : jCommander.getCommands().keySet()) {
+            if (analysisCommands.contains(command)) {
+                System.err.printf("%14s  %s\n", command, jCommander.getCommandDescription(command));
             }
         }
     }
@@ -548,16 +373,12 @@ public class OpencgaCliOptionsParser {
         }
     }
 
-    public GeneralOptions getGeneralOptions() {
+    public GeneralCliOptions.GeneralOptions getGeneralOptions() {
         return generalOptions;
     }
 
     public GeneralCliOptions.CommonCommandOptions getCommonCommandOptions() {
         return commonCommandOptions;
-    }
-
-    public UserAndPasswordOptions getUserAndPasswordOptions() {
-        return userAndPasswordOptions;
     }
 
     public UserCommandOptions getUsersCommandOptions() {

@@ -42,6 +42,7 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -68,7 +69,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     }
 
     @Override
-    public long getId(String userId, String projectStr) throws CatalogDBException {
+    public long getId(String userId, String projectStr) throws CatalogException {
         if (StringUtils.isNumeric(projectStr)) {
             return Long.parseLong(projectStr);
         }
@@ -86,7 +87,61 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             userOwner = userId;
             projectAlias = projectStr;
         }
-        return projectDBAdaptor.getId(userOwner, projectAlias);
+
+        if (!userOwner.equals("anonymous")) {
+            return projectDBAdaptor.getId(userOwner, projectAlias);
+        } else {
+            // Anonymous user
+            Query query = new Query(ProjectDBAdaptor.QueryParams.ALIAS.key(), projectAlias);
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key());
+            QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options);
+
+            if (projectQueryResult.getNumResults() != 1) {
+                if (projectQueryResult.getNumResults() == 0) {
+                    throw new CatalogException("No projects found with alias " + projectAlias);
+                } else {
+                    throw new CatalogException("More than one project found with alias " + projectAlias);
+                }
+            }
+
+            return projectQueryResult.first().getId();
+        }
+    }
+
+    @Override
+    public List<Long> getIds(String userId, String projectStr) throws CatalogException {
+        if (StringUtils.isNumeric(projectStr)) {
+            return Arrays.asList(Long.parseLong(projectStr));
+        }
+
+        String userOwner;
+        String projectAlias;
+
+        String[] split = projectStr.split("@");
+        if (split.length == 2) {
+            // user@project
+            userOwner = split[0];
+            projectAlias = split[1];
+        } else {
+            // project
+            userOwner = userId;
+            projectAlias = projectStr;
+        }
+
+        if (!userOwner.equals("anonymous")) {
+            return Arrays.asList(projectDBAdaptor.getId(userOwner, projectAlias));
+        } else {
+            // Anonymous user
+            Query query = new Query(ProjectDBAdaptor.QueryParams.ALIAS.key(), projectAlias);
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key());
+            QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options);
+
+            if (projectQueryResult.getNumResults() == 0) {
+                throw new CatalogException("No projects found with alias " + projectAlias);
+            }
+
+            return projectQueryResult.getResult().stream().map(project -> project.getId()).collect(Collectors.toList());
+        }
     }
 
     @Deprecated
@@ -166,10 +221,8 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     }
 
     @Override
-    public QueryResult<Project> get(Long projectId, QueryOptions options, String sessionId)
-            throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+    public QueryResult<Project> get(Long projectId, QueryOptions options, String sessionId) throws CatalogException {
+        String userId = catalogManager.getUserManager().getId(sessionId);
 
         authorizationManager.checkProjectPermission(projectId, userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
         QueryResult<Project> projectResult = projectDBAdaptor.get(projectId, options);

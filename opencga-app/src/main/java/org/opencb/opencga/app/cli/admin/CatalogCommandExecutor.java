@@ -24,7 +24,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.monitor.MonitorService;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -79,7 +79,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
     }
 
-    private void demo() throws CatalogException, StorageManagerException, IOException, URISyntaxException {
+    private void demo() throws CatalogException, StorageEngineException, IOException, URISyntaxException {
         if (catalogCommandOptions.demoCatalogCommandOptions.database != null) {
             catalogConfiguration.getDatabase().setDatabase(catalogCommandOptions.demoCatalogCommandOptions.database);
         } else {

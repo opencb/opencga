@@ -31,8 +31,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
-import org.opencb.opencga.storage.core.local.AlignmentStorageManager;
-import org.opencb.opencga.storage.core.local.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
+import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;

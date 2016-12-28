@@ -20,7 +20,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 
@@ -42,9 +41,25 @@ public interface IProjectManager extends ResourceManager<Long, Project> {
      * @param userId User id of the user asking for the project id.
      * @param projectStr Project id in string format. Could be one of [id | user@project | project].
      * @return the numeric project id.
-     * @throws CatalogDBException CatalogDBException.
+     * @throws CatalogException CatalogException.
      */
-    long getId(String userId, String projectStr) throws CatalogDBException;
+    long getId(String userId, String projectStr) throws CatalogException;
+
+    /**
+     * Obtains the list of projectIds corresponding to the comma separated list of project strings given in projectStr.
+     *
+     * @param userId User demanding the action.
+     * @param projectList List of project ids.
+     * @return A list of project ids.
+     * @throws CatalogException CatalogException.
+     */
+    default List<Long> getIds(String userId, List<String> projectList) throws CatalogException {
+        List<Long> projectIds = new ArrayList<>();
+        for (String projectStr : projectList) {
+            projectIds.add(getId(userId, projectStr));
+        }
+        return projectIds;
+    }
 
     /**
      * Obtains the list of projectIds corresponding to the comma separated list of project strings given in projectStr.
@@ -54,13 +69,7 @@ public interface IProjectManager extends ResourceManager<Long, Project> {
      * @return A list of project ids.
      * @throws CatalogException CatalogException.
      */
-    default List<Long> getIds(String userId, String projectStr) throws CatalogException {
-        List<Long> projectIds = new ArrayList<>();
-        for (String projectId : projectStr.split(",")) {
-            projectIds.add(getId(userId, projectId));
-        }
-        return projectIds;
-    }
+    List<Long> getIds(String userId, String projectStr) throws CatalogException;
 
     @Deprecated
     long getId(String projectId) throws CatalogException;

@@ -44,10 +44,10 @@ import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
-import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.local.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.local.variant.operations.StorageOperation;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
@@ -66,7 +66,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 
-import static org.opencb.opencga.storage.core.variant.VariantStorageManager.Options.*;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 
 
 @Path("/{version}/files")
@@ -767,8 +767,8 @@ public class FileWSServer extends OpenCGAWSServer {
 //                outDirId = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
 //            }
 //            // TODO: Change it to query
-//            queryOptions.add(VariantStorageManager.Options.CALCULATE_STATS.key(), calculateStats);
-//            queryOptions.add(VariantStorageManager.Options.ANNOTATE.key(), annotate);
+//            queryOptions.add(VariantStorageEngine.Options.CALCULATE_STATS.key(), calculateStats);
+//            queryOptions.add(VariantStorageEngine.Options.ANNOTATE.key(), annotate);
 //            QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outDirId, sessionId, new QueryOptions(queryOptions));
 //            return createOkResponse(queryResult);
 //        } catch (Exception e) {
@@ -784,7 +784,8 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "limit", value = "[TO BE IMPLEMENTED] Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
     })
-    public Response treeView(@ApiParam(value = "Folder id or path") @PathParam("folder") String folderId,
+    public Response treeView(@ApiParam(value = "Folder id or path. Paths must be separated by : instead of /") @DefaultValue(":")
+                                 @PathParam ("folder") String folderId,
                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                 @QueryParam("study") String studyStr,
                              @ApiParam(value = "Maximum depth to get files from") @DefaultValue("5") @QueryParam("maxDepth") int maxDepth) {
@@ -886,9 +887,9 @@ public class FileWSServer extends OpenCGAWSServer {
 
                     AlignmentDBAdaptor dbAdaptor;
                     try {
-                        AlignmentStorageManager alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
+                        AlignmentStorageEngine alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
                         dbAdaptor = alignmentStorageManager.getDBAdaptor(dbName);
-                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
+                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageEngineException e) {
                         return createErrorResponse(e);
                     }
 //                    QueryResult alignmentsByRegion;
@@ -935,7 +936,7 @@ public class FileWSServer extends OpenCGAWSServer {
                     try {
                         dbAdaptor = storageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
 //                        dbAdaptor = new CatalogVariantDBAdaptor(catalogManager, dbAdaptor);
-                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
+                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageEngineException e) {
                         return createErrorResponse(e);
                     }
 //                    QueryResult queryResult;

@@ -23,9 +23,9 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -69,7 +69,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         studyConfiguration = newStudyConfiguration();
         clearDB(DB_NAME);
         runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration,
-                new ObjectMap(VariantStorageManager.Options.ANNOTATE.key(), false));
+                new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false));
         dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
     }
 
@@ -81,8 +81,8 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         checkCohorts(dbAdaptor, studyConfiguration);
 
         Integer fileId = studyConfiguration.getFileIds().get(Paths.get(inputUri).getFileName().toString());
-        QueryOptions options = new QueryOptions(VariantStorageManager.Options.FILE_ID.key(), fileId);
-        options.put(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 100);
+        QueryOptions options = new QueryOptions(VariantStorageEngine.Options.FILE_ID.key(), fileId);
+        options.put(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100);
         Iterator<String> iterator = studyConfiguration.getSampleIds().keySet().iterator();
 
         /** Create cohorts **/
@@ -117,8 +117,8 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
         int studyId = studyConfiguration.getStudyId();
         String studyName = studyConfiguration.getStudyName();
         Integer fileId = studyConfiguration.getFileIds().get(Paths.get(inputUri).getFileName().toString());
-        QueryOptions options = new QueryOptions(VariantStorageManager.Options.FILE_ID.key(), fileId);
-        options.put(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 100);
+        QueryOptions options = new QueryOptions(VariantStorageEngine.Options.FILE_ID.key(), fileId);
+        options.put(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100);
         Iterator<String> iterator = studyConfiguration.getSampleIds().keySet().iterator();
         StudyConfiguration studyConfiguration;
 
@@ -164,7 +164,7 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageBaseTes
 
         //Try to recalculate stats for cohort2. Will fail
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyName, null).first();
-        thrown.expect(StorageManagerException.class);
+        thrown.expect(StorageEngineException.class);
         stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort2.stats"), cohorts, cohortIds, studyConfiguration, options);
         vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
 

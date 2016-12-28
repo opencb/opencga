@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AnnotationCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.catalog.IndividualCommandOptions;
+import org.opencb.opencga.app.cli.main.options.IndividualCommandOptions;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Individual;
@@ -179,8 +179,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Searching individuals");
 
         Query query = new Query();
-        QueryOptions queryOptions = new QueryOptions();
-
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), individualsCommandOptions.searchCommandOptions.study);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.NAME.key(), individualsCommandOptions.searchCommandOptions.name);
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.searchCommandOptions.fatherId);
@@ -217,6 +215,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
                 individualsCommandOptions.searchCommandOptions.annotationSetName);
 
+        QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, individualsCommandOptions.searchCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, individualsCommandOptions.searchCommandOptions.dataModelOptions.exclude);
         queryOptions.putIfNotEmpty(QueryOptions.SKIP, individualsCommandOptions.searchCommandOptions.numericOptions.skip);
@@ -279,7 +278,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Group by individuals");
 
         ObjectMap params = new ObjectMap();
-
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ID.key(), individualsCommandOptions.groupByCommandOptions.id);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.NAME.key(), individualsCommandOptions.groupByCommandOptions.name);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.groupByCommandOptions.fatherId);

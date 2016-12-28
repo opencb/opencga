@@ -8,8 +8,8 @@ public class DefaultAlignmentDBAdaptorTest {
 //    @Test
 //    public void iterator() throws Exception {
 //        String inputPath = getClass().getResource("/HG00096.chrom20.small.bam").getPath();
-//        AlignmentStorageManager defaultAlignmentStorageManager =
-//                new AlignmentStorageManager(null, null, new StorageConfiguration(), Paths.get("/tmp"));
+//        AlignmentStorageEngine defaultAlignmentStorageManager =
+//                new AlignmentStorageEngine(null, null, new StorageConfiguration(), Paths.get("/tmp"));
 //        AlignmentIterator iterator = defaultAlignmentStorageManager.getDBAdaptor().iterator(inputPath);
 //        while (iterator.hasNext()) {
 //            System.out.println(iterator.next().toString());
