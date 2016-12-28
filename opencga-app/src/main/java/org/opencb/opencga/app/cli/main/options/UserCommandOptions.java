@@ -82,7 +82,7 @@ public class UserCommandOptions {
     @Parameters(commandNames = {"create"}, commandDescription = "Create a new user")
     public class CreateCommandOptions extends BaseUserCommand {
 
-        @Parameter(names = {"-n", "name"}, description = "User name", required = true, arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "User name", required = true, arity = 1)
         public String name;
 
         @Parameter(names = {"-p", "--password"}, description = "User password", required = true,  password = true, arity = 1)
