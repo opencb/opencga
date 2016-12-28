@@ -426,7 +426,8 @@ public class CatalogManager implements AutoCloseable {
         return projectManager.create(name, alias, description, organization, null, null, null, null, options, sessionId);
     }
 
-    public List<Long> getProjectIds(String projectIds, String sessionId) throws CatalogException {
+    @Deprecated
+    public List<Long> getProjectIds(List<String> projectIds, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         return projectManager.getIds(userId, projectIds);
     }

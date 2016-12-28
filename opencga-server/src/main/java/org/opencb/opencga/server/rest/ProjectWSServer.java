@@ -32,6 +32,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -75,7 +76,8 @@ public class ProjectWSServer extends OpenCGAWSServer {
     })
     public Response info(@ApiParam(value = "Comma separated list of project ID or alias", required = true) @PathParam("projects") String projectsStr) {
         try {
-            List<Long> projectIds = catalogManager.getProjectIds(projectsStr, sessionId);
+            List<String> projectList = Arrays.asList(projectsStr.split(","));
+            List<Long> projectIds = catalogManager.getProjectIds(projectList, sessionId);
             List<QueryResult<Project>> queryResults = new ArrayList<>(projectIds.size());
             for (Long projectId : projectIds) {
                 queryResults.add(catalogManager.getProject(projectId, queryOptions, sessionId));
@@ -97,7 +99,8 @@ public class ProjectWSServer extends OpenCGAWSServer {
     })
     public Response getAllStudies(@ApiParam(value = "Comma separated list of project ID or alias", required = true) @PathParam("projects") String projectsStr) {
         try {
-            List<Long> projectIds = catalogManager.getProjectIds(projectsStr, sessionId);
+            List<String> projectList = Arrays.asList(projectsStr.split(","));
+            List<Long> projectIds = catalogManager.getProjectIds(projectList, sessionId);
             List<QueryResult<Study>> results = new ArrayList<>(projectIds.size());
             String[] splittedProjectNames = projectsStr.split(",");
             for (int i = 0; i < projectIds.size(); i++) {
