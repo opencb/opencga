@@ -185,13 +185,11 @@ public abstract class CommandExecutor {
         }
 
         // Configure the logger output, this can be the console or a file if provided by CLI or by configuration file
-        PatternLayout patternLayout = new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n");
+        ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
         if (StringUtils.isEmpty(this.catalogConfiguration.getLogFile())) {
-            ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
-            stderr.setLayout(patternLayout);
             stderr.setThreshold(Level.toLevel(catalogConfiguration.getLogLevel(), Level.INFO));
         } else {
-            RollingFileAppender rollingFileAppender = new RollingFileAppender(patternLayout, this.catalogConfiguration.getLogFile(), true);
+            RollingFileAppender rollingFileAppender = new RollingFileAppender(stderr.getLayout(), this.catalogConfiguration.getLogFile(), true);
             rootLogger.addAppender(rollingFileAppender);
             rollingFileAppender.setThreshold(Level.toLevel(catalogConfiguration.getLogLevel(), Level.INFO));
         }
