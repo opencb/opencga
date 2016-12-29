@@ -217,10 +217,12 @@ public class StudyConfiguration {
         this.indexedFiles = indexedFiles;
     }
 
+    @Deprecated
     public Map<Integer, String> getHeaders() {
         return headers;
     }
 
+    @Deprecated
     public void setHeaders(Map<Integer, String> headers) {
         this.headers = headers;
     }

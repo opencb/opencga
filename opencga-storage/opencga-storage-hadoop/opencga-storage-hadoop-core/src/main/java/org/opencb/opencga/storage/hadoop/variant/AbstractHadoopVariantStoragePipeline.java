@@ -428,8 +428,8 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                 if (!studyConfiguration.getFileIds().inverse().containsKey(readFileId)) {
                     checkNewFile(studyConfiguration, readFileId, readSource.getFileName());
                     studyConfiguration.getFileIds().put(readSource.getFileName(), readFileId);
-                    studyConfiguration.getHeaders().put(readFileId, readSource.getMetadata()
-                            .get(VariantFileUtils.VARIANT_FILE_HEADER).toString());
+//                    studyConfiguration.getHeaders().put(readFileId, readSource.getMetadata()
+//                            .get(VariantFileUtils.VARIANT_FILE_HEADER).toString());
                     checkAndUpdateStudyConfiguration(studyConfiguration, readFileId, readSource, options);
                     missingFilesDetected = true;
                 }
