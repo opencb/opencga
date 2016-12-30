@@ -23,9 +23,9 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.monitor.daemons.ExecutionDaemon;
 import org.opencb.opencga.catalog.monitor.daemons.FileDaemon;
 import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
@@ -84,9 +84,9 @@ public class MonitorService {
             fileDaemon = new FileDaemon(catalogConfiguration.getMonitor().getFileDaemonInterval(),
                     catalogConfiguration.getMonitor().getDaysToRemove(), sessionId, catalogManager);
 
-            executionThread = new Thread(executionDaemon);
-            indexThread = new Thread(indexDaemon);
-            fileThread = new Thread(fileDaemon);
+            executionThread = new Thread(executionDaemon, "execution-thread");
+            indexThread = new Thread(indexDaemon, "index-thread");
+            fileThread = new Thread(fileDaemon, "file-thread");
 
             this.port = catalogConfiguration.getMonitor().getPort();
         } catch (CatalogException e) {
