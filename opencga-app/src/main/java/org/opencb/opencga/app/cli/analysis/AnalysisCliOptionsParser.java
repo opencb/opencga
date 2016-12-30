@@ -979,7 +979,7 @@ public class AnalysisCliOptionsParser {
         String parsedCommand = getCommand();
         if (parsedCommand.isEmpty()) {
             System.err.println("");
-            System.err.println("Program:     OpenCGA (OpenCB)");
+            System.err.println("Program:     OpenCGA Analysis (OpenCB)");
             System.err.println("Version:     " + GitRepositoryState.get().getBuildVersion());
             System.err.println("Git commit:  " + GitRepositoryState.get().getCommitId());
             System.err.println("Description: Big Data platform for processing and analysing NGS data");
