@@ -77,22 +77,33 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         String userOwner;
         String projectAlias;
 
-        String[] split = projectStr.split("@");
-        if (split.length == 2) {
-            // user@project
-            userOwner = split[0];
-            projectAlias = split[1];
-        } else {
-            // project
+        if (StringUtils.isBlank(projectStr)) {
             userOwner = userId;
-            projectAlias = projectStr;
+            projectAlias = null;
+        } else {
+            String[] split = projectStr.split("@");
+            if (split.length == 2) {
+                // user@project
+                userOwner = split[0];
+                projectAlias = split[1];
+            } else {
+                // project
+                userOwner = userId;
+                projectAlias = projectStr;
+            }
         }
 
-        if (!userOwner.equals("anonymous")) {
+        if (!userOwner.equals("anonymous") && StringUtils.isNotBlank(projectAlias)) {
             return projectDBAdaptor.getId(userOwner, projectAlias);
         } else {
             // Anonymous user
-            Query query = new Query(ProjectDBAdaptor.QueryParams.ALIAS.key(), projectAlias);
+            Query query = new Query();
+            if (StringUtils.isNotBlank(projectAlias)) {
+                query.put(ProjectDBAdaptor.QueryParams.ALIAS.key(), projectAlias);
+            }
+            if (!userOwner.equals("anonymous")) {
+                query.put(ProjectDBAdaptor.QueryParams.USER_ID.key(), userOwner);
+            }
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key());
             QueryResult<Project> projectQueryResult = projectDBAdaptor.get(query, options);
 
