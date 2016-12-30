@@ -38,6 +38,7 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort, CohortAc
         NAME("name", TEXT, ""),
         TYPE("type", TEXT, ""),
         CREATION_DATE("creationDate", TEXT, ""),
+        STATUS("status", TEXT_ARRAY, ""),
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
@@ -63,7 +64,8 @@ public interface CohortDBAdaptor extends AnnotationSetDBAdaptor<Cohort, CohortAc
         NSTATS("nstats", DECIMAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         BSTATS("bstats", BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
 
-        STUDY_ID("studyId", DECIMAL, "");
+        STUDY_ID("studyId", DECIMAL, ""),
+        STUDY("study", INTEGER_ARRAY, ""); // Alias to studyId in the database. Only for the webservices.
 
         private static Map<String, QueryParams> map;
         static {
