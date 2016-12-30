@@ -96,6 +96,17 @@ public interface ICohortManager extends ResourceManager<Long, Cohort>, IAnnotati
      */
     AbstractManager.MyResourceIds getIds(String cohortStr, @Nullable String studyStr, String sessionId) throws CatalogException;
 
+    /**
+     * Multi-study search of cohorts in catalog.
+     *
+     * @param studyStr Study string that can point to several studies of the same project.
+     * @param query    Query object.
+     * @param options  QueryOptions object.
+     * @param sessionId Session id.
+     * @return The list of cohorts matching the query.
+     * @throws CatalogException catalogException.
+     */
+    QueryResult<Cohort> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
     /**
      * Delete entries from Catalog.

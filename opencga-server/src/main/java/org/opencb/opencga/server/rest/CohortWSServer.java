@@ -150,6 +150,36 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
+    @GET
+    @Path("/search")
+    @ApiOperation(value = "Search cohorts", position = 2, response = Cohort.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
+                    example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
+                    example = "id,status", dataType = "string", paramType = "query"),
+    })
+    public Response searchCohorts(@ApiParam(value = "Study [[user@]project:]study where study and project can be either "
+            + "the id or alias") @QueryParam("study") String studyStr,
+                                  @ApiParam(value = "Name of the cohort") @QueryParam("name") String name,
+                                  @ApiParam(value = "Cohort type") @QueryParam("type") Study.Type type,
+                                  @ApiParam(value = "Status") @QueryParam("status") String status,
+                                  @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr) {
+//                                  @ApiParam(value = "Family") @QueryParam("family") String family) {
+        try {
+            if (StringUtils.isNotEmpty(samplesStr)) {
+                // First look for the sample ids.
+                AbstractManager.MyResourceIds samples =
+                        catalogManager.getSampleManager().getIds(samplesStr, studyStr, sessionId);
+                query.remove("samples");
+                query.append(CohortDBAdaptor.QueryParams.SAMPLES.key(), samples.getResourceIds());
+            }
+            return createOkResponse(catalogManager.getCohortManager().search(studyStr, query, queryOptions, sessionId));
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+    }
+
 
     @GET
     @Path("/{cohortId}/samples")

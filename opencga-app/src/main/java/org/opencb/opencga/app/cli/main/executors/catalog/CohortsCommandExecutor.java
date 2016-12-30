@@ -76,6 +76,9 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             case "stats":
                 queryResponse = stats();
                 break;
+            case "search":
+                queryResponse = search();
+                break;
             case "group-by":
                 queryResponse = groupBy();
                 break;
@@ -128,6 +131,29 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         }
 
         createOutput(queryResponse);
+    }
+
+    private QueryResponse search() throws IOException {
+        CohortCommandOptions.SearchCommandOptions commandOptions = cohortsCommandOptions.searchCommandOptions;
+
+        logger.debug("Searching cohorts");
+
+        Query query = new Query();
+        query.putIfNotEmpty(CohortDBAdaptor.QueryParams.STUDY.key(), commandOptions.study);
+        query.putIfNotEmpty(CohortDBAdaptor.QueryParams.NAME.key(), commandOptions.name);
+        query.putIfNotNull(CohortDBAdaptor.QueryParams.TYPE.key(), commandOptions.type);
+        query.putIfNotNull(CohortDBAdaptor.QueryParams.STATUS.key(), commandOptions.status);
+        query.putIfNotEmpty(CohortDBAdaptor.QueryParams.SAMPLES.key(), commandOptions.samples);
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, commandOptions.dataModelOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, commandOptions.dataModelOptions.exclude);
+        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, commandOptions.numericOptions.limit);
+        queryOptions.putIfNotEmpty(QueryOptions.SKIP, commandOptions.numericOptions.skip);
+        queryOptions.put("count", commandOptions.numericOptions.count);
+
+        return openCGAClient.getCohortClient().search(query,queryOptions);
+
     }
 
 

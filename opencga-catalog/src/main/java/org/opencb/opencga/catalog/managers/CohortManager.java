@@ -239,6 +239,35 @@ public class CohortManager extends AbstractManager implements ICohortManager {
     }
 
     @Override
+    public QueryResult<Cohort> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
+        String userId = userManager.getId(sessionId);
+        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
+
+        // Check any permission in studies
+        for (Long studyId : studyIds) {
+            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
+        }
+
+        QueryResult<Cohort> queryResult = null;
+        for (Long studyId : studyIds) {
+            query.append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+            QueryResult<Cohort> queryResultAux = cohortDBAdaptor.get(query, options);
+            authorizationManager.filterCohorts(userId, studyId, queryResultAux.getResult());
+
+            if (queryResult == null) {
+                queryResult = queryResultAux;
+            } else {
+                queryResult.getResult().addAll(queryResultAux.getResult());
+                queryResult.setNumTotalResults(queryResult.getNumTotalResults() + queryResultAux.getNumTotalResults());
+                queryResult.setDbTime(queryResult.getDbTime() + queryResultAux.getDbTime());
+            }
+        }
+        queryResult.setNumResults(queryResult.getResult().size());
+
+        return queryResult;
+    }
+
+    @Override
     @Deprecated
     public QueryResult<Cohort> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
         return null;

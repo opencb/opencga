@@ -22,7 +22,10 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
+import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
+
+import java.util.List;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 
@@ -34,6 +37,7 @@ public class CohortCommandOptions {
 
     public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
+    public SearchCommandOptions searchCommandOptions;
     public SamplesCommandOptions samplesCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
@@ -71,6 +75,7 @@ public class CohortCommandOptions {
 
         this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
+        this.searchCommandOptions = new SearchCommandOptions();
         this.samplesCommandOptions = new SamplesCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
@@ -128,6 +133,32 @@ public class CohortCommandOptions {
         @Parameter(names = {"--variable"}, description = "Categorical variable name to use to create cohorts, must go together the "
                 + "parameter variable-set-id", required = false, arity = 1)
         public String variable;
+    }
+
+    @Parameters(commandNames = {"search"}, commandDescription = "Search cohorts")
+    public class SearchCommandOptions extends StudyOption {
+
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
+
+        @ParametersDelegate
+        public NumericOptions numericOptions = commonNumericOptions;
+
+        @Parameter(names = {"--name"}, description = "Comma separated list of file names", required = false, arity = 1)
+        public String name;
+
+        @Parameter(names = {"--type"}, description = "Cohort type.", arity = 1)
+        public String type;
+
+        @Parameter(names = {"--status"}, description = "Status.", arity = 1)
+        public String status;
+
+        @Parameter(names = {"--samples"}, description = "Comma separated list of sample ids", arity = 1)
+        public String samples;
+
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get cohort information")
