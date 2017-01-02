@@ -86,7 +86,10 @@ public class IndexDaemon extends MonitorParentDaemon {
                 .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key())
                 .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
 
-        int numRunningJobs = 0;
+        // Sort jobs by creation date. Limit to 1 result
+        QueryOptions queryOptionsLimit1 = new QueryOptions(queryOptions).append(QueryOptions.LIMIT, 1);
+
+        int maxConcurrentIndexJobs = 1; // TODO: Read from configuration?
 
         while (!exit) {
             try {
@@ -103,7 +106,6 @@ public class IndexDaemon extends MonitorParentDaemon {
              */
             try {
                 QueryResult<Job> runningJobs = jobManager.get(runningJobsQuery, queryOptions, sessionId);
-                numRunningJobs = runningJobs.getNumResults();
                 logger.debug("Checking running jobs. {} running jobs found", runningJobs.getNumResults());
                 for (Job job : runningJobs.getResult()) {
                     checkRunningJob(job);
@@ -133,10 +135,9 @@ public class IndexDaemon extends MonitorParentDaemon {
             PREPARED JOBS
              */
             try {
-                queryOptions.put(QueryOptions.LIMIT, 1);
-                QueryResult<Job> preparedJobs = jobManager.get(preparedJobsQuery, queryOptions, sessionId);
+                QueryResult<Job> preparedJobs = jobManager.get(preparedJobsQuery, queryOptionsLimit1, sessionId);
                 if (preparedJobs != null && preparedJobs.getNumResults() > 0) {
-                    if (numRunningJobs < 1) {
+                    if (getRunningOrQueuedJobs() < maxConcurrentIndexJobs) {
                         queuePreparedIndex(preparedJobs.first());
                     } else {
                         logger.debug("Too many jobs indexing now, waiting for indexing new jobs");
@@ -377,6 +378,13 @@ public class IndexDaemon extends MonitorParentDaemon {
 
     public static String getJobTemporaryFolderName(long jobId) {
         return "J_" + jobId;
+    }
+
+    private long getRunningOrQueuedJobs() throws CatalogException {
+        Query runningJobsQuery = new Query()
+                .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Arrays.asList(Job.JobStatus.RUNNING, Job.JobStatus.QUEUED))
+                .append(JobDBAdaptor.QueryParams.TYPE.key(), Job.Type.INDEX);
+        return catalogManager.getJobManager().get(runningJobsQuery, QueryOptions.empty(), sessionId).getNumTotalResults();
     }
 
     private void closeSessionId(Job job) {

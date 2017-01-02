@@ -136,29 +136,28 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                         new ArrayList<>(cohortIds.keySet()), DB_NAME, options);
 
             }
-
-            for (int i = 0; i < 30  ; i++) {
-                allVariants = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.SORT, true));
-                Long annotated = dbAdaptor.count(new Query(ANNOTATION_EXISTS.key(), true)).first();
-                Long all = dbAdaptor.count(new Query()).first();
-
-                System.out.println("count annotated = " + annotated);
-                System.out.println("count           = " + all);
-                System.out.println("get             = " + allVariants.getNumResults());
-
-                List<Variant> nonAnnotatedVariants = allVariants.getResult()
-                        .stream()
-                        .filter(variant -> variant.getAnnotation() == null)
-                        .collect(Collectors.toList());
-                if (!nonAnnotatedVariants.isEmpty()) {
-                    System.out.println(nonAnnotatedVariants.size() + " variants not annotated:");
-                    System.out.println("Variants not annotated: " + nonAnnotatedVariants);
-                }
-                if (Objects.equals(annotated, all)) {
-                    break;
-                }
-            }
             if (params.getBoolean(VariantStorageEngine.Options.ANNOTATE.key())) {
+                for (int i = 0; i < 30  ; i++) {
+                    allVariants = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.SORT, true));
+                    Long annotated = dbAdaptor.count(new Query(ANNOTATION_EXISTS.key(), true)).first();
+                    Long all = dbAdaptor.count(new Query()).first();
+
+                    System.out.println("count annotated = " + annotated);
+                    System.out.println("count           = " + all);
+                    System.out.println("get             = " + allVariants.getNumResults());
+
+                    List<Variant> nonAnnotatedVariants = allVariants.getResult()
+                            .stream()
+                            .filter(variant -> variant.getAnnotation() == null)
+                            .collect(Collectors.toList());
+                    if (!nonAnnotatedVariants.isEmpty()) {
+                        System.out.println(nonAnnotatedVariants.size() + " variants not annotated:");
+                        System.out.println("Variants not annotated: " + nonAnnotatedVariants);
+                    }
+                    if (Objects.equals(annotated, all)) {
+                        break;
+                    }
+                }
                 assertEquals(dbAdaptor.count(new Query(ANNOTATION_EXISTS.key(), true)).first(), dbAdaptor.count(new Query()).first());
             }
         }
@@ -950,15 +949,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         queryResult = dbAdaptor.get(query, options);
         assertEquals(2, queryResult.getNumResults());
 
-        query = new Query(REGION.key(), "1:14000000-160000000");
-        queryResult = dbAdaptor.get(query, options);
-        assertThat(queryResult, everyResult(allVariants, overlaps(new Region("1:14000000-160000000"))));
-
         query = new Query(CHROMOSOME.key(), "1");
-        queryResult = dbAdaptor.get(query, options);
-        assertThat(queryResult, everyResult(allVariants, overlaps(new Region("1"))));
-
-        query = new Query(REGION.key(), "1");
         queryResult = dbAdaptor.get(query, options);
         assertThat(queryResult, everyResult(allVariants, overlaps(new Region("1"))));
 
@@ -973,6 +964,32 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             assertTrue(lastStart <= variant.getStart());
             lastStart = variant.getStart();
         }
+
+        // Basic queries
+        checkRegion(new Region("1:1000000-2000000"));
+        checkRegion(new Region("1:10000000-20000000"));
+        checkRegion(new Region("1:14000000-160000000"));
+        checkRegion(new Region("1"));
+        checkRegion(new Region("X"));
+        checkRegion(new Region("30"));
+        checkRegion(new Region("3:1-200000000"));
+        checkRegion(new Region("X:1-200000000"));
+
+        // Exactly in the limits
+        checkRegion(new Region("20:238441-7980390"));
+
+        // Just inside the limits
+        checkRegion(new Region("20:238440-7980391"));
+
+        // Just outside the limits
+        checkRegion(new Region("20:238441-7980389"));
+        checkRegion(new Region("20:238442-7980390"));
+        checkRegion(new Region("20:238442-7980389"));
+    }
+
+    public void checkRegion(Region region) {
+        queryResult = dbAdaptor.get(new Query(REGION.key(), region), null);
+        assertThat(queryResult, everyResult(allVariants, overlaps(region)));
     }
 
     @Test

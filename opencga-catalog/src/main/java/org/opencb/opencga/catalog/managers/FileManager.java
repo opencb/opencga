@@ -2420,16 +2420,16 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
 
         // Define the output directory where the indexes will be put
-        String outDirPath = ParamUtils.defaultString(params.get("outdir"), Long.toString(studyId) + ":/");
+        String outDirPath = ParamUtils.defaultString(params.get("outdir"), "/");
         if (outDirPath != null && !StringUtils.isNumeric(outDirPath) && outDirPath.contains("/") && !outDirPath.endsWith("/")) {
             outDirPath = outDirPath + "/";
         }
 
-        long outDirId = 0;
+        long outDirId;
         try {
             outDirId = getId(outDirPath, Long.toString(studyId), sessionId).getResourceId();
         } catch (CatalogException e) {
-            logger.warn("{} does not exist. Trying to create the output directory.");
+            logger.warn("'{}' does not exist. Trying to create the output directory.", outDirPath);
             QueryResult<File> folder = createFolder(studyId, outDirPath, new File.FileStatus(), true, "", new QueryOptions(), sessionId);
             outDirId = folder.first().getId();
         }

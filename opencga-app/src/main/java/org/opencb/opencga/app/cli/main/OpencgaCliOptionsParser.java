@@ -229,6 +229,7 @@ public class OpencgaCliOptionsParser {
         JCommander cohortSubCommands = jCommander.getCommands().get("cohorts");
         cohortSubCommands.addCommand("create", cohortCommandOptions.createCommandOptions);
         cohortSubCommands.addCommand("info", cohortCommandOptions.infoCommandOptions);
+        cohortSubCommands.addCommand("search", cohortCommandOptions.searchCommandOptions);
         cohortSubCommands.addCommand("samples", cohortCommandOptions.samplesCommandOptions);
         cohortSubCommands.addCommand("update", cohortCommandOptions.updateCommandOptions);
         cohortSubCommands.addCommand("delete", cohortCommandOptions.deleteCommandOptions);

@@ -19,15 +19,14 @@ package org.opencb.opencga.storage.core.manager.variant;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
@@ -165,21 +164,21 @@ public class CatalogStudyConfigurationFactory {
             studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(sampleIds));
 
 
-            if (studyConfiguration.getIndexedFiles().contains(fileId) && file.getAttributes().containsKey("variantSource")) {
-                //attributes.variantSource.metadata.variantFileHeader
-                Object object = file.getAttributes().get("variantSource");
-                if (object instanceof Map) {
-                    Map variantSource = ((Map) object);
-                    object = variantSource.get("metadata");
-                    if (object instanceof Map) {
-                        Map metadata = (Map) object;
-                        if (metadata.containsKey(VariantFileUtils.VARIANT_FILE_HEADER)) {
-                            String variantFileHeader = metadata.get(VariantFileUtils.VARIANT_FILE_HEADER).toString();
-                            studyConfiguration.getHeaders().put(fileId, variantFileHeader);
-                        }
-                    }
-                }
-            }
+//            if (studyConfiguration.getIndexedFiles().contains(fileId) && file.getAttributes().containsKey("variantSource")) {
+//                //attributes.variantSource.metadata.variantFileHeader
+//                Object object = file.getAttributes().get("variantSource");
+//                if (object instanceof Map) {
+//                    Map variantSource = ((Map) object);
+//                    object = variantSource.get("metadata");
+//                    if (object instanceof Map) {
+//                        Map metadata = (Map) object;
+//                        if (metadata.containsKey(VariantFileUtils.VARIANT_FILE_HEADER)) {
+//                            String variantFileHeader = metadata.get(VariantFileUtils.VARIANT_FILE_HEADER).toString();
+//                            studyConfiguration.getHeaders().put(fileId, variantFileHeader);
+//                        }
+//                    }
+//                }
+//            }
         }
 
         logger.debug("Get Samples");

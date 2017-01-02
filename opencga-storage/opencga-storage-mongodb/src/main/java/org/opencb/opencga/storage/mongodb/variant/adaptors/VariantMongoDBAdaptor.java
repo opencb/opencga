@@ -2303,28 +2303,25 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             DBObject[] objects = new DBObject[regions.size()];
             int i = 0;
             for (Region region : regions) {
-                if (region.getEnd() - region.getStart() < 1000000) {
-                    List<String> chunkIds = getChunkIds(region);
-                    DBObject regionObject = new BasicDBObject(DocumentToVariantConverter.AT_FIELD + '.' + DocumentToVariantConverter
-                            .CHUNK_IDS_FIELD,
-                            new Document("$in", chunkIds));
-                    if (region.getEnd() != Integer.MAX_VALUE) {
-                        regionObject.put(DocumentToVariantConverter.START_FIELD, new Document("$lte", region.getEnd()));
-                    }
-                    if (region.getStart() != 0) {
-                        regionObject.put(DocumentToVariantConverter.END_FIELD, new Document("$gte", region.getStart()));
-                    }
-                    objects[i] = regionObject;
-                } else {
-                    DBObject regionObject = new BasicDBObject(DocumentToVariantConverter.CHROMOSOME_FIELD, region.getChromosome());
-                    if (region.getEnd() != Integer.MAX_VALUE) {
-                        regionObject.put(DocumentToVariantConverter.START_FIELD, new Document("$lte", region.getEnd()));
-                    }
-                    if (region.getStart() != 0) {
-                        regionObject.put(DocumentToVariantConverter.END_FIELD, new Document("$gte", region.getStart()));
-                    }
-                    objects[i] = regionObject;
+                DBObject regionObject = new BasicDBObject();
+//                if (region.getEnd() - region.getStart() < 1000000) {
+//                    List<String> chunkIds = getChunkIds(region);
+//                    regionObject.put(DocumentToVariantConverter.AT_FIELD + '.' + DocumentToVariantConverter
+//                            .CHUNK_IDS_FIELD,
+//                            new Document("$in", chunkIds));
+//                } else {
+//                    regionObject.put(DocumentToVariantConverter.CHROMOSOME_FIELD, region.getChromosome());
+//                }
+
+                int end = region.getEnd();
+                if (end < Integer.MAX_VALUE) { // Avoid overflow
+                    end++;
                 }
+                regionObject.put("_id", new Document()
+                        .append("$gte", VariantStringIdConverter.buildId(region.getChromosome(), region.getStart()))
+                        .append("$lt", VariantStringIdConverter.buildId(region.getChromosome(), end)));
+
+                objects[i] = regionObject;
                 i++;
             }
             builder.or(objects);
