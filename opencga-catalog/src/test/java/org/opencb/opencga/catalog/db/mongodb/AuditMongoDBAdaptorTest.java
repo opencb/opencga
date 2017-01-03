@@ -35,7 +35,7 @@ import java.util.Collections;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CatalogMongoAuditDBAdaptorTest {
+public class AuditMongoDBAdaptorTest {
 
     private AuditDBAdaptor auditDbAdaptor;
 

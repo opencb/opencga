@@ -37,7 +37,7 @@ public class Study extends AbstractAcl<StudyAclEntry> {
     private String description;
     private Status status;
     private String lastModified;
-    private long diskUsage;
+    private long size;
     // TODO: Pending !!!
     private String cipher;
 
@@ -79,7 +79,7 @@ public class Study extends AbstractAcl<StudyAclEntry> {
     }
 
     public Study(long id, String name, String alias, Type type, String creationDate, String description, Status status, String lastModified,
-                 long diskUsage, String cipher, List<Group> groups, List<StudyAclEntry> acl, List<Experiment> experiments, List<File> files,
+                 long size, String cipher, List<Group> groups, List<StudyAclEntry> acl, List<Experiment> experiments, List<File> files,
                  List<Job> jobs, List<Individual> individuals, List<Sample> samples, List<Dataset> datasets, List<Cohort> cohorts,
                  List<DiseasePanel> panels, List<VariableSet> variableSets, URI uri, Map<File.Bioformat, DataStore> dataStores,
                  Map<String, Object> stats, Map<String, Object> attributes) {
@@ -91,7 +91,7 @@ public class Study extends AbstractAcl<StudyAclEntry> {
         this.description = description;
         this.status = status;
         this.lastModified = lastModified;
-        this.diskUsage = diskUsage;
+        this.size = size;
         this.cipher = cipher;
         this.groups = groups;
         this.acl = acl;
@@ -135,7 +135,7 @@ public class Study extends AbstractAcl<StudyAclEntry> {
         sb.append(", description='").append(description).append('\'');
         sb.append(", status=").append(status);
         sb.append(", lastModified='").append(lastModified).append('\'');
-        sb.append(", diskUsage=").append(diskUsage);
+        sb.append(", size=").append(size);
         sb.append(", cipher='").append(cipher).append('\'');
         sb.append(", groups=").append(groups);
         sb.append(", acl=").append(acl);
@@ -228,12 +228,12 @@ public class Study extends AbstractAcl<StudyAclEntry> {
         return this;
     }
 
-    public long getDiskUsage() {
-        return diskUsage;
+    public long getSize() {
+        return size;
     }
 
-    public Study setDiskUsage(long diskUsage) {
-        this.diskUsage = diskUsage;
+    public Study setSize(long size) {
+        this.size = size;
         return this;
     }
 

@@ -71,7 +71,7 @@ public class AdminCliOptionsParser {
         usersSubCommands.addCommand("create", usersCommandOptions.createUserCommandOptions);
         usersSubCommands.addCommand("import", usersCommandOptions.importUserCommandOptions);
         usersSubCommands.addCommand("delete", usersCommandOptions.deleteUserCommandOptions);
-        usersSubCommands.addCommand("disk-quota", usersCommandOptions.diskQuotaUserCommandOptions);
+        usersSubCommands.addCommand("quota", usersCommandOptions.QuotaUserCommandOptions);
         usersSubCommands.addCommand("stats", usersCommandOptions.statsUserCommandOptions);
 
         auditCommandOptions = new AuditCommandOptions();
@@ -201,7 +201,7 @@ public class AdminCliOptionsParser {
         ImportUserCommandOptions importUserCommandOptions;
         DeleteUserCommandOptions deleteUserCommandOptions;
         StatsUserCommandOptions statsUserCommandOptions;
-        DiskQuotaUserCommandOptions diskQuotaUserCommandOptions;
+        QuotaUserCommandOptions QuotaUserCommandOptions;
 
         AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
@@ -210,7 +210,7 @@ public class AdminCliOptionsParser {
             this.importUserCommandOptions = new ImportUserCommandOptions();
             this.deleteUserCommandOptions = new DeleteUserCommandOptions();
             this.statsUserCommandOptions = new StatsUserCommandOptions();
-            this.diskQuotaUserCommandOptions = new DiskQuotaUserCommandOptions();
+            this.QuotaUserCommandOptions = new QuotaUserCommandOptions();
         }
     }
 
@@ -443,8 +443,8 @@ public class AdminCliOptionsParser {
         @Parameter(names = {"--user-organization"}, description = "User organization", required = false, arity = 1)
         public String userOrganization;
 
-        @Parameter(names = {"--user-DiskQuota"}, description = "User disk quota", required = false, arity = 1)
-        public Long userDiskQuota;
+        @Parameter(names = {"--user-Quota"}, description = "User disk quota", required = false, arity = 1)
+        public Long userQuota;
 
         @Parameter(names = {"--project-name"}, description = "Project name. Default: Default", required = false, arity = 1)
         public String projectName;
@@ -501,8 +501,8 @@ public class AdminCliOptionsParser {
     }
 
 
-    @Parameters(commandNames = {"disk-quota"}, commandDescription = "Set a new disk quota for an user")
-    public class DiskQuotaUserCommandOptions extends CatalogDatabaseCommandOptions {
+    @Parameters(commandNames = {"quota"}, commandDescription = "Set a new disk quota for an user")
+    public class QuotaUserCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
@@ -512,7 +512,7 @@ public class AdminCliOptionsParser {
         public String userId;
 
         @Parameter(names = {"--quota"}, description = "Disk quota in GB", required = true, arity = 1)
-        public long diskQuota;
+        public long quota;
     }
 
     @Parameters(commandNames = {"stats"}, commandDescription = "Print summary stats for an user")

@@ -3,7 +3,7 @@ logLevel: "INFO"
 logFile: null
 
 openRegister: false
-userDefaultDiskQuota: 200000
+userDefaultQuota: 200000
 
 databasePrefix: ${OPENCGA.CATALOG.DB.PREFIX}
 dataDir: ${OPENCGA.CATALOG.ROOTDIR}

@@ -42,7 +42,7 @@ import java.util.LinkedList;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-public class CatalogMongoDBAdaptorTest extends GenericTest {
+public class MongoDBAdaptorTest extends GenericTest {
 
     static MongoDBAdaptorFactory catalogDBAdaptor;
 
@@ -190,10 +190,10 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         options.put("includeFiles", true);
         options.put("includeJobs", true);
         options.put("includeSamples", true);
-        user1 = catalogUserDBAdaptor.get(CatalogMongoDBAdaptorTest.user1.getId(), options, null).first();
-        user2 = catalogUserDBAdaptor.get(CatalogMongoDBAdaptorTest.user2.getId(), options, null).first();
-        user3 = catalogUserDBAdaptor.get(CatalogMongoDBAdaptorTest.user3.getId(), options, null).first();
-        user4 = catalogUserDBAdaptor.get(CatalogMongoDBAdaptorTest.user4.getId(), options, null).first();
+        user1 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user1.getId(), options, null).first();
+        user2 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user2.getId(), options, null).first();
+        user3 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user3.getId(), options, null).first();
+        user4 = catalogUserDBAdaptor.get(MongoDBAdaptorTest.user4.getId(), options, null).first();
 
     }
 

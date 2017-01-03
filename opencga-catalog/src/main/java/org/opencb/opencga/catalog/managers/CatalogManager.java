@@ -343,18 +343,18 @@ public class CatalogManager implements AutoCloseable {
      * ***************************
      */
 
-    public QueryResult<User> createUser(String id, String name, String email, String password, String organization, Long diskQuota,
+    public QueryResult<User> createUser(String id, String name, String email, String password, String organization, Long quota,
                                         QueryOptions options) throws CatalogException {
 //        catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(catalogConfiguration.getAdmin().getPassword());
-        return userManager.create(id, name, email, password, organization, diskQuota, options,
+        return userManager.create(id, name, email, password, organization, quota, options,
                 configuration.getAdmin().getPassword());
     }
 
     @Deprecated
-    public QueryResult<User> createUser(String id, String name, String email, String password, String organization, Long diskQuota,
+    public QueryResult<User> createUser(String id, String name, String email, String password, String organization, Long quota,
                                         QueryOptions options, String sessionId)
             throws CatalogException {
-        return userManager.create(id, name, email, password, organization, diskQuota, options, sessionId);
+        return userManager.create(id, name, email, password, organization, quota, options, sessionId);
     }
 
     @Deprecated
@@ -735,12 +735,12 @@ public class CatalogManager implements AutoCloseable {
 
 
     public QueryResult<File> createFile(long studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path,
-                                        String creationDate, String description, File.FileStatus status, long diskUsage, long experimentId,
+                                        String creationDate, String description, File.FileStatus status, long size, long experimentId,
                                         List<Long> sampleIds, long jobId, Map<String, Object> stats, Map<String, Object> attributes,
                                         boolean parents, QueryOptions options, String sessionId)
             throws CatalogException {
         return fileManager.create(studyId, type, format, bioformat, path, creationDate, description, status,
-                diskUsage, experimentId, sampleIds, jobId, stats, attributes, parents, options, sessionId);
+                size, experimentId, sampleIds, jobId, stats, attributes, parents, options, sessionId);
     }
 
     public QueryResult<File> createFolder(long studyId, Path folderPath, boolean parents, QueryOptions options, String sessionId)

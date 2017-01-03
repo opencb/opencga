@@ -210,7 +210,7 @@ public class FileScannerTest {
         files = fileScanner.scan(root, studyUri, FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
 
         assertEquals(1, files.size());
-        files.forEach((f) -> assertTrue(f.getDiskUsage() > 0));
+        files.forEach((f) -> assertTrue(f.getSize() > 0));
         files.forEach((f) -> assertEquals(f.getStatus().getName(), File.FileStatus.READY));
         files.forEach((f) -> assertTrue(f.getAttributes().containsKey("checksum")));
     }
@@ -232,7 +232,7 @@ public class FileScannerTest {
 
         assertEquals(1, files.size());
         File file = files.get(0);
-        assertTrue(file.getDiskUsage() > 0);
+        assertTrue(file.getSize() > 0);
         assertEquals(File.FileStatus.READY, file.getStatus().getName());
         assertTrue(file.getAttributes().containsKey("checksum"));
 

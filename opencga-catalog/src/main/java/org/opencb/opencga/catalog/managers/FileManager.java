@@ -637,7 +637,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     @Override
     public QueryResult<File> create(long studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path,
-                                    String creationDate, String description, File.FileStatus status, long diskUsage, long experimentId,
+                                    String creationDate, String description, File.FileStatus status, long size, long experimentId,
                                     List<Long> sampleIds, long jobId, Map<String, Object> stats, Map<String, Object> attributes,
                                     boolean parents, QueryOptions options, String sessionId) throws CatalogException {
         /** Check and set all the params and create a File object **/
@@ -654,7 +654,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         } else {
             status = (status == null) ? new File.FileStatus(File.FileStatus.READY) : status;
         }
-        if (diskUsage < 0) {
+        if (size < 0) {
             throw new CatalogException("Error: DiskUsage can't be negative!");
         }
         if (experimentId > 0 && !jobDBAdaptor.experimentExists(experimentId)) {
@@ -719,12 +719,12 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         //Create file object
 //        File file = new File(-1, Paths.get(path).getFileName().toString(), type, format, bioformat,
-//                path, ownerId, creationDate, description, status, diskUsage, experimentId, sampleIds, jobId,
+//                path, ownerId, creationDate, description, status, size, experimentId, sampleIds, jobId,
 //                new LinkedList<>(), stats, attributes);
 
         boolean external = isExternal(studyId, path, uri);
         File file = new File(-1, Paths.get(path).getFileName().toString(), type, format, bioformat, uri, path, TimeUtils.getTime(),
-                TimeUtils.getTime(), description, status, external, diskUsage, new Experiment().setId(experimentId), sampleIds,
+                TimeUtils.getTime(), description, status, external, size, new Experiment().setId(experimentId), sampleIds,
                 new Job().setId(jobId), Collections.emptyList(), Collections.emptyList(), null, stats, attributes);
 
         //Find parent. If parents == true, create folders.
@@ -1744,11 +1744,11 @@ public class FileManager extends AbstractManager implements IFileManager {
 
             // Create the file
             if (fileDBAdaptor.count(query).first() == 0) {
-                long diskUsage = Files.size(Paths.get(normalizedUri));
+                long size = Files.size(Paths.get(normalizedUri));
 
                 File subfile = new File(-1, externalPathDestiny.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                         File.Bioformat.NONE, normalizedUri, externalPathDestinyStr, TimeUtils.getTime(), TimeUtils.getTime(), description,
-                        new File.FileStatus(File.FileStatus.READY), true, diskUsage, new Experiment(), Collections.emptyList(), new Job(),
+                        new File.FileStatus(File.FileStatus.READY), true, size, new Experiment(), Collections.emptyList(), new Job(),
                         Collections.emptyList(), Collections.emptyList(), null, Collections.emptyMap(), Collections.emptyMap());
                 QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, studyId, new QueryOptions());
                 File file = fileMetadataReader.setMetadataInformation(queryResult.first(), queryResult.first().getUri(),
@@ -1828,11 +1828,11 @@ public class FileManager extends AbstractManager implements IFileManager {
                                 .append(FileDBAdaptor.QueryParams.PATH.key(), destinyPath);
 
                         if (fileDBAdaptor.count(query).first() == 0) {
-                            long diskUsage = Files.size(filePath);
+                            long size = Files.size(filePath);
                             // If the file does not exist, we create it
                             File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                                     File.Bioformat.NONE, filePath.toUri(), destinyPath, TimeUtils.getTime(), TimeUtils.getTime(),
-                                    description, new File.FileStatus(File.FileStatus.READY), true, diskUsage, new Experiment(),
+                                    description, new File.FileStatus(File.FileStatus.READY), true, size, new Experiment(),
                                     Collections.emptyList(), new Job(), Collections.emptyList(), Collections.emptyList(), null,
                                     Collections.emptyMap(), Collections.emptyMap());
                             QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, studyId, new QueryOptions());
@@ -2598,12 +2598,12 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public void setDiskUsage(long fileId, long diskUsage, String sessionId) throws CatalogException {
+    public void setDiskUsage(long fileId, long size, String sessionId) throws CatalogException {
         String userId = userManager.getId(sessionId);
 
         authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.UPDATE);
 
-        ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.DISK_USAGE.key(), diskUsage);
+        ObjectMap parameters = new ObjectMap(FileDBAdaptor.QueryParams.SIZE.key(), size);
         fileDBAdaptor.update(fileId, parameters);
 
         auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);

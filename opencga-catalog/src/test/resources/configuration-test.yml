@@ -3,7 +3,7 @@ logLevel: "INFO"
 logFile: null
 
 openRegister: true
-userDefaultDiskQuota: 200000
+userDefaultQuota: 200000
 
 databasePrefix: "opencga_test"
 dataDir: "file:///tmp/opencga/sessions"

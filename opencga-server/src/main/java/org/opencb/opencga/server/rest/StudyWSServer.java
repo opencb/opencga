@@ -238,7 +238,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "modificationDate") @DefaultValue("") @QueryParam("modificationDate")
                                             String modificationDate,
                                 @ApiParam(value = "description") @DefaultValue("") @QueryParam("description") String description,
-                                @ApiParam(value = "diskUsage") @DefaultValue("") @QueryParam("diskUsage") Long diskUsage,
+                                @ApiParam(value = "size") @DefaultValue("") @QueryParam("size") Long size,
                                 @ApiParam(value = "Comma separated sampleIds") @DefaultValue("") @QueryParam("sampleIds") String sampleIds,
                                 @ApiParam(value = "jobId") @DefaultValue("") @QueryParam("jobId") String jobId,
                                 @ApiParam(value = "attributes") @DefaultValue("") @QueryParam("attributes") String attributes,
@@ -877,7 +877,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 //            "Only nested files parameter accepted, and only a few parameters.<br>" +
 //            "<b>{ files:[ { format, bioformat, path, description, type, jobId, attributes } ] }</b><br>" +
                     "<ul>" +
-                    "<il><b>id</b>, <b>lastModified</b> and <b>diskUsage</b> parameters will be ignored.<br></il>" +
+                    "<il><b>id</b>, <b>lastModified</b> and <b>size</b> parameters will be ignored.<br></il>" +
                     "<il><b>type</b> accepted values: [<b>'CASE_CONTROL', 'CASE_SET', 'CONTROL_SET', 'FAMILY', 'PAIRED', 'TRIO'</b>].<br>"
                     + "</il><ul>")
     public Response createStudyPOST(@ApiParam(value = "Project id or alias", required = true) @QueryParam("projectId") String projectIdStr,
@@ -905,7 +905,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 //                    for (File file : files) {
 //                        QueryResult<File> fileQueryResult = catalogManager.createFile(studyAdded.getId(), file.getType(), file.getFormat(),
 //                                file.getBioformat(), file.getPath(), file.getOwnerId(), file.getCreationDate(),
-//                                file.getDescription(), file.getName(), file.getDiskUsage(), file.getExperimentId(),
+//                                file.getDescription(), file.getName(), file.getSize(), file.getExperimentId(),
 //                                file.getSampleIds(), file.getJobId(), file.stats(), file.getAttributes(), true, sessionId);
 //                        file = fileQueryResult.getResult().get(0);
 //                        System.out.println("fileQueryResult = " + fileQueryResult);
@@ -951,7 +951,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         public String description;
 //        public String status;
 //        public String lastModified;
-//        public long diskUsage;
+//        public long size;
 //        public String cipher;
 
         //public URI uri;

@@ -530,7 +530,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 .setCreationDate(studyInfo.getCreationDate())
                 .setDatasets(studyInfo.getDatasets().size())
                 .setDescription(studyInfo.getDescription())
-                .setDiskUsage(studyInfo.getDiskUsage())
+                .setDiskUsage(studyInfo.getSize())
                 .setExperiments(studyInfo.getExperiments())
                 .setGroups(studyInfo.getGroups())
                 .setName(studyInfo.getName())

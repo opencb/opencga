@@ -37,7 +37,7 @@ public class Configuration {
     private String logFile;
 
     private boolean openRegister;
-    private int userDefaultDiskQuota;
+    private int userDefaultQuota;
 
     private String databasePrefix;
     private String dataDir;
@@ -107,7 +107,7 @@ public class Configuration {
         sb.append("logLevel='").append(logLevel).append('\'');
         sb.append(", logFile='").append(logFile).append('\'');
         sb.append(", openRegister=").append(openRegister);
-        sb.append(", userDefaultDiskQuota=").append(userDefaultDiskQuota);
+        sb.append(", userDefaultQuota=").append(userDefaultQuota);
         sb.append(", databasePrefix='").append(databasePrefix).append('\'');
         sb.append(", dataDir='").append(dataDir).append('\'');
         sb.append(", tempJobsDir='").append(tempJobsDir).append('\'');
@@ -152,12 +152,12 @@ public class Configuration {
         return this;
     }
 
-    public int getUserDefaultDiskQuota() {
-        return userDefaultDiskQuota;
+    public int getUserDefaultQuota() {
+        return userDefaultQuota;
     }
 
-    public Configuration setUserDefaultDiskQuota(int userDefaultDiskQuota) {
-        this.userDefaultDiskQuota = userDefaultDiskQuota;
+    public Configuration setUserDefaultQuota(int userDefaultQuota) {
+        this.userDefaultQuota = userDefaultQuota;
         return this;
     }
 

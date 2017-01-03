@@ -164,7 +164,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult<User> create(String id, String name, String email, String password, String organization, Long diskQuota,
+    public QueryResult<User> create(String id, String name, String email, String password, String organization, Long quota,
                                     QueryOptions options, String adminPassword) throws CatalogException {
 
         // Check if the users can be registered publicly or just the admin.
@@ -186,8 +186,8 @@ public class UserManager extends AbstractManager implements IUserManager {
         User user = new User(id, name, email, "", organization, User.UserStatus.READY);
         user.getAccount().setAuthOrigin(INTERNAL_AUTHORIZATION);
 
-        if (diskQuota != null && diskQuota > 0L) {
-            user.setDiskQuota(diskQuota);
+        if (quota != null && quota > 0L) {
+            user.setQuota(quota);
         }
 
         // TODO: If the registration is closed, we have to check the sessionId to see if it corresponds with the admin in order to continue.
@@ -572,7 +572,19 @@ public class UserManager extends AbstractManager implements IUserManager {
             authenticationManagerMap.get(authId).authenticate(userId, password, true);
         }
 
-        return catalogManager.getSessionManager().createToken(userId, sessionIp);
+        QueryResult<ObjectMap> sessionTokenQueryResult;
+        try {
+            sessionTokenQueryResult = catalogManager.getSessionManager().createToken(userId, sessionIp);
+        } catch (CatalogException e) {
+            auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.login, AuditRecord.Magnitude.high, userId, userId,
+                    null, null, "Unsuccessfully login attempt", null);
+            throw e;
+        }
+
+        auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.login, AuditRecord.Magnitude.low, userId, userId, null,
+                sessionTokenQueryResult.first(), "User successfully logged in", null);
+
+        return sessionTokenQueryResult;
     }
 
     @Override
@@ -586,7 +598,20 @@ public class UserManager extends AbstractManager implements IUserManager {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
         checkSessionId(userId, sessionId);
-        return userDBAdaptor.logout(userId, sessionId);
+
+        QueryResult logout;
+        try {
+            logout = userDBAdaptor.logout(userId, sessionId);
+        } catch (CatalogDBException e) {
+            auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.logout, AuditRecord.Magnitude.high, userId, userId,
+                    null, null, "Unsuccessfully logout attempt", null);
+            throw e;
+        }
+        ObjectMap session = new ObjectMap().append("userId", userId).append("sessionId", sessionId);
+        auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.logout, AuditRecord.Magnitude.low, userId, userId, session,
+                null, "User successfully logged out", null);
+
+        return logout;
 //        switch (authorizationManager.getUserRole(userId)) {
 //            case ANONYMOUS:
 //                return logoutAnonymous(sessionId);

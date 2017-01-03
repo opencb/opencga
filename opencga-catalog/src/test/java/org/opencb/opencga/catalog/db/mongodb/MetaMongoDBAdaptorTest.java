@@ -29,7 +29,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by imedina on 07/04/16.
  */
-public class CatalogMongoMetaDBAdaptorTest extends CatalogMongoDBAdaptorTest {
+public class MetaMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void createIndex() throws Exception {

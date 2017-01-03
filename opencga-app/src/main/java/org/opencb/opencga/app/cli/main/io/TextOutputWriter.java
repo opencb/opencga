@@ -1,7 +1,6 @@
 package org.opencb.opencga.app.cli.main.io;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.*;
@@ -115,26 +114,26 @@ public class TextOutputWriter extends AbstractOutputWriter {
         for (QueryResult<User> queryResult : queryResultList) {
             // Write header
             if (writerConfiguration.isHeader()) {
-                sb.append("#(U)ID\tNAME\tE-MAIL\tORGANIZATION\tACCOUNT_TYPE\tDISK_USAGE\tDISK_QUOTA\n");
-                sb.append("#(P)\tALIAS\tNAME\tORGANIZATION\tDESCRIPTION\tID\tDISK_USAGE\n");
-                sb.append("#(S)\t\tALIAS\tNAME\tTYPE\tDESCRIPTION\tID\t#GROUPS\tDISK_USAGE\n");
+                sb.append("#(U)ID\tNAME\tE-MAIL\tORGANIZATION\tACCOUNT_TYPE\tSIZE\tQUOTA\n");
+                sb.append("#(P)\tALIAS\tNAME\tORGANIZATION\tDESCRIPTION\tID\tSIZE\n");
+                sb.append("#(S)\t\tALIAS\tNAME\tTYPE\tDESCRIPTION\tID\t#GROUPS\tSIZE\n");
             }
 
             for (User user : queryResult.getResult()) {
                 sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%d\t%d\n", "", user.getId(), user.getName(), user.getEmail(),
-                        user.getOrganization(), user.getAccount().getType(), user.getDiskUsage(), user.getDiskQuota()));
+                        user.getOrganization(), user.getAccount().getType(), user.getSize(), user.getQuota()));
 
                 if (user.getProjects().size() > 0) {
                     for (Project project : user.getProjects()) {
                         sb.append(String.format("%s%s\t%s\t%s\t%s\t%d\t%d\n", " * ", project.getAlias(), project.getName(),
-                                project.getOrganization(), project.getDescription(), project.getId(), project.getDiskUsage()));
+                                project.getOrganization(), project.getDescription(), project.getId(), project.getSize()));
 
                         if (project.getStudies().size() > 0) {
                             for (Study study : project.getStudies()) {
                                 sb.append(String.format("    - %s\t%s\t%s\t%s\t%d\t%s\t%d\n", study.getAlias(), study.getName(),
                                         study.getType(), study.getDescription(), study.getId(),
                                         StringUtils.join(study.getGroups().stream().map(Group::getName).collect(Collectors.toList()), ", "),
-                                        study.getDiskUsage()));
+                                        study.getSize()));
 
                                 if (study.getGroups().size() > 0) {
                                     sb.append("       Groups:\n");
@@ -164,7 +163,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<Project> queryResult : queryResultList) {
             // Write header
-            sb.append("#ALIAS\tNAME\tID\tORGANIZATION\tORGANISM\tASSEMBLY\tDESCRIPTION\tDISK_USAGE\t#STUDIES\tSTATUS\n");
+            sb.append("#ALIAS\tNAME\tID\tORGANIZATION\tORGANISM\tASSEMBLY\tDESCRIPTION\tSIZE\t#STUDIES\tSTATUS\n");
 
             for (Project project : queryResult.getResult()) {
                 String organism = "NA";
@@ -180,7 +179,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 }
 
                 sb.append(String.format("%s\t%s\t%d\t%s\t%s\t%s\t%s\t%d\t%d\t%s\n", project.getAlias(), project.getName(),
-                        project.getId(), project.getOrganization(), organism, assembly, project.getDescription(), project.getDiskUsage(),
+                        project.getId(), project.getOrganization(), organism, assembly, project.getDescription(), project.getSize(),
                         project.getStudies().size(), project.getStatus().getName()));
             }
         }
@@ -191,13 +190,13 @@ public class TextOutputWriter extends AbstractOutputWriter {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<Study> queryResult : queryResultList) {
             // Write header
-            sb.append("#ALIAS\tNAME\tTYPE\tDESCRIPTION\tID\t#GROUPS\tDISK_USAGE\t#FILES\t#SAMPLES\t#COHORTS\t#INDIVIDUALS\t#JOBS\t")
+            sb.append("#ALIAS\tNAME\tTYPE\tDESCRIPTION\tID\t#GROUPS\tSIZE\t#FILES\t#SAMPLES\t#COHORTS\t#INDIVIDUALS\t#JOBS\t")
                     .append("#VARIABLE_SETS\tSTATUS\n");
 
             for (Study study : queryResult.getResult()) {
                 sb.append(String.format("%s\t%s\t%s\t%s\t%d\t%d\t%d\t%s\t%d\t%d\t%d\t%d\t%d\t%s\n",
                         study.getAlias(), study.getName(), study.getType(), study.getDescription(), study.getId(), study.getGroups().size(),
-                        study.getDiskUsage(), study.getFiles().size(), study.getSamples().size(), study.getCohorts().size(),
+                        study.getSize(), study.getFiles().size(), study.getSamples().size(), study.getCohorts().size(),
                         study.getIndividuals().size(), study.getJobs().size(), study.getVariableSets().size(),
                         study.getStatus().getName()));
             }
@@ -228,11 +227,11 @@ public class TextOutputWriter extends AbstractOutputWriter {
     }
 
     private void printFiles(List<File> files, StringBuilder sb, String format) {
-        // # name	type	format	bioformat	description	path	id	status	diskUsage	index status	related files   samples
+        // # name	type	format	bioformat	description	path	id	status	size	index status	related files   samples
         for (File file : files) {
             sb.append(String.format("%s%s\t%s\t%s\t%s\t%s\t%s\t%s\t%d\t%s\t%d\t%s\t%s\t%s\n", format, file.getName(), file.getType(),
                     file.getFormat(), file.getBioformat(), file.getDescription(), file.getPath(), file.getUri(), file.getId(),
-                    file.getStatus().getName(), file.getDiskUsage(), file.getIndex() != null ? file.getIndex().getStatus().getName() : "NA",
+                    file.getStatus().getName(), file.getSize(), file.getIndex() != null ? file.getIndex().getStatus().getName() : "NA",
                     StringUtils.join(file.getRelatedFiles().stream().map(File.RelatedFile::getFileId).collect(Collectors.toList()), ", "),
                     StringUtils.join(file.getSampleIds().stream().collect(Collectors.toList()), ", ")));
         }
@@ -398,7 +397,7 @@ public class TextOutputWriter extends AbstractOutputWriter {
                     file.getType() == File.Type.FILE ? file.getName() : file.getName() + "/",
                     file.getId(),
                     file.getStatus().getName(),
-                    humanReadableByteCount(file.getDiskUsage(), false)));
+                    humanReadableByteCount(file.getSize(), false)));
 
             if (file.getType() == File.Type.DIRECTORY) {
                 printRecursiveTree(fileTree.getChildren(), sb, indent + (iterator.hasNext()? "│   " : "    "));

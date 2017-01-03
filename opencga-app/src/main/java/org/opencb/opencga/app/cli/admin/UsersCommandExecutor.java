@@ -60,8 +60,8 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             case "delete":
                 delete();
                 break;
-            case "disk-quota":
-                setDiskQuota();
+            case "quota":
+                setQuota();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -143,11 +143,11 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             throw new CatalogException("No admin password found. Please, insert the OpenCGA admin password.");
         }
 
-        long userDiskQuota;
-        if (usersCommandOptions.createUserCommandOptions.userDiskQuota != null) {
-            userDiskQuota = usersCommandOptions.createUserCommandOptions.userDiskQuota;
+        long userQuota;
+        if (usersCommandOptions.createUserCommandOptions.userQuota != null) {
+            userQuota = usersCommandOptions.createUserCommandOptions.userQuota;
         } else {
-            userDiskQuota = configuration.getUserDefaultDiskQuota();
+            userQuota = configuration.getUserDefaultQuota();
         }
 
         CatalogManager catalogManager = new CatalogManager(configuration);
@@ -156,7 +156,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         User user = catalogManager.createUser(usersCommandOptions.createUserCommandOptions.userId,
                 usersCommandOptions.createUserCommandOptions.userName, usersCommandOptions.createUserCommandOptions.userEmail,
                 usersCommandOptions.createUserCommandOptions.userPassword, usersCommandOptions.createUserCommandOptions.userOrganization,
-                userDiskQuota, null).first();
+                userQuota, null).first();
         System.out.println("The user has been successfully created: " + user.toString() + "\n");
 
         // Login the user
@@ -230,18 +230,18 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         }
     }
 
-    private void setDiskQuota() throws CatalogException {
-        if (usersCommandOptions.diskQuotaUserCommandOptions.databaseUser != null) {
-            configuration.getDatabase().setUser(usersCommandOptions.diskQuotaUserCommandOptions.databaseUser);
+    private void setQuota() throws CatalogException {
+        if (usersCommandOptions.QuotaUserCommandOptions.databaseUser != null) {
+            configuration.getDatabase().setUser(usersCommandOptions.QuotaUserCommandOptions.databaseUser);
         }
-        if (usersCommandOptions.diskQuotaUserCommandOptions.databasePassword != null) {
-            configuration.getDatabase().setPassword(usersCommandOptions.diskQuotaUserCommandOptions.databasePassword);
+        if (usersCommandOptions.QuotaUserCommandOptions.databasePassword != null) {
+            configuration.getDatabase().setPassword(usersCommandOptions.QuotaUserCommandOptions.databasePassword);
         }
-        if (usersCommandOptions.diskQuotaUserCommandOptions.database != null) {
-            configuration.getDatabase().setDatabase(usersCommandOptions.diskQuotaUserCommandOptions.database);
+        if (usersCommandOptions.QuotaUserCommandOptions.database != null) {
+            configuration.getDatabase().setDatabase(usersCommandOptions.QuotaUserCommandOptions.database);
         }
-        if (usersCommandOptions.diskQuotaUserCommandOptions.databaseHost != null) {
-            configuration.getDatabase().setHosts(Collections.singletonList(usersCommandOptions.diskQuotaUserCommandOptions.databaseHost));
+        if (usersCommandOptions.QuotaUserCommandOptions.databaseHost != null) {
+            configuration.getDatabase().setHosts(Collections.singletonList(usersCommandOptions.QuotaUserCommandOptions.databaseHost));
         }
         if (usersCommandOptions.commonOptions.adminPassword != null) {
             configuration.getAdmin().setPassword(usersCommandOptions.commonOptions.adminPassword);
@@ -254,9 +254,9 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         CatalogManager catalogManager = new CatalogManager(configuration);
         catalogManager.getUserManager().validatePassword("admin", configuration.getAdmin().getPassword(), true);
         
-        User user = catalogManager.modifyUser(usersCommandOptions.diskQuotaUserCommandOptions.userId,
-                new ObjectMap(UserDBAdaptor.QueryParams.DISK_QUOTA.key(),
-                        usersCommandOptions.diskQuotaUserCommandOptions.diskQuota *  1073741824), null).first();
+        User user = catalogManager.modifyUser(usersCommandOptions.QuotaUserCommandOptions.userId,
+                new ObjectMap(UserDBAdaptor.QueryParams.QUOTA.key(),
+                        usersCommandOptions.QuotaUserCommandOptions.quota *  1073741824), null).first();
         System.out.println("The disk quota has been properly updated: " + user.toString());
     }
 
