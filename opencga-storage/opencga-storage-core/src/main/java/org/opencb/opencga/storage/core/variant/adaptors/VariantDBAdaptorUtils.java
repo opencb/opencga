@@ -348,6 +348,10 @@ public class VariantDBAdaptorUtils {
             } else {
                 returnedFields = new HashSet<>(VariantFields.valuesString());
             }
+            if (!returnedFields.contains(STUDIES_FIELD)) {
+                returnedFields.remove(SAMPLES_FIELD);
+                returnedFields.remove(STATS_FIELD);
+            }
         }
 //        System.out.println("returnedFields = " + returnedFields);
         return returnedFields;
