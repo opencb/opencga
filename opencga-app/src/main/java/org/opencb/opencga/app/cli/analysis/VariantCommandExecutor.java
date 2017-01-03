@@ -261,16 +261,6 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         org.opencb.opencga.storage.core.manager.variant.VariantStorageManager variantManager =
                 new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageManagerFactory);
 
-
-        long studyId = catalogManager.getStudyId(cliOptions.studyId, sessionId);
-        String catalogOutDirId;
-        if (isEmpty(cliOptions.catalogPath)) {
-            catalogOutDirId = String.valueOf(catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.PATH.key(), ""), null, sessionId)
-                    .first().getId());
-        } else {
-            catalogOutDirId = cliOptions.catalogPath;
-        }
-
         Query query = new Query()
                 .append(VariantDBAdaptor.VariantQueryParams.REGION.key(), cliOptions.filterRegion)
                 .append(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), cliOptions.filterChromosome)
@@ -286,10 +276,10 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         options.putIfNotEmpty(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, cliOptions.customAnnotationKey);
         options.putIfNotNull(VariantAnnotationManager.ANNOTATION_SOURCE, cliOptions.annotator);
         options.putIfNotEmpty(DefaultVariantAnnotationManager.FILE_NAME, cliOptions.fileName);
-        options.put(StorageOperation.CATALOG_PATH, catalogOutDirId);
+        options.put(StorageOperation.CATALOG_PATH, cliOptions.catalogPath);
         options.putAll(cliOptions.commonOptions.params);
 
-        variantManager.annotate(cliOptions.studyId, query, cliOptions.outdir, options, sessionId);
+        variantManager.annotate(cliOptions.project, cliOptions.studyId, query, cliOptions.outdir, options, sessionId);
 
     }
 

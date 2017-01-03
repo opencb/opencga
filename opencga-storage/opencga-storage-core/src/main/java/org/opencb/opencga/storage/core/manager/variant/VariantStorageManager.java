@@ -22,7 +22,10 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.converters.ga4gh.Ga4ghVariantConverter;
 import org.opencb.biodata.tools.variant.converters.ga4gh.factories.AvroGa4GhVariantFactory;
 import org.opencb.biodata.tools.variant.converters.ga4gh.factories.ProtoGa4GhVariantFactory;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -32,8 +35,8 @@ import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.StorageManager;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
@@ -50,9 +53,7 @@ import java.net.URISyntaxException;
 import java.util.*;
 import java.util.function.Function;
 
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.checkOperator;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.isValidParam;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.splitValue;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
 
 public class VariantStorageManager extends StorageManager {
 
@@ -170,11 +171,20 @@ public class VariantStorageManager extends StorageManager {
     }
 
     public List<File> annotate(String study, Query query, String outDir, ObjectMap config, String sessionId)
+            throws StorageEngineException, URISyntaxException, CatalogException, IOException {
+        return annotate(null, study, query, outDir, config, sessionId);
+    }
+
+    public List<File> annotate(String project, String studies, Query query, String outDir, ObjectMap config, String sessionId)
             throws CatalogException, StorageEngineException, IOException, URISyntaxException {
         VariantAnnotationStorageOperation annotOperation = new VariantAnnotationStorageOperation(catalogManager, storageConfiguration);
 
-        StudyInfo studyInfo = getStudyInfo(study, Collections.emptyList(), sessionId);
-        return annotOperation.annotateVariants(studyInfo, query, outDir, sessionId, config);
+        List<Long> studyIds = catalogManager.getStudyIds(studies, sessionId);
+        List<StudyInfo> studiesList = new ArrayList<>(studyIds.size());
+        for (Long studyId : studyIds) {
+            studiesList.add(getStudyInfo(studyId.toString(), Collections.emptyList(), sessionId));
+        }
+        return annotOperation.annotateVariants(project, studiesList, query, outDir, sessionId, config);
     }
 
     public void deleteAnnotation(String annotationId, String studyId, String sessionId) {
