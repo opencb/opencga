@@ -56,8 +56,9 @@ public class CatalogConfiguration {
 
     private EmailServer emailServer;
     private DatabaseCredentials database;
-//    private Policies policies;
 
+    private RestServerConfiguration rest;
+    private GrpcServerConfiguration grpc;
 
     protected static Logger logger = LoggerFactory.getLogger(CatalogConfiguration.class);
 
@@ -274,6 +275,24 @@ public class CatalogConfiguration {
 
     public CatalogConfiguration setOrganism(Project.Organism organism) {
         this.organism = organism;
+        return this;
+    }
+
+    public RestServerConfiguration getRest() {
+        return rest;
+    }
+
+    public CatalogConfiguration setRest(RestServerConfiguration rest) {
+        this.rest = rest;
+        return this;
+    }
+
+    public GrpcServerConfiguration getGrpc() {
+        return grpc;
+    }
+
+    public CatalogConfiguration setGrpc(GrpcServerConfiguration grpc) {
+        this.grpc = grpc;
         return this;
     }
 }

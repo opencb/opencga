@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.config;
+package org.opencb.opencga.catalog.config;
 
 /**
  * Created by imedina on 25/04/16.
  */
-@Deprecated
 public abstract class ServerConfiguration {
 
     protected int port;

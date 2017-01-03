@@ -29,6 +29,7 @@ import java.nio.file.Paths;
 /**
  * Created by imedina on 25/04/16.
  */
+@Deprecated
 public class Configuration {
 
     private String logLevel;

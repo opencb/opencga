@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.config;
+package org.opencb.opencga.catalog.config;
 
 /**
  * Created by imedina on 22/05/16.
  */
-@Deprecated
 public class GrpcServerConfiguration extends ServerConfiguration {
 
     public GrpcServerConfiguration() {
