@@ -16,11 +16,6 @@
 
 package org.opencb.opencga.catalog.config;
 
-import org.opencb.opencga.catalog.models.Session;
-
-import java.util.Collections;
-import java.util.List;
-
 /**
  * Created by imedina on 18/04/16.
  */

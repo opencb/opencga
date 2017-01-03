@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.*;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.config.GeneralConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -59,7 +59,7 @@ public abstract class CommandExecutor {
     /** Use {@link #getOpenCGAConfiguration()} */
     @Deprecated
     private GeneralConfiguration generalConfiguration;
-    protected CatalogConfiguration catalogConfiguration;
+    protected Configuration configuration;
     protected StorageConfiguration storageConfiguration;
     protected ClientConfiguration clientConfiguration;
 
@@ -121,10 +121,10 @@ public abstract class CommandExecutor {
             if (loadClientConfiguration) {
                 loadClientConfiguration();
                 if (StringUtils.isNotEmpty(this.clientConfiguration.getLogLevel())) {
-                    this.catalogConfiguration.setLogLevel(this.clientConfiguration.getLogLevel());
+                    this.configuration.setLogLevel(this.clientConfiguration.getLogLevel());
                 }
                 if (StringUtils.isNotEmpty(this.clientConfiguration.getLogFile())) {
-                    this.catalogConfiguration.setLogFile(this.clientConfiguration.getLogFile());
+                    this.configuration.setLogFile(this.clientConfiguration.getLogFile());
                 }
             }
 
@@ -177,22 +177,22 @@ public abstract class CommandExecutor {
         // Command line parameters have preference over configuration file
         // We overwrite logLevel configuration param with command line value
         if (StringUtils.isNotEmpty(this.logLevel)) {
-            this.catalogConfiguration.setLogLevel(this.logLevel);
+            this.configuration.setLogLevel(this.logLevel);
         }
 
         // We overwrite logFile configuration param with command line value
         if (StringUtils.isNotEmpty(this.options.logFile)) {
-            this.catalogConfiguration.setLogFile(this.options.logFile);
+            this.configuration.setLogFile(this.options.logFile);
         }
 
         // Configure the logger output, this can be the console or a file if provided by CLI or by configuration file
         ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
-        if (StringUtils.isEmpty(this.catalogConfiguration.getLogFile())) {
-            stderr.setThreshold(Level.toLevel(catalogConfiguration.getLogLevel(), Level.INFO));
+        if (StringUtils.isEmpty(this.configuration.getLogFile())) {
+            stderr.setThreshold(Level.toLevel(configuration.getLogLevel(), Level.INFO));
         } else {
-            RollingFileAppender rollingFileAppender = new RollingFileAppender(stderr.getLayout(), this.catalogConfiguration.getLogFile(), true);
+            RollingFileAppender rollingFileAppender = new RollingFileAppender(stderr.getLayout(), this.configuration.getLogFile(), true);
             rootLogger.addAppender(rollingFileAppender);
-            rollingFileAppender.setThreshold(Level.toLevel(catalogConfiguration.getLogLevel(), Level.INFO));
+            rollingFileAppender.setThreshold(Level.toLevel(configuration.getLogLevel(), Level.INFO));
         }
     }
 
@@ -271,14 +271,14 @@ public abstract class CommandExecutor {
         FileUtils.checkDirectory(Paths.get(this.conf));
 
         // We load configuration file either from app home folder or from the JAR
-        Path path = Paths.get(this.conf).resolve("catalog-configuration.yml");
+        Path path = Paths.get(this.conf).resolve("configuration.yml");
         if (path != null && Files.exists(path)) {
             privateLogger.debug("Loading configuration from '{}'", path.toAbsolutePath());
-            this.catalogConfiguration = CatalogConfiguration.load(new FileInputStream(path.toFile()));
+            this.configuration = Configuration.load(new FileInputStream(path.toFile()));
         } else {
             privateLogger.debug("Loading configuration from JAR file");
-            this.catalogConfiguration = CatalogConfiguration
-                    .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("catalog-configuration.yml"));
+            this.configuration = Configuration
+                    .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml"));
         }
     }
 
@@ -365,12 +365,12 @@ public abstract class CommandExecutor {
     }
 
 
-    public CatalogConfiguration getCatalogConfiguration() {
-        return catalogConfiguration;
+    public Configuration getConfiguration() {
+        return configuration;
     }
 
-    public void setCatalogConfiguration(CatalogConfiguration catalogConfiguration) {
-        this.catalogConfiguration = catalogConfiguration;
+    public void setConfiguration(Configuration configuration) {
+        this.configuration = configuration;
     }
 
     public String getLogLevel() {

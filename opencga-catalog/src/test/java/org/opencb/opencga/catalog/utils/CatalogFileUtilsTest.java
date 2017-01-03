@@ -31,7 +31,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManagerTest;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.File;
@@ -62,20 +62,20 @@ public class CatalogFileUtilsTest {
 
     @Before
     public void before() throws CatalogException, IOException {
-        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration-test.yml")
+        Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml")
                 .openStream());
 
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", catalogConfiguration.getDatabase().getUser())
-                .add("password", catalogConfiguration.getDatabase().getPassword())
-                .add("authenticationDatabase", catalogConfiguration.getDatabase().getOptions().get("authenticationDatabase"))
+                .add("username", configuration.getDatabase().getUser())
+                .add("password", configuration.getDatabase().getPassword())
+                .add("authenticationDatabase", configuration.getDatabase().getOptions().get("authenticationDatabase"))
                 .build();
 
-        String[] split = catalogConfiguration.getDatabase().getHosts().get(0).split(":");
+        String[] split = configuration.getDatabase().getHosts().get(0).split(":");
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(split[0], Integer.parseInt(split[1]));
 
-        CatalogManagerExternalResource.clearCatalog(catalogConfiguration);
-        catalogManager = new CatalogManager(catalogConfiguration);
+        CatalogManagerExternalResource.clearCatalog(configuration);
+        catalogManager = new CatalogManager(configuration);
         catalogManager.installCatalogDB();
 
         //Create USER

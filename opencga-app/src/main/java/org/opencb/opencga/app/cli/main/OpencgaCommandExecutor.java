@@ -105,7 +105,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                                 options.sessionId = cliSession.getSessionId();
                             }
                             // Some operations such as copy and link are run in the server side and need Catalog Manager
-                            catalogManager = new CatalogManager(catalogConfiguration);
+                            catalogManager = new CatalogManager(configuration);
                         }
                     }
                 } else {

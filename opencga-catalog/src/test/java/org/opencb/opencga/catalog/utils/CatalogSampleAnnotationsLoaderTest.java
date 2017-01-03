@@ -30,7 +30,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 
@@ -53,9 +53,9 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
 
     @BeforeClass
     public static void beforeClass() throws IOException, CatalogException, URISyntaxException {
-        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(CatalogSampleAnnotationsLoaderTest.class.getClassLoader()
-                .getClass().getResource("/catalog-configuration-test.yml").openStream());
-        catalogManager = new CatalogManager(catalogConfiguration);
+        Configuration configuration = Configuration.load(CatalogSampleAnnotationsLoaderTest.class.getClassLoader()
+                .getClass().getResource("/configuration-test.yml").openStream());
+        catalogManager = new CatalogManager(configuration);
         catalogManager.deleteCatalogDB(true);
         catalogManager.installCatalogDB();
         loader = new CatalogSampleAnnotationsLoader(catalogManager);

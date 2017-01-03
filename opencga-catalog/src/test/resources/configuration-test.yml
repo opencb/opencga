@@ -64,3 +64,13 @@ organism:
   scientificName: "Homo sapiens"
   commonName: "human"
   assembly: "GRCh38"
+
+rest:
+  port: ${OPENCGA.SERVER.REST.PORT}
+  logFile: null
+  defaultLimit: 2000
+  maxLimit: 5000
+
+grpc:
+  port: ${OPENCGA.SERVER.GRPC.PORT}
+  logFile: null

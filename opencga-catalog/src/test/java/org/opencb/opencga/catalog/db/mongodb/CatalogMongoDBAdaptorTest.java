@@ -28,7 +28,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
@@ -61,7 +61,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     IndividualDBAdaptor catalogIndividualDBAdaptor;
     PanelDBAdaptor catalogPanelDBAdaptor;
 
-    private CatalogConfiguration catalogConfiguration;
+    private Configuration configuration;
 
     @AfterClass
     public static void afterClass() {
@@ -70,25 +70,25 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Before
     public void before() throws IOException, CatalogException {
-        catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration-test.yml")
+        configuration = Configuration.load(getClass().getResource("/configuration-test.yml")
                 .openStream());
 
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
-                catalogConfiguration.getDatabase().getHosts().get(0).split(":")[0], 27017);
+                configuration.getDatabase().getHosts().get(0).split(":")[0], 27017);
 
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", catalogConfiguration.getDatabase().getUser())
-                .add("password", catalogConfiguration.getDatabase().getPassword())
-                .add("authenticationDatabase", catalogConfiguration.getDatabase().getOptions().get("authenticationDatabase"))
+                .add("username", configuration.getDatabase().getUser())
+                .add("password", configuration.getDatabase().getPassword())
+                .add("authenticationDatabase", configuration.getDatabase().getOptions().get("authenticationDatabase"))
                 .build();
 
 //        String database = catalogConfiguration.getDatabase().getDatabase();
         String database;
-        if(StringUtils.isNotEmpty(catalogConfiguration.getDatabasePrefix())) {
-            if (!catalogConfiguration.getDatabasePrefix().endsWith("_")) {
-                database = catalogConfiguration.getDatabasePrefix() + "_catalog";
+        if(StringUtils.isNotEmpty(configuration.getDatabasePrefix())) {
+            if (!configuration.getDatabasePrefix().endsWith("_")) {
+                database = configuration.getDatabasePrefix() + "_catalog";
             } else {
-                database = catalogConfiguration.getDatabasePrefix() + "catalog";
+                database = configuration.getDatabasePrefix() + "catalog";
             }
         } else {
             database = "opencga_test_catalog";
@@ -117,7 +117,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     public void initDefaultCatalogDB() throws CatalogException {
 
         assertTrue(!catalogDBAdaptor.isCatalogDBReady());
-        catalogDBAdaptor.installCatalogDB(catalogConfiguration);
+        catalogDBAdaptor.installCatalogDB(configuration);
 //        catalogDBAdaptor.initializeCatalogDB(new Admin());
 
         /**

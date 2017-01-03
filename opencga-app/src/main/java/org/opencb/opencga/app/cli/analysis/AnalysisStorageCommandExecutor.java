@@ -49,7 +49,7 @@ public abstract class AnalysisStorageCommandExecutor extends AnalysisCommandExec
     protected void configure() throws IllegalAccessException, ClassNotFoundException, InstantiationException, CatalogException {
 
         //  Creating CatalogManager
-        catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager = new CatalogManager(configuration);
 
         // Creating StorageManagerFactory
         storageManagerFactory = StorageManagerFactory.get(storageConfiguration);

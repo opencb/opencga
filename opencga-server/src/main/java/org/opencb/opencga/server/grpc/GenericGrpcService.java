@@ -19,7 +19,7 @@ package org.opencb.opencga.server.grpc;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.server.grpc.GenericServiceModel.Request;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
  */
 public class GenericGrpcService {
 
-    protected CatalogConfiguration catalogConfiguration;
+    protected Configuration configuration;
     protected StorageConfiguration storageConfiguration;
     protected String defaultStorageEngine;
 
@@ -45,22 +45,22 @@ public class GenericGrpcService {
     private Logger privLogger;
     protected Logger logger;
 
-    public GenericGrpcService(CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration) {
-        this(catalogConfiguration, storageConfiguration, storageConfiguration.getDefaultStorageEngineId());
+    public GenericGrpcService(Configuration configuration, StorageConfiguration storageConfiguration) {
+        this(configuration, storageConfiguration, storageConfiguration.getDefaultStorageEngineId());
     }
 
-    public GenericGrpcService(CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration, String defaultStorageEngine) {
+    public GenericGrpcService(Configuration configuration, StorageConfiguration storageConfiguration, String defaultStorageEngine) {
 
         privLogger = LoggerFactory.getLogger(this.getClass().toString());
         logger = LoggerFactory.getLogger(this.getClass().toString());
 
-        this.catalogConfiguration = catalogConfiguration;
+        this.configuration = configuration;
         this.storageConfiguration = storageConfiguration;
         this.defaultStorageEngine = defaultStorageEngine;
 
 
         try {
-            catalogManager = new CatalogManager(catalogConfiguration);
+            catalogManager = new CatalogManager(configuration);
         } catch (CatalogException e) {
             e.printStackTrace();
         }

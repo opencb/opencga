@@ -17,7 +17,7 @@
 package org.opencb.opencga.catalog.utils;
 
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Study;
 
@@ -36,12 +36,12 @@ public final class CatalogDemo {
     /**
      * Populates the database with dummy data.
      *
-     * @param catalogConfiguration Catalog configuration file.
+     * @param configuration Catalog configuration file.
      * @param force Used in the case where a database already exists with the same name. When force = true, it will override it.
      * @throws CatalogException when there is already a database with the same name and force is false.
      */
-    public static void createDemoDatabase(CatalogConfiguration catalogConfiguration, boolean force) throws CatalogException {
-        CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
+    public static void createDemoDatabase(Configuration configuration, boolean force) throws CatalogException {
+        CatalogManager catalogManager = new CatalogManager(configuration);
         if (catalogManager.existsCatalogDB()) {
             if (force) {
                 catalogManager.deleteCatalogDB(force);

@@ -275,17 +275,17 @@ public class AdminCliOptionsParser {
      */
     class CatalogDatabaseCommandOptions {
 
-        @Parameter(names = {"-d", "--database"}, description = "Database name for the catalog metadata, eg. opencga_catalog. If not present is read from catalog-configuration.yml")
+        @Parameter(names = {"-d", "--database"}, description = "Database name for the catalog metadata, eg. opencga_catalog. If not present is read from configuration-test.yml")
         @Deprecated
         public String database;
 
-        @Parameter(names = {"--database-host"}, description = "Database host and port, eg. localhost:27017. If not present is read from catalog-configuration.yml")
+        @Parameter(names = {"--database-host"}, description = "Database host and port, eg. localhost:27017. If not present is read from configuration-test.yml")
         public String databaseHost;
 
-        @Parameter(names = {"--database-user"}, description = "Database user name. If not present is read from catalog-configuration.yml")
+        @Parameter(names = {"--database-user"}, description = "Database user name. If not present is read from configuration-test.yml")
         public String databaseUser;
 
-        @Parameter(names = {"--database-password"}, description = "Database password. If not present is read from catalog-configuration.yml", password = true, arity = 0)
+        @Parameter(names = {"--database-password"}, description = "Database password. If not present is read from configuration-test.yml", password = true, arity = 0)
         public String databasePassword;
     }
 

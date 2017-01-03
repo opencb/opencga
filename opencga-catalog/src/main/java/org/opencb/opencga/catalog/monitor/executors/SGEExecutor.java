@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.monitor.executors;
 
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.SgeManager;
 import org.slf4j.LoggerFactory;
@@ -30,9 +30,9 @@ public class SGEExecutor extends AbstractExecutor {
 
     private SGEManager sgeManager;
 
-    public SGEExecutor(CatalogConfiguration catalogConfiguration) {
+    public SGEExecutor(Configuration configuration) {
         logger = LoggerFactory.getLogger(SGEExecutor.class);
-        sgeManager = new SGEManager(catalogConfiguration.getExecution());
+        sgeManager = new SGEManager(configuration.getExecution());
     }
 
     @Override

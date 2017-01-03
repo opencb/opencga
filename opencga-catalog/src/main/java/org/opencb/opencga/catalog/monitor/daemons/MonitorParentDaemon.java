@@ -43,7 +43,7 @@ public abstract class MonitorParentDaemon implements Runnable {
         this.sessionId = sessionId;
         logger = LoggerFactory.getLogger(this.getClass());
 
-        ExecutorManager executorFactory = new ExecutorManager(catalogManager.getCatalogConfiguration());
+        ExecutorManager executorFactory = new ExecutorManager(catalogManager.getConfiguration());
         this.executorManager = executorFactory.getExecutor();
 //        if (catalogManager.getCatalogConfiguration().getExecution().getMode().equalsIgnoreCase("local")) {
 //            this.executorManager = new LocalExecutorManager(catalogManager, sessionId);

@@ -30,7 +30,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.config.Admin;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -173,13 +173,13 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         }
     }
 
-    public void initializeMetaCollection(CatalogConfiguration catalogConfiguration) throws CatalogException {
-        Admin admin = catalogConfiguration.getAdmin();
+    public void initializeMetaCollection(Configuration configuration) throws CatalogException {
+        Admin admin = configuration.getAdmin();
         admin.setPassword(CatalogAuthenticationManager.cypherPassword(admin.getPassword()));
 
         Metadata metadata = new Metadata().setIdCounter(0).setVersion(VERSION);
 
-        if (catalogConfiguration.isOpenRegister()) {
+        if (configuration.isOpenRegister()) {
             metadata.setOpen("public");
         } else {
             metadata.setOpen("private");
@@ -192,10 +192,10 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         metadataObject.put("admin", adminDocument);
 
         // We store the original configuration file
-        Document config = getMongoDBDocument(catalogConfiguration, "CatalogConfiguration");
+        Document config = getMongoDBDocument(configuration, "CatalogConfiguration");
         metadataObject.put("config", config);
 
-        List<StudyAclEntry> acls = catalogConfiguration.getAcl();
+        List<StudyAclEntry> acls = configuration.getAcl();
         List<Document> aclList = new ArrayList<>(acls.size());
         for (StudyAclEntry acl : acls) {
             aclList.add(getMongoDBDocument(acl, "StudyAcl"));

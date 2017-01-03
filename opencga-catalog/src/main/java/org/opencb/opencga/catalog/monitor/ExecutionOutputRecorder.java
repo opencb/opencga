@@ -71,7 +71,7 @@ public class ExecutionOutputRecorder {
 
     public void recordJobOutputAndPostProcess(Job job, String status) throws CatalogException, IOException, URISyntaxException {
         /** Modifies the job to set the output and endTime. **/
-        URI uri = UriUtils.createUri(catalogManager.getCatalogConfiguration().getTempJobsDir());
+        URI uri = UriUtils.createUri(catalogManager.getConfiguration().getTempJobsDir());
         Path tmpOutdirPath = Paths.get(uri.getPath()).resolve("J_" + job.getId());
 //        Path tmpOutdirPath = Paths.get(catalogManager.getCatalogConfiguration().getTempJobsDir(), "J_" + job.getId());
         this.ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutdirPath.toUri());

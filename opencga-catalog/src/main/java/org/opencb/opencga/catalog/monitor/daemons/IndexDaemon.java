@@ -60,7 +60,7 @@ public class IndexDaemon extends MonitorParentDaemon {
             throws URISyntaxException, CatalogIOException {
         super(interval, sessionId, catalogManager);
         this.binHome = appHome + "/bin/";
-        URI uri = UriUtils.createUri(catalogManager.getCatalogConfiguration().getTempJobsDir());
+        URI uri = UriUtils.createUri(catalogManager.getConfiguration().getTempJobsDir());
         this.tempJobFolder = Paths.get(uri.getPath());
         this.catalogIOManager = catalogManager.getCatalogIOManagerFactory().get("file");
 //        this.variantIndexOutputRecorder = new VariantIndexOutputRecorder(catalogManager, catalogIOManager, sessionId);

@@ -22,7 +22,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.core.config.GeneralConfiguration;
 import org.opencb.opencga.server.rest.AdminRestWebService;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -56,15 +56,15 @@ public class RestServer extends AbstractStorageServer {
         init();
     }
 
-    public RestServer(CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration) {
-        super(catalogConfiguration, storageConfiguration);
+    public RestServer(Configuration configuration, StorageConfiguration storageConfiguration) {
+        super(configuration, storageConfiguration);
 
         init();
     }
 
     @Deprecated
-    public RestServer(GeneralConfiguration generalConfiguration, CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration) {
-        super(generalConfiguration, catalogConfiguration, storageConfiguration);
+    public RestServer(GeneralConfiguration generalConfiguration, Configuration configuration, StorageConfiguration storageConfiguration) {
+        super(generalConfiguration, configuration, storageConfiguration);
 
         init();
     }
@@ -80,8 +80,8 @@ public class RestServer extends AbstractStorageServer {
     private void init() {
         logger = LoggerFactory.getLogger(this.getClass());
 
-        if (catalogConfiguration != null) {
-            this.port = catalogConfiguration.getRest().getPort();
+        if (configuration != null) {
+            this.port = configuration.getRest().getPort();
         }
     }
 

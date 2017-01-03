@@ -29,7 +29,7 @@ import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManag
 import org.opencb.opencga.catalog.auth.authentication.LDAPAuthenticationManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.AuthenticationOrigin;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -71,12 +71,12 @@ public class UserManager extends AbstractManager implements IUserManager {
 
     public UserManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                        DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                       CatalogConfiguration catalogConfiguration) {
-        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, catalogConfiguration);
+                       Configuration configuration) {
+        super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
 
         authenticationManagerMap = new HashMap<>();
-        if (catalogConfiguration.getAuthenticationOrigins() != null) {
-            for (AuthenticationOrigin authenticationOrigin : catalogConfiguration.getAuthenticationOrigins()) {
+        if (configuration.getAuthenticationOrigins() != null) {
+            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthenticationOrigins()) {
                 if (authenticationOrigin.getId() != null) {
                     switch (authenticationOrigin.getType()) {
                         case LDAP:
@@ -95,14 +95,14 @@ public class UserManager extends AbstractManager implements IUserManager {
         }
         // Even if internal authentication is not present in the configuration file, create it
         authenticationManagerMap.putIfAbsent(INTERNAL_AUTHORIZATION,
-                new CatalogAuthenticationManager(catalogDBAdaptorFactory, catalogConfiguration));
+                new CatalogAuthenticationManager(catalogDBAdaptorFactory, configuration));
         AuthenticationOrigin authenticationOrigin = new AuthenticationOrigin();
-        if (catalogConfiguration.getAuthenticationOrigins() == null) {
-            catalogConfiguration.setAuthenticationOrigins(Arrays.asList(authenticationOrigin));
+        if (configuration.getAuthenticationOrigins() == null) {
+            configuration.setAuthenticationOrigins(Arrays.asList(authenticationOrigin));
         } else {
             // Check if OPENCGA authentication is already present in catalog configuration
             boolean catalogPresent = false;
-            for (AuthenticationOrigin origin : catalogConfiguration.getAuthenticationOrigins()) {
+            for (AuthenticationOrigin origin : configuration.getAuthenticationOrigins()) {
                 if (AuthenticationOrigin.AuthenticationType.OPENCGA == origin.getType()) {
                     catalogPresent = true;
                     break;
@@ -110,9 +110,9 @@ public class UserManager extends AbstractManager implements IUserManager {
             }
             if (!catalogPresent) {
                 List<AuthenticationOrigin> linkedList = new LinkedList<>();
-                linkedList.addAll(catalogConfiguration.getAuthenticationOrigins());
+                linkedList.addAll(configuration.getAuthenticationOrigins());
                 linkedList.add(authenticationOrigin);
-                catalogConfiguration.setAuthenticationOrigins(linkedList);
+                configuration.setAuthenticationOrigins(linkedList);
             }
         }
     }
@@ -153,8 +153,8 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     private AuthenticationOrigin getAuthenticationOrigin(String authOrigin) {
-        if (catalogConfiguration.getAuthenticationOrigins() != null) {
-            for (AuthenticationOrigin authenticationOrigin : catalogConfiguration.getAuthenticationOrigins()) {
+        if (configuration.getAuthenticationOrigins() != null) {
+            for (AuthenticationOrigin authenticationOrigin : configuration.getAuthenticationOrigins()) {
                 if (authOrigin.equals(authenticationOrigin.getId())) {
                     return authenticationOrigin;
                 }
@@ -419,11 +419,11 @@ public class UserManager extends AbstractManager implements IUserManager {
                 }
             }
         } else {
-            if (catalogConfiguration.getAdmin().getPassword() == null || catalogConfiguration.getAdmin().getPassword().isEmpty()) {
+            if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
                 throw new CatalogException("Nor the administrator password nor the session id could be found. The user could not be "
                         + "updated.");
             }
-            authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", catalogConfiguration.getAdmin().getPassword(), true);
+            authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", configuration.getAdmin().getPassword(), true);
         }
 
         if (parameters.containsKey("email")) {
@@ -446,12 +446,12 @@ public class UserManager extends AbstractManager implements IUserManager {
                 ParamUtils.checkParameter(sessionId, "sessionId");
                 checkSessionId(userId, sessionId);
             } else {
-                if (catalogConfiguration.getAdmin().getPassword() == null || catalogConfiguration.getAdmin().getPassword().isEmpty()) {
+                if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
                     throw new CatalogException("Nor the administrator password nor the session id could be found. The user could not be "
                             + "deleted.");
                 }
                 authenticationManagerMap.get(INTERNAL_AUTHORIZATION)
-                        .authenticate("admin", catalogConfiguration.getAdmin().getPassword(), true);
+                        .authenticate("admin", configuration.getAdmin().getPassword(), true);
             }
 
             QueryResult<User> deletedUser = userDBAdaptor.delete(userId, options);
