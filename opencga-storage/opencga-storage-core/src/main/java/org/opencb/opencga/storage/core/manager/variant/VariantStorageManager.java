@@ -179,7 +179,13 @@ public class VariantStorageManager extends StorageManager {
             throws CatalogException, StorageEngineException, IOException, URISyntaxException {
         VariantAnnotationStorageOperation annotOperation = new VariantAnnotationStorageOperation(catalogManager, storageConfiguration);
 
-        List<Long> studyIds = catalogManager.getStudyIds(studies, sessionId);
+        List<Long> studyIds;
+        if (StringUtils.isNotEmpty(studies) || StringUtils.isEmpty(project)) {
+            // Only get specific studies if project is missing, or if some study is given
+            studyIds = catalogManager.getStudyIds(studies, sessionId);
+        } else {
+            studyIds = Collections.emptyList();
+        }
         List<StudyInfo> studiesList = new ArrayList<>(studyIds.size());
         for (Long studyId : studyIds) {
             studiesList.add(getStudyInfo(studyId.toString(), Collections.emptyList(), sessionId));
