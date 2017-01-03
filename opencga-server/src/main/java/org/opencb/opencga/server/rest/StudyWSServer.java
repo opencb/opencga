@@ -797,7 +797,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                        required = true) @QueryParam("members") String members,
                                @ApiParam(value = "Comma separated list of permissions that will be granted to the member list")
                                    @DefaultValue("") @QueryParam("permissions") String permissions,
-                               @ApiParam(value = "Template of permissions to be used (admin, analyst or locked)")
+                               @ApiParam(value = "Template of permissions to be used (admin, analyst or view_only)")
                                    @QueryParam("templateId") String templateId) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
