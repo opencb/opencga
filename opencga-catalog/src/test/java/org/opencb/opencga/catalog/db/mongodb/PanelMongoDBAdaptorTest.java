@@ -30,7 +30,7 @@ import static org.junit.Assert.*;
 /**
  * Created by pfurio on 01/06/16.
  */
-public class CatalogMongoPanelDBAdaptorTest extends CatalogMongoDBAdaptorTest {
+public class PanelMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void createPanel() throws CatalogDBException {

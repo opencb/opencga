@@ -37,7 +37,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by pfurio on 19/01/16.
  */
-public class CatalogMongoStudyDBAdaptorTest extends CatalogMongoDBAdaptorTest {
+public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void updateDiskUsage() throws Exception {

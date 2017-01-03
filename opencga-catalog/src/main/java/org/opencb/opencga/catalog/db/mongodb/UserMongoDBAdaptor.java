@@ -172,9 +172,15 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             return endQuery("logout", startTime, null, "", "Session not found");
         }
         if (userIdBySessionId.equals(userId)) {
-            Bson query = new Document(QueryParams.SESSION_ID.key(), sessionId);
-            Bson updates = Updates.set("sessions.$.logout", TimeUtils.getTime());
-            userCollection.update(query, updates, null);
+            Bson query = new Document(QueryParams.ID.key(), userId);
+            Bson update = new Document("$pull", new Document("sessions", new Document("id", sessionId)));
+            QueryResult<UpdateResult> updateQueryResult = userCollection.update(query, update, null);
+            if (updateQueryResult.first().getModifiedCount() == 0) {
+                throw new CatalogDBException("Internal error: Could not remove closed session from user " + userId);
+            }
+//            Bson query = new Document(QueryParams.SESSION_ID.key(), sessionId);
+//            Bson updates = Updates.set("sessions.$.logout", TimeUtils.getTime());
+//            userCollection.update(query, updates, null);
         } else {
             throw new CatalogDBException("UserId mismatches with the sessionId");
         }

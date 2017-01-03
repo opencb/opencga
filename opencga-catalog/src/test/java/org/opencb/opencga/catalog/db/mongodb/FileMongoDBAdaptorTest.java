@@ -38,7 +38,7 @@ import static org.junit.Assert.*;
 /**
  * Created by pfurio on 3/2/16.
  */
-public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
+public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void createFileToStudyTest() throws CatalogException, IOException {
