@@ -512,7 +512,7 @@ public class FileManagerTest extends GenericTest {
         fileResult = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "data/" + fileName,
                 StringUtils.randomString(200).getBytes(), "description", true, sessionIdUser);
         assertTrue("", fileResult.first().getStatus().getName().equals(File.FileStatus.READY));
-        assertTrue("", fileResult.first().getDiskUsage() == 200);
+        assertTrue("", fileResult.first().getSize() == 200);
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
         fileTest = createDebugFile();
@@ -542,7 +542,7 @@ public class FileManagerTest extends GenericTest {
         fileQueryResult = catalogManager.createFile(studyId2, File.Format.PLAIN, File.Bioformat.VARIANT, "" + fileName,
                 fileTest.toURI(), "file at root", true, sessionIdUser);
         assertTrue("File should be moved", !fileTest.exists());
-        assertTrue(fileQueryResult.first().getDiskUsage() == size);
+        assertTrue(fileQueryResult.first().getSize() == size);
     }
 
     @Test
@@ -779,12 +779,12 @@ public class FileManagerTest extends GenericTest {
         assertEquals(numFiles + numFolders, result.getNumResults());
 
         query = new Query("type", "FILE");
-        query.put("diskUsage", ">400");
+        query.put("size", ">400");
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
         assertEquals(2, result.getNumResults());
 
         query = new Query("type", "FILE");
-        query.put("diskUsage", "<400");
+        query.put("size", "<400");
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
         assertEquals(1, result.getNumResults());
 

@@ -138,7 +138,7 @@ public interface JobDBAdaptor extends AclDBAdaptor<Job, JobAclEntry> {
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
-        DISK_USAGE("diskUsage", DECIMAL, ""),
+        SIZE("size", DECIMAL, ""),
         OUT_DIR_ID("outDirId", INTEGER_ARRAY, ""),
         TMP_OUT_DIR_URI("tmpOutDirUri", TEXT_ARRAY, ""),
         INPUT("input", INTEGER_ARRAY, ""),

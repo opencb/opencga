@@ -82,7 +82,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
     private String commandLine;
     private long visits;
     private JobStatus status;
-    private long diskUsage;
+    private long size;
     private long outDirId;
     private List<Long> input;    // input files to this job
     private List<Long> output;   // output files of this job
@@ -114,7 +114,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
 
     @Deprecated
     public Job(long id, String name, String userId, String executable, String creationDate, String description, long startTime,
-               long endTime, String outputError, String commandLine, long visits, JobStatus jobStatus, long diskUsage, long outDirId,
+               long endTime, String outputError, String commandLine, long visits, JobStatus jobStatus, long size, long outDirId,
                List<Long> input, List<Long> output, List<String> tags, Map<String, Object> attributes,
                Map<String, Object> resourceManagerAttributes) {
         this.id = id;
@@ -129,7 +129,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
         this.commandLine = commandLine;
         this.visits = visits;
         this.status = jobStatus;
-        this.diskUsage = diskUsage;
+        this.size = size;
         this.outDirId = outDirId;
         this.input = input;
         this.output = output;
@@ -153,7 +153,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
 
     public Job(long id, String name, String userId, String toolName, String executable, String creationDate, String description,
                long startTime, long endTime, String outputError, String execution, String commandLine, long visits, JobStatus status,
-               long diskUsage, long outDirId, List<Long> input, List<Long> output, List<String> tags, List<JobAclEntry> acl,
+               long size, long outDirId, List<Long> input, List<Long> output, List<String> tags, List<JobAclEntry> acl,
                Map<String, String> params, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, String error) {
         this.id = id;
         this.name = name;
@@ -169,7 +169,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
         this.commandLine = commandLine;
         this.visits = visits;
         this.status = status;
-        this.diskUsage = diskUsage;
+        this.size = size;
         this.outDirId = outDirId;
         this.input = input;
         this.output = output;
@@ -192,7 +192,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
     }
 
     public Job(long id, String name, String userId, String executable, String creationDate, String description, long startTime,
-               long endTime, String outputError, String execution, String commandLine, long visits, JobStatus status, long diskUsage,
+               long endTime, String outputError, String execution, String commandLine, long visits, JobStatus status, long size,
                long outDirId, List<Long> input, List<Long> output, List<String> tags, List<JobAclEntry> acl, Map<String, String> params,
                Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, String error, String errorDescription) {
         this.id = id;
@@ -208,7 +208,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
         this.commandLine = commandLine;
         this.visits = visits;
         this.status = status;
-        this.diskUsage = diskUsage;
+        this.size = size;
         this.outDirId = outDirId;
         this.input = input;
         this.output = output;
@@ -232,7 +232,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
 
     public Job(long id, String name, String userId, String toolName, Type type, String creationDate, String description, long startTime,
                long endTime, String outputError, String execution, String executable, String commandLine, long visits, JobStatus status,
-               long diskUsage, long outDirId, List<Long> input, List<Long> output, List<String> tags, Map<String, String> params,
+               long size, long outDirId, List<Long> input, List<Long> output, List<String> tags, Map<String, String> params,
                Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, String error, String errorDescription) {
         this.id = id;
         this.name = name;
@@ -249,7 +249,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
         this.commandLine = commandLine;
         this.visits = visits;
         this.status = status;
-        this.diskUsage = diskUsage;
+        this.size = size;
         this.outDirId = outDirId;
         this.input = input;
         this.output = output;
@@ -346,7 +346,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
         sb.append(", commandLine='").append(commandLine).append('\'');
         sb.append(", visits=").append(visits);
         sb.append(", status=").append(status);
-        sb.append(", diskUsage=").append(diskUsage);
+        sb.append(", size=").append(size);
         sb.append(", outDirId=").append(outDirId);
         sb.append(", input=").append(input);
         sb.append(", output=").append(output);
@@ -486,12 +486,12 @@ public class Job extends AbstractAcl<JobAclEntry> {
         return this;
     }
 
-    public long getDiskUsage() {
-        return diskUsage;
+    public long getSize() {
+        return size;
     }
 
-    public Job setDiskUsage(long diskUsage) {
-        this.diskUsage = diskUsage;
+    public Job setSize(long size) {
+        this.size = size;
         return this;
     }
 

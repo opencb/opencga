@@ -323,7 +323,7 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
         List<Long> pfurioStudies = Arrays.asList(9L, 14L);
         List<Document> rankedFilesPerDiskUsage = catalogFileDBAdaptor.rank(
                 new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), pfurioStudies),
-                FileDBAdaptor.QueryParams.DISK_USAGE.key(), 100, false).getResult();
+                FileDBAdaptor.QueryParams.SIZE.key(), 100, false).getResult();
 
         assertEquals(3, rankedFilesPerDiskUsage.size());
 

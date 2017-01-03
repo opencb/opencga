@@ -49,7 +49,7 @@ public interface ProjectDBAdaptor extends DBAdaptor<Project> {
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         LAST_MODIFIED("lastModified", TEXT_ARRAY, ""),
-        DISK_USAGE("diskUsage", INTEGER, ""),
+        SIZE("size", INTEGER, ""),
         USER_ID("userId", TEXT, ""),
         DATASTORES("dataStores", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"

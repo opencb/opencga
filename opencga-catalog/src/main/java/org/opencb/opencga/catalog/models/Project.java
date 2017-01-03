@@ -34,7 +34,7 @@ public class Project {
     private Organism organism;
     private Status status;
     private String lastModified;
-    private long diskUsage;
+    private long size;
 
     private List<Study> studies;
 
@@ -50,14 +50,14 @@ public class Project {
                 new HashMap<>(), new HashMap<>());
     }
 
-    public Project(String name, String alias, String creationDate, String description, Status status, String lastModified, long diskUsage,
+    public Project(String name, String alias, String creationDate, String description, Status status, String lastModified, long size,
                    String organization, Organism organism) {
-        this(-1, name, alias, creationDate, description, organization, organism, status, lastModified, diskUsage, new LinkedList<>(),
+        this(-1, name, alias, creationDate, description, organization, organism, status, lastModified, size, new LinkedList<>(),
                 new HashMap<>(), new HashMap<>());
     }
 
     public Project(long id, String name, String alias, String creationDate, String description, String organization, Organism organism,
-                   Status status, String lastModified, long diskUsage, List<Study> studies, Map<File.Bioformat, DataStore> dataStores,
+                   Status status, String lastModified, long size, List<Study> studies, Map<File.Bioformat, DataStore> dataStores,
                    Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -68,7 +68,7 @@ public class Project {
         this.organism = organism;
         this.status = status;
         this.lastModified = lastModified;
-        this.diskUsage = diskUsage;
+        this.size = size;
         this.studies = studies;
         this.dataStores = dataStores;
         this.attributes = attributes;
@@ -172,7 +172,7 @@ public class Project {
         sb.append(", organization='").append(organization).append('\'');
         sb.append(", status=").append(status);
         sb.append(", lastModified='").append(lastModified).append('\'');
-        sb.append(", diskUsage=").append(diskUsage);
+        sb.append(", size=").append(size);
         sb.append(", studies=").append(studies);
         sb.append(", dataStores=").append(dataStores);
         sb.append(", attributes=").append(attributes);
@@ -261,12 +261,12 @@ public class Project {
         return this;
     }
 
-    public long getDiskUsage() {
-        return diskUsage;
+    public long getSize() {
+        return size;
     }
 
-    public Project setDiskUsage(long diskUsage) {
-        this.diskUsage = diskUsage;
+    public Project setSize(long size) {
+        this.size = size;
         return this;
     }
 

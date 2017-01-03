@@ -121,7 +121,7 @@ public class FileWSServer extends OpenCGAWSServer {
             try {
                 QueryResult<File> fileQueryResult = catalogManager.createFile(studyId, file.getType(), file.getFormat(),
                         file.getBioformat(), file.getPath(), file.getCreationDate(),
-                        file.getDescription(), new File.FileStatus(file.getStatus().getName()), file.getDiskUsage(),
+                        file.getDescription(), new File.FileStatus(file.getStatus().getName()), file.getSize(),
                         file.getExperiment().getId(), file.getSampleIds(), file.getJob().getId(), file.getStats(), file.getAttributes(),
                         true, queryOptions, sessionId);
 //                file = fileQueryResult.getResult().get(0);
@@ -641,7 +641,7 @@ public class FileWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)", required = false) @DefaultValue("") @QueryParam("creationDate") String creationDate,
                            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss)", required = false) @DefaultValue("") @QueryParam("modificationDate") String modificationDate,
                            @ApiParam(value = "Description", required = false) @DefaultValue("") @QueryParam("description") String description,
-                           @ApiParam(value = "Disk usage", required = false) @DefaultValue("") @QueryParam("diskUsage") Long diskUsage,
+                           @ApiParam(value = "Size", required = false) @DefaultValue("") @QueryParam("size") Long size,
                            @ApiParam(value = "DEPRECATED: use sample instead", required = false) @DefaultValue("") @QueryParam("sampleIds") String sampleIds,
                            @ApiParam(value = "Comma separated list of sample ids", required = false) @DefaultValue("") @QueryParam("sample") String samples,
                            @ApiParam(value = "(DEPRECATED) Job id that created the file(s) or folder(s)", required = false) @QueryParam("jobId") String jobIdOld,
@@ -1163,7 +1163,7 @@ public class FileWSServer extends OpenCGAWSServer {
 //        public String creationDate;
 //        public String modificationDate;
         public String description;
-        //        public Long diskUsage;
+        //        public Long size;
 //        public int experimentId;
         public List<Integer> sampleIds;
         public Long jobId;
@@ -1407,7 +1407,7 @@ public class FileWSServer extends OpenCGAWSServer {
                                         String modificationDate,
                             @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description")
                                         String description,
-                            @ApiParam(value = "diskUsage", required = false) @DefaultValue("") @QueryParam("diskUsage") Long diskUsage,
+                            @ApiParam(value = "size", required = false) @DefaultValue("") @QueryParam("size") Long size,
                             @ApiParam(value = "Comma separated sampleIds", required = false) @DefaultValue("") @QueryParam("sampleIds")
                                         String sampleIds,
                             @ApiParam(value = "(DEPRECATED) Job id", required = false) @QueryParam("jobId") String jobIdOld,

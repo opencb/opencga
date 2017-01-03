@@ -242,7 +242,7 @@ public class StudyCommandOptions {
         public String description;
 
         @Parameter(names = {"--size"}, description = "Filter by size of the file", arity = 1)
-        public String diskUsage;
+        public String size;
 
         @Parameter(names = {"--sample-ids"}, description = "Comma separated sampleIds", arity = 1)
         public String sampleIds;

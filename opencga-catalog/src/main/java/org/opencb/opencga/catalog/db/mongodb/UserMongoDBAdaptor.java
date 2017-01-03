@@ -550,7 +550,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             userParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
-        final String[] acceptedLongParams = {QueryParams.DISK_QUOTA.key(), QueryParams.DISK_USAGE.key()};
+        final String[] acceptedLongParams = {QueryParams.QUOTA.key(), QueryParams.SIZE.key()};
         filterLongParams(parameters, userParameters, acceptedLongParams);
 
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
@@ -809,8 +809,8 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                     case STATUS_MSG:
                     case STATUS_DATE:
                     case LAST_MODIFIED:
-                    case DISK_USAGE:
-                    case DISK_QUOTA:
+                    case SIZE:
+                    case QUOTA:
                     case PROJECTS:
                     case PROJECT_ID:
                     case PROJECT_NAME:

@@ -164,7 +164,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult<User> create(String id, String name, String email, String password, String organization, Long diskQuota,
+    public QueryResult<User> create(String id, String name, String email, String password, String organization, Long quota,
                                     QueryOptions options, String adminPassword) throws CatalogException {
 
         // Check if the users can be registered publicly or just the admin.
@@ -186,8 +186,8 @@ public class UserManager extends AbstractManager implements IUserManager {
         User user = new User(id, name, email, "", organization, User.UserStatus.READY);
         user.getAccount().setAuthOrigin(INTERNAL_AUTHORIZATION);
 
-        if (diskQuota != null && diskQuota > 0L) {
-            user.setDiskQuota(diskQuota);
+        if (quota != null && quota > 0L) {
+            user.setQuota(quota);
         }
 
         // TODO: If the registration is closed, we have to check the sessionId to see if it corresponds with the admin in order to continue.
