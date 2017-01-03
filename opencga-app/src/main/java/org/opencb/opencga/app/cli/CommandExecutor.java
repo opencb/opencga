@@ -19,11 +19,13 @@ package org.opencb.opencga.app.cli;
 import com.beust.jcommander.JCommander;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.*;
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.RollingFileAppender;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.core.config.GeneralConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,9 +58,6 @@ public abstract class CommandExecutor {
     protected String sessionId;
     protected CliSession cliSession;
 
-    /** Use {@link #getOpenCGAConfiguration()} */
-    @Deprecated
-    private GeneralConfiguration generalConfiguration;
     protected Configuration configuration;
     protected StorageConfiguration storageConfiguration;
     protected ClientConfiguration clientConfiguration;
@@ -246,27 +245,6 @@ public abstract class CommandExecutor {
      *
      * @throws IOException If any IO problem occurs
      */
-    @Deprecated
-    public void loadOpencgaConfiguration() throws IOException {
-        FileUtils.checkDirectory(Paths.get(this.conf));
-
-        // We load configuration file either from app home folder or from the JAR
-        Path path = Paths.get(this.conf).resolve("general-configuration.yml");
-        if (path != null && Files.exists(path)) {
-            privateLogger.debug("Loading configuration from '{}'", path.toAbsolutePath());
-            this.generalConfiguration = GeneralConfiguration.load(new FileInputStream(path.toFile()));
-        } else {
-            privateLogger.debug("Loading configuration from JAR file");
-            this.generalConfiguration = GeneralConfiguration.load(ClientConfiguration.class.getClassLoader().getResourceAsStream("general-configuration.yml"));
-        }
-    }
-
-
-    /**
-     * This method attempts to load general configuration from CLI 'conf' parameter, if not exists then loads JAR storage-configuration.yml.
-     *
-     * @throws IOException If any IO problem occurs
-     */
     public void loadCatalogConfiguration() throws IOException {
         FileUtils.checkDirectory(Paths.get(this.conf));
 
@@ -339,19 +317,6 @@ public abstract class CommandExecutor {
             cliSession.setProjectsAndStudies(null);
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(sessionPath.toFile(), cliSession);
         }
-    }
-
-    /**
-     * With lazy initialization
-     * @return OpenCGAConfiguration
-     * @throws IOException if an error reading the configuration
-     */
-    @Deprecated
-    public GeneralConfiguration getOpenCGAConfiguration() throws IOException {
-        if (generalConfiguration == null) {
-            loadOpencgaConfiguration();
-        }
-        return generalConfiguration;
     }
 
     protected static String getParsedSubCommand(JCommander jCommander) {

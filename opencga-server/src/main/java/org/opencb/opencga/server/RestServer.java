@@ -23,7 +23,6 @@ import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.opencb.opencga.catalog.config.Configuration;
-import org.opencb.opencga.core.config.GeneralConfiguration;
 import org.opencb.opencga.server.rest.AdminRestWebService;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.LoggerFactory;
@@ -58,13 +57,6 @@ public class RestServer extends AbstractStorageServer {
 
     public RestServer(Configuration configuration, StorageConfiguration storageConfiguration) {
         super(configuration, storageConfiguration);
-
-        init();
-    }
-
-    @Deprecated
-    public RestServer(GeneralConfiguration generalConfiguration, Configuration configuration, StorageConfiguration storageConfiguration) {
-        super(generalConfiguration, configuration, storageConfiguration);
 
         init();
     }

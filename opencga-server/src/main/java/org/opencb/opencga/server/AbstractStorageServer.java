@@ -18,7 +18,6 @@ package org.opencb.opencga.server;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.catalog.config.Configuration;
-import org.opencb.opencga.core.config.GeneralConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,8 +37,6 @@ public abstract class AbstractStorageServer {
     protected int port;
     protected Path configDir;
 
-    @Deprecated
-    protected GeneralConfiguration generalConfiguration;
     protected Configuration configuration;
     protected StorageConfiguration storageConfiguration;
 
@@ -83,16 +80,6 @@ public abstract class AbstractStorageServer {
         this.configuration = configuration;
         this.storageConfiguration = storageConfiguration;
         this.port = configuration.getRest().getPort();
-    }
-
-    @Deprecated
-    public AbstractStorageServer(GeneralConfiguration generalConfiguration, Configuration configuration,
-                                 StorageConfiguration storageConfiguration) {
-        logger.info("Loading configuration files");
-        this.generalConfiguration = generalConfiguration;
-        this.configuration = configuration;
-        this.storageConfiguration = storageConfiguration;
-        this.port = this.configuration.getRest().getPort();
     }
 
     private void initDefaultConfigurationFiles() {

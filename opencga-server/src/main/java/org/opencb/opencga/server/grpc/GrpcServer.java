@@ -56,8 +56,8 @@ public class GrpcServer extends AbstractStorageServer {
 
     private void init() {
         logger = LoggerFactory.getLogger(this.getClass());
-        if (generalConfiguration != null) {
-            this.port = generalConfiguration.getGrpc().getPort();
+        if (configuration != null) {
+            this.port = configuration.getGrpc().getPort();
         }
     }
 

@@ -21,12 +21,11 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.junit.rules.ExternalResource;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.demo.AnalysisDemo;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
 import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.core.config.GeneralConfiguration;
 import org.opencb.opencga.server.RestServer;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -47,7 +46,6 @@ public class WorkEnvironmentTest extends ExternalResource {
     protected OpenCGAClient openCGAClient;
     protected Path opencgaHome;
     protected CatalogManager catalogManager;
-    protected GeneralConfiguration generalConfiguration;
     protected ClientConfiguration clientConfiguration;
     protected Configuration configuration;
     protected StorageConfiguration storageConfiguration;
@@ -62,7 +60,6 @@ public class WorkEnvironmentTest extends ExternalResource {
     private void isolateOpenCGA() throws Exception {
         opencgaHome = Paths.get("target/test-data").resolve("junit_opencga_home_" + RandomStringUtils.randomAlphabetic(10));
         Files.createDirectories(opencgaHome);
-        generalConfiguration = GeneralConfiguration.load(getClass().getResource("/general-configuration-test.yml").openStream());
         storageConfiguration = StorageConfiguration.load(getClass().getResource("/storage-configuration.yml").openStream());
         configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
         configuration.setDataDir(opencgaHome.resolve("sessions").toUri().toString());
