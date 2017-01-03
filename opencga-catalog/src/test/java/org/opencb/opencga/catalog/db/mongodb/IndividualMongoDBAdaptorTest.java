@@ -39,7 +39,7 @@ import static org.junit.Assert.assertFalse;
 /**
  * Created by hpccoll1 on 19/06/15.
  */
-public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTest {
+public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void testCreateIndividual() throws Exception {

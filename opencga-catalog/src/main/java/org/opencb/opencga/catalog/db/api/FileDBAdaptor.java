@@ -54,7 +54,7 @@ public interface FileDBAdaptor extends AclDBAdaptor<File, FileAclEntry> {
         STATUS_DATE("status.date", TEXT, ""),
         RELATED_FILES("relatedFiles", TEXT_ARRAY, ""),
         RELATED_FILES_RELATION("relatedFiles.relation", TEXT, ""),
-        DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
+        SIZE("size", INTEGER_ARRAY, ""),
         EXPERIMENT_ID("experiment.id", INTEGER_ARRAY, ""),
         SAMPLE_IDS("sampleIds", INTEGER_ARRAY, ""),
 
@@ -267,7 +267,7 @@ public interface FileDBAdaptor extends AclDBAdaptor<File, FileAclEntry> {
         modificationDate(Type.TEXT, ""),
         description(Type.TEXT, ""),
         status(Type.TEXT, ""),
-        diskUsage(Type.NUMERICAL, ""),
+        size(Type.NUMERICAL, ""),
         experimentId(Type.NUMERICAL, ""),
         sampleIds(Type.NUMERICAL, ""),
         jobId(Type.NUMERICAL, ""),

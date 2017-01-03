@@ -34,7 +34,7 @@ import static org.junit.Assert.*;
 /**
  * Created by pfurio on 19/01/16.
  */
-public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
+public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void nativeGet() throws Exception {

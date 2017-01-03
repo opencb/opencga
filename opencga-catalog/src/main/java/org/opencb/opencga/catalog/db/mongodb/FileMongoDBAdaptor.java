@@ -106,12 +106,12 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
             throw CatalogDBException.alreadyExists("File", studyId, "path", file.getPath(), e);
         }
 
-        // Update the diskUsage field from the study collection
+        // Update the size field from the study collection
         if (!file.isExternal()) {
-            dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, file.getDiskUsage());
+            dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, file.getSize());
         }
 //        try {
-//            dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, file.getDiskUsage());
+//            dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, file.getSize());
 //        } catch (CatalogDBException e) {
 //            delete(newFileId, options);
 //            throw new CatalogDBException("File from study { id:" + studyId + "} was removed from the database due to problems "
@@ -273,9 +273,9 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
         // If the user wants to change the diskUsages of the file(s), we first make a query to obtain the old values.
         QueryResult fileQueryResult = null;
-        if (parameters.containsKey(QueryParams.DISK_USAGE.key())) {
+        if (parameters.containsKey(QueryParams.SIZE.key())) {
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
-                    FILTER_ROUTE_FILES + QueryParams.DISK_USAGE.key(), FILTER_ROUTE_FILES + PRIVATE_STUDY_ID));
+                    FILTER_ROUTE_FILES + QueryParams.SIZE.key(), FILTER_ROUTE_FILES + PRIVATE_STUDY_ID));
             fileQueryResult = nativeGet(query, queryOptions);
         }
 
@@ -320,7 +320,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                     getMongoDBDocument(parameters.get(QueryParams.INDEX_TRANSFORMED_FILE.key()), "TransformedFile"));
         }
 
-        String[] acceptedLongParams = {QueryParams.DISK_USAGE.key()};
+        String[] acceptedLongParams = {QueryParams.SIZE.key()};
         filterLongParams(parameters, fileParameters, acceptedLongParams);
 
         String[] acceptedIntParams = {QueryParams.JOB_ID.key()};
@@ -354,11 +354,11 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         if (!fileParameters.isEmpty()) {
             QueryResult<UpdateResult> update = fileCollection.update(queryBson, new Document("$set", fileParameters), null);
 
-            // If the diskUsage of some of the files have been changed, notify to the correspondent study
+            // If the size of some of the files have been changed, notify to the correspondent study
             if (fileQueryResult != null) {
-                long newDiskUsage = parameters.getLong(QueryParams.DISK_USAGE.key());
+                long newDiskUsage = parameters.getLong(QueryParams.SIZE.key());
                 for (Document file : (List<Document>) fileQueryResult.getResult()) {
-                    long difDiskUsage = newDiskUsage - Long.parseLong(file.get(QueryParams.DISK_USAGE.key()).toString());
+                    long difDiskUsage = newDiskUsage - Long.parseLong(file.get(QueryParams.SIZE.key()).toString());
                     long studyId = (long) file.get(PRIVATE_STUDY_ID);
                     dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, difDiskUsage);
                 }
@@ -711,7 +711,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
                     case STATUS_DATE:
                     case RELATED_FILES:
                     case RELATED_FILES_RELATION:
-                    case DISK_USAGE:
+                    case SIZE:
                     case EXPERIMENT_ID:
                     case SAMPLE_IDS:
                     case JOB_ID:

@@ -207,10 +207,10 @@ public class FileMetadataReader {
         if (!modifyParams.isEmpty()) {
 //            start = System.currentTimeMillis();
 
-            if (modifyParams.get(FileDBAdaptor.QueryParams.DISK_USAGE.key()) != null) {
+            if (modifyParams.get(FileDBAdaptor.QueryParams.SIZE.key()) != null) {
                 catalogManager.getFileManager()
-                        .setDiskUsage(file.getId(), modifyParams.getLong(FileDBAdaptor.QueryParams.DISK_USAGE.key()), sessionId);
-                modifyParams.remove(FileDBAdaptor.QueryParams.DISK_USAGE.key());
+                        .setDiskUsage(file.getId(), modifyParams.getLong(FileDBAdaptor.QueryParams.SIZE.key()), sessionId);
+                modifyParams.remove(FileDBAdaptor.QueryParams.SIZE.key());
             }
             if (modifyParams.get(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()) != null) {
                 catalogManager.getFileManager()

@@ -25,7 +25,7 @@ import java.util.Arrays;
 /**
  * Created by pfurio on 3/3/16.
  */
-public class CatalogMongoDBUtilsTest extends CatalogMongoDBAdaptorTest {
+public class MongoDBUtilsTest extends MongoDBAdaptorTest {
     /////////// Other tests
     @Test
     public void replaceDots() {

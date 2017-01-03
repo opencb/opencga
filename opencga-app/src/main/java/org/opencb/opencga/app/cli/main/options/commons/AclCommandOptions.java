@@ -59,7 +59,7 @@ public class AclCommandOptions {
     }
 
     public class AclsCreateCommandOptionsTemplate extends AclsCreateCommandOptions {
-        @Parameter(names = {"--template-id"}, description = "Template of permissions to be used (admin, analyst or locked)", arity = 1)
+        @Parameter(names = {"--template-id"}, description = "Template of permissions to be used (admin, analyst or view_only)", arity = 1)
         public String templateId;
     }
 

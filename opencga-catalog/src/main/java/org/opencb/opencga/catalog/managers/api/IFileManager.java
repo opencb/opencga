@@ -157,7 +157,7 @@ public interface IFileManager extends ResourceManager<Long, File> {
     /* CRUD METHODS */
     /*--------------*/
     QueryResult<File> create(long studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path, String creationDate,
-                             String description, File.FileStatus status, long diskUsage, long experimentId, List<Long> sampleIds,
+                             String description, File.FileStatus status, long size, long experimentId, List<Long> sampleIds,
                              long jobId, Map<String, Object> stats, Map<String, Object> attributes, boolean parents, QueryOptions options,
                              String sessionId) throws CatalogException;
 
@@ -355,7 +355,7 @@ public interface IFileManager extends ResourceManager<Long, File> {
 
     void setFileIndex(long fileId, FileIndex index, String sessionId) throws CatalogException;
 
-    void setDiskUsage(long fileId, long diskUsage, String sessionId) throws CatalogException;
+    void setDiskUsage(long fileId, long size, String sessionId) throws CatalogException;
 
     void setModificationDate(long fileId, String date, String sessionId) throws CatalogException;
 

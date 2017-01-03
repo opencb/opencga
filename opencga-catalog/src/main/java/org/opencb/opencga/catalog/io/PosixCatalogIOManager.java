@@ -490,7 +490,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 //        }
 //        try {
 //            Files.copy(tmpFile, fullFilePath);
-//            file.setDiskUsage(Files.size(fullFilePath));
+//            file.setSize(Files.size(fullFilePath));
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //            throw new CatalogIOManagerException("createObject(): Copying from tmp folder to bucket folder");

@@ -242,8 +242,8 @@ public class FileCommandOptions {
         @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
         public String description;
 
-        @Parameter(names = {"--disk-usage"}, description = "diskUsage.", required = false, arity = 1)
-        public String diskUsage;
+        @Parameter(names = {"--size"}, description = "Size.", required = false, arity = 1)
+        public String size;
 
         @Parameter(names = {"--sample-ids"}, description = "Sample ids", required = false, arity = 1)
         public String samples;
@@ -586,8 +586,8 @@ public class FileCommandOptions {
         @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
         public String description;
 
-        @Parameter(names = {"--disk-usage"}, description = "Filter by size", required = false, arity = 1)
-        public String diskUsage;
+        @Parameter(names = {"--size"}, description = "Filter by size", required = false, arity = 1)
+        public String size;
 
         @Parameter(names = {"--sample-ids"}, description = "Sample ids", required = false, arity = 1)
         public String sampleIds;

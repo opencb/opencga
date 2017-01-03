@@ -111,8 +111,8 @@ public interface UserDBAdaptor extends DBAdaptor<User> {
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         LAST_MODIFIED("lastModified", TEXT_ARRAY, ""),
-        DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
-        DISK_QUOTA("diskQuota", INTEGER_ARRAY, ""),
+        SIZE("size", INTEGER_ARRAY, ""),
+        QUOTA("quota", INTEGER_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"

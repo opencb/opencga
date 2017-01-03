@@ -33,7 +33,7 @@ import static org.junit.Assert.*;
 /**
  * Created by pfurio on 3/2/16.
  */
-public class CatalogMongoProjectDBAdaptorTest extends CatalogMongoDBAdaptorTest {
+public class ProjectMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void createProjectTest() throws CatalogException, JsonProcessingException {

@@ -172,9 +172,15 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             return endQuery("logout", startTime, null, "", "Session not found");
         }
         if (userIdBySessionId.equals(userId)) {
-            Bson query = new Document(QueryParams.SESSION_ID.key(), sessionId);
-            Bson updates = Updates.set("sessions.$.logout", TimeUtils.getTime());
-            userCollection.update(query, updates, null);
+            Bson query = new Document(QueryParams.ID.key(), userId);
+            Bson update = new Document("$pull", new Document("sessions", new Document("id", sessionId)));
+            QueryResult<UpdateResult> updateQueryResult = userCollection.update(query, update, null);
+            if (updateQueryResult.first().getModifiedCount() == 0) {
+                throw new CatalogDBException("Internal error: Could not remove closed session from user " + userId);
+            }
+//            Bson query = new Document(QueryParams.SESSION_ID.key(), sessionId);
+//            Bson updates = Updates.set("sessions.$.logout", TimeUtils.getTime());
+//            userCollection.update(query, updates, null);
         } else {
             throw new CatalogDBException("UserId mismatches with the sessionId");
         }
@@ -544,7 +550,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             userParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
-        final String[] acceptedLongParams = {QueryParams.DISK_QUOTA.key(), QueryParams.DISK_USAGE.key()};
+        final String[] acceptedLongParams = {QueryParams.QUOTA.key(), QueryParams.SIZE.key()};
         filterLongParams(parameters, userParameters, acceptedLongParams);
 
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
@@ -803,8 +809,8 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
                     case STATUS_MSG:
                     case STATUS_DATE:
                     case LAST_MODIFIED:
-                    case DISK_USAGE:
-                    case DISK_QUOTA:
+                    case SIZE:
+                    case QUOTA:
                     case PROJECTS:
                     case PROJECT_ID:
                     case PROJECT_NAME:

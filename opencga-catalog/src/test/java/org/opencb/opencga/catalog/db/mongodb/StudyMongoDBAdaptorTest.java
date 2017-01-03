@@ -37,14 +37,14 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by pfurio on 19/01/16.
  */
-public class CatalogMongoStudyDBAdaptorTest extends CatalogMongoDBAdaptorTest {
+public class StudyMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void updateDiskUsage() throws Exception {
         catalogDBAdaptor.getCatalogStudyDBAdaptor().updateDiskUsage(5, 100);
-        assertEquals(2100, catalogStudyDBAdaptor.get(5, null).getResult().get(0).getDiskUsage());
+        assertEquals(2100, catalogStudyDBAdaptor.get(5, null).getResult().get(0).getSize());
         catalogDBAdaptor.getCatalogStudyDBAdaptor().updateDiskUsage(5, -200);
-        assertEquals(1900, catalogStudyDBAdaptor.get(5, null).getResult().get(0).getDiskUsage());
+        assertEquals(1900, catalogStudyDBAdaptor.get(5, null).getResult().get(0).getSize());
     }
 
     /***

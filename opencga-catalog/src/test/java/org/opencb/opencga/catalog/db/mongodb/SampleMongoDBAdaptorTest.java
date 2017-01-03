@@ -46,7 +46,7 @@ import static org.junit.Assert.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class CatalogMongoSampleDBAdaptorTest {
+public class SampleMongoDBAdaptorTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -66,19 +66,19 @@ public class CatalogMongoSampleDBAdaptorTest {
 
     @AfterClass
     public static void afterClass() {
-        CatalogMongoDBAdaptorTest.afterClass();
+        MongoDBAdaptorTest.afterClass();
     }
 
     @Before
     public void before() throws IOException, CatalogException {
-        CatalogMongoDBAdaptorTest dbAdaptorTest = new CatalogMongoDBAdaptorTest();
+        MongoDBAdaptorTest dbAdaptorTest = new MongoDBAdaptorTest();
         dbAdaptorTest.before();
 
-        user1 = CatalogMongoDBAdaptorTest.user1;
-        user2 = CatalogMongoDBAdaptorTest.user2;
-        user3 = CatalogMongoDBAdaptorTest.user3;
-        user4 = CatalogMongoDBAdaptorTest.user4;
-        dbAdaptorFactory = CatalogMongoDBAdaptorTest.catalogDBAdaptor;
+        user1 = MongoDBAdaptorTest.user1;
+        user2 = MongoDBAdaptorTest.user2;
+        user3 = MongoDBAdaptorTest.user3;
+        user4 = MongoDBAdaptorTest.user4;
+        dbAdaptorFactory = MongoDBAdaptorTest.catalogDBAdaptor;
         catalogSampleDBAdaptor = dbAdaptorFactory.getCatalogSampleDBAdaptor();
 
         studyId = user3.getProjects().get(0).getStudies().get(0).getId();

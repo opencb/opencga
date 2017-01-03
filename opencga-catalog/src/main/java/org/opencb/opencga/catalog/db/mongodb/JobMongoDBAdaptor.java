@@ -419,7 +419,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         String[] acceptedIntParams = {QueryParams.VISITS.key(), };
         filterIntParams(parameters, jobParameters, acceptedIntParams);
 
-        String[] acceptedLongParams = {QueryParams.START_TIME.key(), QueryParams.END_TIME.key(), QueryParams.DISK_USAGE.key()};
+        String[] acceptedLongParams = {QueryParams.START_TIME.key(), QueryParams.END_TIME.key(), QueryParams.SIZE.key()};
         filterLongParams(parameters, jobParameters, acceptedLongParams);
 
         String[] acceptedIntegerListParams = {QueryParams.OUTPUT.key()};
@@ -677,7 +677,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case STATUS_NAME:
                     case STATUS_MSG:
                     case STATUS_DATE:
-                    case DISK_USAGE:
+                    case SIZE:
                     case OUT_DIR_ID:
                     case TMP_OUT_DIR_URI:
                     case INPUT:

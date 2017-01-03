@@ -38,7 +38,7 @@ import static org.junit.Assert.*;
 /**
  * Created by pfurio on 3/2/16.
  */
-public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
+public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
     @Test
     public void createFileToStudyTest() throws CatalogException, IOException {
@@ -323,7 +323,7 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         List<Long> pfurioStudies = Arrays.asList(9L, 14L);
         List<Document> rankedFilesPerDiskUsage = catalogFileDBAdaptor.rank(
                 new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), pfurioStudies),
-                FileDBAdaptor.QueryParams.DISK_USAGE.key(), 100, false).getResult();
+                FileDBAdaptor.QueryParams.SIZE.key(), 100, false).getResult();
 
         assertEquals(3, rankedFilesPerDiskUsage.size());
 

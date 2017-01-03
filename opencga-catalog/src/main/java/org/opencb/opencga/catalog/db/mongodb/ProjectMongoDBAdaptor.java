@@ -246,7 +246,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
 //                ((Document) projectParameters).put("projects.$." + s, parameters.getString(s));
 //            }
 //        }
-//        String[] acceptedIntParams = {"diskQuota", "diskUsage"};
+//        String[] acceptedIntParams = {"quota", "size"};
 //        for (String s : acceptedIntParams) {
 //            if (parameters.containsKey(s)) {
 //                int anInt = parameters.getInt(s, Integer.MIN_VALUE);
@@ -451,7 +451,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                 ((Document) projectParameters).put("projects.$." + s, parameters.getString(s));
             }
         }
-        String[] acceptedIntParams = {QueryParams.DISK_USAGE.key(), QueryParams.ORGANISM_TAXONOMY_CODE.key(), };
+        String[] acceptedIntParams = {QueryParams.SIZE.key(), QueryParams.ORGANISM_TAXONOMY_CODE.key(), };
         for (String s : acceptedIntParams) {
             if (parameters.containsKey(s)) {
                 int anInt = parameters.getInt(s, Integer.MIN_VALUE);
@@ -680,7 +680,7 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
                     case STATUS_MSG:
                     case STATUS_DATE:
                     case LAST_MODIFIED:
-                    case DISK_USAGE:
+                    case SIZE:
                     case DATASTORES:
                     case STUDY_ID:
                     case STUDY_NAME:

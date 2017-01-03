@@ -37,7 +37,7 @@ public class CatalogConfiguration {
     private String logFile;
 
     private boolean openRegister;
-    private int userDefaultDiskQuota;
+    private int userDefaultQuota;
 
     private String databasePrefix;
     private String dataDir;
@@ -106,7 +106,7 @@ public class CatalogConfiguration {
         sb.append("logLevel='").append(logLevel).append('\'');
         sb.append(", logFile='").append(logFile).append('\'');
         sb.append(", openRegister=").append(openRegister);
-        sb.append(", userDefaultDiskQuota=").append(userDefaultDiskQuota);
+        sb.append(", userDefaultQuota=").append(userDefaultQuota);
         sb.append(", databasePrefix='").append(databasePrefix).append('\'');
         sb.append(", dataDir='").append(dataDir).append('\'');
         sb.append(", tempJobsDir='").append(tempJobsDir).append('\'');
@@ -151,12 +151,12 @@ public class CatalogConfiguration {
         return this;
     }
 
-    public int getUserDefaultDiskQuota() {
-        return userDefaultDiskQuota;
+    public int getUserDefaultQuota() {
+        return userDefaultQuota;
     }
 
-    public CatalogConfiguration setUserDefaultDiskQuota(int userDefaultDiskQuota) {
-        this.userDefaultDiskQuota = userDefaultDiskQuota;
+    public CatalogConfiguration setUserDefaultQuota(int userDefaultQuota) {
+        this.userDefaultQuota = userDefaultQuota;
         return this;
     }
 
