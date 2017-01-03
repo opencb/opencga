@@ -21,22 +21,21 @@ import org.junit.Test;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-import static org.junit.Assert.*;
-
 /**
  * Created by imedina on 25/04/16.
  */
-public class ConfigurationTest {
+@Deprecated
+public class GeneralConfigurationTest {
 
     @Test
     public void testDefault() {
-        Configuration configuration = new Configuration();
+        GeneralConfiguration generalConfiguration = new GeneralConfiguration();
 
-        configuration.setRest(new RestServerConfiguration(9090));
-        configuration.setGrpc(new GrpcServerConfiguration(9091));
+        generalConfiguration.setRest(new RestServerConfiguration(9090));
+        generalConfiguration.setGrpc(new GrpcServerConfiguration(9091));
 
         try {
-            configuration.serialize(new FileOutputStream("/tmp/configuration-test.yml"));
+            generalConfiguration.serialize(new FileOutputStream("/tmp/configuration-test.yml"));
         } catch (IOException e) {
             e.printStackTrace();
         }

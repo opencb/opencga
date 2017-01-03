@@ -23,7 +23,7 @@ import org.apache.log4j.*;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.GeneralConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +57,8 @@ public abstract class CommandExecutor {
     protected CliSession cliSession;
 
     /** Use {@link #getOpenCGAConfiguration()} */
-    private Configuration configuration;
+    @Deprecated
+    private GeneralConfiguration generalConfiguration;
     protected CatalogConfiguration catalogConfiguration;
     protected StorageConfiguration storageConfiguration;
     protected ClientConfiguration clientConfiguration;
@@ -250,13 +251,13 @@ public abstract class CommandExecutor {
         FileUtils.checkDirectory(Paths.get(this.conf));
 
         // We load configuration file either from app home folder or from the JAR
-        Path path = Paths.get(this.conf).resolve("configuration.yml");
+        Path path = Paths.get(this.conf).resolve("general-configuration.yml");
         if (path != null && Files.exists(path)) {
             privateLogger.debug("Loading configuration from '{}'", path.toAbsolutePath());
-            this.configuration= Configuration.load(new FileInputStream(path.toFile()));
+            this.generalConfiguration = GeneralConfiguration.load(new FileInputStream(path.toFile()));
         } else {
             privateLogger.debug("Loading configuration from JAR file");
-            this.configuration = Configuration.load(ClientConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml"));
+            this.generalConfiguration = GeneralConfiguration.load(ClientConfiguration.class.getClassLoader().getResourceAsStream("general-configuration.yml"));
         }
     }
 
@@ -346,11 +347,11 @@ public abstract class CommandExecutor {
      * @throws IOException if an error reading the configuration
      */
     @Deprecated
-    public Configuration getOpenCGAConfiguration() throws IOException {
-        if (configuration == null) {
+    public GeneralConfiguration getOpenCGAConfiguration() throws IOException {
+        if (generalConfiguration == null) {
             loadOpencgaConfiguration();
         }
-        return configuration;
+        return generalConfiguration;
     }
 
     protected static String getParsedSubCommand(JCommander jCommander) {

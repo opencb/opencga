@@ -18,7 +18,7 @@ package org.opencb.opencga.server;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
-import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.GeneralConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +38,8 @@ public abstract class AbstractStorageServer {
     protected int port;
     protected Path configDir;
 
-    protected Configuration configuration;
+    @Deprecated
+    protected GeneralConfiguration generalConfiguration;
     protected CatalogConfiguration catalogConfiguration;
     protected StorageConfiguration storageConfiguration;
 
@@ -77,13 +78,21 @@ public abstract class AbstractStorageServer {
         }
     }
 
-    public AbstractStorageServer(Configuration configuration, CatalogConfiguration catalogConfiguration,
-                                 StorageConfiguration storageConfiguration) {
+    public AbstractStorageServer(CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration) {
         logger.info("Loading configuration files");
-        this.configuration = configuration;
         this.catalogConfiguration = catalogConfiguration;
         this.storageConfiguration = storageConfiguration;
-        this.port = configuration.getRest().getPort();
+        this.port = catalogConfiguration.getRest().getPort();
+    }
+
+    @Deprecated
+    public AbstractStorageServer(GeneralConfiguration generalConfiguration, CatalogConfiguration catalogConfiguration,
+                                 StorageConfiguration storageConfiguration) {
+        logger.info("Loading configuration files");
+        this.generalConfiguration = generalConfiguration;
+        this.catalogConfiguration = catalogConfiguration;
+        this.storageConfiguration = storageConfiguration;
+        this.port = this.catalogConfiguration.getRest().getPort();
     }
 
     private void initDefaultConfigurationFiles() {
@@ -92,7 +101,7 @@ public abstract class AbstractStorageServer {
                 initConfigurationFiles(Paths.get(System.getenv("OPENCGA_HOME") + "/conf"));
             } else {
                 logger.info("Loading configuration files from inside JAR file");
-                configuration = Configuration.load(Configuration.class.getClassLoader().getResourceAsStream("configuration.yml"));
+//                generalConfiguration = GeneralConfiguration.load(GeneralConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml"));
                 catalogConfiguration = CatalogConfiguration
                         .load(CatalogConfiguration.class.getClassLoader().getResourceAsStream("catalog-configuration.yml"));
                 storageConfiguration = StorageConfiguration
@@ -107,7 +116,7 @@ public abstract class AbstractStorageServer {
         try {
             if (configDir != null && Files.exists(configDir) && Files.isDirectory(configDir)) {
                 logger.info("Loading configuration files from '{}'", configDir.toString());
-                configuration = Configuration.load(Configuration.class.getClassLoader().getResourceAsStream("configuration.yml"));
+//                generalConfiguration = GeneralConfiguration.load(GeneralConfiguration.class.getClassLoader().getResourceAsStream("configuration.yml"));
                 catalogConfiguration = CatalogConfiguration
                         .load(new FileInputStream(new File(configDir.toFile().getAbsolutePath() + "/catalog-configuration.yml")));
                 storageConfiguration = StorageConfiguration

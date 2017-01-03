@@ -23,7 +23,7 @@ import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.catalog.SampleClient;
-import org.opencb.opencga.core.config.Configuration;
+import org.opencb.opencga.core.config.GeneralConfiguration;
 import org.opencb.opencga.server.RestServer;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
@@ -45,7 +45,7 @@ public class SampleClientTest {
     private SampleClient sampleClient;
     private Path opencgaHome;
     private CatalogManager catalogManager;
-    private Configuration configuration;
+    private GeneralConfiguration generalConfiguration;
     private ClientConfiguration clientConfiguration;
     private CatalogConfiguration catalogConfiguration;
     private StorageConfiguration storageConfiguration;
@@ -56,7 +56,7 @@ public class SampleClientTest {
         try {
             opencgaHome = Paths.get("target/test-data").resolve("junit_opencga_home_" + RandomStringUtils.randomAlphabetic(10));
             Files.createDirectories(opencgaHome);
-            configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
+            generalConfiguration = GeneralConfiguration.load(getClass().getResource("/general- configuration-test.yml").openStream());
             storageConfiguration = StorageConfiguration.load(getClass().getResource("/storage-configuration.yml").openStream());
             catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration-test.yml").openStream());
             catalogConfiguration.setDataDir(opencgaHome.resolve("sessions").toUri().toString());
@@ -66,7 +66,7 @@ public class SampleClientTest {
             // Copy the conf files
             Files.createDirectories(opencgaHome.resolve("conf"));
 //            InputStream inputStream = getClass().getResource("/catalog-configuration-test.yml").openStream();
-//            Files.copy(inputStream, opencgaHome.resolve("conf").resolve("catalog-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
+//            Files.copy(inputStream, opencgaHome.resolve("conf").resolve("catalog-configuration.yml"), Stand ardCopyOption.REPLACE_EXISTING);
             catalogConfiguration.serialize(
                     new FileOutputStream(opencgaHome.resolve("conf").resolve("catalog-configuration.yml").toString()));
 

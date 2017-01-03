@@ -18,8 +18,6 @@ package org.opencb.opencga.server.grpc;
 
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
-import io.grpc.inprocess.InProcessServerBuilder;
-import io.grpc.netty.NettyServerBuilder;
 import org.opencb.opencga.server.AbstractStorageServer;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.LoggerFactory;
@@ -58,8 +56,8 @@ public class GrpcServer extends AbstractStorageServer {
 
     private void init() {
         logger = LoggerFactory.getLogger(this.getClass());
-        if (configuration != null) {
-            this.port = configuration.getGrpc().getPort();
+        if (generalConfiguration != null) {
+            this.port = generalConfiguration.getGrpc().getPort();
         }
     }
 

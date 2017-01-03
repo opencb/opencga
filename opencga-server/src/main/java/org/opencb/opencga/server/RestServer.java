@@ -17,15 +17,13 @@
 package org.opencb.opencga.server;
 
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
-import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.server.AbstractStorageServer;
+import org.opencb.opencga.core.config.GeneralConfiguration;
 import org.opencb.opencga.server.rest.AdminRestWebService;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.LoggerFactory;
@@ -58,8 +56,15 @@ public class RestServer extends AbstractStorageServer {
         init();
     }
 
-    public RestServer(Configuration configuration, CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration) {
-        super(configuration, catalogConfiguration, storageConfiguration);
+    public RestServer(CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration) {
+        super(catalogConfiguration, storageConfiguration);
+
+        init();
+    }
+
+    @Deprecated
+    public RestServer(GeneralConfiguration generalConfiguration, CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration) {
+        super(generalConfiguration, catalogConfiguration, storageConfiguration);
 
         init();
     }
@@ -75,8 +80,8 @@ public class RestServer extends AbstractStorageServer {
     private void init() {
         logger = LoggerFactory.getLogger(this.getClass());
 
-        if (configuration != null) {
-            this.port = configuration.getRest().getPort();
+        if (catalogConfiguration != null) {
+            this.port = catalogConfiguration.getRest().getPort();
         }
     }
 

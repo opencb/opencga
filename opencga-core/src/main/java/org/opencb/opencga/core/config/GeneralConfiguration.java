@@ -22,15 +22,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Created by imedina on 25/04/16.
  */
 @Deprecated
-public class Configuration {
+public class GeneralConfiguration {
 
     private String logLevel;
     private String logFile;
@@ -38,32 +35,32 @@ public class Configuration {
     private RestServerConfiguration rest;
     private GrpcServerConfiguration grpc;
 
-    protected static Logger logger = LoggerFactory.getLogger(Configuration.class);
+    protected static Logger logger = LoggerFactory.getLogger(GeneralConfiguration.class);
 
     /**
      * This method loads the configuration from the InputStream.
      * @throws IOException If any IO problem occurs
      */
-    public static Configuration load(InputStream configurationInputStream) throws IOException {
+    public static GeneralConfiguration load(InputStream configurationInputStream) throws IOException {
         return load(configurationInputStream, "yaml");
     }
 
-    public static Configuration load(InputStream configurationInputStream, String format) throws IOException {
-        Configuration storageConfiguration;
+    public static GeneralConfiguration load(InputStream configurationInputStream, String format) throws IOException {
+        GeneralConfiguration storageGeneralConfiguration;
         ObjectMapper objectMapper;
         switch (format) {
             case "json":
                 objectMapper = new ObjectMapper();
-                storageConfiguration = objectMapper.readValue(configurationInputStream, Configuration.class);
+                storageGeneralConfiguration = objectMapper.readValue(configurationInputStream, GeneralConfiguration.class);
                 break;
             case "yml":
             case "yaml":
             default:
                 objectMapper = new ObjectMapper(new YAMLFactory());
-                storageConfiguration = objectMapper.readValue(configurationInputStream, Configuration.class);
+                storageGeneralConfiguration = objectMapper.readValue(configurationInputStream, GeneralConfiguration.class);
                 break;
         }
-        return storageConfiguration;
+        return storageGeneralConfiguration;
     }
 
     public void serialize(OutputStream configurationOututStream) throws IOException {
@@ -86,7 +83,7 @@ public class Configuration {
         return logLevel;
     }
 
-    public Configuration setLogLevel(String logLevel) {
+    public GeneralConfiguration setLogLevel(String logLevel) {
         this.logLevel = logLevel;
         return this;
     }
@@ -95,7 +92,7 @@ public class Configuration {
         return logFile;
     }
 
-    public Configuration setLogFile(String logFile) {
+    public GeneralConfiguration setLogFile(String logFile) {
         this.logFile = logFile;
         return this;
     }
@@ -104,7 +101,7 @@ public class Configuration {
         return rest;
     }
 
-    public Configuration setRest(RestServerConfiguration rest) {
+    public GeneralConfiguration setRest(RestServerConfiguration rest) {
         this.rest = rest;
         return this;
     }
@@ -113,7 +110,7 @@ public class Configuration {
         return grpc;
     }
 
-    public Configuration setGrpc(GrpcServerConfiguration grpc) {
+    public GeneralConfiguration setGrpc(GrpcServerConfiguration grpc) {
         this.grpc = grpc;
         return this;
     }
