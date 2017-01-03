@@ -19,6 +19,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
@@ -102,8 +103,10 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
                 }
             }
 
-
-            String outputFileName = buildOutputFileName(alias, query);
+            String outputFileName = options.getString(DefaultVariantAnnotationManager.FILE_NAME);
+            if (StringUtils.isEmpty(outputFileName)) {
+                outputFileName = buildOutputFileName(alias, query);
+            }
 
             Long catalogOutDirId = getCatalogOutdirId(studyStr, options, sessionId);
 
@@ -117,7 +120,7 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
 
             QueryOptions annotationOptions = new QueryOptions(options)
                     .append(DefaultVariantAnnotationManager.OUT_DIR, outdirUri.getPath());
-            annotationOptions.putIfAbsent(DefaultVariantAnnotationManager.FILE_NAME, outputFileName);
+            annotationOptions.put(DefaultVariantAnnotationManager.FILE_NAME, outputFileName);
 
             String loadFileStr = options.getString(VariantAnnotationManager.LOAD_FILE);
             if (StringUtils.isNotEmpty(loadFileStr)) {
@@ -169,11 +172,17 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
 
     private String buildOutputFileName(String alias, Query query) {
         List<Region> regions = new ArrayList<>();
-        if (query.containsKey(VariantQueryParams.REGION.key())) {
-            regions.addAll(Region.parseRegions(query.getString(VariantQueryParams.REGION.key())));
+        if (VariantDBAdaptorUtils.isValidParam(query, VariantQueryParams.REGION)) {
+            List<Region> c = Region.parseRegions(query.getString(VariantQueryParams.REGION.key()));
+            if (c != null) {
+                regions.addAll(c);
+            }
         }
-        if (query.containsKey(VariantQueryParams.CHROMOSOME.key())) {
-            regions.addAll(Region.parseRegions(query.getString(VariantQueryParams.CHROMOSOME.key())));
+        if (VariantDBAdaptorUtils.isValidParam(query, VariantQueryParams.CHROMOSOME)) {
+            List<Region> c = Region.parseRegions(query.getString(VariantQueryParams.CHROMOSOME.key()));
+            if (c != null) {
+                regions.addAll(c);
+            }
         }
         if (regions.isEmpty() || regions.size() > 1) {
             return alias + '.' + TimeUtils.getTime();
