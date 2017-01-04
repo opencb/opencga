@@ -48,6 +48,7 @@ import java.util.*;
 public abstract class StorageManager {
 
     protected final CatalogManager catalogManager;
+    protected final CatalogUtils catalogUtils;
     protected final CacheManager cacheManager;
     protected final StorageConfiguration storageConfiguration;
     protected final StorageManagerFactory storageManagerFactory;
@@ -67,6 +68,7 @@ public abstract class StorageManager {
                              StorageManagerFactory storageManagerFactory) {
         this.catalogManager = catalogManager;
         this.cacheManager = cacheManager == null ? new CacheManager(storageConfiguration) : cacheManager;
+        this.catalogUtils = new CatalogUtils(catalogManager);
         this.storageConfiguration = storageConfiguration;
         this.storageManagerFactory = storageManagerFactory == null
                 ? StorageManagerFactory.get(storageConfiguration)

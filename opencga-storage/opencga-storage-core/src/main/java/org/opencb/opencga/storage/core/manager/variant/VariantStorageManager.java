@@ -300,9 +300,9 @@ public class VariantStorageManager extends StorageManager {
 
     public VariantDBIterator iterator(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException {
-        long mainStudyId = getMainStudyId(query, sessionId);
+        long studyId = catalogUtils.getAnyStudyId(query, sessionId);
 
-        VariantDBAdaptor dbAdaptor = getVariantDBAdaptor(mainStudyId, sessionId);
+        VariantDBAdaptor dbAdaptor = getVariantDBAdaptor(studyId, sessionId);
         checkSamplesPermissions(query, queryOptions, dbAdaptor, sessionId);
         VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
         iterator.addCloseable(dbAdaptor);
@@ -323,8 +323,8 @@ public class VariantStorageManager extends StorageManager {
 
     public Map<Long, List<Sample>> getSamplesMetadata(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
-        long mainStudyId = getMainStudyId(query, sessionId);
-        try (VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(mainStudyId, sessionId)) {
+        long studyId = catalogUtils.getAnyStudyId(query, sessionId);
+        try (VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(studyId, sessionId)) {
             return checkSamplesPermissions(query, queryOptions, variantDBAdaptor, sessionId);
         }
     }
@@ -345,7 +345,9 @@ public class VariantStorageManager extends StorageManager {
 
     private <R> R secure(Query query, QueryOptions queryOptions, String sessionId, Function<VariantDBAdaptor, R> supplier)
             throws CatalogException, StorageEngineException, IOException {
-        long studyId = getMainStudyId(query, sessionId);
+        long studyId = catalogUtils.getAnyStudyId(query, sessionId);
+
+        catalogUtils.parseQuery(query, sessionId);
 
         try (VariantDBAdaptor dbAdaptor = getVariantDBAdaptor(studyId, sessionId)) {
             checkSamplesPermissions(query, queryOptions, dbAdaptor, sessionId);
@@ -356,7 +358,7 @@ public class VariantStorageManager extends StorageManager {
 
     private Map<Long, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
-        long studyId = getMainStudyId(query, sessionId);
+        long studyId = catalogUtils.getAnyStudyId(query, sessionId);
         try (VariantDBAdaptor dbAdaptor = getVariantDBAdaptor(studyId, sessionId)) {
             return checkSamplesPermissions(query, queryOptions, dbAdaptor, sessionId);
         }
@@ -411,35 +413,6 @@ public class VariantStorageManager extends StorageManager {
             }
         }
         return samplesMap;
-    }
-
-    public long getMainStudyId(Query query, String sessionId) throws CatalogException {
-        Long id = getMainStudyId(query, VariantQueryParams.STUDIES, sessionId);
-        if (id == null) {
-            id = getMainStudyId(query, VariantQueryParams.RETURNED_STUDIES, sessionId);
-        }
-        if (id == null) {
-            id = catalogManager.getStudyId(null, sessionId);
-            if (id < 0) {
-                throw new IllegalArgumentException("Missing StudyId. Unable to get any variant!");
-            }
-        }
-        return id;
-    }
-
-    private Long getMainStudyId(Query query, VariantQueryParams param, String sessionId) throws CatalogException {
-        if (isValidParam(query, param)) {
-            String value = query.getString(param.key());
-            VariantDBAdaptorUtils.QueryOperation op = checkOperator(value);
-            List<String> values = splitValue(value, op);
-            for (String id : values) {
-                if (!id.startsWith("!")) {
-                    long studyId = catalogManager.getStudyId(id, sessionId);
-                    return studyId > 0 ? studyId : null;
-                }
-            }
-        }
-        return null;
     }
 
     // Some aux methods

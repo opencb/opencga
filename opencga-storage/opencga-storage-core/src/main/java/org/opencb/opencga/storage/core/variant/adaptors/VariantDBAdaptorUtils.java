@@ -247,7 +247,7 @@ public class VariantDBAdaptorUtils {
         return studyId;
     }
 
-    public boolean isNegated(String value) {
+    public static boolean isNegated(String value) {
         return value.startsWith("!");
     }
 
