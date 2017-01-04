@@ -1,4 +1,0 @@
-|import            |
-|fitnesse.slim.test|
-
-!include  .FitNesse.UserGuide.WritingAcceptanceTests.SliM.DefineAlias
