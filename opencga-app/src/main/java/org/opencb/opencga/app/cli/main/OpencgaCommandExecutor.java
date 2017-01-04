@@ -45,6 +45,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
     public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) {
         super(options, true);
+
         init(options, skipDuration);
     }
 
@@ -69,9 +70,6 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                     this.writer = new TextOutputWriter(writerConfiguration);
                     break;
             }
-
-//            loadClientConfiguration();
-//            loadCatalogConfiguration();
 
 //            CliSession cliSession = loadCliSessionFile();
             logger.debug("sessionFile = " + cliSession);

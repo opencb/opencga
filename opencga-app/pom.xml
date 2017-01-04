@@ -254,18 +254,9 @@
                                     <arg value="${build.dir}"/>
                                 </exec>
 
-                                <!--<echo>Copying to ${build.dir}/obsolete</echo>-->
-                                <!--<exec executable="cp">-->
-                                    <!--<arg value="-r"/>-->
-                                    <!--<arg value="${app.dir}/bin"/>-->
-                                    <!--<arg value="${build.dir}/bin/obsolete"/>-->
-                                <!--</exec>-->
-
                                 <echo>Coping configuration files</echo>
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/../opencga-catalog/target/classes/configuration.yml"/>
-                                    <!--<arg value="${project.basedir}/../opencga-core/target/classes/general-configuration.yml"/>-->
-                                    <!--<arg value="${project.basedir}/../opencga-catalog/target/classes/catalog-configuration.yml"/>-->
                                     <arg value="${project.basedir}/../opencga-client/target/classes/client-configuration.yml"/>
                                     <arg value="${project.basedir}/../opencga-storage/opencga-storage-core/target/classes/storage-configuration.yml"/>
                                     <arg value="${project.basedir}/../opencga-core/target/classes/log4j.properties"/>

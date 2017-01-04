@@ -352,6 +352,7 @@ public class OpencgaCliOptionsParser {
 
     private void printMainUsage() {
         Set<String> analysisCommands = new HashSet<>(Arrays.asList("alignments", "variant"));
+
         System.err.println("Catalog commands:");
         for (String command : jCommander.getCommands().keySet()) {
             if (!analysisCommands.contains(command)) {

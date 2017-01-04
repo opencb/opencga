@@ -84,7 +84,7 @@ public class AdminMain {
 
                     if (commandExecutor != null) {
                         try {
-                            commandExecutor.loadCatalogConfiguration();
+                            commandExecutor.loadConfiguration();
                         } catch (IOException ex) {
                             if (commandExecutor.getLogger() == null) {
                                 ex.printStackTrace();
