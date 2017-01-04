@@ -1,5 +1,5 @@
 !define TEST_SYSTEM {slim}
-!path dependencies/*.jar
+!path ../target/dependencies/*.jar
 
 !|import|
 |smartrics.rest.fitnesse.fixture|
