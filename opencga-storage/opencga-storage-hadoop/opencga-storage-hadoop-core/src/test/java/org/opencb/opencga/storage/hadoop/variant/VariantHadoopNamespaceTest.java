@@ -55,7 +55,7 @@ public class VariantHadoopNamespaceTest extends VariantStorageBaseTest implement
 
         runDefaultETL(smallInputUri, variantStorageManager, newStudyConfiguration(),
                 new ObjectMap()
-                        .append(HadoopVariantStorageEngine.OPENCGA_STORAGE_HADOOP_HBASE_NAMESPACE, "opencga")
+                        .append(HadoopVariantStorageEngine.OPENCGA_STORAGE_HADOOP_VARIANT_HBASE_NAMESPACE, "opencga")
                         .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
                         .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true));
 
@@ -77,7 +77,7 @@ public class VariantHadoopNamespaceTest extends VariantStorageBaseTest implement
     public void testNoNamespace() throws Exception {
         runDefaultETL(smallInputUri, getVariantStorageManager(), newStudyConfiguration(),
                 new ObjectMap()
-                        .append(HadoopVariantStorageEngine.OPENCGA_STORAGE_HADOOP_HBASE_NAMESPACE, "")
+                        .append(HadoopVariantStorageEngine.OPENCGA_STORAGE_HADOOP_VARIANT_HBASE_NAMESPACE, "")
                         .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
                         .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true));
 
