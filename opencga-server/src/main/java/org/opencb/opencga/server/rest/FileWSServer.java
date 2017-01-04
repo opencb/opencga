@@ -266,7 +266,7 @@ public class FileWSServer extends OpenCGAWSServer {
                                        String bioformat,
                                 @ApiParam(value = "(DEPRECATED) Use study instead", required = true) @FormDataParam("studyId") String studyIdStr,
                                 @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                    @QueryParam("study") String studyStr,
+                                    @FormDataParam("study") String studyStr,
                                 @ApiParam(value = "Path within catalog where the file will be located (default: root folder)",
                                         required = true) @DefaultValue(".") @FormDataParam("relativeFilePath") String relativeFilePath,
                                 @ApiParam(value = "description", required = false) @DefaultValue("") @FormDataParam("description")
@@ -276,6 +276,18 @@ public class FileWSServer extends OpenCGAWSServer {
 
         if (StringUtils.isNotEmpty(studyIdStr)) {
             studyStr = studyIdStr;
+        }
+
+        try {
+            File.Format.valueOf(fileFormat.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return createErrorResponse(new CatalogException("The file format " + fileFormat + " introduced is not valid."));
+        }
+
+        try {
+            File.Bioformat.valueOf(bioformat.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return createErrorResponse(new CatalogException("The file bioformat " + bioformat + " introduced is not valid."));
         }
 
         long t = System.currentTimeMillis();
@@ -447,6 +459,8 @@ public class FileWSServer extends OpenCGAWSServer {
                 logger.debug("Relative path: {}", relativeFilePath);
                 logger.debug("Destination path: {}", destinationPath);
                 logger.debug("File name {}", filename);
+                logger.debug("Bioformat {}", bioformat);
+                logger.debug("Fileformat {}", fileFormat);
 
                 // Register the file and move it to the proper directory
                 QueryResult<File> queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()),
