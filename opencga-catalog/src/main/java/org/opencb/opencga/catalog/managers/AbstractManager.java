@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -47,7 +47,7 @@ public abstract class AbstractManager {
     protected final CatalogIOManagerFactory catalogIOManagerFactory;
     protected final CatalogManager catalogManager;
 
-    protected CatalogConfiguration catalogConfiguration;
+    protected Configuration configuration;
     @Deprecated
     protected Properties catalogProperties;
 
@@ -66,10 +66,10 @@ public abstract class AbstractManager {
     @Deprecated
     public AbstractManager(AuthorizationManager authorizationManager, AuditManager auditManager,
                            DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                           CatalogConfiguration catalogConfiguration) {
+                           Configuration configuration) {
         this.authorizationManager = authorizationManager;
         this.auditManager = auditManager;
-        this.catalogConfiguration = catalogConfiguration;
+        this.configuration = configuration;
         this.userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
         this.studyDBAdaptor = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor();
         this.fileDBAdaptor = catalogDBAdaptorFactory.getCatalogFileDBAdaptor();
@@ -88,10 +88,10 @@ public abstract class AbstractManager {
 
     public AbstractManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                            DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                           CatalogConfiguration catalogConfiguration) {
+                           Configuration configuration) {
         this.authorizationManager = authorizationManager;
         this.auditManager = auditManager;
-        this.catalogConfiguration = catalogConfiguration;
+        this.configuration = configuration;
         this.userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
         this.studyDBAdaptor = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor();
         this.fileDBAdaptor = catalogDBAdaptorFactory.getCatalogFileDBAdaptor();

@@ -19,7 +19,7 @@ package org.opencb.opencga.analysis.storage.variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.Config;
@@ -127,9 +127,9 @@ public abstract class CatalogVariantStorageEngine extends StorageEngine<VariantD
     public CatalogManager getCatalogManager() {
         if (catalogManager == null) {
             try {
-                CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(new FileInputStream(Paths.get(Config.getOpenCGAHome(),
-                        "conf", "catalog-configuration.yml").toFile()));
-                catalogManager = new CatalogManager(catalogConfiguration);
+                Configuration configuration = Configuration.load(new FileInputStream(Paths.get(Config.getOpenCGAHome(),
+                        "conf", "configuration.yml").toFile()));
+                catalogManager = new CatalogManager(configuration);
             } catch (CatalogException | IOException e) {
                 e.printStackTrace();
             }

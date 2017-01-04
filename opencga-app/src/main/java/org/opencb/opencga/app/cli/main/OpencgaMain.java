@@ -66,18 +66,9 @@ public class OpencgaMain {
                     cliOptionsParser.printUsage();
                 } else {
                     switch (parsedCommand) {
-//                        case "catalog":
-//                            commandExecutor = new CatalogCommandExecutor(cliOptionsParser.getCatalogCommandOptions());
-//                            break;
                         case "users":
                             commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
                             break;
-//                        case "audit":
-//                            commandExecutor = new AuditCommandExecutor(cliOptionsParser.getAuditCommandOptions());
-//                            break;
-//                        case "server":
-//                            commandExecutor = new ServerCommandExecutor(cliOptionsParser.getServerCommandOptions());
-//                            break;
                         case "projects":
                             commandExecutor = new ProjectsCommandExecutor(cliOptionsParser.getProjectCommandOptions());
                             break;
@@ -120,7 +111,6 @@ public class OpencgaMain {
                     }
 
                     if (commandExecutor != null) {
-//                        commandExecutor.loadConfigurations();
                         try {
                             commandExecutor.execute();
                         } catch (Exception e) {
@@ -132,7 +122,6 @@ public class OpencgaMain {
                         System.exit(1);
                     }
                 }
-
             }
         }
     }

@@ -27,23 +27,23 @@ import java.util.*;
 /**
  * Created by imedina on 16/03/16.
  */
-public class CatalogConfigurationTest {
+public class ConfigurationTest {
 
     @Test
     public void testDefault() {
-        CatalogConfiguration catalogConfiguration = new CatalogConfiguration();
+        Configuration configuration = new Configuration();
 
-        catalogConfiguration.setLogLevel("INFO");
+        configuration.setLogLevel("INFO");
 
-        catalogConfiguration.setDataDir("/opt/opencga/sessions");
-        catalogConfiguration.setTempJobsDir("/opt/opencga/sessions/jobs");
+        configuration.setDataDir("/opt/opencga/sessions");
+        configuration.setTempJobsDir("/opt/opencga/sessions/jobs");
 
-        catalogConfiguration.setAdmin(new Admin("password", "admin@admin.com"));
+        configuration.setAdmin(new Admin("password", "admin@admin.com"));
 
-        catalogConfiguration.setMonitor(new Monitor());
-        catalogConfiguration.setExecution(new Execution());
+        configuration.setMonitor(new Monitor());
+        configuration.setExecution(new Execution());
 
-        catalogConfiguration.setOrganism(new Project.Organism("Homo sapiens", "human", 9606, "GRCh38"));
+        configuration.setOrganism(new Project.Organism("Homo sapiens", "human", 9606, "GRCh38"));
 
         List<AuthenticationOrigin> authenticationOriginList = new ArrayList<>();
         authenticationOriginList.add(new AuthenticationOrigin("opencga", AuthenticationOrigin.AuthenticationType.OPENCGA.toString(),
@@ -52,22 +52,30 @@ public class CatalogConfigurationTest {
         myMap.put("ou", "People");
         authenticationOriginList.add(new AuthenticationOrigin("opencga", AuthenticationOrigin.AuthenticationType.LDAP.toString(),
                 "ldap://10.10.0.20:389", myMap));
-        catalogConfiguration.setAuthenticationOrigins(authenticationOriginList);
+        configuration.setAuthenticationOrigins(authenticationOriginList);
 
-        EmailServer emailServer = new EmailServer("localhost", "", "", "", "", false);
-        catalogConfiguration.setEmailServer(emailServer);
+        Email emailServer = new Email("localhost", "", "", "", "", false);
+        configuration.setEmail(emailServer);
 
-        DatabaseCredentials databaseCredentials = new DatabaseCredentials(Arrays.asList("localhost"), "opencga_catalog", "admin", "");
-        catalogConfiguration.setDatabase(databaseCredentials);
+        CatalogDBCredentials databaseCredentials = new CatalogDBCredentials(Arrays.asList("localhost"), "opencga_catalog", "admin", "");
+        configuration.setCatalog(databaseCredentials);
 
         Audit audit = new Audit(20000000, 100000000000L, "", Collections.emptyList());
-        catalogConfiguration.setAudit(audit);
+        configuration.setAudit(audit);
 
         StudyAclEntry studyAcl = new StudyAclEntry("admin", EnumSet.of(
                 StudyAclEntry.StudyPermissions.VIEW_FILE_HEADERS, StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENTS,
                 StudyAclEntry.StudyPermissions.VIEW_FILES, StudyAclEntry.StudyPermissions.UPDATE_FILES,
                 StudyAclEntry.StudyPermissions.VIEW_JOBS, StudyAclEntry.StudyPermissions.UPDATE_JOBS));
-        catalogConfiguration.setAcl(Arrays.asList(studyAcl));
+        configuration.setAcl(Arrays.asList(studyAcl));
+
+        ServerConfiguration serverConfiguration = new ServerConfiguration();
+        RestServerConfiguration rest = new RestServerConfiguration(1000, 100, 1000);
+        GrpcServerConfiguration grpc = new GrpcServerConfiguration(1001);
+        serverConfiguration.setGrpc(grpc);
+        serverConfiguration.setRest(rest);
+
+        configuration.setServer(serverConfiguration);
 
 //        CellBaseConfiguration cellBaseConfiguration = new CellBaseConfiguration(Arrays.asList("localhost"), "v3",
 // new DatabaseCredentials(Arrays.asList("localhost"), "user", "password"));
@@ -82,7 +90,7 @@ public class CatalogConfigurationTest {
 //        catalogConfiguration.getStorageEngines().add(storageEngineConfiguration2);
 
         try {
-            catalogConfiguration.serialize(new FileOutputStream("/tmp/catalog-configuration-test.yml"));
+            configuration.serialize(new FileOutputStream("/tmp/configuration-test.yml"));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -90,8 +98,8 @@ public class CatalogConfigurationTest {
 
     @Test
     public void testLoad() throws Exception {
-        CatalogConfiguration catalogConfiguration = CatalogConfiguration
-                .load(getClass().getResource("/catalog-configuration-test.yml").openStream());
-        System.out.println("catalogConfiguration = " + catalogConfiguration);
+        Configuration configuration = Configuration
+                .load(getClass().getResource("/configuration-test.yml").openStream());
+        System.out.println("catalogConfiguration = " + configuration);
     }
 }

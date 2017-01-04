@@ -31,7 +31,7 @@ import java.util.List;
 /**
  * Created by imedina on 16/03/16.
  */
-public class CatalogConfiguration {
+public class Configuration {
 
     private String logLevel;
     private String logFile;
@@ -42,7 +42,7 @@ public class CatalogConfiguration {
     private String databasePrefix;
     private String dataDir;
     private String tempJobsDir;
-    private String toolsDir;
+    private String toolDir;
 
     private Project.Organism organism;
 
@@ -54,14 +54,14 @@ public class CatalogConfiguration {
 
     private List<StudyAclEntry> acl;
 
-    private EmailServer emailServer;
-    private DatabaseCredentials database;
-//    private Policies policies;
+    private Email email;
+    private CatalogDBCredentials catalog;
 
+    private ServerConfiguration server;
 
-    protected static Logger logger = LoggerFactory.getLogger(CatalogConfiguration.class);
+    protected static Logger logger = LoggerFactory.getLogger(Configuration.class);
 
-    public CatalogConfiguration() {
+    public Configuration() {
     }
 
 //    public CatalogConfiguration(String defaultStorageEngineId, List<StorageEngineConfiguration> storageEngines) {
@@ -78,31 +78,31 @@ public class CatalogConfiguration {
         yamlMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOututStream, this);
     }
 
-    public static CatalogConfiguration load(InputStream configurationInputStream) throws IOException {
+    public static Configuration load(InputStream configurationInputStream) throws IOException {
         return load(configurationInputStream, "yaml");
     }
 
-    public static CatalogConfiguration load(InputStream configurationInputStream, String format) throws IOException {
-        CatalogConfiguration catalogConfiguration;
+    public static Configuration load(InputStream configurationInputStream, String format) throws IOException {
+        Configuration configuration;
         ObjectMapper objectMapper;
         switch (format) {
             case "json":
                 objectMapper = new ObjectMapper();
-                catalogConfiguration = objectMapper.readValue(configurationInputStream, CatalogConfiguration.class);
+                configuration = objectMapper.readValue(configurationInputStream, Configuration.class);
                 break;
             case "yml":
             case "yaml":
             default:
                 objectMapper = new ObjectMapper(new YAMLFactory());
-                catalogConfiguration = objectMapper.readValue(configurationInputStream, CatalogConfiguration.class);
+                configuration = objectMapper.readValue(configurationInputStream, Configuration.class);
                 break;
         }
-        return catalogConfiguration;
+        return configuration;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("CatalogConfiguration{");
+        final StringBuilder sb = new StringBuilder("Configuration{");
         sb.append("logLevel='").append(logLevel).append('\'');
         sb.append(", logFile='").append(logFile).append('\'');
         sb.append(", openRegister=").append(openRegister);
@@ -110,7 +110,7 @@ public class CatalogConfiguration {
         sb.append(", databasePrefix='").append(databasePrefix).append('\'');
         sb.append(", dataDir='").append(dataDir).append('\'');
         sb.append(", tempJobsDir='").append(tempJobsDir).append('\'');
-        sb.append(", toolsDir='").append(toolsDir).append('\'');
+        sb.append(", toolDir='").append(toolDir).append('\'');
         sb.append(", organism=").append(organism);
         sb.append(", admin=").append(admin);
         sb.append(", authenticationOrigins=").append(authenticationOrigins);
@@ -118,8 +118,9 @@ public class CatalogConfiguration {
         sb.append(", execution=").append(execution);
         sb.append(", audit=").append(audit);
         sb.append(", acl=").append(acl);
-        sb.append(", emailServer=").append(emailServer);
-        sb.append(", database=").append(database);
+        sb.append(", email=").append(email);
+        sb.append(", catalog=").append(catalog);
+        sb.append(", server=").append(server);
         sb.append('}');
         return sb.toString();
     }
@@ -128,7 +129,7 @@ public class CatalogConfiguration {
         return logLevel;
     }
 
-    public CatalogConfiguration setLogLevel(String logLevel) {
+    public Configuration setLogLevel(String logLevel) {
         this.logLevel = logLevel;
         return this;
     }
@@ -137,7 +138,7 @@ public class CatalogConfiguration {
         return logFile;
     }
 
-    public CatalogConfiguration setLogFile(String logFile) {
+    public Configuration setLogFile(String logFile) {
         this.logFile = logFile;
         return this;
     }
@@ -146,7 +147,7 @@ public class CatalogConfiguration {
         return openRegister;
     }
 
-    public CatalogConfiguration setOpenRegister(boolean openRegister) {
+    public Configuration setOpenRegister(boolean openRegister) {
         this.openRegister = openRegister;
         return this;
     }
@@ -155,7 +156,7 @@ public class CatalogConfiguration {
         return userDefaultQuota;
     }
 
-    public CatalogConfiguration setUserDefaultQuota(int userDefaultQuota) {
+    public Configuration setUserDefaultQuota(int userDefaultQuota) {
         this.userDefaultQuota = userDefaultQuota;
         return this;
     }
@@ -164,7 +165,7 @@ public class CatalogConfiguration {
         return databasePrefix;
     }
 
-    public CatalogConfiguration setDatabasePrefix(String databasePrefix) {
+    public Configuration setDatabasePrefix(String databasePrefix) {
         this.databasePrefix = databasePrefix;
         return this;
     }
@@ -173,7 +174,7 @@ public class CatalogConfiguration {
         return dataDir;
     }
 
-    public CatalogConfiguration setDataDir(String dataDir) {
+    public Configuration setDataDir(String dataDir) {
         this.dataDir = dataDir;
         return this;
     }
@@ -182,17 +183,17 @@ public class CatalogConfiguration {
         return tempJobsDir;
     }
 
-    public CatalogConfiguration setTempJobsDir(String tempJobsDir) {
+    public Configuration setTempJobsDir(String tempJobsDir) {
         this.tempJobsDir = tempJobsDir;
         return this;
     }
 
-    public String getToolsDir() {
-        return toolsDir;
+    public String getToolDir() {
+        return toolDir;
     }
 
-    public CatalogConfiguration setToolsDir(String toolsDir) {
-        this.toolsDir = toolsDir;
+    public Configuration setToolDir(String toolDir) {
+        this.toolDir = toolDir;
         return this;
     }
 
@@ -200,7 +201,7 @@ public class CatalogConfiguration {
         return admin;
     }
 
-    public CatalogConfiguration setAdmin(Admin admin) {
+    public Configuration setAdmin(Admin admin) {
         this.admin = admin;
         return this;
     }
@@ -209,7 +210,7 @@ public class CatalogConfiguration {
         return authenticationOrigins;
     }
 
-    public CatalogConfiguration setAuthenticationOrigins(List<AuthenticationOrigin> authenticationOrigins) {
+    public Configuration setAuthenticationOrigins(List<AuthenticationOrigin> authenticationOrigins) {
         this.authenticationOrigins = authenticationOrigins;
         return this;
     }
@@ -218,7 +219,7 @@ public class CatalogConfiguration {
         return monitor;
     }
 
-    public CatalogConfiguration setMonitor(Monitor monitor) {
+    public Configuration setMonitor(Monitor monitor) {
         this.monitor = monitor;
         return this;
     }
@@ -227,26 +228,26 @@ public class CatalogConfiguration {
         return execution;
     }
 
-    public CatalogConfiguration setExecution(Execution execution) {
+    public Configuration setExecution(Execution execution) {
         this.execution = execution;
         return this;
     }
 
-    public EmailServer getEmailServer() {
-        return emailServer;
+    public Email getEmail() {
+        return email;
     }
 
-    public CatalogConfiguration setEmailServer(EmailServer emailServer) {
-        this.emailServer = emailServer;
+    public Configuration setEmail(Email email) {
+        this.email = email;
         return this;
     }
 
-    public DatabaseCredentials getDatabase() {
-        return database;
+    public CatalogDBCredentials getCatalog() {
+        return catalog;
     }
 
-    public CatalogConfiguration setDatabase(DatabaseCredentials database) {
-        this.database = database;
+    public Configuration setCatalog(CatalogDBCredentials catalog) {
+        this.catalog = catalog;
         return this;
     }
 
@@ -254,7 +255,7 @@ public class CatalogConfiguration {
         return audit;
     }
 
-    public CatalogConfiguration setAudit(Audit audit) {
+    public Configuration setAudit(Audit audit) {
         this.audit = audit;
         return this;
     }
@@ -263,7 +264,7 @@ public class CatalogConfiguration {
         return acl;
     }
 
-    public CatalogConfiguration setAcl(List<StudyAclEntry> acl) {
+    public Configuration setAcl(List<StudyAclEntry> acl) {
         this.acl = acl;
         return this;
     }
@@ -272,8 +273,17 @@ public class CatalogConfiguration {
         return organism;
     }
 
-    public CatalogConfiguration setOrganism(Project.Organism organism) {
+    public Configuration setOrganism(Project.Organism organism) {
         this.organism = organism;
+        return this;
+    }
+
+    public ServerConfiguration getServer() {
+        return server;
+    }
+
+    public Configuration setServer(ServerConfiguration server) {
+        this.server = server;
         return this;
     }
 }

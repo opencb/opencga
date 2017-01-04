@@ -21,7 +21,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.monitor.daemons.ExecutionDaemon;
@@ -38,7 +38,7 @@ import java.net.URISyntaxException;
  */
 public class MonitorService {
 
-    private CatalogConfiguration catalogConfiguration;
+    private Configuration configuration;
     private CatalogManager catalogManager;
     private String appHome;
 
@@ -58,9 +58,9 @@ public class MonitorService {
     protected static Logger logger;
 
 
-    public MonitorService(String password, CatalogConfiguration catalogConfiguration, String appHome)
+    public MonitorService(String password, Configuration configuration, String appHome)
             throws IOException, URISyntaxException {
-        this.catalogConfiguration = catalogConfiguration;
+        this.configuration = configuration;
         this.appHome = appHome;
 
         init(password);
@@ -70,22 +70,22 @@ public class MonitorService {
         logger = LoggerFactory.getLogger(this.getClass());
 
         try {
-            this.catalogManager = new CatalogManager(this.catalogConfiguration);
+            this.catalogManager = new CatalogManager(this.configuration);
             String sessionId = this.catalogManager.login("admin", password,
-                    this.catalogConfiguration.getDatabase().getHosts().get(0)).getId();
+                    this.configuration.getCatalog().getHosts().get(0)).getId();
 
-            executionDaemon = new ExecutionDaemon(catalogConfiguration.getMonitor().getExecutionDaemonInterval(), sessionId,
+            executionDaemon = new ExecutionDaemon(configuration.getMonitor().getExecutionDaemonInterval(), sessionId,
                     catalogManager, appHome);
-            indexDaemon = new IndexDaemon(catalogConfiguration.getMonitor().getExecutionDaemonInterval(), sessionId, catalogManager,
+            indexDaemon = new IndexDaemon(configuration.getMonitor().getExecutionDaemonInterval(), sessionId, catalogManager,
                     appHome);
-            fileDaemon = new FileDaemon(catalogConfiguration.getMonitor().getFileDaemonInterval(),
-                    catalogConfiguration.getMonitor().getDaysToRemove(), sessionId, catalogManager);
+            fileDaemon = new FileDaemon(configuration.getMonitor().getFileDaemonInterval(),
+                    configuration.getMonitor().getDaysToRemove(), sessionId, catalogManager);
 
             executionThread = new Thread(executionDaemon, "execution-thread");
             indexThread = new Thread(indexDaemon, "index-thread");
             fileThread = new Thread(fileDaemon, "file-thread");
 
-            this.port = catalogConfiguration.getMonitor().getPort();
+            this.port = configuration.getMonitor().getPort();
         } catch (CatalogException e) {
             e.printStackTrace();
         }

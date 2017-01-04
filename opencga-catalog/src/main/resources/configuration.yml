@@ -5,10 +5,10 @@ logFile: null
 openRegister: false
 userDefaultQuota: 200000
 
-databasePrefix: ${OPENCGA.CATALOG.DB.PREFIX}
-dataDir: ${OPENCGA.CATALOG.ROOTDIR}
-tempJobsDir: ${OPENCGA.CATALOG.JOBS.ROOTDIR}
-toolsDir: "tools"
+databasePrefix: ${OPENCGA.DB.PREFIX}
+dataDir: ${OPENCGA.USER.WORKSPACE}
+tempJobsDir: ${OPENCGA.JOBS.DIR}
+toolDir: "tools"
 
 admin:
   password: ""
@@ -24,19 +24,19 @@ monitor:
   daysToRemove: 30
   executionDaemonInterval: 4000 # number of milliseconds between checks
   fileDaemonInterval: 8000      # number of milliseconds between checks
-  port: ${OPENCGA.CATALOG.DAEMON.PORT}
+  port: ${OPENCGA.MONITOR.PORT}
 
 execution:
-  mode: "local"
+  mode: ${OPENCGA.EXECUTION.MODE}
   defaultQueue: ""
   availableQueues: ""
   toolsPerQueue: {}
 
-emailServer:
-  host: ${OPENCGA.CATALOG.MAIL.HOST}
-  port: ${OPENCGA.CATALOG.MAIL.PORT}
-  user: ${OPENCGA.CATALOG.MAIL.USER}
-  password: ${OPENCGA.CATALOG.MAIL.PASSWORD}
+email:
+  host: ${OPENCGA.MAIL.HOST}
+  port: ${OPENCGA.MAIL.PORT}
+  user: ${OPENCGA.MAIL.USER}
+  password: ${OPENCGA.MAIL.PASSWORD}
   from: ""
   ssl: false
 
@@ -50,20 +50,21 @@ acl:                 # Do not touch the acl configuration. If this is not proper
   - "VIEW_JOBS"
   - "UPDATE_JOBS"
 
-database:
+catalog:
   hosts:
   - ${OPENCGA.CATALOG.DB.HOSTS}
-  database: ${OPENCGA.CATALOG.DB.DATABASE}
   user: ${OPENCGA.CATALOG.DB.USER}
   password: ${OPENCGA.CATALOG.DB.PASSWORD}
   options:
     authenticationDatabase: ${OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE}
+    connectionsPerHost: ${OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST}
 
+# The default organism values can be defined here.
 organism:
-  taxonomyCode: ${OPENCGA.CATALOG.ORGANISM.TAXONOMY_CODE}
-  scientificName: ${OPENCGA.CATALOG.ORGANISM.SCIENTIFIC_NAME}
-  commonName: ${OPENCGA.CATALOG.ORGANISM.COMMON_NAME}
-  assembly: ${OPENCGA.CATALOG.ORGANISM.ASSEMBLY}
+  taxonomyCode: ${OPENCGA.ORGANISM.TAXONOMY_CODE}
+  scientificName: ${OPENCGA.ORGANISM.SCIENTIFIC_NAME}
+  commonName: ${OPENCGA.ORGANISM.COMMON_NAME}
+  assembly: ${OPENCGA.ORGANISM.ASSEMBLY}
 
 # LDAP configuration example
 #authenticationOrigins:
@@ -73,3 +74,14 @@ organism:
 #  options:
 #    usersSearch: dc=ge,dc=co,dc=uk # Base search to look for the users
 #    groupsSearch: ou=general,ou=groups,dc=ge,dc=co,dc=uk # Base search to look for the groups
+
+server:
+  rest:
+    port: ${OPENCGA.SERVER.REST.PORT}
+    logFile: null
+    defaultLimit: 2000
+    maxLimit: 5000
+
+  grpc:
+    port: ${OPENCGA.SERVER.GRPC.PORT}
+    logFile: null

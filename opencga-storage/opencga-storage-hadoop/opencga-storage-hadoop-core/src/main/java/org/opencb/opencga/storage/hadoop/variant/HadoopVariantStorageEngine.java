@@ -86,8 +86,8 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     //Other files to be loaded from Archive to Variant
     public static final String HADOOP_LOAD_VARIANT_PENDING_FILES = "opencga.storage.hadoop.load.pending.files";
     public static final String OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY = "opencga.storage.hadoop.intermediate.hdfs.directory";
-    public static final String OPENCGA_STORAGE_HADOOP_HBASE_NAMESPACE = "opencga.storage.hadoop.hbase.namespace";
-    public static final String OPENCGA_STORAGE_HADOOP_HBASE_ARCHIVE_TABLE_PREFIX = "opencga.storage.hadoop.hbase.archive.table.prefix";
+    public static final String OPENCGA_STORAGE_HADOOP_VARIANT_HBASE_NAMESPACE = "opencga.storage.hadoop.variant.hbase.namespace";
+    public static final String OPENCGA_STORAGE_HADOOP_VARIANT_ARCHIVE_TABLE_PREFIX = "opencga.storage.hadoop.variant.archive.table.prefix";
     public static final String OPENCGA_STORAGE_HADOOP_MAPREDUCE_SCANNER_TIMEOUT = "opencga.storage.hadoop.mapreduce.scanner.timeout";
 
     public static final String HADOOP_LOAD_ARCHIVE_BATCH_SIZE = "hadoop.load.archive.batch.size";
@@ -569,11 +569,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
      * @return Table name
      */
     public String getArchiveTableName(int studyId) {
-        String prefix = getOptions().getString(OPENCGA_STORAGE_HADOOP_HBASE_ARCHIVE_TABLE_PREFIX);
+        String prefix = getOptions().getString(OPENCGA_STORAGE_HADOOP_VARIANT_ARCHIVE_TABLE_PREFIX);
         if (StringUtils.isEmpty(prefix)) {
             prefix = ARCHIVE_TABLE_PREFIX;
         }
-        return buildTableName(getOptions().getString(OPENCGA_STORAGE_HADOOP_HBASE_NAMESPACE, ""),
+        return buildTableName(getOptions().getString(OPENCGA_STORAGE_HADOOP_VARIANT_HBASE_NAMESPACE, ""),
                 prefix, studyId);
     }
 
@@ -585,11 +585,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
      * @return Table name
      */
     public static String getArchiveTableName(int studyId, Configuration conf) {
-        String prefix = conf.get(OPENCGA_STORAGE_HADOOP_HBASE_ARCHIVE_TABLE_PREFIX);
+        String prefix = conf.get(OPENCGA_STORAGE_HADOOP_VARIANT_ARCHIVE_TABLE_PREFIX);
         if (StringUtils.isEmpty(prefix)) {
             prefix = ARCHIVE_TABLE_PREFIX;
         }
-        return buildTableName(conf.get(OPENCGA_STORAGE_HADOOP_HBASE_NAMESPACE, ""),
+        return buildTableName(conf.get(OPENCGA_STORAGE_HADOOP_VARIANT_HBASE_NAMESPACE, ""),
                 prefix, studyId);
     }
 
@@ -601,11 +601,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
      * @return Table name
      */
     public static String getArchiveTableName(int studyId, ObjectMap options) {
-        String prefix = options.getString(OPENCGA_STORAGE_HADOOP_HBASE_ARCHIVE_TABLE_PREFIX);
+        String prefix = options.getString(OPENCGA_STORAGE_HADOOP_VARIANT_ARCHIVE_TABLE_PREFIX);
         if (StringUtils.isEmpty(prefix)) {
             prefix = ARCHIVE_TABLE_PREFIX;
         }
-        return buildTableName(options.getString(OPENCGA_STORAGE_HADOOP_HBASE_NAMESPACE, ""),
+        return buildTableName(options.getString(OPENCGA_STORAGE_HADOOP_VARIANT_HBASE_NAMESPACE, ""),
                 prefix, studyId);
     }
 
@@ -618,11 +618,11 @@ public class HadoopVariantStorageEngine extends VariantStorageEngine {
     }
 
     public static String getVariantTableName(String table, ObjectMap options) {
-        return buildTableName(options.getString(OPENCGA_STORAGE_HADOOP_HBASE_NAMESPACE, ""), "", table);
+        return buildTableName(options.getString(OPENCGA_STORAGE_HADOOP_VARIANT_HBASE_NAMESPACE, ""), "", table);
     }
 
     public static String getVariantTableName(String table, Configuration conf) {
-        return buildTableName(conf.get(OPENCGA_STORAGE_HADOOP_HBASE_NAMESPACE, ""), "", table);
+        return buildTableName(conf.get(OPENCGA_STORAGE_HADOOP_VARIANT_HBASE_NAMESPACE, ""), "", table);
     }
 
     protected static String buildTableName(String namespace, String prefix, int studyId) {

@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.config;
+package org.opencb.opencga.catalog.config;
 
 /**
  * Created by imedina on 22/05/16.
  */
-public class RestServerConfiguration extends ServerConfiguration {
+public class RestServerConfiguration extends AbstractServerConfiguration {
 
     private int defaultLimit;
     private int maxLimit;

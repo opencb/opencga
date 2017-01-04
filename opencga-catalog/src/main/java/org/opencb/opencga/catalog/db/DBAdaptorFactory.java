@@ -17,7 +17,7 @@
 package org.opencb.opencga.catalog.db;
 
 import org.opencb.opencga.catalog.config.Admin;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -44,10 +44,10 @@ public interface DBAdaptorFactory {
     /**
      * Installs the catalog database with their corresponding indexes.
      *
-     * @param catalogConfiguration Configuration of catalog.
+     * @param configuration Configuration of catalog.
      * @throws CatalogException if there is any problem with the installation.
      */
-    void installCatalogDB(CatalogConfiguration catalogConfiguration) throws CatalogException;
+    void installCatalogDB(Configuration configuration) throws CatalogException;
 
     /**
      * Creates the indexes needed to make queries faster.

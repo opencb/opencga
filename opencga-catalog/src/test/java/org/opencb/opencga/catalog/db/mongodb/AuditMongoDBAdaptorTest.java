@@ -25,7 +25,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.api.AuditDBAdaptor;
 
 import java.util.Collections;
@@ -41,25 +41,25 @@ public class AuditMongoDBAdaptorTest {
 
     @Before
     public void beforeClass() throws Exception {
-        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration-test.yml")
+        Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml")
                 .openStream());
 
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
-                catalogConfiguration.getDatabase().getHosts().get(0).split(":")[0], 27017);
+                configuration.getCatalog().getHosts().get(0).split(":")[0], 27017);
 
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", catalogConfiguration.getDatabase().getUser())
-                .add("password", catalogConfiguration.getDatabase().getPassword())
-                .add("authenticationDatabase", catalogConfiguration.getDatabase().getOptions().get("authenticationDatabase"))
+                .add("username", configuration.getCatalog().getUser())
+                .add("password", configuration.getCatalog().getPassword())
+                .add("authenticationDatabase", configuration.getCatalog().getOptions().get("authenticationDatabase"))
                 .build();
 
 //        String database = catalogConfiguration.getDatabase().getDatabase();
         String database;
-        if(StringUtils.isNotEmpty(catalogConfiguration.getDatabasePrefix())) {
-            if (!catalogConfiguration.getDatabasePrefix().endsWith("_")) {
-                database = catalogConfiguration.getDatabasePrefix() + "_catalog";
+        if(StringUtils.isNotEmpty(configuration.getDatabasePrefix())) {
+            if (!configuration.getDatabasePrefix().endsWith("_")) {
+                database = configuration.getDatabasePrefix() + "_catalog";
             } else {
-                database = catalogConfiguration.getDatabasePrefix() + "catalog";
+                database = configuration.getDatabasePrefix() + "catalog";
             }
         } else {
             database = "opencga_test_catalog";

@@ -207,8 +207,8 @@ public abstract class StorageOperation {
             String alias = project.getAlias();
 
             String prefix;
-            if (StringUtils.isNotEmpty(catalogManager.getCatalogConfiguration().getDatabasePrefix())) {
-                prefix = catalogManager.getCatalogConfiguration().getDatabasePrefix();
+            if (StringUtils.isNotEmpty(catalogManager.getConfiguration().getDatabasePrefix())) {
+                prefix = catalogManager.getConfiguration().getDatabasePrefix();
                 if (!prefix.endsWith("_")) {
                     prefix += "_";
                 }

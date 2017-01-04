@@ -35,7 +35,7 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.Config;
@@ -125,7 +125,7 @@ public class OpenCGAWSServer {
 
     protected static AtomicBoolean initialized;
 
-    protected static CatalogConfiguration catalogConfiguration;
+    protected static Configuration configuration;
     protected static CatalogManager catalogManager;
 
     protected static StorageConfiguration storageConfiguration;
@@ -230,10 +230,10 @@ public class OpenCGAWSServer {
      */
     private void initOpenCGAObjects(java.nio.file.Path configDir) {
         try {
-            logger.info("|  * Catalog configuration file: '{}'", configDir.toFile().getAbsolutePath() + "/catalog-configuration.yml");
-            catalogConfiguration = CatalogConfiguration
-                    .load(new FileInputStream(new File(configDir.toFile().getAbsolutePath() + "/catalog-configuration.yml")));
-            catalogManager = new CatalogManager(catalogConfiguration);
+            logger.info("|  * Catalog configuration file: '{}'", configDir.toFile().getAbsolutePath() + "/configuration.yml");
+            configuration = Configuration
+                    .load(new FileInputStream(new File(configDir.toFile().getAbsolutePath() + "/configuration.yml")));
+            catalogManager = new CatalogManager(configuration);
             // TODO think about this
             if (!catalogManager.existsCatalogDB()) {
 //                logger.info("|  * Catalog database created: '{}'", catalogConfiguration.getDatabase().getDatabase());

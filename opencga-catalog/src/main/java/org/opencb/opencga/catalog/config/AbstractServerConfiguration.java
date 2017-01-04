@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.core.config;
+package org.opencb.opencga.catalog.config;
 
 /**
  * Created by imedina on 25/04/16.
  */
-public abstract class ServerConfiguration {
+public abstract class AbstractServerConfiguration {
 
     protected int port;
     protected String logFile;
 
-    public ServerConfiguration() {
+    public AbstractServerConfiguration() {
     }
 
-    public ServerConfiguration(int port) {
+    public AbstractServerConfiguration(int port) {
         this.port = port;
     }
 
@@ -44,7 +44,7 @@ public abstract class ServerConfiguration {
         return port;
     }
 
-    public ServerConfiguration setPort(int port) {
+    public AbstractServerConfiguration setPort(int port) {
         this.port = port;
         return this;
     }
@@ -53,7 +53,7 @@ public abstract class ServerConfiguration {
         return logFile;
     }
 
-    public ServerConfiguration setLogFile(String logFile) {
+    public AbstractServerConfiguration setLogFile(String logFile) {
         this.logFile = logFile;
         return this;
     }

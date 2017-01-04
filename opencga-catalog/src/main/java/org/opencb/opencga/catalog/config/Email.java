@@ -19,7 +19,7 @@ package org.opencb.opencga.catalog.config;
 /**
  * Created by imedina on 16/03/16.
  */
-public class EmailServer {
+public class Email {
 
     private String host;
     private String port;
@@ -28,10 +28,10 @@ public class EmailServer {
     private String from;
     private boolean ssl;
 
-    public EmailServer() {
+    public Email() {
     }
 
-    public EmailServer(String host, String port, String user, String password, String from, boolean ssl) {
+    public Email(String host, String port, String user, String password, String from, boolean ssl) {
         this.host = host;
         this.port = port;
         this.user = user;

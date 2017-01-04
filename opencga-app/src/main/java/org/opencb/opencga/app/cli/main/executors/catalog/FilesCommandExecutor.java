@@ -401,7 +401,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         CatalogManager catalogManager = null;
         try {
-            catalogManager = new CatalogManager(catalogConfiguration);
+            catalogManager = new CatalogManager(configuration);
         } catch (CatalogException e) {
             logger.error("Catalog manager could not be initialized. Is the configuration OK?");
         }

@@ -54,7 +54,7 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
         this.jsonObjectMapper = new ObjectMapper(factory);
         jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
         jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        species = options.getString(VariantAnnotationManager.SPECIES);
+        species = toCellBaseSpeciesName(options.getString(VariantAnnotationManager.SPECIES));
         assembly = options.getString(VariantAnnotationManager.ASSEMBLY);
         cellbaseVersion = storageConfiguration.getCellbase().getVersion();
         List<String> hosts = storageConfiguration.getCellbase().getHosts();
@@ -75,7 +75,7 @@ public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator 
     }
 
     public static String toCellBaseSpeciesName(String scientificName) {
-        if (scientificName.contains(" ")) {
+        if (scientificName != null && scientificName.contains(" ")) {
             String[] split = scientificName.split(" ", 2);
             scientificName = (split[0].charAt(0) + split[1]).toLowerCase();
         }

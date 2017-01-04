@@ -137,8 +137,8 @@ public class OpenCGATestExternalResource extends ExternalResource {
         Files.createDirectories(userHome);
 
         InputStream inputStream;
-        catalogManagerExternalResource.getCatalogConfiguration().serialize(
-                new FileOutputStream(conf.resolve("catalog-configuration.yml").toFile()));
+        catalogManagerExternalResource.getConfiguration().serialize(
+                new FileOutputStream(conf.resolve("configuration.yml").toFile()));
 
 //        inputStream = new ByteArrayInputStream((ExecutorManager.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
 //                AnalysisFileIndexer.OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX + "=" + "opencga_test_").getBytes());
@@ -164,7 +164,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
 //        inputStream = StorageEngine.class.getClassLoader().getResourceAsStream("client-configuration-test.yml");
 //        Files.copy(inputStream, conf.resolve("client-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
 
-//        inputStream = StorageEngine.class.getClassLoader().getResourceAsStream("configuration-test.yml");
+//        inputStream = StorageEngine.class.getClassLoader().getResourceAsStream("configuration.yml");
 //        Files.copy(inputStream, conf.resolve("configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
 
         // Example files
