@@ -66,12 +66,12 @@ public class CatalogFileUtilsTest {
                 .openStream());
 
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", configuration.getDatabase().getUser())
-                .add("password", configuration.getDatabase().getPassword())
-                .add("authenticationDatabase", configuration.getDatabase().getOptions().get("authenticationDatabase"))
+                .add("username", configuration.getCatalog().getUser())
+                .add("password", configuration.getCatalog().getPassword())
+                .add("authenticationDatabase", configuration.getCatalog().getOptions().get("authenticationDatabase"))
                 .build();
 
-        String[] split = configuration.getDatabase().getHosts().get(0).split(":");
+        String[] split = configuration.getCatalog().getHosts().get(0).split(":");
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(split[0], Integer.parseInt(split[1]));
 
         CatalogManagerExternalResource.clearCatalog(configuration);

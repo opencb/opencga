@@ -74,7 +74,7 @@ public class MonitorService {
         try {
             this.catalogManager = new CatalogManager(this.configuration);
             QueryResult<ObjectMap> login = this.catalogManager.login("admin", password,
-                    this.configuration.getDatabase().getHosts().get(0));
+                    this.configuration.getCatalog().getHosts().get(0));
             String sessionId = login.first().getString("sessionId");
 
             executionDaemon = new ExecutionDaemon(configuration.getMonitor().getExecutionDaemonInterval(), sessionId,

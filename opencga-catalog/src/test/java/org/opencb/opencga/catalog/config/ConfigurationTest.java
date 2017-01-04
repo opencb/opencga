@@ -54,11 +54,11 @@ public class ConfigurationTest {
                 "ldap://10.10.0.20:389", myMap));
         configuration.setAuthenticationOrigins(authenticationOriginList);
 
-        EmailServer emailServer = new EmailServer("localhost", "", "", "", "", false);
-        configuration.setEmailServer(emailServer);
+        Email emailServer = new Email("localhost", "", "", "", "", false);
+        configuration.setEmail(emailServer);
 
-        DatabaseCredentials databaseCredentials = new DatabaseCredentials(Arrays.asList("localhost"), "opencga_catalog", "admin", "");
-        configuration.setDatabase(databaseCredentials);
+        CatalogDBCredentials databaseCredentials = new CatalogDBCredentials(Arrays.asList("localhost"), "opencga_catalog", "admin", "");
+        configuration.setCatalog(databaseCredentials);
 
         Audit audit = new Audit(20000000, 100000000000L, "", Collections.emptyList());
         configuration.setAudit(audit);
@@ -68,6 +68,14 @@ public class ConfigurationTest {
                 StudyAclEntry.StudyPermissions.VIEW_FILES, StudyAclEntry.StudyPermissions.UPDATE_FILES,
                 StudyAclEntry.StudyPermissions.VIEW_JOBS, StudyAclEntry.StudyPermissions.UPDATE_JOBS));
         configuration.setAcl(Arrays.asList(studyAcl));
+
+        ServerConfiguration serverConfiguration = new ServerConfiguration();
+        RestServerConfiguration rest = new RestServerConfiguration(1000, 100, 1000);
+        GrpcServerConfiguration grpc = new GrpcServerConfiguration(1001);
+        serverConfiguration.setGrpc(grpc);
+        serverConfiguration.setRest(rest);
+
+        configuration.setServer(serverConfiguration);
 
 //        CellBaseConfiguration cellBaseConfiguration = new CellBaseConfiguration(Arrays.asList("localhost"), "v3",
 // new DatabaseCredentials(Arrays.asList("localhost"), "user", "password"));

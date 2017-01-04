@@ -79,7 +79,7 @@ public abstract class AbstractStorageServer {
         logger.info("Loading configuration files");
         this.configuration = configuration;
         this.storageConfiguration = storageConfiguration;
-        this.port = configuration.getRest().getPort();
+        this.port = configuration.getServer().getRest().getPort();
     }
 
     private void initDefaultConfigurationFiles() {

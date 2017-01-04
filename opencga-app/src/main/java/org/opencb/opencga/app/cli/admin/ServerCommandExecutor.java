@@ -85,7 +85,7 @@ public class ServerCommandExecutor extends AdminCommandExecutor {
 
 //            GeneralConfiguration openCGAGeneralConfiguration = getOpenCGAConfiguration();catalogConfiguration
             Client client = ClientBuilder.newClient();
-            WebTarget target = client.target("http://localhost:" + configuration.getRest().getPort())
+            WebTarget target = client.target("http://localhost:" + configuration.getServer().getRest().getPort())
                     .path("opencga")
                     .path("webservices")
                     .path("rest")
@@ -114,7 +114,7 @@ public class ServerCommandExecutor extends AdminCommandExecutor {
 //            }
 //            GeneralConfiguration openCGAGeneralConfiguration = getOpenCGAConfiguration();
             Client client = ClientBuilder.newClient();
-            WebTarget target = client.target("http://localhost" + configuration.getGrpc().getPort())
+            WebTarget target = client.target("http://localhost" + configuration.getServer().getGrpc().getPort())
                     .path("opencga")
                     .path("webservices")
                     .path("rest")

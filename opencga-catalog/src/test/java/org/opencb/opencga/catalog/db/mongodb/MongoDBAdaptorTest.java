@@ -74,12 +74,12 @@ public class MongoDBAdaptorTest extends GenericTest {
                 .openStream());
 
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
-                configuration.getDatabase().getHosts().get(0).split(":")[0], 27017);
+                configuration.getCatalog().getHosts().get(0).split(":")[0], 27017);
 
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", configuration.getDatabase().getUser())
-                .add("password", configuration.getDatabase().getPassword())
-                .add("authenticationDatabase", configuration.getDatabase().getOptions().get("authenticationDatabase"))
+                .add("username", configuration.getCatalog().getUser())
+                .add("password", configuration.getCatalog().getPassword())
+                .add("authenticationDatabase", configuration.getCatalog().getOptions().get("authenticationDatabase"))
                 .build();
 
 //        String database = catalogConfiguration.getDatabase().getDatabase();

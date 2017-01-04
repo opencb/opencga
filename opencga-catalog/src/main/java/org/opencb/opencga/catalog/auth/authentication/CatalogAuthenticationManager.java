@@ -149,10 +149,10 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
         String mailHost = catalogProperties.getProperty(CatalogManager.CATALOG_MAIL_HOST);
         String mailPort = catalogProperties.getProperty(CatalogManager.CATALOG_MAIL_PORT);
 */
-        String mailUser = configuration.getEmailServer().getFrom();
-        String mailPassword = configuration.getEmailServer().getPassword();
-        String mailHost = configuration.getEmailServer().getHost();
-        String mailPort = configuration.getEmailServer().getPort();
+        String mailUser = configuration.getEmail().getFrom();
+        String mailPassword = configuration.getEmail().getPassword();
+        String mailHost = configuration.getEmail().getHost();
+        String mailPort = configuration.getEmail().getPort();
 
         MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort);
 

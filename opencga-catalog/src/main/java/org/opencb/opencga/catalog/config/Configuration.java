@@ -42,7 +42,7 @@ public class Configuration {
     private String databasePrefix;
     private String dataDir;
     private String tempJobsDir;
-    private String toolsDir;
+    private String toolDir;
 
     private Project.Organism organism;
 
@@ -54,11 +54,10 @@ public class Configuration {
 
     private List<StudyAclEntry> acl;
 
-    private EmailServer emailServer;
-    private DatabaseCredentials database;
+    private Email email;
+    private CatalogDBCredentials catalog;
 
-    private RestServerConfiguration rest;
-    private GrpcServerConfiguration grpc;
+    private ServerConfiguration server;
 
     protected static Logger logger = LoggerFactory.getLogger(Configuration.class);
 
@@ -103,7 +102,7 @@ public class Configuration {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("CatalogConfiguration{");
+        final StringBuilder sb = new StringBuilder("Configuration{");
         sb.append("logLevel='").append(logLevel).append('\'');
         sb.append(", logFile='").append(logFile).append('\'');
         sb.append(", openRegister=").append(openRegister);
@@ -111,7 +110,7 @@ public class Configuration {
         sb.append(", databasePrefix='").append(databasePrefix).append('\'');
         sb.append(", dataDir='").append(dataDir).append('\'');
         sb.append(", tempJobsDir='").append(tempJobsDir).append('\'');
-        sb.append(", toolsDir='").append(toolsDir).append('\'');
+        sb.append(", toolDir='").append(toolDir).append('\'');
         sb.append(", organism=").append(organism);
         sb.append(", admin=").append(admin);
         sb.append(", authenticationOrigins=").append(authenticationOrigins);
@@ -119,8 +118,9 @@ public class Configuration {
         sb.append(", execution=").append(execution);
         sb.append(", audit=").append(audit);
         sb.append(", acl=").append(acl);
-        sb.append(", emailServer=").append(emailServer);
-        sb.append(", database=").append(database);
+        sb.append(", email=").append(email);
+        sb.append(", catalog=").append(catalog);
+        sb.append(", server=").append(server);
         sb.append('}');
         return sb.toString();
     }
@@ -188,12 +188,12 @@ public class Configuration {
         return this;
     }
 
-    public String getToolsDir() {
-        return toolsDir;
+    public String getToolDir() {
+        return toolDir;
     }
 
-    public Configuration setToolsDir(String toolsDir) {
-        this.toolsDir = toolsDir;
+    public Configuration setToolDir(String toolDir) {
+        this.toolDir = toolDir;
         return this;
     }
 
@@ -233,21 +233,21 @@ public class Configuration {
         return this;
     }
 
-    public EmailServer getEmailServer() {
-        return emailServer;
+    public Email getEmail() {
+        return email;
     }
 
-    public Configuration setEmailServer(EmailServer emailServer) {
-        this.emailServer = emailServer;
+    public Configuration setEmail(Email email) {
+        this.email = email;
         return this;
     }
 
-    public DatabaseCredentials getDatabase() {
-        return database;
+    public CatalogDBCredentials getCatalog() {
+        return catalog;
     }
 
-    public Configuration setDatabase(DatabaseCredentials database) {
-        this.database = database;
+    public Configuration setCatalog(CatalogDBCredentials catalog) {
+        this.catalog = catalog;
         return this;
     }
 
@@ -278,21 +278,12 @@ public class Configuration {
         return this;
     }
 
-    public RestServerConfiguration getRest() {
-        return rest;
+    public ServerConfiguration getServer() {
+        return server;
     }
 
-    public Configuration setRest(RestServerConfiguration rest) {
-        this.rest = rest;
-        return this;
-    }
-
-    public GrpcServerConfiguration getGrpc() {
-        return grpc;
-    }
-
-    public Configuration setGrpc(GrpcServerConfiguration grpc) {
-        this.grpc = grpc;
+    public Configuration setServer(ServerConfiguration server) {
+        this.server = server;
         return this;
     }
 }

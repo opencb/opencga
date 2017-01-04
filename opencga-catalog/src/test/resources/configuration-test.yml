@@ -8,7 +8,7 @@ userDefaultQuota: 200000
 databasePrefix: "opencga_test"
 dataDir: "file:///tmp/opencga/sessions"
 tempJobsDir: "file:///tmp/opencga/sessions/jobs"
-toolsDir: "tools"
+toolDir: "tools"
 
 admin:
   password: "admin"
@@ -32,7 +32,7 @@ execution:
   availableQueues: ""
   toolsPerQueue: {}
 
-emailServer:
+email:
   host: "localhost"
   port: ""
   user: ""
@@ -50,10 +50,9 @@ acl:
   - "VIEW_JOBS"
   - "UPDATE_JOBS"
 
-database:
+catalog:
   hosts:
   - "localhost:27017"
-  database: "opencga_catalog_test"
   user: ""
   password: ""
   options:
@@ -65,12 +64,13 @@ organism:
   commonName: "human"
   assembly: "GRCh38"
 
-rest:
-  port: ${OPENCGA.SERVER.REST.PORT}
-  logFile: null
-  defaultLimit: 2000
-  maxLimit: 5000
+server:
+  rest:
+    port: 8080
+    logFile: null
+    defaultLimit: 2000
+    maxLimit: 5000
 
-grpc:
-  port: ${OPENCGA.SERVER.GRPC.PORT}
-  logFile: null
+  grpc:
+    port: 8081
+    logFile: null

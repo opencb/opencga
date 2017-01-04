@@ -23,7 +23,7 @@ import java.util.Map;
 /**
  * Created by imedina on 01/05/15.
  */
-public class DatabaseCredentials {
+public class CatalogDBCredentials {
 
     /*
      * host attribute includes port with this format 'host[:port]'
@@ -41,14 +41,14 @@ public class DatabaseCredentials {
     private Map<String, String> options;
 
 
-    public DatabaseCredentials() {
+    public CatalogDBCredentials() {
     }
 
-    public DatabaseCredentials(List<String> hosts, String database, String user, String password) {
+    public CatalogDBCredentials(List<String> hosts, String database, String user, String password) {
         this(hosts, database, user, password, new HashMap<>());
     }
 
-    public DatabaseCredentials(List<String> hosts, String database, String user, String password, Map<String, String> options) {
+    public CatalogDBCredentials(List<String> hosts, String database, String user, String password, Map<String, String> options) {
         this.hosts = hosts;
         this.database = database;
         this.user = user;

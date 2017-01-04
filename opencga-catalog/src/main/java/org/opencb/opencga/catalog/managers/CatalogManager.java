@@ -160,7 +160,7 @@ public class CatalogManager implements AutoCloseable {
 
     private void clearCatalog() {
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : configuration.getDatabase().getHosts()) {
+        for (String hostPort : configuration.getCatalog().getHosts()) {
             if (hostPort.contains(":")) {
                 String[] split = hostPort.split(":");
                 Integer port = Integer.valueOf(split[1]);
@@ -225,13 +225,13 @@ public class CatalogManager implements AutoCloseable {
     private void configureDBAdaptor(Configuration configuration) throws CatalogDBException {
 
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", configuration.getDatabase().getUser())
-                .add("password", configuration.getDatabase().getPassword())
-                .add("authenticationDatabase", configuration.getDatabase().getOptions().get("authenticationDatabase"))
+                .add("username", configuration.getCatalog().getUser())
+                .add("password", configuration.getCatalog().getPassword())
+                .add("authenticationDatabase", configuration.getCatalog().getOptions().get("authenticationDatabase"))
                 .build();
 
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : configuration.getDatabase().getHosts()) {
+        for (String hostPort : configuration.getCatalog().getHosts()) {
             if (hostPort.contains(":")) {
                 String[] split = hostPort.split(":");
                 Integer port = Integer.valueOf(split[1]);
