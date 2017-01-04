@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.cellbase.core.api.GeneDBAdaptor;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -347,6 +348,10 @@ public class VariantDBAdaptorUtils {
             } else {
                 returnedFields = new HashSet<>(VariantFields.valuesString());
             }
+            if (!returnedFields.contains(STUDIES_FIELD)) {
+                returnedFields.remove(SAMPLES_FIELD);
+                returnedFields.remove(STATS_FIELD);
+            }
         }
 //        System.out.println("returnedFields = " + returnedFields);
         return returnedFields;
@@ -486,6 +491,35 @@ public class VariantDBAdaptorUtils {
             }
         }
         return genes;
+    }
+
+    public static int parseConsequenceType(String so) {
+        int soAccession;
+        boolean startsWithSO = so.toUpperCase().startsWith("SO:");
+        if (startsWithSO || StringUtils.isNumeric(so)) {
+            try {
+                if (startsWithSO) {
+                    soAccession = Integer.parseInt(so.substring("SO:".length()));
+                } else {
+                    soAccession = Integer.parseInt(so);
+                }
+            } catch (NumberFormatException e) {
+                throw VariantQueryException.malformedParam(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE, so,
+                        "Not a valid SO number");
+            }
+            if (!ConsequenceTypeMappings.accessionToTerm.containsKey(soAccession)) {
+                throw VariantQueryException.malformedParam(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE, so,
+                        "Not a valid SO number");
+            }
+        } else {
+            if (!ConsequenceTypeMappings.termToAccession.containsKey(so)) {
+                throw VariantQueryException.malformedParam(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE, so,
+                        "Not a valid Accession term");
+            } else {
+                soAccession = ConsequenceTypeMappings.termToAccession.get(so);
+            }
+        }
+        return soAccession;
     }
 
     /**

@@ -501,8 +501,10 @@ public class AnalysisCliOptionsParser {
         @ParametersDelegate
         public JobCommand job = new JobCommand();
 
-        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true,
-                arity = 1)
+        @Parameter(names = {"-p", "--project-id"}, description = "Project to annotate.", arity = 1)
+        public String project;
+
+        @Parameter(names = {"-s", "--study-id"}, description = "Studies to annotate. Must be in the same database.", arity = 1)
         public String studyId;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
@@ -515,7 +517,8 @@ public class AnalysisCliOptionsParser {
         @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by --output-filename)")
         public boolean create = false;
 
-        @Parameter(names = {"--load"}, description = "Run only the load of the annotations into the DB from FILE")
+        @Parameter(names = {"--load"}, description = "Run only the load of the annotations into the DB from FILE. "
+                + "Can be a file from catalog or a local file.")
         public String load = null;
 
         @Parameter(names = {"--custom-name"}, description = "Provide a name to the custom annotation")

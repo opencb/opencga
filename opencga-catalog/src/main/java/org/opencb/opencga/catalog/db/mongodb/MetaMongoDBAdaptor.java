@@ -222,7 +222,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
     }
 
     @Override
-    public QueryResult<ObjectMap> addAdminSession(Session session) throws CatalogDBException {
+    public QueryResult<Session> addAdminSession(Session session) throws CatalogDBException {
         long startTime = startQuery();
 
         Bson query = new Document(PRIVATE_ID, "METADATA");
@@ -235,10 +235,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
             throw new CatalogDBException("An internal error occurred when logging the admin");
         }
 
-        ObjectMap resultObjectMap = new ObjectMap();
-        resultObjectMap.put("sessionId", session.getId());
-        resultObjectMap.put("userId", "admin");
-        return endQuery("Login", startTime, Collections.singletonList(resultObjectMap));
+        return endQuery("Login", startTime, Collections.singletonList(session));
     }
 
     @Override

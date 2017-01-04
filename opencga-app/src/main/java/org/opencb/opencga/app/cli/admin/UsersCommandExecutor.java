@@ -24,6 +24,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
+import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
 
 import javax.naming.NamingException;
@@ -160,7 +161,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         System.out.println("The user has been successfully created: " + user.toString() + "\n");
 
         // Login the user
-        ObjectMap login = catalogManager.login(usersCommandOptions.createUserCommandOptions.userId,
+        Session login = catalogManager.login(usersCommandOptions.createUserCommandOptions.userId,
                 usersCommandOptions.createUserCommandOptions.userPassword, "localhost").first();
 
         String projectName = "Default";
@@ -188,10 +189,10 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         }
 
         Project project = catalogManager.getProjectManager().create(projectName, projectAlias,
-                projectDescription, projectOrganization, null, null, null, null, null, login.getString("sessionId")).first();
+                projectDescription, projectOrganization, null, null, null, null, null, login.getId()).first();
         System.out.println("A default project has been created for the user: " + project.toString() + "\n");
 
-        catalogManager.logout(usersCommandOptions.createUserCommandOptions.userId, login.getString("sessionId"));
+        catalogManager.logout(usersCommandOptions.createUserCommandOptions.userId, login.getId());
     }
 
     private void delete() throws CatalogException, IOException {

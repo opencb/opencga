@@ -66,6 +66,15 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
     }
 
     @Test
+    public void testAnnotateProject() throws Exception {
+        QueryOptions config = new QueryOptions(StorageOperation.CATALOG_PATH, outputStr);
+
+        variantManager.annotate(String.valueOf(projectId), null, new Query(), opencga.createTmpOutdir(studyId, "_ANNOT_", sessionId), config, sessionId);
+
+        checkAnnotation(v -> true);
+    }
+
+    @Test
     public void testAnnotateRegion() throws Exception {
 
         annotate(new Query(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), "22"), new QueryOptions());

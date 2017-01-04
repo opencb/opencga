@@ -82,10 +82,14 @@ public abstract class StorageOperation {
     }
 
     protected Long getCatalogOutdirId(long studyId, ObjectMap options, String sessionId) throws CatalogException {
+        return getCatalogOutdirId(Long.toString(studyId), options, sessionId);
+    }
+
+    protected Long getCatalogOutdirId(String studyStr, ObjectMap options, String sessionId) throws CatalogException {
         Long catalogOutDirId;
         if (options != null && StringUtils.isNoneEmpty(options.getString(CATALOG_PATH))) {
             String catalogOutDirIdStr = options.getString(CATALOG_PATH);
-            catalogOutDirId = catalogManager.getFileManager().getId(catalogOutDirIdStr, Long.toString(studyId), sessionId).getResourceId();
+            catalogOutDirId = catalogManager.getFileManager().getId(catalogOutDirIdStr, studyStr, sessionId).getResourceId();
             if (catalogOutDirId <= 0) {
                 throw new CatalogException("Output directory " + catalogOutDirIdStr + " could not be found within catalog.");
             }
@@ -183,30 +187,37 @@ public abstract class StorageOperation {
             dataStore = study.getDataStores().get(bioformat);
         } else {
             long projectId = catalogManager.getStudyManager().getProjectId(study.getId());
-            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE,
-                    Arrays.asList(ProjectDBAdaptor.QueryParams.ALIAS.key(), ProjectDBAdaptor.QueryParams.DATASTORES.key())
-            );
-            Project project = catalogManager.getProjectManager().get(projectId, queryOptions, sessionId).first();
-            if (project != null && project.getDataStores() != null && project.getDataStores().containsKey(bioformat)) {
-                dataStore = project.getDataStores().get(bioformat);
-            } else { //get default datastore
-                //Must use the UserByStudyId instead of the file owner.
-                String userId = catalogManager.getStudyManager().getUserId(study.getId());
-                String alias = project.getAlias();
+            dataStore = getDataStoreByProjectId(catalogManager, projectId, bioformat, sessionId);
+        }
+        return dataStore;
+    }
 
-                String prefix;
-                if (StringUtils.isNotEmpty(catalogManager.getConfiguration().getDatabasePrefix())) {
-                    prefix = catalogManager.getConfiguration().getDatabasePrefix();
-                    if (!prefix.endsWith("_")) {
-                        prefix += "_";
-                    }
-                } else {
-                    prefix = "opencga_";
+    protected static DataStore getDataStoreByProjectId(CatalogManager catalogManager, long projectId, File.Bioformat bioformat,
+                                                       String sessionId)
+            throws CatalogException {
+        DataStore dataStore;
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE,
+                Arrays.asList(ProjectDBAdaptor.QueryParams.ALIAS.key(), ProjectDBAdaptor.QueryParams.DATASTORES.key()));
+        Project project = catalogManager.getProjectManager().get(projectId, queryOptions, sessionId).first();
+        if (project != null && project.getDataStores() != null && project.getDataStores().containsKey(bioformat)) {
+            dataStore = project.getDataStores().get(bioformat);
+        } else { //get default datastore
+            //Must use the UserByStudyId instead of the file owner.
+            String userId = catalogManager.getProjectManager().getUserId(projectId);
+            String alias = project.getAlias();
+
+            String prefix;
+            if (StringUtils.isNotEmpty(catalogManager.getConfiguration().getDatabasePrefix())) {
+                prefix = catalogManager.getConfiguration().getDatabasePrefix();
+                if (!prefix.endsWith("_")) {
+                    prefix += "_";
                 }
-
-                String dbName = prefix + userId + "_" + alias;
-                dataStore = new DataStore(StorageManagerFactory.get().getDefaultStorageManagerName(), dbName);
+            } else {
+                prefix = "opencga_";
             }
+
+            String dbName = prefix + userId + '_' + alias;
+            dataStore = new DataStore(StorageManagerFactory.get().getDefaultStorageManagerName(), dbName);
         }
         return dataStore;
     }

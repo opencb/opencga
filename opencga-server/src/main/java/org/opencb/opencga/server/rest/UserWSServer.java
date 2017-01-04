@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Project;
+import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.core.exception.VersionException;
 
@@ -34,6 +35,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -92,7 +94,7 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response login(@ApiParam(value = "userId", required = true) @PathParam("user") String userId,
                           @ApiParam(value = "password", required = true) @QueryParam("password") String password) {
         sessionIp = httpServletRequest.getRemoteAddr();
-        QueryResult queryResult;
+        QueryResult<Session> queryResult;
         try {
             queryOptions.remove("password"); //Remove password from query options
 //            if (userId.equalsIgnoreCase("anonymous")) {
@@ -101,7 +103,16 @@ public class UserWSServer extends OpenCGAWSServer {
 //                queryResult = catalogManager.login(userId, password, sessionIp);
 //            }
             queryResult = catalogManager.login(userId, password, sessionIp);
-            return createOkResponse(queryResult);
+            ObjectMap sessionMap = new ObjectMap();
+            sessionMap.append("sessionId", queryResult.first().getId())
+                    .append("id", queryResult.first().getId())
+                    .append("ip", queryResult.first().getIp())
+                    .append("date", queryResult.first().getDate());
+
+            QueryResult<ObjectMap> login = new QueryResult<>("login", queryResult.getDbTime(), 1, 1, queryResult.getWarningMsg(),
+                    queryResult.getErrorMsg(), Arrays.asList(sessionMap));
+
+            return createOkResponse(login);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -271,19 +282,29 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response loginPost(@ApiParam(value = "userId", required = true) @PathParam("user") String userId,
                               @ApiParam(value = "Json containing the param 'password'", required = true) Map<String, String> map) {
         sessionIp = httpServletRequest.getRemoteAddr();
-        QueryResult queryResult;
+        QueryResult<Session> queryResult;
         try {
             if (!map.containsKey("password")) {
                 throw new Exception("The json does not contain the key password.");
             }
             String password = map.get("password");
             queryResult = catalogManager.login(userId, password, sessionIp);
+
+            ObjectMap sessionMap = new ObjectMap();
+            sessionMap.append("sessionId", queryResult.first().getId())
+                    .append("id", queryResult.first().getId())
+                    .append("ip", queryResult.first().getIp())
+                    .append("date", queryResult.first().getDate());
+
+            QueryResult<ObjectMap> login = new QueryResult<>("login", queryResult.getDbTime(), 1, 1, queryResult.getWarningMsg(),
+                    queryResult.getErrorMsg(), Arrays.asList(sessionMap));
+
 //            if (userId.equalsIgnoreCase("anonymous")) {
 //                queryResult = catalogManager.loginAsAnonymous(sessionIp);
 //            } else {
 //                queryResult = catalogManager.login(userId, password, sessionIp);
 //            }
-            return createOkResponse(queryResult);
+            return createOkResponse(login);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

@@ -973,10 +973,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (isValidParam(query, VariantQueryParams.ANNOT_CONSEQUENCE_TYPE)) {
                 String value = query.getString(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key());
-                value = value.replace("SO:", "");
-                addQueryIntegerFilter(DocumentToVariantConverter.ANNOTATION_FIELD
+                addQueryFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD, value, builder, QueryOperation.AND);
+                        + "." + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD, value, builder, QueryOperation.AND,
+                        VariantDBAdaptorUtils::parseConsequenceType);
             }
 
             if (isValidParam(query, VariantQueryParams.ANNOT_BIOTYPE)) {

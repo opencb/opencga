@@ -903,10 +903,12 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         // We obtain the permissions present in the demanded template (if present)
         EnumSet<StudyAclEntry.StudyPermissions> studyPermissions = AuthorizationManager.getLockedAcls();
         if (template != null && !template.isEmpty()) {
-            if (template.equals(ADMIN)) {
+            if (template.equals(AuthorizationManager.ROLE_ADMIN)) {
                 studyPermissions = AuthorizationManager.getAdminAcls();
-            } else if (template.equals("analyst")) {
+            } else if (template.equals(AuthorizationManager.ROLE_ANALYST)) {
                 studyPermissions = AuthorizationManager.getAnalystAcls();
+            } else if (template.equals(AuthorizationManager.ROLE_VIEW_ONLY)) {
+                studyPermissions = AuthorizationManager.getViewOnlyAcls();
             }
         }
         // Add the permissions present in permissions

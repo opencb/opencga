@@ -28,6 +28,7 @@ import java.util.Collections;
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.isValidParam;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.parseConsequenceType;
 
 /**
  * Created on 01/02/16
@@ -118,5 +119,30 @@ public class VariantDBAdaptorUtilsTest extends GenericTest {
         assertTrue(isValidParam(new Query(ANNOTATION_EXISTS.key(), Arrays.asList(1,2,3)), ANNOTATION_EXISTS));
         assertTrue(isValidParam(new Query(ANNOTATION_EXISTS.key(), 5), ANNOTATION_EXISTS));
         assertTrue(isValidParam(new Query(ANNOTATION_EXISTS.key(), "sdfas"), ANNOTATION_EXISTS));
+    }
+
+    @Test
+    public void testParseSO() throws Exception {
+        assertEquals(1587, parseConsequenceType("stop_gained"));
+        assertEquals(1587, parseConsequenceType("1587"));
+        assertEquals(1587, parseConsequenceType("SO:00001587"));
+    }
+
+    @Test
+    public void testParseWrongSOTerm() throws Exception {
+        thrown.expect(VariantQueryException.class);
+        parseConsequenceType("wrong_so");
+    }
+
+    @Test
+    public void testParseWrongSONumber() throws Exception {
+        thrown.expect(VariantQueryException.class);
+        parseConsequenceType("9999999");
+    }
+
+    @Test
+    public void testParseWrongSONumber2() throws Exception {
+        thrown.expect(VariantQueryException.class);
+        parseConsequenceType("SO:9999999");
     }
 }

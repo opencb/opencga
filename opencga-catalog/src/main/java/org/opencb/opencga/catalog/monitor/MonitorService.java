@@ -21,8 +21,6 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -73,9 +71,8 @@ public class MonitorService {
 
         try {
             this.catalogManager = new CatalogManager(this.configuration);
-            QueryResult<ObjectMap> login = this.catalogManager.login("admin", password,
-                    this.configuration.getCatalog().getHosts().get(0));
-            String sessionId = login.first().getString("sessionId");
+            String sessionId = this.catalogManager.login("admin", password,
+                    this.configuration.getCatalog().getHosts().get(0)).getId();
 
             executionDaemon = new ExecutionDaemon(configuration.getMonitor().getExecutionDaemonInterval(), sessionId,
                     catalogManager, appHome);

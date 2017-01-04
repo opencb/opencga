@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
 
 import javax.naming.NamingException;
@@ -101,17 +102,17 @@ public interface IUserManager extends ResourceManager<String, User> {
 
     void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException;
 
-    QueryResult<ObjectMap> login(String userId, String password, String sessionIp) throws CatalogException, IOException;
+    QueryResult<Session> login(String userId, String password, String sessionIp) throws CatalogException, IOException;
 
     /**
-     * This method will be only callable by the admin. It generates a new session id for the user.
+     * This method will be only callable by the system. It generates a new session id for the user.
      *
      * @param sessionId Admin session id.
      * @param userId user id for which a session will be generated.
      * @return an objectMap containing the new sessionId
      * @throws CatalogException if the password is not correct or the userId does not exist.
      */
-    QueryResult<ObjectMap> getNewUserSession(String sessionId, String userId) throws CatalogException;
+    QueryResult<Session> getNewUserSession(String sessionId, String userId) throws CatalogException;
 
     QueryResult resetPassword(String userId) throws CatalogException;
 

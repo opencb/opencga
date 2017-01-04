@@ -363,7 +363,7 @@ public class CatalogManager implements AutoCloseable {
         return userManager.loginAsAnonymous(sessionIp);
     }
 
-    public QueryResult<ObjectMap> login(String userId, String password, String sessionIp) throws CatalogException, IOException {
+    public QueryResult<Session> login(String userId, String password, String sessionIp) throws CatalogException, IOException {
         return userManager.login(userId, password, sessionIp);
     }
 

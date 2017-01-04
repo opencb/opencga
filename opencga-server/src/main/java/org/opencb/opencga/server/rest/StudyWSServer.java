@@ -369,7 +369,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Samples with a specific genotype: "
                                         + "{samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1")
                                     @QueryParam("genotype") String genotype,
-                                @ApiParam(value = "Consequence type SO term list. e.g. SO:0000045,SO:0000046")
+                                @ApiParam(value = "Consequence type SO term list. e.g. missense_variant,stop_lost or SO:0001583,SO:0001578")
                                     @QueryParam("annot-ct") String annot_ct,
                                 @ApiParam(value = "XRef") @QueryParam("annot-xref") String annot_xref,
                                 @ApiParam(value = "Biotype") @QueryParam("annot-biotype") String annot_biotype,
@@ -797,7 +797,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                        required = true) @QueryParam("members") String members,
                                @ApiParam(value = "Comma separated list of permissions that will be granted to the member list")
                                    @DefaultValue("") @QueryParam("permissions") String permissions,
-                               @ApiParam(value = "Template of permissions to be used (admin, analyst or locked)")
+                               @ApiParam(value = "Template of permissions to be used (admin, analyst or view_only)")
                                    @QueryParam("templateId") String templateId) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {

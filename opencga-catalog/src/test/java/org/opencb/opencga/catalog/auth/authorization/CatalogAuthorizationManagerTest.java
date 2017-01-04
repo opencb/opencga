@@ -122,11 +122,11 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.createUser(memberUser, memberUser, "email@ccc.ccc", password, "ASDF", null, null);
         catalogManager.createUser(externalUser, externalUser, "email@ccc.ccc", password, "ASDF", null, null);
 
-        ownerSessionId = catalogManager.login(ownerUser, password, "localhost").first().get("sessionId").toString();
-        studyAdmin1SessionId = catalogManager.login(studyAdminUser1, password, "localhost").first().get("sessionId").toString();
-        studyAdmin2SessionId = catalogManager.login(studyAdminUser2, password, "localhost").first().get("sessionId").toString();
-        memberSessionId = catalogManager.login(memberUser, password, "localhost").first().get("sessionId").toString();
-        externalSessionId = catalogManager.login(externalUser, password, "localhost").first().get("sessionId").toString();
+        ownerSessionId = catalogManager.login(ownerUser, password, "localhost").first().getId();
+        studyAdmin1SessionId = catalogManager.login(studyAdminUser1, password, "localhost").first().getId();
+        studyAdmin2SessionId = catalogManager.login(studyAdminUser2, password, "localhost").first().getId();
+        memberSessionId = catalogManager.login(memberUser, password, "localhost").first().getId();
+        externalSessionId = catalogManager.login(externalUser, password, "localhost").first().getId();
 
         p1 = catalogManager.createProject("p1", "p1", null, null, null, ownerSessionId).first().getId();
         s1 = catalogManager.createStudy(p1, "s1", "s1", Study.Type.CASE_CONTROL, null, ownerSessionId).first().getId();
@@ -484,7 +484,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void readFileNoStudyMember() throws CatalogException, IOException {
         String newUser = "newUser";
         catalogManager.createUser(newUser, newUser, "asda@mail.com", password, "org", 1000L, null);
-        String sessionId = catalogManager.login(newUser, password, "localhost").first().get("sessionId").toString();
+        String sessionId = catalogManager.login(newUser, password, "localhost").first().getId();
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getFile(data, sessionId);
     }
@@ -494,7 +494,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         // Add a new user to a new group
         String newUser = "newUser";
         catalogManager.createUser(newUser, newUser, "asda@mail.com", password, "org", 1000L, null);
-        String sessionId = catalogManager.login(newUser, password, "localhost").first().get("sessionId").toString();
+        String sessionId = catalogManager.login(newUser, password, "localhost").first().getId();
         String newGroup = "@external";
 //        catalogManager.addUsersToGroup(s1, "@external", newUser, ownerSessionId);
         catalogManager.createGroup(Long.toString(s1), newGroup, newUser, ownerSessionId);
@@ -518,7 +518,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         // Add a new user to a new group
         String newUser = "newUser";
         catalogManager.createUser(newUser, newUser, "asda@mail.com", password, "org", 1000L, null);
-        String sessionId = catalogManager.login(newUser, password, "localhost").first().get("sessionId").toString();
+        String sessionId = catalogManager.login(newUser, password, "localhost").first().getId();
         String newGroup = "@external";
 //        catalogManager.addUsersToGroup(s1, "@external", newUser, ownerSessionId);
         catalogManager.createGroup(Long.toString(s1), newGroup, newUser, ownerSessionId);
@@ -571,7 +571,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void createFileNoStudyMember() throws CatalogException, IOException {
         String newUser = "newUser";
         catalogManager.createUser(newUser, newUser, "asda@mail.com", password, "org", 1000L, null);
-        String sessionId = catalogManager.login(newUser, password, "localhost").first().get("sessionId").toString();
+        String sessionId = catalogManager.login(newUser, password, "localhost").first().getId().toString();
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.createFolder(s1, Paths.get("data/my_folder/"), false, null, sessionId);
     }
@@ -627,7 +627,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void readSampleExternalUser() throws CatalogException, IOException {
         String newUser = "newUser";
         catalogManager.createUser(newUser, newUser, "asda@mail.com", password, "org", 1000L, null);
-        String sessionId = catalogManager.login(newUser, password, "localhost").first().get("sessionId").toString();
+        String sessionId = catalogManager.login(newUser, password, "localhost").first().getId().toString();
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getSample(smp2, null, sessionId);
     }
@@ -651,7 +651,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         // Add a new user to a new group
         String newUser = "newUser";
         catalogManager.createUser(newUser, newUser, "asda@mail.com", password, "org", 1000L, null);
-        String sessionId = catalogManager.login(newUser, password, "localhost").first().get("sessionId").toString();
+        String sessionId = catalogManager.login(newUser, password, "localhost").first().getId().toString();
         String newGroup = "@external";
 //        catalogManager.addUsersToGroup(s1, "@external", newUser, ownerSessionId);
         catalogManager.createGroup(Long.toString(s1), newGroup, newUser, ownerSessionId);
@@ -677,7 +677,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         // Add a new user to a new group
         String newUser = "newUser";
         catalogManager.createUser(newUser, newUser, "asda@mail.com", password, "org", 1000L, null);
-        String sessionId = catalogManager.login(newUser, password, "localhost").first().get("sessionId").toString();
+        String sessionId = catalogManager.login(newUser, password, "localhost").first().getId().toString();
 
         QueryResult<Sample> sample = catalogManager.getSample(smp6, null, sessionId);
         assertEquals(1, sample.getNumResults());

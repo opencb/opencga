@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.manager.variant;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.Variant;
@@ -8,10 +9,14 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
+import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created on 16/12/16.
@@ -48,6 +53,30 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
         for (Variant variant : result.getResult()) {
             System.out.println("variant = " + variant);
         }
+    }
+
+    @Test
+    public void testQueryExcludeSamples() throws Exception {
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantDBAdaptorUtils.VariantFields.SAMPLES);
+        Query query = new Query();
+
+        // Without studies
+        Map<Long, List<Sample>> longListMap = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor(), sessionId);
+        Assert.assertEquals(Collections.singletonMap(studyId, Collections.emptyList()), longListMap);
+
+        // With studies
+        query.append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
+        longListMap = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor(), sessionId);
+        Assert.assertEquals(Collections.singletonMap(studyId, Collections.emptyList()), longListMap);
+    }
+
+    @Test
+    public void testQueryExcludeStudies() throws Exception {
+        Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantDBAdaptorUtils.VariantFields.STUDIES);
+
+        Map<Long, List<Sample>> longListMap = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor(), sessionId);
+        Assert.assertEquals(Collections.emptyMap(), longListMap);
     }
 
     @Test

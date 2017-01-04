@@ -16,9 +16,9 @@
 
 package org.opencb.opencga.catalog.session;
 
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.Session;
 
 /**
  * Created by pfurio on 24/05/16.
@@ -30,10 +30,13 @@ public interface SessionManager {
      *
      * @param userId valid user id.
      * @param ip current ip of the user.
+     * @param type type of the session to be generated.
      * @return A queryResult object containing the generated session id.
      * @throws CatalogException if the user is not valid.
      */
-    QueryResult<ObjectMap> createToken(String userId, String ip) throws CatalogException;
+    QueryResult<Session> createToken(String userId, String ip, Session.Type type) throws CatalogException;
+
+//    QueryResult<Session> createToken(String userId, String ip, Session.Type type) throws CatalogException;
 
     /**
      * Closes the session.
