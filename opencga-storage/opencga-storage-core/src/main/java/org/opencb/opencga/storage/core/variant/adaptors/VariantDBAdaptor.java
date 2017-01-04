@@ -86,7 +86,7 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
         ANNOTATION_EXISTS("annotationExists", BOOLEAN,
                 "Specify if the variant annotation must exists."),
         ANNOT_CONSEQUENCE_TYPE("annot-ct", TEXT_ARRAY,
-                "Consequence type SO term list. e.g. SO:0000045,SO:0000046"),
+                "Consequence type SO term list. e.g. missense_variant,stop_lost or SO:0001583,SO:0001578"),
         ANNOT_XREF("annot-xref", TEXT_ARRAY,
                 "External references."),
         ANNOT_BIOTYPE("annot-biotype", TEXT_ARRAY,

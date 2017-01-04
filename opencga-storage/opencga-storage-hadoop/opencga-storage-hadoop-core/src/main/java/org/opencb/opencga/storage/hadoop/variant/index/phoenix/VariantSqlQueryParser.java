@@ -22,7 +22,6 @@ import org.apache.phoenix.parse.HintNode;
 import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
@@ -46,7 +45,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.*;
-import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper.Column;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.*;
 
 /**
@@ -606,19 +605,7 @@ public class VariantSqlQueryParser {
         }
 
 
-        addQueryFilter(query, ANNOT_CONSEQUENCE_TYPE, VariantColumn.SO, filters, so -> {
-            int soAccession;
-            if (so.startsWith("SO:") || StringUtils.isNumeric(so)) {
-                try {
-                    soAccession = Integer.parseInt(so.toUpperCase().replace("SO:", ""));
-                } catch (NumberFormatException e) {
-                    throw new VariantQueryException("Invalid SOAccession number", e);
-                }
-            } else {
-                soAccession = ConsequenceTypeMappings.termToAccession.get(so);
-            }
-            return soAccession;
-        });
+        addQueryFilter(query, ANNOT_CONSEQUENCE_TYPE, VariantColumn.SO, filters, VariantDBAdaptorUtils::parseConsequenceType);
 
         addQueryFilter(query, ANNOT_XREF, VariantColumn.XREFS, filters);
 
