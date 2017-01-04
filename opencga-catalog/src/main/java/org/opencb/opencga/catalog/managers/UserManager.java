@@ -539,7 +539,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult<ObjectMap> login(String userId, String password, String sessionIp) throws CatalogException, IOException {
+    public QueryResult<Session> login(String userId, String password, String sessionIp) throws CatalogException, IOException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(password, "password");
         ParamUtils.checkParameter(sessionIp, "sessionIp");
@@ -572,9 +572,9 @@ public class UserManager extends AbstractManager implements IUserManager {
             authenticationManagerMap.get(authId).authenticate(userId, password, true);
         }
 
-        QueryResult<ObjectMap> sessionTokenQueryResult;
+        QueryResult<Session> sessionTokenQueryResult;
         try {
-            sessionTokenQueryResult = catalogManager.getSessionManager().createToken(userId, sessionIp);
+            sessionTokenQueryResult = catalogManager.getSessionManager().createToken(userId, sessionIp, Session.Type.USER);
         } catch (CatalogException e) {
             auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.login, AuditRecord.Magnitude.high, userId, userId,
                     null, null, "Unsuccessfully login attempt", null);
@@ -588,9 +588,9 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult<ObjectMap> getNewUserSession(String sessionId, String userId) throws CatalogException {
+    public QueryResult<Session> getNewUserSession(String sessionId, String userId) throws CatalogException {
         authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", sessionId, true);
-        return catalogManager.getSessionManager().createToken(userId, "ADMIN");
+        return catalogManager.getSessionManager().createToken(userId, "localhost", Session.Type.SYSTEM);
     }
 
     @Override
@@ -599,7 +599,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         checkSessionId(userId, sessionId);
 
-        QueryResult logout;
+        QueryResult<Session> logout;
         try {
             logout = userDBAdaptor.logout(userId, sessionId);
         } catch (CatalogDBException e) {
@@ -607,9 +607,8 @@ public class UserManager extends AbstractManager implements IUserManager {
                     null, null, "Unsuccessfully logout attempt", null);
             throw e;
         }
-        ObjectMap session = new ObjectMap().append("userId", userId).append("sessionId", sessionId);
-        auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.logout, AuditRecord.Magnitude.low, userId, userId, session,
-                null, "User successfully logged out", null);
+        auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.logout, AuditRecord.Magnitude.low, userId, userId,
+                logout.first(), null, "User successfully logged out", null);
 
         return logout;
 //        switch (authorizationManager.getUserRole(userId)) {

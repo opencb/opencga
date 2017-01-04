@@ -89,7 +89,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         catalogConfiguration.getAdmin().setPassword("demo");
         CatalogDemo.createDemoDatabase(catalogConfiguration, catalogCommandOptions.demoCatalogCommandOptions.force);
         CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
-        sessionId = catalogManager.login("user1", "user1_pass", "localhost").first().getString("sessionId");
+        sessionId = catalogManager.login("user1", "user1_pass", "localhost").first().getId();
         AnalysisDemo.insertPedigreeFile(catalogManager, 6L, Paths.get(this.appHome).resolve("examples/20130606_g1k.ped"), sessionId);
     }
 

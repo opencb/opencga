@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.DuplicateKeyException;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
@@ -144,7 +145,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    public QueryResult<ObjectMap> addSession(String userId, Session session) throws CatalogDBException {
+    public QueryResult<Session> addSession(String userId, Session session) throws CatalogDBException {
         long startTime = startQuery();
 
         Bson query = new Document(QueryParams.ID.key(), userId);
@@ -157,26 +158,42 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             throw new CatalogDBException("An internal error occurred when logging the user" + userId);
         }
 
-        ObjectMap resultObjectMap = new ObjectMap();
-        resultObjectMap.put("sessionId", session.getId());
-        resultObjectMap.put("userId", userId);
-        return endQuery("Login", startTime, Collections.singletonList(resultObjectMap));
+//        ObjectMap resultObjectMap = new ObjectMap();
+//        resultObjectMap.put("sessionId", session.getId());
+//        resultObjectMap.put("userId", userId);
+        return endQuery("Login", startTime, Collections.singletonList(session));
     }
 
     @Override
-    public QueryResult logout(String userId, String sessionId) throws CatalogDBException {
+    public QueryResult<Session> logout(String userId, String sessionId) throws CatalogDBException {
         long startTime = startQuery();
 
         String userIdBySessionId = getUserIdBySessionId(sessionId);
         if (userIdBySessionId.isEmpty()) {
             return endQuery("logout", startTime, null, "", "Session not found");
         }
+
+        List<Session> retSession = Collections.emptyList();
         if (userIdBySessionId.equals(userId)) {
-            Bson query = new Document(QueryParams.ID.key(), userId);
-            Bson update = new Document("$pull", new Document("sessions", new Document("id", sessionId)));
-            QueryResult<UpdateResult> updateQueryResult = userCollection.update(query, update, null);
-            if (updateQueryResult.first().getModifiedCount() == 0) {
-                throw new CatalogDBException("Internal error: Could not remove closed session from user " + userId);
+            // Get the session object
+            List<Bson> aggregates = new ArrayList<>();
+            aggregates.add(Aggregates.match(Filters.eq("id", userId)));
+            aggregates.add(Aggregates.unwind("$sessions"));
+            aggregates.add(Aggregates.match(Filters.eq("sessions.id", sessionId)));
+            QueryResult<User> aggregate = userCollection.aggregate(aggregates, userConverter, new QueryOptions());
+            if (aggregate.first() != null && aggregate.first().getSessions() != null && aggregate.first().getSessions().size() == 1) {
+                retSession = aggregate.first().getSessions();
+
+                // Remove the session object
+                Bson query = new Document(QueryParams.ID.key(), userId);
+                Bson update = new Document("$pull", new Document("sessions", new Document("id", sessionId)));
+                QueryResult<UpdateResult> updateQueryResult = userCollection.update(query, update, null);
+                if (updateQueryResult.first().getModifiedCount() == 0) {
+                    throw new CatalogDBException("Internal error: Could not remove closed session from user " + userId);
+                }
+            } else {
+                throw new CatalogDBException("Internal error: Could not obtain session object from user " + userId + " when attempting to "
+                        + "logout");
             }
 //            Bson query = new Document(QueryParams.SESSION_ID.key(), sessionId);
 //            Bson updates = Updates.set("sessions.$.logout", TimeUtils.getTime());
@@ -185,7 +202,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
             throw new CatalogDBException("UserId mismatches with the sessionId");
         }
 
-        return endQuery("Logout", startTime);
+        return endQuery("Logout", startTime, retSession);
     }
 
     @Override
@@ -328,7 +345,7 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     @Override
     public String getUserIdBySessionId(String sessionId) {
 
-        Bson query = new Document("sessions", new Document("$elemMatch", new Document("id", sessionId).append("logout", "")));
+        Bson query = new Document("sessions", new Document("$elemMatch", new Document("id", sessionId)));
         Bson projection = Projections.include(QueryParams.ID.key());
         QueryResult<Document> id = userCollection.find(query, projection, null);
 

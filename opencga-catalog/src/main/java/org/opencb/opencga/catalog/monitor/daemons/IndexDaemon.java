@@ -174,6 +174,8 @@ public class IndexDaemon extends MonitorParentDaemon {
                 String sessionId = (String) job.getAttributes().get("sessionId");
                 ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, sessionId);
                 try {
+                    // Close the session opened for the user
+                    catalogManager.getUserManager().logout(job.getUserId(), sessionId);
 //                    outputRecorder.recordJobOutputAndPostProcess(job, status);
                     outputRecorder.updateJobStatus(job, new Job.JobStatus(status));
                     logger.info("Removing temporal directory.");
@@ -284,7 +286,7 @@ public class IndexDaemon extends MonitorParentDaemon {
         String userId = job.getUserId();
         String userSessionId = null;
         try {
-            userSessionId = catalogManager.getUserManager().getNewUserSession(sessionId, userId).first().getString("sessionId");
+            userSessionId = catalogManager.getUserManager().getNewUserSession(sessionId, userId).first().getId();
         } catch (CatalogException e) {
             logger.warn("Could not obtain a new session id for user {}. Error: {}", userId, e.getMessage());
         }

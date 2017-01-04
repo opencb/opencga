@@ -119,9 +119,9 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.createUser("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, null);
         catalogManager.createUser("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, null);
 
-        sessionIdUser = catalogManager.login("user", PASSWORD, "127.0.0.1").first().getString("sessionId");
-        sessionIdUser2 = catalogManager.login("user2", PASSWORD, "127.0.0.1").first().getString("sessionId");
-        sessionIdUser3 = catalogManager.login("user3", PASSWORD, "127.0.0.1").first().getString("sessionId");
+        sessionIdUser = catalogManager.login("user", PASSWORD, "127.0.0.1").first().getId();
+        sessionIdUser2 = catalogManager.login("user2", PASSWORD, "127.0.0.1").first().getId();
+        sessionIdUser3 = catalogManager.login("user3", PASSWORD, "127.0.0.1").first().getId();
 
         project1 = catalogManager.createProject("Project about some genomes", "1000G", "", "ACME", null, sessionIdUser)
                 .first().getId();
@@ -247,8 +247,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testAdminUserExists() throws Exception {
-        QueryResult<ObjectMap> login = catalogManager.getUserManager().login("admin", "admin", "localhost");
-        assertTrue(login.first().getString("sessionId").length() == 40);
+        QueryResult<Session> login = catalogManager.getUserManager().login("admin", "admin", "localhost");
+        assertTrue(login.first().getId().length() == 40);
     }
 
     @Test
@@ -265,12 +265,26 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testLogin() throws Exception {
-        QueryResult<ObjectMap> queryResult = catalogManager.login("user", PASSWORD, "127.0.0.1");
-        System.out.println(queryResult.first().toJson());
+        catalogManager.login("user", PASSWORD, "127.0.0.1");
 
         thrown.expect(CatalogException.class);
         thrown.expectMessage(allOf(containsString("Bad"), containsString("password")));
         catalogManager.login("user", "fakePassword", "127.0.0.1");
+    }
+
+    @Test
+    public void dummyLogin() throws Exception {
+        QueryResult<Session> user = catalogManager.login("user", PASSWORD, "127.0.0.1");
+
+        ObjectMap sessionMap = new ObjectMap();
+        sessionMap.append("id", user.first().getId()).append("sessionId", user.first().getId()).append("ip", user.first().getIp())
+                .append("date", user.first().getDate());
+
+        QueryResult<ObjectMap> login = new QueryResult<>("login", user.getDbTime(), 1, 1, user.getWarningMsg(), user.getErrorMsg(),
+                Arrays.asList(sessionMap));
+
+        System.out.println(login);
+
     }
 
     @Test
@@ -602,7 +616,7 @@ public class CatalogManagerTest extends GenericTest {
                 outDir.getId(),
                 Collections.emptyList(), null, new HashMap<>(), null, new Job.JobStatus(Job.JobStatus.ERROR), 0, 0, null, sessionIdUser);
 
-        String sessionId = catalogManager.login("admin", "admin", "localhost").first().get("sessionId").toString();
+        String sessionId = catalogManager.login("admin", "admin", "localhost").first().getId().toString();
         QueryResult<Job> unfinishedJobs = catalogManager.getUnfinishedJobs(sessionId);
         assertEquals(2, unfinishedJobs.getNumResults());
 

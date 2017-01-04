@@ -79,7 +79,7 @@ public class AnalysisMainTest {
         opencga.clearStorageDB(STORAGE_ENGINE, dbNameAlignments);
 
         User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null, null).first();
-        sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");
+        sessionId = catalogManager.login(userId, "user", "localhost").first().getId();
         projectId = catalogManager.createProject("p1", "p1", "Project 1", "ACME", null, sessionId).first().getId();
 
         Map<File.Bioformat, DataStore> datastores = new HashMap<>();
