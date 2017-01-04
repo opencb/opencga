@@ -89,7 +89,7 @@ public class FileWSServerTest {
     @Before
     public void init() throws Exception {
         webTarget = serverTestUtils.getWebTarget();
-        sessionId = OpenCGAWSServer.catalogManager.login("user", CatalogManagerTest.PASSWORD, "localhost").first().getString("sessionId");
+        sessionId = OpenCGAWSServer.catalogManager.login("user", CatalogManagerTest.PASSWORD, "localhost").first().getId();
         studyId = OpenCGAWSServer.catalogManager.getStudyId("user@1000G:phase1");
 
         if (ROOT_DIR.toFile().exists()) {
