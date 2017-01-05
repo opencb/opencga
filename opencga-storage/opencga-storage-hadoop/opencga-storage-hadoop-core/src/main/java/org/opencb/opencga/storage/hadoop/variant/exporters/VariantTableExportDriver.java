@@ -14,7 +14,7 @@ import org.apache.hadoop.io.compress.GzipCodec;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 
@@ -87,7 +87,7 @@ public class VariantTableExportDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected void postExecution(boolean succeed) throws IOException, StorageManagerException {
+    protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
         super.postExecution(succeed);
         StudyConfiguration studyConfiguration = loadStudyConfiguration();
         writeMetadata(studyConfiguration, this.outFile + ".studyConfiguration");

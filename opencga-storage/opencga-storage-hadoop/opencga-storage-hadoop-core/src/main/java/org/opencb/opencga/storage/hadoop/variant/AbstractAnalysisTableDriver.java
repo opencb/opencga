@@ -14,7 +14,7 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
@@ -30,8 +30,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager
-        .OPENCGA_STORAGE_HADOOP_MAPREDUCE_SCANNER_TIMEOUT;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.OPENCGA_STORAGE_HADOOP_MAPREDUCE_SCANNER_TIMEOUT;
 import static org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableDriver.CONFIG_VARIANT_FILE_IDS;
 import static org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableDriver.CONFIG_VARIANT_TABLE_NAME;
 
@@ -113,11 +112,11 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         return succeed ? 0 : 1;
     }
 
-    protected void preExecution() throws IOException, StorageManagerException {
+    protected void preExecution() throws IOException, StorageEngineException {
         // do nothing
     }
 
-    protected void postExecution(boolean succeed) throws IOException, StorageManagerException {
+    protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
         // do nothing
     }
 

@@ -8,7 +8,7 @@ import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.mapreduce.Job;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
 
@@ -49,7 +49,7 @@ public class VariantTableStatsDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected void preExecution() throws IOException, StorageManagerException {
+    protected void preExecution() throws IOException, StorageEngineException {
         super.preExecution();
         String defaultCohortName = StudyEntry.DEFAULT_COHORT;
         // TODO needs to be remove after integration
@@ -82,7 +82,7 @@ public class VariantTableStatsDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected void postExecution(boolean succeed) throws IOException, StorageManagerException {
+    protected void postExecution(boolean succeed) throws IOException, StorageEngineException {
         super.postExecution(succeed);
         if (succeed) {
             int studyId = getHelper().getStudyId();

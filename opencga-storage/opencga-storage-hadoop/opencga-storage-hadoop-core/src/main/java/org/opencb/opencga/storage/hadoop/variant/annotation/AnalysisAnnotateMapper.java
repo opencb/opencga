@@ -12,8 +12,9 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.hadoop.variant.AbstractHBaseMapReduce;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
@@ -57,14 +58,14 @@ public class AnalysisAnnotateMapper extends AbstractHBaseMapReduce<NullWritable,
         try {
             StorageConfiguration storageConfiguration = StorageConfiguration.load(
                 StorageConfiguration.class.getClassLoader().getResourceAsStream(configFile));
-            this.variantAnnotator = VariantAnnotationManager.buildVariantAnnotator(storageConfiguration, storageEngine, options);
+            this.variantAnnotator = VariantAnnotatorFactory.buildVariantAnnotator(storageConfiguration, storageEngine, options);
         } catch (Exception e) {
             throw new IllegalStateException("Problems loading storage configuration from " + configFile, e);
         }
     }
     private final CopyOnWriteArrayList<Variant> variantsToAnnotate = new CopyOnWriteArrayList<>();
 
-    private void annotateVariants(Context context, boolean force) throws IOException, InterruptedException {
+    private void annotateVariants(Context context, boolean force) throws IOException, InterruptedException, VariantAnnotatorException {
         if (this.variantsToAnnotate.isEmpty()) {
             return;
         }
@@ -97,6 +98,8 @@ public class AnalysisAnnotateMapper extends AbstractHBaseMapReduce<NullWritable,
                 annotateVariants(context, false);
             }
             annotateVariants(context, true);
+        } catch (VariantAnnotatorException e) {
+            throw new RuntimeException(e);
         } finally {
             this.cleanup(context);
         }

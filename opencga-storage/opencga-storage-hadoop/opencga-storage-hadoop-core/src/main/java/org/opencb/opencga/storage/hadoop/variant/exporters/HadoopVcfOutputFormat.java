@@ -15,7 +15,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
-import org.opencb.opencga.storage.core.variant.io.VariantVcfExporter;
+import org.opencb.opencga.storage.core.variant.io.VariantVcfDataWriter;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 
@@ -57,8 +57,8 @@ public class HadoopVcfOutputFormat extends FileOutputFormat<Variant, NullWritabl
         }
     }
 
-    private VariantVcfExporter configureWriter(final TaskAttemptContext job, OutputStream fileOut) {
-        job.getCounter(VariantVcfExporter.class.getName(), "failed").increment(0); // init
+    private VariantVcfDataWriter configureWriter(final TaskAttemptContext job, OutputStream fileOut) {
+        job.getCounter(VariantVcfDataWriter.class.getName(), "failed").increment(0); // init
         final Configuration conf = job.getConfiguration();
         boolean withGenotype = conf.getBoolean(VariantTableExportDriver.CONFIG_VARIANT_TABLE_EXPORT_GENOTYPE, false);
 
@@ -66,10 +66,10 @@ public class HadoopVcfOutputFormat extends FileOutputFormat<Variant, NullWritabl
             StudyConfiguration sc = helper.loadMeta();
             VariantSourceDBAdaptor source = new HadoopVariantSourceDBAdaptor(helper);
             QueryOptions options = new QueryOptions();
-            VariantVcfExporter exporter = new VariantVcfExporter(sc, source, fileOut, options);
+            VariantVcfDataWriter exporter = new VariantVcfDataWriter(sc, source, fileOut, options);
             exporter.setExportGenotype(withGenotype);
             exporter.setConverterErrorListener((v, e) ->
-                    job.getCounter(VariantVcfExporter.class.getName(), "failed").increment(1));
+                    job.getCounter(VariantVcfDataWriter.class.getName(), "failed").increment(1));
             exporter.open();
             exporter.pre();
             return exporter;
@@ -80,9 +80,9 @@ public class HadoopVcfOutputFormat extends FileOutputFormat<Variant, NullWritabl
     }
 
     protected static class VcfRecordWriter extends RecordWriter<Variant, NullWritable> {
-        private final VariantVcfExporter writer;
+        private final VariantVcfDataWriter writer;
 
-        public VcfRecordWriter(VariantVcfExporter writer) {
+        public VcfRecordWriter(VariantVcfDataWriter writer) {
             this.writer = writer;
         }
 
