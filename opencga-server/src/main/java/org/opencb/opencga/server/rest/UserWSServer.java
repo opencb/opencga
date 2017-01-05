@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -53,13 +54,13 @@ public class UserWSServer extends OpenCGAWSServer {
     @GET
     @Path("/create")
     @Deprecated
-    @ApiOperation(value = "Creates a new user", position = 1, response = User.class)
-    public Response createUser(@ApiParam(value = "userId", required = true) @QueryParam("userId") String userId,
-                               @ApiParam(value = "name", required = true) @QueryParam("name") String name,
-                               @ApiParam(value = "email", required = true) @QueryParam("email") String email,
-                               @ApiParam(value = "password", required = true) @QueryParam("password") String password,
-                               @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
-                               @ApiParam(value = "[PENDING] Create a default project after creating the user", required = false, defaultValue = "false")
+    @ApiOperation(value = "Create a new user", response = User.class)
+    public Response createUser(@ApiParam(value = "User id", required = true) @QueryParam("userId") String userId,
+                               @ApiParam(value = "User name", required = true) @QueryParam("name") String name,
+                               @ApiParam(value = "User's email", required = true) @QueryParam("email") String email,
+                               @ApiParam(value = "User's password", required = true) @QueryParam("password") String password,
+                               @ApiParam(value = "User's organization") @QueryParam("organization") String organization,
+                               @ApiParam(value = "[PENDING] Create a default project after creating the user", defaultValue = "false")
                                    @QueryParam("createDefaultProject") boolean defaultProject) {
         try {
             queryOptions.remove("password");
@@ -70,195 +71,15 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/{user}/info")
-    @ApiOperation(value = "Return the user information including its projects and studies", position = 2, response = User.class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
-    })
-    public Response getInfo(@ApiParam(value = "User ID", required = true) @PathParam("user") String userId,
-                            @ApiParam(value = "If matches with the user's last activity, return an empty QueryResult") @QueryParam("lastModified") String lastModified) {
-        try {
-            QueryResult result = catalogManager.getUser(userId, lastModified, queryOptions, sessionId);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @Deprecated
-    @GET
-    @Path("/{user}/login")
-    @ApiOperation(value = "User login returns a valid session ID token [DEPRECATED]", position = 3)
-    public Response login(@ApiParam(value = "userId", required = true) @PathParam("user") String userId,
-                          @ApiParam(value = "password", required = true) @QueryParam("password") String password) {
-        sessionIp = httpServletRequest.getRemoteAddr();
-        QueryResult<Session> queryResult;
-        try {
-            queryOptions.remove("password"); //Remove password from query options
-//            if (userId.equalsIgnoreCase("anonymous")) {
-//                queryResult = catalogManager.loginAsAnonymous(sessionIp);
-//            } else {
-//                queryResult = catalogManager.login(userId, password, sessionIp);
-//            }
-            queryResult = catalogManager.login(userId, password, sessionIp);
-            ObjectMap sessionMap = new ObjectMap();
-            sessionMap.append("sessionId", queryResult.first().getId())
-                    .append("id", queryResult.first().getId())
-                    .append("ip", queryResult.first().getIp())
-                    .append("date", queryResult.first().getDate());
-
-            QueryResult<ObjectMap> login = new QueryResult<>("login", queryResult.getDbTime(), 1, 1, queryResult.getWarningMsg(),
-                    queryResult.getErrorMsg(), Arrays.asList(sessionMap));
-
-            return createOkResponse(login);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{user}/logout")
-    @ApiOperation(value = "User logout method", position = 4)
-    public Response logout(@ApiParam(value = "userId", required = true) @PathParam("user") String userId) {
-        try {
-            QueryResult result;
-            if (userId.equalsIgnoreCase("anonymous")) {
-                result = catalogManager.logoutAnonymous(sessionId);
-            } else {
-                result = catalogManager.logout(userId, sessionId);
-            }
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @Deprecated
-    @GET
-    @Path("/{user}/change-password")
-    @ApiOperation(value = "User password change [DEPRECATED]", position = 5)
-    public Response changePassword(@ApiParam(value = "userId", required = true) @PathParam("user") String userId,
-                                   @ApiParam(value = "Old password", required = true) @QueryParam("password") String password,
-                                   @ApiParam(value = "New password", required = true) @QueryParam("npassword") String nPassword) {
-        try {
-            queryOptions.remove("password");
-            queryOptions.remove("npassword");
-            QueryResult result = catalogManager.changePassword(userId, password, nPassword);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @Deprecated
-    @GET
-    @Path("/{user}/change-email")
-    @ApiOperation(value = "User email change", position = 6, notes = "Deprecated method. Moved to update.")
-    public Response changeEmail(@ApiParam(value = "userId", required = true) @PathParam("user") String userId,
-                                @ApiParam(value = "New email", required = true) @QueryParam("nemail") String nEmail) {
-        try {
-            QueryResult result = catalogManager.changeEmail(userId, nEmail, sessionId);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{user}/reset-password")
-    @ApiOperation(value = "Reset password", position = 7, notes = "Reset the user password and send a new one to the e-mail stored in catalog.")
-    public Response resetPassword(@ApiParam(value = "userId", required = true) @PathParam("user") String userId) {
-        try {
-            QueryResult result = catalogManager.resetPassword(userId);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-
-    @GET
-    @Path("/{user}/projects")
-    @ApiOperation(value = "Return projects", position = 8, notes = "Return all the projects and studies belonging to the user", response = Project[].class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query")
-    })
-    public Response getAllProjects(@ApiParam(value = "userId", required = true) @PathParam("user") String userId,
-                                   @ApiParam(value = "shared", required = false, defaultValue = "false") @QueryParam("shared") boolean shared) {
-        try {
-            QueryResult queryResult;
-            if (!shared) {
-                queryResult = catalogManager.getAllProjects(userId, queryOptions, sessionId);
-            } else {
-                queryResult = catalogManager.getProjectManager().getSharedProjects(userId, queryOptions, sessionId);
-            }
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{user}/update")
-    @ApiOperation(value = "Update some user attributes using GET method", position = 9, response = User.class)
-    public Response update(@ApiParam(value = "userId", required = true) @PathParam("user") String userId,
-                           @ApiParam(value = "name", required = false) @QueryParam("name") String name,
-                           @ApiParam(value = "email", required = false) @QueryParam("email") String email,
-                           @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
-                           @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes) {
-        try {
-            ObjectMap objectMap = new ObjectMap();
-            objectMap.putIfNotNull("name", name);
-            objectMap.putIfNotNull("email", email);
-            objectMap.putIfNotNull("organization", organization);
-            objectMap.putIfNotNull("attributes", attributes);
-
-            QueryResult result = catalogManager.modifyUser(userId, objectMap, sessionId);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @POST
-    @Path("/{user}/update")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some user attributes using POST method", position = 9, response = User.class)
-    public Response updateByPost(@ApiParam(value = "userId", required = true) @PathParam("user") String userId,
-                                 @ApiParam(name = "params", value = "Parameters to modify", required = true) Map<String, Object> params) {
-        try {
-            ObjectMap objectMap = new ObjectMap(params);
-            QueryResult result = catalogManager.modifyUser(userId, objectMap, sessionId);
-            return createOkResponse(result);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{userId}/delete")
-    @ApiOperation(value = "Delete an user [NO TESTED]", position = 10)
-    public Response delete(@ApiParam(value = "userIds", required = true) @PathParam("userId") String userId) {
-        try {
-            List<QueryResult<User>> deletedUsers = catalogManager.getUserManager().delete(userId, queryOptions, sessionId);
-            return createOkResponse(deletedUsers);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
     @POST
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create a new user", position = 1, response = User.class)
-    public Response createUserPost(@ApiParam(value = "Json containing the params 'userId', 'name', 'email', 'password', 'organization'", required = true) Map<String, String> map) {
+    @ApiOperation(value = "Create a new user", response = User.class)
+    public Response createUserPost(@ApiParam(value = "JSON containing the parameters 'userId', 'name', 'email' and 'password' "
+            + "and, optionally, 'organization'", required = true) Map<String, String> map) {
         try {
-            if (!map.containsKey("userId") || !map.containsKey("name") || !map.containsKey("email") || !map.containsKey("password")) {
+            if (!map.containsKey("userId") || !map.containsKey("name") || !map.containsKey("email")
+                    || !map.containsKey("password")) {
                 createErrorResponse(new CatalogException("userId, name, email or password not present"));
             }
 
@@ -275,12 +96,61 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
+    @GET
+    @Path("/{user}/info")
+    @ApiOperation(value = "Return the user information including its projects and studies", response = User.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Set which fields are included in the response, e.g.: name,alias...",
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Set which fields are excluded in the response, e.g.: name,alias...",
+                    dataType = "string", paramType = "query"),
+    })
+    public Response getInfo(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
+                            @ApiParam(value = "[DEPRECATED] This parameter shows the last time the user information was modified. When "
+                                    + "the value passed corresponds with the user's last activity registered, an empty result will be "
+                                    + "returned meaning that the client already has the most up to date user information.")
+                            @QueryParam ("lastModified") String lastModified) {
+        try {
+            QueryResult result = catalogManager.getUser(userId, lastModified, queryOptions, sessionId);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @Deprecated
+    @GET
+    @Path("/{user}/login")
+    @ApiOperation(value = "Get identified and gain access to the system [DEPRECATED]")
+    public Response login(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
+                          @ApiParam(value = "User password", required = true) @QueryParam("password") String password) {
+        sessionIp = httpServletRequest.getRemoteAddr();
+        QueryResult<Session> queryResult;
+        try {
+            queryOptions.remove("password"); //Remove password from query options
+
+            queryResult = catalogManager.login(userId, password, sessionIp);
+            ObjectMap sessionMap = new ObjectMap();
+            sessionMap.append("sessionId", queryResult.first().getId())
+                    .append("id", queryResult.first().getId())
+                    .append("ip", queryResult.first().getIp())
+                    .append("date", queryResult.first().getDate());
+
+            QueryResult<ObjectMap> login = new QueryResult<>("login", queryResult.getDbTime(), 1, 1, queryResult.getWarningMsg(),
+                    queryResult.getErrorMsg(), Arrays.asList(sessionMap));
+
+            return createOkResponse(login);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     @POST
     @Path("/{user}/login")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "User login returns a valid session ID token", position = 3)
-    public Response loginPost(@ApiParam(value = "userId", required = true) @PathParam("user") String userId,
-                              @ApiParam(value = "Json containing the param 'password'", required = true) Map<String, String> map) {
+    @ApiOperation(value = "Get identified and gain access to the systemn")
+    public Response loginPost(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
+                              @ApiParam(value = "JSON containing the parameter 'password'", required = true) Map<String, String> map) {
         sessionIp = httpServletRequest.getRemoteAddr();
         QueryResult<Session> queryResult;
         try {
@@ -299,30 +169,18 @@ public class UserWSServer extends OpenCGAWSServer {
             QueryResult<ObjectMap> login = new QueryResult<>("login", queryResult.getDbTime(), 1, 1, queryResult.getWarningMsg(),
                     queryResult.getErrorMsg(), Arrays.asList(sessionMap));
 
-//            if (userId.equalsIgnoreCase("anonymous")) {
-//                queryResult = catalogManager.loginAsAnonymous(sessionIp);
-//            } else {
-//                queryResult = catalogManager.login(userId, password, sessionIp);
-//            }
             return createOkResponse(login);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
-    @POST
-    @Path("/{userId}/change-password")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "User password change", position = 5)
-    public Response changePasswordPost(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-                                   @ApiParam(value = "Json containing the params 'password' and 'npassword'", required = true) Map<String, String> map) {
+    @GET
+    @Path("/{user}/logout")
+    @ApiOperation(value = "End user session")
+    public Response logout(@ApiParam(value = "userId", required = true) @PathParam("user") String userId) {
         try {
-            if (!map.containsKey("password") || !map.containsKey("password")) {
-                throw new Exception("The json must contain the keys password and npassword.");
-            }
-            String password = map.get("password");
-            String nPassword = map.get("npassword");
-            QueryResult result = catalogManager.changePassword(userId, password, nPassword);
+            QueryResult result = catalogManager.logout(userId, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -330,11 +188,143 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{userId}/configs/create")
-    @ApiOperation(value = "Create or update a user configuration", response = Map.class)
-    public Response setConfiguration(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-                    @ApiParam(value = "Configuration name (typically the name of the application)", required = true) @QueryParam("name") String name,
-                    @ApiParam(name = "params", value = "Configuration", required = true) ObjectMap params) {
+    @Path("/{user}/change-password")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Change the password of a user")
+    public Response changePasswordPost(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
+                                       @ApiParam(value = "JSON containing the params 'password' (old password) and 'npassword' (new "
+                                               + "password)", required = true) ObjectMap params) {
+        try {
+            if (!params.containsKey("password") || !params.containsKey("npassword")) {
+                throw new Exception("The json must contain the keys password and npassword.");
+            }
+            String password = params.getString("password");
+            String nPassword = params.getString("npassword");
+            QueryResult result = catalogManager.changePassword(userId, password, nPassword);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{user}/reset-password")
+    @ApiOperation(value = "Reset password", notes = "Reset the user's password and send a new random one to the e-mail stored in catalog.")
+    public Response resetPassword(@ApiParam(value = "User id", required = true) @PathParam("user") String userId) {
+        try {
+            QueryResult result = catalogManager.resetPassword(userId);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{user}/projects")
+    @ApiOperation(value = "Retrieve the projects of the user", notes = "Retrieve the list of projects and studies belonging or shared with "
+            + "the user", response = Project[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Set which fields are included in the response, e.g.: name,alias...",
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Set which fields are excluded in the response, e.g.: name,alias...",
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Max number of results to be returned.", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to be skipped.", dataType = "integer", paramType = "query")
+    })
+    public Response getAllProjects(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
+                                   @ApiParam(value = "When false, it will return only the projects and studies belonging to the user. "
+                                           + "However, if this parameter is set to true, only the projects and studies shared with the "
+                                           + "user will be shown.", defaultValue = "false") @QueryParam ("shared") boolean shared) {
+        try {
+            QueryResult queryResult;
+            if (!shared) {
+                queryResult = catalogManager.getAllProjects(userId, queryOptions, sessionId);
+            } else {
+                queryResult = catalogManager.getProjectManager().getSharedProjects(userId, queryOptions, sessionId);
+            }
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{user}/update")
+    @ApiOperation(value = "Update some user attributes", response = User.class)
+    public Response update(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
+                           @ApiParam(value = "User name") @QueryParam("name") String name,
+                           @ApiParam(value = "User's email") @QueryParam("email") String email,
+                           @ApiParam(value = "User's organization") @QueryParam("organization") String organization,
+                           @ApiParam(value = "JSON string containing additional information to be stored") @QueryParam("attributes")
+                                       String attributes) {
+        try {
+            ObjectMap objectMap = new ObjectMap();
+            objectMap.putIfNotNull("name", name);
+            objectMap.putIfNotNull("email", email);
+            objectMap.putIfNotNull("organization", organization);
+            objectMap.putIfNotNull("attributes", attributes);
+
+            QueryResult result = catalogManager.modifyUser(userId, objectMap, sessionId);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{user}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update some user attributes", position = 9, response = User.class)
+    public Response updateByPost(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
+                                 @ApiParam(name = "params", value = "JSON containing the params to be updated. Supported keys " +
+                                         "are: 'name', 'email', 'organization' and 'attributes'", required = true) ObjectMap params) {
+        try {
+            QueryResult result = catalogManager.modifyUser(userId, params, sessionId);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{user}/delete")
+    @ApiOperation(value = "Delete a user [NOT TESTED]")
+    public Response delete(@ApiParam(value = "Comma separated list of user ids", required = true) @PathParam("user") String userId) {
+        try {
+            List<QueryResult<User>> deletedUsers = catalogManager.getUserManager().delete(userId, queryOptions, sessionId);
+            return createOkResponse(deletedUsers);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{user}/configs/create")
+    @ApiOperation(value = "Store a user configuration", notes = "Some applications might want to store some configuration parameters "
+            + "containing the preferences of the user. The intention of this is to provide a place to store this things for every user.",
+            response = Map.class)
+    public Response setConfiguration(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
+                                         @ApiParam(value = "Unique name (typically the name of the application)", required = true)
+                                         @QueryParam("name") String name,
+                                         @ApiParam(name = "params", value = "JSON string containing anything useful for the application "
+                                                 + "such as user or default preferences", required = true) String parameters) {
+        try {
+            return createOkResponse(catalogManager.getUserManager().setConfig(userId, sessionId, name, new ObjectMap(parameters)));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{user}/configs/create")
+    @ApiOperation(value = "Store a user configuration", notes = "Some applications might want to store some configuration parameters "
+            + "containing the preferences of the user. The aim of this is to provide a place to store this things for every user.",
+            response = Map.class)
+    public Response setConfigurationPOST(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
+                    @ApiParam(value = "Unique name (typically the name of the application)", required = true) @QueryParam("name")
+                            String name,
+                    @ApiParam(name = "params", value = "JSON containing anything useful for the application such as user or default "
+                            + "preferences", required = true) ObjectMap params) {
         try {
             return createOkResponse(catalogManager.getUserManager().setConfig(userId, sessionId, name, params));
         } catch (Exception e) {
@@ -343,10 +333,11 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{userId}/configs/{name}/delete")
+    @Path("/{user}/configs/{name}/delete")
     @ApiOperation(value = "Delete a user configuration", response = Map.class)
-    public Response deleteConfiguration(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-                                     @ApiParam(value = "Configuration name (typically the name of the application)", required = true) @PathParam("name") String name) {
+    public Response deleteConfiguration(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
+                                     @ApiParam(value = "Unique name (typically the name of the application)", required = true)
+                                     @PathParam("name") String name) {
         try {
             return createOkResponse(catalogManager.getUserManager().deleteConfig(userId, sessionId, name));
         } catch (Exception e) {
@@ -355,10 +346,11 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{userId}/configs/{name}/info")
+    @Path("/{user}/configs/{name}/info")
     @ApiOperation(value = "Fetch a user configuration", response = Map.class)
-    public Response getConfiguration(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-                                     @ApiParam(value = "Configuration name (typically the name of the application)", required = true) @PathParam("name") String name) {
+    public Response getConfiguration(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
+                                     @ApiParam(value = "Unique name (typically the name of the application)", required = true)
+                                     @PathParam("name") String name) {
         try {
             return createOkResponse(catalogManager.getUserManager().getConfig(userId, sessionId, name));
         } catch (Exception e) {
@@ -366,10 +358,59 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
+    @GET
+    @Path("/{user}/configs/filters/create")
+    @ApiOperation(value = "Store a custom filter", notes = "Users normally try to query the data using the same filters most of "
+            + "the times. The aim of this WS is to allow storing as many different filters as the user might want in order not to type "
+            + "the same filters.", response = User.Filter.class)
+    public Response addFilter(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
+                              @ApiParam(value = "Name of the filter", required = true) @QueryParam("name") String name,
+                              @ApiParam(value = "Bioformat for which the filters will make sense (generally VARIANT or ALIGNMENT). The "
+                                      + "whole list of allowed bioformats can be checked in the files webservice /files/bioformats")
+                                  @QueryParam("bioformat") String bioformatStr,
+                              @ApiParam(value = "Description of the filter") @QueryParam("description") String description,
+                              @ApiParam(value = "JSON string containing the query to be stored") @QueryParam("query") String queryStr,
+                              @ApiParam(value = "JSON string containing modifiers of the result") @QueryParam("queryOptions")
+                                          String queryOptionsStr) {
+
+        File.Bioformat bioformat = File.Bioformat.UNKNOWN;
+        if (StringUtils.isNotEmpty(bioformatStr)) {
+            try {
+                bioformat = File.Bioformat.valueOf(bioformatStr.toUpperCase());
+            } catch (Exception e) {
+                return createErrorResponse(new CatalogException("Bioformat " + bioformatStr + " is not a valid bioformat."));
+            }
+        }
+
+        try {
+            Query myQuery;
+            QueryOptions myOptions;
+
+            if (StringUtils.isNotEmpty(queryStr)) {
+                myQuery = new Query(queryStr);
+            } else {
+                myQuery = new Query();
+            }
+
+            if (StringUtils.isNotEmpty(queryOptionsStr)) {
+                myOptions = new QueryOptions(queryOptionsStr);
+            } else {
+                myOptions = new QueryOptions();
+            }
+
+            return createOkResponse(catalogManager.getUserManager().addFilter(userId, sessionId, name, description, bioformat, myQuery,
+                    myOptions));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     @POST
-    @Path("/{userId}/configs/filters/create")
-    @ApiOperation(value = "Store a custom filter", response = User.Filter.class)
-    public Response addFilter(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+    @Path("/{user}/configs/filters/create")
+    @ApiOperation(value = "Store a custom filter", notes = "Users normally try to query the data using the same filters most of "
+            + "the times. The aim of this WS is to allow storing as many different filters as the user might want in order not to type "
+            + "the same filters.", response = User.Filter.class)
+    public Response addFilterPOST(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                            @ApiParam(name = "params", value = "Filter parameters", required = true) User.Filter params) {
         try {
             return createOkResponse(catalogManager.getUserManager().addFilter(userId, sessionId, params.getName(), params.getDescription(),
@@ -386,10 +427,39 @@ public class UserWSServer extends OpenCGAWSServer {
         public QueryOptions options;
     }
 
-    @POST
-    @Path("/{userId}/configs/filters/{name}/update")
+    @GET
+    @Path("/{user}/configs/filters/{name}/update")
     @ApiOperation(value = "Update a custom filter", response = User.Filter.class)
-    public Response updateFilter(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+    public Response updateFilter(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
+                                 @ApiParam(value = "Filter name", required = true) @PathParam("name") String name,
+                                 @ApiParam(value = "Bioformat for which the filters will make sense (generally VARIANT or ALIGNMENT). The "
+                                         + "whole list of allowed bioformats can be checked in the files webservice /files/bioformats")
+                                     @QueryParam("bioformat") String bioformatStr,
+                                 @ApiParam(value = "Description of the filter") @QueryParam("description") String description,
+                                 @ApiParam(value = "JSON string containing the query to be stored") @QueryParam("query") String queryStr,
+                                 @ApiParam(value = "JSON string containing modifiers of the result") @QueryParam("queryOptions")
+                                             String queryOptionsStr) {
+        try {
+            ObjectMap params = new ObjectMap();
+            params.putIfNotEmpty("bioformat", bioformatStr);
+            params.putIfNotEmpty("description", description);
+            if (StringUtils.isNotEmpty(queryStr)) {
+                params.put("query", new Query(queryStr));
+            }
+            if (StringUtils.isNotEmpty(queryOptionsStr)) {
+                params.put("options", new QueryOptions(queryOptionsStr));
+            }
+
+            return createOkResponse(catalogManager.getUserManager().updateFilter(userId, sessionId, name, params));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{user}/configs/filters/{name}/update")
+    @ApiOperation(value = "Update a custom filter", response = User.Filter.class)
+    public Response updateFilterPOST(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                               @ApiParam(value = "Filter name", required = true) @PathParam("name") String name,
                               @ApiParam(name = "params", value = "Filter parameters", required = true) UpdateFilter params) {
         try {
@@ -401,9 +471,9 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{userId}/configs/filters/{name}/delete")
+    @Path("/{user}/configs/filters/{name}/delete")
     @ApiOperation(value = "Delete a custom filter", response = User.Filter.class)
-    public Response deleteFilter(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+    public Response deleteFilter(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                                  @ApiParam(value = "Filter name", required = true) @PathParam("name") String name) {
         try {
             return createOkResponse(catalogManager.getUserManager().deleteFilter(userId, sessionId, name));
@@ -413,9 +483,9 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{userId}/configs/filters/{name}/info")
-    @ApiOperation(value = "Fetch filter", response = User.Filter.class)
-    public Response getFilter(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+    @Path("/{user}/configs/filters/{name}/info")
+    @ApiOperation(value = "Fetch a filter", response = User.Filter.class)
+    public Response getFilter(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                                  @ApiParam(value = "Filter name", required = true) @PathParam("name") String name) {
         try {
             return createOkResponse(catalogManager.getUserManager().getFilter(userId, sessionId, name));
@@ -425,9 +495,9 @@ public class UserWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{userId}/configs/filters/list")
-    @ApiOperation(value = "Fetch all the filters", response = User.Filter.class)
-    public Response getFilters(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId) {
+    @Path("/{user}/configs/filters/list")
+    @ApiOperation(value = "Fetch all the filters of a user", response = User.Filter.class)
+    public Response getFilters(@ApiParam(value = "User id", required = true) @PathParam("user") String userId) {
         try {
             return createOkResponse(catalogManager.getUserManager().getAllFilters(userId, sessionId));
         } catch (Exception e) {

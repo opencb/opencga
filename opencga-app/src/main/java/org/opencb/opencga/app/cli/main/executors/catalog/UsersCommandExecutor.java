@@ -260,7 +260,6 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(UserDBAdaptor.QueryParams.EMAIL.key(), usersCommandOptions.updateCommandOptions.email);
         params.putIfNotEmpty(UserDBAdaptor.QueryParams.ORGANIZATION.key(), usersCommandOptions.updateCommandOptions.organization);
         params.putIfNotEmpty(UserDBAdaptor.QueryParams.ATTRIBUTES.key(), usersCommandOptions.updateCommandOptions.attributes);
-        params.putIfNotEmpty(UserDBAdaptor.QueryParams.CONFIGS.key(), usersCommandOptions.updateCommandOptions.configs);
         return openCGAClient.getUserClient().update(usersCommandOptions.updateCommandOptions.user, params);
     }
 

@@ -124,41 +124,39 @@ public class UserCommandOptions {
         public String lastModified;
     }
 
-    @Parameters(commandNames = {"update"}, commandDescription = "Update some user attributes using GET method")
+    @Parameters(commandNames = {"update"}, commandDescription = "Update some user attributes")
     public class UpdateCommandOptions extends BaseUserCommand {
 
-        @Parameter(names = {"-n", "--name"}, description = "Name", arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "User name", arity = 1)
         public String name;
 
-        @Parameter(names = {"-e", "--email"}, description = "Email", arity = 1)
+        @Parameter(names = {"-e", "--email"}, description = "User's email", arity = 1)
         public String email;
 
-        @Parameter(names = {"-o", "--organization"}, description = "Organization", arity = 1)
+        @Parameter(names = {"-o", "--organization"}, description = "User's organization", arity = 1)
         public String organization;
 
-        @Parameter(names = {"--attributes"}, description = "Attributes", arity = 1)
+        @Parameter(names = {"--attributes"}, description = "JSON string containing additional information to be stored", arity = 1)
         public String attributes;
 
-        @Parameter(names = {"--configs"}, description = "Configs", arity = 1)
-        public String configs;
-
     }
-    @Parameters(commandNames = {"change-password"}, commandDescription = "Update some user attributes using GET method")
+
+    @Parameters(commandNames = {"change-password"}, commandDescription = "Change the user's password")
     public class ChangePasswordCommandOptions {
 
-        @Parameter(names = {"--password"}, description = "password", arity = 1, required = true)
+        @Parameter(names = {"--password"}, description = "Old password", arity = 1, required = true)
         public String password;
 
-        @Parameter(names = {"--npassword"}, description = "new password", arity = 1, required = true)
+        @Parameter(names = {"--npassword"}, description = "New password", arity = 1, required = true)
         public String npassword;
     }
 
-    @Parameters(commandNames = {"delete"}, commandDescription = "Delete an user [NO TESTED]")
+    @Parameters(commandNames = {"delete"}, commandDescription = "Delete a user [NOT TESTED]")
     public class DeleteCommandOptions extends BaseUserCommand {
 
     }
 
-    @Parameters(commandNames = {"projects"}, commandDescription = "List all projects and studies belonging to the selected user")
+    @Parameters(commandNames = {"projects"}, commandDescription = "List all projects and studies belonging or shared with the user")
     public class ProjectsCommandOptions {
 
         @ParametersDelegate
@@ -170,18 +168,19 @@ public class UserCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"-u", "--user"}, description = "User id, this must be unique in this OpenCGA installation",  required = false, arity = 1)
+        @Parameter(names = {"-u", "--user"}, description = "User name",  arity = 1)
         public String user;
 
-        @Parameter(names = {"--shared"}, description = "Show only the projects and studies shared with the user.", arity = 0)
+        @Parameter(names = {"--shared"}, description = "When not set, it will only return the projects and studies belonging to the user. "
+                + "However, if this parameter is set, only the projects and studies shared with the user will be shown.", arity = 0)
         public boolean shared;
 
     }
 
-    @Parameters(commandNames = {"login"}, commandDescription = "Login as a user")
+    @Parameters(commandNames = {"login"}, commandDescription = "Get identified and gain access to the system")
     public class LoginCommandOptions extends BaseUserCommand {
 
-        @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, required = true, password = true)
+        @Parameter(names = {"-p", "--password"}, description = "User password", arity = 1, required = true, password = true)
         public String password;
 
     }

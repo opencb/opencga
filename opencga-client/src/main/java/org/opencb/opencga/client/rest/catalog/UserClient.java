@@ -135,10 +135,6 @@ public class UserClient extends CatalogClient<User, User> {
     */
     public QueryResponse<User> changePassword(String currentPassword, String newPassword, ObjectMap params)
             throws CatalogException, IOException {
-        if (params.containsKey("method") && params.get("method").equals("GET")) {
-            params = addParamsToObjectMap(params, "password", currentPassword, "npassword", newPassword);
-            return execute(USERS_URL, getUserId(params), "change-password", params, GET, User.class);
-        }
         ObjectMapper mapper = new ObjectMapper();
         params = addParamsToObjectMap(params, "password", currentPassword, "npassword", newPassword);
         String json = mapper.writeValueAsString(params);
