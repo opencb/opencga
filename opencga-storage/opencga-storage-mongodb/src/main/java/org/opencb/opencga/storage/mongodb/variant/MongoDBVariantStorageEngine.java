@@ -30,11 +30,16 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantImporter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.io.db.VariantAnnotationDBWriter;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.metadata.MongoDBStudyConfigurationManager;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
+import org.opencb.opencga.storage.mongodb.variant.io.db.VariantMongoDBAnnotationDBWriter;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoVariantImporter;
 
 import java.net.URI;
@@ -128,6 +133,17 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
     public MongoDBVariantStoragePipeline newStoragePipeline(boolean connected) throws StorageEngineException {
         VariantMongoDBAdaptor dbAdaptor = connected ? getDBAdaptor(null) : null;
         return new MongoDBVariantStoragePipeline(configuration, STORAGE_ENGINE_ID, dbAdaptor);
+    }
+
+    @Override
+    protected VariantAnnotationManager newVariantAnnotationManager(VariantAnnotator annotator, VariantDBAdaptor dbAdaptor) {
+        VariantMongoDBAdaptor mongoDBAdaptor = (VariantMongoDBAdaptor) dbAdaptor;
+        return new DefaultVariantAnnotationManager(annotator, dbAdaptor) {
+            @Override
+            protected VariantAnnotationDBWriter newVariantAnnotationDBWriter(VariantDBAdaptor dbAdaptor, QueryOptions options) {
+                return new VariantMongoDBAnnotationDBWriter(options, mongoDBAdaptor);
+            }
+        };
     }
 
     @Override
