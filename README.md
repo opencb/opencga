@@ -155,7 +155,7 @@ For changing particular settings during buildings you can create a profile in _~
                         <OPENCGA.CELLBASE.DB.READ_PREFERENCE>secondaryPreferred</OPENCGA.CELLBASE.DB.READ_PREFERENCE>
                     </properties>
                 </profile>
-            <profiles>
+            </profiles>
         </settings>
 
 See the description of each property in https://github.com/opencb/opencga/wiki/OpenCGA-installation.
