@@ -301,9 +301,11 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
 //        // Annotations
         mongoVariant.append(ANNOTATION_FIELD, Collections.emptyList());
         if (variantAnnotationConverter != null) {
-            if (variant.getAnnotation() != null) {
+            if (variant.getAnnotation() != null
+                    && variant.getAnnotation().getConsequenceTypes() != null
+                    && !variant.getAnnotation().getConsequenceTypes().isEmpty()) {
                 Document annotation = variantAnnotationConverter.convertToStorageType(variant.getAnnotation());
-                mongoVariant.append(ANNOTATION_FIELD, annotation);
+                mongoVariant.append(ANNOTATION_FIELD, Collections.singletonList(annotation));
             }
         }
 
