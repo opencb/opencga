@@ -195,6 +195,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
             updateOutputTable(ctx.context, Collections.singletonList(var), rows, ctx.sampleIds);
             submit.getAndAdd(System.nanoTime() - end);
         };
+        getLog().info("Merge ...");
         processVariants(analysisVar, variantConsumer);
         registerRuntime("5a Merge same and missing - overlap", overlap.get());
         registerRuntime("5b Merge same and missing - merge", merge.get());

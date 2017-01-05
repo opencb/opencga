@@ -134,16 +134,26 @@ storageEngines:
       opencga.storage.hadoop.jar-with-dependencies: "opencga-storage-hadoop-core-${opencga.version}-jar-with-dependencies.jar"
       opencga.archive.chunk_size: 1000
       hadoop.load.archive.batch.size: 3
-      hadoop.load.variant.batch.size: 1000
+      hadoop.load.variant.batch.size: 500
       opencga.archive.table.presplit.size: 500
       opencga.variant.table.presplit.size: 500
       opencga.archive.table.compression: "snappy"
       opencga.variant.table.compression: "snappy"
       opencga.storage.hadoop.hbase.namespace: "${OPENCGA.STORAGE.HADOOP.HBASE.NAMESPACE}"
       opencga.storage.hadoop.hbase.archive.table.prefix: "${OPENCGA.STORAGE.HADOOP.HBASE.ARCHIVE.TABLE.PREFIX}"
+
+### hadoop properties
+      mapreduce.map.cpu.vcores: 1
+      mapreduce.map.memory.mb: 2560
+      opencga.variant.table.mapreduce.map.java.opts: -Xmx2048m,-XX:+UseG1GC,-Djava.util.concurrent.ForkJoinPool.common.parallelism=1
+      opencga.storage.hadoop.hbase.merge.archive.scan.batchsize: 2000
       # Increase the ScannerTimeoutPeriod from 60000 (1min) to 300000 (5min) to avoid ScannerTimeoutExceptions
       # See opencb/opencga#352 for more info.
       opencga.storage.hadoop.mapreduce.scanner.timeout: 300000
+       # 900000 -> 15 minutes
+#      hbase.client.scanner.timeout.period: 900000
+#      hbase.rpc.timeout: 900000
+###
       #Hadoop options
       #fs.defaultFS: "${OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS}"
     database:
