@@ -217,8 +217,9 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
      * @param uri     URI of the annotation file
      * @param options Specific options.
      * @throws IOException IOException thrown
+     * @throws StorageEngineException if there is a problem creating or running the {@link ParallelTaskRunner}
      */
-    public void loadVariantAnnotation(URI uri, QueryOptions options) throws IOException {
+    public void loadVariantAnnotation(URI uri, QueryOptions options) throws IOException, StorageEngineException {
 
         final int batchSize = options.getInt(DefaultVariantAnnotationManager.BATCH_SIZE, 100);
         final int numConsumers = options.getInt(DefaultVariantAnnotationManager.NUM_WRITERS, 6);
@@ -236,8 +237,8 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
             ParallelTaskRunner<VariantAnnotation, Object> ptr = new ParallelTaskRunner<>(reader,
                     () -> newVariantAnnotationDBWriter(dbAdaptor, options).setProgressLogger(progressLogger), null, config);
             ptr.run();
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (ExecutionException e) {
+            throw new StorageEngineException("Error loading variant annotation");
         }
 
     }

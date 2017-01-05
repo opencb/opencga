@@ -2361,7 +2361,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return value;
     }
 
-    void createIndexes(QueryOptions options) {
+    public void createIndexes(QueryOptions options) {
         createIndexes(options, variantsCollection);
     }
 
