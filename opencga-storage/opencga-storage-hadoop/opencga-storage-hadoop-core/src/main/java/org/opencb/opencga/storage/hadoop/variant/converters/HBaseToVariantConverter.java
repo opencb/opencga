@@ -239,9 +239,8 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                 // FIXME: Decide what to do with lists of genotypes
                 if (simpleGenotypes) {
                     returnedGenotype = getSimpleGenotype(genotype);
-                    System.out.println("Return simplified genotype: " + genotype + " -> " + returnedGenotype);
+                    logger.debug("Return simplified genotype: {} -> {}", genotype, returnedGenotype);
                 } else {
-                    System.out.println("Don't simplify genotype!");
                     returnedGenotype = genotype;
                 }
                 samplesDataArray[samplePosition] = Arrays.asList(returnedGenotype, VariantMerger.PASS_VALUE);
