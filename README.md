@@ -74,82 +74,89 @@ You can build OpenCGA by executing the following command from the root of the cl
 
 For changing particular settings during buildings you can create a profile in _~/.m2/settings.xml_ in the \<*profiles*\> section using this template:
 
-        <profile>
-            <id>custom-config</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <opencga.war.name>opencga-${opencga.version}</opencga.war.name>
+        <?xml version="1.0" encoding="UTF-8"?>
+        <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" 
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+            <profiles>
+                <profile>
+                    <id>custom-config</id>
+                    <activation>
+                        <activeByDefault>true</activeByDefault>
+                    </activation>
+                    <properties>
+                        <opencga.war.name>opencga-${opencga.version}</opencga.war.name>
 
-                <!-- General -->
-                <OPENCGA.INSTALLATION.DIR>/opt/opencga</OPENCGA.INSTALLATION.DIR>
-                <OPENCGA.USER.WORKSPACE>file:///opt/opencga/sessions/</OPENCGA.USER.WORKSPACE>
-                <OPENCGA.JOBS.DIR>${OPENCGA.USER.WORKSPACE}/jobs/</OPENCGA.JOBS.DIR>
-                <OPENCGA.DB.PREFIX>opencga</OPENCGA.DB.PREFIX>
-                <OPENCGA.EXECUTION.MODE>LOCAL</OPENCGA.EXECUTION.MODE>
-                <OPENCGA.CLIENT.HOST>http://localhost:8080/${opencga.war.name}</OPENCGA.CLIENT.HOST>
+                        <!-- General -->
+                        <OPENCGA.INSTALLATION.DIR>/opt/opencga</OPENCGA.INSTALLATION.DIR>
+                        <OPENCGA.USER.WORKSPACE>file:///opt/opencga/sessions/</OPENCGA.USER.WORKSPACE>
+                        <OPENCGA.JOBS.DIR>${OPENCGA.USER.WORKSPACE}/jobs/</OPENCGA.JOBS.DIR>
+                        <OPENCGA.DB.PREFIX>opencga</OPENCGA.DB.PREFIX>
+                        <OPENCGA.EXECUTION.MODE>LOCAL</OPENCGA.EXECUTION.MODE>
+                        <OPENCGA.CLIENT.HOST>http://localhost:8080/${opencga.war.name}</OPENCGA.CLIENT.HOST>
 
-                <OPENCGA.SERVER.REST.PORT>9090</OPENCGA.SERVER.REST.PORT>
-                <OPENCGA.SERVER.GRPC.PORT>9091</OPENCGA.SERVER.GRPC.PORT>
-                <OPENCGA.MONITOR.PORT>9092</OPENCGA.MONITOR.PORT>
+                        <OPENCGA.SERVER.REST.PORT>9090</OPENCGA.SERVER.REST.PORT>
+                        <OPENCGA.SERVER.GRPC.PORT>9091</OPENCGA.SERVER.GRPC.PORT>
+                        <OPENCGA.MONITOR.PORT>9092</OPENCGA.MONITOR.PORT>
 
-                <!-- Catalog -->
-                <OPENCGA.CATALOG.DB.HOSTS>localhost:27017</OPENCGA.CATALOG.DB.HOSTS>
-                <OPENCGA.CATALOG.DB.USER></OPENCGA.CATALOG.DB.USER>
-                <OPENCGA.CATALOG.DB.PASSWORD></OPENCGA.CATALOG.DB.PASSWORD>
-                <OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE></OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE>
-                <OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST>20</OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST>
+                        <!-- Catalog -->
+                        <OPENCGA.CATALOG.DB.HOSTS>localhost:27017</OPENCGA.CATALOG.DB.HOSTS>
+                        <OPENCGA.CATALOG.DB.USER></OPENCGA.CATALOG.DB.USER>
+                        <OPENCGA.CATALOG.DB.PASSWORD></OPENCGA.CATALOG.DB.PASSWORD>
+                        <OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE></OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE>
+                        <OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST>20</OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST>
 
-                <OPENCGA.ORGANISM.SCIENTIFIC_NAME>Homo sapiens</OPENCGA.ORGANISM.SCIENTIFIC_NAME>
-                <OPENCGA.ORGANISM.COMMON_NAME>human</OPENCGA.ORGANISM.COMMON_NAME>
-                <OPENCGA.ORGANISM.TAXONOMY_CODE>9606</OPENCGA.ORGANISM.TAXONOMY_CODE>
-                <OPENCGA.ORGANISM.ASSEMBLY></OPENCGA.ORGANISM.ASSEMBLY>
+                        <OPENCGA.ORGANISM.SCIENTIFIC_NAME>Homo sapiens</OPENCGA.ORGANISM.SCIENTIFIC_NAME>
+                        <OPENCGA.ORGANISM.COMMON_NAME>human</OPENCGA.ORGANISM.COMMON_NAME>
+                        <OPENCGA.ORGANISM.TAXONOMY_CODE>9606</OPENCGA.ORGANISM.TAXONOMY_CODE>
+                        <OPENCGA.ORGANISM.ASSEMBLY></OPENCGA.ORGANISM.ASSEMBLY>
 
-                <!-- Storage -->
-                <OPENCGA.STORAGE.DEFAULT_ENGINE>mongodb</OPENCGA.STORAGE.DEFAULT_ENGINE>
-                <OPENCGA.STORAGE.CACHE.HOST>localhost:6379</OPENCGA.STORAGE.CACHE.HOST>
-                <OPENCGA.STORAGE.SEARCH.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.SEARCH.HOST>
-                <OPENCGA.STORAGE.STUDY_METADATA_MANAGER></OPENCGA.STORAGE.STUDY_METADATA_MANAGER>
+                        <!-- Storage -->
+                        <OPENCGA.STORAGE.DEFAULT_ENGINE>mongodb</OPENCGA.STORAGE.DEFAULT_ENGINE>
+                        <OPENCGA.STORAGE.CACHE.HOST>localhost:6379</OPENCGA.STORAGE.CACHE.HOST>
+                        <OPENCGA.STORAGE.SEARCH.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.SEARCH.HOST>
+                        <OPENCGA.STORAGE.STUDY_METADATA_MANAGER></OPENCGA.STORAGE.STUDY_METADATA_MANAGER>
 
-                <!-- Storage Variants general -->
-                <OPENCGA.STORAGE.VARIANT.DB.HOSTS>localhost:27017</OPENCGA.STORAGE.VARIANT.DB.HOSTS>
-                <OPENCGA.STORAGE.VARIANT.DB.USER></OPENCGA.STORAGE.VARIANT.DB.USER>
-                <OPENCGA.STORAGE.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.VARIANT.DB.PASSWORD>
+                        <!-- Storage Variants general -->
+                        <OPENCGA.STORAGE.VARIANT.DB.HOSTS>localhost:27017</OPENCGA.STORAGE.VARIANT.DB.HOSTS>
+                        <OPENCGA.STORAGE.VARIANT.DB.USER></OPENCGA.STORAGE.VARIANT.DB.USER>
+                        <OPENCGA.STORAGE.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.VARIANT.DB.PASSWORD>
 
-                <!-- Storage Alignments general -->
-                <OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS>localhost:27017</OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS>
-                <OPENCGA.STORAGE.ALIGNMENT.DB.USER></OPENCGA.STORAGE.ALIGNMENT.DB.USER>
-                <OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD></OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD>
+                        <!-- Storage Alignments general -->
+                        <OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS>localhost:27017</OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS>
+                        <OPENCGA.STORAGE.ALIGNMENT.DB.USER></OPENCGA.STORAGE.ALIGNMENT.DB.USER>
+                        <OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD></OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD>
 
-                <!-- Storage-mongodb -->
-                <OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION_DATABASE></OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION_DATABASE>
-                <OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST>20</OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST>
+                        <!-- Storage-mongodb -->
+                        <OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION_DATABASE></OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION_DATABASE>
+                        <OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST>20</OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST>
 
-                <!-- Storage-hadoop -->
-                <!--If empty, will use the ZOOKEEPER_QUORUM read from the hbase configuration files-->
-                <OPENCGA.STORAGE.HADOOP.VARIANT.DB.HOSTS></OPENCGA.STORAGE.HADOOP.VARIANT.DB.HOSTS>
-                <OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER></OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER>
-                <OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD>
-                <OPENCGA.STORAGE.HADOOP.VARIANT.HBASE.NAMESPACE></OPENCGA.STORAGE.HADOOP.VARIANT.HBASE.NAMESPACE>
-                <OPENCGA.STORAGE.HADOOP.VARIANT.ARCHIVE.TABLE.PREFIX>${OPENCGA.DB.PREFIX}_study</OPENCGA.STORAGE.HADOOP.VARIANT.ARCHIVE.TABLE.PREFIX>
+                        <!-- Storage-hadoop -->
+                        <!--If empty, will use the ZOOKEEPER_QUORUM read from the hbase configuration files-->
+                        <OPENCGA.STORAGE.HADOOP.VARIANT.DB.HOSTS></OPENCGA.STORAGE.HADOOP.VARIANT.DB.HOSTS>
+                        <OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER></OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER>
+                        <OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD>
+                        <OPENCGA.STORAGE.HADOOP.VARIANT.HBASE.NAMESPACE></OPENCGA.STORAGE.HADOOP.VARIANT.HBASE.NAMESPACE>
+                        <OPENCGA.STORAGE.HADOOP.VARIANT.ARCHIVE.TABLE.PREFIX>${OPENCGA.DB.PREFIX}_study</OPENCGA.STORAGE.HADOOP.VARIANT.ARCHIVE.TABLE.PREFIX>
 
-                <!-- Email server -->
-                <OPENCGA.MAIL.HOST></OPENCGA.MAIL.HOST>
-                <OPENCGA.MAIL.PORT></OPENCGA.MAIL.PORT>
-                <OPENCGA.MAIL.USER></OPENCGA.MAIL.USER>
-                <OPENCGA.MAIL.PASSWORD></OPENCGA.MAIL.PASSWORD>
+                        <!-- Email server -->
+                        <OPENCGA.MAIL.HOST></OPENCGA.MAIL.HOST>
+                        <OPENCGA.MAIL.PORT></OPENCGA.MAIL.PORT>
+                        <OPENCGA.MAIL.USER></OPENCGA.MAIL.USER>
+                        <OPENCGA.MAIL.PASSWORD></OPENCGA.MAIL.PASSWORD>
 
-                <!-- cellbase -->
-                <OPENCGA.CELLBASE.VERSION>v4</OPENCGA.CELLBASE.VERSION>
-                <OPENCGA.CELLBASE.REST.HOST>http://bioinfodev.hpc.cam.ac.uk/cellbase-4.5.0-beta1.1/</OPENCGA.CELLBASE.REST.HOST>
-                <OPENCGA.CELLBASE.DB.HOST>localhost:27017</OPENCGA.CELLBASE.DB.HOST>
-                <OPENCGA.CELLBASE.DB.USER></OPENCGA.CELLBASE.DB.USER>
-                <OPENCGA.CELLBASE.DB.PASSWORD></OPENCGA.CELLBASE.DB.PASSWORD>
-                <OPENCGA.CELLBASE.DB.AUTHENTICATION_DATABASE></OPENCGA.CELLBASE.DB.AUTHENTICATION_DATABASE>
-                <OPENCGA.CELLBASE.DB.READ_PREFERENCE>secondaryPreferred</OPENCGA.CELLBASE.DB.READ_PREFERENCE>
-            </properties>
-        </profile>
+                        <!-- cellbase -->
+                        <OPENCGA.CELLBASE.VERSION>v4</OPENCGA.CELLBASE.VERSION>
+                        <OPENCGA.CELLBASE.REST.HOST>http://bioinfodev.hpc.cam.ac.uk/cellbase-4.5.0-beta1.1/</OPENCGA.CELLBASE.REST.HOST>
+                        <OPENCGA.CELLBASE.DB.HOST>localhost:27017</OPENCGA.CELLBASE.DB.HOST>
+                        <OPENCGA.CELLBASE.DB.USER></OPENCGA.CELLBASE.DB.USER>
+                        <OPENCGA.CELLBASE.DB.PASSWORD></OPENCGA.CELLBASE.DB.PASSWORD>
+                        <OPENCGA.CELLBASE.DB.AUTHENTICATION_DATABASE></OPENCGA.CELLBASE.DB.AUTHENTICATION_DATABASE>
+                        <OPENCGA.CELLBASE.DB.READ_PREFERENCE>secondaryPreferred</OPENCGA.CELLBASE.DB.READ_PREFERENCE>
+                    </properties>
+                </profile>
+            <profiles>
+        </settings>
 
 See the description of each property in https://github.com/opencb/opencga/wiki/OpenCGA-installation.
 
