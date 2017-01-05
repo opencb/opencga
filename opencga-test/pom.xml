@@ -19,10 +19,9 @@
         <dependency>
             <groupId>org.fitnesse</groupId>
             <artifactId>fitnesse</artifactId>
-            <version>20161106</version>
+            <version>20160618</version>
         </dependency>
     </dependencies>
-
     <build>
         <plugins>
             <plugin>
@@ -31,7 +30,7 @@
                 <executions>
                     <execution>
                         <configuration>
-                            <outputDirectory>${project.build.directory}/dependencies</outputDirectory>
+                            <outputDirectory>dependencies</outputDirectory>
                         </configuration>
                         <goals>
                             <goal>copy-dependencies</goal>
@@ -40,5 +39,36 @@
                 </executions>
             </plugin>
         </plugins>
+    </build> 
+<profiles>
+  <profile>
+    <id>fitnesse</id>
+    <build>
+      <plugins>
+        <plugin>
+          <artifactId>maven-antrun-plugin</artifactId>
+          <version>1.6</version>
+          <executions>
+            <execution>
+              <id>start-fitnesse</id>
+              <phase>test</phase>
+              <configuration>
+                <tasks>
+                  <echo taskname="fitnesse" message="Starting FitNesse..." />
+                  <java classname="fitnesseMain.FitNesseMain" classpathref="maven.runtime.classpath" fork="true">
+                    <arg line="-p 7070" />
+                    <arg line="-d fitnesse" />
+                  </java>
+                </tasks>
+              </configuration>
+              <goals>
+                <goal>run</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
     </build>
+  </profile>
+</profiles>
 </project>
