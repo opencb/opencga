@@ -224,7 +224,8 @@ public class File extends AbstractAcl<FileAclEntry> {
         ALIGNMENT,
         SEQUENCE,
         PEDIGREE,
-        NONE
+        NONE,
+        UNKNOWN
     }
 
     public static class RelatedFile {
