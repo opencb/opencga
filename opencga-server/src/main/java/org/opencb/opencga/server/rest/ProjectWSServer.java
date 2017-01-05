@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -48,18 +49,48 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create project", position = 1, response = Project.class)
-    public Response createProject(@ApiParam(value = "name", required = true) @QueryParam("name") String name,
-                                  @ApiParam(value = "alias", required = true) @QueryParam("alias") String alias,
-                                  @ApiParam(value = "description", required = false) @QueryParam("description") String description,
-                                  @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
-                                  @ApiParam(value = "Organism scientific name", required = false) @QueryParam("organism.scientificName") String scientificName,
-                                  @ApiParam(value = "Organism common name", required = false) @QueryParam("organism.commonName") String commonName,
-                                  @ApiParam(value = "Organism taxonomy code", required = false) @QueryParam("organism.taxonomyCode") String taxonomyCode,
-                                  @ApiParam(value = "Organism assembly", required = false) @QueryParam("organism.assembly") String assembly) {
+    @ApiOperation(value = "Create a new project", response = Project.class)
+    public Response createProject(@ApiParam(value = "Project name", required = true) @QueryParam("name") String name,
+                                  @ApiParam(value = "Project alias. Unique name without spaces that will be used to identify the project",
+                                          required = true) @QueryParam("alias") String alias,
+                                  @ApiParam(value = "Project description") @QueryParam("description") String description,
+                                  @ApiParam(value = "Project organization") @QueryParam("organization") String organization,
+                                  @ApiParam(value = "Scientific name of the organism for which the project is intended")
+                                      @QueryParam("organism.scientificName") String scientificName,
+                                  @ApiParam(value = "Common name of the organism for which the project is intended")
+                                      @QueryParam("organism.commonName") String commonName,
+                                  @ApiParam(value = "Taxonomy code of the organism for which the project is intended")
+                                      @QueryParam("organism.taxonomyCode") String taxonomyCode,
+                                  @ApiParam(value = "Assembly of the organism for which the project is intended")
+                                      @QueryParam("organism.assembly") String assembly) {
         try {
             QueryResult queryResult = catalogManager.getProjectManager()
-                    .create(name, alias, description, organization, scientificName, commonName, taxonomyCode, assembly, queryOptions, sessionId);
+                    .create(name, alias, description, organization, scientificName, commonName, taxonomyCode, assembly, queryOptions,
+                            sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            e.printStackTrace();
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/create")
+    @ApiOperation(value = "Create a new project", response = Project.class)
+    public Response createProjectPOST(@ApiParam(value = "JSON containing the mandatory parameters 'name', and 'alias' and optionally, the"
+            + " parameters 'description', 'organization', 'organism.scientificName', 'organism.commonName', 'organism.taxonomyCode'"
+            + " and 'organism.assembly'", required = true) ObjectMap map) {
+
+        if (StringUtils.isEmpty(map.getString("name")) || StringUtils.isEmpty(map.getString("alias"))) {
+            return createErrorResponse(new CatalogException("Parameters name and alias are both mandatory. At least one of them not "
+                    + "present."));
+        }
+
+        try {
+            QueryResult queryResult = catalogManager.getProjectManager()
+                    .create(map.getString("name"), map.getString("alias"), map.getString("description"), map.getString("organization"),
+                            map.getString("organism.scientificName"), map.getString("organism.commonName"),
+                            map.getString("organism.taxonomyCode"), map.getString("organism.assembly"), queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -69,12 +100,15 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{projects}/info")
-    @ApiOperation(value = "Project information", position = 2, response = Project.class)
+    @ApiOperation(value = "Fetch project information", response = Project.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "include", value = "Set which fields are included in the response, e.g.: name,alias...",
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Set which fields are excluded in the response, e.g.: name,alias...",
+                    dataType = "string", paramType = "query")
     })
-    public Response info(@ApiParam(value = "Comma separated list of project ID or alias", required = true) @PathParam("projects") String projectsStr) {
+    public Response info(@ApiParam(value = "Comma separated list of project ids or aliases", required = true) @PathParam("projects")
+                                     String projectsStr) {
         try {
             String userId = catalogManager.getUserManager().getId(sessionId);
             List<Long> projectIds = catalogManager.getProjectManager().getIds(userId, projectsStr);
@@ -90,14 +124,17 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{projects}/studies")
-    @ApiOperation(value = "Get all studies the from a project", position = 3, response = Study[].class)
+    @ApiOperation(value = "Fetch all the studies contained in the projects", response = Study[].class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query")
+            @ApiImplicitParam(name = "include", value = "Set which fields are included in the response, e.g.: name,alias...",
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Set which fields are excluded in the response, e.g.: name,alias...",
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Max number of results to be returned.", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to be skipped.", dataType = "integer", paramType = "query")
     })
-    public Response getAllStudies(@ApiParam(value = "Comma separated list of project ID or alias", required = true) @PathParam("projects") String projectsStr) {
+    public Response getAllStudies(@ApiParam(value = "Comma separated list of project ID or alias", required = true)
+                                      @PathParam("projects") String projectsStr) {
         try {
             String userId = catalogManager.getUserManager().getId(sessionId);
             List<Long> projectIds = catalogManager.getProjectManager().getIds(userId, projectsStr);
@@ -118,17 +155,17 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{project}/update")
-    @ApiOperation(value = "Project update", position = 4)
-    public Response update(@ApiParam(value = "Project ID or alias", required = true) @PathParam("project") String projectStr,
-                           @ApiParam(value = "name", required = false) @QueryParam("name") String name,
-                           @ApiParam(value = "alias", required = false) @QueryParam("alias") String alias,
-                           @ApiParam(value = "description", required = false) @QueryParam("description") String description,
-                           @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
-                           @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes,
-                           @ApiParam(value = "Organism scientific name", required = false) @QueryParam("organism.scientificName") String scientificName,
-                           @ApiParam(value = "Organism common name", required = false) @QueryParam("organism.commonName") String commonName,
-                           @ApiParam(value = "Organism taxonomy code", required = false) @QueryParam("organism.taxonomyCode") String taxonomyCode,
-                           @ApiParam(value = "Organism assembly", required = false) @QueryParam("organism.assembly") String assembly) throws IOException {
+    @ApiOperation(value = "Update some project attributes", position = 4)
+    public Response update(@ApiParam(value = "Project id or alias", required = true) @PathParam("project") String projectStr,
+                           @ApiParam(value = "Project name") @QueryParam("name") String name,
+                           @ApiParam(value = "Project alias") @QueryParam("alias") String alias,
+                           @ApiParam(value = "Project description") @QueryParam("description") String description,
+                           @ApiParam(value = "Project organization") @QueryParam("organization") String organization,
+                           @ApiParam(value = "Project attributes") @QueryParam("attributes") String attributes,
+                           @ApiParam(value = "Organism scientific name") @QueryParam("organism.scientificName") String scientificName,
+                           @ApiParam(value = "Organism common name") @QueryParam("organism.commonName") String commonName,
+                           @ApiParam(value = "Organism taxonomy code") @QueryParam("organism.taxonomyCode") String taxonomyCode,
+                           @ApiParam(value = "Organism assembly") @QueryParam("organism.assembly") String assembly) throws IOException {
         try {
             ObjectMap params = new ObjectMap();
             params.putIfNotNull("name", name);
@@ -153,15 +190,16 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{project}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update by POST [NO TESTED]", position = 4, response = Project.class)
-    public Response updateByPost(@ApiParam(value = "Project ID or alias", required = true) @PathParam("project") String projectStr,
-                                 @ApiParam(value = "params", required = true) Map<String, Object> params) throws IOException {
+    @ApiOperation(value = "Update some project attributes [NO TESTED]", response = Project.class)
+    public Response updateByPost(@ApiParam(value = "Project id or alias", required = true) @PathParam("project") String projectStr,
+                                 @ApiParam(value = "JSON containing the params to be updated. Supported keys can be found in the update "
+                                         + "via GET", required = true) ObjectMap params)
+            throws IOException {
         try {
             String userId = catalogManager.getUserManager().getId(sessionId);
             long projectId = catalogManager.getProjectManager().getId(userId, projectStr);
 
-            ObjectMap objectMap = new ObjectMap(params);
-            QueryResult result = catalogManager.getProjectManager().update(projectId, objectMap, queryOptions, sessionId);
+            QueryResult result = catalogManager.getProjectManager().update(projectId, params, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
