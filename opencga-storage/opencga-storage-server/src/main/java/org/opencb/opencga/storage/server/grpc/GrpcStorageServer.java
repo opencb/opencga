@@ -50,8 +50,8 @@ public class GrpcStorageServer extends AbstractStorageServer {
     public void start() throws Exception {
         server = ServerBuilder.forPort(port)
 //                .addService(GeneServiceGrpc.bindService(new GeneGrpcServer()))
-                .addService(AdminServiceGrpc.bindService(new AdminGrpcService(storageConfiguration, this)))
-                .addService(VariantServiceGrpc.bindService(new VariantGrpcService(storageConfiguration)))
+                .addService(new AdminGrpcService(storageConfiguration, this))
+                .addService(new VariantGrpcService(storageConfiguration))
                 .build()
                 .start();
         logger.info("gRPC server started, listening on {}", port);

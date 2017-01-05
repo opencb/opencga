@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.analysis.AlignmentClient;
+import org.opencb.opencga.client.rest.analysis.VariantClient;
 import org.opencb.opencga.client.rest.catalog.*;
 
 import java.util.HashMap;
@@ -123,6 +124,10 @@ public class OpenCGAClient {
         return (AlignmentClient) clients.get("ALIGNMENT");
     }
 
+    public VariantClient getVariantClient() {
+        clients.putIfAbsent("VARIANT", new VariantClient(userId, sessionId, clientConfiguration));
+        return (VariantClient) clients.get("VARIANT");
+    }
 
     /**
      * Logs in the user.

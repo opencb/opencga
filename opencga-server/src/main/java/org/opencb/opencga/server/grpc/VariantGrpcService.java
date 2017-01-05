@@ -23,10 +23,10 @@ import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.io.IOException;
@@ -39,17 +39,17 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
 
     private GenericGrpcService genericGrpcService;
 
-    public VariantGrpcService(CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration) {
+    public VariantGrpcService(Configuration configuration, StorageConfiguration storageConfiguration) {
 //        super(catalogConfiguration, storageConfiguration);
 
-        genericGrpcService = new GenericGrpcService(catalogConfiguration, storageConfiguration);
+        genericGrpcService = new GenericGrpcService(configuration, storageConfiguration);
     }
 
     @Deprecated
-    public VariantGrpcService(CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration, String defaultStorageEngine) {
+    public VariantGrpcService(Configuration configuration, StorageConfiguration storageConfiguration, String defaultStorageEngine) {
 //        super(catalogConfiguration, storageConfiguration, defaultStorageEngine);
 
-        genericGrpcService = new GenericGrpcService(catalogConfiguration, storageConfiguration);
+        genericGrpcService = new GenericGrpcService(configuration, storageConfiguration);
     }
 
 
@@ -65,7 +65,7 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
             responseObserver.onNext(ServiceTypesModel.LongResponse.newBuilder().setValue(queryResult.getResult().get(0)).build());
             responseObserver.onCompleted();
             variantDBAdaptor.close();
-        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | StorageManagerException | IOException e) {
+        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | StorageEngineException | IOException e) {
             e.printStackTrace();
         }
 //        catch (NotAuthorizedHostException | NotAuthorizedUserException e) {
@@ -98,7 +98,7 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
             }
             responseObserver.onCompleted();
             variantDBAdaptor.close();
-        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | StorageManagerException | IOException e) {
+        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | StorageEngineException | IOException e) {
             e.printStackTrace();
         }
 //        catch (NotAuthorizedHostException e) {
@@ -130,7 +130,7 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
     }
 
     private VariantDBAdaptor getVariantDBAdaptor(GenericServiceModel.Request request)
-            throws IllegalAccessException, InstantiationException, ClassNotFoundException, StorageManagerException {
+            throws IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
         // Setting storageEngine and database parameters. If the storageEngine is not provided then the server default is used
         String storageEngine = genericGrpcService.getDefaultStorageEngine();
         if (StringUtils.isNotEmpty(request.getStorageEngine())) {
@@ -144,7 +144,7 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
 
         // Creating the VariantDBAdaptor to the parsed storageEngine and database
         long start = System.currentTimeMillis();
-        VariantStorageManager variantStorageManager = GenericGrpcService.storageManagerFactory.getVariantStorageManager(storageEngine);
+        VariantStorageEngine variantStorageManager = GenericGrpcService.storageManagerFactory.getVariantStorageManager(storageEngine);
         VariantDBAdaptor variantDBAdaptor = variantStorageManager.getDBAdaptor(database);
 //        logger.debug("Connection to {}:{} in {}ms", storageEngine, database, System.currentTimeMillis() - start);
 

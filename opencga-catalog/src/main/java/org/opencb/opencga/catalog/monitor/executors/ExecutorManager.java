@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.monitor.executors;
 
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 
 /**
  * Created by pfurio on 22/08/16.
@@ -26,13 +26,13 @@ public class ExecutorManager {
     // TODO: Change for a map
     private AbstractExecutor executor;
 
-    public ExecutorManager(CatalogConfiguration catalogConfiguration) {
-        if (catalogConfiguration != null) {
-            if (catalogConfiguration.getExecution().getMode().equalsIgnoreCase("local")) {
+    public ExecutorManager(Configuration configuration) {
+        if (configuration != null) {
+            if (configuration.getExecution().getMode().equalsIgnoreCase("local")) {
                 this.executor = new LocalExecutor();
-            } else if (catalogConfiguration.getExecution().getMode().equalsIgnoreCase("sge")) {
+            } else if (configuration.getExecution().getMode().equalsIgnoreCase("sge")) {
                 // init sge executor
-                this.executor = new SGEExecutor(catalogConfiguration);
+                this.executor = new SGEExecutor(configuration);
                 System.out.println("SGE not ready");
             }
         }

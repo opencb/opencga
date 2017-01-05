@@ -18,12 +18,16 @@ package org.opencb.opencga.server.rest.analysis;
 
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.rest.FileWSServer;
+import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -32,10 +36,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 
 /**
  * Created by imedina on 17/08/16.
@@ -77,12 +80,33 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         addParamIfNotNull(params, "outdir", outDirStr);
         addParamIfTrue(params, "transform", transform);
         addParamIfTrue(params, "load", load);
-        addParamIfNotNull(params, "include-extra-fields", includeExtraFields);
-        addParamIfNotNull(params, "aggregated", aggregated);
-        addParamIfTrue(params, "calculate-stats", calculateStats);
-        addParamIfTrue(params, "annotate", annotate);
-        addParamIfTrue(params, "overwrite-annotations", overwriteAnnotations);
+        addParamIfNotNull(params, EXTRA_GENOTYPE_FIELDS.key(), includeExtraFields);
+        addParamIfNotNull(params, AGGREGATED_TYPE.key(), aggregated);
+        addParamIfTrue(params, CALCULATE_STATS.key(), calculateStats);
+        addParamIfTrue(params, ANNOTATE.key(), annotate);
+        addParamIfTrue(params, VariantAnnotationManager.OVERWRITE_ANNOTATIONS, overwriteAnnotations);
 
+        Set<String> knownParams = new HashSet<>();
+        knownParams.add("outDir");
+        knownParams.add("transform");
+        knownParams.add("load");
+        knownParams.add("includeExtraFields");
+        knownParams.add("aggregated");
+        knownParams.add("calculateStats");
+        knownParams.add("annotate");
+        knownParams.add("overwrite");
+        knownParams.add("sid");
+        knownParams.add("include");
+        knownParams.add("exclude");
+
+        // Add other params
+        query.forEach((key, value) -> {
+            if (!knownParams.contains(key)) {
+                if (value != null) {
+                    params.put(key, value.toString());
+                }
+            }
+        });
         logger.info("ObjectMap: {}", params);
 
         try {
@@ -96,7 +120,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
     @GET
     @Path("/query")
-    @ApiOperation(value = "Fetch variants from a VCF/gVCF file", position = 15, response = QueryResponse.class)
+    @ApiOperation(value = "Fetch variants from a VCF/gVCF file", position = 15, response = Variant[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
@@ -104,15 +128,14 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
 //            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
-    public Response getVariants(@ApiParam(value = "", required = true) @QueryParam("fileId") String fileIdCsv,
-                                @ApiParam(value = "List of variant ids") @QueryParam("ids") String ids,
+    public Response getVariants(@ApiParam(value = "List of variant ids") @QueryParam("ids") String ids,
                                 @ApiParam(value = "List of regions: {chr}:{start}-{end}") @QueryParam("region") String region,
                                 @ApiParam(value = "List of chromosomes") @QueryParam("chromosome") String chromosome,
                                 @ApiParam(value = "List of genes") @QueryParam("gene") String gene,
                                 @ApiParam(value = "Variant type: [SNV, MNV, INDEL, SV, CNV]") @QueryParam("type") String type,
                                 @ApiParam(value = "Reference allele") @QueryParam("reference") String reference,
                                 @ApiParam(value = "Main alternate allele") @QueryParam("alternate") String alternate,
-//                                @ApiParam(value = "") @QueryParam("studies") String studies,
+                                @ApiParam(value = "", required = true) @QueryParam("studies") String studies,
                                 @ApiParam(value = "List of studies to be returned") @QueryParam("returnedStudies") String returnedStudies,
                                 @ApiParam(value = "List of samples to be returned") @QueryParam("returnedSamples") String returnedSamples,
                                 @ApiParam(value = "List of files to be returned.") @QueryParam("returnedFiles") String returnedFiles,
@@ -123,7 +146,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                                 @ApiParam(value = "Number of missing genotypes: [{study:}]{cohort}[<|>|<=|>=]{number}") @QueryParam("missingGenotypes") String missingGenotypes,
                                 @ApiParam(value = "Specify if the variant annotation must exists.") @QueryParam("annotationExists") boolean annotationExists,
                                 @ApiParam(value = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1") @QueryParam("genotype") String genotype,
-                                @ApiParam(value = "Consequence type SO term list. e.g. SO:0000045,SO:0000046") @QueryParam("annot-ct") String annot_ct,
+                                @ApiParam(value = "Consequence type SO term list. e.g. missense_variant,stop_lost or SO:0001583,SO:0001578") @QueryParam("annot-ct") String annot_ct,
                                 @ApiParam(value = "XRef") @QueryParam("annot-xref") String annot_xref,
                                 @ApiParam(value = "Biotype") @QueryParam("annot-biotype") String annot_biotype,
                                 @ApiParam(value = "Polyphen, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description} e.g. <=0.9 , =benign") @QueryParam("polyphen") String polyphen,
@@ -154,23 +177,47 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                                 @ApiParam(value = "Histogram interval size", required = false) @DefaultValue("2000") @QueryParam("interval") int interval,
                                 @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge) {
 
-        List<QueryResult> results = new LinkedList<>();
-        try ( VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory) ) {
-            List<String> fileIds = FileWSServer.convertPathList(fileIdCsv, sessionId);
-            for (String fileIdStr : fileIds) {
-                QueryResult result;
-                if (count) {
-                    long fileId = catalogManager.getFileId(fileIdStr, sessionId);
-                    result = variantFetcher.countByFile(fileId, queryOptions, sessionId);
-                } else {
-                    result = variantFetcher.getVariantsPerFile(region, histogram, groupBy, interval, fileIdStr, sessionId, queryOptions);
-                }
-                results.add(result);
+        try {
+            List<QueryResult> queryResults = new LinkedList<>();
+            QueryResult queryResult;
+            // Get all query options
+            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            Query query = VariantStorageManager.getVariantQuery(queryOptions);
+
+            if (count) {
+                queryResult = variantManager.count(query, sessionId);
+            } else if (histogram) {
+                queryResult = variantManager.getFrequency(query, interval, sessionId);
+            } else if (StringUtils.isNotEmpty(groupBy)) {
+                queryResult = variantManager.groupBy(groupBy, query, queryOptions, sessionId);
+            } else {
+                queryResult = variantManager.get(query, queryOptions, sessionId);
             }
+            queryResults.add(queryResult);
+
+            return createOkResponse(queryResults);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-        return createOkResponse(results);
+//        }
+//        List<QueryResult> results = new LinkedList<>();
+//        try {
+//            VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
+//            List<String> fileIds = FileWSServer.convertPathList(fileIdCsv, sessionId);
+//            for (String fileIdStr : fileIds) {
+//                QueryResult result;
+//                if (count) {
+//                    long fileId = catalogManager.getFileId(fileIdStr, sessionId);
+//                    result = variantFetcher.countByFile(fileId, queryOptions, sessionId);
+//                } else {
+//                    result = variantFetcher.getVariantsPerFile(region, histogram, groupBy, interval, fileIdStr, sessionId, queryOptions);
+//                }
+//                results.add(result);
+//            }
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//        return createOkResponse(results);
     }
 
     @GET

@@ -24,8 +24,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.analysis.storage.variant.CatalogVariantDBAdaptor;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.executors.commons.AclCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.catalog.StudyCommandOptions;
+import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.StudyCommandOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
@@ -40,6 +40,9 @@ import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.client.rest.catalog.StudyClient;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by imedina on 03/06/16.
@@ -94,9 +97,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             case "files":
                 queryResponse = files();
                 break;
-            case "alignments":
-                queryResponse = alignments();
-                break;
             case "samples":
                 queryResponse = samples();
                 break;
@@ -140,83 +140,104 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             case "groups-update":
                 queryResponse = groupsUpdate();
                 break;
-
             default:
                 logger.error("Subcommand not valid");
                 break;
         }
 
         createOutput(queryResponse);
+    }
 
+    /**
+     * This method selects a single valid study from these sources and in this order. First, checks if CLI param exists,
+     * second it reads the configuration file, and third it reads the projects and studies from the session file.
+     * @param study parameter from the CLI
+     * @return a singe valid Study from the CLI, configuration or from the session file
+     * @throws CatalogException when no possible single study can be chosen
+     */
+    private String getSingleValidStudy(String study) throws CatalogException {
+        // First, check the study parameter, if is not empty we just return it, this the user's selection.
+        if (StringUtils.isNotEmpty(study)) {
+            return study;
+        } else {
+            // Second, check if there is a default study in the client configuration.
+            if (StringUtils.isNotEmpty(clientConfiguration.getDefaultStudy())) {
+                return clientConfiguration.getDefaultStudy();
+            } else {
+                // Third, check if there is only one single project and study for this user in the current CLI session file.
+                Map<String, List<String>> projectsAndStudies = cliSession.getProjectsAndStudies();
+                if (projectsAndStudies != null && projectsAndStudies.size() == 1) {
+                    List<String> projectAliases = new ArrayList<>(projectsAndStudies.keySet());
+                    // Get the study list of the only existing project
+                    List<String> studyAlias = projectsAndStudies.get(projectAliases.get(0));
+                    if (studyAlias.size() == 1) {
+                        study = studyAlias.get(0);
+                    } else {
+                        throw new CatalogException("non or more than one study found");
+                    }
+                } else {
+                    throw new CatalogException("Non or more than one project found");
+                }
+            }
+        }
+        return study;
     }
 
     /**********************************************  Administration Commands  ***********************************************/
 
     private QueryResponse<Study> create() throws CatalogException, IOException {
-
         logger.debug("Creating a new study");
-        String alias = studiesCommandOptions.createCommandOptions.alias;
+
+        String project = studiesCommandOptions.createCommandOptions.project;
         String name = studiesCommandOptions.createCommandOptions.name;
-        String projectId = studiesCommandOptions.createCommandOptions.projectId;
-        String description = studiesCommandOptions.createCommandOptions.description;
-        String type = studiesCommandOptions.createCommandOptions.type;
+        String alias = studiesCommandOptions.createCommandOptions.alias;
 
-        //ObjectMap o = new ObjectMap("method", "GET");
-        ObjectMap o = new ObjectMap();
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.createCommandOptions.description);
+        params.putIfNotNull(StudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(studiesCommandOptions.createCommandOptions.type));
 
-        if (description != null) {
-            o.append(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), description);
-        }
-        if (type != null) {
-            try {
-                o.append(StudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(type));
-            } catch (IllegalArgumentException e) {
-                logger.error("{} not recognized as a proper study type", type);
-                return null;
-            }
-        }
-
-        return openCGAClient.getStudyClient().create(projectId, name, alias, o);
+        return openCGAClient.getStudyClient().create(project, name, alias, params);
     }
 
     private QueryResponse<Study> info() throws CatalogException, IOException {
-
         logger.debug("Getting the study info");
-        return openCGAClient.getStudyClient().get(studiesCommandOptions.infoCommandOptions.id, null);
+
+        studiesCommandOptions.infoCommandOptions.study = getSingleValidStudy(studiesCommandOptions.infoCommandOptions.study);
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.infoCommandOptions.dataModelOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.infoCommandOptions.dataModelOptions.exclude);
+        return openCGAClient.getStudyClient().get(studiesCommandOptions.infoCommandOptions.study, queryOptions);
     }
 
     private QueryResponse<Study> update() throws CatalogException, IOException {
-
         logger.debug("Updating the study");
 
-        ObjectMap params = new ObjectMap();
-        params.putIfNotNull(StudyDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.updateCommandOptions.name);
-        params.putIfNotNull(StudyDBAdaptor.QueryParams.TYPE.key(), studiesCommandOptions.updateCommandOptions.type);
-        params.putIfNotNull(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.updateCommandOptions.description);
-        params.putIfNotNull(StudyDBAdaptor.QueryParams.STATS.key(), studiesCommandOptions.updateCommandOptions.stats);
-        params.putIfNotNull(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), studiesCommandOptions.updateCommandOptions.attributes);
+        studiesCommandOptions.updateCommandOptions.study = getSingleValidStudy(studiesCommandOptions.updateCommandOptions.study);
 
-        return openCGAClient.getStudyClient().update(studiesCommandOptions.updateCommandOptions.id, params);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.updateCommandOptions.name);
+        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.TYPE.key(), studiesCommandOptions.updateCommandOptions.type);
+        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.updateCommandOptions.description);
+        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.STATS.key(), studiesCommandOptions.updateCommandOptions.stats);
+        params.putIfNotEmpty(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), studiesCommandOptions.updateCommandOptions.attributes);
+        return openCGAClient.getStudyClient().update(studiesCommandOptions.updateCommandOptions.study, params);
     }
 
     private QueryResponse<Study> delete() throws CatalogException, IOException {
-
         logger.debug("Deleting a study");
-        ObjectMap objectMap = new ObjectMap();
-        return openCGAClient.getStudyClient().delete(studiesCommandOptions.deleteCommandOptions.id, objectMap);
+
+        return openCGAClient.getStudyClient().delete(studiesCommandOptions.deleteCommandOptions.study, new ObjectMap());
     }
 
     /************************************************  Summary and help Commands  ***********************************************/
 
     private QueryResponse<StudySummary> summary() throws CatalogException, IOException {
-
         logger.debug("Doing summary with the general stats of a study");
-        QueryOptions queryOptions = new QueryOptions();
-        return openCGAClient.getStudyClient().getSummary(studiesCommandOptions.summaryCommandOptions.id, queryOptions);
+
+        return openCGAClient.getStudyClient().getSummary(studiesCommandOptions.summaryCommandOptions.study, QueryOptions.empty());
     }
 
     private QueryResponse<Study> help() throws CatalogException, IOException {
-
         logger.debug("Helping");
         /*QueryOptions queryOptions = new QueryOptions();
         QueryResponse<Study> study =
@@ -229,279 +250,138 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     /************************************************  Search Commands  ***********************************************/
 
     private QueryResponse<Study> search() throws CatalogException, IOException {
-
         logger.debug("Searching study");
 
-
         Query query = new Query();
-        QueryOptions queryOptions = new QueryOptions();
-
-        String id = studiesCommandOptions.searchCommandOptions.id;
-        String projectId = studiesCommandOptions.searchCommandOptions.projectId;
-        String name = studiesCommandOptions.searchCommandOptions.name;
-        String alias = studiesCommandOptions.searchCommandOptions.alias;
-        String type = studiesCommandOptions.searchCommandOptions.type;
-        String creationDate = studiesCommandOptions.searchCommandOptions.creationDate;
-        String status = studiesCommandOptions.searchCommandOptions.status;
-        String attributes = studiesCommandOptions.searchCommandOptions.attributes;
-        String nattributes = studiesCommandOptions.searchCommandOptions.nattributes;
-        String battributes = studiesCommandOptions.searchCommandOptions.battributes;
-//        String groups = studiesCommandOptions.searchCommandOptions.groups;
-//        String groupsUsers = studiesCommandOptions.searchCommandOptions.groupsUsers;
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ID.key(), id );
-
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId);
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.NAME.key(), name);
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), alias);
-
-        if (StringUtils.isNotEmpty(type)) {
-            try {
-                query.append(StudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(type));
-            } catch (IllegalArgumentException e) {
-                logger.error("{} not recognized as a proper study type", type);
-                return null;
-            }
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), studiesCommandOptions.searchCommandOptions.project);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.searchCommandOptions.name);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ALIAS.key(), studiesCommandOptions.searchCommandOptions.alias);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.CREATION_DATE.key(), studiesCommandOptions.searchCommandOptions.creationDate);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.STATUS_NAME.key(), studiesCommandOptions.searchCommandOptions.status);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), studiesCommandOptions.searchCommandOptions.attributes);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.NATTRIBUTES.key(), studiesCommandOptions.searchCommandOptions.nattributes);
+        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.BATTRIBUTES.key(), studiesCommandOptions.searchCommandOptions.battributes);
+        try {
+            query.putIfNotNull(StudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(studiesCommandOptions.searchCommandOptions.type));
+        } catch (IllegalArgumentException e) {
+            logger.warn("{} not recognized as a proper study type", studiesCommandOptions.searchCommandOptions.type);
         }
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.CREATION_DATE.key(), creationDate);
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.STATUS_NAME.key(), status);
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.NATTRIBUTES.key(), nattributes);
-        query.putIfNotEmpty(StudyDBAdaptor.QueryParams.BATTRIBUTES.key(), battributes);
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.searchCommandOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.searchCommandOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, studiesCommandOptions.searchCommandOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, studiesCommandOptions.searchCommandOptions.skip);
 
-        queryOptions.put("count", studiesCommandOptions.searchCommandOptions.count);
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.searchCommandOptions.dataModelOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.searchCommandOptions.dataModelOptions.exclude);
+        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, studiesCommandOptions.searchCommandOptions.numericOptions.limit);
+        queryOptions.putIfNotEmpty(QueryOptions.SKIP, studiesCommandOptions.searchCommandOptions.numericOptions.skip);
+        queryOptions.put("count", studiesCommandOptions.searchCommandOptions.numericOptions.count);
 
         return openCGAClient.getStudyClient().search(query, queryOptions);
     }
 
     private QueryResponse scanFiles() throws CatalogException, IOException {
         logger.debug("Scan the study folder to find changes.\n");
-        return openCGAClient.getStudyClient().scanFiles(studiesCommandOptions.scanFilesCommandOptions.id, null);
+
+        return openCGAClient.getStudyClient().scanFiles(studiesCommandOptions.scanFilesCommandOptions.study, null);
     }
 
     private QueryResponse resyncFiles() throws CatalogException, IOException {
         logger.debug("Scan the study folder to find changes.\n");
-        return openCGAClient.getStudyClient().resyncFiles(studiesCommandOptions.resyncFilesCommandOptions.id, null);
+
+        return openCGAClient.getStudyClient().resyncFiles(studiesCommandOptions.resyncFilesCommandOptions.study, null);
     }
 
     private QueryResponse<File> files() throws CatalogException, IOException {
-
         logger.debug("Listing files of a study [PENDING]");
 
+        studiesCommandOptions.filesCommandOptions.study = getSingleValidStudy(studiesCommandOptions.filesCommandOptions.study);
+
         QueryOptions queryOptions = new QueryOptions();
+        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.ID.key(), studiesCommandOptions.filesCommandOptions.file);
+        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.filesCommandOptions.name);
+        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.PATH.key(), studiesCommandOptions.filesCommandOptions.path);
+        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.TYPE.key(), studiesCommandOptions.filesCommandOptions.type);
+        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.BIOFORMAT.key(), studiesCommandOptions.filesCommandOptions.bioformat);
+        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.FORMAT.key(), studiesCommandOptions.filesCommandOptions.format);
+        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.STATUS.key(), studiesCommandOptions.filesCommandOptions.status);
+        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.DIRECTORY.key(), studiesCommandOptions.filesCommandOptions.directory);
+        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.OWNER_ID.key(), studiesCommandOptions.filesCommandOptions.ownerId);
+        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.CREATION_DATE.key(), studiesCommandOptions.filesCommandOptions.creationDate);
+        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key(),
+                studiesCommandOptions.filesCommandOptions.modificationDate);
+        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.filesCommandOptions.description);
+        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.SIZE.key(), studiesCommandOptions.filesCommandOptions.size);
+        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), studiesCommandOptions.filesCommandOptions.sampleIds);
+        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_ID.key(), studiesCommandOptions.filesCommandOptions.jobId);
+        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), studiesCommandOptions.filesCommandOptions.attributes);
+        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.NATTRIBUTES.key(), studiesCommandOptions.filesCommandOptions.nattributes);
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.filesCommandOptions.dataModelOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.filesCommandOptions.dataModelOptions.exclude);
+        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, studiesCommandOptions.filesCommandOptions.numericOptions.limit);
+        queryOptions.putIfNotEmpty(QueryOptions.SKIP, studiesCommandOptions.filesCommandOptions.numericOptions.skip);
+        queryOptions.put("count", studiesCommandOptions.filesCommandOptions.numericOptions.count);
 
-        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.fileId)) {
-            queryOptions.put(FileDBAdaptor.QueryParams.ID.key(), studiesCommandOptions.filesCommandOptions.fileId);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.name)) {
-            queryOptions.put(FileDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.filesCommandOptions.name);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.path)) {
-            queryOptions.put(FileDBAdaptor.QueryParams.PATH.key(), studiesCommandOptions.filesCommandOptions.path);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.type)) {
-            queryOptions.put(FileDBAdaptor.QueryParams.TYPE.key(), studiesCommandOptions.filesCommandOptions.type);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.bioformat)) {
-            queryOptions.put(FileDBAdaptor.QueryParams.BIOFORMAT.key(), studiesCommandOptions.filesCommandOptions.bioformat);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.format)) {
-            queryOptions.put(FileDBAdaptor.QueryParams.FORMAT.key(), studiesCommandOptions.filesCommandOptions.format);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.status)) {
-            queryOptions.put(FileDBAdaptor.QueryParams.STATUS.key(), studiesCommandOptions.filesCommandOptions.status);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.directory)) {
-            queryOptions.put(FileDBAdaptor.QueryParams.DIRECTORY.key(), studiesCommandOptions.filesCommandOptions.directory);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.ownerId)) {
-            queryOptions.put(FileDBAdaptor.QueryParams.OWNER_ID.key(), studiesCommandOptions.filesCommandOptions.ownerId);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.creationDate)) {
-            queryOptions.put(FileDBAdaptor.QueryParams.CREATION_DATE.key(), studiesCommandOptions.filesCommandOptions.creationDate);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.modificationDate)) {
-            queryOptions.put(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key(),
-                    studiesCommandOptions.filesCommandOptions.modificationDate);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.description)) {
-            queryOptions.put(FileDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.filesCommandOptions.description);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.diskUsage)) {
-            queryOptions.put(FileDBAdaptor.QueryParams.DISK_USAGE.key(), studiesCommandOptions.filesCommandOptions.diskUsage);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.sampleIds)) {
-            queryOptions.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), studiesCommandOptions.filesCommandOptions.sampleIds);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.jobId)) {
-            queryOptions.put(FileDBAdaptor.QueryParams.JOB_ID.key(), studiesCommandOptions.filesCommandOptions.jobId);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.attributes)) {
-            queryOptions.put(FileDBAdaptor.QueryParams.ATTRIBUTES.key(), studiesCommandOptions.filesCommandOptions.attributes);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.nattributes)) {
-            queryOptions.put(FileDBAdaptor.QueryParams.NATTRIBUTES.key(), studiesCommandOptions.filesCommandOptions.nattributes);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, studiesCommandOptions.jobsCommandOptions.include);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, studiesCommandOptions.jobsCommandOptions.exclude);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.jobsCommandOptions.limit);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.jobsCommandOptions.skip);
-        }
-        queryOptions.put("count", studiesCommandOptions.jobsCommandOptions.count);
-
-        return openCGAClient.getStudyClient().getFiles(studiesCommandOptions.filesCommandOptions.id, queryOptions);
+        return openCGAClient.getStudyClient().getFiles(studiesCommandOptions.filesCommandOptions.study, queryOptions);
     }
 
     private QueryResponse<Job> jobs() throws CatalogException, IOException {
-
         logger.debug("Listing jobs of a study. [PENDING]");
 
+        studiesCommandOptions.jobsCommandOptions.study = getSingleValidStudy(studiesCommandOptions.jobsCommandOptions.study);
+
         QueryOptions queryOptions = new QueryOptions();
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.name)) {
-            queryOptions.put(JobDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.jobsCommandOptions.name);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.toolName)) {
-            queryOptions.put(JobDBAdaptor.QueryParams.TOOL_NAME.key(), studiesCommandOptions.jobsCommandOptions.toolName);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.status)) {
-            queryOptions.put(JobDBAdaptor.QueryParams.STATUS_NAME.key(), studiesCommandOptions.jobsCommandOptions.status);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.ownerId)) {
-            queryOptions.put(JobDBAdaptor.QueryParams.USER_ID.key(), studiesCommandOptions.jobsCommandOptions.ownerId);
-        }
+        queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.jobsCommandOptions.name);
+        queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.TOOL_NAME.key(), studiesCommandOptions.jobsCommandOptions.toolName);
+        queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.STATUS_NAME.key(), studiesCommandOptions.jobsCommandOptions.status);
+        queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.USER_ID.key(), studiesCommandOptions.jobsCommandOptions.ownerId);
         /*if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.date)) {
             queryOptions.put(CatalogJobDBAdaptor.QueryParams.CREATION_DATE.key(), studiesCommandOptions.jobsCommandOptions.date);
         }*/
+        queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.INPUT.key(), studiesCommandOptions.jobsCommandOptions.inputFiles);
+        queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.OUTPUT.key(), studiesCommandOptions.jobsCommandOptions.outputFiles);
 
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.inputFiles)) {
-            queryOptions.put(JobDBAdaptor.QueryParams.INPUT.key(), studiesCommandOptions.jobsCommandOptions.inputFiles);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.outputFiles)) {
-            queryOptions.put(JobDBAdaptor.QueryParams.OUTPUT.key(), studiesCommandOptions.jobsCommandOptions.outputFiles);
-        }
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.jobsCommandOptions.dataModelOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.jobsCommandOptions.dataModelOptions.exclude);
+        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, studiesCommandOptions.jobsCommandOptions.numericOptions.limit);
+        queryOptions.putIfNotEmpty(QueryOptions.SKIP, studiesCommandOptions.jobsCommandOptions.numericOptions.skip);
+        queryOptions.put("count", studiesCommandOptions.jobsCommandOptions.numericOptions.count);
 
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, studiesCommandOptions.jobsCommandOptions.include);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, studiesCommandOptions.jobsCommandOptions.exclude);
-        }
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.jobsCommandOptions.limit);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.jobsCommandOptions.skip);
-        }
-
-        queryOptions.put("count", studiesCommandOptions.jobsCommandOptions.count);
-
-        return openCGAClient.getStudyClient().getJobs(studiesCommandOptions.jobsCommandOptions.id, queryOptions);
+        return openCGAClient.getStudyClient().getJobs(studiesCommandOptions.jobsCommandOptions.study, queryOptions);
     }
 
-    private QueryResponse alignments() throws CatalogException, IOException {
-
-        //TODO
-        logger.debug("Listing alignments of a study. [PENDING]");
-        return null;
-
-/*
-        QueryOptions queryOptions = new QueryOptions();
-        if (StringUtils.isNotEmpty(studiesCommandOptions.alignmentsCommandOptions.sampleId)) {
-            queryOptions.put(CatalogStudyDBAdaptor.QueryParams.SAMPLE_ID.key(), studiesCommandOptions.alignmentsCommandOptions.sampleId);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.alignmentsCommandOptions.fileId)) {
-            queryOptions.put(CatalogStudyDBAdaptor.QueryParams.FILE_ID.key(), studiesCommandOptions.alignmentsCommandOptions.fileId);
-        }
-        if (studiesCommandOptions.alignmentsCommandOptions.view_as_pairs) {
-            queryOptions.put(CatalogStudyDBAdaptor.QueryParams.VIEW_AS_PAIRS.key(), studiesCommandOptions.alignmentsCommandOptions.view_as_pairs);
-        }
-        if (studiesCommandOptions.alignmentsCommandOptions.include_coverage) {
-            queryOptions.put(CatalogStudyDBAdaptor.QueryParams.INCLUDE_COVERAGE.key(), studiesCommandOptions.alignmentsCommandOptions.include_coverage);
-        }
-        if (studiesCommandOptions.alignmentsCommandOptions.process_differences) {
-            queryOptions.put(CatalogStudyDBAdaptor.QueryParams.PROCESS_DIFFERENCES.key(), studiesCommandOptions.alignmentsCommandOptions.process_differences);
-        }
-
-        if (studiesCommandOptions.alignmentsCommandOptions.process_differences) {
-            queryOptions.put(CatalogStudyDBAdaptor.QueryParams.HISTOGRAM.key(), studiesCommandOptions.alignmentsCommandOptions.histogram);
-        }
-
-        if (studiesCommandOptions.alignmentsCommandOptions.process_differences) {
-            queryOptions.put(CatalogStudyDBAdaptor.QueryParams.INTERVAL.key(), studiesCommandOptions.alignmentsCommandOptions.interval);
-        }
-
-        Query query = new Query();
-        QueryResponse<Alignment> alignments = openCGAClient.getStudyClient().getAlignments(studiesCommandOptions.alignmentsCommandOptions.id,
-                studiesCommandOptions.alignmentsCommandOptions.sampleId, studiesCommandOptions.alignmentsCommandOptions.fileId,
-                studiesCommandOptions.alignmentsCommandOptions.region, query, queryOptions);
-        System.out.println(alignments.toString());*/
-    }
 
     private QueryResponse<Sample> samples() throws CatalogException, IOException {
-
         logger.debug("Listing samples of a study. [PENDING]");
 
+        studiesCommandOptions.updateCommandOptions.study = getSingleValidStudy(studiesCommandOptions.updateCommandOptions.study);
+
         QueryOptions queryOptions = new QueryOptions();
-        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.name)) {
-            queryOptions.put(SampleDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.samplesCommandOptions.name);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.source)) {
-            queryOptions.put(SampleDBAdaptor.QueryParams.SOURCE.key(), studiesCommandOptions.samplesCommandOptions.source);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.individualId)) {
-            queryOptions.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(),
-                    studiesCommandOptions.samplesCommandOptions.individualId);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.annotationSetName)) {
-            queryOptions.put(SampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
-                    studiesCommandOptions.samplesCommandOptions.annotationSetName);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.variableSetId)) {
-            queryOptions.put(SampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
-                    studiesCommandOptions.samplesCommandOptions.variableSetId);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.annotation)) {
-            queryOptions.put(SampleDBAdaptor.QueryParams.ANNOTATION.key(), studiesCommandOptions.samplesCommandOptions.annotation);
-        }
+        queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.samplesCommandOptions.name);
+        queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), studiesCommandOptions.samplesCommandOptions.source);
+        queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), studiesCommandOptions.samplesCommandOptions.individual);
+        queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
+                studiesCommandOptions.samplesCommandOptions.annotationSetName);
+        queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
+                studiesCommandOptions.samplesCommandOptions.variableSetId);
+        queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.ANNOTATION.key(), studiesCommandOptions.samplesCommandOptions.annotation);
         /*if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.description)) {
             queryOptions.put(CatalogSampleDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.samplesCommandOptions.description);
         }*/
-        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, studiesCommandOptions.samplesCommandOptions.include);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, studiesCommandOptions.samplesCommandOptions.exclude);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.samplesCommandOptions.limit);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.samplesCommandOptions.skip);
-        }
-        queryOptions.put("count", studiesCommandOptions.samplesCommandOptions.count);
 
-        return openCGAClient.getStudyClient().getSamples(studiesCommandOptions.samplesCommandOptions.id, queryOptions);
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.samplesCommandOptions.dataModelOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.samplesCommandOptions.dataModelOptions.exclude);
+        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, studiesCommandOptions.samplesCommandOptions.numericOptions.limit);
+        queryOptions.putIfNotEmpty(QueryOptions.SKIP, studiesCommandOptions.samplesCommandOptions.numericOptions.skip);
+        queryOptions.put("count", studiesCommandOptions.samplesCommandOptions.numericOptions.count);
+
+        return openCGAClient.getStudyClient().getSamples(studiesCommandOptions.samplesCommandOptions.study, queryOptions);
     }
 
+    @Deprecated
     private QueryResponse variants() throws CatalogException, IOException {
 
         logger.debug("Listing variants of a study.");
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putAll(studiesCommandOptions.commonCommandOptions.dynamic);
+        queryOptions.putAll(studiesCommandOptions.commonCommandOptions.params);
 
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ID.key(), studiesCommandOptions.variantsCommandOptions.ids);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.REGION.key(), studiesCommandOptions.variantsCommandOptions.region);
@@ -525,7 +405,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.MISSING_ALLELES.key(),
                 studiesCommandOptions.variantsCommandOptions.missingAlleles);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.MISSING_GENOTYPES.key(),
-                    studiesCommandOptions.variantsCommandOptions.missingGenotypes);
+                studiesCommandOptions.variantsCommandOptions.missingGenotypes);
 //        queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(),
 //                studiesCommandOptions.variantsCommandOptions.annotationExists);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.GENOTYPE.key(),
@@ -566,7 +446,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key(),
                 studiesCommandOptions.variantsCommandOptions.functionalScore);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.UNKNOWN_GENOTYPE.key(),
-                    studiesCommandOptions.variantsCommandOptions.unknownGenotype);
+                studiesCommandOptions.variantsCommandOptions.unknownGenotype);
         queryOptions.put(QueryOptions.SORT, studiesCommandOptions.variantsCommandOptions.sort);
 //        queryOptions.putIfNotEmpty("merge", studiesCommandOptions.variantsCommandOptions.merge);
 
@@ -582,59 +462,68 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.put("count", studiesCommandOptions.variantsCommandOptions.count);
 
         if (studiesCommandOptions.variantsCommandOptions.count) {
-            return openCGAClient.getStudyClient().countVariants(studiesCommandOptions.variantsCommandOptions.id, queryOptions);
+            return openCGAClient.getStudyClient().countVariants(studiesCommandOptions.variantsCommandOptions.study, queryOptions);
         } else if (studiesCommandOptions.variantsCommandOptions.samplesMetadata || StringUtils.isNoneEmpty(studiesCommandOptions.variantsCommandOptions.groupBy) || studiesCommandOptions.variantsCommandOptions.histogram) {
-            return openCGAClient.getStudyClient().getVariantsGeneric(studiesCommandOptions.variantsCommandOptions.id, queryOptions);
+            return openCGAClient.getStudyClient().getVariantsGeneric(studiesCommandOptions.variantsCommandOptions.study, queryOptions);
         } else {
-            return openCGAClient.getStudyClient().getVariants(studiesCommandOptions.variantsCommandOptions.id, queryOptions);
+            return openCGAClient.getStudyClient().getVariants(studiesCommandOptions.variantsCommandOptions.study, queryOptions);
         }
     }
 
     /************************************************* Groups commands *********************************************************/
     private QueryResponse<ObjectMap> groups() throws CatalogException,IOException {
         logger.debug("Groups");
+
+        studiesCommandOptions.groupsCommandOptions.study = getSingleValidStudy(studiesCommandOptions.groupsCommandOptions.study);
+
         QueryOptions queryOptions = new QueryOptions();
-        return openCGAClient.getStudyClient().groups(studiesCommandOptions.groupsCommandOptions.id, queryOptions);
+        return openCGAClient.getStudyClient().groups(studiesCommandOptions.groupsCommandOptions.study, queryOptions);
     }
 
     private QueryResponse<ObjectMap> groupsCreate() throws CatalogException,IOException {
-
         logger.debug("Creating groups");
+
+        studiesCommandOptions.groupsCreateCommandOptions.study = getSingleValidStudy(studiesCommandOptions.groupsCreateCommandOptions.study);
+
         QueryOptions queryOptions = new QueryOptions();
-        return openCGAClient.getStudyClient().createGroup(studiesCommandOptions.groupsCreateCommandOptions.id,
+        return openCGAClient.getStudyClient().createGroup(studiesCommandOptions.groupsCreateCommandOptions.study,
                 studiesCommandOptions.groupsCreateCommandOptions.groupId, studiesCommandOptions.groupsCreateCommandOptions.users,
                 queryOptions);
     }
 
     private QueryResponse<ObjectMap> groupsDelete() throws CatalogException,IOException {
-
         logger.debug("Deleting groups");
+
+        studiesCommandOptions.groupsDeleteCommandOptions.study = getSingleValidStudy(studiesCommandOptions.groupsDeleteCommandOptions.study);
+
         QueryOptions queryOptions = new QueryOptions();
-        return openCGAClient.getStudyClient().deleteGroup(studiesCommandOptions.groupsDeleteCommandOptions.id,
+        return openCGAClient.getStudyClient().deleteGroup(studiesCommandOptions.groupsDeleteCommandOptions.study,
                 studiesCommandOptions.groupsDeleteCommandOptions.groupId, queryOptions);
     }
 
     private QueryResponse<ObjectMap> groupsInfo() throws CatalogException,IOException {
-
         logger.debug("Info groups");
+
+        studiesCommandOptions.groupsInfoCommandOptions.study = getSingleValidStudy(studiesCommandOptions.groupsInfoCommandOptions.study);
+
         QueryOptions queryOptions = new QueryOptions();
-        return openCGAClient.getStudyClient().infoGroup(studiesCommandOptions.groupsInfoCommandOptions.id,
+        return openCGAClient.getStudyClient().infoGroup(studiesCommandOptions.groupsInfoCommandOptions.study,
                 studiesCommandOptions.groupsInfoCommandOptions.groupId, queryOptions);
     }
     private QueryResponse<ObjectMap> groupsUpdate() throws CatalogException,IOException {
-
         logger.debug("Updating groups");
 
-        QueryOptions queryOptions = new QueryOptions();
+        studiesCommandOptions.groupsUpdateCommandOptions.study = getSingleValidStudy(studiesCommandOptions.groupsUpdateCommandOptions.study);
 
+        QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(StudyClient.GroupUpdateParams.ADD_USERS.key(),
                 studiesCommandOptions.groupsUpdateCommandOptions.addUsers);
         queryOptions.putIfNotEmpty(StudyClient.GroupUpdateParams.SET_USERS.key(),
                 studiesCommandOptions.groupsUpdateCommandOptions.setUsers);
         queryOptions.putIfNotEmpty(StudyClient.GroupUpdateParams.REMOVE_USERS.key(),
-                    studiesCommandOptions.groupsUpdateCommandOptions.removeUsers);
+                studiesCommandOptions.groupsUpdateCommandOptions.removeUsers);
 
-        return openCGAClient.getStudyClient().updateGroup(studiesCommandOptions.groupsUpdateCommandOptions.id,
+        return openCGAClient.getStudyClient().updateGroup(studiesCommandOptions.groupsUpdateCommandOptions.study,
                 studiesCommandOptions.groupsUpdateCommandOptions.groupId, queryOptions);
     }
 

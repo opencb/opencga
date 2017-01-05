@@ -25,10 +25,11 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -48,9 +49,9 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -66,15 +67,15 @@ public class JobManager extends AbstractManager implements IJobManager {
     public static final String DELETE_FILES = "deleteFiles";
 
     public JobManager(AuthorizationManager authorizationManager, AuditManager auditManager, DBAdaptorFactory catalogDBAdaptorFactory,
-                      CatalogIOManagerFactory ioManagerFactory, CatalogConfiguration catalogConfiguration) {
-        super(authorizationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogConfiguration);
+                      CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
+        super(authorizationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
     }
 
     public JobManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                       DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                      CatalogConfiguration catalogConfiguration) {
+                      Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
-                catalogConfiguration);
+                configuration);
         this.userManager = catalogManager.getUserManager();
     }
 
@@ -216,37 +217,6 @@ public class JobManager extends AbstractManager implements IJobManager {
         String userId = userManager.getId(sessionId);
         authorizationManager.checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.VIEW);
         return jobDBAdaptor.incJobVisits(jobId);
-    }
-
-    @Deprecated
-    @Override
-    public QueryResult<Job> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(objectMap, "objectMap");
-        try {
-
-            return create(
-                    objectMap.getLong("studyId"),
-                    objectMap.getString("name"),
-                    objectMap.getString("toolName"),
-                    objectMap.getString("description"),
-                    objectMap.getString("execution"),
-                    Collections.emptyMap(),
-                    objectMap.getString("commandLine"),
-                    objectMap.containsKey("tmpOutDirUri") ? new URI(null, objectMap.getString("tmpOutDirUri"), null) : null,
-                    objectMap.getLong("outDirId"),
-                    objectMap.getAsLongList("inputFiles"),
-                    objectMap.getAsLongList("outputFiles"),
-                    objectMap.getMap("attributes"),
-                    objectMap.getMap("resourceManagerAttributes"),
-                    new Job.JobStatus(options.getString("status")),
-                    objectMap.getLong("startTime"),
-                    objectMap.getLong("endTime"),
-                    options,
-                    sessionId
-            );
-        } catch (URISyntaxException e) {
-            throw new CatalogException(e);
-        }
     }
 
     @Override
@@ -472,39 +442,21 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public QueryResult groupBy(long studyId, Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-        ParamUtils.checkObj(field, "field");
-        ParamUtils.checkObj(studyId, "studyId");
-        ParamUtils.checkObj(sessionId, "sessionId");
-
-        String userId = userManager.getId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_JOBS);
-
-        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
-        boolean count = true;
-//        query.append(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-        QueryResult queryResult = null;
-        if (count) {
-            // We do not need to check for permissions when we show the count of files
-            queryResult = jobDBAdaptor.groupBy(query, field, options);
-        }
-
-        return ParamUtils.defaultObject(queryResult, QueryResult::new);
-    }
-
-    @Override
-    public QueryResult groupBy(long studyId, Query query, List<String> fields, QueryOptions options, String sessionId)
+    public QueryResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         ParamUtils.checkObj(fields, "fields");
-        ParamUtils.checkObj(studyId, "studyId");
-        ParamUtils.checkObj(sessionId, "sessionId");
+        if (fields == null || fields.size() == 0) {
+            throw new CatalogException("Empty fields parameter.");
+        }
 
         String userId = userManager.getId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_JOBS);
+
+        // Add study id to the query
+        query.put(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;

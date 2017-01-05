@@ -55,7 +55,7 @@ import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
@@ -63,16 +63,17 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
-import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager;
+import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
-import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageLoader;
+import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -83,8 +84,8 @@ import java.util.stream.Collectors;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.MULTI;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.UPSERT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
-import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager.MongoDBVariantOptions.COLLECTION_STAGE;
-import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager.MongoDBVariantOptions.DEFAULT_GENOTYPE;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_STAGE;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -118,6 +119,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     protected static Logger logger = LoggerFactory.getLogger(VariantMongoDBAdaptor.class);
 
+    // Number of opened dbAdaptors
+    public static final AtomicInteger NUMBER_INSTANCES = new AtomicInteger(0);
+
     public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName,
                                  StudyConfigurationManager studyConfigurationManager, StorageConfiguration storageConfiguration)
             throws UnknownHostException {
@@ -140,13 +144,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         variantsCollection = db.getCollection(collectionName);
         this.studyConfigurationManager = studyConfigurationManager;
         cellbaseConfiguration = storageConfiguration.getCellbase();
-        this.storageEngineConfiguration = storageConfiguration.getStorageEngine(MongoDBVariantStorageManager.STORAGE_ENGINE_ID);
+        this.storageEngineConfiguration = storageConfiguration.getStorageEngine(MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
         this.configuration = storageEngineConfiguration == null || this.storageEngineConfiguration.getVariant().getOptions() == null
                 ? new ObjectMap()
                 : this.storageEngineConfiguration.getVariant().getOptions();
         this.utils = new VariantDBAdaptorUtils(this);
         cellBaseClient = new CellBaseClient(cellbaseConfiguration.toClientConfiguration());
         this.cacheManager = new CacheManager(storageConfiguration);
+        NUMBER_INSTANCES.incrementAndGet();
     }
 
     public MongoDBCollection getVariantsCollection() {
@@ -176,16 +181,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public QueryResult insert(List<Variant> variants, String studyName, QueryOptions options) {
         StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyName, options).first();
         // TODO FILE_ID must be in QueryOptions?
-        int fileId = options.getInt(VariantStorageManager.Options.FILE_ID.key());
-        boolean includeStats = options.getBoolean(VariantStorageManager.Options.INCLUDE_STATS.key(), VariantStorageManager.Options
+        int fileId = options.getInt(VariantStorageEngine.Options.FILE_ID.key());
+        boolean includeStats = options.getBoolean(VariantStorageEngine.Options.INCLUDE_STATS.key(), VariantStorageEngine.Options
                 .INCLUDE_STATS.defaultValue());
-//        boolean includeSrc = options.getBoolean(VariantStorageManager.Options.INCLUDE_SRC.key(), VariantStorageManager.Options
+//        boolean includeSrc = options.getBoolean(VariantStorageEngine.Options.INCLUDE_SRC.key(), VariantStorageEngine.Options
 //                .INCLUDE_SRC.defaultValue());
-//        boolean includeGenotypes = options.getBoolean(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), VariantStorageManager
+//        boolean includeGenotypes = options.getBoolean(VariantStorageEngine.Options.INCLUDE_GENOTYPES.key(), VariantStorageEngine
 //                .Options.INCLUDE_GENOTYPES.defaultValue());
-//        boolean compressGenotypes = options.getBoolean(VariantStorageManager.Options.COMPRESS_GENOTYPES.key(), VariantStorageManager
+//        boolean compressGenotypes = options.getBoolean(VariantStorageEngine.Options.COMPRESS_GENOTYPES.key(), VariantStorageEngine
 // .Options.COMPRESS_GENOTYPES.defaultValue());
-//        String defaultGenotype = options.getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "0|0");
+//        String defaultGenotype = options.getString(MongoDBVariantStorageEngine.DEFAULT_GENOTYPE, "0|0");
 
         DocumentToVariantConverter variantConverter = new DocumentToVariantConverter(null, includeStats ? new
                 DocumentToVariantStatsConverter(studyConfigurationManager) : null);
@@ -682,11 +687,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
-        return updateStats(variantStatsWrappers, studyName, queryOptions);
-    }
-
-    @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions options) {
         return updateStats(variantStatsWrappers, studyConfigurationManager.getStudyConfiguration(studyName, options).first(), options);
     }
@@ -706,9 +706,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         long start = System.nanoTime();
         DocumentToVariantStatsConverter statsConverter = new DocumentToVariantStatsConverter(studyConfigurationManager);
-//        VariantSource variantSource = queryOptions.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
+//        VariantSource variantSource = queryOptions.get(VariantStorageEngine.VARIANT_SOURCE, VariantSource.class);
         DocumentToVariantConverter variantConverter = getDocumentToVariantConverter(new Query(), options);
-        boolean overwrite = options.getBoolean(VariantStorageManager.Options.OVERWRITE_STATS.key(), false);
+        boolean overwrite = options.getBoolean(VariantStorageEngine.Options.OVERWRITE_STATS.key(), false);
         //TODO: Use the StudyConfiguration to change names to ids
 
         // TODO make unset of 'st' if already present?
@@ -853,6 +853,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             mongoManager.close();
         }
         studyConfigurationManager.close();
+        cacheManager.close();
+        NUMBER_INSTANCES.decrementAndGet();
     }
 
     private Document parseQuery(Query query) {
@@ -863,14 +865,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         QueryBuilder builder = new QueryBuilder();
         if (query != null) {
             /** VARIANT PARAMS **/
-            if (query.get(VariantQueryParams.CHROMOSOME.key()) != null && !query.getString(VariantQueryParams.CHROMOSOME.key()).isEmpty()) {
+            if (isValidParam(query, VariantQueryParams.CHROMOSOME)) {
                 List<String> chromosomes = query.getAsStringList(VariantQueryParams.CHROMOSOME.key());
                 LinkedList<String> regions = new LinkedList<>(query.getAsStringList(VariantQueryParams.REGION.key()));
                 regions.addAll(chromosomes);
                 query.put(VariantQueryParams.REGION.key(), regions);
             }
 
-            if (query.get(VariantQueryParams.REGION.key()) != null && !query.getString(VariantQueryParams.REGION.key()).isEmpty()) {
+            if (isValidParam(query, VariantQueryParams.REGION)) {
                 List<String> stringList = query.getAsStringList(VariantQueryParams.REGION.key());
                 List<Region> regions = new ArrayList<>(stringList.size());
                 for (String reg : stringList) {
@@ -880,7 +882,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 getRegionFilter(regions, builder);
             }
 
-            if (query.get(VariantQueryParams.ID.key()) != null && !query.getString(VariantQueryParams.ID.key()).isEmpty()) {
+            if (isValidParam(query, VariantQueryParams.ID)) {
                 List<String> idsList = query.getAsStringList(VariantQueryParams.ID.key());
                 List<String> otherIds = new ArrayList<>(idsList.size());
                 List<String> mongoIds = new ArrayList<>(idsList.size());
@@ -912,24 +914,24 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 }
             }
 
-            if (query.containsKey(VariantQueryParams.GENE.key())) {
+            if (isValidParam(query, VariantQueryParams.GENE)) {
                 String xrefs = query.getString(VariantQueryParams.GENE.key());
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.XREFS_FIELD
                         + "." + DocumentToVariantAnnotationConverter.XREF_ID_FIELD, xrefs, builder, QueryOperation.OR);
             }
 
-            if (query.containsKey(VariantQueryParams.REFERENCE.key()) && query.getString(VariantQueryParams.REFERENCE.key()) != null) {
+            if (isValidParam(query, VariantQueryParams.REFERENCE)) {
                 addQueryStringFilter(DocumentToVariantConverter.REFERENCE_FIELD, query.getString(VariantQueryParams.REFERENCE.key()),
                         builder, QueryOperation.AND);
             }
 
-            if (query.containsKey(VariantQueryParams.ALTERNATE.key()) && query.getString(VariantQueryParams.ALTERNATE.key()) != null) {
+            if (isValidParam(query, VariantQueryParams.ALTERNATE)) {
                 addQueryStringFilter(DocumentToVariantConverter.ALTERNATE_FIELD, query.getString(VariantQueryParams.ALTERNATE.key()),
                         builder, QueryOperation.AND);
             }
 
-            if (query.containsKey(VariantQueryParams.TYPE.key()) && !query.getString(VariantQueryParams.TYPE.key()).isEmpty()) {
+            if (isValidParam(query, VariantQueryParams.TYPE)) {
                 addQueryFilter(DocumentToVariantConverter.TYPE_FIELD, query.getString(VariantQueryParams.TYPE.key()), builder,
                         QueryOperation.AND, s -> {
                             Set<VariantType> subTypes = Variant.subTypes(VariantType.valueOf(s));
@@ -957,34 +959,34 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     private void parseAnnotationQueryParams(Query query, QueryBuilder builder) {
         if (query != null) {
-            if (query.containsKey(VariantQueryParams.ANNOTATION_EXISTS.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOTATION_EXISTS)) {
                 builder.and(DocumentToVariantConverter.ANNOTATION_FIELD + "." + DocumentToVariantAnnotationConverter.ANNOT_ID_FIELD);
                 builder.exists(query.getBoolean(VariantQueryParams.ANNOTATION_EXISTS.key()));
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_XREF.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_XREF)) {
                 String xrefs = query.getString(VariantQueryParams.ANNOT_XREF.key());
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.XREFS_FIELD
                         + "." + DocumentToVariantAnnotationConverter.XREF_ID_FIELD, xrefs, builder, QueryOperation.AND);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_CONSEQUENCE_TYPE)) {
                 String value = query.getString(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key());
-                value = value.replace("SO:", "");
-                addQueryIntegerFilter(DocumentToVariantConverter.ANNOTATION_FIELD
+                addQueryFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD, value, builder, QueryOperation.AND);
+                        + "." + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD, value, builder, QueryOperation.AND,
+                        VariantDBAdaptorUtils::parseConsequenceType);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_BIOTYPE.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_BIOTYPE)) {
                 String biotypes = query.getString(VariantQueryParams.ANNOT_BIOTYPE.key());
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CT_BIOTYPE_FIELD, biotypes, builder, QueryOperation.AND);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_POLYPHEN.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_POLYPHEN)) {
                 String value = query.getString(VariantQueryParams.ANNOT_POLYPHEN.key());
 //                addCompListQueryFilter(DocumentToVariantConverter.ANNOTATION_FIELD
 //                                + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
@@ -994,7 +996,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 addScoreFilter(value, builder, VariantQueryParams.ANNOT_POLYPHEN, DocumentToVariantAnnotationConverter.POLYPHEN);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_SIFT.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_SIFT)) {
                 String value = query.getString(VariantQueryParams.ANNOT_SIFT.key());
 //                addCompListQueryFilter(DocumentToVariantConverter.ANNOTATION_FIELD
 //                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
@@ -1003,17 +1005,17 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 addScoreFilter(value, builder, VariantQueryParams.ANNOT_SIFT, DocumentToVariantAnnotationConverter.SIFT);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION)) {
                 String value = query.getString(VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key());
                 addScoreFilter(value, builder, VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_CONSERVATION.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_CONSERVATION)) {
                 String value = query.getString(VariantQueryParams.ANNOT_CONSERVATION.key());
                 addScoreFilter(value, builder, VariantQueryParams.ANNOT_CONSERVATION);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_TRANSCRIPTION_FLAGS.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_TRANSCRIPTION_FLAGS)) {
                 String value = query.getString(VariantQueryParams.ANNOT_TRANSCRIPTION_FLAGS.key());
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
@@ -1021,23 +1023,23 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
 
             QueryBuilder geneTraitBuilder = QueryBuilder.start();
-            if (query.containsKey(VariantQueryParams.ANNOT_GENE_TRAITS_ID.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_GENE_TRAITS_ID)) {
                 String value = query.getString(VariantQueryParams.ANNOT_GENE_TRAITS_ID.key());
                 addQueryStringFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_ID_FIELD, value, geneTraitBuilder, QueryOperation.AND);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_GENE_TRAITS_NAME.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_GENE_TRAITS_NAME)) {
                 String value = query.getString(VariantQueryParams.ANNOT_GENE_TRAITS_NAME.key());
                 addCompQueryFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_NAME_FIELD, value, geneTraitBuilder, false);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_HPO.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_HPO)) {
                 String value = query.getString(VariantQueryParams.ANNOT_HPO.key());
                 addQueryStringFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_HPO_FIELD, value, geneTraitBuilder,
                         QueryOperation.AND);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_GO.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_GO)) {
                 String value = query.getString(VariantQueryParams.ANNOT_GO.key());
 
                 // Check if comma separated of semi colon separated (AND or OR)
@@ -1057,7 +1059,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_EXPRESSION.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_EXPRESSION)) {
                 String value = query.getString(VariantQueryParams.ANNOT_EXPRESSION.key());
 
                 // Check if comma separated of semi colon separated (AND or OR)
@@ -1083,31 +1085,31 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         + "." + DocumentToVariantAnnotationConverter.GENE_TRAIT_FIELD).elemMatch(geneTraitQuery);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_PROTEIN_KEYWORDS.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_PROTEIN_KEYWORDS)) {
                 String value = query.getString(VariantQueryParams.ANNOT_PROTEIN_KEYWORDS.key());
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_KEYWORDS, value, builder, QueryOperation.AND);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_DRUG.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_DRUG)) {
                 String value = query.getString(VariantQueryParams.ANNOT_DRUG.key());
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.DRUG_FIELD
                         + "." + DocumentToVariantAnnotationConverter.DRUG_NAME_FIELD, value, builder, QueryOperation.AND);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_FUNCTIONAL_SCORE)) {
                 String value = query.getString(VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key());
                 addScoreFilter(value, builder, VariantQueryParams.ANNOT_FUNCTIONAL_SCORE);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_CUSTOM.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_CUSTOM)) {
                 String value = query.getString(VariantQueryParams.ANNOT_CUSTOM.key());
                 addCompListQueryFilter(DocumentToVariantConverter.CUSTOM_ANNOTATION_FIELD, value, builder, true);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY)) {
                 String value = query.getString(VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key());
                 addFrequencyFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
@@ -1117,7 +1119,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 // (reference/alternate) where to check the frequency
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_POPULATION_REFERENCE_FREQUENCY.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_POPULATION_REFERENCE_FREQUENCY)) {
                 String value = query.getString(VariantQueryParams.ANNOT_POPULATION_REFERENCE_FREQUENCY.key());
                 addFrequencyFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
@@ -1127,7 +1129,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 // (reference/alternate) where to check the frequency
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key())) {
+            if (isValidParam(query, VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY)) {
                 String value = query.getString(VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key());
                 addFrequencyFilter(DocumentToVariantConverter.ANNOTATION_FIELD + "."
                                 + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
@@ -1183,7 +1185,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             QueryBuilder studyBuilder = QueryBuilder.start();
             final StudyConfiguration defaultStudyConfiguration;
 
-            if (query.containsKey(VariantQueryParams.STUDIES.key())) { // && !options.getList("studies").isEmpty() && !options.getListAs
+            if (isValidParam(query, VariantQueryParams.STUDIES)) { // && !options.getList("studies").isEmpty() && !options.getListAs
                 String sidKey = STUDIES_FIELD + "." + DocumentToStudyVariantEntryConverter.STUDYID_FIELD;
                 // ("studies", String.class).get(0).isEmpty()) {
                 String value = objectToString(query.get(VariantQueryParams.STUDIES.key()));
@@ -1231,7 +1233,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 }
             }
 
-            if (query.containsKey(VariantQueryParams.FILES.key())) { // && !options.getList("files").isEmpty() && !options.getListAs
+            if (isValidParam(query, VariantQueryParams.FILES)) { // && !options.getList("files").isEmpty() && !options.getListAs
                 // ("files", String.class).get(0).isEmpty()) {
                 String fid = studyQueryPrefix
                         + DocumentToStudyVariantEntryConverter.FILES_FIELD + "."
@@ -1263,7 +1265,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         });
             }
 
-            if (query.containsKey(VariantQueryParams.GENOTYPE.key())) {
+            if (isValidParam(query, VariantQueryParams.GENOTYPE)) {
                 String sampleGenotypesCSV = query.getString(VariantQueryParams.GENOTYPE.key());
                 // we may need to know the study type
 //                studyConfigurationManager.getStudyConfiguration(1, null).getResult().get(0).
@@ -1433,31 +1435,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 options.remove(QueryOptions.SORT);
             }
         }
-        Set<String> returnedFields = utils.getReturnedFields(options);
-        List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
-        if (!includeList.isEmpty()) { //Include some
-            for (String s : includeList) {
+        Set<String> returnedFields = getReturnedFields(options);
+        if (!returnedFields.isEmpty()) { //Include some
+            for (String s : returnedFields) {
                 String key = DocumentToVariantConverter.toShortFieldName(s);
                 if (key != null) {
                     projection.put(key, 1);
                 } else {
-                    logger.warn("Unknown include field: {}", s);
-                }
-            }
-        } else { //Include all
-            for (String field : DocumentToVariantConverter.FIELDS_MAP.values()) {
-                if (field != null) {
-                    projection.put(field, 1);
-                }
-            }
-            if (options.containsKey(QueryOptions.EXCLUDE)) { // Exclude some
-                List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
-                for (String s : excludeList) {
-                    String key = DocumentToVariantConverter.toShortFieldName(s);
-                    if (key != null) {
-                        projection.remove(key);
-                    } else {
-                        logger.warn("Unknown exclude field: {}", s);
+                    if (!s.equals(VariantFields.FILES.toString()) && !s.equals(VariantFields.SAMPLES.toString())) {
+                        logger.warn("Unknown include field: {}", s);
                     }
                 }
             }
@@ -1544,10 +1530,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         Multiset<String> nonInsertedVariants = HashMultiset.create();
         String fileIdStr = Integer.toString(fileId);
 
-//        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS
+//        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS
 //                .key());
-        boolean excludeGenotypes = studyConfiguration.getAttributes().getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(),
-                VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue());
+        boolean excludeGenotypes = studyConfiguration.getAttributes().getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(),
+                VariantStorageEngine.Options.EXCLUDE_GENOTYPES.defaultValue());
 
         long nanoTime = System.nanoTime();
         Map missingSamples = Collections.emptyMap();
@@ -1740,14 +1726,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // } }
         if (studyConfiguration.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key(), "")
                 .equals(Collections.singletonList(DocumentToSamplesConverter.UNKNOWN_GENOTYPE))
-//                && studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key()).isEmpty()
+//                && studyConfiguration.getAttributes().getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key()).isEmpty()
                 ) {
             // Check if the default genotype is the unknown genotype. In that case, is not required to fill missing genotypes.
             // Previously, also checks if there where EXTRA_GENOTYPE_FIELDS like DP:AD,... . In that case, those arrays had to be filled.
             logger.debug("Do not need fill gaps. DefaultGenotype is UNKNOWN_GENOTYPE({}).", DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
             return new QueryResult<>();
-        } else if (studyConfiguration.getAttributes().getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(),
-                VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue())) {
+        } else if (studyConfiguration.getAttributes().getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(),
+                VariantStorageEngine.Options.EXCLUDE_GENOTYPES.defaultValue())) {
             // Check if the genotypes are not required. In that case, no fillGaps is needed
             logger.debug("Do not need fill gaps. Exclude genotypes.");
             return new QueryResult<>();
@@ -1788,7 +1774,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //            missingOtherValues.add(DBObjectToSamplesConverter.UNKNOWN_FIELD);
 //        }
 //        List<String> extraFields = studyConfiguration.getAttributes()
-//                .getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key());
+//                .getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key());
 //        for (String extraField : extraFields) {
 //            push.put(DBObjectToVariantConverter.STUDIES_FIELD + ".$." + extraField.toLowerCase(),
 //                    new Document("$each", missingOtherValues).append("$position", loadedSamples.size())
@@ -1826,7 +1812,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             samplesConverter.setReturnedUnknownGenotype(query.getString(VariantQueryParams.UNKNOWN_GENOTYPE.key()));
         }
 
-        samplesConverter.setReturnedSamples(utils.getReturnedSamples(query, options));
+        samplesConverter.setReturnedSamples(getReturnedSamplesList(query, options));
 
         DocumentToStudyVariantEntryConverter studyEntryConverter;
         Collection<Integer> returnedFiles;
@@ -2317,28 +2303,25 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             DBObject[] objects = new DBObject[regions.size()];
             int i = 0;
             for (Region region : regions) {
-                if (region.getEnd() - region.getStart() < 1000000) {
-                    List<String> chunkIds = getChunkIds(region);
-                    DBObject regionObject = new BasicDBObject(DocumentToVariantConverter.AT_FIELD + '.' + DocumentToVariantConverter
-                            .CHUNK_IDS_FIELD,
-                            new Document("$in", chunkIds));
-                    if (region.getEnd() != Integer.MAX_VALUE) {
-                        regionObject.put(DocumentToVariantConverter.START_FIELD, new Document("$lte", region.getEnd()));
-                    }
-                    if (region.getStart() != 0) {
-                        regionObject.put(DocumentToVariantConverter.END_FIELD, new Document("$gte", region.getStart()));
-                    }
-                    objects[i] = regionObject;
-                } else {
-                    DBObject regionObject = new BasicDBObject(DocumentToVariantConverter.CHROMOSOME_FIELD, region.getChromosome());
-                    if (region.getEnd() != Integer.MAX_VALUE) {
-                        regionObject.put(DocumentToVariantConverter.START_FIELD, new Document("$lte", region.getEnd()));
-                    }
-                    if (region.getStart() != 0) {
-                        regionObject.put(DocumentToVariantConverter.END_FIELD, new Document("$gte", region.getStart()));
-                    }
-                    objects[i] = regionObject;
+                DBObject regionObject = new BasicDBObject();
+//                if (region.getEnd() - region.getStart() < 1000000) {
+//                    List<String> chunkIds = getChunkIds(region);
+//                    regionObject.put(DocumentToVariantConverter.AT_FIELD + '.' + DocumentToVariantConverter
+//                            .CHUNK_IDS_FIELD,
+//                            new Document("$in", chunkIds));
+//                } else {
+//                    regionObject.put(DocumentToVariantConverter.CHROMOSOME_FIELD, region.getChromosome());
+//                }
+
+                int end = region.getEnd();
+                if (end < Integer.MAX_VALUE) { // Avoid overflow
+                    end++;
                 }
+                regionObject.put("_id", new Document()
+                        .append("$gte", VariantStringIdConverter.buildId(region.getChromosome(), region.getStart()))
+                        .append("$lt", VariantStringIdConverter.buildId(region.getChromosome(), end)));
+
+                objects[i] = regionObject;
                 i++;
             }
             builder.or(objects);

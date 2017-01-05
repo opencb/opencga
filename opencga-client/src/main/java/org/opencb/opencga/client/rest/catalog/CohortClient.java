@@ -44,7 +44,7 @@ public class CohortClient extends AnnotationClient<Cohort, CohortAclEntry> {
     }
 
     public QueryResponse<Cohort> create(String studyId, String cohortName, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "studyId", studyId, "name", cohortName);
+        params = addParamsToObjectMap(params, "study", studyId, "name", cohortName);
         return execute(COHORT_URL, "create", params, GET, Cohort.class);
     }
 
@@ -64,7 +64,7 @@ public class CohortClient extends AnnotationClient<Cohort, CohortAclEntry> {
     }
 
     public QueryResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "studyId", studyId, "fields", fields);
+        params = addParamsToObjectMap(params, "study", studyId, "fields", fields);
         return execute(COHORT_URL, "groupBy", params, GET, ObjectMap.class);
     }
 

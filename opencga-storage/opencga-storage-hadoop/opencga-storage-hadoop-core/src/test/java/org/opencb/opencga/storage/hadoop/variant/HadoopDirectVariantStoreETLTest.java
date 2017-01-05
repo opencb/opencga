@@ -19,7 +19,7 @@
  */
 package org.opencb.opencga.storage.hadoop.variant;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE;
 
 import java.net.URI;
 import java.util.Arrays;
@@ -29,11 +29,11 @@ import org.apache.hadoop.conf.Configuration;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
@@ -53,17 +53,17 @@ public class HadoopDirectVariantStoreETLTest implements HadoopVariantStorageTest
     
     
     @Test
-    public void runTest() throws StorageManagerException, Exception{
+    public void runTest() throws StorageEngineException, Exception{
         String f1 = "/Users/mh719/Projects/git-checkouts/opencb/opencga/opencga-storage/opencga-storage-hadoop/./src/test/resources/s1.genome.vcf";
         String f2 = "";
         URI uri = URI.create(f1);
         List<URI> inputFiles = Arrays.asList(uri);
 //        URI outdirUri = null;
-//        HadoopVariantStorageManager manager = this.getVariantStorageManager();
+//        HadoopVariantStorageEngine manager = this.getVariantStorageManager();
 //        String storageEngineId = "hadoop";
 //        StorageConfiguration config = new StorageConfiguration();
 //        ObjectMap options = new ObjectMap(0);
-//        options.append(VariantStorageManager.Options.DB_NAME.key(), "x");
+//        options.append(VariantStorageEngine.Options.DB_NAME.key(), "x");
 //        StorageEtlConfiguration variant = new StorageEtlConfiguration();
 //        DatabaseCredentials db = new DatabaseCredentials();
 //        db.setPassword("");
@@ -73,7 +73,7 @@ public class HadoopDirectVariantStoreETLTest implements HadoopVariantStorageTest
 //        variant.setOptions(options);
 //        List<StorageEngineConfiguration> asList = Arrays.asList(new StorageEngineConfiguration("hadoop", null, variant, options));
 //        config.setStorageEngines(asList);
-//        manager.setConfiguration(config, storageEngineId);
+//        manager.init(config, storageEngineId);
 //        manager.index(inputFiles, outdirUri, false, false, true);
 
         Configuration conf = new Configuration();
@@ -88,7 +88,7 @@ public class HadoopDirectVariantStoreETLTest implements HadoopVariantStorageTest
         HBaseCredentials credentials = new HBaseCredentials("who1", "test-table", "user", "pass");
         VariantHadoopDBAdaptor dbAdaptor = null; // new VariantHadoopDBAdaptor(credentials, config, conf);
         VariantReaderUtils variantReaderUtils = new VariantReaderUtils();
-        HadoopDirectVariantStorageETL etl = new HadoopDirectVariantStorageETL(sconfig, "hadoop", dbAdaptor , mrexec, conf, credentials, variantReaderUtils, options);
+        HadoopDirectVariantStoragePipeline etl = new HadoopDirectVariantStoragePipeline(sconfig, "hadoop", dbAdaptor , mrexec, conf, credentials, variantReaderUtils, options);
         URI load = etl.load(uri);
         System.out.println(load);
 
@@ -105,8 +105,8 @@ public class HadoopDirectVariantStoreETLTest implements HadoopVariantStorageTest
      * @see org.opencb.opencga.storage.core.variant.VariantStorageTest#getVariantStorageManager()
      */
     @Override
-    public HadoopVariantStorageManager getVariantStorageManager() throws Exception {
-        HadoopVariantStorageManager manager = new HadoopVariantStorageManager();
+    public HadoopVariantStorageEngine getVariantStorageManager() throws Exception {
+        HadoopVariantStorageEngine manager = new HadoopVariantStorageEngine();
         return manager;
     }
 

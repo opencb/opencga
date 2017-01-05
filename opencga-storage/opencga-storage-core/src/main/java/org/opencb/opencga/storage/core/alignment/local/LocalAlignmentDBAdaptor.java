@@ -16,6 +16,7 @@ import org.opencb.biodata.tools.alignment.BamUtils;
 import org.opencb.biodata.tools.alignment.filters.AlignmentFilters;
 import org.opencb.biodata.tools.alignment.filters.SamRecordFilters;
 import org.opencb.biodata.tools.alignment.stats.AlignmentGlobalStats;
+import org.opencb.biodata.tools.commons.ChunkFrequencyManager;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -25,9 +26,9 @@ import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.iterators.ProtoAlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.iterators.SamRecordAlignmentIterator;
 
-import java.nio.ByteBuffer;
+import java.io.IOException;
 import java.nio.file.Path;
-import java.sql.*;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -36,11 +37,15 @@ import java.util.List;
  */
 public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
+    private int chunkSize;
+
     private static final int MINOR_CHUNK_SIZE = 1000;
     private static final int DEFAULT_CHUNK_SIZE = 1000;
     private static final int DEFAULT_WINDOW_SIZE = 1000000;
 
-    private int chunkSize = DEFAULT_CHUNK_SIZE;
+    private static final String COVERAGE_SUFFIX = ".coverage";
+    private static final String COVERAGE_DATABASE_NAME = "coverage.db";
+
 
     public LocalAlignmentDBAdaptor() {
         this(DEFAULT_CHUNK_SIZE);
@@ -96,10 +101,10 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
             String queryResultId;
             List<ReadAlignment> readAlignmentList;
             if (region != null) {
-                readAlignmentList = alignmentManager.query(region, alignmentOptions, alignmentFilters, ReadAlignment.class);
+                readAlignmentList = alignmentManager.query(region, alignmentFilters, alignmentOptions, ReadAlignment.class);
                 queryResultId = region.toString();
             } else {
-                readAlignmentList = alignmentManager.query(alignmentOptions, alignmentFilters, ReadAlignment.class);
+                readAlignmentList = alignmentManager.query(alignmentFilters, alignmentOptions, ReadAlignment.class);
                 queryResultId = "Get alignments";
             }
 //            List<String> stringFormatList = new ArrayList<>(readAlignmentList.size());
@@ -146,19 +151,19 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
             Region region = parseRegion(query);
             if (region != null) {
                 if (Reads.ReadAlignment.class == clazz) {
-                    return (AlignmentIterator<T>) new ProtoAlignmentIterator(alignmentManager.iterator(region, alignmentOptions,
-                            alignmentFilters, Reads.ReadAlignment.class));
+                    return (AlignmentIterator<T>) new ProtoAlignmentIterator(alignmentManager.iterator(region,
+                            alignmentFilters, alignmentOptions, Reads.ReadAlignment.class));
                 } else if (SAMRecord.class == clazz) {
-                    return (AlignmentIterator<T>) new SamRecordAlignmentIterator(alignmentManager.iterator(region, alignmentOptions,
-                            alignmentFilters, SAMRecord.class));
+                    return (AlignmentIterator<T>) new SamRecordAlignmentIterator(alignmentManager.iterator(region,
+                            alignmentFilters, alignmentOptions, SAMRecord.class));
                 }
             } else {
                 if (Reads.ReadAlignment.class == clazz) {
-                    return (AlignmentIterator<T>) new ProtoAlignmentIterator(alignmentManager.iterator(alignmentOptions, alignmentFilters,
-                            Reads.ReadAlignment.class));
+                    return (AlignmentIterator<T>) new ProtoAlignmentIterator(alignmentManager.iterator(alignmentFilters,
+                            alignmentOptions, Reads.ReadAlignment.class));
                 } else if (SAMRecord.class == clazz) {
-                    return (AlignmentIterator<T>) new SamRecordAlignmentIterator(alignmentManager.iterator(alignmentOptions,
-                            alignmentFilters, SAMRecord.class));
+                    return (AlignmentIterator<T>) new SamRecordAlignmentIterator(alignmentManager.iterator(alignmentFilters,
+                            alignmentOptions, SAMRecord.class));
                 }
             }
         } catch (Exception e) {
@@ -233,7 +238,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         Region region = parseRegion(query);
 
         BamManager alignmentManager = new BamManager(path);
-        AlignmentGlobalStats alignmentGlobalStats = alignmentManager.stats(region, alignmentOptions, alignmentFilters);
+        AlignmentGlobalStats alignmentGlobalStats = alignmentManager.stats(region, alignmentFilters, alignmentOptions);
 
         watch.stop();
         return new QueryResult<>("Get stats", (int) watch.getTime(), 1, 1, "", "", Arrays.asList(alignmentGlobalStats));
@@ -268,18 +273,27 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
 
         String queryResultId;
         int windowSize;
-        RegionCoverage coverage;
+        RegionCoverage coverage = null;
+
+        Path coverageDBPath = workspace.toAbsolutePath().resolve(COVERAGE_DATABASE_NAME);
+        if (!coverageDBPath.toFile().exists()
+                && (region == null || (region.getEnd() - region.getStart() > 50 * MINOR_CHUNK_SIZE))) {
+            createDBCoverage(path, workspace);
+        }
+
+        ChunkFrequencyManager chunkFrequencyManager = new ChunkFrequencyManager(coverageDBPath, chunkSize);
+        ChunkFrequencyManager.ChunkFrequency chunkFrequency = null;
         if (region != null) {
             if (region.getEnd() - region.getStart() > 50 * MINOR_CHUNK_SIZE) {
                 // if region is too big then we calculate the mean. We need to protect this code!
                 // and query SQLite database
                 windowSize = options.getInt("windowSize", DEFAULT_WINDOW_SIZE);
-                coverage = meanCoverage(path, workspace, region, windowSize);
+                chunkFrequency = chunkFrequencyManager.query(region, path, windowSize);
             } else {
                 // if region is small enough we calculate all coverage for all positions dynamically
                 // calling the biodata alignment manager
                 BamManager alignmentManager = new BamManager(path);
-                coverage = alignmentManager.coverage(region, alignmentOptions, alignmentFilters);
+                coverage = alignmentManager.coverage(region, alignmentFilters, alignmentOptions);
             }
             queryResultId = region.toString();
         } else {
@@ -290,19 +304,19 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
             SAMFileHeader fileHeader = BamUtils.getFileHeader(path);
             SAMSequenceRecord seq = fileHeader.getSequenceDictionary().getSequences().get(0);
             int arraySize = Math.min(50 * MINOR_CHUNK_SIZE, seq.getSequenceLength());
-//            System.out.println("size = " + size);
-//            System.out.println("seq = " + seq);
-//            System.exit(0);
 
             region = new Region(seq.getSequenceName(), 1, arraySize * MINOR_CHUNK_SIZE);
-            coverage = meanCoverage(path, workspace, region, windowSize);
             queryResultId = "Get coverage";
+            chunkFrequency = chunkFrequencyManager.query(region, path, windowSize);
+        }
+
+        if (coverage == null) {
+            coverage = new RegionCoverage(region, chunkFrequency.getWindowSize(), chunkFrequency.getValues());
         }
 
         watch.stop();
         return new QueryResult(queryResultId, ((int) watch.getTime()), 1, 1, null, null, Arrays.asList(coverage));
     }
-
 
     private Region parseRegion(Query query) {
         Region region = null;
@@ -332,94 +346,27 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
         return alignmentOptions;
     }
 
-    public int getChunkSize() {
-        return chunkSize;
+    private void createDBCoverage(Path filePath, Path workspace) throws IOException {
+        SAMFileHeader fileHeader = BamUtils.getFileHeader(filePath);
+
+        Path coverageDBPath = workspace.toAbsolutePath().resolve(COVERAGE_DATABASE_NAME);
+        ChunkFrequencyManager chunkFrequencyManager = new ChunkFrequencyManager(coverageDBPath);
+        List<String> chromosomeNames = new ArrayList<>();
+        List<Integer> chromosomeLengths = new ArrayList<>();
+        fileHeader.getSequenceDictionary().getSequences().forEach(
+                seq -> {
+                    chromosomeNames.add(seq.getSequenceName());
+                    chromosomeLengths.add(seq.getSequenceLength());
+                });
+        chunkFrequencyManager.init(chromosomeNames, chromosomeLengths);
+
+        Path coveragePath = workspace.toAbsolutePath().resolve(filePath.getFileName() + COVERAGE_SUFFIX);
+
+        AlignmentOptions options = new AlignmentOptions();
+        options.setContained(false);
+
+        BamUtils.createCoverageWigFile(filePath, coveragePath, 200);
+        chunkFrequencyManager.loadWigFile(coveragePath, filePath);
     }
 
-    public LocalAlignmentDBAdaptor setChunkSize(int chunkSize) {
-        this.chunkSize = chunkSize;
-        return this;
-    }
-
-    private RegionCoverage meanCoverage(Path bamPath, Path workspace, Region region, int windowSize) {
-        windowSize = Math.max(windowSize / MINOR_CHUNK_SIZE * MINOR_CHUNK_SIZE, MINOR_CHUNK_SIZE);
-        int size = ((region.getEnd() - region.getStart() + 1) / windowSize) + 1;
-        short[] values = new short[size];
-
-        String absoluteBamPath = bamPath.toFile().getAbsolutePath();
-        Path coverageDBPath = workspace.toAbsolutePath().resolve("coverage.db");
-
-        try {
-            Class.forName("org.sqlite.JDBC");
-            Connection connection = DriverManager.getConnection("jdbc:sqlite:" + coverageDBPath);
-            Statement stmt = connection.createStatement();
-
-            String sql = "SELECT id FROM file where path = '" + absoluteBamPath + "';";
-            ResultSet rs = stmt.executeQuery(sql);
-            int fileId = -1;
-            while (rs.next()) {
-                fileId = rs.getInt("id");
-                break;
-            }
-
-            // sanity check
-            if (fileId == -1) {
-                throw new SQLException("Internal error: file " + absoluteBamPath + " not found in the coverage DB");
-            }
-
-            sql = "SELECT c.start, c.end, mc.v1, mc.v2, mc.v3, mc.v4, mc.v5, mc.v6, mc.v7, mc.v8"
-                    + " FROM chunk c, mean_coverage mc"
-                    + " WHERE c.id = mc.chunk_id AND mc.file_id = " + fileId
-                    + " AND c.chromosome = '" + region.getChromosome() + "' AND c.start <= " + region.getEnd()
-                    + " AND c.end > " + region.getStart() + " ORDER by c.start ASC;";
-            rs = stmt.executeQuery(sql);
-
-            int chunksPerWindow = windowSize / MINOR_CHUNK_SIZE;
-            int chunkCounter = 0;
-            int coverageAccumulator = 0;
-            int arrayPos = 0;
-
-            int start = 0;
-            long packedCoverages;
-            byte[] meanCoverages;
-
-            boolean first = true;
-            while (rs.next()) {
-                if (first) {
-                    start = rs.getInt("start");
-                    first = false;
-                }
-                for (int i = 0; i < 8; i++) {
-                    packedCoverages = rs.getInt("v" + (i + 1));
-                    meanCoverages = longToBytes(packedCoverages);
-                    for (int j = 0; j < 8; j++) {
-                        if (start <= region.getEnd() && (start + MINOR_CHUNK_SIZE) >= region.getStart()) {
-                            // A byte is always signed in Java,
-                            // we can get its unsigned value by binary-anding it with 0xFF
-                            coverageAccumulator += (meanCoverages[j] & 0xFF);
-                            if (++chunkCounter >= chunksPerWindow) {
-                                values[arrayPos++] = (short) Math.round(1.0f * coverageAccumulator / chunkCounter);
-                                coverageAccumulator = 0;
-                                chunkCounter = 0;
-                            }
-                        }
-                        start += MINOR_CHUNK_SIZE;
-                    }
-                }
-            }
-            if (chunkCounter > 0) {
-                values[arrayPos++] = (short) Math.round(1.0f * coverageAccumulator / chunkCounter);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return new RegionCoverage(region, windowSize, values);
-    }
-
-    private byte[] longToBytes(long x) {
-        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
-        buffer.putLong(x);
-        return buffer.array();
-    }
 }

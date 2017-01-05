@@ -27,12 +27,12 @@ import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.slf4j.Logger;
@@ -94,7 +94,7 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
     }
 
     public Iterator<VariantSource> iterator(int studyId, List<Integer> fileIds, QueryOptions options) throws IOException {
-        String tableName = HadoopVariantStorageManager.getArchiveTableName(studyId, genomeHelper.getConf());
+        String tableName = HadoopVariantStorageEngine.getArchiveTableName(studyId, genomeHelper.getConf());
         long start = System.currentTimeMillis();
         Get get = new Get(genomeHelper.getMetaRowKey());
         if (fileIds == null || fileIds.isEmpty()) {
@@ -128,7 +128,7 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
                     .iterator();
         }
 //        } catch (IOException e) {
-//            throw new StorageManagerException("Error fetching VariantSources from study " + studyId
+//            throw new StorageEngineException("Error fetching VariantSources from study " + studyId
 //                    + ", from table \"" + tableName + "\""
 //                    + " for files " + fileIds, e);
 //        }
@@ -137,7 +137,7 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
     @Override
     public QueryResult updateSourceStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration,
                                          QueryOptions queryOptions) {
-//        String tableName = HadoopVariantStorageManager.getTableName(Integer.parseInt(variantSource.getStudyId()));
+//        String tableName = HadoopVariantStorageEngine.getTableName(Integer.parseInt(variantSource.getStudyId()));
         logger.warn("Unimplemented method!");
         return null;
     }
@@ -153,17 +153,17 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
     }
 
     @Override
-    public void updateVariantSource(VariantSource variantSource) throws StorageManagerException {
+    public void updateVariantSource(VariantSource variantSource) throws StorageEngineException {
         try {
             update(variantSource);
         } catch (IOException e) {
-            throw new StorageManagerException("Unable to update VariantSoruce " + variantSource, e);
+            throw new StorageEngineException("Unable to update VariantSoruce " + variantSource, e);
         }
     }
 
     public void update(VariantSource variantSource) throws IOException {
         Objects.requireNonNull(variantSource);
-        String tableName = HadoopVariantStorageManager.getArchiveTableName(Integer.parseInt(variantSource.getStudyId()),
+        String tableName = HadoopVariantStorageEngine.getArchiveTableName(Integer.parseInt(variantSource.getStudyId()),
                 genomeHelper.getConf());
         if (ArchiveDriver.createArchiveTableIfNeeded(genomeHelper, tableName, getHBaseManager().getConnection())) {
             logger.info("Create table '{}' in hbase!", tableName);
@@ -182,7 +182,7 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
     }
 
     public void updateLoadedFilesSummary(int studyId, List<Integer> newLoadedFiles) throws IOException {
-        String tableName = HadoopVariantStorageManager.getArchiveTableName(studyId, genomeHelper.getConf());
+        String tableName = HadoopVariantStorageEngine.getArchiveTableName(studyId, genomeHelper.getConf());
         if (ArchiveDriver.createArchiveTableIfNeeded(genomeHelper, tableName, getHBaseManager().getConnection())) {
             logger.info("Create table '{}' in hbase!", tableName);
         }
@@ -209,7 +209,7 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
     }
 
     public Set<Integer> getLoadedFiles(int studyId) throws IOException {
-        String tableName = HadoopVariantStorageManager.getArchiveTableName(studyId, genomeHelper.getConf());
+        String tableName = HadoopVariantStorageEngine.getArchiveTableName(studyId, genomeHelper.getConf());
         if (!getHBaseManager().tableExists(tableName)) {
             return new HashSet<>();
         } else {

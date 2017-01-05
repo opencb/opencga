@@ -18,7 +18,6 @@ package org.opencb.opencga.storage.mongodb.variant;
 
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
@@ -27,6 +26,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -35,29 +37,43 @@ import java.util.concurrent.atomic.AtomicReference;
 public interface MongoDBVariantStorageTest extends VariantStorageTest {
 
     Logger logger = LoggerFactory.getLogger(MongoDBVariantStorageTest.class);
-    AtomicReference<MongoDBVariantStorageManager> manager = new AtomicReference<>(null);
+    AtomicReference<MongoDBVariantStorageEngine> manager = new AtomicReference<>(null);
+    List<MongoDBVariantStorageEngine> managers = Collections.synchronizedList(new ArrayList<>());
 
-    default MongoDBVariantStorageManager getVariantStorageManager() throws Exception {
+    default MongoDBVariantStorageEngine getVariantStorageManager() throws Exception {
         synchronized (manager) {
-            MongoDBVariantStorageManager storageManager = manager.get();
+            MongoDBVariantStorageEngine storageManager = manager.get();
             if (storageManager == null) {
-                storageManager = new MongoDBVariantStorageManager();
+                storageManager = new MongoDBVariantStorageEngine();
                 manager.set(storageManager);
             }
             InputStream is = MongoDBVariantStorageTest.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
             StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
-            storageManager.setConfiguration(storageConfiguration, MongoDBVariantStorageManager.STORAGE_ENGINE_ID);
+            storageManager.setConfiguration(storageConfiguration, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
             return storageManager;
         }
     }
 
-    default MongoDBVariantStorageManager newVariantStorageManager() throws Exception {
-        synchronized (manager) {
-            MongoDBVariantStorageManager storageManager = new MongoDBVariantStorageManager();
+    default MongoDBVariantStorageEngine newVariantStorageManager() throws Exception {
+        synchronized (managers) {
+            MongoDBVariantStorageEngine storageManager = new MongoDBVariantStorageEngine();
             InputStream is = MongoDBVariantStorageTest.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
             StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
-            storageManager.setConfiguration(storageConfiguration, MongoDBVariantStorageManager.STORAGE_ENGINE_ID);
+            storageManager.setConfiguration(storageConfiguration, MongoDBVariantStorageEngine.STORAGE_ENGINE_ID);
+            managers.add(storageManager);
             return storageManager;
+        }
+    }
+
+    default void closeConnections() {
+        System.out.println("Closing MongoDBVariantStorageEngine");
+        for (MongoDBVariantStorageEngine manager : managers) {
+            System.out.println("closing manager = " + manager);
+            manager.close();
+        }
+        managers.clear();
+        if (manager.get() != null) {
+            manager.get().close();
         }
     }
 
@@ -65,7 +81,7 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
         MongoCredentials credentials = getVariantStorageManager().getMongoCredentials(dbName);
         logger.info("Cleaning MongoDB {}", credentials.getMongoDbName());
         try (MongoDataStoreManager mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses())) {
-            MongoDataStore mongoDataStore = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
+            mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
             mongoManager.drop(credentials.getMongoDbName());
         }
     }

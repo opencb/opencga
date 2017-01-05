@@ -41,7 +41,7 @@ public class VariableSetClient extends CatalogClient<VariableSet, VariableSet> {
 
     public QueryResponse<VariableSet> create(String studyId, String variableSetName, Object variables, ObjectMap params)
             throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "studyId", studyId, "name", variableSetName, "body", variables);
+        params = addParamsToObjectMap(params, "study", studyId, "name", variableSetName, "body", variables);
         return execute(VARIABLES_URL, "create", params, POST, VariableSet.class);
     }
 

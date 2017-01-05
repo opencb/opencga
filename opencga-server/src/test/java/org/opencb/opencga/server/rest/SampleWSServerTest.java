@@ -65,7 +65,7 @@ public class SampleWSServerTest {
     public void init() throws Exception {
 //        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
-        sessionId = OpenCGAWSServer.catalogManager.login("user", CatalogManagerTest.PASSWORD, "localhost").first().getString("sessionId");
+        sessionId = OpenCGAWSServer.catalogManager.login("user", CatalogManagerTest.PASSWORD, "localhost").first().getId();
         studyId = OpenCGAWSServer.catalogManager.getStudyId("user@1000G:phase1");
         in1 = OpenCGAWSServer.catalogManager.createIndividual(studyId, "in1", "f1", -1, -1, null, null, sessionId).first().getId();
         s1 = OpenCGAWSServer.catalogManager.createSample(studyId, "s1", "f1", "", null, null, sessionId).first().getId();

@@ -17,6 +17,7 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.models.Variable;
@@ -43,7 +44,8 @@ import java.util.Map;
 public class VariableSetWSServer extends OpenCGAWSServer {
 
 
-    public VariableSetWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+    public VariableSetWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+            throws IOException, VersionException {
         super(uriInfo, httpServletRequest);
     }
 
@@ -51,14 +53,20 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create variable set", position = 1, response = VariableSet.class)
-    public Response createSet(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
+    public Response createSet(@ApiParam(value = "DEPRECATED: studyId", required = true) @QueryParam("studyId") String studyIdStr,
+                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                    @QueryParam("study") String studyStr,
                               @ApiParam(value = "name", required = true) @QueryParam("name") String name,
                               @ApiParam(value = "unique", required = false) @QueryParam("unique") Boolean unique,
                               @ApiParam(value = "description", required = false) @QueryParam("description") String description,
-                              @ApiParam(name = "variables", value = "Variables of the variable set", required = true) List<Variable> variables) {
+                              @ApiParam(name = "variables", value = "Variables of the variable set", required = true)
+                                          List<Variable> variables) {
         try {
+            if (StringUtils.isNotEmpty(studyIdStr)) {
+                studyStr = studyIdStr;
+            }
             logger.info("variables: {}", variables);
-            long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
+            long studyId = catalogManager.getStudyId(studyStr, sessionId);
             QueryResult<VariableSet> queryResult = catalogManager.createVariableSet(studyId, name, unique, description, null, variables,
                     sessionId);
             return createOkResponse(queryResult);
@@ -72,11 +80,14 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Get VariableSet info", position = 2, response = VariableSet.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
+                    example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
+                    example = "id,status", dataType = "string", paramType = "query"),
     })
     public Response variableSetInfo(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") long variableSetId) {
         try {
+            // TODO: read param VariableSetParams.STUDY_ID.key()
             QueryResult<VariableSet> queryResult = catalogManager.getVariableSet(variableSetId, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -102,19 +113,27 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Get VariableSet info", position = 2, response = VariableSet[].class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
+                    example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
+                    example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer",
+                    paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "count", value = "Total number of results. [PENDING]", dataType = "boolean", paramType = "query")
     })
     public Response search(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
+                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                @QueryParam("study") String studyStr,
                            @ApiParam(value = "CSV list of variableSetIds", required = false) @QueryParam("id") String id,
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
                            @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes) {
         try {
-            long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
+            if (StringUtils.isNotEmpty(studyIdStr)) {
+                studyStr = studyIdStr;
+            }
+            long studyId = catalogManager.getStudyId(studyStr, sessionId);
             queryOptions.put(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
             QueryResult<VariableSet> queryResult = catalogManager.getAllVariableSet(studyId, queryOptions, sessionId);
             return createOkResponse(queryResult);
@@ -128,7 +147,8 @@ public class VariableSetWSServer extends OpenCGAWSServer {
 //    @ApiOperation(value = "Update some variableSet attributes using GET method [PENDING]", position = 3)
 //    public Response update(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") String variableSetId,
 //                           @ApiParam(value = "name", required = true) @QueryParam("name") String name,
-//                           @ApiParam(value = "description", required = false) @QueryParam("description") String description) throws IOException {
+//                           @ApiParam(value = "description", required = false) @QueryParam("description") String description)
+// throws IOException {
 //        return createErrorResponse("update - GET", "PENDING");
 //    }
 
@@ -160,7 +180,8 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     @Path("/{variableSetId}/field/add")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Add a new field in a variable set", position = 5)
-    public Response addFieldToVariableSet(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") long variableSetId,
+    public Response addFieldToVariableSet(@ApiParam(value = "variableSetId", required = true)
+                                              @PathParam("variableSetId") long variableSetId,
                                           @ApiParam(value = "variable", required = true) Variable variable) {
         try {
             QueryResult<VariableSet> queryResult = catalogManager.addFieldToVariableSet(variableSetId, variable, sessionId);
@@ -173,7 +194,8 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{variableSetId}/field/delete")
     @ApiOperation(value = "Delete one field from a variable set", position = 6)
-    public Response renameFieldInVariableSet(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") long variableSetId,
+    public Response renameFieldInVariableSet(@ApiParam(value = "variableSetId", required = true)
+                                                 @PathParam("variableSetId") long variableSetId,
                                              @ApiParam(value = "name", required = true) @QueryParam("name") String name) {
         try {
             QueryResult<VariableSet> queryResult = catalogManager.removeFieldFromVariableSet(variableSetId, name, sessionId);
@@ -186,7 +208,8 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{variableSetId}/field/rename")
     @ApiOperation(value = "Rename the field id of a field in a variable set", position = 7)
-    public Response renameFieldInVariableSet(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") long variableSetId,
+    public Response renameFieldInVariableSet(@ApiParam(value = "variableSetId", required = true)
+                                                 @PathParam("variableSetId") long variableSetId,
                                              @ApiParam(value = "oldName", required = true) @QueryParam("oldName") String oldName,
                                              @ApiParam(value = "newName", required = true) @QueryParam("newName") String newName) {
         try {

@@ -31,7 +31,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManagerTest;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.File;
@@ -62,25 +62,25 @@ public class CatalogFileUtilsTest {
 
     @Before
     public void before() throws CatalogException, IOException {
-        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration-test.yml")
+        Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml")
                 .openStream());
 
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", catalogConfiguration.getDatabase().getUser())
-                .add("password", catalogConfiguration.getDatabase().getPassword())
-                .add("authenticationDatabase", catalogConfiguration.getDatabase().getOptions().get("authenticationDatabase"))
+                .add("username", configuration.getCatalog().getUser())
+                .add("password", configuration.getCatalog().getPassword())
+                .add("authenticationDatabase", configuration.getCatalog().getOptions().get("authenticationDatabase"))
                 .build();
 
-        String[] split = catalogConfiguration.getDatabase().getHosts().get(0).split(":");
+        String[] split = configuration.getCatalog().getHosts().get(0).split(":");
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(split[0], Integer.parseInt(split[1]));
 
-        CatalogManagerExternalResource.clearCatalog(catalogConfiguration);
-        catalogManager = new CatalogManager(catalogConfiguration);
+        CatalogManagerExternalResource.clearCatalog(configuration);
+        catalogManager = new CatalogManager(configuration);
         catalogManager.installCatalogDB();
 
         //Create USER
         catalogManager.createUser("user", "name", "mi@mail.com", "asdf", "", null, null);
-        userSessionId = catalogManager.login("user", "asdf", "--").getResult().get(0).getString("sessionId");
+        userSessionId = catalogManager.login("user", "asdf", "--").getResult().get(0).getId();
 //        adminSessionId = catalogManager.login("admin", "admin", "--").getResult().get(0).getString("sessionId");
         long projectId = catalogManager.createProject("proj", "proj", "", "", null, userSessionId).getResult().get(0).getId();
         studyId = catalogManager.createStudy(projectId, "std", "std", Study.Type.CONTROL_SET, "", userSessionId).getResult().get(0).getId();
@@ -310,7 +310,7 @@ public class CatalogFileUtilsTest {
         // Now we try to unlink it
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Only previously linked files can be unlinked. Please, use delete instead.");
-        catalogManager.unlink(Long.toString(file.getId()), new QueryOptions(), userSessionId);
+        catalogManager.unlink(Long.toString(file.getId()), Long.toString(studyId), new QueryOptions(), userSessionId);
     }
 
     @Test
@@ -329,7 +329,7 @@ public class CatalogFileUtilsTest {
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(file.getUri());
         assertTrue(ioManager.exists(file.getUri()));
 
-        catalogManager.getFileManager().delete(Long.toString(file.getId()), null, userSessionId);
+        catalogManager.getFileManager().delete(Long.toString(file.getId()), null, null, userSessionId);
         assertTrue(ioManager.exists(file.getUri()));
 
 //        catalogFileUtils.delete(file.getId(), userSessionId);
@@ -345,7 +345,7 @@ public class CatalogFileUtilsTest {
             assertTrue(ioManager.exists(catalogManager.getFileUri(file)));
         }
 
-        catalogManager.getFileManager().delete(Long.toString(folder.getId()), null, userSessionId);
+        catalogManager.getFileManager().delete(Long.toString(folder.getId()), null, null, userSessionId);
         QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(new Query()
                         .append(FileDBAdaptor.QueryParams.ID.key(), folder.getId())
                         .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
@@ -376,14 +376,14 @@ public class CatalogFileUtilsTest {
         //Create deleted files inside the folder
         File toDelete = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toDelete.txt",
                 StringUtils.randomString(200).getBytes(), "", true, userSessionId).first();
-        catalogManager.getFileManager().delete(Long.toString(toDelete.getId()), null, userSessionId);
+        catalogManager.getFileManager().delete(Long.toString(toDelete.getId()), null, null, userSessionId);
 //        catalogFileUtils.delete(toDelete.getId(), userSessionId);
 
         File toTrash = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toTrash.txt",
                 StringUtils.randomString(200).getBytes(), "", true, userSessionId).first();
-        catalogManager.getFileManager().delete(Long.toString(toTrash.getId()), null, userSessionId);
+        catalogManager.getFileManager().delete(Long.toString(toTrash.getId()), null, null, userSessionId);
 
-        catalogManager.getFileManager().delete(Long.toString(folder.getId()), null, userSessionId);
+        catalogManager.getFileManager().delete(Long.toString(folder.getId()), null, null, userSessionId);
         QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(new Query()
                 .append(FileDBAdaptor.QueryParams.ID.key(), folder.getId())
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
@@ -456,7 +456,7 @@ public class CatalogFileUtilsTest {
         assertEquals(File.FileStatus.READY, returnedFile.getStatus().getName());
 
         /** Check TRASHED file with found file **/
-        catalogManager.getFileManager().delete(Long.toString(file.getId()), null, userSessionId);
+        catalogManager.getFileManager().delete(Long.toString(file.getId()), null, null, userSessionId);
         QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(new Query()
                         .append(FileDBAdaptor.QueryParams.ID.key(), file.getId())
                         .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)

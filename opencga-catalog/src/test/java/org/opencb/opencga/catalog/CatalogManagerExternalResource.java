@@ -16,13 +16,12 @@
 
 package org.opencb.opencga.catalog;
 
-import org.apache.commons.lang.RandomStringUtils;
 import org.apache.log4j.Level;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -43,7 +42,7 @@ import java.util.List;
 public class CatalogManagerExternalResource extends ExternalResource {
 
     private static CatalogManager catalogManager;
-    private CatalogConfiguration catalogConfiguration;
+    private Configuration configuration;
     private Path opencgaHome;
 
 
@@ -57,17 +56,21 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
     @Override
     public void before() throws Exception {
-        opencgaHome = Paths.get("target/test-data").resolve("junit_opencga_home_" + TimeUtils.getTimeMillis() + "_" + RandomStringUtils.randomAlphabetic(3));
+        int c = 0;
+        do {
+            opencgaHome = Paths.get("target/test-data").resolve("junit_opencga_home_" + TimeUtils.getTimeMillis() + (c > 0 ? "_" + c : ""));
+            c++;
+        } while (opencgaHome.toFile().exists());
         Files.createDirectories(opencgaHome);
-        catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration-test.yml").openStream());
-        catalogConfiguration.setDataDir(opencgaHome.resolve("sessions").toUri().toString());
-        catalogConfiguration.setTempJobsDir(opencgaHome.resolve("jobs").toUri().toString());
+        configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
+        configuration.setDataDir(opencgaHome.resolve("sessions").toUri().toString());
+        configuration.setTempJobsDir(opencgaHome.resolve("jobs").toUri().toString());
 
-        catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager = new CatalogManager(configuration);
         try {
             catalogManager.deleteCatalogDB(false);
         } catch (Exception ignore) {}
-        clearCatalog(catalogConfiguration);
+        clearCatalog(configuration);
         if (!opencgaHome.toFile().exists()) {
             deleteFolderTree(opencgaHome.toFile());
             Files.createDirectory(opencgaHome);
@@ -85,8 +88,8 @@ public class CatalogManagerExternalResource extends ExternalResource {
         }
     }
 
-    public CatalogConfiguration getCatalogConfiguration() {
-        return catalogConfiguration;
+    public Configuration getConfiguration() {
+        return configuration;
     }
 
     public CatalogManager getCatalogManager() {
@@ -97,9 +100,9 @@ public class CatalogManagerExternalResource extends ExternalResource {
         return opencgaHome;
     }
 
-    public static void clearCatalog(CatalogConfiguration catalogConfiguration) throws IOException, CatalogException {
+    public static void clearCatalog(Configuration configuration) throws IOException, CatalogException {
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : catalogConfiguration.getDatabase().getHosts()) {
+        for (String hostPort : configuration.getCatalog().getHosts()) {
             if (hostPort.contains(":")) {
                 String[] split = hostPort.split(":");
                 Integer port = Integer.valueOf(split[1]);
@@ -111,7 +114,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
         MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
 
         if (catalogManager == null) {
-            catalogManager = new CatalogManager(catalogConfiguration);
+            catalogManager = new CatalogManager(configuration);
         }
 
 //        MongoDataStore db = mongoManager.get(catalogConfiguration.getDatabase().getDatabase());
@@ -120,10 +123,10 @@ public class CatalogManagerExternalResource extends ExternalResource {
 //        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
         mongoManager.close(catalogManager.getCatalogDatabase());
 
-        Path rootdir = Paths.get(URI.create(catalogConfiguration.getDataDir()));
+        Path rootdir = Paths.get(URI.create(configuration.getDataDir()));
         deleteFolderTree(rootdir.toFile());
-        if (!catalogConfiguration.getTempJobsDir().isEmpty()) {
-            Path jobsDir = Paths.get(URI.create(catalogConfiguration.getTempJobsDir()));
+        if (!configuration.getTempJobsDir().isEmpty()) {
+            Path jobsDir = Paths.get(URI.create(configuration.getTempJobsDir()));
             if (jobsDir.toFile().exists()) {
                 deleteFolderTree(jobsDir.toFile());
             }

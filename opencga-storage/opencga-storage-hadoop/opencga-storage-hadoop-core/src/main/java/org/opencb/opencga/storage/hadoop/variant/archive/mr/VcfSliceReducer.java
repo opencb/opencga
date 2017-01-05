@@ -21,8 +21,8 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableReducer;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
-import org.opencb.biodata.tools.variant.converter.VariantToVcfSliceConverter;
-import org.opencb.biodata.tools.variant.converter.VcfSliceToVariantListConverter;
+import org.opencb.biodata.tools.variant.converters.proto.VariantToVcfSliceConverter;
+import org.opencb.biodata.tools.variant.converters.proto.VcfSliceToVariantListConverter;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 
 import java.io.IOException;

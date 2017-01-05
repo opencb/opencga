@@ -242,7 +242,7 @@ public class VariantMatchers {
     }
 
     public static Matcher<VariantAnnotation> hasProteinSubstitutionScoreDesc(String source, Matcher<? super Iterable<String>> subMatcher) {
-        return hasProteinSubstitutionScore(source, subMatcher, Score::getSource);
+        return hasProteinSubstitutionScore(source, subMatcher, Score::getDescription);
     }
 
     private static <T> Matcher<VariantAnnotation> hasProteinSubstitutionScore(String source, Matcher<? super Iterable<T>> subMatcher, Function<Score, T> mapper) {

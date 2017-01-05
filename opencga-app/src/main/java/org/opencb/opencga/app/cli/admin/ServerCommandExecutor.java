@@ -17,7 +17,6 @@
 package org.opencb.opencga.app.cli.admin;
 
 
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.server.RestServer;
 import org.opencb.opencga.server.grpc.GrpcServer;
 
@@ -84,9 +83,9 @@ public class ServerCommandExecutor extends AdminCommandExecutor {
 //                port = restCommandOptions.restStopCommandOptions.port;
 //            }
 
-            Configuration openCGAConfiguration = getOpenCGAConfiguration();
+//            GeneralConfiguration openCGAGeneralConfiguration = getOpenCGAConfiguration();catalogConfiguration
             Client client = ClientBuilder.newClient();
-            WebTarget target = client.target("http://localhost:" + openCGAConfiguration.getRest().getPort())
+            WebTarget target = client.target("http://localhost:" + configuration.getServer().getRest().getPort())
                     .path("opencga")
                     .path("webservices")
                     .path("rest")
@@ -113,9 +112,9 @@ public class ServerCommandExecutor extends AdminCommandExecutor {
 //            if (serverCommandOptions.restStopCommandOptions.port > 0) {
 //                port = restCommandOptions.restStopCommandOptions.port;
 //            }
-            Configuration openCGAConfiguration = getOpenCGAConfiguration();
+//            GeneralConfiguration openCGAGeneralConfiguration = getOpenCGAConfiguration();
             Client client = ClientBuilder.newClient();
-            WebTarget target = client.target("http://localhost" + openCGAConfiguration.getGrpc().getPort())
+            WebTarget target = client.target("http://localhost" + configuration.getServer().getGrpc().getPort())
                     .path("opencga")
                     .path("webservices")
                     .path("rest")

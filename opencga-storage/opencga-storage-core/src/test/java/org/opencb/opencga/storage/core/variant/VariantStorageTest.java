@@ -25,7 +25,7 @@ import org.opencb.biodata.models.variant.VariantSource;
  */
 public interface VariantStorageTest {
 
-    VariantStorageManager getVariantStorageManager() throws Exception;
+    VariantStorageEngine getVariantStorageManager() throws Exception;
 
     void clearDB(String dbName) throws Exception;
 

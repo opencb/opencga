@@ -16,13 +16,14 @@
 
 package org.opencb.opencga.catalog.session;
 
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Session;
+import org.opencb.opencga.core.common.TimeUtils;
 
 /**
  * Created by pfurio on 24/05/16.
@@ -41,14 +42,14 @@ public class DefaultSessionManager implements SessionManager {
     }
 
     @Override
-    public QueryResult<ObjectMap> createToken(String userId, String ip) throws CatalogException {
+    public QueryResult<Session> createToken(String userId, String ip, Session.Type type) throws CatalogException {
         int length = USER_SESSION_LENGTH;
         if (userId.equals("admin")) {
             length = ADMIN_SESSION_LENGTH;
         }
 
         // Create the session
-        Session session = new Session(ip, length);
+        Session session = new Session(StringUtils.randomString(length), ip, TimeUtils.getTime(), type);
         while (true) {
             if (length == USER_SESSION_LENGTH) {
                 if (userDBAdaptor.getUserIdBySessionId(session.getId()).isEmpty()) {
@@ -62,7 +63,7 @@ public class DefaultSessionManager implements SessionManager {
             session.generateNewId(length);
         }
 
-        QueryResult<ObjectMap> result;
+        QueryResult<Session> result;
         // Add the session to the user
         if (userId.equals("admin")) {
             result = metaDBAdaptor.addAdminSession(session);

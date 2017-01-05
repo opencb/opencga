@@ -1,0 +1,261 @@
+package org.opencb.opencga.storage.core.manager.variant.operations;
+
+import org.opencb.biodata.models.core.Region;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
+import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.manager.models.StudyInfo;
+import org.opencb.opencga.storage.core.metadata.ExportMetadata;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.io.VariantMetadataImporter;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
+import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
+import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.stream.Collectors;
+
+/**
+ * Created on 06/12/16.
+ *
+ * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
+ */
+public class VariantExportStorageOperation extends StorageOperation {
+
+    public VariantExportStorageOperation(CatalogManager catalogManager, StorageConfiguration storageConfiguration) {
+        super(catalogManager, StorageManagerFactory.get(storageConfiguration),
+                LoggerFactory.getLogger(VariantExportStorageOperation.class));
+    }
+
+    public List<URI> exportData(List<StudyInfo> studyInfos, Query query, VariantOutputFormat outputFormat, String outputStr,
+                                String sessionId, ObjectMap options)
+            throws IOException, StorageEngineException, CatalogException {
+        if (options == null) {
+            options = new ObjectMap();
+        }
+
+        List<URI> newFiles = new ArrayList<>();
+
+        if (studyInfos.isEmpty()) {
+            logger.warn("Nothing to do!");
+            return Collections.emptyList();
+        }
+        Thread hook = null;
+        URI outputFile = null;
+        final Path outdir;
+        if (!VariantWriterFactory.isStandardOutput(outputStr)) {
+            URI outdirUri = null;
+            try {
+                outdirUri = UriUtils.createUri(outputStr);
+            } catch (URISyntaxException e) {
+                throw new IllegalArgumentException(e);
+            }
+            String outputFileName = null;
+            if (!Paths.get(outdirUri).toFile().exists()) {
+                outputFileName = outdirUri.resolve(".").relativize(outdirUri).toString();
+                outdirUri = outdirUri.resolve(".");
+            } else {
+                try {
+                    outdirUri = UriUtils.createDirectoryUri(outputStr);
+                } catch (URISyntaxException e) {
+                    throw new IllegalArgumentException(e);
+                }
+                List<Region> regions = Region.parseRegions(query.getString(VariantDBAdaptor.VariantQueryParams.REGION.key()));
+                outputFileName = buildOutputFileName(studyInfos.stream().map(StudyInfo::getStudyAlias).collect(Collectors.toList()),
+                        regions);
+            }
+            outputFile = outdirUri.resolve(outputFileName);
+            outdir = Paths.get(outdirUri);
+
+            outdirMustBeEmpty(outdir);
+
+            hook = buildHook(outdir);
+            writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
+            Runtime.getRuntime().addShutdownHook(hook);
+        } else {
+            outdir = null;
+        }
+
+
+
+        // Up to this point, catalog has not been modified
+        try {
+            DataStore dataStore = studyInfos.get(0).getDataStores().get(File.Bioformat.VARIANT);
+            for (StudyInfo studyInfo : studyInfos) {
+                if (!studyInfo.getDataStores().get(File.Bioformat.VARIANT).equals(dataStore)) {
+                    throw new StorageEngineException("Unable to export variants from studies in different databases");
+                }
+            }
+
+//            String outputFileName = buildOutputFileName(Collections.singletonList(study.getAlias()), regions, outputFormatStr);
+            Long catalogOutDirId = getCatalogOutdirId(studyInfos.get(0).getStudyId(), options, sessionId);
+
+            // TODO: Needed?
+            for (StudyInfo studyInfo : studyInfos) {
+                StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyInfo.getStudyId(), dataStore);
+            }
+
+            VariantStorageEngine variantStorageManager = storageManagerFactory.getVariantStorageManager(dataStore.getStorageEngine());
+            variantStorageManager.exportData(outputFile, outputFormat, dataStore.getDbName(), query, new QueryOptions(options));
+
+            if (catalogOutDirId != null && outdir != null) {
+                copyResults(outdir, catalogOutDirId, sessionId).stream().map(File::getUri);
+            }
+            if (outdir != null) {
+                java.io.File[] files = outdir.toFile().listFiles((dir, name) -> !name.equals(AbstractExecutor.JOB_STATUS_FILE));
+                if (files != null) {
+                    for (java.io.File file : files) {
+                        newFiles.add(file.toURI());
+                    }
+                }
+            }
+
+            if (outdir != null) {
+                writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.DONE, "Job completed"));
+            }
+        } catch (Exception e) {
+            // Error!
+            logger.error("Error exporting variants.", e);
+            if (outdir != null) {
+                writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.ERROR, "Job with error : " + e.getMessage()));
+            }
+            throw new StorageEngineException("Error exporting variants.", e);
+        } finally {
+            // Remove hook
+            if (hook != null) {
+                Runtime.getRuntime().removeShutdownHook(hook);
+            }
+        }
+
+        return newFiles;
+    }
+
+
+    public void importData(StudyInfo studyInfo, URI inputUri, String sessionId) throws IOException, StorageEngineException {
+
+        VariantMetadataImporter variantMetadataImporter;
+        variantMetadataImporter = new CatalogVariantMetadataImporter(studyInfo.getStudyId(), inputUri, sessionId);
+
+        try {
+            DataStore dataStore = studyInfo.getDataStores().get(File.Bioformat.VARIANT);
+            VariantStorageEngine variantStorageManager = storageManagerFactory.getVariantStorageManager(dataStore.getStorageEngine());
+            ObjectMap options = variantStorageManager.getOptions()
+                    .append(VariantStorageEngine.Options.DB_NAME.key(), dataStore.getDbName());
+            ExportMetadata exportMetadata;
+            try (StudyConfigurationManager scm = variantStorageManager.getStudyConfigurationManager(options)) {
+                exportMetadata = variantMetadataImporter.importMetaData(inputUri, scm);
+            }
+
+            variantStorageManager.importData(inputUri, exportMetadata, dataStore.getDbName(), options);
+
+        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+            throw new StorageEngineException("Error importing data", e);
+        }
+
+    }
+
+
+    private String buildOutputFileName(List<String> studyNames, List<Region> regions) {
+        String studies = String.join("_", studyNames);
+        if (regions == null || regions.size() != 1) {
+            return studies + ".export";
+        } else {
+            return studies + '.' + regions.get(0).toString() + ".export";
+        }
+    }
+
+    private final class CatalogVariantMetadataImporter extends VariantMetadataImporter {
+        private final URI inputUri;
+        private final String sessionId;
+        private long studyId;
+
+        private CatalogVariantMetadataImporter(long studyId, URI inputUri, String sessionId) {
+            this.inputUri = inputUri;
+            this.sessionId = sessionId;
+            this.studyId = studyId;
+        }
+
+        @Override
+        protected void processStudyConfiguration(Map<Integer, List<Integer>> returnedSamples,
+                                                 StudyConfiguration studyConfiguration) {
+            super.processStudyConfiguration(returnedSamples, studyConfiguration);
+
+            studyConfiguration.setStudyId((int) studyId);
+
+            try {
+                // Create Samples
+                Map<String, Integer> samplesMap = new HashMap<>();
+                Map<Integer, Integer> samplesIdMap = new HashMap<>();
+                String source = inputUri.resolve(".").relativize(inputUri).getPath();
+                String description = "Sample data imported from " + source;
+                for (Map.Entry<String, Integer> entry : studyConfiguration.getSampleIds().entrySet()) {
+                    Sample sample = catalogManager.createSample(studyId, entry.getKey(), source, description,
+                            Collections.emptyMap(), QueryOptions.empty(), sessionId).first();
+                    samplesMap.put(sample.getName(), (int) sample.getId());
+                    samplesIdMap.put(entry.getValue(), (int) sample.getId());
+                }
+
+                // Create cohorts
+                Map<String, Integer> newCohortIds = new HashMap<>();
+                Map<Integer, Set<Integer>> newCohorts = new HashMap<>();
+
+                for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
+                    String cohortName = studyConfiguration.getCohortIds().inverse().get(cohortId);
+                    Set<Integer> sampleIds = studyConfiguration.getCohorts().get(cohortId);
+                    Set<Integer> newSampleIds = new HashSet<>(sampleIds.size());
+                    for (Integer sampleId : sampleIds) {
+                        if (samplesIdMap.containsKey(sampleId)) {
+                            newSampleIds.add(samplesIdMap.get(sampleId));
+                        }
+                    }
+                    Cohort cohort = catalogManager.createCohort(
+                            studyConfiguration.getStudyId(), cohortName, Study.Type.COLLECTION,
+                            "", newSampleIds.stream().map(Long::valueOf).collect(Collectors.toList()),
+                            Collections.emptyMap(), sessionId).first();
+                    newCohortIds.put(cohortName, (int) cohort.getId());
+                    newCohorts.put((int) cohort.getId(), newSampleIds);
+                    catalogManager.getCohortManager().setStatus(String.valueOf(cohort.getId()), Cohort.CohortStatus.READY, "", sessionId);
+                }
+                studyConfiguration.setCohortIds(newCohortIds);
+                studyConfiguration.setCohorts(newCohorts);
+                studyConfiguration.setCalculatedStats(newCohorts.keySet());
+
+                // Create Files
+                //TODO
+
+                // Update Sample Ids
+                studyConfiguration.setSampleIds(samplesMap);
+                for (Map.Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration.getSamplesInFiles().entrySet()) {
+                    Set<Integer> samples = entry.getValue();
+                    LinkedHashSet<Integer> remappedSamples = new LinkedHashSet<>(samples.size());
+                    for (Integer sample : samples) {
+                        if (samplesIdMap.containsKey(sample)) {
+                            remappedSamples.add(samplesIdMap.get(sample));
+                        }
+                    }
+                    studyConfiguration.getSamplesInFiles().put(entry.getKey(), remappedSamples);
+                }
+
+            } catch (CatalogException e) {
+                throw new IllegalArgumentException(e);
+            }
+        }
+    }
+}

@@ -28,10 +28,11 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.rest.OpenCGAWSServer;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.manager.AlignmentStorageManager;
+import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
@@ -75,9 +76,8 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
             if (request.getVariantSetId() == null || request.getVariantSetId().isEmpty()) {
                 return createErrorResponse(method, "Required referenceName or referenceId");
             }
+            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
             queryOptions.append(STUDIES.key(), request.getVariantSetId());
-            String studyIdStr = queryOptions.getAsStringList(STUDIES.key()).get(0);
-            long studyId = catalogManager.getStudyId(studyIdStr);
 
 //        queryOptions.append(, request.getVariantName()); //TODO
             if (request.getCallSetIds() != null) {
@@ -104,9 +104,9 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
             queryOptions.append(REGION.key(), new Region(chr.toString(), request.getStart().intValue(), request.getEnd().intValue()));
 
             if (request.getPageSize() == null || request.getPageSize() <= 0 || request.getPageSize() > 4000) {
-                this.queryOptions.add("limit", 1000);
+                this.queryOptions.add(QueryOptions.LIMIT, 1000);
             } else {
-                this.queryOptions.add("limit", request.getPageSize());
+                this.queryOptions.add(QueryOptions.LIMIT, request.getPageSize());
             }
 
             int page = 0;
@@ -119,17 +119,13 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
                 }
             }
             // Get all query options
-            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-            queryOptions.add("model", "ga4gh");
             SearchVariantsResponse response = new SearchVariantsResponse();
+            Query query = VariantStorageManager.getVariantQuery(queryOptions);
 
-            try ( VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory) ) {
-                List<Variant> variants = variantFetcher.getVariantsPerStudy((int) studyId,
-                        queryOptions.getString(REGION.key()), false, null, 0, sessionId, queryOptions).getResult();
-                response.setNextPageToken(Integer.toString(++page));
-                response.setVariants(variants);
-                return buildResponse(Response.ok(response.toString(), MediaType.APPLICATION_JSON_TYPE));
-            }
+            List<Variant> variants = variantManager.get(query, queryOptions, sessionId, Variant.class).getResult();
+            response.setNextPageToken(Integer.toString(++page));
+            response.setVariants(variants);
+            return buildResponse(Response.ok(response.toString(), MediaType.APPLICATION_JSON_TYPE));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -189,7 +185,9 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
 
             SearchReadsResponse response = new SearchReadsResponse();
 
-            QueryResult<ReadAlignment> queryResult = storageManagerFactory.getAlignmentStorageManager()
+            AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageManagerFactory);
+
+            QueryResult<ReadAlignment> queryResult = alignmentStorageManager
                     .query("", request.getReadGroupIds().get(0), query, queryOptions, sessionId);
 
             response.setAlignments(queryResult.getResult());

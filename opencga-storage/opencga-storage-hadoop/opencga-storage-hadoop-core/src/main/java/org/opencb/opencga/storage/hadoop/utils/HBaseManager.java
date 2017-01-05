@@ -35,6 +35,7 @@ import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -45,7 +46,8 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public class HBaseManager extends Configured implements AutoCloseable {
     protected static final Logger LOGGER = LoggerFactory.getLogger(HBaseManager.class);
-
+    //    public static final Set<Connection> CONNECTIONS = new ConcurrentHashSet<>();
+    private static final AtomicInteger OPEN_CONNECTIONS = new AtomicInteger(0);
     @FunctionalInterface
     public interface HBaseTableConsumer {
         void accept(Table table) throws IOException;
@@ -84,6 +86,10 @@ public class HBaseManager extends Configured implements AutoCloseable {
         return closeConnection.get();
     }
 
+    public static int getOpenConnections() {
+        return OPEN_CONNECTIONS.get();
+    }
+
     @Override
     public void close() throws IOException {
         if (this.closeConnection.get()) {
@@ -91,6 +97,8 @@ public class HBaseManager extends Configured implements AutoCloseable {
             if (null != con) {
                 LOGGER.info("Close Hadoop DB connection {}", con);
                 con.close();
+                OPEN_CONNECTIONS.decrementAndGet();
+//                CONNECTIONS.remove(con);
             }
         }
     }
@@ -101,6 +109,8 @@ public class HBaseManager extends Configured implements AutoCloseable {
             while (null == con) {
                 try {
                     con = ConnectionFactory.createConnection(this.getConf());
+                    OPEN_CONNECTIONS.incrementAndGet();
+//                    CONNECTIONS.add(con);
                     StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
                     LOGGER.info("Opened Hadoop DB connection {} called from {}", con, stackTrace);
                 } catch (IOException e) {
@@ -109,6 +119,8 @@ public class HBaseManager extends Configured implements AutoCloseable {
                 if (!this.connection.compareAndSet(null, con)) {
                     try {
                         con.close();
+                        OPEN_CONNECTIONS.decrementAndGet();
+//                        CONNECTIONS.remove(con);
                     } catch (IOException e) {
                         throw new IllegalStateException("Problems closing connection to DB", e);
                     }

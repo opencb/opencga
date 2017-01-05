@@ -57,7 +57,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager.OPENCGA_STORAGE_HADOOP_MAPREDUCE_SCANNER_TIMEOUT;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine.OPENCGA_STORAGE_HADOOP_MAPREDUCE_SCANNER_TIMEOUT;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk

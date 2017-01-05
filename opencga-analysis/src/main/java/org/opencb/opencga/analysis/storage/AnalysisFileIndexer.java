@@ -26,8 +26,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.JobFactory;
-import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
-import org.opencb.opencga.analysis.variant.CatalogStudyConfigurationFactory;
+import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
+import org.opencb.opencga.storage.core.manager.variant.CatalogStudyConfigurationFactory;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -38,9 +38,9 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -194,7 +194,7 @@ public class AnalysisFileIndexer {
                                 indexedFileId = result.first().getId();
 //                                inputFile = result.first();
                             }
-                        } catch (StorageManagerException e) {
+                        } catch (StorageEngineException e) {
                             throw new CatalogException("Unable to find source file from \"" + inputFile.getName() + "\"", e);
                         }
                     } else {
@@ -226,7 +226,7 @@ public class AnalysisFileIndexer {
             originalFile = inputFile;
         }
 
-        final DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, catalogManager.getStudyIdByFileId(originalFile.getId()), originalFile.getBioformat(), sessionId);
+        final DataStore dataStore = StorageOperation.getDataStore(catalogManager, catalogManager.getStudyIdByFileId(originalFile.getId()), originalFile.getBioformat(), sessionId);
 
         /** Check if file can be indexed **/
         if (originalFile.getIndex() != null) {
@@ -299,7 +299,7 @@ public class AnalysisFileIndexer {
 
             ObjectMap updateParams = new ObjectMap();
 
-            if (options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key()) && load) {
+            if (options.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key()) && load) {
                 updateParams.append("status.name", Cohort.CohortStatus.CALCULATING);
             }
             //Samples are the already indexed plus those that are going to be indexed
@@ -333,7 +333,7 @@ public class AnalysisFileIndexer {
                             .getDBAdaptor(dataStore.getDbName()).getStudyConfigurationManager();
                     new CatalogStudyConfigurationFactory(catalogManager).updateStudyConfigurationFromCatalog(studyIdByOutDirId, studyConfigurationManager, sessionId);
                 }
-            } catch (StorageManagerException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+            } catch (StorageEngineException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
                 e.printStackTrace();
             }
         }
@@ -365,8 +365,8 @@ public class AnalysisFileIndexer {
         ObjectMap jobAttributes = new ObjectMap();
         jobAttributes.put(Job.TYPE, Job.Type.INDEX);
         jobAttributes.put(Job.INDEXED_FILE_ID, originalFile.getId());
-        jobAttributes.put(VariantStorageManager.Options.CALCULATE_STATS.key(), options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key(), VariantStorageManager.Options.CALCULATE_STATS.defaultValue()));
-//        jobAttributes.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), options.get(VariantStorageManager.Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class, VariantStorageManager.Options.AGGREGATED_TYPE.defaultValue()));
+        jobAttributes.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), options.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key(), VariantStorageEngine.Options.CALCULATE_STATS.defaultValue()));
+//        jobAttributes.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), options.get(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class, VariantStorageEngine.Options.AGGREGATED_TYPE.defaultValue()));
 
         String jobName;
         String jobDescription;
@@ -474,19 +474,19 @@ public class AnalysisFileIndexer {
                     .append(" --outdir ").append(outDirId)
                     .append(" --session-id ").append(sessionId)
                     .append(" --job-id ").append(randomString);
-            if (options.getBoolean(VariantStorageManager.Options.ANNOTATE.key(), VariantStorageManager.Options.ANNOTATE.defaultValue())) {
+            if (options.getBoolean(VariantStorageEngine.Options.ANNOTATE.key(), VariantStorageEngine.Options.ANNOTATE.defaultValue())) {
                 sb.append(" --annotate ");
             }
-            if (options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key(), VariantStorageManager.Options.CALCULATE_STATS.defaultValue())) {
+            if (options.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key(), VariantStorageEngine.Options.CALCULATE_STATS.defaultValue())) {
                 sb.append(" --calculate-stats ");
             }
             if (options.getBoolean(TRANSFORM, false)) {
                 sb.append(" --transform ");
             }
-            if (StringUtils.isNotEmpty(options.getString(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key()))) {
-                sb.append(" --include-extra-fields ").append(options.getString(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key()));
+            if (StringUtils.isNotEmpty(options.getString(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key()))) {
+                sb.append(" --include-extra-fields ").append(options.getString(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key()));
             }
-            if (options.getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue())) {
+            if (options.getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), VariantStorageEngine.Options.EXCLUDE_GENOTYPES.defaultValue())) {
                 sb.append(" --exclude-genotypes ");
             }
             if (options.getBoolean(LOAD, false)) {
@@ -495,8 +495,8 @@ public class AnalysisFileIndexer {
             if (StringUtils.isNotEmpty(options.getString(LOG_LEVEL))) {
                 sb.append(" --log-level ").append(options.getString(LOG_LEVEL));
             }
-            if (options.containsKey(VariantStorageManager.Options.AGGREGATED_TYPE.key())) {
-                sb.append(" --aggregated ").append(options.getString(VariantStorageManager.Options.AGGREGATED_TYPE.key()));
+            if (options.containsKey(VariantStorageEngine.Options.AGGREGATED_TYPE.key())) {
+                sb.append(" --aggregated ").append(options.getString(VariantStorageEngine.Options.AGGREGATED_TYPE.key()));
             }
             commandLine = sb.toString();
 

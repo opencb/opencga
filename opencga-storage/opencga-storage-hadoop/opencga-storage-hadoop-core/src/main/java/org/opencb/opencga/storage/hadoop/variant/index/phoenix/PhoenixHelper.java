@@ -5,10 +5,12 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.PTable;
 import org.apache.phoenix.schema.PTableType;
+import org.apache.phoenix.schema.TableNotFoundException;
 import org.apache.phoenix.schema.types.PArrayDataType;
 import org.apache.phoenix.schema.types.PDataType;
 import org.apache.phoenix.schema.types.PhoenixArray;
 import org.apache.phoenix.util.ColumnInfo;
+import org.apache.phoenix.util.PhoenixRuntime;
 import org.apache.phoenix.util.QueryUtil;
 import org.apache.phoenix.util.SchemaUtil;
 import org.slf4j.Logger;
@@ -199,6 +201,15 @@ public class PhoenixHelper {
         String sql = sb.toString();
         logger.info("Creating index: {}", sql);
         return sql;
+    }
+
+    public boolean tableExists(Connection con, String table) throws SQLException {
+        try {
+            PhoenixRuntime.getTable(con, table);
+            return true;
+        } catch (TableNotFoundException ignore) {
+            return false;
+        }
     }
 
     public List<Column> getColumns(Connection con, String tableName) throws SQLException {

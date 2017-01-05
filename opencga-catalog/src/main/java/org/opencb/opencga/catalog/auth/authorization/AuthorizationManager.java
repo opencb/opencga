@@ -22,7 +22,10 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.*;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.List;
 
 /**
  * Created by pfurio on 12/05/16.
@@ -39,6 +42,7 @@ public interface AuthorizationManager {
 
     String ROLE_ADMIN = "admin";
     String ROLE_ANALYST = "analyst";
+    String ROLE_VIEW_ONLY = "view_only";
     String ROLE_LOCKED = "locked";
 
     String OTHER_USERS_ID = "*";
@@ -54,6 +58,7 @@ public interface AuthorizationManager {
                 StudyAclEntry.StudyPermissions.CREATE_FILES, StudyAclEntry.StudyPermissions.VIEW_FILE_HEADERS,
                 StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENTS, StudyAclEntry.StudyPermissions.VIEW_FILES,
                 StudyAclEntry.StudyPermissions.UPDATE_FILES, StudyAclEntry.StudyPermissions.DOWNLOAD_FILES,
+                StudyAclEntry.StudyPermissions.UPLOAD_FILES,
                 StudyAclEntry.StudyPermissions.CREATE_JOBS, StudyAclEntry.StudyPermissions.VIEW_JOBS,
                 StudyAclEntry.StudyPermissions.UPDATE_JOBS, StudyAclEntry.StudyPermissions.CREATE_SAMPLES,
                 StudyAclEntry.StudyPermissions.VIEW_SAMPLES, StudyAclEntry.StudyPermissions.UPDATE_SAMPLES,
@@ -68,6 +73,17 @@ public interface AuthorizationManager {
                 StudyAclEntry.StudyPermissions.VIEW_DATASETS, StudyAclEntry.StudyPermissions.UPDATE_DATASETS,
                 StudyAclEntry.StudyPermissions.CREATE_PANELS, StudyAclEntry.StudyPermissions.VIEW_PANELS,
                 StudyAclEntry.StudyPermissions.UPDATE_PANELS);
+    }
+
+    static EnumSet<StudyAclEntry.StudyPermissions> getViewOnlyAcls() {
+        return EnumSet.of(StudyAclEntry.StudyPermissions.VIEW_STUDY, StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET,
+                StudyAclEntry.StudyPermissions.VIEW_FILE_HEADERS, StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENTS,
+                StudyAclEntry.StudyPermissions.VIEW_FILES, StudyAclEntry.StudyPermissions.DOWNLOAD_FILES,
+                StudyAclEntry.StudyPermissions.VIEW_JOBS, StudyAclEntry.StudyPermissions.VIEW_SAMPLES,
+                StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS,
+                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_COHORTS,
+                StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_DATASETS,
+                StudyAclEntry.StudyPermissions.VIEW_PANELS);
     }
 
     static EnumSet<StudyAclEntry.StudyPermissions> getLockedAcls() {

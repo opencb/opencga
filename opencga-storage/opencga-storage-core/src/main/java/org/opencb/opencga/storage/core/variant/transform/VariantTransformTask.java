@@ -28,7 +28,7 @@ import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
 import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.exceptions.NotAVariantException;
-import org.opencb.biodata.tools.variant.converter.VariantContextToVariantConverter;
+import org.opencb.biodata.tools.variant.converters.avro.VariantContextToVariantConverter;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.io.plain.StringDataWriter;

@@ -19,14 +19,14 @@ package org.opencb.opencga.app.cli.main.options.commons;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
 
 /**
  * Created by imedina on 26/07/16.
  */
 public class AclCommandOptions {
 
-    private OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonCommandOptions;
+    private GeneralCliOptions.CommonCommandOptions commonCommandOptions;
 
     private AclsCommandOptions aclsCommandOptions;
     private AclsCreateCommandOptions aclsCreateCommandOptions;
@@ -34,7 +34,7 @@ public class AclCommandOptions {
     private AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
     private AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
 
-    public AclCommandOptions(OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonCommandOptions) {
+    public AclCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions) {
         this.commonCommandOptions = commonCommandOptions;
     }
 
@@ -42,7 +42,7 @@ public class AclCommandOptions {
     public class AclsCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "Id of the resource", required = true, arity = 1)
         public String id;
@@ -59,7 +59,7 @@ public class AclCommandOptions {
     }
 
     public class AclsCreateCommandOptionsTemplate extends AclsCreateCommandOptions {
-        @Parameter(names = {"--template-id"}, description = "Template of permissions to be used (admin, analyst or locked)", arity = 1)
+        @Parameter(names = {"--template-id"}, description = "Template of permissions to be used (admin, analyst or view_only)", arity = 1)
         public String templateId;
     }
 

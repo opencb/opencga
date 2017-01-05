@@ -22,7 +22,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.io.VariantVcfExporter;
+import org.opencb.opencga.storage.core.variant.io.VariantVcfDataWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -211,10 +211,10 @@ public class VariantQueryCommandUtils {
 
 
         VariantOutputFormat of = VCF;
-        if (StringUtils.isNotEmpty(queryVariantsOptions.outputFormat)) {
-            of = VariantOutputFormat.safeValueOf(queryVariantsOptions.outputFormat);
+        if (StringUtils.isNotEmpty(queryVariantsOptions.commonOptions.outputFormat)) {
+            of = VariantOutputFormat.safeValueOf(queryVariantsOptions.commonOptions.outputFormat);
             if (of == null) {
-                throw variantFormatNotSupported(queryVariantsOptions.outputFormat);
+                throw variantFormatNotSupported(queryVariantsOptions.commonOptions.outputFormat);
             }
         }
 
@@ -275,12 +275,12 @@ public class VariantQueryCommandUtils {
          */
         boolean gzip = true;
         VariantOutputFormat outputFormat;
-        if (StringUtils.isNotEmpty(queryVariantsOptions.outputFormat)) {
-            outputFormat = VariantOutputFormat.safeValueOf(queryVariantsOptions.outputFormat);
+        if (StringUtils.isNotEmpty(queryVariantsOptions.commonOptions.outputFormat)) {
+            outputFormat = VariantOutputFormat.safeValueOf(queryVariantsOptions.commonOptions.outputFormat);
             if (outputFormat == null) {
-                throw variantFormatNotSupported(queryVariantsOptions.outputFormat);
+                throw variantFormatNotSupported(queryVariantsOptions.commonOptions.outputFormat);
             } else {
-                gzip = VariantOutputFormat.isGzip(queryVariantsOptions.outputFormat);
+                gzip = VariantOutputFormat.isGzip(queryVariantsOptions.commonOptions.outputFormat);
             }
         } else {
             outputFormat = VCF;
@@ -290,7 +290,7 @@ public class VariantQueryCommandUtils {
         OutputStream outputStream;
         if (isStandardOutput(queryVariantsOptions)) {
             // Unclosable OutputStream
-            outputStream = new VariantVcfExporter.UnclosableOutputStream(System.out);
+            outputStream = new VariantVcfDataWriter.UnclosableOutputStream(System.out);
         } else {
             if (gzip && !queryVariantsOptions.output.endsWith(".gz")) {
                 queryVariantsOptions.output += ".gz";

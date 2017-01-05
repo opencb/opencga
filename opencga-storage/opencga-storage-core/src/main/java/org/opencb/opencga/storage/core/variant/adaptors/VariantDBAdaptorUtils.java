@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.cellbase.core.api.GeneDBAdaptor;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -29,6 +30,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -46,30 +48,97 @@ public class VariantDBAdaptorUtils {
     public static final String AND = ";";
     public static final String IS = ":";
     public static final String STUDY_POP_FREQ_SEPARATOR = ":";
-    public static final Map<String, String> PROJECT_FIELD_ALIAS;
+//    public static final Map<String, String> PROJECT_FIELD_ALIAS;
 
-    public static final String SAMPLES_FIELD = "samples";
-    public static final String STUDIES_FIELD = "studies";
-    public static final String STATS_FIELD = "stats";
-    public static final String ANNOTATION_FIELD = "annotation";
-    private static final int GENE_EXTRA_REGION = 5000;
+    public static final String SAMPLES_FIELD = VariantFields.SAMPLES.fieldName();
+    public static final String STUDIES_FIELD = VariantFields.STUDIES.fieldName();
+    public static final String STATS_FIELD = VariantFields.STATS.fieldName();
+    public static final String ANNOTATION_FIELD = VariantFields.ANNOTATION.fieldName();
 
-    static {
-        Map<String, String> map =  new HashMap<>();
-        map.put("studies.samplesData", SAMPLES_FIELD);
-        map.put("samplesData", SAMPLES_FIELD);
-        map.put(SAMPLES_FIELD, SAMPLES_FIELD);
-        map.put("sourceEntries", STUDIES_FIELD);
-        map.put("studies.cohortStats", STATS_FIELD);
-        map.put("studies.stats", STATS_FIELD);
-        map.put("sourceEntries.stats", STATS_FIELD);
-        map.put(STATS_FIELD, STATS_FIELD);
-        map.put(STUDIES_FIELD, STUDIES_FIELD);
-        map.put(ANNOTATION_FIELD, ANNOTATION_FIELD);
-        PROJECT_FIELD_ALIAS = Collections.unmodifiableMap(map);
+    public enum VariantFields {
+        IDS,
+        CHROMOSOME,
+        START,
+        END,
+        REFERENCE,
+        ALTERNATE,
+        LENGTH,
+        TYPE,
+        HGVS,
+        STUDIES("studies", "sourceEntries"),
+        SAMPLES("samples", "studies.samplesData", "samplesData"),
+        FILES("files", "studies.files"),
+        STATS("stats", "studies.cohortStats", "studies.stats", "sourceEntries.stats"),
+        ANNOTATION("annotation");
+
+        private final List<String> names;
+        private static final Map<String, VariantFields> NAMES_MAP = new HashMap<>();
+
+        VariantFields(String ... names) {
+            if (names.length == 0) {
+                this.names = Collections.singletonList(name().toLowerCase());
+            } else {
+                this.names = Collections.unmodifiableList(Arrays.asList(names));
+            }
+        }
+
+        public String fieldName() {
+            return names.get(0);
+        }
+
+        @Override
+        public String toString() {
+            return fieldName();
+        }
+
+        public static VariantFields get(String field) {
+            return getNamesMap().get(field);
+        }
+
+        public static List<String> valuesString() {
+            return Arrays.stream(values()).map(VariantFields::fieldName).collect(Collectors.toList());
+        }
+
+        private static Map<String, VariantFields> getNamesMap() {
+            if (NAMES_MAP.isEmpty()) {
+                synchronized (NAMES_MAP) {
+                    if (NAMES_MAP.isEmpty()) {
+                        for (VariantFields variantFields : VariantFields.values()) {
+                            for (String name : variantFields.names) {
+                                NAMES_MAP.put(name, variantFields);
+                            }
+                        }
+                    }
+                }
+            }
+            return NAMES_MAP;
+        }
     }
 
+    private static final int GENE_EXTRA_REGION = 5000;
+
     private VariantDBAdaptor adaptor;
+
+    /**
+     * Check if the object query contains the value param, is not null and, if is an string or a list, is not empty.
+     *
+     * isValidParam(new Query(), PARAM) == false
+     * isValidParam(new Query(PARAM.key(), null), PARAM) == false
+     * isValidParam(new Query(PARAM.key(), ""), PARAM) == false
+     * isValidParam(new Query(PARAM.key(), Collections.emptyList()), PARAM) == false
+     * isValidParam(new Query(PARAM.key(), 5), PARAM) == true
+     * isValidParam(new Query(PARAM.key(), "sdfas"), PARAM) == true
+     *
+     * @param query Query to parse
+     * @param param QueryParam to check
+     * @return If is valid or not
+     */
+    public static boolean isValidParam(Query query, VariantDBAdaptor.VariantQueryParams param) {
+        Object value = query.getOrDefault(param.key(), null);
+        return (value != null)
+                && !(value instanceof String && ((String) value).isEmpty()
+                || value instanceof Collection && ((Collection) value).isEmpty());
+    }
 
     public enum QueryOperation {
         AND(VariantDBAdaptorUtils.AND),
@@ -178,7 +247,7 @@ public class VariantDBAdaptorUtils {
         return studyId;
     }
 
-    public boolean isNegated(String value) {
+    public static boolean isNegated(String value) {
         return value.startsWith("!");
     }
 
@@ -246,15 +315,20 @@ public class VariantDBAdaptorUtils {
         return sampleId;
     }
 
-    public Set<String> getReturnedFields(QueryOptions options) {
+    public static Set<String> getReturnedFields(QueryOptions options) {
         Set<String> returnedFields;
 
-        List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
+        List<String> includeList = options == null ? Collections.emptyList() : options.getAsStringList(QueryOptions.INCLUDE);
         if (includeList != null && !includeList.isEmpty()) {
 //            System.out.println("includeList = " + includeList);
             returnedFields = new HashSet<>();
             for (String include : includeList) {
-                returnedFields.add(PROJECT_FIELD_ALIAS.get(include));
+                String includeAlias = VariantFields.get(include).fieldName();
+                if (includeAlias != null) {
+                    returnedFields.add(includeAlias);
+                } else {
+                    returnedFields.add(include);
+                }
             }
             if (returnedFields.contains(STUDIES_FIELD)) {
                 returnedFields.add(SAMPLES_FIELD);
@@ -264,31 +338,70 @@ public class VariantDBAdaptorUtils {
             }
 
         } else {
-            List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
+            List<String> excludeList = options == null ? Collections.emptyList() : options.getAsStringList(QueryOptions.EXCLUDE);
             if (excludeList != null && !excludeList.isEmpty()) {
 //                System.out.println("excludeList = " + excludeList);
-                returnedFields = new HashSet<>(PROJECT_FIELD_ALIAS.values());
+                returnedFields = new HashSet<>(VariantFields.valuesString());
                 for (String exclude : excludeList) {
-                    returnedFields.remove(PROJECT_FIELD_ALIAS.get(exclude));
+                    returnedFields.remove(VariantFields.get(exclude).fieldName());
                 }
             } else {
-                returnedFields = new HashSet<>(PROJECT_FIELD_ALIAS.values());
+                returnedFields = new HashSet<>(VariantFields.valuesString());
+            }
+            if (!returnedFields.contains(STUDIES_FIELD)) {
+                returnedFields.remove(SAMPLES_FIELD);
+                returnedFields.remove(STATS_FIELD);
             }
         }
 //        System.out.println("returnedFields = " + returnedFields);
         return returnedFields;
     }
 
-    public List<String> getReturnedSamples(Query query, QueryOptions options) {
+    public List<Integer> getReturnedStudies(Query query, QueryOptions options) {
+        List<Integer> studyIds = getStudyIds(query.getAsList(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key()), options);
+        if (studyIds.isEmpty()) {
+            studyIds = getStudyIds(getStudyConfigurationManager().getStudyNames(options), options);
+        }
+        return studyIds;
+    }
+
+    public Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
+        List<Integer> returnedStudies = getReturnedStudies(query, options);
+        return getReturnedSamples(query, options, returnedStudies, studyId -> getStudyConfigurationManager()
+                .getStudyConfiguration(studyId, options).first());
+
+    }
+
+    public static Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options, Collection<Integer> studyIds,
+                                                          Function<Integer, StudyConfiguration> studyProvider) {
+        List<String> returnedSamples = getReturnedSamplesList(query, options);
+        LinkedHashSet<String> returnedSamplesSet = new LinkedHashSet<>(returnedSamples);
+
+        Map<Integer, List<Integer>> samples = new HashMap<>(studyIds.size());
+        for (Integer studyId : studyIds) {
+            StudyConfiguration sc = studyProvider.apply(studyId);
+            if (sc == null) {
+                continue;
+            }
+            LinkedHashMap<String, Integer> returnedSamplesPosition = StudyConfiguration.getReturnedSamplesPosition(sc, returnedSamplesSet);
+            List<Integer> sampleNames = Arrays.asList(new Integer[returnedSamplesPosition.size()]);
+            returnedSamplesPosition.forEach((sample, position) -> sampleNames.set(position, sc.getSampleIds().get(sample)));
+            samples.put(studyId, sampleNames);
+        }
+
+        return samples;
+    }
+
+    public static List<String> getReturnedSamplesList(Query query, QueryOptions options) {
         if (!getReturnedFields(options).contains(SAMPLES_FIELD)) {
             return Collections.singletonList("none");
         } else {
             //Remove the studyName, if any
-            return getReturnedSamples(query);
+            return getReturnedSamplesList(query);
         }
     }
 
-    public List<String> getReturnedSamples(Query query) {
+    public static List<String> getReturnedSamplesList(Query query) {
         return query.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key())
                 .stream()
                 .map(s -> s.contains(":") ? s.split(":")[1] : s)
@@ -378,6 +491,35 @@ public class VariantDBAdaptorUtils {
             }
         }
         return genes;
+    }
+
+    public static int parseConsequenceType(String so) {
+        int soAccession;
+        boolean startsWithSO = so.toUpperCase().startsWith("SO:");
+        if (startsWithSO || StringUtils.isNumeric(so)) {
+            try {
+                if (startsWithSO) {
+                    soAccession = Integer.parseInt(so.substring("SO:".length()));
+                } else {
+                    soAccession = Integer.parseInt(so);
+                }
+            } catch (NumberFormatException e) {
+                throw VariantQueryException.malformedParam(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE, so,
+                        "Not a valid SO number");
+            }
+            if (!ConsequenceTypeMappings.accessionToTerm.containsKey(soAccession)) {
+                throw VariantQueryException.malformedParam(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE, so,
+                        "Not a valid SO number");
+            }
+        } else {
+            if (!ConsequenceTypeMappings.termToAccession.containsKey(so)) {
+                throw VariantQueryException.malformedParam(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE, so,
+                        "Not a valid Accession term");
+            } else {
+                soAccession = ConsequenceTypeMappings.termToAccession.get(so);
+            }
+        }
+        return soAccession;
     }
 
     /**

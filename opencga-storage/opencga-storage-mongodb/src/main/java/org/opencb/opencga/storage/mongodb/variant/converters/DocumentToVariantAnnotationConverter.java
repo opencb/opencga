@@ -647,9 +647,9 @@ public class DocumentToVariantAnnotationConverter
     }
 
 
-    private <T> List generateClinicalDBList(List<T> objectList) {
-        List list = new ArrayList(objectList.size());
+    private <T> List<Document> generateClinicalDBList(List<T> objectList) {
         if (objectList != null) {
+            List<Document> list = new ArrayList<>(objectList.size());
             for (T object : objectList) {
                 try {
                     if (object instanceof GenericRecord) {

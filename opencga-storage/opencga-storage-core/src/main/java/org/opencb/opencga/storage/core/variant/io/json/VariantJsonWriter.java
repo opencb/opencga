@@ -32,13 +32,16 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.*;
 
+import javax.annotation.Nullable;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
@@ -48,8 +51,9 @@ import java.util.zip.GZIPOutputStream;
  */
 public class VariantJsonWriter implements VariantWriter {
 
-    private VariantSource source;
-    private Path outdir;
+    private final VariantSource source;
+    // Null if OutputStreams were directly provided
+    private final Path outdir;
 
     protected JsonFactory factory;
     protected ObjectMapper jsonObjectMapper;
@@ -64,25 +68,44 @@ public class VariantJsonWriter implements VariantWriter {
     private boolean includeSrc = false;
     private boolean includeStats;
     private boolean includeSamples = true;
+    private boolean closeStreams;
 
-    public VariantJsonWriter(VariantSource source, Path outdir) {
+    public VariantJsonWriter(VariantSource source, @Nullable Path outdir) {
+        Objects.requireNonNull(source, "VariantSource can not be null");
         this.source = source;
         this.outdir = (outdir != null) ? outdir : Paths.get("").toAbsolutePath();
         this.factory = new JsonFactory();
         this.jsonObjectMapper = new ObjectMapper(this.factory);
         this.numVariantsWritten = 0;
+        closeStreams = true;
+    }
+
+    public VariantJsonWriter(OutputStream variantsStream) {
+        this(null, variantsStream, null);
+    }
+
+    public VariantJsonWriter(VariantSource source, OutputStream variantsStream, OutputStream fileStream) {
+        this.source = source;
+        this.outdir = null;
+        this.variantsStream = variantsStream;
+        this.fileStream = fileStream;
+        this.factory = new JsonFactory();
+        this.jsonObjectMapper = new ObjectMapper(this.factory);
+        this.numVariantsWritten = 0;
+        closeStreams = false;
     }
 
     @Override
     public boolean open() {
         try {
-            String output = Paths.get(outdir.toString(), source.getFileName()).toAbsolutePath().toString()
-                    + "." + VariantReaderUtils.VARIANTS_FILE + ".json.gz";
-            variantsStream = new GZIPOutputStream(new FileOutputStream(output));
-            fileStream = new GZIPOutputStream(new FileOutputStream(VariantReaderUtils.getMetaFromTransformedFile(output)));
+            if (outdir != null) {
+                String output = Paths.get(outdir.toString(), source.getFileName()).toAbsolutePath().toString()
+                        + "." + VariantReaderUtils.VARIANTS_FILE + ".json.gz";
+                variantsStream = new GZIPOutputStream(new FileOutputStream(output));
+                fileStream = new GZIPOutputStream(new FileOutputStream(VariantReaderUtils.getMetaFromTransformedFile(output)));
+            }
         } catch (IOException ex) {
-            Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, null, ex);
-            return false;
+            throw new UncheckedIOException(ex);
         }
         return true;
     }
@@ -98,11 +121,12 @@ public class VariantJsonWriter implements VariantWriter {
 
         try {
             variantsGenerator = factory.createGenerator(variantsStream);
-            fileGenerator = factory.createGenerator(fileStream);
+            if (fileStream != null || source != null) {
+                fileGenerator = factory.createGenerator(fileStream);
+            }
         } catch (IOException ex) {
-            Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, null, ex);
             close();
-            return false;
+            throw new UncheckedIOException(ex);
         }
 
         return true;
@@ -116,7 +140,7 @@ public class VariantJsonWriter implements VariantWriter {
         } catch (IOException ex) {
             Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, variant.getChromosome() + ":" + variant.getStart(), ex);
             close();
-            return false;
+            throw new UncheckedIOException(ex);
         }
         return true;
     }
@@ -146,7 +170,7 @@ public class VariantJsonWriter implements VariantWriter {
                 Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, variant.getChromosome() + ":" + variant.getStart(),
                         ex);
                 close();
-                return false;
+                throw new UncheckedIOException(ex);
             }
         }
 
@@ -166,13 +190,15 @@ public class VariantJsonWriter implements VariantWriter {
             variantsStream.flush();
             variantsGenerator.flush();
 
-            fileGenerator.writeObject(source);
-            fileStream.flush();
-            fileGenerator.flush();
+            if (fileGenerator != null) {
+                fileGenerator.writeObject(source);
+                fileStream.flush();
+                fileGenerator.flush();
+            }
         } catch (IOException ex) {
             Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, null, ex);
             close();
-            return false;
+            throw new UncheckedIOException(ex);
         }
         return true;
     }
@@ -180,8 +206,10 @@ public class VariantJsonWriter implements VariantWriter {
     @Override
     public boolean close() {
         try {
-            variantsGenerator.close();
-            fileGenerator.close();
+            if (closeStreams) {
+                variantsGenerator.close();
+                fileGenerator.close();
+            }
         } catch (IOException ex) {
             Logger.getLogger(VariantJsonWriter.class.getName()).log(Level.SEVERE, null, ex);
             return false;

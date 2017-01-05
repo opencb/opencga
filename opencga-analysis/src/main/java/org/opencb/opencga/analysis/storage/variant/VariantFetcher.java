@@ -19,12 +19,13 @@ package org.opencb.opencga.analysis.storage.variant;
 import org.apache.commons.lang.StringUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.variant.converter.ga4gh.GAVariantFactory;
+import org.opencb.biodata.tools.variant.converters.ga4gh.Ga4ghVariantConverter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
@@ -33,7 +34,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
@@ -50,6 +50,7 @@ import java.util.stream.Collectors;
  *
  * Created on 18/08/15.
  */
+@Deprecated
 public class VariantFetcher implements AutoCloseable {
 
     public static final String SAMPLES_METADATA = "samplesMetadata";
@@ -90,13 +91,13 @@ public class VariantFetcher implements AutoCloseable {
     }
 
     public Map<Long, List<Sample>> getSamplesMetadata(long studyId, Query query, QueryOptions queryOptions, String sessionId)
-            throws CatalogException, StorageManagerException, IOException {
+            throws CatalogException, StorageEngineException, IOException {
         VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(studyId, sessionId);
         return checkSamplesPermissions(query, queryOptions, variantDBAdaptor, sessionId);
     }
 
     public StudyConfiguration getStudyConfiguration(long studyId, QueryOptions options, String sessionId)
-            throws CatalogException, StorageManagerException, IOException {
+            throws CatalogException, StorageEngineException, IOException {
         VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(studyId, sessionId); // DB con closed by VariantFetcher
         return variantDBAdaptor.getStudyConfigurationManager().getStudyConfiguration((int) studyId, options).first();
     }
@@ -106,7 +107,7 @@ public class VariantFetcher implements AutoCloseable {
         QueryResult result;
         long fileIdNum;
 
-        fileIdNum = catalogManager.getFileId(fileId, sessionId);
+        fileIdNum = catalogManager.getFileId(fileId, null, sessionId);
         File file = catalogManager.getFile(fileIdNum, sessionId).first();
 
         if (file.getIndex() == null || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
@@ -148,49 +149,50 @@ public class VariantFetcher implements AutoCloseable {
             query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
         }
 
-        VariantDBAdaptor dbAdaptor = getVariantDBAdaptor(studyId, sessionId);
         // TODO: Check returned files
+        try (VariantDBAdaptor dbAdaptor = getVariantDBAdaptor(studyId, sessionId)) {
 
-        final Map<Long, List<Sample>> samplesMap = checkSamplesPermissions(query, queryOptions, dbAdaptor, sessionId);
+            final Map<Long, List<Sample>> samplesMap = checkSamplesPermissions(query, queryOptions, dbAdaptor, sessionId);
 
-        String[] regions = getRegions(query);
+            String[] regions = getRegions(query);
 
-        if (histogram) {
-            if (regions.length != 1) {
-                throw new IllegalArgumentException("Unable to calculate histogram with " + regions.length + " regions.");
-            }
-            result = dbAdaptor.getFrequency(query, Region.parseRegion(regions[0]), interval);
-        } else if (StringUtils.isNotEmpty(groupBy)) {
-            result = dbAdaptor.groupBy(query, groupBy, queryOptions);
-        } else if (StringUtils.isNotEmpty(rank)) {
-            int limit = addDefaultLimit(queryOptions, LIMIT_MAX, 10);
-            boolean asc = false;
-            if (rank.contains(":")) {  //  eg. gene:-1
-                String[] arr = rank.split(":");
-                rank = arr[0];
-                if (arr[1].endsWith("-1")) {
-                    asc = true;
+            if (histogram) {
+                if (regions.length != 1) {
+                    throw new IllegalArgumentException("Unable to calculate histogram with " + regions.length + " regions.");
+                }
+                result = dbAdaptor.getFrequency(query, Region.parseRegion(regions[0]), interval);
+            } else if (StringUtils.isNotEmpty(groupBy)) {
+                result = dbAdaptor.groupBy(query, groupBy, queryOptions);
+            } else if (StringUtils.isNotEmpty(rank)) {
+                int limit = addDefaultLimit(queryOptions, LIMIT_MAX, 10);
+                boolean asc = false;
+                if (rank.contains(":")) {  //  eg. gene:-1
+                    String[] arr = rank.split(":");
+                    rank = arr[0];
+                    if (arr[1].endsWith("-1")) {
+                        asc = true;
+                    }
+                }
+                result = dbAdaptor.rank(query, rank, limit, asc);
+            } else if (queryOptions.getBoolean(SAMPLES_METADATA)) {
+                List<ObjectMap> list = samplesMap.entrySet().stream()
+                        .map(entry -> new ObjectMap("id", entry.getKey()).append("samples", entry.getValue()))
+                        .collect(Collectors.toList());
+                result = new QueryResult("getVariantSamples", 0, list.size(), list.size(), "", "", list);
+            } else {
+                addDefaultLimit(queryOptions);
+                logger.debug("getVariants {}, {}", query, queryOptions);
+                result = dbAdaptor.get(query, queryOptions);
+                logger.debug("gotVariants {}, {}, in {}ms", result.getNumResults(), result.getNumTotalResults(), result.getDbTime());
+                if (queryOptions.getString("model", "opencb").equalsIgnoreCase("ga4gh")) {
+                    result = convertToGA4GH(result);
                 }
             }
-            result = dbAdaptor.rank(query, rank, limit, asc);
-        } else if (queryOptions.getBoolean(SAMPLES_METADATA)) {
-            List<ObjectMap> list = samplesMap.entrySet().stream()
-                    .map(entry -> new ObjectMap("id", entry.getKey()).append("samples", entry.getValue()))
-                    .collect(Collectors.toList());
-            result = new QueryResult("getVariantSamples", 0, list.size(), list.size(), "", "", list);
-        } else {
-            addDefaultLimit(queryOptions);
-            logger.debug("getVariants {}, {}", query, queryOptions);
-            result = dbAdaptor.get(query, queryOptions);
-            logger.debug("gotVariants {}, {}, in {}ms", result.getNumResults(), result.getNumTotalResults(), result.getDbTime());
-            if (queryOptions.getString("model", "opencb").equalsIgnoreCase("ga4gh")) {
-                result = convertToGA4GH(result);
-            }
+            return result;
         }
-        return result;
     }
 
-    public VariantDBIterator iterator(Query query, QueryOptions queryOptions, String sessionId) throws CatalogException, StorageManagerException {
+    public VariantDBIterator iterator(Query query, QueryOptions queryOptions, String sessionId) throws CatalogException, StorageEngineException {
 
         long studyId = getMainStudyId(query, sessionId);
 
@@ -201,7 +203,7 @@ public class VariantFetcher implements AutoCloseable {
         return dbAdaptor.iterator(query, queryOptions);
     }
 
-    public QueryResult<Long> countByFile(long fileId, QueryOptions params, String sessionId) throws CatalogException, StorageManagerException, IOException {
+    public QueryResult<Long> countByFile(long fileId, QueryOptions params, String sessionId) throws CatalogException, StorageEngineException, IOException {
         Query query = getVariantQuery(params);
         if (getMainStudyId(query, VariantDBAdaptor.VariantQueryParams.STUDIES.key(), sessionId) == null) {
             long studyId = catalogManager.getStudyIdByFileId(fileId);
@@ -211,7 +213,7 @@ public class VariantFetcher implements AutoCloseable {
         return count(query, sessionId);
     }
 
-    public QueryResult<Long> count(long studyId, QueryOptions params, String sessionId) throws CatalogException, StorageManagerException, IOException {
+    public QueryResult<Long> count(long studyId, QueryOptions params, String sessionId) throws CatalogException, StorageEngineException, IOException {
         Query query = getVariantQuery(params);
         if (getMainStudyId(query, VariantDBAdaptor.VariantQueryParams.STUDIES.key(), sessionId) == null) {
             query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
@@ -219,7 +221,7 @@ public class VariantFetcher implements AutoCloseable {
         return count(query, sessionId);
     }
 
-    public QueryResult<Long> count(Query query, String sessionId) throws CatalogException, StorageManagerException, IOException {
+    public QueryResult<Long> count(Query query, String sessionId) throws CatalogException, StorageEngineException, IOException {
 
         long studyId = getMainStudyId(query, sessionId);
 
@@ -335,31 +337,31 @@ public class VariantFetcher implements AutoCloseable {
         }
     }
 
-    protected VariantDBAdaptor getVariantDBAdaptor(long studyId, String sessionId) throws CatalogException, StorageManagerException {
+    protected VariantDBAdaptor getVariantDBAdaptor(long studyId, String sessionId) throws CatalogException, StorageEngineException {
         String key = studyId + "_" + sessionId;
         if (!this.variantDBAdaptor.containsKey(key)) {
             // Set new key
-            DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
+            DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
             String storageEngine = dataStore.getStorageEngine();
             String dbName = dataStore.getDbName();
             try {
                 this.variantDBAdaptor.computeIfAbsent(key, (str) -> {
                     try {
                         return storageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
-                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageManagerException e) {
+                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageEngineException e) {
                         throw new IllegalStateException("Unable to get VariantDBAdaptor", e);
                     }
                 });
             } catch (IllegalStateException e) {
-                throw new StorageManagerException("Problems creating VariantDBAdaptor", e);
+                throw new StorageEngineException("Problems creating VariantDBAdaptor", e);
             }
         }
         return variantDBAdaptor.get(key);
     }
 
     protected QueryResult<org.ga4gh.models.Variant> convertToGA4GH(QueryResult<Variant> result) {
-        GAVariantFactory factory = new GAVariantFactory();
-        List<org.ga4gh.models.Variant> gaVariants = factory.create(result.getResult());
+        Ga4ghVariantConverter<org.ga4gh.models.Variant> converter = Ga4ghVariantConverter.newAvroConverter(false, null);
+        List<org.ga4gh.models.Variant> gaVariants = converter.apply(result.getResult());
         QueryResult<org.ga4gh.models.Variant> gaResult = new QueryResult<>(result.getId(), result.getDbTime(), result.getNumResults(), result.getNumTotalResults(), result.getWarningMsg(), result.getErrorMsg(), gaVariants);
         return gaResult;
     }
@@ -376,7 +378,7 @@ public class VariantFetcher implements AutoCloseable {
         return query;
     }
 
-    public VariantSourceDBAdaptor getSourceDBAdaptor(int studyId, String sessionId) throws CatalogException, StorageManagerException {
+    public VariantSourceDBAdaptor getSourceDBAdaptor(int studyId, String sessionId) throws CatalogException, StorageEngineException {
         return getVariantDBAdaptor(studyId, sessionId).getVariantSourceDBAdaptor();
     }
 

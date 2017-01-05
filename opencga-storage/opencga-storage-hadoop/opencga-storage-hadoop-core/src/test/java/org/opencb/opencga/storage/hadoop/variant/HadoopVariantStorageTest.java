@@ -45,7 +45,6 @@ import org.apache.hadoop.hbase.regionserver.snapshot.RegionServerSnapshotManager
 import org.apache.hadoop.hbase.regionserver.wal.FSHLog;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.FSTableDescriptors;
-import org.apache.hadoop.hbase.zookeeper.RecoverableZooKeeper;
 import org.apache.hadoop.hbase.zookeeper.ZKTableStateManager;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.common.Storage;
@@ -84,6 +83,8 @@ import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -103,9 +104,12 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
     AtomicReference<HBaseTestingUtility> utility = new AtomicReference<>(null);
     AtomicReference<Configuration> configuration = new AtomicReference<>(null);
+//    Set<HadoopVariantStorageEngine> managers = new ConcurrentHashSet<>();
+    AtomicReference<HadoopVariantStorageEngine> manager = new AtomicReference<>();
 
     class HadoopExternalResource extends ExternalResource implements HadoopVariantStorageTest {
 
+        Logger logger = LoggerFactory.getLogger(this.getClass());
         @Override
         public void before() throws Throwable {
             if (utility.get() == null) {
@@ -174,7 +178,8 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 org.apache.log4j.Logger.getLogger(NIOServerCnxn.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(NIOServerCnxnFactory.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(PrepRequestProcessor.class).setLevel(Level.WARN);
-                org.apache.log4j.Logger.getLogger(RecoverableZooKeeper.class).setLevel(Level.WARN);
+                // Interesting class for logging new Zookeeper connections
+//                org.apache.log4j.Logger.getLogger(RecoverableZooKeeper.class).setLevel(Level.WARN);
 
                 // HDFS loggers
                 org.apache.log4j.Logger.getLogger(FSNamesystem.class.getName() + ".audit").setLevel(Level.WARN);
@@ -195,7 +200,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
 
 //                // Change port to avoid port collisions
-//                utility.get().getConfiguration().setInt(HConstants.MASTER_INFO_PORT, HConstants.DEFAULT_MASTER_INFOPORT + 1);
+//                utility.get().getStorageConfiguration().setInt(HConstants.MASTER_INFO_PORT, HConstants.DEFAULT_MASTER_INFOPORT + 1);
 
                 // Enable phoenix secundary indexes
                 conf.set("hbase.regionserver.wal.codec",
@@ -216,6 +221,9 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
                 conf.setBoolean(QueryServices.IS_NAMESPACE_MAPPING_ENABLED, true);
 
+                // Zookeeper always with the same clientPort.
+//                conf.setInt("test.hbase.zookeeper.property.clientPort", 55419);
+
                 utility.get().startMiniCluster(1);
 
     //            MiniMRCluster miniMRCluster = utility.startMiniMapReduceCluster();
@@ -223,13 +231,26 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
     //            miniMRClientCluster.start();
 
 //                checkHBaseMiniCluster();
-
             }
         }
 
         @Override
         public void after() {
             try {
+                logger.info("Closing HBaseTestingUtility");
+//                for (HadoopVariantStorageEngine manager : managers) {
+//                    manager.close();
+//                }
+                if (manager.get() != null) {
+                    manager.get().close();
+                    manager.set(null);
+                }
+//                for (Connection connection : HBaseManager.CONNECTIONS) {
+//                    connection.close();
+//                }
+                System.out.println("HBaseManager.getOpenConnections() = " + HBaseManager.getOpenConnections());
+
+                configuration.set(null);
                 try {
                     if (utility.get() != null) {
                         utility.get().shutdownMiniCluster();
@@ -240,6 +261,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
             } catch (Exception e) {
                 Assert.fail(e.getMessage());
             }
+            System.out.println("##### HBaseMiniCluster down ###################");
         }
 
         public Configuration getConf() {
@@ -281,16 +303,20 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
     }
 
     @Override
-    default HadoopVariantStorageManager getVariantStorageManager() throws Exception {
-
-        HadoopVariantStorageManager manager = new HadoopVariantStorageManager();
+    default HadoopVariantStorageEngine getVariantStorageManager() throws Exception {
+        synchronized (manager) {
+            if (manager.get() == null) {
+                manager.set(new HadoopVariantStorageEngine());
+            }
+        }
+        HadoopVariantStorageEngine manager = HadoopVariantStorageTest.manager.get();
 
         //Make a copy of the configuration
         Configuration conf = new Configuration(false);
         HBaseConfiguration.merge(conf, HadoopVariantStorageTest.configuration.get());
         StorageConfiguration storageConfiguration = getStorageConfiguration(conf);
 
-        manager.setConfiguration(storageConfiguration, HadoopVariantStorageManager.STORAGE_ENGINE_ID);
+        manager.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
         manager.mrExecutor = new TestMRExecutor(conf);
         manager.conf = conf;
         return manager;
@@ -305,11 +331,11 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
     }
 
     static StorageConfiguration updateStorageConfiguration(StorageConfiguration storageConfiguration, Configuration conf) throws IOException {
-        storageConfiguration.setDefaultStorageEngineId(HadoopVariantStorageManager.STORAGE_ENGINE_ID);
-        StorageEtlConfiguration variantConfiguration = storageConfiguration.getStorageEngine(HadoopVariantStorageManager.STORAGE_ENGINE_ID).getVariant();
+        storageConfiguration.setDefaultStorageEngineId(HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
+        StorageEtlConfiguration variantConfiguration = storageConfiguration.getStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID).getVariant();
         ObjectMap options = variantConfiguration.getOptions();
 
-        options.put(HadoopVariantStorageManager.EXTERNAL_MR_EXECUTOR, TestMRExecutor.class);
+        options.put(HadoopVariantStorageEngine.EXTERNAL_MR_EXECUTOR, TestMRExecutor.class);
         TestMRExecutor.setStaticConfiguration(conf);
 
         options.put(GenomeHelper.CONFIG_HBASE_ADD_DEPENDENCY_JARS, false);
@@ -324,9 +350,9 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
         FileSystem fs = FileSystem.get(HadoopVariantStorageTest.configuration.get());
         String intermediateDirectory = fs.getHomeDirectory().toUri().resolve("opencga_test/").toString();
-        System.out.println(HadoopVariantStorageManager.OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY + " = " + intermediateDirectory);
+        System.out.println(HadoopVariantStorageEngine.OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY + " = " + intermediateDirectory);
         options.put(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY, conf.get(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY));
-        options.put(HadoopVariantStorageManager.OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY, intermediateDirectory);
+        options.put(HadoopVariantStorageEngine.OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY, intermediateDirectory);
 
         variantConfiguration.getDatabase().setHosts(Collections.singletonList("hbase://" + HadoopVariantStorageTest.configuration.get().get(HConstants.ZOOKEEPER_QUORUM)));
         return storageConfiguration;

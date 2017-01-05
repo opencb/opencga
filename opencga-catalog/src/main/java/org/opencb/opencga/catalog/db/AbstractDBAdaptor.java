@@ -96,7 +96,7 @@ public abstract class AbstractDBAdaptor {
              * The accepted operators are: [<, <=, >, >=, =, , !=]
              * <p>
              * Example:
-             * getAllFiles ( {diskUsage : "<200000" } )
+             * getAllFiles ( {size : "<200000" } )
              * getAllFiles ( {jobId : "32,33,34" } )
              * </p>
              */

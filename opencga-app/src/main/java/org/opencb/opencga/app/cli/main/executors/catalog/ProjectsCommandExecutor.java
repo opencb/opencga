@@ -21,7 +21,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.catalog.ProjectCommandOptions;
+import org.opencb.opencga.app.cli.main.options.ProjectCommandOptions;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
@@ -45,7 +45,7 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
 
     @Override
     public void execute() throws Exception {
-        logger.debug("Executing variant command line");
+        logger.debug("Executing Project command line");
 
         String subCommandString = getParsedSubCommand(projectsCommandOptions.jCommander);
         QueryResponse queryResponse = null;
@@ -65,74 +65,72 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
             case "studies":
                 queryResponse = studies();
                 break;
-            case "help":
-                queryResponse = help();
-                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
         }
 
         createOutput(queryResponse);
-
     }
 
     private QueryResponse<Project> create() throws CatalogException, IOException {
         logger.debug("Creating a new project");
-        ObjectMap o = new ObjectMap();
-        o.append(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.createCommandOptions.description);
-        if (projectsCommandOptions.createCommandOptions.organization != null) {
-            o.append("organization", projectsCommandOptions.createCommandOptions.organization);
-        }
+
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.createCommandOptions.description);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), projectsCommandOptions.createCommandOptions.organization);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(), projectsCommandOptions.createCommandOptions.scientificName);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(), projectsCommandOptions.createCommandOptions.commonName);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(), projectsCommandOptions.createCommandOptions.taxonomyCode);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), projectsCommandOptions.createCommandOptions.assembly);
+
         return openCGAClient.getProjectClient().create(projectsCommandOptions.createCommandOptions.name,
-                projectsCommandOptions.createCommandOptions.alias, o);
+                projectsCommandOptions.createCommandOptions.alias, params);
     }
 
     private QueryResponse<Project> info() throws CatalogException, IOException {
-        logger.debug("Geting the project info");
-        return openCGAClient.getProjectClient().get(projectsCommandOptions.infoCommandOptions.id, null);
+        logger.debug("Getting the project info");
+
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, projectsCommandOptions.infoCommandOptions.dataModelOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, projectsCommandOptions.infoCommandOptions.dataModelOptions.exclude);
+        return openCGAClient.getProjectClient().get(projectsCommandOptions.infoCommandOptions.project, null);
     }
 
     private QueryResponse<Project> update() throws CatalogException, IOException {
         logger.debug("Updating project");
 
-        ObjectMap objectMap = new ObjectMap();
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.NAME.key(), projectsCommandOptions.updateCommandOptions.name);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.updateCommandOptions.description);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), projectsCommandOptions.updateCommandOptions.organization);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ATTRIBUTES.key(), projectsCommandOptions.updateCommandOptions.attributes);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(),
+                projectsCommandOptions.updateCommandOptions.scientificName);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(),
+                projectsCommandOptions.updateCommandOptions.commonName);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(),
+                projectsCommandOptions.updateCommandOptions.taxonomyCode);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), projectsCommandOptions.updateCommandOptions.assembly);
 
-        objectMap.putIfNotEmpty(ProjectDBAdaptor.QueryParams.NAME.key(), projectsCommandOptions.updateCommandOptions.name);
-        objectMap.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.updateCommandOptions.description);
-        objectMap.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), projectsCommandOptions.updateCommandOptions.organization);
-
-        //if (StringUtils.isNotEmpty(projectsCommandOptions.updateCommandOptions.status)) {
-        //    objectMap.put(CatalogProjectDBAdaptor.QueryParams.STATUS_NAME.key(), projectsCommandOptions.updateCommandOptions.status);
-        //}
-        objectMap.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ATTRIBUTES.key(), projectsCommandOptions.updateCommandOptions.attributes);
-
-        return openCGAClient.getProjectClient().update(projectsCommandOptions.updateCommandOptions.id, objectMap);
+        return openCGAClient.getProjectClient().update(projectsCommandOptions.updateCommandOptions.project, params);
     }
 
     private QueryResponse<Project> delete() throws CatalogException, IOException {
         logger.debug("Deleting project ");
-        ObjectMap objectMap = new ObjectMap();
-        return openCGAClient.getProjectClient().delete(projectsCommandOptions.deleteCommandOptions.id, objectMap);
+
+        return openCGAClient.getProjectClient().delete(projectsCommandOptions.deleteCommandOptions.project, new ObjectMap());
     }
 
     private QueryResponse<Study> studies() throws CatalogException, IOException {
         logger.debug("Getting all studies the from a project ");
+
         QueryOptions queryOptions = new QueryOptions();
-
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, projectsCommandOptions.studiesCommandOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE,projectsCommandOptions.studiesCommandOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, projectsCommandOptions.studiesCommandOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, projectsCommandOptions.studiesCommandOptions.skip);
-
-        return openCGAClient.getProjectClient().getStudies(projectsCommandOptions.studiesCommandOptions.id, queryOptions);
-    }
-
-    private QueryResponse help() throws CatalogException, IOException {
-
-        System.out.println("PENDING");
-        return null;
-
+        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, projectsCommandOptions.studiesCommandOptions.dataModelOptions.include);
+        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE,projectsCommandOptions.studiesCommandOptions.dataModelOptions.exclude);
+        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, projectsCommandOptions.studiesCommandOptions.numericOptions.limit);
+        queryOptions.putIfNotEmpty(QueryOptions.SKIP, projectsCommandOptions.studiesCommandOptions.numericOptions.skip);
+        return openCGAClient.getProjectClient().getStudies(projectsCommandOptions.studiesCommandOptions.project, queryOptions);
     }
 
 }

@@ -16,11 +16,11 @@
 
 package org.opencb.opencga.storage.core;
 
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,21 +32,19 @@ import java.util.stream.Collectors;
 
 /**
  * Creates StorageManagers by reflexion.
- * The StorageManager's className is read from <opencga-home>/conf/storage-configuration.yml
+ * The StorageEngine's className is read from <opencga-home>/conf/storage-configuration.yml
  */
 public final class StorageManagerFactory {
 
     private static StorageManagerFactory storageManagerFactory;
     private static StorageConfiguration storageConfigurationDefault;
-    private CatalogManager catalogManager;
     private StorageConfiguration storageConfiguration;
 
-    private Map<String, AlignmentStorageManager> alignmentStorageManagerMap = new HashMap<>();
-    private Map<String, VariantStorageManager> variantStorageManagerMap = new HashMap<>();
+    private Map<String, AlignmentStorageEngine> alignmentStorageManagerMap = new HashMap<>();
+    private Map<String, VariantStorageEngine> variantStorageManagerMap = new HashMap<>();
     protected static Logger logger = LoggerFactory.getLogger(StorageConfiguration.class);
 
-    private StorageManagerFactory(CatalogManager catalogManager, StorageConfiguration storageConfiguration) {
-        this.catalogManager = catalogManager;
+    private StorageManagerFactory(StorageConfiguration storageConfiguration) {
         this.storageConfiguration = storageConfiguration;
     }
 
@@ -64,10 +62,10 @@ public final class StorageManagerFactory {
 //                throw new UncheckedIOException(e);
 //            }
 //        }
-        return get(null, null);
+        return get(null);
     }
 
-    public static StorageManagerFactory get(CatalogManager catalogManager, StorageConfiguration storageConfiguration) {
+    public static StorageManagerFactory get(StorageConfiguration storageConfiguration) {
         if (storageManagerFactory == null) {
             if (storageConfiguration != null) {
                 configure(storageConfiguration);
@@ -77,37 +75,36 @@ public final class StorageManagerFactory {
             Objects.requireNonNull(storageConfiguration, "Storage configuration needed");
             // TODO: Uncomment the line below once variantStorageManager starts needing to know catalog
 //            Objects.requireNonNull(catalogManager, "Catalog manager needed");
-            storageManagerFactory = new StorageManagerFactory(catalogManager, storageConfiguration);
+            storageManagerFactory = new StorageManagerFactory(storageConfiguration);
             return storageManagerFactory;
 
         }
         return storageManagerFactory;
     }
 
-    public AlignmentStorageManager getAlignmentStorageManager()
+    public AlignmentStorageEngine getAlignmentStorageManager()
             throws IllegalAccessException, InstantiationException, ClassNotFoundException {
         return getAlignmentStorageManager(null);
     }
 
-    public AlignmentStorageManager getAlignmentStorageManager(String storageEngineName)
+    public AlignmentStorageEngine getAlignmentStorageManager(String storageEngineName)
             throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-//        return new AlignmentStorageManager(catalogManager, storageConfiguration);
         return getStorageManager("ALIGNMENT", storageEngineName, alignmentStorageManagerMap);
     }
 
 
-    public VariantStorageManager getVariantStorageManager()
+    public VariantStorageEngine getVariantStorageManager()
             throws IllegalAccessException, InstantiationException, ClassNotFoundException {
         return getVariantStorageManager(null);
     }
 
-    public VariantStorageManager getVariantStorageManager(String storageEngineName)
+    public VariantStorageEngine getVariantStorageManager(String storageEngineName)
             throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         return getStorageManager("VARIANT", storageEngineName, variantStorageManagerMap);
     }
 
 
-    private <T extends StorageManager> T getStorageManager(String bioformat, String storageEngineName, Map<String, T> storageManagerMap)
+    private <T extends StorageEngine> T getStorageManager(String bioformat, String storageEngineName, Map<String, T> storageManagerMap)
             throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         /*
          * This new block of code use new StorageConfiguration system, it must replace older one
@@ -115,20 +112,24 @@ public final class StorageManagerFactory {
         if (this.storageConfiguration == null) {
             throw new NullPointerException();
         }
+        if (StringUtils.isEmpty(storageEngineName)) {
+            storageEngineName = getDefaultStorageManagerName();
+        }
         if (!storageManagerMap.containsKey(storageEngineName)) {
-            T storageManager = null;
+            String clazz = null;
             switch (bioformat.toUpperCase()) {
                 case "ALIGNMENT":
-                    storageManager = (T) new AlignmentStorageManager(catalogManager, storageConfiguration);
+                    clazz = this.storageConfiguration.getStorageEngine(storageEngineName).getAlignment().getManager();
                     break;
                 case "VARIANT":
-                    String clazz = this.storageConfiguration.getStorageEngine(storageEngineName).getVariant().getManager();
-                    storageManager = (T) Class.forName(clazz).newInstance();
-                    storageManager.setConfiguration(this.storageConfiguration, storageEngineName);
+                    clazz = this.storageConfiguration.getStorageEngine(storageEngineName).getVariant().getManager();
                     break;
                 default:
                     break;
             }
+
+            T storageManager = (T) Class.forName(clazz).newInstance();
+            storageManager.setConfiguration(this.storageConfiguration, storageEngineName);
 
             storageManagerMap.put(storageEngineName, storageManager);
         }
@@ -148,7 +149,11 @@ public final class StorageManagerFactory {
 //        return Config.getStorageProperties().getProperty("OPENCGA.STORAGE.ENGINES").split(",");
     }
 
-//    private static String parseStorageEngineName(String storageEngineName) {
+    public StorageConfiguration getStorageConfiguration() {
+        return storageConfiguration;
+    }
+
+    //    private static String parseStorageEngineName(String storageEngineName) {
 //        String[] storageEngineNames = Config.getStorageProperties().getProperty("OPENCGA.STORAGE.ENGINES").split(",");
 //        if(storageEngineName == null || storageEngineName.isEmpty()) {
 //            return storageEngineNames[0].toUpperCase();
@@ -163,4 +168,19 @@ public final class StorageManagerFactory {
 //        }
 //    }
 
+    public void registerStorageManager(VariantStorageEngine variantStorageManager) {
+        variantStorageManagerMap.put(variantStorageManager.getStorageEngineId(), variantStorageManager);
+    }
+
+    public VariantStorageEngine unregisterVariantStorageManager(String storageEngineId) {
+        return variantStorageManagerMap.remove(storageEngineId);
+    }
+
+    public void registerStorageManager(AlignmentStorageEngine alignmentStorageManager) {
+        alignmentStorageManagerMap.put(alignmentStorageManager.getStorageEngineId(), alignmentStorageManager);
+    }
+
+    public AlignmentStorageEngine unregisterAlignmentStorageManager(String storageEngineId) {
+        return alignmentStorageManagerMap.remove(storageEngineId);
+    }
 }

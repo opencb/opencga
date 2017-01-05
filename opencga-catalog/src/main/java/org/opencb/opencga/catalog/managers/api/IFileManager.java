@@ -16,20 +16,25 @@
 
 package org.opencb.opencga.catalog.managers.api;
 
+import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.DatasetAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 
+import javax.annotation.Nullable;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -60,17 +65,40 @@ public interface IFileManager extends ResourceManager<Long, File> {
     /*-------------*/
     Long getStudyId(long fileId) throws CatalogException;
 
+//    /**
+//     * Obtains the numeric file id given a string.
+//     *
+//     * @param fileStr File id in string format. Could be one of [id | user@aliasProject:aliasStudy:{fileName|path}
+//     *                | user@aliasStudy:{fileName|path} | aliasStudy:{fileName|path} | {fileName|path}].
+//     * @param studyId study id where the file will be looked for.
+//     * @param sessionId session id of the user asking for the file.
+//     * @return the numeric file id.
+//     * @throws CatalogException when more than one file id is found.
+//     */
+//    @Deprecated
+//    Long getId(String fileStr, long studyId, String sessionId) throws CatalogException;
+
     /**
-     * Obtains the numeric file id given a string.
+     * Obtains the resource java bean containing the requested ids.
      *
-     * @param fileStr File id in string format. Could be one of [id | user@aliasProject:aliasStudy:{fileName|path}
-     *                | user@aliasStudy:{fileName|path} | aliasStudy:{fileName|path} | {fileName|path}].
-     * @param studyId study id where the file will be looked for.
-     * @param sessionId session id of the user asking for the file.
-     * @return the numeric file id.
+     * @param fileStr File id in string format. Could be either the id, name or path.
+     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param sessionId Session id of the user logged.
+     * @return the resource java bean containing the requested ids.
      * @throws CatalogException when more than one file id is found.
      */
-    Long getId(String fileStr, long studyId, String sessionId) throws CatalogException;
+    AbstractManager.MyResourceId getId(String fileStr, @Nullable String studyStr, String sessionId) throws CatalogException;
+
+    /**
+     * Obtains the resource java bean containing the requested ids.
+     *
+     * @param fileStr File id in string format. Could be either the id, name or path.
+     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param sessionId Session id of the user logged.
+     * @return the resource java bean containing the requested ids.
+     * @throws CatalogException CatalogException.
+     */
+    AbstractManager.MyResourceIds getIds(String fileStr, @Nullable String studyStr, String sessionId) throws CatalogException;
 
     /**
      * Obtains the numeric file id given a string.
@@ -81,6 +109,7 @@ public interface IFileManager extends ResourceManager<Long, File> {
      * @return the numeric file id.
      * @throws CatalogException when more than one file id is found.
      */
+    @Deprecated
     Long getId(String userId, String fileStr) throws CatalogException;
 
     /**
@@ -91,6 +120,7 @@ public interface IFileManager extends ResourceManager<Long, File> {
      * @return A list of file ids.
      * @throws CatalogException CatalogException.
      */
+    @Deprecated
     default List<Long> getIds(String userId, String fileStr) throws CatalogException {
         List<Long> fileIds = new ArrayList<>();
         for (String fileId : fileStr.split(",")) {
@@ -104,16 +134,30 @@ public interface IFileManager extends ResourceManager<Long, File> {
     @Deprecated
     Long getId(String fileId) throws CatalogException;
 
+    /**
+     * Delete entries from Catalog.
+     *
+     * @param ids       Comma separated list of ids corresponding to the objects to delete
+     * @param studyStr  Study string.
+     * @param options   Deleting options.
+     * @param sessionId sessionId
+     * @return A list with the deleted objects
+     * @throws CatalogException CatalogException
+     * @throws IOException IOException.
+     */
+    List<QueryResult<File>> delete(String ids, @Nullable String studyStr, QueryOptions options, String sessionId)
+            throws CatalogException, IOException;
+
     boolean isExternal(File file) throws CatalogException;
 
-    QueryResult<FileIndex>  updateFileIndexStatus(File file, String newStatus, String sessionId) throws CatalogException;
+    QueryResult<FileIndex>  updateFileIndexStatus(File file, String newStatus, String message, String sessionId) throws CatalogException;
 
 
     /*--------------*/
     /* CRUD METHODS */
     /*--------------*/
     QueryResult<File> create(long studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path, String creationDate,
-                             String description, File.FileStatus status, long diskUsage, long experimentId, List<Long> sampleIds,
+                             String description, File.FileStatus status, long size, long experimentId, List<Long> sampleIds,
                              long jobId, Map<String, Object> stats, Map<String, Object> attributes, boolean parents, QueryOptions options,
                              String sessionId) throws CatalogException;
 
@@ -121,6 +165,18 @@ public interface IFileManager extends ResourceManager<Long, File> {
                                    QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<File> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
+
+    /**
+     * Multi-study search of files in catalog.
+     *
+     * @param studyStr Study string that can point to several studies of the same project.
+     * @param query    Query object.
+     * @param options  QueryOptions object.
+     * @param sessionId Session id.
+     * @return The list of files matching the query.
+     * @throws CatalogException catalogException.
+     */
+    QueryResult<File> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<Long> count(Query query, String sessionId) throws CatalogException;
 
@@ -147,13 +203,14 @@ public interface IFileManager extends ResourceManager<Long, File> {
     QueryResult<File> link(URI uriOrigin, String pathDestiny, long studyId, ObjectMap params, String sessionId)
             throws CatalogException, IOException;
 
-    QueryResult<FileTree> getTree(String fileIdStr, Query query, QueryOptions queryOptions, int maxDepth, String sessionId)
-            throws CatalogException;
+    QueryResult<FileTree> getTree(String fileIdStr, @Nullable String studyId, Query query, QueryOptions queryOptions, int maxDepth,
+                                  String sessionId) throws CatalogException;
 
     @Deprecated
     QueryResult<File> unlink(long fileId, String sessionId) throws CatalogException;
 
-    QueryResult<File> unlink(String fileIdStr, QueryOptions options, String sessionId) throws CatalogException, IOException;
+    QueryResult<File> unlink(String fileIdStr, @Nullable String studyStr, QueryOptions options, String sessionId)
+            throws CatalogException, IOException;
 
     /**
      * Retrieve the file Acls for the given members in the file.
@@ -174,8 +231,6 @@ public interface IFileManager extends ResourceManager<Long, File> {
         }
         return result;
     }
-
-
 
     @Deprecated
     QueryResult move(long fileId, String newPath, QueryOptions options, String sessionId)
@@ -203,46 +258,27 @@ public interface IFileManager extends ResourceManager<Long, File> {
         return rank(studyId, query, field, numResults, asc, sessionId);
     }
 
-    /**
-     * Groups the elements queried by the field(s) given.
-     *
-     * @param studyId Study id.
-     * @param query   Query object containing the query that will be executed.
-     * @param field   Field by which the results will be grouped in.
-     * @param options QueryOptions object.
-     * @param sessionId  sessionId.
-     * @return        A QueryResult object containing the results of the query grouped by the field.
-     * @throws CatalogException CatalogException
-     */
-    QueryResult groupBy(long studyId, Query query, String field, QueryOptions options, String sessionId) throws CatalogException;
-
-    default QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        long studyId = query.getLong(FileDBAdaptor.QueryParams.STUDY_ID.key());
-        if (studyId == 0L) {
-            throw new CatalogException("File[groupBy]: Study id not found in the query");
+    default QueryResult groupBy(@Nullable String studyStr, Query query, QueryOptions options, String fields, String sessionId)
+            throws CatalogException {
+        if (StringUtils.isEmpty(fields)) {
+            throw new CatalogException("Empty fields parameter.");
         }
-        return groupBy(studyId, query, field, options, sessionId);
+        return groupBy(studyStr, query, Arrays.asList(fields.split(",")), options, sessionId);
     }
 
-    /**
-     * Groups the elements queried by the field(s) given.
-     *
-     * @param studyId Study id.
-     * @param query   Query object containing the query that will be executed.
-     * @param fields  List of fields by which the results will be grouped in.
-     * @param options QueryOptions object.
-     * @param sessionId  sessionId.
-     * @return        A QueryResult object containing the results of the query grouped by the fields.
-     * @throws CatalogException CatalogException
-     */
-    QueryResult groupBy(long studyId, Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
+            throws CatalogException;
 
-    default QueryResult groupBy(Query query, List<String> field, QueryOptions options, String sessionId) throws CatalogException {
-        long studyId = query.getLong(FileDBAdaptor.QueryParams.STUDY_ID.key());
-        if (studyId == 0L) {
-            throw new CatalogException("File[groupBy]: Study id not found in the query");
-        }
-        return groupBy(studyId, query, field, options, sessionId);
+    @Deprecated
+    @Override
+    default QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
+        throw new NotImplementedException("Group by has to be called passing the study string");
+    }
+
+    @Deprecated
+    @Override
+    default QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
+        throw new NotImplementedException("Group by has to be called passing the study string");
     }
 
     QueryResult<Dataset> createDataset(long studyId, String name, String description, List<Long> files, Map<String, Object> attributes,
@@ -319,7 +355,7 @@ public interface IFileManager extends ResourceManager<Long, File> {
 
     void setFileIndex(long fileId, FileIndex index, String sessionId) throws CatalogException;
 
-    void setDiskUsage(long fileId, long diskUsage, String sessionId) throws CatalogException;
+    void setDiskUsage(long fileId, long size, String sessionId) throws CatalogException;
 
     void setModificationDate(long fileId, String date, String sessionId) throws CatalogException;
 

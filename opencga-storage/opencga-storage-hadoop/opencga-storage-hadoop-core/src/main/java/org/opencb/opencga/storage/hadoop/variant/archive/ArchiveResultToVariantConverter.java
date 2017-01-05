@@ -26,7 +26,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
-import org.opencb.biodata.tools.variant.converter.VcfSliceToVariantListConverter;
+import org.opencb.biodata.tools.variant.converters.proto.VcfSliceToVariantListConverter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VariantLocalConflictResolver;
@@ -134,7 +134,6 @@ public class ArchiveResultToVariantConverter {
             }
             VcfSliceToVariantListConverter converter = new VcfSliceToVariantListConverter(
                     thisFileSamplePositions, Integer.toString(fileId), Integer.toString(studyId));
-            converter.setCreateMapCopy(this.isParallel()); // create copy when run in parallel
             return converter;
         });
     }
