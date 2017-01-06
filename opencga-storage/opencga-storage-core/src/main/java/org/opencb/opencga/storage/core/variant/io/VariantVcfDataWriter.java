@@ -365,26 +365,17 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         return convertVariantToVariantContext(variant, annotations);
     }
 
-    public List<String> buildAlleles(Variant variant, boolean adjust) {
+    public List<String> buildAlleles(Variant variant, Integer adjustedStart) {
         String reference = variant.getReference();
         String alternate = variant.getAlternate();
         List<AlternateCoordinate> secAlts = variant.getStudy(this.studyIdString).getSecondaryAlternates();
         List<String> alleles = new ArrayList<>(secAlts.size() + 2);
         Integer origStart = variant.getStart();
         Integer origEnd = variant.getEnd();
-        Integer adjustedStart = adjust ? origStart - 1 : origStart;
         alleles.add(buildAllele(variant.getChromosome(), origStart, reference, adjustedStart));
         alleles.add(buildAllele(variant.getChromosome(), origStart, alternate, adjustedStart));
         secAlts.forEach(alt -> {
-            if (origStart.equals(alt.getStart()) && origEnd.equals(alt.getEnd())) {
-                alleles.add(buildAllele(variant.getChromosome(), origStart, alt.getAlternate(), adjustedStart));
-            } else if (adjustedStart.equals(alt.getStart()) && origEnd.equals(alt.getEnd())) {
-                // By chance the alt matches the adjusted start
-                alleles.add(buildAllele(variant.getChromosome(), adjustedStart, alt.getAlternate(), adjustedStart));
-            } else {
-                // different position as ref variant
-                alleles.add(Character.toString(VCFConstants.NO_CALL_ALLELE));
-            }
+            alleles.add(buildAllele(variant.getChromosome(), alt.getStart(), alt.getAlternate(), adjustedStart));
         });
         return alleles;
     }
@@ -396,24 +387,31 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         if (StringUtils.startsWith(allele, "*")) {
             return allele;
         }
-        return getReferenceBase(chromosome, adjustedStart) + allele;
+        return getReferenceBase(chromosome, adjustedStart, originalPosition) + allele;
     }
 
-    private String getReferenceBase(String chromosome, Integer position) {
-        return "N"; // current default return of base TODO load reference sequence
+    /**
+     * Get bases from reference sequence.
+     * @param chromosome Chromosome.
+     * @param from Start ( inclusive) position.
+     * @param to End (exclusive) position.
+     * @return String Reference sequence of length to - from.
+     */
+    private String getReferenceBase(String chromosome, Integer from, Integer to) {
+        int length = to - from;
+        if (length <= 0) {
+            throw new IllegalStateException(
+                    "Sequence length is negative: chromosome " + chromosome + " from " + from + " to " + to);
+        }
+        return StringUtils.repeat('N', length); // current return default base TODO load reference sequence
     }
 
     public VariantContext convertVariantToVariantContext(Variant variant, List<String> annotations) { //, StudyConfiguration
         final String noCallAllele = String.valueOf(VCFConstants.NO_CALL_ALLELE);
         VariantContextBuilder variantContextBuilder = new VariantContextBuilder();
-        int start = variant.getStart();
-        int end = variant.getEnd();
         VariantType type = variant.getType();
-        boolean adjustStart = doAdjustVariantStart(variant);
-        if (adjustStart) {
-            start -= 1;
-        }
-        List<String> allelesArray = buildAlleles(variant, adjustStart);
+        Integer adjustedStart = doAdjustVariantStart(variant);
+        List<String> allelesArray = buildAlleles(variant, adjustedStart);
         Set<Integer> nocallAlleles = IntStream.range(0,  allelesArray.size()).boxed()
                 .filter(i -> {
                     return noCallAllele.equals(allelesArray.get(i));
@@ -517,8 +515,8 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
 
         addStats(studyEntry, attributes);
 
-        variantContextBuilder.start(start)
-                .stop(start + refAllele.length() - 1) //TODO mh719: check what happens for Insertions
+        variantContextBuilder.start(adjustedStart)
+                .stop(adjustedStart + refAllele.length() - 1) //TODO mh719: check what happens for Insertions
                 .chr(variant.getChromosome())
                 .filter(filter); // TODO jmmut: join attributes from different source entries? what to do on a collision?
 
@@ -561,21 +559,22 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
     /**
      * Adjust start if a reference base is required due to an empty allele. Only for INDELs.
      * @param variant {@link Variant} object.
-     * @return TRUE if variant is an INDEL and one of REF, ALT or SecAlt is blank.
+     * @return Integer The adjusted (or same) start position.
      */
-    protected boolean doAdjustVariantStart(Variant variant) {
+    protected Integer doAdjustVariantStart(Variant variant) {
+        Integer start = variant.getStart();
         if (!VariantType.INDEL.equals(variant.getType())) {
-            return false;
+            return start;
         }
         if (StringUtils.isBlank(variant.getReference()) || StringUtils.isBlank(variant.getAlternate())) {
-            return true;
+            start = start - 1;
         }
         for (AlternateCoordinate alternateCoordinate : variant.getStudy(this.studyIdString).getSecondaryAlternates()) {
-            if (StringUtils.isBlank(alternateCoordinate.getAlternate())) {
-                return true;
+            if (StringUtils.isBlank(alternateCoordinate.getAlternate()) || StringUtils.isBlank(alternateCoordinate.getReference())) {
+                start = Math.min(start, alternateCoordinate.getStart() - 1);
             }
         }
-        return false;
+        return start;
     }
 
     private Map<String, Object> addAnnotations(Variant variant, List<String> annotations, Map<String, Object> attributes) {
