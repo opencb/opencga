@@ -67,7 +67,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         QueryResponse queryResponse = null;
         switch (subCommandString) {
             case "create":
-                create();
+                queryResponse = create();
                 break;
             case "info":
                 queryResponse = info();
@@ -144,7 +144,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         logoutCliSessionFile();
     }
 
-    private void create() throws CatalogException, IOException {
+    private QueryResponse<User> create() throws CatalogException, IOException {
         logger.debug("Creating user...");
 
         ObjectMap params = new ObjectMap();
@@ -153,45 +153,8 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(UserDBAdaptor.QueryParams.PASSWORD.key(), usersCommandOptions.createCommandOptions.password);
         params.putIfNotEmpty(UserDBAdaptor.QueryParams.ORGANIZATION.key(), usersCommandOptions.createCommandOptions.organization);
 
-        QueryResponse<User> userQueryResponse = openCGAClient.getUserClient().create(usersCommandOptions.createCommandOptions.user,
+        return openCGAClient.getUserClient().create(usersCommandOptions.createCommandOptions.user,
                 usersCommandOptions.createCommandOptions.password, params);
-
-        if (userQueryResponse != null && userQueryResponse.first().getNumResults() == 1) {
-            logger.info("User {} successfully created", usersCommandOptions.createCommandOptions.user);
-        } else {
-            logger.error("User {} could not be created due to ", usersCommandOptions.createCommandOptions.user,
-                    userQueryResponse.getError());
-            return;
-        }
-
-        openCGAClient.login(usersCommandOptions.createCommandOptions.user, usersCommandOptions.createCommandOptions.password);
-
-        logger.info("Creating project...");
-
-        params = new ObjectMap();
-
-        String alias = usersCommandOptions.createCommandOptions.projectAlias != null
-                ? usersCommandOptions.createCommandOptions.projectAlias : "default";
-        String name = usersCommandOptions.createCommandOptions.projectName != null
-                ? usersCommandOptions.createCommandOptions.projectName : "Default";
-
-        if (usersCommandOptions.createCommandOptions.projectDescription != null) {
-            params.append("description", usersCommandOptions.createCommandOptions.projectDescription);
-        }
-
-        if (usersCommandOptions.createCommandOptions.projectOrganization != null) {
-            params.append("organization", usersCommandOptions.createCommandOptions.projectOrganization);
-        }
-
-        QueryResponse<Project> projectQueryResponse = openCGAClient.getProjectClient().create(name, alias, params);
-
-        openCGAClient.logout();
-
-        if (projectQueryResponse != null && projectQueryResponse.first().getNumResults() == 1) {
-            logger.info("Project {} has been created successfully", name);
-        } else {
-            logger.error("Project {} could not be created due to ", name, projectQueryResponse.getError());
-        }
     }
 
     private QueryResponse<User> info() throws CatalogException, IOException {

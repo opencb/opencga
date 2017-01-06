@@ -446,18 +446,6 @@ public class AdminCliOptionsParser {
         @Parameter(names = {"--user-Quota"}, description = "User disk quota", required = false, arity = 1)
         public Long userQuota;
 
-        @Parameter(names = {"--project-name"}, description = "Project name. Default: Default", required = false, arity = 1)
-        public String projectName;
-
-        @Parameter(names = {"--project-alias"}, description = "Project alias: Default: default", required = false, arity = 1)
-        public String projectAlias;
-
-        @Parameter(names = {"--project-description"}, description = "Project description.", required = false, arity = 1)
-        public String projectDescription;
-
-        @Parameter(names = {"--project-organization"}, description = "Project organization", required = false, arity = 1)
-        public String projectOrganization;
-
     }
 
     @Parameters(commandNames = {"import"}, commandDescription = "Import users from an authentication origin into catalog")

@@ -59,9 +59,7 @@ public class UserWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "User name", required = true) @QueryParam("name") String name,
                                @ApiParam(value = "User's email", required = true) @QueryParam("email") String email,
                                @ApiParam(value = "User's password", required = true) @QueryParam("password") String password,
-                               @ApiParam(value = "User's organization") @QueryParam("organization") String organization,
-                               @ApiParam(value = "[PENDING] Create a default project after creating the user", defaultValue = "false")
-                                   @QueryParam("createDefaultProject") boolean defaultProject) {
+                               @ApiParam(value = "User's organization") @QueryParam("organization") String organization) {
         try {
             queryOptions.remove("password");
             QueryResult queryResult = catalogManager.createUser(userId, name, email, password, organization, null, queryOptions);

@@ -159,40 +159,6 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                 usersCommandOptions.createUserCommandOptions.userPassword, usersCommandOptions.createUserCommandOptions.userOrganization,
                 userQuota, null).first();
         System.out.println("The user has been successfully created: " + user.toString() + "\n");
-
-        // Login the user
-        Session login = catalogManager.login(usersCommandOptions.createUserCommandOptions.userId,
-                usersCommandOptions.createUserCommandOptions.userPassword, "localhost").first();
-
-        String projectName = "Default";
-        if (usersCommandOptions.createUserCommandOptions.projectName != null
-                && !usersCommandOptions.createUserCommandOptions.projectName.isEmpty()) {
-            projectName = usersCommandOptions.createUserCommandOptions.projectName;
-        }
-
-        String projectAlias = "default";
-        if (usersCommandOptions.createUserCommandOptions.projectAlias != null
-                && !usersCommandOptions.createUserCommandOptions.projectAlias.isEmpty()) {
-            projectAlias = usersCommandOptions.createUserCommandOptions.projectAlias;
-        }
-
-        String projectDescription = "";
-        if (usersCommandOptions.createUserCommandOptions.projectDescription != null
-                && !usersCommandOptions.createUserCommandOptions.projectDescription.isEmpty()) {
-            projectDescription = usersCommandOptions.createUserCommandOptions.projectDescription;
-        }
-
-        String projectOrganization = "";
-        if (usersCommandOptions.createUserCommandOptions.projectOrganization != null
-                && !usersCommandOptions.createUserCommandOptions.projectOrganization.isEmpty()) {
-            projectOrganization = usersCommandOptions.createUserCommandOptions.projectOrganization;
-        }
-
-        Project project = catalogManager.getProjectManager().create(projectName, projectAlias,
-                projectDescription, projectOrganization, null, null, null, null, null, login.getId()).first();
-        System.out.println("A default project has been created for the user: " + project.toString() + "\n");
-
-        catalogManager.logout(usersCommandOptions.createUserCommandOptions.userId, login.getId());
     }
 
     private void delete() throws CatalogException, IOException {
