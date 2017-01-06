@@ -18,6 +18,7 @@ package org.opencb.opencga.client.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.opencb.opencga.catalog.models.Project;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,6 +35,7 @@ public class ClientConfiguration {
     private String version;
     private int sessionDuration;
 
+    private Project.Organism organism;
     private String defaultStudy;
 
     private RestConfig rest;
@@ -84,6 +86,7 @@ public class ClientConfiguration {
         sb.append(", logFile='").append(logFile).append('\'');
         sb.append(", version='").append(version).append('\'');
         sb.append(", sessionDuration=").append(sessionDuration);
+        sb.append(", organism=").append(organism);
         sb.append(", defaultStudy='").append(defaultStudy).append('\'');
         sb.append(", rest=").append(rest);
         sb.append(", grpc=").append(grpc);
@@ -124,6 +127,15 @@ public class ClientConfiguration {
 
     public ClientConfiguration setSessionDuration(int sessionDuration) {
         this.sessionDuration = sessionDuration;
+        return this;
+    }
+
+    public Project.Organism getOrganism() {
+        return organism;
+    }
+
+    public ClientConfiguration setOrganism(Project.Organism organism) {
+        this.organism = organism;
         return this;
     }
 

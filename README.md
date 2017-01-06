@@ -93,7 +93,13 @@ For changing particular settings during buildings you can create a profile in _~
                         <OPENCGA.JOBS.DIR>${OPENCGA.USER.WORKSPACE}/jobs/</OPENCGA.JOBS.DIR>
                         <OPENCGA.DB.PREFIX>opencga</OPENCGA.DB.PREFIX>
                         <OPENCGA.EXECUTION.MODE>LOCAL</OPENCGA.EXECUTION.MODE>
+                        
+                        <!-- Client -->
                         <OPENCGA.CLIENT.HOST>http://localhost:8080/${opencga.war.name}</OPENCGA.CLIENT.HOST>
+                        <OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME>Homo sapiens</OPENCGA.ORGANISM.SCIENTIFIC_NAME>
+                        <OPENCGA.CLIENT.ORGANISM.COMMON_NAME>human</OPENCGA.ORGANISM.COMMON_NAME>
+                        <OPENCGA.CLIENT.ORGANISM.TAXONOMY_CODE>9606</OPENCGA.ORGANISM.TAXONOMY_CODE>
+                        <OPENCGA.CLIENT.ORGANISM.ASSEMBLY></OPENCGA.ORGANISM.ASSEMBLY>
 
                         <OPENCGA.SERVER.REST.PORT>9090</OPENCGA.SERVER.REST.PORT>
                         <OPENCGA.SERVER.GRPC.PORT>9091</OPENCGA.SERVER.GRPC.PORT>
@@ -105,11 +111,6 @@ For changing particular settings during buildings you can create a profile in _~
                         <OPENCGA.CATALOG.DB.PASSWORD></OPENCGA.CATALOG.DB.PASSWORD>
                         <OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE></OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE>
                         <OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST>20</OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST>
-
-                        <OPENCGA.ORGANISM.SCIENTIFIC_NAME>Homo sapiens</OPENCGA.ORGANISM.SCIENTIFIC_NAME>
-                        <OPENCGA.ORGANISM.COMMON_NAME>human</OPENCGA.ORGANISM.COMMON_NAME>
-                        <OPENCGA.ORGANISM.TAXONOMY_CODE>9606</OPENCGA.ORGANISM.TAXONOMY_CODE>
-                        <OPENCGA.ORGANISM.ASSEMBLY></OPENCGA.ORGANISM.ASSEMBLY>
 
                         <!-- Storage -->
                         <OPENCGA.STORAGE.DEFAULT_ENGINE>mongodb</OPENCGA.STORAGE.DEFAULT_ENGINE>

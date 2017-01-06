@@ -175,6 +175,8 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             throws CatalogException {
 
         ParamUtils.checkParameter(name, "name");
+        ParamUtils.checkParameter(scientificName, "organism.scientificName");
+        ParamUtils.checkParameter(taxonomyCode, "organism.taxonomyCode");
         ParamUtils.checkAlias(alias, "alias");
         ParamUtils.checkParameter(sessionId, "sessionId");
 
@@ -199,18 +201,12 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         organization = organization != null ? organization : "";
 
         // Organism
-        Project.Organism organism;
-        if (!StringUtils.isEmpty(scientificName) || !StringUtils.isEmpty(commonName) || !StringUtils.isEmpty(taxonomyCode)
-                || !StringUtils.isEmpty(assembly)) {
-            organism = new Project.Organism(scientificName, commonName);
-            if (StringUtils.isNumeric(taxonomyCode)) {
-                organism.setTaxonomyCode(Integer.parseInt(taxonomyCode));
-            }
-            if (StringUtils.isNotEmpty(assembly)) {
-                organism.setAssembly(assembly);
-            }
-        } else {
-            organism = configuration.getOrganism();
+        Project.Organism organism = new Project.Organism(scientificName, assembly);
+        if (StringUtils.isNumeric(taxonomyCode)) {
+            organism.setTaxonomyCode(Integer.parseInt(taxonomyCode));
+        }
+        if (StringUtils.isNotEmpty(commonName)) {
+            organism.setCommonName(assembly);
         }
 
         Project project = new Project(name, alias, description, new Status(), organization, organism);

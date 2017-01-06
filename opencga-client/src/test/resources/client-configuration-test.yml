@@ -6,3 +6,9 @@ rest:
   defaultLimit: 2000
 grpc:
   host: "http://localhost:9091"
+
+organism:
+  taxonomyCode: 9606
+  scientificName: "Homo sapiens"
+  commonName: "human"
+  assembly: "GRCh38"

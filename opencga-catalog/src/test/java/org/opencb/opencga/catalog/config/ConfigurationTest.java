@@ -43,8 +43,6 @@ public class ConfigurationTest {
         configuration.setMonitor(new Monitor());
         configuration.setExecution(new Execution());
 
-        configuration.setOrganism(new Project.Organism("Homo sapiens", "human", 9606, "GRCh38"));
-
         List<AuthenticationOrigin> authenticationOriginList = new ArrayList<>();
         authenticationOriginList.add(new AuthenticationOrigin("opencga", AuthenticationOrigin.AuthenticationType.OPENCGA.toString(),
                 "localhost", Collections.emptyMap()));
