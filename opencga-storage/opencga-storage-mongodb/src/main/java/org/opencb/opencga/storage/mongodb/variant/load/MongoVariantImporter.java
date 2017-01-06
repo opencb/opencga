@@ -139,6 +139,12 @@ public class MongoVariantImporter extends VariantImporter {
             return true;
         }
 
+        @Override
+        public boolean post() {
+            VariantMongoDBAdaptor.createIndexes(new QueryOptions(), collection);
+            return true;
+        }
+
         public int getInsertedCount() {
             return insertedCount;
         }

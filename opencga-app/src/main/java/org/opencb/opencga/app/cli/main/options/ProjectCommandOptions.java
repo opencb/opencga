@@ -60,11 +60,11 @@ public class ProjectCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--project"}, description = "Project identifier", required = true, arity = 1)
+        @Parameter(names = {"--project"}, description = "Project id or alias", required = true, arity = 1)
         public String project;
     }
 
-    @Parameters(commandNames = {"create"}, commandDescription = "Create new project")
+    @Parameters(commandNames = {"create"}, commandDescription = "Create a new project")
     public class CreateCommandOptions {
 
         @ParametersDelegate
@@ -117,7 +117,7 @@ public class ProjectCommandOptions {
     @Parameters(commandNames = {"update"}, commandDescription = "Update a project")
     public class UpdateCommandOptions extends BaseProjectCommand {
 
-        @Parameter(names = {"-n", "--name"}, description = "Project name", required = true, arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "Project name", required = false, arity = 1)
         public String name;
 
         @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)

@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -34,7 +35,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -106,6 +109,18 @@ public class AnnotationVariantStorageTest extends AbstractVariantStorageOperatio
         verify(dbAdaptor, atLeastOnce()).updateAnnotations(any(), any());
         verify(dbAdaptor, never()).updateCustomAnnotations(any(), any(), any(), any());
         verify(dbAdaptor, never()).iterator(any(Query.class), any());
+
+        checkAnnotation(v -> true);
+    }
+
+    @Test
+    public void testAnnotateCreateAndLoadExternal() throws Exception {
+
+        String outdir = opencga.createTmpOutdir(studyId, "_ANNOT_", sessionId);
+        variantManager.annotate(studyStr, new Query(), outdir, new QueryOptions(VariantAnnotationManager.CREATE, true), sessionId);
+
+        String[] files = Paths.get(URI.create(outdir)).toFile().list((dir, name) -> !name.contains(AbstractExecutor.JOB_STATUS_FILE));
+        QueryOptions config = new QueryOptions(VariantAnnotationManager.LOAD_FILE, Paths.get(outdir, files[0]));
 
         checkAnnotation(v -> true);
     }

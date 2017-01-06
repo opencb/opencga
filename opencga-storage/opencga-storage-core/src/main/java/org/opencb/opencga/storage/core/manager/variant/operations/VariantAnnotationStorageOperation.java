@@ -124,13 +124,11 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
 
             String loadFileStr = options.getString(VariantAnnotationManager.LOAD_FILE);
             if (StringUtils.isNotEmpty(loadFileStr)) {
-                long fileId = catalogManager.getFileId(loadFileStr, studyStr, sessionId);
-                if (fileId < 0) {
-                    // No result. Check if external file
-                    if (!Paths.get(loadFileStr).toFile().exists()) {
+                if (!Paths.get(UriUtils.createUri(loadFileStr)).toFile().exists()) {
+                    long fileId = catalogManager.getFileId(loadFileStr, studyStr, sessionId);
+                    if (fileId < 0) {
                         throw new CatalogException("File '" + loadFileStr + "' does not exist!");
                     }
-                } else {
                     File loadFile = catalogManager.getFile(fileId, sessionId).first();
                     annotationOptions.put(VariantAnnotationManager.LOAD_FILE, loadFile.getUri().toString());
                 }
