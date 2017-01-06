@@ -85,8 +85,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         this.studyConfiguration = studyConfiguration;
         this.sourceDBAdaptor = sourceDBAdaptor;
         this.outputStream = outputStream;
-
-        this.queryOptions = queryOptions;
+        this.queryOptions = queryOptions == null ? new QueryOptions() : queryOptions;
     }
 
 
