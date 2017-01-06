@@ -217,7 +217,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         }
         List<Long> ids = getIds(userId, studyStr);
         if (ids.size() > 1) {
-            throw new CatalogException("More than one study was found");
+            throw new CatalogException("More than one study was found for study '" + studyStr + '\'');
         } else {
             return ids.get(0);
         }

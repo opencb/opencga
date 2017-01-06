@@ -258,11 +258,11 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         queryOptions.append(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
         boolean calculateStats = queryOptions.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key());
 
-        long studyId = catalogManager.getStudyIdByFileId(files.get(0).getId());
+        Long studyId = catalogManager.getStudyIdByFileId(files.get(0).getId());
 
         List<String> fileIds = files.stream().map(File::getId).map(Object::toString).collect(Collectors.toList());
         String outdir = opencga.createTmpOutdir(studyId, "_LOAD_", sessionId);
-        List<StoragePipelineResult> etlResults = variantManager.index(null, fileIds, outdir, queryOptions, sessionId);
+        List<StoragePipelineResult> etlResults = variantManager.index(studyId.toString(), fileIds, outdir, queryOptions, sessionId);
 
         assertEquals(expectedLoadedFiles.size(), etlResults.size());
         checkEtlResults(studyId, etlResults, FileIndex.IndexStatus.READY);
@@ -292,12 +292,12 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
         queryOptions.append(StorageOperation.CATALOG_PATH, String.valueOf(outputId));
         boolean calculateStats = queryOptions.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key());
 
-        long studyId = catalogManager.getStudyIdByFileId(files.get(0).getId());
+        Long studyId = catalogManager.getStudyIdByFileId(files.get(0).getId());
 
         String outdir = opencga.createTmpOutdir(studyId, "_INDEX_", sessionId);
         List<String> fileIds = files.stream().map(File::getId).map(Object::toString).collect(Collectors.toList());
 
-        List<StoragePipelineResult> etlResults = variantManager.index(null, fileIds, outdir, queryOptions, sessionId);
+        List<StoragePipelineResult> etlResults = variantManager.index(studyId.toString(), fileIds, outdir, queryOptions, sessionId);
 
         assertEquals(expectedLoadedFiles.size(), etlResults.size());
         checkEtlResults(studyId, etlResults, FileIndex.IndexStatus.READY);
