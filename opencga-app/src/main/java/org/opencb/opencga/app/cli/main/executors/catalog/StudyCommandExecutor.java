@@ -173,10 +173,10 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                     if (studyAlias.size() == 1) {
                         study = studyAlias.get(0);
                     } else {
-                        throw new CatalogException("non or more than one study found");
+                        throw new CatalogException("None or more than one study found");
                     }
                 } else {
-                    throw new CatalogException("Non or more than one project found");
+                    throw new CatalogException("None or more than one project found");
                 }
             }
         }
@@ -261,10 +261,13 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), studiesCommandOptions.searchCommandOptions.attributes);
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.NATTRIBUTES.key(), studiesCommandOptions.searchCommandOptions.nattributes);
         query.putIfNotEmpty(StudyDBAdaptor.QueryParams.BATTRIBUTES.key(), studiesCommandOptions.searchCommandOptions.battributes);
-        try {
-            query.putIfNotNull(StudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(studiesCommandOptions.searchCommandOptions.type));
-        } catch (IllegalArgumentException e) {
-            logger.warn("{} not recognized as a proper study type", studiesCommandOptions.searchCommandOptions.type);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.searchCommandOptions.type)) {
+            try {
+                query.put(StudyDBAdaptor.QueryParams.TYPE.key(),
+                        Study.Type.valueOf(studiesCommandOptions.searchCommandOptions.type.toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                logger.warn("{} not recognized as a proper study type", studiesCommandOptions.searchCommandOptions.type);
+            }
         }
 
         QueryOptions queryOptions = new QueryOptions();
