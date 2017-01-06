@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.storage.core.variant.io;
 
-import com.google.common.collect.BiMap;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.variant.variantcontext.*;
 import htsjdk.variant.variantcontext.Genotype;
@@ -35,10 +34,11 @@ import org.opencb.biodata.tools.variant.converters.avro.VariantFileMetadataToVCF
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
@@ -172,8 +172,8 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
             throw new UncheckedIOException(e);
         }
         header.addMetaDataLine(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "Genotype"));
-        header.addMetaDataLine(new VCFFormatHeaderLine("PF", VCFHeaderLineCount.A, VCFHeaderLineType.Integer,
-                "variant was PASS filter in original sample gvcf"));
+        header.addMetaDataLine(new VCFFormatHeaderLine("PF", 1, VCFHeaderLineType.Integer,
+                "Variant was PASS (1) filter in original vcf"));
         header.addMetaDataLine(new VCFFilterHeaderLine("PASS", "Valid variant"));
         header.addMetaDataLine(new VCFFilterHeaderLine(".", "No FILTER info"));
 
@@ -203,6 +203,16 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
                             + " in the same order as listed"));
 //            header.addMetaDataLine(new VCFInfoHeaderLine(cohortName + VCFConstants.ALLELE_NUMBER_KEY, 1, VCFHeaderLineType.Integer,
 //                    "Total number of alleles in called genotypes"));
+        }
+        List<String> formatFields = studyConfiguration.getAttributes()
+                .getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key());
+        List<String> formatFieldsType = studyConfiguration.getAttributes()
+                .getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key());
+        for (int i = 0; i < formatFields.size(); i++) {
+            String id = formatFields.get(i);
+            if (header.getFormatHeaderLine(id) == null) {
+                header.addMetaDataLine(new VCFFormatHeaderLine(id, 1, VCFHeaderLineType.valueOf(formatFieldsType.get(i)), ""));
+            }
         }
 
         // check if variant annotations are exported in the INFO column
@@ -276,14 +286,9 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
     }
 
     private VCFHeader getVcfHeader(StudyConfiguration studyConfiguration, QueryOptions options) throws IOException {
+        List<String> returnedSamples = getReturnedSamples(studyConfiguration, options);
         //        get header from studyConfiguration
         Collection<String> headers = studyConfiguration.getHeaders().values();
-        List<String> returnedSamples = null;
-        if (options != null) {
-            if (options.get(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key()) != null) {
-                returnedSamples = options.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key());
-            }
-        }
         String fileHeader;
         if (headers.isEmpty()) {
             Iterator<VariantSource> iterator = sourceDBAdaptor.iterator(
@@ -293,52 +298,46 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
                 VariantSource source = iterator.next();
                 fileHeader = source.getMetadata().get(VariantFileUtils.VARIANT_FILE_HEADER).toString();
             } else {
-                throw new IllegalStateException("file headers not available for study " + studyConfiguration.getStudyName()
-                        + ". note: check files: " + studyConfiguration.getFileIds().values().toString());
+                fileHeader = null;
             }
+//            else {
+//                throw new IllegalStateException("file headers not available for study " + studyConfiguration.getStudyName()
+//                        + ". note: check files: " + studyConfiguration.getFileIds().values().toString());
+//            }
         } else {
             fileHeader = headers.iterator().next();
         }
 
-        int lastLineIndex = fileHeader.lastIndexOf("#CHROM");
-        if (lastLineIndex >= 0) {
-            String substring = fileHeader.substring(0, lastLineIndex);
-            if (returnedSamples == null) {
-                BiMap<Integer, String> samplesPosition = StudyConfiguration.getIndexedSamplesPosition(studyConfiguration).inverse();
-                returnedSamples = new ArrayList<>(samplesPosition.size());
-                for (int i = 0; i < samplesPosition.size(); i++) {
-                    returnedSamples.add(samplesPosition.get(i));
-                }
-            } else {
-                List<String> newReturnedSamples = new ArrayList<>(returnedSamples.size());
-                for (String returnedSample : returnedSamples) {
-                    if (returnedSample.isEmpty()) {
-                        continue;
-                    } else if (StringUtils.isNumeric(returnedSample)) {
-                        int sampleId = Integer.parseInt(returnedSample);
-                        newReturnedSamples.add(studyConfiguration.getSampleIds().inverse().get(sampleId));
-                    } else {
-                        if (studyConfiguration.getSampleIds().containsKey(returnedSample)) {
-                            newReturnedSamples.add(returnedSample);
-                        } else {
-                            throw new IllegalArgumentException("Unknown sample " + returnedSample + " for study "
-                                    + studyConfiguration.getStudyName() + " (" + studyConfiguration.getStudyId() + ")");
-                        }
-                    }
-                }
-                returnedSamples = newReturnedSamples;
-            }
-            String samples = String.join("\t", returnedSamples);
-            logger.debug("export will be done on samples: [{}]", samples);
+        if (fileHeader != null) {
+            int lastLineIndex = fileHeader.lastIndexOf("#CHROM");
+            if (lastLineIndex >= 0) {
+                String substring = fileHeader.substring(0, lastLineIndex);
 
-            if (returnedSamples.isEmpty()) {
-                fileHeader = substring + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\t";
-            } else {
-                fileHeader = substring + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" + samples;
+                String samples = String.join("\t", returnedSamples);
+                logger.debug("export will be done on samples: [{}]", samples);
+
+                if (returnedSamples.isEmpty()) {
+                    fileHeader = substring + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\t";
+                } else {
+                    fileHeader = substring + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" + samples;
+                }
             }
+
+            return VariantFileMetadataToVCFHeaderConverter.parseVcfHeader(fileHeader);
+        } else {
+            HashSet<VCFHeaderLine> metaData = new HashSet<>();
+            VCFHeader vcfHeader = new VCFHeader(metaData, returnedSamples);
+            return vcfHeader;
         }
+    }
 
-        return VariantFileMetadataToVCFHeaderConverter.parseVcfHeader(fileHeader);
+    private List<String> getReturnedSamples(StudyConfiguration studyConfiguration, QueryOptions options) {
+        Map<Integer, List<Integer>> returnedSamplesMap =
+                VariantDBAdaptorUtils.getReturnedSamples(new Query(options), options, studyConfiguration);
+        List<String> returnedSamples = returnedSamplesMap.get(studyConfiguration.getStudyId()).stream()
+                .map(sampleId -> studyConfiguration.getSampleIds().inverse().get(sampleId))
+                .collect(Collectors.toList());
+        return returnedSamples;
     }
 
     /**
@@ -364,13 +363,9 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
 
         VariantType type = variant.getType();
         if (type == VariantType.INDEL) {
-            if (reference.isEmpty()) {
-                reference = "N" + reference;
-                start -= 1; // adjust start
-            }
-            if (alternate.isEmpty()) {
-                alternate = "N" + alternate;
-            }
+            reference = "N" + reference;
+            alternate = "N" + alternate;
+            start -= 1; // adjust start
         }
 
         String filter = "PASS";
@@ -419,7 +414,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
                 if (gtStr != null) {
                     List<String> gtSplit = new ArrayList<>(Arrays.asList(gtStr.split(",")));
                     List<String> ftSplit = new ArrayList<>(Arrays.asList(
-                            (StringUtils.isBlank(genotypeFilter) ? "." : genotypeFilter).split(",")));
+                            (StringUtils.isBlank(genotypeFilter) ? "" : genotypeFilter).split(",")));
                     boolean filterIsMatching = gtSplit.size() == ftSplit.size();
                     while (gtSplit.size() > 1) {
                         int idx = gtSplit.indexOf(".");
@@ -461,6 +456,14 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
                     if (genotypeFilter != null) {
                         builder.attribute("PF", genotypeFilter);
                     }
+                    for (String id : studyEntry.getFormat()) {
+                        if (id.equals("GT") || id.equals("FT")) {
+                            continue;
+                        }
+                        String value = studyEntry.getSampleData(sampleName, id);
+                        builder.attribute(id, value);
+                    }
+
                     genotypes.add(builder.make());
                 }
             }

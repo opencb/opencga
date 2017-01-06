@@ -372,6 +372,17 @@ public class VariantDBAdaptorUtils {
 
     }
 
+    public static Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options, StudyConfiguration... studies) {
+        return getReturnedSamples(query, options, Arrays.asList(studies));
+    }
+
+    public static Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options,
+                                                                 Collection<StudyConfiguration> studies) {
+        Map<Integer, StudyConfiguration> map = studies.stream()
+                .collect(Collectors.toMap(StudyConfiguration::getStudyId, Function.identity()));
+        return getReturnedSamples(query, options, map.keySet(), map::get);
+    }
+
     public static Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options, Collection<Integer> studyIds,
                                                           Function<Integer, StudyConfiguration> studyProvider) {
         List<String> returnedSamples = getReturnedSamplesList(query, options);
