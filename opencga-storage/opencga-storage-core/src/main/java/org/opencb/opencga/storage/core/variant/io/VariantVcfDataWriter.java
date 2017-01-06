@@ -409,7 +409,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         int start = variant.getStart();
         int end = variant.getEnd();
         VariantType type = variant.getType();
-        boolean adjustStart = VariantType.INDEL.equals(type);
+        boolean adjustStart = doAdjustVariantStart(variant);
         if (adjustStart) {
             start -= 1;
         }
@@ -556,6 +556,26 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         }
 
         return variantContextBuilder.make();
+    }
+
+    /**
+     * Adjust start if a reference base is required due to an empty allele. Only for INDELs.
+     * @param variant {@link Variant} object.
+     * @return TRUE if variant is an INDEL and one of REF, ALT or SecAlt is blank.
+     */
+    protected boolean doAdjustVariantStart(Variant variant) {
+        if (!VariantType.INDEL.equals(variant.getType())) {
+            return false;
+        }
+        if (StringUtils.isBlank(variant.getReference()) || StringUtils.isBlank(variant.getAlternate())) {
+            return true;
+        }
+        for (AlternateCoordinate alternateCoordinate : variant.getStudy(this.studyIdString).getSecondaryAlternates()) {
+            if (StringUtils.isBlank(alternateCoordinate.getAlternate())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Map<String, Object> addAnnotations(Variant variant, List<String> annotations, Map<String, Object> attributes) {
