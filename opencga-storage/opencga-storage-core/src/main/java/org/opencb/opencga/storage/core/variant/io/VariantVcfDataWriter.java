@@ -410,7 +410,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         final String noCallAllele = String.valueOf(VCFConstants.NO_CALL_ALLELE);
         VariantContextBuilder variantContextBuilder = new VariantContextBuilder();
         VariantType type = variant.getType();
-        Integer adjustedStart = doAdjustVariantStart(variant);
+        Integer adjustedStart = adjustedVariantStart(variant);
         List<String> allelesArray = buildAlleles(variant, adjustedStart);
         Set<Integer> nocallAlleles = IntStream.range(0,  allelesArray.size()).boxed()
                 .filter(i -> {
@@ -557,15 +557,12 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
     }
 
     /**
-     * Adjust start if a reference base is required due to an empty allele. Only for INDELs.
+     * Adjust start if a reference base is required due to an empty allele. All variants are checked due to SecAlts.
      * @param variant {@link Variant} object.
-     * @return Integer The adjusted (or same) start position.
+     * @return Integer The adjusted (or same) start position e.g. SV and MNV as SecAlt, INDEL, etc.
      */
-    protected Integer doAdjustVariantStart(Variant variant) {
+    protected Integer adjustedVariantStart(Variant variant) {
         Integer start = variant.getStart();
-        if (!VariantType.INDEL.equals(variant.getType())) {
-            return start;
-        }
         if (StringUtils.isBlank(variant.getReference()) || StringUtils.isBlank(variant.getAlternate())) {
             start = start - 1;
         }
