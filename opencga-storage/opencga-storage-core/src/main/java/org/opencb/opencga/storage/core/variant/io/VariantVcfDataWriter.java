@@ -25,6 +25,8 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.*;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
@@ -365,29 +367,30 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         return convertVariantToVariantContext(variant, annotations);
     }
 
-    public List<String> buildAlleles(Variant variant, Integer adjustedStart) {
+    public List<String> buildAlleles(Variant variant, Pair<Integer, Integer> adjustedRange) {
         String reference = variant.getReference();
         String alternate = variant.getAlternate();
         List<AlternateCoordinate> secAlts = variant.getStudy(this.studyIdString).getSecondaryAlternates();
         List<String> alleles = new ArrayList<>(secAlts.size() + 2);
         Integer origStart = variant.getStart();
         Integer origEnd = variant.getEnd();
-        alleles.add(buildAllele(variant.getChromosome(), origStart, reference, adjustedStart));
-        alleles.add(buildAllele(variant.getChromosome(), origStart, alternate, adjustedStart));
+        alleles.add(buildAllele(variant.getChromosome(), origStart, origEnd, reference, adjustedRange));
+        alleles.add(buildAllele(variant.getChromosome(), origStart, origEnd, alternate, adjustedRange));
         secAlts.forEach(alt -> {
-            alleles.add(buildAllele(variant.getChromosome(), alt.getStart(), alt.getAlternate(), adjustedStart));
+            alleles.add(buildAllele(variant.getChromosome(), alt.getStart(), alt.getEnd(), alt.getAlternate(), adjustedRange));
         });
         return alleles;
     }
 
-    public String buildAllele(String chromosome, Integer originalPosition, String allele, Integer adjustedStart) {
-        if (originalPosition.equals(adjustedStart)) {
-            return allele;
+    public String buildAllele(String chromosome, Integer start, Integer end, String allele, Pair<Integer, Integer> adjustedRange) {
+        if (start.equals(adjustedRange.getLeft()) && end.equals(adjustedRange.getRight())) {
+            return allele; // same start / end
         }
         if (StringUtils.startsWith(allele, "*")) {
-            return allele;
+            return allele; // no need
         }
-        return getReferenceBase(chromosome, adjustedStart, originalPosition) + allele;
+        return getReferenceBase(chromosome, adjustedRange.getLeft(), start) + allele
+                + getReferenceBase(chromosome, end, adjustedRange.getRight());
     }
 
     /**
@@ -399,7 +402,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
      */
     private String getReferenceBase(String chromosome, Integer from, Integer to) {
         int length = to - from;
-        if (length <= 0) {
+        if (length < 0) {
             throw new IllegalStateException(
                     "Sequence length is negative: chromosome " + chromosome + " from " + from + " to " + to);
         }
@@ -410,8 +413,8 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         final String noCallAllele = String.valueOf(VCFConstants.NO_CALL_ALLELE);
         VariantContextBuilder variantContextBuilder = new VariantContextBuilder();
         VariantType type = variant.getType();
-        Integer adjustedStart = adjustedVariantStart(variant);
-        List<String> allelesArray = buildAlleles(variant, adjustedStart);
+        Pair<Integer, Integer> adjustedRange = adjustedVariantStart(variant);
+        List<String> allelesArray = buildAlleles(variant, adjustedRange);
         Set<Integer> nocallAlleles = IntStream.range(0,  allelesArray.size()).boxed()
                 .filter(i -> {
                     return noCallAllele.equals(allelesArray.get(i));
@@ -515,8 +518,8 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
 
         addStats(studyEntry, attributes);
 
-        variantContextBuilder.start(adjustedStart)
-                .stop(adjustedStart + refAllele.length() - 1) //TODO mh719: check what happens for Insertions
+        variantContextBuilder.start(adjustedRange.getLeft())
+                .stop(adjustedRange.getLeft() + refAllele.length() - 1) //TODO mh719: check what happens for Insertions
                 .chr(variant.getChromosome())
                 .filter(filter); // TODO jmmut: join attributes from different source entries? what to do on a collision?
 
@@ -557,21 +560,24 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
     }
 
     /**
-     * Adjust start if a reference base is required due to an empty allele. All variants are checked due to SecAlts.
+     * Adjust start/end if a reference base is required due to an empty allele. All variants are checked due to SecAlts.
      * @param variant {@link Variant} object.
-     * @return Integer The adjusted (or same) start position e.g. SV and MNV as SecAlt, INDEL, etc.
+     * @return Pair<Integer, Integer> The adjusted (or same) start/end position e.g. SV and MNV as SecAlt, INDEL, etc.
      */
-    protected Integer adjustedVariantStart(Variant variant) {
+    protected Pair<Integer, Integer> adjustedVariantStart(Variant variant) {
         Integer start = variant.getStart();
+        Integer end = variant.getEnd();
         if (StringUtils.isBlank(variant.getReference()) || StringUtils.isBlank(variant.getAlternate())) {
             start = start - 1;
         }
         for (AlternateCoordinate alternateCoordinate : variant.getStudy(this.studyIdString).getSecondaryAlternates()) {
+            start = Math.min(start, alternateCoordinate.getStart());
+            end = Math.max(end, alternateCoordinate.getEnd());
             if (StringUtils.isBlank(alternateCoordinate.getAlternate()) || StringUtils.isBlank(alternateCoordinate.getReference())) {
                 start = Math.min(start, alternateCoordinate.getStart() - 1);
             }
         }
-        return start;
+        return new ImmutablePair<>(start, end);
     }
 
     private Map<String, Object> addAnnotations(Variant variant, List<String> annotations, Map<String, Object> attributes) {
