@@ -77,12 +77,25 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Creating a new project");
 
         ObjectMap params = new ObjectMap();
+        // First we populate the organism information using the client configuration
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(),
+                clientConfiguration.getOrganism().getScientificName());
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(), clientConfiguration.getOrganism().getCommonName());
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(),
+                Integer.toString(clientConfiguration.getOrganism().getTaxonomyCode()));
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), clientConfiguration.getOrganism().getAssembly());
+
+        // We overwrite the organism information with what the user has given
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(),
+                projectsCommandOptions.createCommandOptions.scientificName);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(),
+                projectsCommandOptions.createCommandOptions.commonName);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(),
+                projectsCommandOptions.createCommandOptions.taxonomyCode);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), projectsCommandOptions.createCommandOptions.assembly);
+
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.createCommandOptions.description);
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), projectsCommandOptions.createCommandOptions.organization);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(), projectsCommandOptions.createCommandOptions.scientificName);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(), projectsCommandOptions.createCommandOptions.commonName);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(), projectsCommandOptions.createCommandOptions.taxonomyCode);
-        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), projectsCommandOptions.createCommandOptions.assembly);
 
         return openCGAClient.getProjectClient().create(projectsCommandOptions.createCommandOptions.name,
                 projectsCommandOptions.createCommandOptions.alias, params);
