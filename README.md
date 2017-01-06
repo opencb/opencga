@@ -95,7 +95,8 @@ For changing particular settings during buildings you can create a profile in _~
                         <OPENCGA.EXECUTION.MODE>LOCAL</OPENCGA.EXECUTION.MODE>
                         
                         <!-- Client -->
-                        <OPENCGA.CLIENT.HOST>http://localhost:8080/${opencga.war.name}</OPENCGA.CLIENT.HOST>
+                        <OPENCGA.CLIENT.REST.HOST>http://localhost:8080/${opencga.war.name}</OPENCGA.CLIENT.REST.HOST>
+                        <OPENCGA.CLIENT.GRPC.HOST>http://localhost:9091</OPENCGA.CLIENT.GRPC.HOST>
                         <OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME>Homo sapiens</OPENCGA.ORGANISM.SCIENTIFIC_NAME>
                         <OPENCGA.CLIENT.ORGANISM.COMMON_NAME>human</OPENCGA.ORGANISM.COMMON_NAME>
                         <OPENCGA.CLIENT.ORGANISM.TAXONOMY_CODE>9606</OPENCGA.ORGANISM.TAXONOMY_CODE>
