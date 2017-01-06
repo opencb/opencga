@@ -24,8 +24,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
@@ -132,11 +131,27 @@ public class VariantExporter {
     protected void exportMetaData(Query query, QueryOptions queryOptions, List studies, String output) throws IOException {
         StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
 
-        List<Integer> studyIds = dbAdaptor.getDBAdaptorUtils().getStudyIds(studies, QueryOptions.empty());
-        List<StudyConfiguration> studyConfigurations = new ArrayList<>(studyIds.size());
-        for (Integer studyId : studyIds) {
-            studyConfigurations.add(scm.getStudyConfiguration(studyId, QueryOptions.empty()).first());
-        }
+        Map<Integer, List<Integer>> returnedSamples = dbAdaptor.getDBAdaptorUtils().getReturnedSamples(query, queryOptions);
+        List<StudyConfiguration> studyConfigurations = new ArrayList<>(returnedSamples.size());
+        returnedSamples.forEach((studyId, samplesList) -> {
+            StudyConfiguration sc = scm.getStudyConfiguration(studyId, QueryOptions.empty()).first();
+            List<Integer> samplesToRemove = new ArrayList<>();
+            for (Integer sampleId : sc.getSampleIds().values()) {
+                if (!samplesList.contains(sampleId)) {
+                    samplesToRemove.add(sampleId);
+                }
+            }
+            for (Integer sampleToRemove : samplesToRemove) {
+                sc.getSampleIds().inverse().remove(sampleToRemove);
+                for (LinkedHashSet<Integer> samplesInFile : sc.getSamplesInFiles().values()) {
+                    samplesInFile.remove(sampleToRemove);
+                }
+                sc.getCohorts().values().forEach(samplesInCohort -> samplesInCohort.remove(sampleToRemove));
+            }
+            sc.setBatches(Collections.emptyList());
+
+            studyConfigurations.add(sc);
+        });
 
         ExportMetadata exportMetadata = new ExportMetadata(studyConfigurations, query, queryOptions);
 
