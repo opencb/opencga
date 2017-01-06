@@ -37,13 +37,13 @@ import java.io.IOException;
 /**
  * Created by imedina on 03/06/16.
  */
-public class CohortsCommandExecutor extends OpencgaCommandExecutor {
+public class CohortCommandExecutor extends OpencgaCommandExecutor {
 
     private CohortCommandOptions cohortsCommandOptions;
     private AclCommandExecutor<Cohort, CohortAclEntry> aclCommandExecutor;
     private AnnotationCommandExecutor<Cohort, CohortAclEntry> annotationCommandExecutor;
 
-    public CohortsCommandExecutor(CohortCommandOptions cohortsCommandOptions) {
+    public CohortCommandExecutor(CohortCommandOptions cohortsCommandOptions) {
         super(cohortsCommandOptions.commonCommandOptions);
         this.cohortsCommandOptions = cohortsCommandOptions;
         this.aclCommandExecutor = new AclCommandExecutor<>();

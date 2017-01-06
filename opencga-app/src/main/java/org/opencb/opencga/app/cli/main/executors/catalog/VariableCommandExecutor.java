@@ -35,11 +35,11 @@ import java.io.IOException;
 /**
  * Created by by sgallego on 6/15/16.
  */
-public class VariablesCommandExecutor extends OpencgaCommandExecutor {
+public class VariableCommandExecutor extends OpencgaCommandExecutor {
 
     private VariableCommandOptions variableCommandOptions;
 
-    public VariablesCommandExecutor(VariableCommandOptions variableCommandOptions) {
+    public VariableCommandExecutor(VariableCommandOptions variableCommandOptions) {
         super(variableCommandOptions.commonCommandOptions);
         this.variableCommandOptions = variableCommandOptions;
     }

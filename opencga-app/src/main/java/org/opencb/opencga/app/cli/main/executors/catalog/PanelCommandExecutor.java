@@ -33,12 +33,12 @@ import java.io.IOException;
 /**
  * Created by sgallego on 6/15/16.
  */
-public class PanelsCommandExecutor extends OpencgaCommandExecutor {
+public class PanelCommandExecutor extends OpencgaCommandExecutor {
 
     private PanelCommandOptions panelsCommandOptions;
     private AclCommandExecutor<DiseasePanel, DiseasePanelAclEntry> aclCommandExecutor;
 
-    public PanelsCommandExecutor(PanelCommandOptions panelsCommandOptions) {
+    public PanelCommandExecutor(PanelCommandOptions panelsCommandOptions) {
         super(panelsCommandOptions.commonCommandOptions);
         this.panelsCommandOptions = panelsCommandOptions;
         this.aclCommandExecutor = new AclCommandExecutor<>();

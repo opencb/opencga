@@ -31,11 +31,11 @@ import java.io.IOException;
 /**
  * Created by imedina on 03/06/16.
  */
-public class ToolsCommandExecutor extends OpencgaCommandExecutor {
+public class ToolCommandExecutor extends OpencgaCommandExecutor {
 
     private ToolCommandOptions toolsCommandOptions;
 
-    public ToolsCommandExecutor(ToolCommandOptions toolsCommandOptions) {
+    public ToolCommandExecutor(ToolCommandOptions toolsCommandOptions) {
         super(toolsCommandOptions.commonCommandOptions);
         this.toolsCommandOptions = toolsCommandOptions;
     }

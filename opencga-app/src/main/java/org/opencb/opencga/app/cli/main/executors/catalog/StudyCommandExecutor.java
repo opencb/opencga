@@ -47,13 +47,13 @@ import java.util.Map;
 /**
  * Created by imedina on 03/06/16.
  */
-public class StudiesCommandExecutor extends OpencgaCommandExecutor {
+public class StudyCommandExecutor extends OpencgaCommandExecutor {
     // TODO: Add include/exclude/skip/... (queryOptions) to the client calls !!!!
 
     private StudyCommandOptions studiesCommandOptions;
     private AclCommandExecutor<Study, StudyAclEntry> aclCommandExecutor;
 
-    public StudiesCommandExecutor(StudyCommandOptions studiesCommandOptions) {
+    public StudyCommandExecutor(StudyCommandOptions studiesCommandOptions) {
         super(studiesCommandOptions.commonCommandOptions);
         this.studiesCommandOptions = studiesCommandOptions;
         this.aclCommandExecutor = new AclCommandExecutor<>();
@@ -303,7 +303,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.FORMAT.key(), studiesCommandOptions.filesCommandOptions.format);
         queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.STATUS.key(), studiesCommandOptions.filesCommandOptions.status);
         queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.DIRECTORY.key(), studiesCommandOptions.filesCommandOptions.directory);
-        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.OWNER_ID.key(), studiesCommandOptions.filesCommandOptions.ownerId);
         queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.CREATION_DATE.key(), studiesCommandOptions.filesCommandOptions.creationDate);
         queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key(),
                 studiesCommandOptions.filesCommandOptions.modificationDate);
@@ -332,6 +331,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.TOOL_NAME.key(), studiesCommandOptions.jobsCommandOptions.toolName);
         queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.STATUS_NAME.key(), studiesCommandOptions.jobsCommandOptions.status);
         queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.USER_ID.key(), studiesCommandOptions.jobsCommandOptions.ownerId);
+        queryOptions.putIfNotEmpty(JobDBAdaptor.QueryParams.CREATION_DATE.key(), studiesCommandOptions.jobsCommandOptions.date);
         /*if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.date)) {
             queryOptions.put(CatalogJobDBAdaptor.QueryParams.CREATION_DATE.key(), studiesCommandOptions.jobsCommandOptions.date);
         }*/
@@ -384,10 +384,12 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putAll(studiesCommandOptions.commonCommandOptions.params);
 
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ID.key(), studiesCommandOptions.variantsCommandOptions.ids);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.REGION.key(), studiesCommandOptions.variantsCommandOptions.region);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.REGION.key(),
+                studiesCommandOptions.variantsCommandOptions.region);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(),
                 studiesCommandOptions.variantsCommandOptions.chromosome);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.GENE.key(), studiesCommandOptions.variantsCommandOptions.gene);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.GENE.key(),
+                studiesCommandOptions.variantsCommandOptions.gene);
         queryOptions.putIfNotNull(CatalogVariantDBAdaptor.VariantQueryParams.TYPE.key(), studiesCommandOptions.variantsCommandOptions.type);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.REFERENCE.key(),
                 studiesCommandOptions.variantsCommandOptions.reference);
@@ -399,9 +401,12 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                 studiesCommandOptions.variantsCommandOptions.returnedSamples);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(),
                 studiesCommandOptions.variantsCommandOptions.returnedFiles);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.FILES.key(), studiesCommandOptions.variantsCommandOptions.files);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), studiesCommandOptions.variantsCommandOptions.maf);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.STATS_MGF.key(), studiesCommandOptions.variantsCommandOptions.mgf);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.FILES.key(),
+                studiesCommandOptions.variantsCommandOptions.files);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.STATS_MAF.key(),
+                studiesCommandOptions.variantsCommandOptions.maf);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.STATS_MGF.key(),
+                studiesCommandOptions.variantsCommandOptions.mgf);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.MISSING_ALLELES.key(),
                 studiesCommandOptions.variantsCommandOptions.missingAlleles);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.MISSING_GENOTYPES.key(),
@@ -418,7 +423,8 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                 studiesCommandOptions.variantsCommandOptions.annot_biotype);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POLYPHEN.key(),
                 studiesCommandOptions.variantsCommandOptions.polyphen);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_SIFT.key(), studiesCommandOptions.variantsCommandOptions.sift);
+        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_SIFT.key(),
+                studiesCommandOptions.variantsCommandOptions.sift);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION.key(),
                 studiesCommandOptions.variantsCommandOptions.conservation);
         queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),
@@ -463,7 +469,9 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         if (studiesCommandOptions.variantsCommandOptions.count) {
             return openCGAClient.getStudyClient().countVariants(studiesCommandOptions.variantsCommandOptions.study, queryOptions);
-        } else if (studiesCommandOptions.variantsCommandOptions.samplesMetadata || StringUtils.isNoneEmpty(studiesCommandOptions.variantsCommandOptions.groupBy) || studiesCommandOptions.variantsCommandOptions.histogram) {
+        } else if (studiesCommandOptions.variantsCommandOptions.samplesMetadata
+                || StringUtils.isNoneEmpty(studiesCommandOptions.variantsCommandOptions.groupBy)
+                || studiesCommandOptions.variantsCommandOptions.histogram) {
             return openCGAClient.getStudyClient().getVariantsGeneric(studiesCommandOptions.variantsCommandOptions.study, queryOptions);
         } else {
             return openCGAClient.getStudyClient().getVariants(studiesCommandOptions.variantsCommandOptions.study, queryOptions);
@@ -483,7 +491,8 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<ObjectMap> groupsCreate() throws CatalogException,IOException {
         logger.debug("Creating groups");
 
-        studiesCommandOptions.groupsCreateCommandOptions.study = getSingleValidStudy(studiesCommandOptions.groupsCreateCommandOptions.study);
+        studiesCommandOptions.groupsCreateCommandOptions.study =
+                getSingleValidStudy(studiesCommandOptions.groupsCreateCommandOptions.study);
 
         QueryOptions queryOptions = new QueryOptions();
         return openCGAClient.getStudyClient().createGroup(studiesCommandOptions.groupsCreateCommandOptions.study,
@@ -494,7 +503,8 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<ObjectMap> groupsDelete() throws CatalogException,IOException {
         logger.debug("Deleting groups");
 
-        studiesCommandOptions.groupsDeleteCommandOptions.study = getSingleValidStudy(studiesCommandOptions.groupsDeleteCommandOptions.study);
+        studiesCommandOptions.groupsDeleteCommandOptions.study =
+                getSingleValidStudy(studiesCommandOptions.groupsDeleteCommandOptions.study);
 
         QueryOptions queryOptions = new QueryOptions();
         return openCGAClient.getStudyClient().deleteGroup(studiesCommandOptions.groupsDeleteCommandOptions.study,
@@ -513,7 +523,8 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<ObjectMap> groupsUpdate() throws CatalogException,IOException {
         logger.debug("Updating groups");
 
-        studiesCommandOptions.groupsUpdateCommandOptions.study = getSingleValidStudy(studiesCommandOptions.groupsUpdateCommandOptions.study);
+        studiesCommandOptions.groupsUpdateCommandOptions.study =
+                getSingleValidStudy(studiesCommandOptions.groupsUpdateCommandOptions.study);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(StudyClient.GroupUpdateParams.ADD_USERS.key(),

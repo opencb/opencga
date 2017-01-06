@@ -32,12 +32,12 @@ import java.io.IOException;
 /**
  * Created by imedina on 03/06/16.
  */
-public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
+public class ProjectCommandExecutor extends OpencgaCommandExecutor {
     // TODO: Add include/exclude/skip/... (queryOptions) to the client calls !!!!
 
     private ProjectCommandOptions projectsCommandOptions;
 
-    public ProjectsCommandExecutor(ProjectCommandOptions projectsCommandOptions) {
+    public ProjectCommandExecutor(ProjectCommandOptions projectsCommandOptions) {
         super(projectsCommandOptions.commonCommandOptions);
         this.projectsCommandOptions = projectsCommandOptions;
     }

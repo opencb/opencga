@@ -34,12 +34,12 @@ import java.io.IOException;
 /**
  * Created by imedina on 03/06/16.
  */
-public class JobsCommandExecutor extends OpencgaCommandExecutor {
+public class JobCommandExecutor extends OpencgaCommandExecutor {
 
     private JobCommandOptions jobsCommandOptions;
     private AclCommandExecutor<Job, JobAclEntry> aclCommandExecutor;
 
-    public JobsCommandExecutor(JobCommandOptions jobsCommandOptions) {
+    public JobCommandExecutor(JobCommandOptions jobsCommandOptions) {
         super(jobsCommandOptions.commonCommandOptions);
         this.jobsCommandOptions = jobsCommandOptions;
         this.aclCommandExecutor = new AclCommandExecutor<>();

@@ -41,12 +41,12 @@ import java.util.stream.Stream;
 /**
  * Created by imedina on 02/03/15.
  */
-public class UsersCommandExecutor extends OpencgaCommandExecutor {
+public class UserCommandExecutor extends OpencgaCommandExecutor {
     // TODO: Add include/exclude/skip/... (queryOptions) to the client calls !!!!
 
     private UserCommandOptions usersCommandOptions;
 
-    public UsersCommandExecutor(UserCommandOptions usersCommandOptions) {
+    public UserCommandExecutor(UserCommandOptions usersCommandOptions) {
 
         super(usersCommandOptions.commonCommandOptions, getParsedSubCommand(usersCommandOptions.getjCommander()).startsWith("log"));
         this.usersCommandOptions = usersCommandOptions;

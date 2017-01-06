@@ -48,12 +48,12 @@ import java.util.List;
 /**
  * Created by imedina on 03/06/16.
  */
-public class FilesCommandExecutor extends OpencgaCommandExecutor {
+public class FileCommandExecutor extends OpencgaCommandExecutor {
 
     private FileCommandOptions filesCommandOptions;
     private AclCommandExecutor<File, FileAclEntry> aclCommandExecutor;
 
-    public FilesCommandExecutor(FileCommandOptions filesCommandOptions) {
+    public FileCommandExecutor(FileCommandOptions filesCommandOptions) {
         super(filesCommandOptions.commonCommandOptions);
         this.filesCommandOptions = filesCommandOptions;
         this.aclCommandExecutor = new AclCommandExecutor<>();

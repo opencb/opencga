@@ -115,7 +115,8 @@ public class StudyCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-p", "--project"}, description = "Project identifier, this parameter is optional when only one project exist", arity = 1)
+        @Parameter(names = {"-p", "--project"}, description = "Project identifier, this parameter is optional when only one project exist",
+                arity = 1)
         public String project;
 
         @Parameter(names = {"-n", "--name"}, description = "Study name", required = true, arity = 1)
@@ -150,7 +151,7 @@ public class StudyCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"-p", "--project"}, description = "Project ID or alias", arity = 1)
+        @Parameter(names = {"-p", "--project"}, description = "Project id or alias", arity = 1)
         public String project;
 
         @Parameter(names = {"-n", "--name"}, description = "Study name.", arity = 1)
@@ -227,9 +228,6 @@ public class StudyCommandOptions {
 
         @Parameter(names = {"--directory"}, description = "Directory", arity = 1)
         public String directory;
-
-        @Parameter(names = {"--owner-id"}, description = "owner Id", arity = 1)
-        public String ownerId;
 
         @Parameter(names = {"--creation-date"}, description = "Creation date.", arity = 1)
         public String creationDate;
@@ -317,8 +315,8 @@ public class StudyCommandOptions {
         @Parameter(names = {"--owner-id"}, description = "User that created the job", arity = 1)
         public String ownerId;
 
-        /*@Parameter(names = {"--date"}, description = "Creation date of the job", arity = 1)
-        public String date;*/
+        @Parameter(names = {"--date"}, description = "Creation date of the job", arity = 1)
+        public String date;
 
         @Deprecated
         @Parameter(names = {"--input-files"}, description = "[DEPRECATED] Comma separated list of input file ids", arity = 1)

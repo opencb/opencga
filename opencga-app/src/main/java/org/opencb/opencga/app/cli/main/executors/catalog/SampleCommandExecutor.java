@@ -35,13 +35,13 @@ import java.io.IOException;
 /**
  * Created by imedina on 03/06/16.
  */
-public class SamplesCommandExecutor extends OpencgaCommandExecutor {
+public class SampleCommandExecutor extends OpencgaCommandExecutor {
 
     private SampleCommandOptions samplesCommandOptions;
     private AclCommandExecutor<Sample, SampleAclEntry> aclCommandExecutor;
     private AnnotationCommandExecutor<Sample, SampleAclEntry> annotationCommandExecutor;
 
-    public SamplesCommandExecutor(SampleCommandOptions samplesCommandOptions) {
+    public SampleCommandExecutor(SampleCommandOptions samplesCommandOptions) {
         super(samplesCommandOptions.commonCommandOptions);
         this.samplesCommandOptions = samplesCommandOptions;
         this.aclCommandExecutor = new AclCommandExecutor<>();

@@ -56,20 +56,18 @@ import java.util.stream.Collectors;
 @Api(value = "Studies", position = 3, description = "Methods for working with 'studies' endpoint")
 public class StudyWSServer extends OpenCGAWSServer {
 
-
     public StudyWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(uriInfo, httpServletRequest);
     }
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create study with GET method", position = 1, response = Study.class)
-    public Response createStudy(@ApiParam(value = "projectId", required = true) @QueryParam("projectId") String projectIdStr,
-                                @ApiParam(value = "name", required = true) @QueryParam("name") String name,
-                                @ApiParam(value = "alias", required = true) @QueryParam("alias") String alias,
-                                @ApiParam(value = "type", required = false) @DefaultValue("CASE_CONTROL")
-                                    @QueryParam("type") Study.Type type,
-                                @ApiParam(value = "description", required = false) @QueryParam("description") String description) {
+    @ApiOperation(value = "Create a new study", response = Study.class)
+    public Response createStudy(@ApiParam(value = "Project id or alias", required = true) @QueryParam("projectId") String projectIdStr,
+                                @ApiParam(value = "Study name", required = true) @QueryParam("name") String name,
+                                @ApiParam(value = "Study alias", required = true) @QueryParam("alias") String alias,
+                                @ApiParam(value = "Study type") @DefaultValue("CASE_CONTROL") @QueryParam("type") Study.Type type,
+                                @ApiParam(value = "Study description") @QueryParam("description") String description) {
         try {
             long projectId = catalogManager.getProjectId(projectIdStr, sessionId);
             QueryResult queryResult = catalogManager.createStudy(projectId, name, alias, type, description, sessionId);
@@ -80,28 +78,66 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
+    @POST
+    @Path("/create")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Create a new study", response = Study.class,
+            notes = "Wont't accept files, jobs, experiments, samples.<br>" +
+                    "Will accept: acl, uri, cohorts, datasets.<br>" +
+//            "Work in progress.<br>" +
+//            "Only nested files parameter accepted, and only a few parameters.<br>" +
+//            "<b>{ files:[ { format, bioformat, path, description, type, jobId, attributes } ] }</b><br>" +
+                    "<ul>" +
+                    "<il><b>id</b>, <b>lastModified</b> and <b>size</b> parameters will be ignored.<br></il>" +
+                    "<il><b>type</b> accepted values: [<b>'CASE_CONTROL', 'CASE_SET', 'CONTROL_SET', 'FAMILY', 'PAIRED', 'TRIO'</b>].<br>"
+                    + "</il><ul>")
+    public Response createStudyPOST(@ApiParam(value = "Project id or alias", required = true) @QueryParam("projectId") String projectIdStr,
+                                    @ApiParam(value="studies", required = true) List<Study> studies) {
+        List<QueryResult<Study>> queryResults = new LinkedList<>();
+        long projectId;
+        try {
+            String userId = catalogManager.getUserManager().getId(sessionId);
+            projectId = catalogManager.getProjectManager().getId(userId, projectIdStr);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+        for (Study study : studies) {
+            System.out.println("study = " + study);
+            try {
+                QueryResult<Study> queryResult = catalogManager.createStudy(projectId, study.getName(),
+                        study.getAlias(), study.getType(), study.getCreationDate(),
+                        study.getDescription(), new Status(), study.getCipher(), null, null, null, study.getStats(),
+                        study.getAttributes(), queryOptions, sessionId);
+                queryResults.add(queryResult);
+            } catch (Exception e) {
+                return createErrorResponse(e);
+            }
+        }
+        return createOkResponse(queryResults);
+    }
+
     @GET
     @Path("/search")
-    @ApiOperation(value = "Search studies", position = 2, response = Study[].class)
+    @ApiOperation(value = "Search studies", response = Study[].class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
-                    example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
-                    example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer",
-                    paramType = "query"),
-            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = "include", value = "Set which fields are included in the response, e.g.: name,alias...",
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Set which fields are excluded in the response, e.g.: name,alias...",
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Max number of results to be returned.", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to be skipped.", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Get a count of the number of results obtained. Deactivated by default.",
+                    dataType = "boolean", paramType = "query")
     })
-    public Response getAllStudies(@ApiParam(value = "projectId") @QueryParam("projectId") String projectId,
-                                  @ApiParam(value = "name") @QueryParam("name") String name,
-                                  @ApiParam(value = "alias") @QueryParam("alias") String alias,
-                                  @ApiParam(value = "Comma separated list of types") @QueryParam("type") String type,
-                                  @ApiParam(value = "creationDate") @QueryParam("creationDate") String creationDate,
-                                  @ApiParam(value = "status") @QueryParam("status") String status,
-                                  @ApiParam(value = "attributes") @QueryParam("attributes") String attributes,
-                                  @Deprecated @ApiParam(value = "numerical attributes") @QueryParam("nattributes") String nattributes,
-                                  @Deprecated @ApiParam(value = "boolean attributes") @QueryParam("battributes") boolean battributes) {
+    public Response getAllStudies(@ApiParam(value = "Project id or alias") @QueryParam("projectId") String projectId,
+                                  @ApiParam(value = "Study name") @QueryParam("name") String name,
+                                  @ApiParam(value = "Study alias") @QueryParam("alias") String alias,
+                                  @ApiParam(value = "Type of study: CASE_CONTROL, CASE_SET...") @QueryParam("type") String type,
+                                  @ApiParam(value = "Creation date") @QueryParam("creationDate") String creationDate,
+                                  @ApiParam(value = "Status") @QueryParam("status") String status,
+                                  @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes,
+                                  @Deprecated @ApiParam(value = "Numerical attributes") @QueryParam("nattributes") String nattributes,
+                                  @Deprecated @ApiParam(value = "Boolean attributes") @QueryParam("battributes") boolean battributes) {
         try {
             if (projectId != null) {
                 query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), catalogManager.getProjectId(projectId, sessionId));
@@ -113,17 +149,40 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
+    @POST
+    @Path("/search")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Search studies", position = 2, response = Study[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
+                    example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
+                    example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer",
+                    paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
+    public Response getAllStudiesByPost(@ApiParam(value="studies", required = true) Query query) {
+        try {
+            QueryResult<Study> queryResult = catalogManager.getAllStudies(query, queryOptions, sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     @GET
     @Path("/{study}/update")
-    @ApiOperation(value = "Study modify", position = 3, response = Study.class)
+    @ApiOperation(value = "Update some study attributes", response = Study.class)
     public Response update(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
                                    required = true) @PathParam("study") String studyStr,
-                           @ApiParam(value = "name") @QueryParam("name") String name,
-                           @ApiParam(value = "alias") @QueryParam("alias") String alias,
-                           @ApiParam(value = "type") @QueryParam("type") String type,
-                           @ApiParam(value = "description") @QueryParam("description") String description,
-                           @ApiParam(value = "attributes") @QueryParam("attributes") String attributes,
-                           @ApiParam(value = "stats") @QueryParam("stats") String stats) throws IOException {
+                           @ApiParam(value = "Study name") @QueryParam("name") String name,
+                           @ApiParam(value = "Study alias") @QueryParam("alias") String alias,
+                           @ApiParam(value = "Study type") @QueryParam("type") String type,
+                           @ApiParam(value = "Study description") @QueryParam("description") String description,
+                           @ApiParam(value = "Study attributes") @QueryParam("attributes") String attributes,
+                           @ApiParam(value = "Study stats") @QueryParam("stats") String stats) throws IOException {
         try {
             ObjectMap params = new ObjectMap();
             params.putIfNotNull(StudyDBAdaptor.QueryParams.NAME.key(), name);
@@ -142,10 +201,34 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
+    public static class UpdateStudy {
+        public String name;
+        public Study.Type type;
+        public String description;
+        public Map<String, Object> stats;
+        public Map<String, Object> attributes;
+    }
+
+    @POST
+    @Path("/{study}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update some study attributes")
+    public Response updateByPost(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
+            required = true) @PathParam("study") String studyStr,
+                                 @ApiParam(value = "JSON containing the params to be updated.", required = true) UpdateStudy updateParams) {
+        try {
+            long studyId = catalogManager.getStudyId(studyStr, sessionId);
+            QueryResult queryResult = catalogManager
+                    .modifyStudy(studyId, new ObjectMap(jsonObjectMapper.writeValueAsString(updateParams)), sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 
     @GET
     @Path("/{study}/delete")
-    @ApiOperation(value = "Delete a study [PENDING]", position = 4, response = Study.class)
+    @ApiOperation(value = "Delete a study [PENDING]", response = Study.class)
     public Response delete(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
             required = true) @PathParam("study") String studyStr) {
         return createOkResponse("PENDING");
@@ -153,12 +236,12 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/info")
-    @ApiOperation(value = "Study information", position = 5, response = Study[].class)
+    @ApiOperation(value = "Fetch study information", response = Study[].class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
-                    example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
-                    example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "include", value = "Set which fields are included in the response, e.g.: name,alias...",
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Set which fields are excluded in the response, e.g.: name,alias...",
+                    dataType = "string", paramType = "query")
     })
     public Response info(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
                                  required = true) @PathParam("study") String studyStr) {
@@ -174,10 +257,10 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
-
     @GET
     @Path("/{study}/summary")
-    @ApiOperation(value = "Summary with the general stats of a study", position = 6)
+    @ApiOperation(value = "Fetch study information plus some basic stats", notes = "Fetch study information plus some basic stats such as"
+            + " the number of files, samples, cohorts...")
     public Response summary(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
                                     required = true) @PathParam("study") String studyStr) {
         try {
@@ -192,44 +275,40 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
-    // FIXME: Implement filters
     @GET
     @Path("/{study}/files")
-    @ApiOperation(value = "Return filtered files in study [PENDING]", position = 7, notes = "Currently it returns all the files in the "
-            + "study. No filters are applied yet.", response = File[].class)
+    @ApiOperation(value = "Fetch files in study", response = File[].class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
-                    example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
-                    example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer",
-                    paramType = "query"),
-            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = "include", value = "Set which fields are included in the response, e.g.: name,alias...",
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Set which fields are excluded in the response, e.g.: name,alias...",
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Max number of results to be returned.", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to be skipped.", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Get a count of the number of results obtained. Deactivated by default.",
+                    dataType = "boolean", paramType = "query")
     })
     public Response getAllFiles(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
                                         required = true) @PathParam("study") String studyStr,
-                                @ApiParam(value = "id") @DefaultValue("") @QueryParam("id") String id,
-                                @ApiParam(value = "name") @DefaultValue("") @QueryParam("name") String name,
-                                @ApiParam(value = "path") @DefaultValue("") @QueryParam("path") String path,
-                                @ApiParam(value = "Comma separated Type values. For existing Types see files/help")
-                                    @DefaultValue("") @QueryParam("type") String type,
-                                @ApiParam(value = "Comma separated Bioformat values. For existing Bioformats see files/help")
-                                    @DefaultValue("") @QueryParam("bioformat") String bioformat,
-                                @ApiParam(value = "Comma separated Format values. For existing Formats see files/help")
-                                    @DefaultValue("") @QueryParam("format") String formats,
-                                @ApiParam(value = "status") @DefaultValue("") @QueryParam("status") File.FileStatus status,
-                                @ApiParam(value = "directory") @DefaultValue("") @QueryParam("directory") String directory,
-                                @ApiParam(value = "ownerId") @DefaultValue("") @QueryParam("ownerId") String ownerId,
-                                @ApiParam(value = "creationDate") @DefaultValue("") @QueryParam("creationDate") String creationDate,
-                                @ApiParam(value = "modificationDate") @DefaultValue("") @QueryParam("modificationDate")
+                                @ApiParam(value = "File id") @QueryParam("id") String id,
+                                @ApiParam(value = "File name") @QueryParam("name") String name,
+                                @ApiParam(value = "File path") @QueryParam("path") String path,
+                                @ApiParam(value = "File type (FILE or DIRECTORY)") @QueryParam("type") String type,
+                                @ApiParam(value = "Comma separated list of bioformat values. For existing Bioformats see files/bioformats")
+                                    @QueryParam("bioformat") String bioformat,
+                                @ApiParam(value = "Comma separated list of format values. For existing Formats see files/formats")
+                                    @QueryParam("format") String formats,
+                                @ApiParam(value = "File status") @QueryParam("status") File.FileStatus status,
+                                @ApiParam(value = "Directory where the files will be looked for") @QueryParam("directory") String directory,
+                                @ApiParam(value = "Creation date of the file") @QueryParam("creationDate") String creationDate,
+                                @ApiParam(value = "Last modification date of the file") @QueryParam("modificationDate")
                                             String modificationDate,
-                                @ApiParam(value = "description") @DefaultValue("") @QueryParam("description") String description,
-                                @ApiParam(value = "size") @DefaultValue("") @QueryParam("size") Long size,
-                                @ApiParam(value = "Comma separated sampleIds") @DefaultValue("") @QueryParam("sampleIds") String sampleIds,
-                                @ApiParam(value = "jobId") @DefaultValue("") @QueryParam("jobId") String jobId,
-                                @ApiParam(value = "attributes") @DefaultValue("") @QueryParam("attributes") String attributes,
-                                @ApiParam(value = "numerical attributes") @DefaultValue("") @QueryParam("nattributes") String nattributes) {
+                                @ApiParam(value = "File description") @QueryParam("description") String description,
+                                @ApiParam(value = "File size") @QueryParam("size") Long size,
+                                @ApiParam(value = "List of sample ids associated with the files") @QueryParam("sampleIds") String sampleIds,
+                                @ApiParam(value = "Job id that generated the file") @QueryParam("jobId") String jobId,
+                                @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes,
+                                @ApiParam(value = "Numerical attributes") @QueryParam("nattributes") String nattributes) {
         try {
             long studyId = catalogManager.getStudyId(studyStr, sessionId);
             QueryResult queryResult = catalogManager.getAllFiles(studyId, query, queryOptions, sessionId);
@@ -241,21 +320,20 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/samples")
-    @ApiOperation(value = "Return filtered samples in study [PENDING]", position = 8, notes = "Currently it returns all the samples in the "
-            + "study. No filters are being used yet", response = Sample[].class)
+    @ApiOperation(value = "Fetch samples in study", response = Sample[].class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
-                    example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
-                    example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer",
-                    paramType = "query"),
-            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = "include", value = "Set which fields are included in the response, e.g.: name,alias...",
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Set which fields are excluded in the response, e.g.: name,alias...",
+                    dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Max number of results to be returned.", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to be skipped.", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Get a count of the number of results obtained. Deactivated by default.",
+                    dataType = "boolean", paramType = "query")
     })
     public Response getAllSamples(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
                                           required = true) @PathParam("study") String studyStr,
-                                  @ApiParam(value = "name") @QueryParam("name") String name,
+                                  @ApiParam(value = "Sample name") @QueryParam("name") String name,
                                   @Deprecated @ApiParam(value = "source") @QueryParam("source") String source,
                                   @ApiParam(value = "individualId") @QueryParam("individualId") String individualId,
                                   @ApiParam(value = "annotationSetName") @QueryParam("annotationSetName") String annotationSetName,
@@ -286,14 +364,14 @@ public class StudyWSServer extends OpenCGAWSServer {
     })
     public Response getAllJobs(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
                                        required = true) @PathParam("study") String studyStr,
-                               @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
-                               @ApiParam(value = "tool name", required = false) @DefaultValue("") @QueryParam("toolName") String tool,
-                               @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status,
-                               @ApiParam(value = "ownerId", required = false) @DefaultValue("") @QueryParam("ownerId") String ownerId,
-                               @ApiParam(value = "date", required = false) @DefaultValue("") @QueryParam("date") String date,
-                               @ApiParam(value = "Comma separated list of output file ids", required = false) @DefaultValue("")
+                               @ApiParam(value = "name") @DefaultValue("") @QueryParam("name") String name,
+                               @ApiParam(value = "tool name") @DefaultValue("") @QueryParam("toolName") String tool,
+                               @ApiParam(value = "status") @DefaultValue("") @QueryParam("status") String status,
+                               @ApiParam(value = "ownerId") @DefaultValue("") @QueryParam("ownerId") String ownerId,
+                               @ApiParam(value = "date") @DefaultValue("") @QueryParam("date") String date,
+                               @ApiParam(value = "Comma separated list of output file ids") @DefaultValue("")
                                    @QueryParam("inputFiles") String inputFiles,
-                               @ApiParam(value = "Comma separated list of output file ids", required = false) @DefaultValue("")
+                               @ApiParam(value = "Comma separated list of output file ids") @DefaultValue("")
                                    @QueryParam("outputFiles") String outputFiles) {
         try {
             long studyId = catalogManager.getStudyId(studyStr, sessionId);
@@ -556,7 +634,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/scanFiles")
-    @ApiOperation(value = "Scans the study folder to find untracked or missing files", position = 12)
+    @ApiOperation(value = "Scan the study folder to find untracked or missing files", position = 12)
     public Response scanFiles(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
                                       required = true) @PathParam("study") String studyStr) {
         try {
@@ -615,7 +693,10 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/resyncFiles")
-    @ApiOperation(value = "Scan the study folder to find untracked or missing files and update their status", position = 12)
+    @ApiOperation(value = "Scan the study folder to find untracked or missing files.", notes = "This method is intended to keep the "
+            + "consistency between the database and the file system. It will check all the files and folders belonging to the study and "
+            + "will keep track of those new files and/or folders found in the file system as well as update the status of those "
+            + "files/folders that are no longer available in the file system setting their status to MISSING.")
     public Response resyncFiles(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
                                         required = true) @PathParam("study") String studyStr) {
         try {
@@ -650,12 +731,30 @@ public class StudyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Create a group", position = 14)
     public Response createGroup(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
                                         required = true) @PathParam("study") String studyStr,
-                                @ApiParam(value = "Id of the new group to be created", required = true) @DefaultValue("")
-                                    @QueryParam("groupId") String groupId,
+                                @ApiParam(value = "Id of the new group to be created", required = true)
+                                @QueryParam("groupId") String groupId,
                                 @ApiParam(value = "Comma separated list of users to take part of the group", required = true)
                                     @DefaultValue("") @QueryParam("users") String users) {
         try {
             QueryResult group = catalogManager.createGroup(studyStr, groupId, users, sessionId);
+            return createOkResponse(group);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{study}/groups/create")
+    @ApiOperation(value = "Create a group", position = 14)
+    public Response createGroupPOST(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
+            required = true) @PathParam("study") String studyStr,
+                                    @ApiParam(value="JSON containing 'groupId' as a mandatory parameter and optionally 'users' containing" +
+                                            " the list of users to take part of the group", required = true) ObjectMap params) {
+        if (StringUtils.isEmpty(params.getString("groupId"))) {
+            return createErrorResponse(new CatalogException("groupId key missing."));
+        }
+        try {
+            QueryResult group = catalogManager.createGroup(studyStr, params.getString("groupId"), params.getString("users"), sessionId);
             return createOkResponse(group);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -678,7 +777,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/groups/{groupId}/update")
-    @ApiOperation(value = "Updates the members of the group", position = 16)
+    @ApiOperation(value = "Updates the members of the group")
     public Response addMembersToGroup(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
                                               + "alias", required = true) @PathParam("study") String studyStr,
                                       @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId,
@@ -690,6 +789,23 @@ public class StudyWSServer extends OpenCGAWSServer {
                                           @QueryParam("removeUsers") String removeUsers) {
         try {
             return createOkResponse(catalogManager.updateGroup(studyStr, groupId, addUsers, removeUsers, setUsers, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{study}/groups/{groupId}/update")
+    @ApiOperation(value = "Updates the members of the group")
+    public Response addMembersToGroupPOST(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
+                    + "alias", required = true) @PathParam("study") String studyStr,
+            @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId,
+            @ApiParam(value="JSON containing one of the keys 'addUsers', 'setUsers' or 'removeUsers'", required = true) ObjectMap params) {
+        try {
+            return createOkResponse(catalogManager.
+                    updateGroup(studyStr, groupId, params.getString("addUsers"), params.getString("removeUsers"),
+                            params.getString("setUsers"), sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -722,20 +838,37 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
-
     @GET
     @Path("/{study}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of users or groups", position = 19)
+    @ApiOperation(value = "Define a set of permissions for a list of users or groups")
     public Response createRole(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-                                       required = true) @PathParam("study") String studyStr,
+            required = true) @PathParam("study") String studyStr,
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
                                        required = true) @QueryParam("members") String members,
                                @ApiParam(value = "Comma separated list of permissions that will be granted to the member list")
-                                   @DefaultValue("") @QueryParam("permissions") String permissions,
+                               @DefaultValue("") @QueryParam("permissions") String permissions,
                                @ApiParam(value = "Template of permissions to be used (admin, analyst or view_only)")
-                                   @QueryParam("templateId") String templateId) {
+                               @QueryParam("templateId") String templateId) {
         try {
             return createOkResponse(catalogManager.createStudyAcls(studyStr, members, permissions, templateId, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{study}/acl/create")
+    @ApiOperation(value = "Define a set of permissions for a list of users or groups")
+    public Response createRolePOST(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
+            @PathParam("study") String studyStr,
+            @ApiParam(value="JSON containing the parameters defined in GET. Mandatory keys: 'members'", required = true) ObjectMap params) {
+        if (params == null || StringUtils.isEmpty(params.getString("members"))) {
+            return createErrorResponse(new CatalogException("members parameter not found"));
+        }
+        try {
+            return createOkResponse(catalogManager.createStudyAcls(studyStr, params.getString("members"), params.getString("permissions"),
+                    params.getString("templateId"), sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -774,6 +907,25 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
+    @POST
+    @Path("/{study}/acl/{memberId}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the user or group", position = 21)
+    public Response updateAcl(
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
+            @PathParam("study") String studyStr,
+            @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
+            @ApiParam(value="JSON containing one of the keys 'addUsers', 'setUsers' or 'removeUsers'", required = true) ObjectMap params) {
+        if (params == null || params.isEmpty()) {
+            return createErrorResponse(new CatalogException("At least one of the keys 'addUsers', 'setUsers' or 'removeUsers'"));
+        }
+        try {
+            return createOkResponse(catalogManager.updateStudyAcl(studyStr, memberId, params.getString("addPermissions"),
+                    params.getString("removePermissions"), params.getString("setPermissions"), sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     @GET
     @Path("/{study}/acl/{memberId}/delete")
     @ApiOperation(value = "Delete all the permissions granted for the user or group", position = 22)
@@ -787,114 +939,5 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
-    @POST
-    @Path("/create")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create a file with POST method", response = QueryResult.class, position = 1, notes =
-            "Wont't accept files, jobs, experiments, samples.<br>" +
-                    "Will accept (but not yet): acl, uri, cohorts, datasets.<br>" +
-//            "Work in progress.<br>" +
-//            "Only nested files parameter accepted, and only a few parameters.<br>" +
-//            "<b>{ files:[ { format, bioformat, path, description, type, jobId, attributes } ] }</b><br>" +
-                    "<ul>" +
-                    "<il><b>id</b>, <b>lastModified</b> and <b>size</b> parameters will be ignored.<br></il>" +
-                    "<il><b>type</b> accepted values: [<b>'CASE_CONTROL', 'CASE_SET', 'CONTROL_SET', 'FAMILY', 'PAIRED', 'TRIO'</b>].<br>"
-                    + "</il><ul>")
-    public Response createStudyPOST(@ApiParam(value = "Project id or alias", required = true) @QueryParam("projectId") String projectIdStr,
-                                    @ApiParam(value="studies", required = true) List<Study> studies) {
-//        List<Study> catalogStudies = new LinkedList<>();
-        List<QueryResult<Study>> queryResults = new LinkedList<>();
-        long projectId;
-        try {
-            String userId = catalogManager.getUserManager().getId(sessionId);
-            projectId = catalogManager.getProjectManager().getId(userId, projectIdStr);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-        for (Study study : studies) {
-            System.out.println("study = " + study);
-            try {
-                QueryResult<Study> queryResult = catalogManager.createStudy(projectId, study.getName(),
-                        study.getAlias(), study.getType(), study.getCreationDate(),
-                        study.getDescription(), new Status(), study.getCipher(), null, null, null, study.getStats(),
-                        study.getAttributes(), queryOptions, sessionId);
-//                Study studyAdded = queryResult.getResult().get(0);
-                queryResults.add(queryResult);
-//                List<File> files = study.getFiles();
-//                if(files != null) {
-//                    for (File file : files) {
-//                        QueryResult<File> fileQueryResult = catalogManager.createFile(studyAdded.getId(), file.getType(), file.getFormat(),
-//                                file.getBioformat(), file.getPath(), file.getOwnerId(), file.getCreationDate(),
-//                                file.getDescription(), file.getName(), file.getSize(), file.getExperimentId(),
-//                                file.getSampleIds(), file.getJobId(), file.stats(), file.getAttributes(), true, sessionId);
-//                        file = fileQueryResult.getResult().get(0);
-//                        System.out.println("fileQueryResult = " + fileQueryResult);
-//                        studyAdded.getFiles().add(file);
-//                    }
-//                }
-            } catch (Exception e) {
-//                queryResults.add(new QueryResult<>("createStudy", 0, 0, 0, "", e, Collections.<Study>emptyList()));
-                return createErrorResponse(e);
-            }
-        }
-        return createOkResponse(queryResults);
-    }
-
-
-    @POST
-    @Path("/search")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Search studies", position = 2, response = Study[].class)
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
-                    example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
-                    example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer",
-                    paramType = "query"),
-            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
-    })
-    public Response getAllStudiesByPost(@ApiParam(value="studies", required = true) Query query) {
-        try {
-            QueryResult<Study> queryResult = catalogManager.getAllStudies(query, queryOptions, sessionId);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    public static class UpdateStudy {
-
-        public String name;
-        public Study.Type type;
-        public String description;
-//        public String status;
-//        public String lastModified;
-//        public long size;
-//        public String cipher;
-
-        //public URI uri;
-
-        public Map<String, Object> stats;
-        public Map<String, Object> attributes;
-    }
-
-    @POST
-    @Path("/{study}/update")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some study attributes using POST method", position = 3)
-    public Response updateByPost(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-                                         required = true) @PathParam("study") String studyStr,
-                                 @ApiParam(value = "params", required = true) UpdateStudy updateParams) {
-        try {
-            long studyId = catalogManager.getStudyId(studyStr, sessionId);
-            QueryResult queryResult = catalogManager.modifyStudy(studyId,
-                    new QueryOptions(jsonObjectMapper.writeValueAsString(updateParams)), sessionId);
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
 
 }
