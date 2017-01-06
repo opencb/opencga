@@ -134,6 +134,7 @@ public class VariantStorageManager extends StorageManager {
         }
         VariantExportStorageOperation op = new VariantExportStorageOperation(catalogManager, storageConfiguration);
 
+        catalogUtils.parseQuery(query, sessionId);
         Set<Long> studies = checkSamplesPermissions(query, queryOptions, sessionId).keySet();
 
         List<StudyInfo> studyInfos = new ArrayList<>(studies.size());
@@ -303,6 +304,7 @@ public class VariantStorageManager extends StorageManager {
         long studyId = catalogUtils.getAnyStudyId(query, sessionId);
 
         VariantDBAdaptor dbAdaptor = getVariantDBAdaptor(studyId, sessionId);
+        catalogUtils.parseQuery(query, sessionId);
         checkSamplesPermissions(query, queryOptions, dbAdaptor, sessionId);
         VariantDBIterator iterator = dbAdaptor.iterator(query, queryOptions);
         iterator.addCloseable(dbAdaptor);
@@ -324,6 +326,7 @@ public class VariantStorageManager extends StorageManager {
     public Map<Long, List<Sample>> getSamplesMetadata(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
         long studyId = catalogUtils.getAnyStudyId(query, sessionId);
+        catalogUtils.parseQuery(query, sessionId);
         try (VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(studyId, sessionId)) {
             return checkSamplesPermissions(query, queryOptions, variantDBAdaptor, sessionId);
         }
