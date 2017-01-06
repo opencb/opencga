@@ -18,7 +18,7 @@ package org.opencb.opencga.client.rest.catalog;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
@@ -56,8 +56,8 @@ public class JobClient extends CatalogClient<Job, JobAclEntry> {
         return execute(JOBS_URL, "create", p, POST, Job.class);
     }
 
-    public QueryResponse<Job> visit(String jobId, QueryOptions options) throws CatalogException, IOException {
-        return execute(JOBS_URL, jobId, "visit", options, GET, Job.class);
+    public QueryResponse<Job> visit(String jobId, Query query) throws CatalogException, IOException {
+        return execute(JOBS_URL, jobId, "visit", query, GET, Job.class);
     }
     public QueryResponse<Job> groupBy(String studyId, String fields, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "study", studyId, "fields", fields);

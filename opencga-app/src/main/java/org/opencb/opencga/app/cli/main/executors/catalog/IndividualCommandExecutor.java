@@ -25,6 +25,7 @@ import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AnnotationCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.IndividualCommandOptions;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Individual;
@@ -129,6 +130,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Creating individual");
 
         ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), individualsCommandOptions.createCommandOptions.study);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.createCommandOptions.family);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.createCommandOptions.fatherId);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), individualsCommandOptions.createCommandOptions.motherId);
@@ -169,10 +171,11 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Individual> info() throws CatalogException, IOException {
         logger.debug("Getting individual information");
 
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotNull(QueryOptions.INCLUDE, individualsCommandOptions.infoCommandOptions.dataModelOptions.include);
-        queryOptions.putIfNotNull(QueryOptions.EXCLUDE, individualsCommandOptions.infoCommandOptions.dataModelOptions.exclude);
-        return openCGAClient.getIndividualClient().get(individualsCommandOptions.infoCommandOptions.individual, queryOptions);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), individualsCommandOptions.infoCommandOptions.study);
+        params.putIfNotNull(QueryOptions.INCLUDE, individualsCommandOptions.infoCommandOptions.dataModelOptions.include);
+        params.putIfNotNull(QueryOptions.EXCLUDE, individualsCommandOptions.infoCommandOptions.dataModelOptions.exclude);
+        return openCGAClient.getIndividualClient().get(individualsCommandOptions.infoCommandOptions.individual, params);
     }
 
     private QueryResponse<Individual> search() throws CatalogException, IOException {
@@ -230,6 +233,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Updating individual information");
 
         ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), individualsCommandOptions.updateCommandOptions.study);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.NAME.key(), individualsCommandOptions.updateCommandOptions.name);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.updateCommandOptions.family);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.updateCommandOptions.fatherId);
@@ -270,14 +274,16 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
 
     private QueryResponse<Individual> delete() throws CatalogException, IOException {
         logger.debug("Deleting individual information");
-        ObjectMap objectMap = new ObjectMap();
-        return openCGAClient.getIndividualClient().delete(individualsCommandOptions.deleteCommandOptions.individual, objectMap);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), individualsCommandOptions.deleteCommandOptions.study);
+        return openCGAClient.getIndividualClient().delete(individualsCommandOptions.deleteCommandOptions.individual, params);
     }
 
     private QueryResponse<ObjectMap> groupBy() throws CatalogException, IOException {
         logger.debug("Group by individuals");
 
         ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), individualsCommandOptions.groupByCommandOptions.study);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ID.key(), individualsCommandOptions.groupByCommandOptions.id);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.NAME.key(), individualsCommandOptions.groupByCommandOptions.name);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.groupByCommandOptions.fatherId);

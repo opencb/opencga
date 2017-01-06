@@ -45,8 +45,8 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
         return execute(category, "count", query, GET, Long.class);
     }
 
-    public QueryResponse<T> get(String id, QueryOptions options) throws IOException {
-        return execute(category, id, "info", options, GET, clazz);
+    public QueryResponse<T> get(String id, ObjectMap params) throws IOException {
+        return execute(category, id, "info", params, GET, clazz);
     }
 
     public QueryResponse<T> search(Query query, QueryOptions options) throws IOException {
@@ -73,12 +73,12 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
 
     // Acl methods
 
-    public QueryResponse<A> getAcls(String id) throws IOException {
-        return execute(category, id, "acl", new ObjectMap(), GET, aclClass);
+    public QueryResponse<A> getAcls(String id, ObjectMap params) throws IOException {
+        return execute(category, id, "acl", params, GET, aclClass);
     }
 
-    public QueryResponse<A> getAcl(String id, String memberId) throws CatalogException, IOException {
-        return execute(category, id, "acl", memberId, "info", new ObjectMap(), GET, aclClass);
+    public QueryResponse<A> getAcl(String id, String memberId, ObjectMap params) throws CatalogException, IOException {
+        return execute(category, id, "acl", memberId, "info", params, GET, aclClass);
     }
 
     public QueryResponse<A> createAcl(String id, String members, ObjectMap params) throws CatalogException,
@@ -87,8 +87,8 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
         return execute(category, id, "acl", null, "create", params, GET, aclClass);
     }
 
-    public QueryResponse<A> deleteAcl(String id, String memberId) throws CatalogException, IOException {
-        return execute(category, id, "acl", memberId, "delete", new ObjectMap(), GET, aclClass);
+    public QueryResponse<A> deleteAcl(String id, String memberId, ObjectMap params) throws CatalogException, IOException {
+        return execute(category, id, "acl", memberId, "delete", params, GET, aclClass);
     }
 
     public QueryResponse<A> updateAcl(String id, String memberId, ObjectMap params) throws CatalogException, IOException {

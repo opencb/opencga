@@ -94,9 +94,6 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
             case "index":
                 queryResponse = index();
                 break;
-            case "alignment":
-                queryResponse = alignment();
-                break;
             case "content":
                 queryResponse = content();
                 break;
@@ -312,18 +309,6 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(QueryOptions.EXCLUDE, filesCommandOptions.treeCommandOptions.dataModelOptions.exclude);
         params.putIfNotEmpty(QueryOptions.LIMIT, filesCommandOptions.treeCommandOptions.limit);
         return openCGAClient.getFileClient().tree(filesCommandOptions.treeCommandOptions.folderId, params);
-    }
-
-    private QueryResponse alignment() throws CatalogException, IOException {
-        logger.debug("Fetch alignments from a BAM file");
-
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, filesCommandOptions.alignmentCommandOptions.dataModelOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, filesCommandOptions.alignmentCommandOptions.dataModelOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, filesCommandOptions.alignmentCommandOptions.numericOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, filesCommandOptions.alignmentCommandOptions.numericOptions.skip);
-        queryOptions.put("count", filesCommandOptions.alignmentCommandOptions.numericOptions.count);
-        return openCGAClient.getAlignmentClient().query(filesCommandOptions.alignmentCommandOptions.file, queryOptions);
     }
 
     private QueryResponse content() throws CatalogException, IOException {

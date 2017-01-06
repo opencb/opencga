@@ -190,14 +190,18 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Cohort> info() throws CatalogException, IOException {
         logger.debug("Getting cohort information");
 
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, cohortsCommandOptions.infoCommandOptions.dataModelOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, cohortsCommandOptions.infoCommandOptions.dataModelOptions.exclude);
-        return openCGAClient.getCohortClient().get(cohortsCommandOptions.infoCommandOptions.cohort, queryOptions);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.STUDY.key(), cohortsCommandOptions.infoCommandOptions.study);
+        params.putIfNotEmpty(QueryOptions.INCLUDE, cohortsCommandOptions.infoCommandOptions.dataModelOptions.include);
+        params.putIfNotEmpty(QueryOptions.EXCLUDE, cohortsCommandOptions.infoCommandOptions.dataModelOptions.exclude);
+        return openCGAClient.getCohortClient().get(cohortsCommandOptions.infoCommandOptions.cohort, params);
     }
 
     private QueryResponse<Sample> samples() throws CatalogException, IOException {
         logger.debug("Listing samples belonging to a cohort");
+
+        Query query = new Query();
+        query.putIfNotEmpty(CohortDBAdaptor.QueryParams.STUDY.key(), cohortsCommandOptions.samplesCommandOptions.study);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, cohortsCommandOptions.samplesCommandOptions.dataModelOptions.include);
@@ -205,13 +209,14 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putIfNotEmpty(QueryOptions.LIMIT, cohortsCommandOptions.samplesCommandOptions.numericOptions.limit);
         queryOptions.putIfNotEmpty(QueryOptions.SKIP, cohortsCommandOptions.samplesCommandOptions.numericOptions.skip);
         queryOptions.put("count", cohortsCommandOptions.samplesCommandOptions.numericOptions.count);
-        return openCGAClient.getCohortClient().getSamples(cohortsCommandOptions.samplesCommandOptions.cohort, queryOptions);
+        return openCGAClient.getCohortClient().getSamples(cohortsCommandOptions.samplesCommandOptions.cohort, query, queryOptions);
     }
 
     private QueryResponse<Cohort> update() throws CatalogException, IOException {
         logger.debug("Updating cohort");
 
         ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.STUDY.key(), cohortsCommandOptions.updateCommandOptions.study);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.NAME.key(), cohortsCommandOptions.updateCommandOptions.name);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.CREATION_DATE.key(), cohortsCommandOptions.updateCommandOptions.creationDate);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.DESCRIPTION.key(), cohortsCommandOptions.updateCommandOptions.description);
@@ -222,13 +227,18 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Cohort> delete() throws CatalogException, IOException {
         logger.debug("Deleting cohort");
 
-        return openCGAClient.getCohortClient().delete(cohortsCommandOptions.deleteCommandOptions.cohort, new ObjectMap());
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.STUDY.key(), cohortsCommandOptions.deleteCommandOptions.study);
+
+        return openCGAClient.getCohortClient().delete(cohortsCommandOptions.deleteCommandOptions.cohort, params);
     }
 
     private QueryResponse<Object> stats() throws CatalogException, IOException {
         logger.debug("Calculating variant stats for a set of cohorts");
 
         Query query = new Query();
+        query.putIfNotEmpty(CohortDBAdaptor.QueryParams.STUDY.key(), cohortsCommandOptions.statsCommandOptions.study);
+
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.put("calculate", cohortsCommandOptions.statsCommandOptions.calculate);
         queryOptions.put("delete", cohortsCommandOptions.statsCommandOptions.delete);
@@ -241,6 +251,7 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Group by cohorts");
 
         ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.STUDY.key(), cohortsCommandOptions.groupByCommandOptions.study);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.ID.key(), cohortsCommandOptions.groupByCommandOptions.id);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.NAME.key(), cohortsCommandOptions.groupByCommandOptions.name);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.TYPE.key(), cohortsCommandOptions.groupByCommandOptions.type);

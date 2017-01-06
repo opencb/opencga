@@ -54,8 +54,10 @@ public class CohortClient extends AnnotationClient<Cohort, CohortAclEntry> {
         return execute(COHORT_URL, cohortId, "stats", params, GET, Object.class);
     }
 
-    public QueryResponse<Sample> getSamples(String cohortId, QueryOptions options) throws CatalogException, IOException {
-        return execute(COHORT_URL, cohortId, "samples", options, GET, Sample.class);
+    public QueryResponse<Sample> getSamples(String cohortId, Query query, QueryOptions options) throws CatalogException, IOException {
+        ObjectMap params = new ObjectMap(query);
+        params.putAll(options);
+        return execute(COHORT_URL, cohortId, "samples", params, GET, Sample.class);
     }
 
     public QueryResponse<Cohort> annotate(String cohortId, String annotateSetName, ObjectMap params) throws CatalogException, IOException {

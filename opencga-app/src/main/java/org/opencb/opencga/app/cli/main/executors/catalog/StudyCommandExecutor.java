@@ -354,7 +354,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Sample> samples() throws CatalogException, IOException {
         logger.debug("Listing samples of a study. [PENDING]");
 
-        studiesCommandOptions.updateCommandOptions.study = getSingleValidStudy(studiesCommandOptions.updateCommandOptions.study);
+        studiesCommandOptions.samplesCommandOptions.study = getSingleValidStudy(studiesCommandOptions.samplesCommandOptions.study);
 
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(SampleDBAdaptor.QueryParams.NAME.key(), studiesCommandOptions.samplesCommandOptions.name);

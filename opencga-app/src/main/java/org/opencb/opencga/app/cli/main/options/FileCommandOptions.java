@@ -43,7 +43,6 @@ public class FileCommandOptions {
     public ListCommandOptions listCommandOptions;
     public IndexCommandOptions indexCommandOptions;
     public TreeCommandOptions treeCommandOptions;
-    public AlignmentCommandOptions alignmentCommandOptions;
     public ContentCommandOptions contentCommandOptions;
     public FetchCommandOptions fetchCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
@@ -86,7 +85,6 @@ public class FileCommandOptions {
         this.listCommandOptions = new ListCommandOptions();
         this.indexCommandOptions = new IndexCommandOptions();
         this.treeCommandOptions = new TreeCommandOptions();
-        this.alignmentCommandOptions = new AlignmentCommandOptions();
         this.contentCommandOptions = new ContentCommandOptions();
         this.fetchCommandOptions = new FetchCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
@@ -158,7 +156,8 @@ public class FileCommandOptions {
         @Parameter(names = {"--path"}, description = "Path where the folder will be created", required = true, arity = 1)
         public String folder = "";
 
-        @Parameter(names = {"-P", "--parents"}, description = "Create the parent directories if they do not exist. Default: false", arity = 0)
+        @Parameter(names = {"-P", "--parents"}, description = "Create the parent directories if they do not exist. Default: false",
+                arity = 0)
         public boolean parents;
     }
 
@@ -339,17 +338,6 @@ public class FileCommandOptions {
 //
 //        @Parameter(names = "--annotate", description = "Annotate new variants", arity = 0)
 //        public boolean annotate;
-    }
-
-    @Parameters(commandNames = {"alignments"}, commandDescription = "Fetch alignments from a BAM file")
-    public class AlignmentCommandOptions extends BaseFileCommand {
-
-        @ParametersDelegate
-        public DataModelOptions dataModelOptions = commonDataModelOptions;
-
-        @ParametersDelegate
-        public NumericOptions numericOptions = commonNumericOptions;
-
     }
 
     @Parameters(commandNames = {"content"}, commandDescription = "Show the content of a file (up to a limit)")

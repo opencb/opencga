@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.JobCommandOptions;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
@@ -105,6 +106,7 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         String toolId = jobsCommandOptions.createCommandOptions.toolId;
 
         ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), jobsCommandOptions.createCommandOptions.study);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.EXECUTION.key(), jobsCommandOptions.createCommandOptions.execution);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.DESCRIPTION.key(), jobsCommandOptions.createCommandOptions.description);
 
@@ -114,10 +116,11 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Job> info() throws CatalogException, IOException {
         logger.debug("Getting job information");
 
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, jobsCommandOptions.infoCommandOptions.dataModelOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, jobsCommandOptions.infoCommandOptions.dataModelOptions.exclude);
-        return openCGAClient.getJobClient().get(jobsCommandOptions.infoCommandOptions.job, queryOptions);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), jobsCommandOptions.infoCommandOptions.study);
+        params.putIfNotEmpty(QueryOptions.INCLUDE, jobsCommandOptions.infoCommandOptions.dataModelOptions.include);
+        params.putIfNotEmpty(QueryOptions.EXCLUDE, jobsCommandOptions.infoCommandOptions.dataModelOptions.exclude);
+        return openCGAClient.getJobClient().get(jobsCommandOptions.infoCommandOptions.job, params);
     }
 
     private QueryResponse<Job> search() throws CatalogException, IOException {
@@ -145,22 +148,25 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
 
     private QueryResponse<Job> visit() throws CatalogException, IOException {
         logger.debug("Visiting a job");
-        QueryOptions queryOptions = new QueryOptions();
-        return openCGAClient.getJobClient().visit(jobsCommandOptions.visitCommandOptions.job, queryOptions);
+        Query query = new Query();
+        query.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), jobsCommandOptions.visitCommandOptions.study);
+        return openCGAClient.getJobClient().visit(jobsCommandOptions.visitCommandOptions.job, query);
     }
 
     private QueryResponse<Job> delete() throws CatalogException, IOException {
         logger.debug("Deleting job");
 
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put("deleteFiles", jobsCommandOptions.deleteCommandOptions.deleteFiles);
-        return openCGAClient.getJobClient().delete(jobsCommandOptions.deleteCommandOptions.job, queryOptions);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), jobsCommandOptions.deleteCommandOptions.study);
+        params.put("deleteFiles", jobsCommandOptions.deleteCommandOptions.deleteFiles);
+        return openCGAClient.getJobClient().delete(jobsCommandOptions.deleteCommandOptions.job, params);
     }
 
     private QueryResponse<Job> groupBy() throws CatalogException, IOException {
         logger.debug("Group by job");
 
         ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(JobDBAdaptor.QueryParams.STUDY.key(), jobsCommandOptions.groupByCommandOptions.study);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.ID.key(), jobsCommandOptions.groupByCommandOptions.id);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.NAME.key(), jobsCommandOptions.groupByCommandOptions.name);
         params.putIfNotEmpty(JobDBAdaptor.QueryParams.OUT_DIR_ID.key(), jobsCommandOptions.groupByCommandOptions.path);
