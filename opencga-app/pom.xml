@@ -248,7 +248,7 @@
                                     <arg value="${project.basedir}/target/conf"/>
                                     <arg value="${app.dir}/examples"/>
                                     <arg value="${app.dir}/tools"/>
-                                    <arg value="${project.basedir}/../opencga-storage/build/bin"/>
+                                    <!--<arg value="${project.basedir}/../opencga-storage/build/bin"/>-->
                                     <arg value="${project.basedir}/../LICENSE"/>
                                     <arg value="${project.basedir}/../README.md"/>
                                     <arg value="${build.dir}"/>
@@ -280,6 +280,39 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>storage-binaries</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.8</version>
+                        <executions>
+                            <execution>
+                                <id>install-storage-binaries</id>
+                                <phase>install</phase>
+                                <configuration>
+                                    <target>
+                                        <echo>Copying to ${build.dir}</echo>
+                                        <exec executable="cp">
+                                            <arg value="-r"/>
+                                            <arg value="${project.basedir}/../opencga-storage/build/bin"/>
+                                            <arg value="${build.dir}"/>
+                                        </exec>
+                                    </target>
+                                </configuration>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <profile>
             <id>storage-mongodb</id>
             <activation>
