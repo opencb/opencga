@@ -200,6 +200,10 @@
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
+                            <jvmSettings>
+                                <initialMemorySize>256m</initialMemorySize>
+                                <maxMemorySize>4096m</maxMemorySize>
+                            </jvmSettings>
                         </program>
                     </programs>
                 </configuration>
