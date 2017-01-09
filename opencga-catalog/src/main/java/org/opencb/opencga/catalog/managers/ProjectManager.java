@@ -176,7 +176,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
 
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkParameter(scientificName, "organism.scientificName");
-        ParamUtils.checkParameter(taxonomyCode, "organism.taxonomyCode");
+        ParamUtils.checkParameter(assembly, "organism.assembly");
         ParamUtils.checkAlias(alias, "alias");
         ParamUtils.checkParameter(sessionId, "sessionId");
 

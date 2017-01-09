@@ -34,44 +34,36 @@ public class AclCommandExecutor<T,U> {
     public QueryResponse<U> acls(AclCommandOptions.AclsCommandOptions aclCommandOptions, CatalogClient<T,U> client)
             throws CatalogException,IOException {
         ObjectMap params = new ObjectMap();
-//        params.putIfNotEmpty("study", aclCommandOptions.study);
+        params.putIfNotEmpty("study", aclCommandOptions.study);
         return client.getAcls(aclCommandOptions.id, params);
     }
 
     public QueryResponse<U> aclsCreate(AclCommandOptions.AclsCreateCommandOptions aclCommandOptions, CatalogClient<T,U> client)
             throws CatalogException,IOException {
         ObjectMap params = new ObjectMap();
-//        params.putIfNotEmpty("study", aclCommandOptions.study);
+        params.putIfNotEmpty("study", aclCommandOptions.study);
         params.putIfNotNull("permissions", aclCommandOptions.permissions);
         return client.createAcl(aclCommandOptions.id, aclCommandOptions.members, params);
-    }
-
-    public QueryResponse<StudyAclEntry> aclsCreateTemplate(AclCommandOptions.AclsCreateCommandOptionsTemplate aclCommandOptions,
-                                                           StudyClient client) throws CatalogException, IOException {
-        ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotNull("permissions", aclCommandOptions.permissions);
-        objectMap.putIfNotNull("templateId", aclCommandOptions.templateId);
-        return client.createAcl(aclCommandOptions.id, aclCommandOptions.members, objectMap);
     }
 
     public QueryResponse<U> aclMemberDelete(AclCommandOptions.AclsMemberDeleteCommandOptions aclCommandOptions,
                                             CatalogClient<T,U> client) throws CatalogException,IOException {
         ObjectMap params = new ObjectMap();
-//        params.putIfNotEmpty("study", aclCommandOptions.study);
+        params.putIfNotEmpty("study", aclCommandOptions.study);
         return client.deleteAcl(aclCommandOptions.id, aclCommandOptions.memberId, params);
     }
 
     public QueryResponse<U> aclMemberInfo(AclCommandOptions.AclsMemberInfoCommandOptions aclCommandOptions,
                                           CatalogClient<T,U> client) throws CatalogException,IOException {
         ObjectMap params = new ObjectMap();
-//        params.putIfNotEmpty("study", aclCommandOptions.study);
+        params.putIfNotEmpty("study", aclCommandOptions.study);
         return client.getAcl(aclCommandOptions.id, aclCommandOptions.memberId, params);
     }
 
     public QueryResponse<U> aclMemberUpdate(AclCommandOptions.AclsMemberUpdateCommandOptions aclCommandOptions,
                                             CatalogClient<T,U> client) throws CatalogException,IOException {
         ObjectMap params = new ObjectMap();
-//        params.putIfNotEmpty("study", aclCommandOptions.study);
+        params.putIfNotEmpty("study", aclCommandOptions.study);
         params.putIfNotNull(StudyClient.AclParams.ADD_PERMISSIONS.key(), aclCommandOptions.addPermissions);
         params.putIfNotNull(StudyClient.AclParams.REMOVE_PERMISSIONS.key(), aclCommandOptions.removePermissions);
         params.putIfNotNull(StudyClient.AclParams.SET_PERMISSIONS.key(), aclCommandOptions.setPermissions);

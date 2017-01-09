@@ -107,23 +107,19 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 queryResponse = variants();
                 break;
             case "acl":
-                queryResponse = aclCommandExecutor.acls(studiesCommandOptions.aclsCommandOptions, openCGAClient.getStudyClient());
+                queryResponse = getAcl();
                 break;
             case "acl-create":
-                queryResponse = aclCommandExecutor.aclsCreateTemplate(studiesCommandOptions.aclsCreateCommandOptions,
-                        openCGAClient.getStudyClient());
+                queryResponse = createAcl();
                 break;
             case "acl-member-delete":
-                queryResponse = aclCommandExecutor.aclMemberDelete(studiesCommandOptions.aclsMemberDeleteCommandOptions,
-                        openCGAClient.getStudyClient());
+                queryResponse = deleteAcl();
                 break;
             case "acl-member-info":
-                queryResponse = aclCommandExecutor.aclMemberInfo(studiesCommandOptions.aclsMemberInfoCommandOptions,
-                        openCGAClient.getStudyClient());
+                queryResponse = getMemberAcl();
                 break;
             case "acl-member-update":
-                queryResponse = aclCommandExecutor.aclMemberUpdate(studiesCommandOptions.aclsMemberUpdateCommandOptions,
-                        openCGAClient.getStudyClient());
+                queryResponse = updateMemberAcl();
                 break;
             case "groups":
                 queryResponse = groups();
@@ -539,6 +535,65 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
         return openCGAClient.getStudyClient().updateGroup(studiesCommandOptions.groupsUpdateCommandOptions.study,
                 studiesCommandOptions.groupsUpdateCommandOptions.groupId, queryOptions);
+    }
+
+    /************************************************* Acl commands *********************************************************/
+    private QueryResponse<StudyAclEntry> getAcl() throws IOException, CatalogException {
+        logger.debug("Get Acl");
+        studiesCommandOptions.aclsCommandOptions.study =
+                getSingleValidStudy(studiesCommandOptions.aclsCommandOptions.study);
+
+        ObjectMap params = new ObjectMap();
+        return openCGAClient.getStudyClient().getAcls(studiesCommandOptions.aclsCommandOptions.study, params);
+    }
+
+    private QueryResponse<StudyAclEntry> createAcl() throws IOException, CatalogException {
+        logger.debug("Create Acl");
+        studiesCommandOptions.aclsCreateCommandOptions.study =
+                getSingleValidStudy(studiesCommandOptions.aclsCreateCommandOptions.study);
+
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull("permissions", studiesCommandOptions.aclsCreateCommandOptions.permissions);
+        params.putIfNotNull("templateId", studiesCommandOptions.aclsCreateCommandOptions.templateId);
+        return openCGAClient.getStudyClient().createAcl(studiesCommandOptions.aclsCreateCommandOptions.study,
+                studiesCommandOptions.aclsCreateCommandOptions.members, params);
+    }
+
+    private QueryResponse<StudyAclEntry> deleteAcl() throws IOException, CatalogException {
+        logger.debug("Delete Acl");
+        studiesCommandOptions.aclsMemberDeleteCommandOptions.study =
+                getSingleValidStudy(studiesCommandOptions.aclsMemberDeleteCommandOptions.study);
+
+        ObjectMap params = new ObjectMap();
+        return openCGAClient.getStudyClient().deleteAcl(studiesCommandOptions.aclsMemberDeleteCommandOptions.study,
+                studiesCommandOptions.aclsMemberDeleteCommandOptions.memberId, params);
+    }
+
+    private QueryResponse<StudyAclEntry> getMemberAcl() throws IOException, CatalogException {
+        logger.debug("Get member Acl");
+        studiesCommandOptions.aclsMemberInfoCommandOptions.study =
+                getSingleValidStudy(studiesCommandOptions.aclsMemberInfoCommandOptions.study);
+
+        ObjectMap params = new ObjectMap();
+        return openCGAClient.getStudyClient().getAcl(studiesCommandOptions.aclsMemberInfoCommandOptions.study,
+                studiesCommandOptions.aclsMemberInfoCommandOptions.memberId, params);
+    }
+
+    private QueryResponse<StudyAclEntry> updateMemberAcl() throws IOException, CatalogException {
+        logger.debug("Update member Acl");
+        studiesCommandOptions.aclsMemberUpdateCommandOptions.study =
+                getSingleValidStudy(studiesCommandOptions.aclsMemberUpdateCommandOptions.study);
+
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull(StudyClient.AclParams.ADD_PERMISSIONS.key(),
+                studiesCommandOptions.aclsMemberUpdateCommandOptions.addPermissions);
+        params.putIfNotNull(StudyClient.AclParams.REMOVE_PERMISSIONS.key(),
+                studiesCommandOptions.aclsMemberUpdateCommandOptions.removePermissions);
+        params.putIfNotNull(StudyClient.AclParams.SET_PERMISSIONS.key(),
+                studiesCommandOptions.aclsMemberUpdateCommandOptions.setPermissions);
+
+        return openCGAClient.getStudyClient().updateAcl(studiesCommandOptions.aclsMemberUpdateCommandOptions.study,
+                studiesCommandOptions.aclsMemberUpdateCommandOptions.memberId, params);
     }
 
 }
