@@ -47,6 +47,9 @@ public class VariantCommandOptions {
         @Parameter(names = {"--outdir"}, description = "Directory where transformed index files will be stored", required = false, arity = 1)
         public String outdirId;
 
+        /**
+         * @deprecated This field should be detected automatically.
+         */
         @Deprecated
         @Parameter(names = {"--exclude-genotypes"}, description = "Index excluding the genotype information")
         public boolean excludeGenotype;

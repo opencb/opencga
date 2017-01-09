@@ -69,15 +69,15 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         String fileIds = variantCommandOptions.indexCommandOptions.fileIds;
 
         ObjectMap o = new ObjectMap();
-        o.putIfNotNull("studyId", variantCommandOptions.indexCommandOptions.studyId);
+        o.putIfNotNull(VariantStorageEngine.Options.STUDY_ID.key(), variantCommandOptions.indexCommandOptions.studyId);
         o.putIfNotNull("outDir", variantCommandOptions.indexCommandOptions.outdirId);
         o.putIfNotNull("transform", variantCommandOptions.indexCommandOptions.transform);
         o.putIfNotNull("load", variantCommandOptions.indexCommandOptions.load);
-        o.putIfNotNull("excludeGenotypes", variantCommandOptions.indexCommandOptions.excludeGenotype);
+        o.putIfNotNull(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), variantCommandOptions.indexCommandOptions.excludeGenotype);
         o.putIfNotNull("includeExtraFields", variantCommandOptions.indexCommandOptions.extraFields);
         o.putIfNotNull("aggregated", variantCommandOptions.indexCommandOptions.aggregated);
-        o.putIfNotNull("calculateStats", variantCommandOptions.indexCommandOptions.calculateStats);
-        o.putIfNotNull("annotate", variantCommandOptions.indexCommandOptions.annotate);
+        o.putIfNotNull(VariantStorageEngine.Options.CALCULATE_STATS.key(), variantCommandOptions.indexCommandOptions.calculateStats);
+        o.putIfNotNull(VariantStorageEngine.Options.ANNOTATE.key(), variantCommandOptions.indexCommandOptions.annotate);
         o.putIfNotNull(VariantStorageEngine.Options.RESUME.key(), variantCommandOptions.indexCommandOptions.resume);
 //        o.putIfNotNull("overwrite", variantCommandOptions.indexCommandOptions.overwriteAnnotations);
         o.putAll(variantCommandOptions.commonCommandOptions.params);
