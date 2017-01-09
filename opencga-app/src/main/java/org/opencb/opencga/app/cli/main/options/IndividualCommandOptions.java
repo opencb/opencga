@@ -38,6 +38,7 @@ public class IndividualCommandOptions {
     public UpdateCommandOptions updateCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
+    public SampleCommandOptions sampleCommandOptions;
 
     public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
     public AclCommandOptions.AclsCreateCommandOptions aclsCreateCommandOptions;
@@ -74,6 +75,7 @@ public class IndividualCommandOptions {
         this.updateCommandOptions = new UpdateCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
+        this.sampleCommandOptions = new SampleCommandOptions();
 
         this.annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
         this.annotationCreateCommandOptions = this.annotationCommandOptions.getCreateCommandOptions();
@@ -363,6 +365,19 @@ public class IndividualCommandOptions {
 
         @Parameter(names = {"--annotation"}, description = "Annotation", required = false, arity = 1)
         public String annotation;
+    }
+
+    @Parameters(commandNames = {"samples"}, commandDescription = "Get the samples of a list of individuals.")
+    public class SampleCommandOptions extends StudyOption {
+
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
+
+        @Parameter(names = {"--individual"}, description = "List of individual ids or names", required = true, arity = 1)
+        public String individual;
     }
 
 }

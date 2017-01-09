@@ -27,8 +27,10 @@ import org.opencb.opencga.app.cli.main.executors.catalog.commons.AnnotationComma
 import org.opencb.opencga.app.cli.main.options.IndividualCommandOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 
 import java.io.IOException;
@@ -74,6 +76,9 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "group-by":
                 queryResponse = groupBy();
+                break;
+            case "samples":
+                queryResponse = getSamples();
                 break;
             case "acl":
                 queryResponse = aclCommandExecutor.acls(individualsCommandOptions.aclsCommandOptions, openCGAClient.getIndividualClient());
@@ -323,6 +328,20 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
 
         return openCGAClient.getIndividualClient().groupBy(
                 individualsCommandOptions.groupByCommandOptions.study, individualsCommandOptions.groupByCommandOptions.fields, params);
+    }
+
+    private QueryResponse<Sample> getSamples() throws CatalogException, IOException {
+        logger.debug("Getting samples of individual(s)");
+
+        Query query = new Query();
+        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), individualsCommandOptions.sampleCommandOptions.study);
+        query.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualsCommandOptions.sampleCommandOptions.individual);
+
+        QueryOptions options = new QueryOptions();
+        options.putIfNotNull(QueryOptions.INCLUDE, individualsCommandOptions.sampleCommandOptions.dataModelOptions.include);
+        options.putIfNotNull(QueryOptions.EXCLUDE, individualsCommandOptions.sampleCommandOptions.dataModelOptions.exclude);
+
+        return openCGAClient.getSampleClient().search(query, options);
     }
 
 }
