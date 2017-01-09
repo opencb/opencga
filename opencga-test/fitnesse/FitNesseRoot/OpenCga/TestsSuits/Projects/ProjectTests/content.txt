@@ -1,0 +1,34 @@
+!3 Login User Test
+!|Table: Rest Fixture | ${baseURL} |
+| setBody | {"password" : "user_P@ssword"}|
+|setHeader| Content-Type: application/json|
+| POST | /v1/users/test/login |  |  Content-Type: application/json ||
+|let|sessionId|js|response.jsonbody.response[0].result[0].sessionId||
+
+
+!3 Create New Project
+
+!|Table: Rest Fixture | ${baseURL} |
+| GET | /v1/projects/create?sid=$sessionId&name=$projectName&alias=$projectName&organism.scientificName=organism&organism.assembly=assembly |200|  Content-Type: application/json |jsonbody.response[0].result[0].name === '$projectName'|
+
+
+!3 Negative: Create Project With Existing Name
+
+!|Table: Rest Fixture | ${baseURL} |
+| GET | /v1/projects/create?sid=$sessionId&name=$projectName&alias=$projectName&organism.scientificName=organism&organism.assembly=assembly |500|  Content-Type: application/json |jsonbody.error === 'Project {alias:\"$projectName\"} already exists in this user'|
+
+!3 Negative: Create Project With Missing Mandatory Field
+
+!|Table: Rest Fixture | ${baseURL} |
+| GET | /v1/projects/create?sid=$sessionId&name=MissinGprojectName&alias=MissinGprojectName&organism.scientificName=organism |500|  Content-Type: application/json |jsonbody.error == 'Error in parameter: parameter \'organism.assembly\' is null or empty: null.'|
+
+!3 Get Project
+
+!|Table: Rest Fixture | ${baseURL} |
+| GET | /v1/projects/$projectName/info?sid=$sessionId|200|  Content-Type: application/json ||
+
+!3 Get Studies From Project
+
+!|Table: Rest Fixture | ${baseURL} |
+| GET | /v1/projects/$projectName/studies?sid=$sessionId|200|  Content-Type: application/json | jsonbody.error === '' && jsonbody.response[0].id ==='$projectName'|
+
