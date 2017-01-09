@@ -155,8 +155,8 @@ public class IndexDaemon extends MonitorParentDaemon {
         Path tmpOutdirPath = getJobTemporaryFolder(job.getId());
         Job.JobStatus jobStatus;
 
+        ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, this.sessionId);
         if (!tmpOutdirPath.toFile().exists()) {
-            ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, this.sessionId);
             jobStatus = new Job.JobStatus(Job.JobStatus.ERROR, "Temporal output directory not found");
             try {
                 logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.RUNNING, jobStatus.getName());
@@ -171,12 +171,10 @@ public class IndexDaemon extends MonitorParentDaemon {
             if (!status.equalsIgnoreCase(Job.JobStatus.UNKNOWN) && !status.equalsIgnoreCase(Job.JobStatus.RUNNING)) {
 //                variantIndexOutputRecorder.registerStorageETLResults(job, tmpOutdirPath);
                 logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.RUNNING, status);
-                String sessionId = (String) job.getAttributes().get("sessionId");
-                ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, sessionId);
                 try {
-                    // Close the session opened for the user
-                    catalogManager.getUserManager().logout(job.getUserId(), sessionId);
 //                    outputRecorder.recordJobOutputAndPostProcess(job, status);
+                    // TODO: Should this copy the output files?
+//                    outputRecorder.recordJobOutput;
                     outputRecorder.updateJobStatus(job, new Job.JobStatus(status));
                     logger.info("Removing temporal directory.");
                     this.catalogIOManager.deleteDirectory(UriUtils.createUri(tmpOutdirPath.toString()));
