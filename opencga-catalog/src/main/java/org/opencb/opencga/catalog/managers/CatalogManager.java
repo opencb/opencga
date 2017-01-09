@@ -386,10 +386,6 @@ public class CatalogManager implements AutoCloseable {
         return userManager.update(userId, new ObjectMap("email", nEmail), null, sessionId);
     }
 
-    public QueryResult resetPassword(String userId) throws CatalogException {
-        return userManager.resetPassword(userId);
-    }
-
     public QueryResult<User> getUser(String userId, String lastModified, String sessionId) throws CatalogException {
         return getUser(userId, lastModified, new QueryOptions(), sessionId);
     }

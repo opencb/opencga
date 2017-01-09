@@ -114,7 +114,7 @@ public interface IUserManager extends ResourceManager<String, User> {
      */
     QueryResult<Session> getNewUserSession(String sessionId, String userId) throws CatalogException;
 
-    QueryResult resetPassword(String userId) throws CatalogException;
+    QueryResult resetPassword(String userId, String sessionId) throws CatalogException;
 
     void validatePassword(String userId, String password, boolean throwException) throws CatalogException;
 

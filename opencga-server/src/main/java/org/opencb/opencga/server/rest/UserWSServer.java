@@ -210,7 +210,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Reset password", notes = "Reset the user's password and send a new random one to the e-mail stored in catalog.")
     public Response resetPassword(@ApiParam(value = "User id", required = true) @PathParam("user") String userId) {
         try {
-            QueryResult result = catalogManager.resetPassword(userId);
+            QueryResult result = catalogManager.getUserManager().resetPassword(userId, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
