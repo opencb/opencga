@@ -100,8 +100,8 @@ public class JobWSServer extends OpenCGAWSServer {
             notes = "Registers a job that has been previously run outside catalog into catalog. <br>"
                     + "Required values: [name, toolName, commandLine, outDirId]", response = Job.class)
     public Response createJobPOST(@ApiParam(value = "DEPRECATED: studyId") @QueryParam("studyId") String studyIdStr,
-                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-                                          required = true) @QueryParam("study") String studyStr,
+                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                  @QueryParam("study") String studyStr,
                                   @ApiParam(value = "job", required = true) InputJob job) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
@@ -130,7 +130,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @Path("/create")
     @ApiOperation(value = "Create job [PENDING]", position = 1, response = Job.class)
     public Response createJob(@ApiParam(value = "name", required = true) @DefaultValue("") @QueryParam("name") String name,
-                              @ApiParam(value = "DEPRECATED: studyId", required = true) @DefaultValue("-1") @QueryParam("studyId")
+                              @ApiParam(value = "DEPRECATED: studyId", required = true) @QueryParam("studyId")
                                       String studyIdStr,
                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                   @QueryParam("study") String studyStr,
@@ -333,8 +333,8 @@ public class JobWSServer extends OpenCGAWSServer {
                                 @QueryParam("fields") String fields,
                             @ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
                             @ApiParam(value = "DEPRECATED: studyId") @DefaultValue("") @QueryParam("studyId") String studyId,
-                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
-                                    required = true) @QueryParam("study") String studyStr,
+                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                @QueryParam("study") String studyStr,
                             @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
                             @ApiParam(value = "path", required = false) @DefaultValue("") @QueryParam("path") String path,
                             @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") File.FileStatus status,
@@ -382,6 +382,20 @@ public class JobWSServer extends OpenCGAWSServer {
         }
     }
 
+    @POST
+    @Path("/{jobIds}/acl/create")
+    @ApiOperation(value = "Define a set of permissions for a list of members", position = 19)
+    public Response createRolePOST(
+            @ApiParam(value = "Comma separated list of job ids", required = true) @PathParam("jobIds") String jobIdsStr,
+            @ApiParam(value="JSON containing the parameters defined in GET. Mandatory keys: 'members'", required = true)
+                    StudyWSServer.CreateAclCommands params) {
+        try {
+            return createOkResponse(catalogManager.createJobAcls(jobIdsStr, params.members, params.permissions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     @GET
     @Path("/{jobId}/acl/{memberId}/info")
     @ApiOperation(value = "Return the set of permissions granted for the member", position = 20)
@@ -408,6 +422,22 @@ public class JobWSServer extends OpenCGAWSServer {
         try {
             return createOkResponse(catalogManager.updateJobAcl(jobIdStr, memberId, addPermissions, removePermissions, setPermissions,
                     sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{jobId}/acl/{memberId}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    public Response updateAclPOST(
+            @ApiParam(value = "jobId", required = true) @PathParam("jobId") String jobIdStr,
+            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
+            @ApiParam(value="JSON containing one of the keys 'addPermissions', 'setPermissions' or 'removePermissions'", required = true)
+                    StudyWSServer.MemberAclUpdate params) {
+        try {
+            return createOkResponse(catalogManager.updateJobAcl(jobIdStr, memberId, params.addPermissions, params.removePermissions,
+                    params.setPermissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
