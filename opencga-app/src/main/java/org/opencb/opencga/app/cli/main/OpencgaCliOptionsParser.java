@@ -177,6 +177,7 @@ public class OpencgaCliOptionsParser {
         individualSubCommands.addCommand("update", individualCommandOptions.updateCommandOptions);
         individualSubCommands.addCommand("delete", individualCommandOptions.deleteCommandOptions);
         individualSubCommands.addCommand("group-by", individualCommandOptions.groupByCommandOptions);
+        individualSubCommands.addCommand("samples", individualCommandOptions.sampleCommandOptions);
         individualSubCommands.addCommand("acl", individualCommandOptions.aclsCommandOptions);
         individualSubCommands.addCommand("acl-create", individualCommandOptions.aclsCreateCommandOptions);
         individualSubCommands.addCommand("acl-member-delete", individualCommandOptions.aclsMemberDeleteCommandOptions);
@@ -199,6 +200,7 @@ public class OpencgaCliOptionsParser {
         sampleSubCommands.addCommand("update", sampleCommandOptions.updateCommandOptions);
         sampleSubCommands.addCommand("delete", sampleCommandOptions.deleteCommandOptions);
         sampleSubCommands.addCommand("group-by", sampleCommandOptions.groupByCommandOptions);
+        sampleSubCommands.addCommand("individuals", sampleCommandOptions.individualCommandOptions);
         sampleSubCommands.addCommand("acl", sampleCommandOptions.aclsCommandOptions);
         sampleSubCommands.addCommand("acl-create", sampleCommandOptions.aclsCreateCommandOptions);
         sampleSubCommands.addCommand("acl-member-delete", sampleCommandOptions.aclsMemberDeleteCommandOptions);

@@ -501,7 +501,11 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult resetPassword(String userId) throws CatalogException {
+    public QueryResult resetPassword(String userId, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(userId, "userId");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        checkSessionId(userId, sessionId);
+
         String authOrigin = getAuthenticationOriginId(userId);
         return authenticationManagerMap.get(authOrigin).resetPassword(userId);
     }

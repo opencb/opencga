@@ -25,8 +25,10 @@ import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AnnotationCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.SampleCommandOptions;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 
@@ -76,6 +78,9 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "groupBy":
                 queryResponse = groupBy();
+                break;
+            case "individuals":
+                queryResponse = getIndividuals();
                 break;
             case "acl":
                 queryResponse = aclCommandExecutor.acls(samplesCommandOptions.aclsCommandOptions, openCGAClient.getSampleClient());
@@ -221,6 +226,11 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
 
         return openCGAClient.getSampleClient().groupBy(samplesCommandOptions.groupByCommandOptions.study,
                 samplesCommandOptions.groupByCommandOptions.fields,params);
+    }
+
+    private QueryResponse<Individual> getIndividuals() throws CatalogException, IOException {
+        logger.debug("Pending functionality");
+        return null;
     }
 
 }

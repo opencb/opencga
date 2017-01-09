@@ -838,6 +838,15 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
+    public static class CreateAclCommands {
+        public String permissions;
+        public String members;
+    }
+
+    public static class CreateAclCommandsTemplate extends CreateAclCommands {
+        public String templateId;
+    }
+
     @GET
     @Path("/{study}/acl/create")
     @ApiOperation(value = "Define a set of permissions for a list of users or groups")
@@ -862,13 +871,14 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response createRolePOST(
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
             @PathParam("study") String studyStr,
-            @ApiParam(value="JSON containing the parameters defined in GET. Mandatory keys: 'members'", required = true) ObjectMap params) {
-        if (params == null || StringUtils.isEmpty(params.getString("members"))) {
+            @ApiParam(value="JSON containing the parameters defined in GET. Mandatory keys: 'members'", required = true)
+                    CreateAclCommandsTemplate params) {
+        if (params == null || StringUtils.isEmpty(params.members)) {
             return createErrorResponse(new CatalogException("members parameter not found"));
         }
         try {
-            return createOkResponse(catalogManager.createStudyAcls(studyStr, params.getString("members"), params.getString("permissions"),
-                    params.getString("templateId"), sessionId));
+            return createOkResponse(catalogManager.createStudyAcls(studyStr, params.members, params.permissions, params.templateId,
+                    sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -907,6 +917,12 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
+    public static class MemberAclUpdate {
+        public String addPermissions;
+        public String setPermissions;
+        public String removePermissions;
+    }
+
     @POST
     @Path("/{study}/acl/{memberId}/update")
     @ApiOperation(value = "Update the set of permissions granted for the user or group", position = 21)
@@ -914,13 +930,14 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
             @PathParam("study") String studyStr,
             @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
-            @ApiParam(value="JSON containing one of the keys 'addUsers', 'setUsers' or 'removeUsers'", required = true) ObjectMap params) {
-        if (params == null || params.isEmpty()) {
-            return createErrorResponse(new CatalogException("At least one of the keys 'addUsers', 'setUsers' or 'removeUsers'"));
-        }
+            @ApiParam(value="JSON containing one of the keys 'addPermissions', 'setPermissions' or 'removePermissions'", required = true)
+                    MemberAclUpdate params) {
+//        if (params == null || params.isEmpty()) {
+//            return createErrorResponse(new CatalogException("At least one of the keys 'addUsers', 'setUsers' or 'removeUsers'"));
+//        }
         try {
-            return createOkResponse(catalogManager.updateStudyAcl(studyStr, memberId, params.getString("addPermissions"),
-                    params.getString("removePermissions"), params.getString("setPermissions"), sessionId));
+            return createOkResponse(catalogManager.updateStudyAcl(studyStr, memberId, params.addPermissions, params.removePermissions,
+                    params.setPermissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

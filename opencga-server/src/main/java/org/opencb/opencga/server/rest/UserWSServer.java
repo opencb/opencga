@@ -104,9 +104,9 @@ public class UserWSServer extends OpenCGAWSServer {
                     dataType = "string", paramType = "query"),
     })
     public Response getInfo(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                            @ApiParam(value = "[DEPRECATED] This parameter shows the last time the user information was modified. When "
+                            @ApiParam(value = "This parameter shows the last time the user information was modified. When "
                                     + "the value passed corresponds with the user's last activity registered, an empty result will be "
-                                    + "returned meaning that the client already has the most up to date user information.")
+                                    + "returned meaning that the client already has the most up to date user information.", hidden = true)
                             @QueryParam ("lastModified") String lastModified) {
         try {
             QueryResult result = catalogManager.getUser(userId, lastModified, queryOptions, sessionId);
@@ -210,7 +210,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Reset password", notes = "Reset the user's password and send a new random one to the e-mail stored in catalog.")
     public Response resetPassword(@ApiParam(value = "User id", required = true) @PathParam("user") String userId) {
         try {
-            QueryResult result = catalogManager.resetPassword(userId);
+            QueryResult result = catalogManager.getUserManager().resetPassword(userId, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
