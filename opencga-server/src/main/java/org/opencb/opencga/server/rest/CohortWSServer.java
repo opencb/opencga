@@ -387,8 +387,12 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
+    @ApiModel
     public static class AnnotationsetParameters {
+        @ApiModelProperty(required = true)
         public String name;
+
+        @ApiModelProperty
         public Map<String, Object> annotations;
     }
 
