@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant.load.variants;
 
+import com.mongodb.MongoExecutionTimeoutException;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.BsonArray;
 import org.bson.Document;
@@ -768,9 +769,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             for (Variant variant : mergedVariants.values()) {
                 // If the variant is not new in this study, query to the database for the loaded info.
                 if (!newStudies.get(i)) {
-                    QueryResult<Variant> queryResult = dbAdaptor.get(new Query()
-                            .append(VariantDBAdaptor.VariantQueryParams.ID.key(), variant.toString())
-                            .append(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), studyId), null);
+                    QueryResult<Variant> queryResult = fetchVariant(variant);
                     if (queryResult.getResult().size() == 1 && queryResult.first().getStudies().size() == 1) {
                         variantsToMerge.add(queryResult.first());
                     } else {
@@ -801,6 +800,37 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 //        System.out.println("--------------------------------");
 
         return mergedVariants;
+    }
+
+    /**
+     * Reads the given variant from the 'variants' collection.
+     *
+     * It may happen that, 3s of default timeout, is not enough if there is a
+     * lot of writes at the same time in the "variants" collection. Also add a
+     * retry, just in case.
+     * @param variant Variant to read
+     * @return  Query result of the query
+     */
+    private QueryResult<Variant> fetchVariant(Variant variant) {
+        QueryResult<Variant> queryResult = null;
+        int maxNumFails = 2;
+        int fails = 0;
+        while (queryResult == null) {
+            try {
+                queryResult = dbAdaptor.get(new Query()
+                                .append(VariantDBAdaptor.VariantQueryParams.ID.key(), variant.toString())
+                                .append(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), studyId),
+                        new QueryOptions(QueryOptions.TIMEOUT, 30_000));
+            } catch (MongoExecutionTimeoutException e) {
+                fails++;
+                if (fails < maxNumFails) {
+                    logger.warn("Got timeout exception reading variants. Retry!", e);
+                } else {
+                    throw e;
+                }
+            }
+        }
+        return queryResult;
     }
 
     /**
