@@ -34,10 +34,13 @@ public abstract class AnnotationClient<T, U> extends CatalogClient<T, U> {
 
     public QueryResponse<AnnotationSet> createAnnotationSet(String id, String variableSetId, String annotationSetName,
                                                             ObjectMap annotations) throws IOException {
+        ObjectMap bodyParams = new ObjectMap();
+        bodyParams.putIfNotEmpty("name", annotationSetName);
+        bodyParams.putIfNotNull("annotations", annotations);
+
         ObjectMap params = new ObjectMap()
-                .append("body", annotations)
-                .append("variableSetId", variableSetId)
-                .append("annotateSetName", annotationSetName);
+                .append("body", bodyParams)
+                .append("variableSetId", variableSetId);
         return execute(category, id, "annotationSets", null, "create", params, POST, AnnotationSet.class);
     }
 
