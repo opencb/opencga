@@ -24,6 +24,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.server.grpc.GenericServiceModel.Request;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +38,7 @@ public class GenericGrpcService {
     protected String defaultStorageEngine;
 
     protected CatalogManager catalogManager;
+    protected VariantStorageManager variantStorageManager;
     protected static StorageManagerFactory storageManagerFactory;
 
 //    protected AuthManager authManager;
@@ -62,7 +64,7 @@ public class GenericGrpcService {
         try {
             catalogManager = new CatalogManager(configuration);
         } catch (CatalogException e) {
-            e.printStackTrace();
+            throw new IllegalStateException("Error initializating Catalog: ", e);
         }
 
         // Only one StorageManagerFactory is needed, this acts as a simple Singleton pattern which improves the performance significantly
@@ -70,6 +72,9 @@ public class GenericGrpcService {
             privLogger.debug("Creating the StorageManagerFactory object");
             storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
         }
+
+        variantStorageManager = new VariantStorageManager(catalogManager, storageManagerFactory);
+
 
 //        if (authorizedHosts == null) {
 //            privLogger.debug("Creating the authorizedHost HashSet");
@@ -99,9 +104,9 @@ public class GenericGrpcService {
 
     protected Query createQuery(Request request) {
         Query query = new Query();
-        for (String key : request.getQuery().keySet()) {
-            if (request.getQuery().get(key) != null) {
-                query.put(key, request.getQuery().get(key));
+        for (String key : request.getQueryMap().keySet()) {
+            if (request.getQueryMap().get(key) != null) {
+                query.put(key, request.getQueryMap().get(key));
             }
         }
         return query;
@@ -109,9 +114,9 @@ public class GenericGrpcService {
 
     protected QueryOptions createQueryOptions(Request request) {
         QueryOptions queryOptions = new QueryOptions();
-        for (String key : request.getOptions().keySet()) {
-            if (request.getOptions().get(key) != null) {
-                queryOptions.put(key, request.getOptions().get(key));
+        for (String key : request.getOptionsMap().keySet()) {
+            if (request.getOptionsMap().get(key) != null) {
+                queryOptions.put(key, request.getOptionsMap().get(key));
             }
         }
         return queryOptions;

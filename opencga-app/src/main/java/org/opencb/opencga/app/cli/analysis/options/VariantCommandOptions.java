@@ -251,6 +251,9 @@ public class VariantCommandOptions {
         @Parameter(names = {"--interval"}, description = "Histogram interval size. Default:2000", arity = 1)
         public String interval;
 
+        @Parameter(names = {"--grpc"}, description = "Use gRPC instead of REAST communication.")
+        public boolean grpc = false;
+
     }
 
 }

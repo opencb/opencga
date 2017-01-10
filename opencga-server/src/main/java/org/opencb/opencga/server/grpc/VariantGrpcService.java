@@ -17,20 +17,18 @@
 package org.opencb.opencga.server.grpc;
 
 import io.grpc.stub.StreamObserver;
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
+import org.opencb.biodata.tools.variant.converters.proto.VariantAvroToVariantProtoConverter;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-
-import java.io.IOException;
-import java.util.Iterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by imedina on 29/12/15.
@@ -38,116 +36,58 @@ import java.util.Iterator;
 public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBase {
 
     private GenericGrpcService genericGrpcService;
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private final VariantAvroToVariantProtoConverter converter = new VariantAvroToVariantProtoConverter();
 
     public VariantGrpcService(Configuration configuration, StorageConfiguration storageConfiguration) {
-//        super(catalogConfiguration, storageConfiguration);
-
         genericGrpcService = new GenericGrpcService(configuration, storageConfiguration);
     }
-
-    @Deprecated
-    public VariantGrpcService(Configuration configuration, StorageConfiguration storageConfiguration, String defaultStorageEngine) {
-//        super(catalogConfiguration, storageConfiguration, defaultStorageEngine);
-
-        genericGrpcService = new GenericGrpcService(configuration, storageConfiguration);
-    }
-
 
     @Override
     public void count(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.LongResponse> responseObserver) {
         try {
-            // Creating the datastore Query object from the gRPC request Map of Strings
             Query query = genericGrpcService.createQuery(request);
-
-//            checkAuthorizedHosts(query, request.getIp());
-            VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(request);
-            QueryResult<Long> queryResult = variantDBAdaptor.count(query);
-            responseObserver.onNext(ServiceTypesModel.LongResponse.newBuilder().setValue(queryResult.getResult().get(0)).build());
+            logger.info("Count variants query : {} " + query.toJson());
+            QueryResult<Long> count = genericGrpcService.variantStorageManager.count(query, request.getSessionId());
+            responseObserver.onNext(ServiceTypesModel.LongResponse.newBuilder().setValue(count.getResult().get(0)).build());
             responseObserver.onCompleted();
-            variantDBAdaptor.close();
-        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | StorageEngineException | IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            logger.error("Error on count", e);
+            responseObserver.onError(e);
         }
-//        catch (NotAuthorizedHostException | NotAuthorizedUserException e) {
-//            e.printStackTrace();
-//        }
     }
-
 
     @Override
     public void distinct(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.StringArrayResponse> responseObserver) {
-
+        super.distinct(request, responseObserver);
     }
-
 
     @Override
     public void get(GenericServiceModel.Request request, StreamObserver<VariantProto.Variant> responseObserver) {
         try {
-            // Creating the datastore Query and QueryOptions objects from the gRPC request Map of Strings
             Query query = genericGrpcService.createQuery(request);
             QueryOptions queryOptions = genericGrpcService.createQueryOptions(request);
-
-//            checkAuthorizedHosts(query, request.getIp());
-            VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(request);
-//            Iterator iterator = geneDBAdaptor.nativeIterator(query, queryOptions);
-            Iterator iterator = variantDBAdaptor.iterator(query, queryOptions);
-            while (iterator.hasNext()) {
-                org.opencb.biodata.models.variant.Variant next = (org.opencb.biodata.models.variant.Variant) iterator.next();
-                VariantProto.Variant convert = convert(next);
-                responseObserver.onNext(convert);
+            logger.info("Get variants query : {} , queryOptions : {}" , query.toJson(), queryOptions.toJson());
+            try (VariantDBIterator iterator = genericGrpcService.variantStorageManager.iterator(query, queryOptions, request.getSessionId())) {
+                while (iterator.hasNext()) {
+                    Variant variant = iterator.next();
+                    responseObserver.onNext(convert(variant));
+                }
             }
             responseObserver.onCompleted();
-            variantDBAdaptor.close();
-        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | StorageEngineException | IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            logger.error("Error on get variants", e);
+            responseObserver.onError(e);
         }
-//        catch (NotAuthorizedHostException e) {
-//            e.printStackTrace();
-//        } catch (NotAuthorizedUserException e) {
-//            e.printStackTrace();
-//        }
     }
-
 
     @Override
     public void groupBy(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.GroupResponse> responseObserver) {
-
+        super.groupBy(request, responseObserver);
     }
 
     private VariantProto.Variant convert(org.opencb.biodata.models.variant.Variant var) {
-        VariantProto.Variant build = VariantProto.Variant.newBuilder()
-                .setChromosome(var.getChromosome())
-                .setStart(var.getStart())
-                .setEnd(var.getEnd())
-                .setLength(var.getLength())
-                .setReference(var.getReference())
-                .setAlternate(var.getAlternate())
-                .setId(var.getId())
-                .addAllNames(var.getNames())
-                .build();
-
-        return build;
+        return converter.convert(var);
     }
 
-    private VariantDBAdaptor getVariantDBAdaptor(GenericServiceModel.Request request)
-            throws IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
-        // Setting storageEngine and database parameters. If the storageEngine is not provided then the server default is used
-        String storageEngine = genericGrpcService.getDefaultStorageEngine();
-        if (StringUtils.isNotEmpty(request.getStorageEngine())) {
-            storageEngine = request.getStorageEngine();
-        }
-
-        String database = genericGrpcService.getStorageConfiguration().getStorageEngine(storageEngine).getVariant().getOptions().getString("database.name");
-        if (StringUtils.isNotEmpty(request.getDatabase())) {
-            database = request.getDatabase();
-        }
-
-        // Creating the VariantDBAdaptor to the parsed storageEngine and database
-        long start = System.currentTimeMillis();
-        VariantStorageEngine variantStorageManager = GenericGrpcService.storageManagerFactory.getVariantStorageManager(storageEngine);
-        VariantDBAdaptor variantDBAdaptor = variantStorageManager.getDBAdaptor(database);
-//        logger.debug("Connection to {}:{} in {}ms", storageEngine, database, System.currentTimeMillis() - start);
-
-        return variantDBAdaptor;
-    }
 }
