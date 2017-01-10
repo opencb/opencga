@@ -142,8 +142,8 @@ public class VariableCommandOptions {
         @Parameter(names = {"--description"}, description = "Description", required = false, arity = 1)
         public String description;
 
-        @Parameter(names = {"--json"}, description = "Json file containing the variables to be updated.", required = false)
-        public String jsonFile;
+//        @Parameter(names = {"--json"}, description = "Json file containing the variables to be updated.", required = false)
+//        public String jsonFile;
 
     }
 

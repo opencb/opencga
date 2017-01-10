@@ -123,6 +123,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             transform = options.getBoolean(TRANSFORM, false);
             load = options.getBoolean(LOAD, false);
         }
+        boolean resume = options.getBoolean(VariantStorageEngine.Options.RESUME.key());
 
         // Obtain the type of analysis (transform, load or index)
         Type step = getType(load, transform);
@@ -189,24 +190,30 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         String fileStatusMessage;
         List<File> filesToIndex;
         List<URI> fileUris = new ArrayList<>(inputFiles.size());
-        if (step.equals(Type.INDEX)) {
-            fileStatus = FileIndex.IndexStatus.INDEXING;
-            fileStatusMessage = "Start indexing file";
-            filesToIndex = filterTransformFiles(inputFiles);
-            for (File file : filesToIndex) {
-                fileUris.add(file.getUri());
-            }
-        } else if (step.equals(Type.TRANSFORM)) {
-            fileStatus = FileIndex.IndexStatus.TRANSFORMING;
-            fileStatusMessage = "Start transforming file";
-            filesToIndex = filterTransformFiles(inputFiles);
-            for (File file : filesToIndex) {
-                fileUris.add(file.getUri());
-            }
-        } else {
-            filesToIndex = filterLoadFiles(inputFiles, options, fileUris, sessionId);
-            fileStatus = FileIndex.IndexStatus.LOADING;
-            fileStatusMessage = "Start loading file";
+        switch (step) {
+            case INDEX:
+                fileStatus = FileIndex.IndexStatus.INDEXING;
+                fileStatusMessage = "Start indexing file";
+                filesToIndex = filterTransformFiles(inputFiles, resume);
+                for (File file : filesToIndex) {
+                    fileUris.add(file.getUri());
+                }
+                break;
+            case TRANSFORM:
+                fileStatus = FileIndex.IndexStatus.TRANSFORMING;
+                fileStatusMessage = "Start transforming file";
+                filesToIndex = filterTransformFiles(inputFiles, resume);
+                for (File file : filesToIndex) {
+                    fileUris.add(file.getUri());
+                }
+                break;
+            case LOAD:
+                filesToIndex = filterLoadFiles(inputFiles, options, fileUris, sessionId);
+                fileStatus = FileIndex.IndexStatus.LOADING;
+                fileStatusMessage = "Start loading file";
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown step '" + step + "'.");
         }
 
         if (filesToIndex.size() == 0) {
@@ -612,7 +619,14 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                 sessionId);
     }
 
-    private List<File> filterTransformFiles(List<File> fileList) throws CatalogException {
+    /**
+     * Get non transformed files.
+     *
+     * @param fileList Files to filter
+     * @param resume If resume, get also TRANSFORMING and INDEXING files.
+     * @return List of non transformed files
+     */
+    private List<File> filterTransformFiles(List<File> fileList, boolean resume) {
         if (fileList == null || fileList.isEmpty()) {
             return new ArrayList<>();
         }
@@ -622,11 +636,28 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
             if (file.getStatus().getName().equals(File.FileStatus.READY)
                     && file.getFormat().equals(File.Format.VCF)) {
                 if (file.getIndex() != null) {
-                    if (file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.NONE)) {
-                        filteredFiles.add(file);
-                    } else {
-                        logger.warn("We can only transform VCF files not transformed, the status is {}",
-                                file.getIndex().getStatus().getName());
+                    switch (file.getIndex().getStatus().getName()) {
+                        case FileIndex.IndexStatus.NONE:
+                            filteredFiles.add(file);
+                            break;
+                        case FileIndex.IndexStatus.INDEXING:
+                        case FileIndex.IndexStatus.TRANSFORMING:
+                            if (!resume) {
+                                logger.warn("File already being transformed. "
+                                                + "We can only transform VCF files not transformed, the status is {}. "
+                                                + "Do '" + VariantStorageEngine.Options.RESUME.key() + "' to continue.",
+                                        file.getIndex().getStatus().getName());
+                            } else {
+                                filteredFiles.add(file);
+                            }
+                            break;
+                        case FileIndex.IndexStatus.LOADING:
+                        case FileIndex.IndexStatus.TRANSFORMED:
+                        case FileIndex.IndexStatus.READY:
+                        default:
+                            logger.warn("We can only transform VCF files not transformed, the status is {}",
+                                    file.getIndex().getStatus().getName());
+                            break;
                     }
                 } else {
                     // This block should not happen ever
