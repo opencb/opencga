@@ -467,7 +467,8 @@ public class FileCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"link"}, commandDescription = "Link an external file or folder into catalog.")
+    @Parameters(commandNames = {"link"}, commandDescription = "Link an external file or folder into catalog. Only works with direct " +
+            "access to the database installation.")
     public class LinkCommandOptions extends StudyOption {
 
         @ParametersDelegate

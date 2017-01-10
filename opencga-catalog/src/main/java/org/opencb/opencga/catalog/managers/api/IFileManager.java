@@ -345,13 +345,14 @@ public interface IFileManager extends ResourceManager<Long, File> {
      * Index variants or alignments.
      *
      * @param fileIdStr Comma separated list of file ids (directories or files)
+     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
      * @param type Type of the file(s) to be indexed (VCF or BAM)
      * @param params Object map containing the extra parameters for the indexation.
      * @param sessionId session id of the user asking for the index.
      * @return .
      * @throws CatalogException when the files or folders are not in catalog or the study does not match between them.
      * */
-    QueryResult index(String fileIdStr, String type, Map<String, String> params, String sessionId) throws CatalogException;
+    QueryResult index(String fileIdStr, String studyStr, String type, Map<String, String> params, String sessionId) throws CatalogException;
 
     void setFileIndex(long fileId, FileIndex index, String sessionId) throws CatalogException;
 

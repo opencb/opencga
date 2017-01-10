@@ -2399,11 +2399,13 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult index(String fileIdStr, String type, Map<String, String> params, String sessionId) throws CatalogException {
-        String userId = userManager.getId(sessionId);
-        List<Long> fileFolderIdList = getIds(userId, fileIdStr);
+    public QueryResult index(String fileIdStr, String studyStr, String type, Map<String, String> params, String sessionId)
+            throws CatalogException {
+        MyResourceIds resourceIds = getIds(fileIdStr, studyStr, sessionId);
+        List<Long> fileFolderIdList = resourceIds.getResourceIds();
+        long studyId = resourceIds.getStudyId();
+        String userId = resourceIds.getUser();
 
-        long studyId = -1;
         // Check they all belong to the same study
         for (Long fileId : fileFolderIdList) {
             if (fileId == -1) {

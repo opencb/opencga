@@ -64,12 +64,17 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @ApiOperation(value = "Index alignment files", position = 14, response = QueryResponse.class)
     public Response index(@ApiParam("Comma separated list of file ids (files or directories)") @PathParam(value = "fileId") String fileIdStr,
                           // FIXME: Study id is not ingested by the analysis index command line. No longer needed.
-                          @ApiParam("Study id") @QueryParam("studyId") String studyId,
+                          @ApiParam("(DEPRECATED) Study id") @QueryParam("studyId") String studyId,
+                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                              @QueryParam("study") String studyStr,
                           @ApiParam("Boolean indicating that only the transform step will be run") @DefaultValue("false") @QueryParam("transform") boolean transform,
                           @ApiParam("Boolean indicating that only the load step will be run") @DefaultValue("false") @QueryParam("load") boolean load) {
+        if (StringUtils.isNotEmpty(studyId)) {
+            studyStr = studyId;
+        }
 
         Map<String, String> params = new LinkedHashMap<>();
-        addParamIfNotNull(params, "studyId", studyId);
+//        addParamIfNotNull(params, "studyId", studyId);
         addParamIfTrue(params, "transform", transform);
         addParamIfTrue(params, "load", load);
 
@@ -78,7 +83,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
         try {
             List<String> fileIds = FileWSServer.convertPathList(fileIdStr, sessionId);
             // TODO: Indexing bam files is not working !!
-            QueryResult queryResult = catalogManager.getFileManager().index(StringUtils.join(fileIds, ","), "BAM", params, sessionId);
+            QueryResult queryResult = catalogManager.getFileManager().index(StringUtils.join(fileIds, ","), studyStr, "BAM", params,
+                    sessionId);
             return createOkResponse(queryResult);
         } catch(Exception e) {
             return createErrorResponse(e);

@@ -20,7 +20,6 @@ import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
-import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -628,7 +627,7 @@ public class FileWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "(DEPRECATED) Use study instead") @QueryParam("studyId")
                                    String studyIdStr,
                            @ApiParam(value = "Study [[user@]project:]{study1,study2|*}  where studies and project can be either the id or"
-                                   + " alias.", required = false) @QueryParam("study") String studyStr,
+                                   + " alias.") @QueryParam("study") String studyStr,
                            // This can now be done using just the ids field
                            @Deprecated @ApiParam(value = "Comma separated list of file names", required = false) @DefaultValue("") @QueryParam("name") String name,
                            // This can now be done using just the ids field
@@ -652,6 +651,7 @@ public class FileWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
+
             if (StringUtils.isNotEmpty(samples)) {
                 query.put("sampleIds", samples);
             }
@@ -759,8 +759,8 @@ public class FileWSServer extends OpenCGAWSServer {
 
         try {
             AbstractManager.MyResourceIds resource = fileManager.getIds(fileIdStr, studyStr, sessionId);
-            QueryResult queryResult = fileManager.index(StringUtils.join(resource.getResourceIds(), ","), "VCF", params,
-                    sessionId);
+            QueryResult queryResult = fileManager.index(StringUtils.join(resource.getResourceIds(), ","),
+                    Long.toString(resource.getStudyId()), "VCF", params, sessionId);
             return createOkResponse(queryResult);
         } catch(Exception e) {
             return createErrorResponse(e);

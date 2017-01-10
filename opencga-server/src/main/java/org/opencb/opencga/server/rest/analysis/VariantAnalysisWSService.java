@@ -27,7 +27,6 @@ import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.rest.FileWSServer;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import javax.servlet.http.HttpServletRequest;
@@ -66,7 +65,9 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @ApiOperation(value = "Index variant files", position = 14, response = QueryResponse.class)
     public Response index(@ApiParam("Comma separated list of file ids (files or directories)") @QueryParam(value = "fileId") String fileIdStr,
                           // Study id is not ingested by the analysis index command line. No longer needed.
-                          @ApiParam("Study id") @QueryParam("studyId") String studyId,
+                          @ApiParam("(DEPRECATED) Study id") @QueryParam("studyId") String studyId,
+                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                              @QueryParam("study") String studyStr,
                           @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr,
                           @ApiParam("Boolean indicating that only the transform step will be run") @DefaultValue("false") @QueryParam("transform") boolean transform,
                           @ApiParam("Boolean indicating that only the load step will be run") @DefaultValue("false") @QueryParam("load") boolean load,
@@ -75,6 +76,10 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                           @ApiParam("Calculate indexed variants statistics after the load step") @DefaultValue("false") @QueryParam("calculateStats") boolean calculateStats,
                           @ApiParam("Annotate indexed variants after the load step") @DefaultValue("false") @QueryParam("annotate") boolean annotate,
                           @ApiParam("Overwrite annotations already present in variants") @DefaultValue("false") @QueryParam("overwrite") boolean overwriteAnnotations) {
+
+        if (StringUtils.isNotEmpty(studyId)) {
+            studyStr = studyId;
+        }
 
         Map<String, String> params = new LinkedHashMap<>();
 //        addParamIfNotNull(params, "studyId", studyId);
@@ -112,7 +117,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 
         try {
             List<String> fileIds = FileWSServer.convertPathList(fileIdStr, sessionId);
-            QueryResult queryResult = catalogManager.getFileManager().index(StringUtils.join(fileIds, ","), "VCF", params, sessionId);
+            QueryResult queryResult = catalogManager.getFileManager().index(StringUtils.join(fileIds, ","), studyStr, "VCF", params,
+                    sessionId);
             return createOkResponse(queryResult);
         } catch(Exception e) {
             return createErrorResponse(e);
