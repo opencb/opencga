@@ -19,10 +19,7 @@ package org.opencb.opencga.server.rest.analysis;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.rest.FileWSServer;
@@ -31,6 +28,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -138,7 +136,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
-//            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
     public Response getVariants(@ApiParam(value = "List of variant ids") @QueryParam("ids") String ids,
                                 @ApiParam(value = "List of regions: {chr}:{start}-{end}") @QueryParam("region") String region,
@@ -182,7 +180,6 @@ public class VariantAnalysisWSService extends AnalysisWSService {
 //                                @ApiParam(value = "Limit the number of returned variants. Max value: " + VariantFetcher.LIMIT_MAX) @DefaultValue(""+VariantFetcher.LIMIT_DEFAULT) @QueryParam("limit") int limit,
 //                                @ApiParam(value = "Skip some number of variants.") @QueryParam("skip") int skip,
                                 @ApiParam(value = "Returns the samples metadata group by studyId, instead of the variants", required = false) @QueryParam("samplesMetadata") boolean samplesMetadata,
-                                @ApiParam(value = "Count results", required = false) @QueryParam("count") boolean count,
                                 @ApiParam(value = "Sort the results", required = false) @QueryParam("sort") boolean sort,
                                 @ApiParam(value = "Group variants by: [ct, gene, ensemblGene]", required = false) @DefaultValue("") @QueryParam("groupBy") String groupBy,
                                 @ApiParam(value = "Calculate histogram. Requires one region.", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
@@ -211,25 +208,91 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-//        }
-//        List<QueryResult> results = new LinkedList<>();
-//        try {
-//            VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
-//            List<String> fileIds = FileWSServer.convertPathList(fileIdCsv, sessionId);
-//            for (String fileIdStr : fileIds) {
-//                QueryResult result;
-//                if (count) {
-//                    long fileId = catalogManager.getFileId(fileIdStr, sessionId);
-//                    result = variantFetcher.countByFile(fileId, queryOptions, sessionId);
-//                } else {
-//                    result = variantFetcher.getVariantsPerFile(region, histogram, groupBy, interval, fileIdStr, sessionId, queryOptions);
-//                }
-//                results.add(result);
-//            }
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//        return createOkResponse(results);
+    }
+
+    private static class VariantQueryParams {
+        public String ids;
+        public String region;
+        public String chromosome;
+        public String gene;
+        public String type;
+        public String reference;
+        public String alternate;
+        public String studies;
+        public String returnedStudies;
+        public String returnedSamples;
+        public String returnedFiles;
+        public String files;
+        public String maf;
+        public String mgf;
+        public String missingAlleles;
+        public String missingGenotypes;
+        public boolean annotationExists;
+        public String genotype;
+        public String annot_ct;
+        public String annot_xref;
+        public String annot_biotype;
+        public String polyphen;
+        public String sift;
+        public String protein_substitution;
+        public String conservation;
+        public String annotPopulationMaf;
+        public String alternate_frequency;
+        public String reference_frequency;
+        public String transcriptionFlags;
+        public String geneTraitId;
+        public String geneTraitName;
+        public String hpo;
+        public String go;
+        public String expression;
+        public String proteinKeyword;
+        public String drug;
+        public String functional;
+        public String unknownGenotype;
+        public boolean samplesMetadata;
+        public boolean sort;
+        public String groupBy;
+        public boolean histogram;
+        public int interval;
+        public boolean merge;
+    }
+
+    @POST
+    @Path("/query")
+    @ApiOperation(value = "Fetch variants from a VCF/gVCF file", position = 15, response = Variant[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
+    public Response getVariants(@ApiParam(name = "params", value = "Query parameters", required = true) VariantQueryParams params) {
+
+        try {
+            List<QueryResult> queryResults = new LinkedList<>();
+            QueryResult queryResult;
+            // Get all query options
+            //new ObjectMap(jsonObjectMapper.writeValueAsString(updateParams))
+            QueryOptions queryOptions = new QueryOptions(jsonObjectMapper.writeValueAsString(params));
+            queryOptions.putAll(uriInfo.getQueryParameters());
+            Query query = VariantStorageManager.getVariantQuery(queryOptions);
+
+            if (count) {
+                queryResult = variantManager.count(query, sessionId);
+            } else if (params.histogram) {
+                queryResult = variantManager.getFrequency(query, params.interval, sessionId);
+            } else if (StringUtils.isNotEmpty(params.groupBy)) {
+                queryResult = variantManager.groupBy(params.groupBy, query, queryOptions, sessionId);
+            } else {
+                queryResult = variantManager.get(query, queryOptions, sessionId);
+            }
+            queryResults.add(queryResult);
+
+            return createOkResponse(queryResults);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
     }
 
     @GET

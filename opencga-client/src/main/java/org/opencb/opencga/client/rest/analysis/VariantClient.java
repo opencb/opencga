@@ -2,6 +2,7 @@ package org.opencb.opencga.client.rest.analysis;
 
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
@@ -26,16 +27,22 @@ public class VariantClient extends AbstractParentClient {
         return execute(VARIANT_URL, "index", params, GET, Job.class);
     }
 
-    public QueryResponse<Variant> query(ObjectMap params) throws CatalogException, IOException {
-        return execute(VARIANT_URL, "query", params, GET, Variant.class);
+    public QueryResponse<Variant> query(ObjectMap bodyParams, QueryOptions options) throws CatalogException, IOException {
+        ObjectMap params = new ObjectMap(options);
+        params.putIfNotNull("body", bodyParams);
+        return execute(VARIANT_URL, "query", params, POST, Variant.class);
     }
 
-    public QueryResponse<Long> count(ObjectMap params) throws CatalogException, IOException {
-        return execute(VARIANT_URL, "query", params, GET, Long.class);
+    public QueryResponse<Long> count(ObjectMap bodyParams, QueryOptions options) throws CatalogException, IOException {
+        ObjectMap params = new ObjectMap(options);
+        params.putIfNotNull("body", bodyParams);
+        return execute(VARIANT_URL, "query", params, POST, Long.class);
     }
 
-    public QueryResponse<ObjectMap> genericQuery(ObjectMap params) throws CatalogException, IOException {
-        return execute(VARIANT_URL, "query", params, GET, ObjectMap.class);
+    public QueryResponse<ObjectMap> genericQuery(ObjectMap bodyParams, QueryOptions options) throws CatalogException, IOException {
+        ObjectMap params = new ObjectMap(options);
+        params.putIfNotNull("body", bodyParams);
+        return execute(VARIANT_URL, "query", params, POST, ObjectMap.class);
     }
 
 }
