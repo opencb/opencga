@@ -1,0 +1,10 @@
+!define TEST_SYSTEM {slim}
+!path ../dependencies/*.jar
+
+!|import|
+|smartrics.rest.fitnesse.fixture|
+
+!|Table: Rest Fixture Config|
+|restfixture.display.toggle.for.cells.larger.than|200|
+|restfixture.display.actual.on.right | false |
+|http.client.connection.timeout| 100000|

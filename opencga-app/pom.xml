@@ -241,6 +241,7 @@
                                 <exec executable="mkdir">
                                     <arg value="-p"/>
                                     <arg value="${build.dir}/conf"/>
+                                    <arg value="${build.dir}/test"/>
                                 </exec>
 
                                 <echo>Copying to ${build.dir}</echo>
@@ -271,6 +272,21 @@
                                 <exec executable="cp">
                                     <arg value="${project.basedir}/../opencga-server/target/${opencga.war.name}.war"/>
                                     <arg value="${build.dir}"/>
+                                </exec>
+
+                                <echo>Coping Acceptance testing files</echo>
+                                <exec executable="mvn">
+                                    <arg value="-f"/>
+                                    <arg value="${project.basedir}/../opencga-test/pom.xml"/>
+                                    <arg value="install"/>
+                                </exec>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/../opencga-test/target/appassembler/bin"/>
+                                    <arg value="${project.basedir}/../opencga-test/target/appassembler/dependencies"/>
+                                    <arg value="${project.basedir}/../opencga-test/README.md"/>
+                                    <arg value="${project.basedir}/../opencga-test/fitnesse"/>
+                                    <arg value="${build.dir}/test"/>
                                 </exec>
                             </target>
                         </configuration>

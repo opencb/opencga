@@ -1,0 +1,7 @@
+!1 OpenCGA Acceptance Tests
+
+
+OpenCga
+
+!note Release ${FITNESSE_VERSION}
+
