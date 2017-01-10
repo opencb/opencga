@@ -27,16 +27,13 @@ public class VariantCommandOptions {
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index VCF files")
-    public class IndexCommandOptions {
+    public class IndexCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--file-id"}, description = "Comma separated list of file ids (files or directories)", required = true, arity = 1)
+        @Parameter(names = {"--file"}, description = "Comma separated list of file ids (files or directories)", required = true, arity = 1)
         public String fileIds;
-
-        @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = false, arity = 1)
-        public String studyId;
 
         @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
         public boolean transform;

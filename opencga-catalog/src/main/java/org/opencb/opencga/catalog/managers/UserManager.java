@@ -138,6 +138,10 @@ public class UserManager extends AbstractManager implements IUserManager {
 //        checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(oldPassword, "oldPassword");
         ParamUtils.checkParameter(newPassword, "newPassword");
+        if (oldPassword == newPassword) {
+            throw new CatalogException("New password is the same as the old password.");
+        }
+
         userDBAdaptor.checkId(userId);
         String authOrigin = getAuthenticationOriginId(userId);
         authenticationManagerMap.get(authOrigin).changePassword(userId, oldPassword, newPassword);

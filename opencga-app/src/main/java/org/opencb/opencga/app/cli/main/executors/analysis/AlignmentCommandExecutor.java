@@ -75,7 +75,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         String fileIds = alignmentCommandOptions.indexAlignmentCommandOptions.fileId;
 
         ObjectMap o = new ObjectMap();
-        o.putIfNotNull("studyId", alignmentCommandOptions.indexAlignmentCommandOptions.studyId);
+        o.putIfNotNull("study", alignmentCommandOptions.indexAlignmentCommandOptions.study);
         o.putIfNotNull("outDir", alignmentCommandOptions.indexAlignmentCommandOptions.outdirId);
 
         return openCGAClient.getAlignmentClient().index(fileIds, o);
@@ -132,7 +132,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         String fileIds = commandOptions.fileId;
 
         ObjectMap o = new ObjectMap();
-//        o.putIfNotNull("studyId", alignmentCommandOptions.queryAlignmentCommandOptions.studyId);
+        o.putIfNotNull("study", alignmentCommandOptions.queryAlignmentCommandOptions.study);
         o.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), commandOptions.region);
         o.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), commandOptions.minMappingQuality);
         o.putIfNotNull("limit", commandOptions.limit);
@@ -148,6 +148,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         Map<String, String> query = new HashMap<>();
         addParam(query, "fileId", commandOptions.fileId);
         addParam(query, "sid", commandOptions.commonOptions.sessionId);
+        addParam(query, "study", commandOptions.study);
         addParam(query, AlignmentDBAdaptor.QueryParams.REGION.key(), commandOptions.region);
         addParam(query, AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), commandOptions.minMappingQuality);
 
@@ -239,6 +240,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap objectMap = new ObjectMap();
 //        objectMap.putIfNotNull("fileId", alignmentCommandOptions.statsAlignmentCommandOptions.fileId);
         objectMap.putIfNotNull("sid", alignmentCommandOptions.statsAlignmentCommandOptions.commonOptions.sessionId);
+        objectMap.putIfNotNull("study", alignmentCommandOptions.statsAlignmentCommandOptions.study);
         objectMap.putIfNotNull("region", alignmentCommandOptions.statsAlignmentCommandOptions.region);
         objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.statsAlignmentCommandOptions.minMappingQuality);
         if (alignmentCommandOptions.statsAlignmentCommandOptions.contained) {
@@ -259,6 +261,7 @@ public class AlignmentCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap objectMap = new ObjectMap();
 //        objectMap.putIfNotNull("fileId", alignmentCommandOptions.coverageAlignmentCommandOptions.fileId);
         objectMap.putIfNotNull("sid", alignmentCommandOptions.coverageAlignmentCommandOptions.commonOptions.sessionId);
+        objectMap.putIfNotNull("study", alignmentCommandOptions.coverageAlignmentCommandOptions.study);
         objectMap.putIfNotNull("region", alignmentCommandOptions.coverageAlignmentCommandOptions.region);
         objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.coverageAlignmentCommandOptions.minMappingQuality);
         if (alignmentCommandOptions.coverageAlignmentCommandOptions.contained) {

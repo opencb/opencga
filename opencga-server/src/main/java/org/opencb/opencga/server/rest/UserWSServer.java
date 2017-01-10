@@ -134,8 +134,8 @@ public class UserWSServer extends OpenCGAWSServer {
                     .append("ip", queryResult.first().getIp())
                     .append("date", queryResult.first().getDate());
 
-            QueryResult<ObjectMap> login = new QueryResult<>("login", queryResult.getDbTime(), 1, 1, queryResult.getWarningMsg(),
-                    queryResult.getErrorMsg(), Arrays.asList(sessionMap));
+            QueryResult<ObjectMap> login = new QueryResult<>("You successfully logged in", queryResult.getDbTime(), 1, 1,
+                    queryResult.getWarningMsg(), queryResult.getErrorMsg(), Arrays.asList(sessionMap));
 
             return createOkResponse(login);
         } catch (Exception e) {
@@ -164,8 +164,8 @@ public class UserWSServer extends OpenCGAWSServer {
                     .append("ip", queryResult.first().getIp())
                     .append("date", queryResult.first().getDate());
 
-            QueryResult<ObjectMap> login = new QueryResult<>("login", queryResult.getDbTime(), 1, 1, queryResult.getWarningMsg(),
-                    queryResult.getErrorMsg(), Arrays.asList(sessionMap));
+            QueryResult<ObjectMap> login = new QueryResult<>("You successfully logged in", queryResult.getDbTime(), 1, 1, queryResult
+                    .getWarningMsg(), queryResult.getErrorMsg(), Arrays.asList(sessionMap));
 
             return createOkResponse(login);
         } catch (Exception e) {
@@ -179,6 +179,7 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response logout(@ApiParam(value = "userId", required = true) @PathParam("user") String userId) {
         try {
             QueryResult result = catalogManager.logout(userId, sessionId);
+            result.setId("You successfully logged out");
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

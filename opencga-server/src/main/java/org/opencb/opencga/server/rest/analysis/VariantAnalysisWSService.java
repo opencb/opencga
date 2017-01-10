@@ -65,7 +65,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @ApiOperation(value = "Index variant files", position = 14, response = QueryResponse.class)
     public Response index(@ApiParam("(DEPRECATED) Comma separated list of file ids (files or directories)") @QueryParam(value = "fileId")
                                       String fileIdStrOld,
-                          @ApiParam("Comma separated list of file ids (files or directories)") @QueryParam(value = "file") String fileIdStr,
+                          @ApiParam(value = "Comma separated list of file ids (files or directories)", required = true)
+                          @QueryParam(value = "file") String fileIdStr,
                           // Study id is not ingested by the analysis index command line. No longer needed.
                           @ApiParam("(DEPRECATED) Study id") @QueryParam("studyId") String studyId,
                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -122,9 +123,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         logger.info("ObjectMap: {}", params);
 
         try {
-            List<String> fileIds = FileWSServer.convertPathList(fileIdStr, sessionId);
-            QueryResult queryResult = catalogManager.getFileManager().index(StringUtils.join(fileIds, ","), studyStr, "VCF", params,
-                    sessionId);
+            QueryResult queryResult = catalogManager.getFileManager().index(fileIdStr, studyStr, "VCF", params, sessionId);
             return createOkResponse(queryResult);
         } catch(Exception e) {
             return createErrorResponse(e);

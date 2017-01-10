@@ -378,7 +378,7 @@ public class AnalysisCliOptionsParser {
 //        @Parameter(names = {"--study-id"}, description = "Unque ID for the study", arity = 1)
 //        public long studyId;
 
-        @Parameter(names = {"--file-id"}, description = "CSV of file ids to be indexed", required = true, arity = 1)
+        @Parameter(names = {"--file"}, description = "CSV of file ids to be indexed", required = true, arity = 1)
         public String fileId = null;
 
         @Parameter(names = {"--transformed-files"}, description = "CSV of paths corresponding to the location of the transformed files.",
