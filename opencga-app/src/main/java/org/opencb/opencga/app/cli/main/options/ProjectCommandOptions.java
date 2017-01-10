@@ -142,7 +142,7 @@ public class ProjectCommandOptions {
         public String assembly;
     }
 
-    @Parameters(commandNames = {"delete"}, commandDescription = "Delete a project")
+    @Parameters(commandNames = {"delete"}, commandDescription = "[PENDING] Delete a project")
     public class DeleteCommandOptions extends BaseProjectCommand {
 
     }

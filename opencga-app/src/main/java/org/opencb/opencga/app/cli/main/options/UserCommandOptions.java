@@ -138,7 +138,7 @@ public class UserCommandOptions {
         public String npassword;
     }
 
-    @Parameters(commandNames = {"delete"}, commandDescription = "Delete a user [NOT TESTED]")
+    @Parameters(commandNames = {"delete"}, commandDescription = "[PENDING] Delete a user")
     public class DeleteCommandOptions extends BaseUserCommand {
 
     }

@@ -282,7 +282,7 @@ public class StudyCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"delete"}, commandDescription = "Delete a study [PENDING]")
+    @Parameters(commandNames = {"delete"}, commandDescription = "[PENDING] Delete a study")
     public class DeleteCommandOptions extends BaseStudyCommand {
 
     }

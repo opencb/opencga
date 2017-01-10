@@ -210,9 +210,10 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private void delete() throws CatalogException, IOException {
+        System.out.println("Pending functionality");
         logger.debug("Deleting user");
 
-        openCGAClient.getUserClient().delete(usersCommandOptions.deleteCommandOptions.user, new ObjectMap());
+//        openCGAClient.getUserClient().delete(usersCommandOptions.deleteCommandOptions.user, new ObjectMap());
     }
 
     private QueryResponse<User> update() throws CatalogException, IOException {

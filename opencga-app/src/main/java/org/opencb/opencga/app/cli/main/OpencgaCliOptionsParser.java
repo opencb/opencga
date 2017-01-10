@@ -127,7 +127,7 @@ public class OpencgaCliOptionsParser {
         fileCommandOptions = new FileCommandOptions(this.commonCommandOptions,dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("files", fileCommandOptions);
         JCommander fileSubCommands = jCommander.getCommands().get("files");
-        fileSubCommands.addCommand("copy", fileCommandOptions.copyCommandOptions);
+//        fileSubCommands.addCommand("copy", fileCommandOptions.copyCommandOptions);
         fileSubCommands.addCommand("create-folder", fileCommandOptions.createFolderCommandOptions);
         fileSubCommands.addCommand("info", fileCommandOptions.infoCommandOptions);
         fileSubCommands.addCommand("download", fileCommandOptions.downloadCommandOptions);
@@ -135,7 +135,7 @@ public class OpencgaCliOptionsParser {
         fileSubCommands.addCommand("search", fileCommandOptions.searchCommandOptions);
         fileSubCommands.addCommand("list", fileCommandOptions.listCommandOptions);
         fileSubCommands.addCommand("tree", fileCommandOptions.treeCommandOptions);
-        fileSubCommands.addCommand("index", fileCommandOptions.indexCommandOptions);
+//        fileSubCommands.addCommand("index", fileCommandOptions.indexCommandOptions);
         fileSubCommands.addCommand("content", fileCommandOptions.contentCommandOptions);
 //        fileSubCommands.addCommand("fetch", fileCommandOptions.fetchCommandOptions);
         fileSubCommands.addCommand("update", fileCommandOptions.updateCommandOptions);
@@ -145,7 +145,7 @@ public class OpencgaCliOptionsParser {
         fileSubCommands.addCommand("relink", fileCommandOptions.relinkCommandOptions);
         fileSubCommands.addCommand("delete", fileCommandOptions.deleteCommandOptions);
         fileSubCommands.addCommand("refresh", fileCommandOptions.refreshCommandOptions);
-        fileSubCommands.addCommand("variants", fileCommandOptions.variantsCommandOptions);
+//        fileSubCommands.addCommand("variants", fileCommandOptions.variantsCommandOptions);
         fileSubCommands.addCommand("acl", fileCommandOptions.aclsCommandOptions);
         fileSubCommands.addCommand("acl-create", fileCommandOptions.aclsCreateCommandOptions);
         fileSubCommands.addCommand("acl-member-delete", fileCommandOptions.aclsMemberDeleteCommandOptions);

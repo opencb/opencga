@@ -19,30 +19,21 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.analysis.storage.variant.CatalogVariantDBAdaptor;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.FileCommandOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.FileTree;
-import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
-import org.opencb.opencga.catalog.utils.FileMetadataReader;
-import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -67,9 +58,9 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         String subCommandString = getParsedSubCommand(filesCommandOptions.jCommander);
         QueryResponse queryResponse = null;
         switch (subCommandString) {
-            case "copy":
-                queryResponse = copy();
-                break;
+//            case "copy":
+//                queryResponse = copy();
+//                break;
             case "create-folder":
                 queryResponse = createFolder();
                 break;
@@ -91,15 +82,15 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
             case "tree":
                 queryResponse = tree();
                 break;
-            case "index":
-                queryResponse = index();
-                break;
+//            case "index":
+//                queryResponse = index();
+//                break;
             case "content":
                 queryResponse = content();
                 break;
-            case "fetch":
-                queryResponse = fetch();
-                break;
+//            case "fetch":
+//                queryResponse = fetch();
+//                break;
             case "update":
                 queryResponse = update();
                 break;
@@ -124,9 +115,9 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
             case "group-by":
                 queryResponse = groupBy();
                 break;
-            case "variants":
-                queryResponse = variants();
-                break;
+//            case "variants":
+//                queryResponse = variants();
+//                break;
             case "acl":
                 queryResponse = aclCommandExecutor.acls(filesCommandOptions.aclsCommandOptions, openCGAClient.getFileClient());
                 break;
@@ -152,36 +143,36 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
 
         createOutput(queryResponse);
     }
-
-    private QueryResponse<File> copy() throws CatalogException {
-        logger.debug("Creating a new file");
-        //openCGAClient.getFileClient(). /******************* Falta el create en FileClient.java ?? **//
-//        OptionsParser.FileCommands.CreateCommand c = optionsParser.getFileCommands().createCommand;
-        FileCommandOptions.CopyCommandOptions copyCommandOptions = filesCommandOptions.copyCommandOptions;
-        long studyId = catalogManager.getStudyId(copyCommandOptions.study);
-        Path inputFile = Paths.get(copyCommandOptions.inputFile);
-        URI sourceUri;
-        try {
-            sourceUri = new URI(null, copyCommandOptions.inputFile, null);
-        } catch (URISyntaxException e) {
-            throw new CatalogException("Input file is not a proper URI");
-        }
-        if (sourceUri.getScheme() == null || sourceUri.getScheme().isEmpty()) {
-            sourceUri = inputFile.toUri();
-        }
-        if (!catalogManager.getCatalogIOManagerFactory().get(sourceUri).exists(sourceUri)) {
-            throw new CatalogException("File " + sourceUri + " does not exist");
-        }
-
-        String path = ParamUtils.defaultString(copyCommandOptions.path, "");
-        QueryResult<File> file = catalogManager.createFile(studyId, copyCommandOptions.format, copyCommandOptions.bioformat,
-                Paths.get(path, inputFile.getFileName().toString()).toString(), copyCommandOptions.description,
-                copyCommandOptions.parents, -1, sessionId);
-        new CatalogFileUtils(catalogManager).upload(sourceUri, file.first(), null, sessionId, false, false,
-                copyCommandOptions.move, copyCommandOptions.calculateChecksum);
-        FileMetadataReader.get(catalogManager).setMetadataInformation(file.first(), null, new QueryOptions(), sessionId, false);
-        return new QueryResponse<>(new QueryOptions(), Arrays.asList(file));
-    }
+//
+//    private QueryResponse<File> copy() throws CatalogException {
+//        logger.debug("Creating a new file");
+//        //openCGAClient.getFileClient(). /******************* Falta el create en FileClient.java ?? **//
+////        OptionsParser.FileCommands.CreateCommand c = optionsParser.getFileCommands().createCommand;
+//        FileCommandOptions.CopyCommandOptions copyCommandOptions = filesCommandOptions.copyCommandOptions;
+//        long studyId = catalogManager.getStudyId(copyCommandOptions.study);
+//        Path inputFile = Paths.get(copyCommandOptions.inputFile);
+//        URI sourceUri;
+//        try {
+//            sourceUri = new URI(null, copyCommandOptions.inputFile, null);
+//        } catch (URISyntaxException e) {
+//            throw new CatalogException("Input file is not a proper URI");
+//        }
+//        if (sourceUri.getScheme() == null || sourceUri.getScheme().isEmpty()) {
+//            sourceUri = inputFile.toUri();
+//        }
+//        if (!catalogManager.getCatalogIOManagerFactory().get(sourceUri).exists(sourceUri)) {
+//            throw new CatalogException("File " + sourceUri + " does not exist");
+//        }
+//
+//        String path = ParamUtils.defaultString(copyCommandOptions.path, "");
+//        QueryResult<File> file = catalogManager.createFile(studyId, copyCommandOptions.format, copyCommandOptions.bioformat,
+//                Paths.get(path, inputFile.getFileName().toString()).toString(), copyCommandOptions.description,
+//                copyCommandOptions.parents, -1, sessionId);
+//        new CatalogFileUtils(catalogManager).upload(sourceUri, file.first(), null, sessionId, false, false,
+//                copyCommandOptions.move, copyCommandOptions.calculateChecksum);
+//        FileMetadataReader.get(catalogManager).setMetadataInformation(file.first(), null, new QueryOptions(), sessionId, false);
+//        return new QueryResponse<>(new QueryOptions(), Arrays.asList(file));
+//    }
 
     private QueryResponse createFolder() throws CatalogException, IOException {
         logger.debug("Creating a new folder");
@@ -277,27 +268,27 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getFileClient().list(folder, params);
     }
 
-    private QueryResponse<Job> index() throws CatalogException, IOException {
-        logger.debug("Indexing variant(s)");
-
-        String fileIds = filesCommandOptions.indexCommandOptions.file;
-
-        ObjectMap params = new ObjectMap();
-//        o.putIfNotNull("studyId", filesCommandOptions.indexCommandOptions.study);
-        params.putIfNotNull("outDir", filesCommandOptions.indexCommandOptions.outdir);
-        params.putIfNotNull("transform", filesCommandOptions.indexCommandOptions.transform);
-        params.putIfNotNull("load", filesCommandOptions.indexCommandOptions.load);
-        params.putIfNotNull("includeExtraFields", filesCommandOptions.indexCommandOptions.extraFields);
-        params.putIfNotNull("aggregated", filesCommandOptions.indexCommandOptions.aggregated);
-        params.putIfNotNull("calculateStats", filesCommandOptions.indexCommandOptions.calculateStats);
-        params.putIfNotNull("annotate", filesCommandOptions.indexCommandOptions.annotate);
-        params.putIfNotNull("overwrite", filesCommandOptions.indexCommandOptions.overwriteAnnotations);
-        params.putIfNotNull(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.indexCommandOptions.study);
-        params.putIfNotNull(VariantStorageEngine.Options.RESUME.key(), filesCommandOptions.indexCommandOptions.resume);
-        params.putAll(filesCommandOptions.commonCommandOptions.params);
-
-        return openCGAClient.getFileClient().index(fileIds, params);
-    }
+//    private QueryResponse<Job> index() throws CatalogException, IOException {
+//        logger.debug("Indexing variant(s)");
+//
+//        String fileIds = filesCommandOptions.indexCommandOptions.file;
+//
+//        ObjectMap params = new ObjectMap();
+////        o.putIfNotNull("studyId", filesCommandOptions.indexCommandOptions.study);
+//        params.putIfNotNull("outDir", filesCommandOptions.indexCommandOptions.outdir);
+//        params.putIfNotNull("transform", filesCommandOptions.indexCommandOptions.transform);
+//        params.putIfNotNull("load", filesCommandOptions.indexCommandOptions.load);
+//        params.putIfNotNull("includeExtraFields", filesCommandOptions.indexCommandOptions.extraFields);
+//        params.putIfNotNull("aggregated", filesCommandOptions.indexCommandOptions.aggregated);
+//        params.putIfNotNull("calculateStats", filesCommandOptions.indexCommandOptions.calculateStats);
+//        params.putIfNotNull("annotate", filesCommandOptions.indexCommandOptions.annotate);
+//        params.putIfNotNull("overwrite", filesCommandOptions.indexCommandOptions.overwriteAnnotations);
+//        params.putIfNotNull(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.indexCommandOptions.study);
+//        params.putIfNotNull(VariantStorageEngine.Options.RESUME.key(), filesCommandOptions.indexCommandOptions.resume);
+//        params.putAll(filesCommandOptions.commonCommandOptions.params);
+//
+//        return openCGAClient.getFileClient().index(fileIds, params);
+//    }
 
     private QueryResponse<FileTree> tree() throws CatalogException, IOException {
         logger.debug("Obtain a tree view of the files and folders within a folder");
@@ -476,94 +467,94 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
                 filesCommandOptions.groupByCommandOptions.fields, queryOptions);
     }
 
-    private QueryResponse variants() throws CatalogException, IOException {
-        logger.debug("Fetch variants from a VCF/gVCF file");
-
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.putIfNotEmpty("ids", filesCommandOptions.variantsCommandOptions.ids);
-        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.variantsCommandOptions.study);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.REGION.key(),
-                filesCommandOptions.variantsCommandOptions.region);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(),
-                filesCommandOptions.variantsCommandOptions.chromosome);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.GENE.key(), filesCommandOptions.variantsCommandOptions.gene);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.TYPE.key(), filesCommandOptions.variantsCommandOptions.type);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.REFERENCE.key(),
-                filesCommandOptions.variantsCommandOptions.reference);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ALTERNATE.key(),
-                filesCommandOptions.variantsCommandOptions.alternate);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(),
-                filesCommandOptions.variantsCommandOptions.returnedStudies);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(),
-                filesCommandOptions.variantsCommandOptions.returnedSamples);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(),
-                filesCommandOptions.variantsCommandOptions.returnedFiles);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.FILES.key(),
-                filesCommandOptions.variantsCommandOptions.files);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.STATS_MAF.key(),
-                filesCommandOptions.variantsCommandOptions.maf);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.STATS_MGF.key(),
-                filesCommandOptions.variantsCommandOptions.mgf);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.MISSING_ALLELES.key(),
-                filesCommandOptions.variantsCommandOptions.missingAlleles);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.MISSING_GENOTYPES.key(),
-                filesCommandOptions.variantsCommandOptions.missingGenotypes);
-//        queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(),
-//                filesCommandOptions.variantsCommandOptions.annotationExists);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.GENOTYPE.key(),
-                filesCommandOptions.variantsCommandOptions.genotype);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(),
-                filesCommandOptions.variantsCommandOptions.annot_ct);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_XREF.key(),
-                filesCommandOptions.variantsCommandOptions.annot_xref);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_BIOTYPE.key(),
-                filesCommandOptions.variantsCommandOptions.annot_biotype);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POLYPHEN.key(),
-                filesCommandOptions.variantsCommandOptions.polyphen);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_SIFT.key(), filesCommandOptions.variantsCommandOptions.sift);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION.key(),
-                filesCommandOptions.variantsCommandOptions.conservation);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),
-                filesCommandOptions.variantsCommandOptions.annotPopulationMaf);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
-                filesCommandOptions.variantsCommandOptions.alternate_frequency);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_REFERENCE_FREQUENCY.key(),
-                filesCommandOptions.variantsCommandOptions.reference_frequency);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_TRANSCRIPTION_FLAGS.key(),
-                filesCommandOptions.variantsCommandOptions.transcriptionFlags);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_GENE_TRAITS_ID.key(),
-                filesCommandOptions.variantsCommandOptions.geneTraitId);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_GENE_TRAITS_NAME.key(),
-                filesCommandOptions.variantsCommandOptions.geneTraitName);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_HPO.key(),
-                filesCommandOptions.variantsCommandOptions.hpo);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_GO.key(),
-                filesCommandOptions.variantsCommandOptions.go);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_EXPRESSION.key(),
-                filesCommandOptions.variantsCommandOptions.expression);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_KEYWORDS.key(),
-                filesCommandOptions.variantsCommandOptions.proteinKeyword);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_DRUG.key(),
-                filesCommandOptions.variantsCommandOptions.drug);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key(),
-                filesCommandOptions.variantsCommandOptions.functionalScore);
-        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.UNKNOWN_GENOTYPE.key(),
-                filesCommandOptions.variantsCommandOptions.unknownGenotype);
-        queryOptions.put("samplesMetadata", filesCommandOptions.variantsCommandOptions.samplesMetadata);
-        queryOptions.put(QueryOptions.SORT, filesCommandOptions.variantsCommandOptions.sort);
-        queryOptions.putIfNotEmpty("groupBy", filesCommandOptions.variantsCommandOptions.groupBy);
-        queryOptions.put("histogram", filesCommandOptions.variantsCommandOptions.histogram);
-        queryOptions.putIfNotEmpty("interval", filesCommandOptions.variantsCommandOptions.interval);
-        queryOptions.putIfNotEmpty("merge", filesCommandOptions.variantsCommandOptions.merge);
-        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, filesCommandOptions.variantsCommandOptions.include);
-        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, filesCommandOptions.variantsCommandOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, filesCommandOptions.variantsCommandOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, filesCommandOptions.variantsCommandOptions.skip);
-
-        queryOptions.put("count", filesCommandOptions.variantsCommandOptions.count);
-
-        return openCGAClient.getFileClient().getVariants(filesCommandOptions.variantsCommandOptions.file, queryOptions);
-    }
+//    private QueryResponse variants() throws CatalogException, IOException {
+//        logger.debug("Fetch variants from a VCF/gVCF file");
+//
+//        QueryOptions queryOptions = new QueryOptions();
+//        queryOptions.putIfNotEmpty("ids", filesCommandOptions.variantsCommandOptions.ids);
+//        queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.variantsCommandOptions.study);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.REGION.key(),
+//                filesCommandOptions.variantsCommandOptions.region);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(),
+//                filesCommandOptions.variantsCommandOptions.chromosome);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.GENE.key(), filesCommandOptions.variantsCommandOptions.gene);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.TYPE.key(), filesCommandOptions.variantsCommandOptions.type);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.REFERENCE.key(),
+//                filesCommandOptions.variantsCommandOptions.reference);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ALTERNATE.key(),
+//                filesCommandOptions.variantsCommandOptions.alternate);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(),
+//                filesCommandOptions.variantsCommandOptions.returnedStudies);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(),
+//                filesCommandOptions.variantsCommandOptions.returnedSamples);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(),
+//                filesCommandOptions.variantsCommandOptions.returnedFiles);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.FILES.key(),
+//                filesCommandOptions.variantsCommandOptions.files);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.STATS_MAF.key(),
+//                filesCommandOptions.variantsCommandOptions.maf);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.STATS_MGF.key(),
+//                filesCommandOptions.variantsCommandOptions.mgf);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.MISSING_ALLELES.key(),
+//                filesCommandOptions.variantsCommandOptions.missingAlleles);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.MISSING_GENOTYPES.key(),
+//                filesCommandOptions.variantsCommandOptions.missingGenotypes);
+////        queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(),
+////                filesCommandOptions.variantsCommandOptions.annotationExists);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.GENOTYPE.key(),
+//                filesCommandOptions.variantsCommandOptions.genotype);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(),
+//                filesCommandOptions.variantsCommandOptions.annot_ct);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_XREF.key(),
+//                filesCommandOptions.variantsCommandOptions.annot_xref);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_BIOTYPE.key(),
+//                filesCommandOptions.variantsCommandOptions.annot_biotype);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POLYPHEN.key(),
+//                filesCommandOptions.variantsCommandOptions.polyphen);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_SIFT.key(), filesCommandOptions.variantsCommandOptions.sift);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION.key(),
+//                filesCommandOptions.variantsCommandOptions.conservation);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),
+//                filesCommandOptions.variantsCommandOptions.annotPopulationMaf);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
+//                filesCommandOptions.variantsCommandOptions.alternate_frequency);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_REFERENCE_FREQUENCY.key(),
+//                filesCommandOptions.variantsCommandOptions.reference_frequency);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_TRANSCRIPTION_FLAGS.key(),
+//                filesCommandOptions.variantsCommandOptions.transcriptionFlags);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_GENE_TRAITS_ID.key(),
+//                filesCommandOptions.variantsCommandOptions.geneTraitId);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_GENE_TRAITS_NAME.key(),
+//                filesCommandOptions.variantsCommandOptions.geneTraitName);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_HPO.key(),
+//                filesCommandOptions.variantsCommandOptions.hpo);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_GO.key(),
+//                filesCommandOptions.variantsCommandOptions.go);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_EXPRESSION.key(),
+//                filesCommandOptions.variantsCommandOptions.expression);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_KEYWORDS.key(),
+//                filesCommandOptions.variantsCommandOptions.proteinKeyword);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_DRUG.key(),
+//                filesCommandOptions.variantsCommandOptions.drug);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key(),
+//                filesCommandOptions.variantsCommandOptions.functionalScore);
+//        queryOptions.putIfNotEmpty(CatalogVariantDBAdaptor.VariantQueryParams.UNKNOWN_GENOTYPE.key(),
+//                filesCommandOptions.variantsCommandOptions.unknownGenotype);
+//        queryOptions.put("samplesMetadata", filesCommandOptions.variantsCommandOptions.samplesMetadata);
+//        queryOptions.put(QueryOptions.SORT, filesCommandOptions.variantsCommandOptions.sort);
+//        queryOptions.putIfNotEmpty("groupBy", filesCommandOptions.variantsCommandOptions.groupBy);
+//        queryOptions.put("histogram", filesCommandOptions.variantsCommandOptions.histogram);
+//        queryOptions.putIfNotEmpty("interval", filesCommandOptions.variantsCommandOptions.interval);
+//        queryOptions.putIfNotEmpty("merge", filesCommandOptions.variantsCommandOptions.merge);
+//        queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, filesCommandOptions.variantsCommandOptions.include);
+//        queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, filesCommandOptions.variantsCommandOptions.exclude);
+//        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, filesCommandOptions.variantsCommandOptions.limit);
+//        queryOptions.putIfNotEmpty(QueryOptions.SKIP, filesCommandOptions.variantsCommandOptions.skip);
+//
+//        queryOptions.put("count", filesCommandOptions.variantsCommandOptions.count);
+//
+//        return openCGAClient.getFileClient().getVariants(filesCommandOptions.variantsCommandOptions.file, queryOptions);
+//    }
 
 
 }
