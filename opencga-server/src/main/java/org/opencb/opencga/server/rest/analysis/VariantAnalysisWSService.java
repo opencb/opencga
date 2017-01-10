@@ -63,7 +63,9 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @GET
     @Path("/index")
     @ApiOperation(value = "Index variant files", position = 14, response = QueryResponse.class)
-    public Response index(@ApiParam("Comma separated list of file ids (files or directories)") @QueryParam(value = "fileId") String fileIdStr,
+    public Response index(@ApiParam("(DEPRECATED) Comma separated list of file ids (files or directories)") @QueryParam(value = "fileId")
+                                      String fileIdStrOld,
+                          @ApiParam("Comma separated list of file ids (files or directories)") @QueryParam(value = "file") String fileIdStr,
                           // Study id is not ingested by the analysis index command line. No longer needed.
                           @ApiParam("(DEPRECATED) Study id") @QueryParam("studyId") String studyId,
                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -76,6 +78,10 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                           @ApiParam("Calculate indexed variants statistics after the load step") @DefaultValue("false") @QueryParam("calculateStats") boolean calculateStats,
                           @ApiParam("Annotate indexed variants after the load step") @DefaultValue("false") @QueryParam("annotate") boolean annotate,
                           @ApiParam("Overwrite annotations already present in variants") @DefaultValue("false") @QueryParam("overwrite") boolean overwriteAnnotations) {
+
+        if (StringUtils.isNotEmpty(fileIdStrOld)) {
+            fileIdStr = fileIdStrOld;
+        }
 
         if (StringUtils.isNotEmpty(studyId)) {
             studyStr = studyId;

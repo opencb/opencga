@@ -22,7 +22,7 @@ public class VariantClient extends AbstractParentClient {
     }
 
     public QueryResponse<Job> index(String fileIds, ObjectMap params) throws CatalogException, IOException {
-        params.append("fileId", fileIds);
+        params.append("file", fileIds);
         return execute(VARIANT_URL, "index", params, GET, Job.class);
     }
 
