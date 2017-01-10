@@ -17,15 +17,11 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AnnotationCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.SampleCommandOptions;
-import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Individual;
@@ -33,6 +29,10 @@ import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by imedina on 03/06/16.
@@ -194,12 +194,12 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Updating samples");
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), samplesCommandOptions.updateCommandOptions.study);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.NAME.key(), samplesCommandOptions.updateCommandOptions.name);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.DESCRIPTION.key(), samplesCommandOptions.updateCommandOptions.description);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.updateCommandOptions.source);
         params.putIfNotEmpty(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), samplesCommandOptions.updateCommandOptions.individual);
-        return openCGAClient.getSampleClient().update(samplesCommandOptions.updateCommandOptions.sample, params);
+        return openCGAClient.getSampleClient().update(samplesCommandOptions.updateCommandOptions.sample,
+                samplesCommandOptions.updateCommandOptions.study, params);
     }
 
     private QueryResponse<Sample> delete() throws CatalogException, IOException {
@@ -229,8 +229,36 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private QueryResponse<Individual> getIndividuals() throws CatalogException, IOException {
-        logger.debug("Pending functionality");
-        return null;
+        logger.debug("Getting individuals of sample(s)");
+
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(),
+                samplesCommandOptions.individualCommandOptions.study);
+        params.put("lazy", false); // Obtain the whole individual entity
+
+        params.putIfNotNull(QueryOptions.INCLUDE,
+                samplesCommandOptions.individualCommandOptions.dataModelOptions.include);
+        params.putIfNotNull(QueryOptions.EXCLUDE,
+                samplesCommandOptions.individualCommandOptions.dataModelOptions.exclude);
+
+        QueryResponse<Sample> sampleQueryResponse =
+                openCGAClient.getSampleClient().get(samplesCommandOptions.individualCommandOptions.sample, params);
+
+        if (sampleQueryResponse.allResultsSize() == 0) {
+            return new QueryResponse<>(sampleQueryResponse.getApiVersion(), -1, sampleQueryResponse.getWarning(),
+                    sampleQueryResponse.getError(), sampleQueryResponse.getQueryOptions(), new LinkedList<>());
+        }
+
+        // We get the individuals from the sample response
+        List<Individual> individualList = sampleQueryResponse.allResults()
+                .stream()
+                .map(Sample::getIndividual)
+                .collect(Collectors.toCollection(LinkedList::new));
+
+        return new QueryResponse<>(sampleQueryResponse.getApiVersion(), -1, sampleQueryResponse.getWarning(),
+                sampleQueryResponse.getError(), sampleQueryResponse.getQueryOptions(),
+                Arrays.asList(new QueryResult<>(samplesCommandOptions.individualCommandOptions.sample,
+                        -1, individualList.size(), individualList.size(), "", "", individualList)));
     }
 
 }

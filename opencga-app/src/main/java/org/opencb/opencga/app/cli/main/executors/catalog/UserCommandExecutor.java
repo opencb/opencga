@@ -223,7 +223,7 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(UserDBAdaptor.QueryParams.EMAIL.key(), usersCommandOptions.updateCommandOptions.email);
         params.putIfNotEmpty(UserDBAdaptor.QueryParams.ORGANIZATION.key(), usersCommandOptions.updateCommandOptions.organization);
         params.putIfNotEmpty(UserDBAdaptor.QueryParams.ATTRIBUTES.key(), usersCommandOptions.updateCommandOptions.attributes);
-        return openCGAClient.getUserClient().update(usersCommandOptions.updateCommandOptions.user, params);
+        return openCGAClient.getUserClient().update(usersCommandOptions.updateCommandOptions.user, null, params);
     }
 
     private QueryResponse<User> changePassword () throws CatalogException, IOException {

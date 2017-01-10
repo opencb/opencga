@@ -338,8 +338,8 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_ID.key(), filesCommandOptions.updateCommandOptions.jobId);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.PATH.key(), filesCommandOptions.updateCommandOptions.path);
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.NAME.key(), filesCommandOptions.updateCommandOptions.name);
-        params.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.updateCommandOptions.study);
-        return openCGAClient.getFileClient().update(filesCommandOptions.updateCommandOptions.file, params);
+        return openCGAClient.getFileClient().update(filesCommandOptions.updateCommandOptions.file,
+                filesCommandOptions.updateCommandOptions.study, params);
     }
 
     private QueryResponse<File> upload() throws CatalogException, IOException {

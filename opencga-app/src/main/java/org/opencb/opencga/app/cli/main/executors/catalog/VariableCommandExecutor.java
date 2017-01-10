@@ -145,7 +145,8 @@ public class VariableCommandExecutor extends OpencgaCommandExecutor {
 // ObjectMap.class).get("variables");
 //        }
 
-        return openCGAClient.getVariableClient().update(variableCommandOptions.updateCommandOptions.id, params);
+        return openCGAClient.getVariableClient().update(variableCommandOptions.updateCommandOptions.id,
+                variableCommandOptions.updateCommandOptions.studyId, params);
     }
 
     private QueryResponse<VariableSet> delete() throws CatalogException, IOException {

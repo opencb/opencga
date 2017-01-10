@@ -108,7 +108,8 @@ public class ToolCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Tool> update() throws CatalogException, IOException {
         logger.debug("Updating tool");
 
-        return openCGAClient.getToolClient().update(toolsCommandOptions.updateCommandOptions.id, QueryOptions.empty());
+        return openCGAClient.getToolClient().update(toolsCommandOptions.updateCommandOptions.id,
+                null, QueryOptions.empty());
     }
 
     private QueryResponse<Tool> delete() throws CatalogException, IOException {

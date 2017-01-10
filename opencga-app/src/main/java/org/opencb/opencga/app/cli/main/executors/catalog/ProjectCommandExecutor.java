@@ -126,7 +126,7 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
                 projectsCommandOptions.updateCommandOptions.taxonomyCode);
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), projectsCommandOptions.updateCommandOptions.assembly);
 
-        return openCGAClient.getProjectClient().update(projectsCommandOptions.updateCommandOptions.project, params);
+        return openCGAClient.getProjectClient().update(projectsCommandOptions.updateCommandOptions.project, null, params);
     }
 
     private QueryResponse<Project> delete() throws CatalogException, IOException {

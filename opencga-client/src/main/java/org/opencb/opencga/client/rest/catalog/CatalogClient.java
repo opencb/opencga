@@ -9,6 +9,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.AbstractParentClient;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 
 /**
@@ -55,7 +56,8 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
         return execute(category, "search", myQuery, GET, clazz);
     }
 
-    public QueryResponse<T> update(String id, ObjectMap params) throws CatalogException, IOException {
+    public QueryResponse<T> update(String id, @Nullable String study, ObjectMap params)
+            throws CatalogException, IOException {
         //TODO Check that everything is correct
         if (params.containsKey("method") && params.get("method").equals("GET")) {
             return execute(category, id, "update", params, GET, clazz);
@@ -63,6 +65,7 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(params);
         ObjectMap p = new ObjectMap("body", json);
+        p.putIfNotNull("study", study);
         logger.debug("Json in update client: " + json);
         return execute(category, id, "update", p, POST, clazz);
     }

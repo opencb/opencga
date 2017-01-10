@@ -25,7 +25,6 @@ import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AnnotationCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.IndividualCommandOptions;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -238,7 +237,6 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Updating individual information");
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), individualsCommandOptions.updateCommandOptions.study);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.NAME.key(), individualsCommandOptions.updateCommandOptions.name);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.updateCommandOptions.family);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.updateCommandOptions.fatherId);
@@ -274,7 +272,8 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(),
                 individualsCommandOptions.updateCommandOptions.affectationStatus);
 
-        return openCGAClient.getIndividualClient().update(individualsCommandOptions.updateCommandOptions.individual, params);
+        return openCGAClient.getIndividualClient().update(individualsCommandOptions.updateCommandOptions.individual,
+                individualsCommandOptions.updateCommandOptions.study, params);
     }
 
     private QueryResponse<Individual> delete() throws CatalogException, IOException {

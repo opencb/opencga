@@ -216,7 +216,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.updateCommandOptions.description);
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.STATS.key(), studiesCommandOptions.updateCommandOptions.stats);
         params.putIfNotEmpty(StudyDBAdaptor.QueryParams.ATTRIBUTES.key(), studiesCommandOptions.updateCommandOptions.attributes);
-        return openCGAClient.getStudyClient().update(studiesCommandOptions.updateCommandOptions.study, params);
+        return openCGAClient.getStudyClient().update(studiesCommandOptions.updateCommandOptions.study, null, params);
     }
 
     private QueryResponse<Study> delete() throws CatalogException, IOException {

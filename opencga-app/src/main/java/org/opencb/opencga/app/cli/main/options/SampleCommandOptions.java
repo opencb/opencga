@@ -231,7 +231,7 @@ public class SampleCommandOptions {
         public String variableSetId;
     }
 
-    @Parameters(commandNames = {"individuals"}, commandDescription = "[PENDING] Get the individuals of a list of samples.")
+    @Parameters(commandNames = {"individuals"}, commandDescription = "Get the individuals of a list of samples.")
     public class IndividualCommandOptions extends StudyOption {
 
         @ParametersDelegate

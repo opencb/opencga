@@ -216,12 +216,12 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Updating cohort");
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.STUDY.key(), cohortsCommandOptions.updateCommandOptions.study);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.NAME.key(), cohortsCommandOptions.updateCommandOptions.name);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.CREATION_DATE.key(), cohortsCommandOptions.updateCommandOptions.creationDate);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.DESCRIPTION.key(), cohortsCommandOptions.updateCommandOptions.description);
         params.putIfNotEmpty(CohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.updateCommandOptions.samples);
-        return openCGAClient.getCohortClient().update(cohortsCommandOptions.updateCommandOptions.cohort, params);
+        return openCGAClient.getCohortClient().update(cohortsCommandOptions.updateCommandOptions.cohort,
+                cohortsCommandOptions.updateCommandOptions.study, params);
     }
 
     private QueryResponse<Cohort> delete() throws CatalogException, IOException {
