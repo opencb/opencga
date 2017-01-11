@@ -323,7 +323,11 @@ public class VariantDBAdaptorUtils {
 //            System.out.println("includeList = " + includeList);
             returnedFields = new HashSet<>();
             for (String include : includeList) {
-                String includeAlias = VariantFields.get(include).fieldName();
+                VariantFields variantFields = VariantFields.get(include);
+                if (variantFields == null) {
+                    continue;
+                }
+                String includeAlias = variantFields.fieldName();
                 if (includeAlias != null) {
                     returnedFields.add(includeAlias);
                 } else {
@@ -343,7 +347,11 @@ public class VariantDBAdaptorUtils {
 //                System.out.println("excludeList = " + excludeList);
                 returnedFields = new HashSet<>(VariantFields.valuesString());
                 for (String exclude : excludeList) {
-                    returnedFields.remove(VariantFields.get(exclude).fieldName());
+                    VariantFields variantFields = VariantFields.get(exclude);
+                    if (variantFields == null) {
+                        continue;
+                    }
+                    returnedFields.remove(variantFields.fieldName());
                 }
             } else {
                 returnedFields = new HashSet<>(VariantFields.valuesString());
