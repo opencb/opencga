@@ -71,7 +71,9 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     @Override
     public long getId(String userId, String projectStr) throws CatalogException {
         if (StringUtils.isNumeric(projectStr)) {
-            return Long.parseLong(projectStr);
+            long projectId = Long.parseLong(projectStr);
+            projectDBAdaptor.checkId(projectId);
+            return projectId;
         }
 
         String userOwner;
