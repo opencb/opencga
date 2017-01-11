@@ -152,7 +152,6 @@ public class IndexDaemon extends MonitorParentDaemon {
         Path tmpOutdirPath = getJobTemporaryFolder(job.getId());
         Job.JobStatus jobStatus;
 
-        ObjectMap parameters = new ObjectMap(JobDBAdaptor.QueryParams.END_TIME.key(), System.currentTimeMillis());
         ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, this.sessionId);
         if (!tmpOutdirPath.toFile().exists()) {
             jobStatus = new Job.JobStatus(Job.JobStatus.ERROR, "Temporal output directory not found");
@@ -167,6 +166,7 @@ public class IndexDaemon extends MonitorParentDaemon {
         } else {
             String status = executorManager.status(tmpOutdirPath, job);
             if (!status.equalsIgnoreCase(Job.JobStatus.UNKNOWN) && !status.equalsIgnoreCase(Job.JobStatus.RUNNING)) {
+                ObjectMap parameters = new ObjectMap(JobDBAdaptor.QueryParams.END_TIME.key(), System.currentTimeMillis());
 //                variantIndexOutputRecorder.registerStorageETLResults(job, tmpOutdirPath);
                 logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.RUNNING, status);
                 try {
@@ -174,20 +174,25 @@ public class IndexDaemon extends MonitorParentDaemon {
                     // TODO: Should this copy the output files?
 //                    outputRecorder.recordJobOutput;
                     outputRecorder.updateJobStatus(job, new Job.JobStatus(status));
-                    logger.info("Removing temporal directory.");
-                    this.catalogIOManager.deleteDirectory(UriUtils.createUri(tmpOutdirPath.toString()));
+                    if (!status.equals(Job.JobStatus.ERROR)) {
+                        logger.info("Removing temporal directory.");
+                        this.catalogIOManager.deleteDirectory(UriUtils.createUri(tmpOutdirPath.toString()));
+                    } else {
+                        logger.info("Keeping temporal directory from an error job : {}", tmpOutdirPath);
+                    }
                 } catch (CatalogException | URISyntaxException e) {
                     logger.error("Error removing temporal directory", e);
                 } finally {
                     closeSessionId(job);
                 }
+
+                try {
+                    catalogManager.getJobManager().update(job.getId(), parameters, new QueryOptions(), sessionId);
+                } catch (CatalogException e) {
+                    logger.error("Error updating job {} with {}", job.getId(), parameters.toJson(), e);
+                }
             }
 
-            try {
-                catalogManager.getJobManager().update(job.getId(), parameters, new QueryOptions(), sessionId);
-            } catch (CatalogException e) {
-                logger.error("Error updating job {} with {}", job.getId(), parameters.toJson(), e);
-            }
 
 //            Path jobStatusFile = tmpOutdirPath.resolve(JOB_STATUS_FILE);
 //            if (jobStatusFile.toFile().exists()) {
