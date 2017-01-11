@@ -380,7 +380,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         try {
             Files.copy(inputStream, Paths.get(fileUri), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            throw new CatalogIOException("create file failed at copying file " + fileUri);
+            throw new CatalogIOException("create file failed at copying file " + fileUri, e);
         }
     }
 
@@ -588,7 +588,6 @@ public class PosixCatalogIOManager extends CatalogIOManager {
                 throw new CatalogIOException("md5sum failed with exit value : " + p.exitValue() + ". ERROR: " + br.readLine());
             }
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
             //TODO: Handle error in checksum
             throw new CatalogIOException("Checksum error in file " + file, e);
         }
