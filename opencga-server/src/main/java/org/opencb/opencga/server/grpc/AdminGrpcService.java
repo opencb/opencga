@@ -37,7 +37,8 @@ public class AdminGrpcService extends AdminServiceGrpc.AdminServiceImplBase {
 
     @Override
     public void status(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.MapResponse> responseObserver) {
-
+        responseObserver.onNext(ServiceTypesModel.MapResponse.newBuilder().putValues("status", "alive").build());
+        responseObserver.onCompleted();
     }
 
     @Override

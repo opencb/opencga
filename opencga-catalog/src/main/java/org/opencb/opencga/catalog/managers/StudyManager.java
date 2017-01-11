@@ -308,8 +308,12 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             try {
                 uri = catalogIOManager.createStudy(userId, Long.toString(projectId), Long.toString(study.getId()));
             } catch (CatalogIOException e) {
-                e.printStackTrace();
-                studyDBAdaptor.delete(study.getId(), new QueryOptions());
+                try {
+                    QueryOptions deleteOptions = new QueryOptions(DBAdaptor.SKIP_CHECK, true).append(DBAdaptor.FORCE, true);
+                    studyDBAdaptor.delete(study.getId(), deleteOptions);
+                } catch (Exception e1) {
+                    logger.error("Can't delete study after failure creating study", e1);
+                }
                 throw e;
             }
         }

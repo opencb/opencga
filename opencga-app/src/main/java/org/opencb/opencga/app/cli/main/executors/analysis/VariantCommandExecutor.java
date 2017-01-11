@@ -16,17 +16,30 @@
 
 package org.opencb.opencga.app.cli.main.executors.analysis;
 
+import com.google.protobuf.util.JsonFormat;
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.biodata.models.common.protobuf.service.ServiceTypesModel;
+import org.opencb.biodata.models.variant.protobuf.VariantProto;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.server.grpc.AdminServiceGrpc;
+import org.opencb.opencga.server.grpc.GenericServiceModel;
+import org.opencb.opencga.server.grpc.VariantServiceGrpc;
+import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.io.IOException;
+import java.io.PrintStream;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by pfurio on 15/08/16.
@@ -34,6 +47,7 @@ import java.io.IOException;
 public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
     private VariantCommandOptions variantCommandOptions;
+    private ManagedChannel channel = null;
 
     public VariantCommandExecutor(VariantCommandOptions variantCommandOptions) {
         super(variantCommandOptions.commonCommandOptions);
@@ -86,7 +100,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getVariantClient().index(fileIds, o);
     }
 
-    private QueryResponse query() throws CatalogException, IOException {
+    private QueryResponse query() throws CatalogException, IOException, InterruptedException {
         logger.debug("Listing variants of a study.");
 
         VariantCommandOptions.QueryVariantCommandOptions queryCommandOptions = variantCommandOptions.queryCommandOptions;
@@ -156,13 +170,117 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         params.put("histogram", queryCommandOptions.histogram);
         params.putIfNotEmpty("interval", queryCommandOptions.interval);
 
-        if (queryCommandOptions.count) {
-            return openCGAClient.getVariantClient().count(params, options);
-        } else if (queryCommandOptions.samplesMetadata || StringUtils.isNoneEmpty(queryCommandOptions.groupBy)
-                || queryCommandOptions.histogram) {
-            return openCGAClient.getVariantClient().genericQuery(params, options);
+        boolean grpc = usingGrpcMode(queryCommandOptions.mode);
+
+        if (!grpc) {
+            if (queryCommandOptions.count) {
+                return openCGAClient.getVariantClient().count(params, options);
+            } else if (queryCommandOptions.samplesMetadata || StringUtils.isNoneEmpty(queryCommandOptions.groupBy)
+                    || queryCommandOptions.histogram) {
+                return openCGAClient.getVariantClient().genericQuery(params, options);
+            } else {
+                return openCGAClient.getVariantClient().query(params, options);
+            }
         } else {
-            return openCGAClient.getVariantClient().query(params, options);
+            ManagedChannel channel = getManagedChannel();
+
+            // We use a blocking stub to execute the query to gRPC
+            VariantServiceGrpc.VariantServiceBlockingStub variantServiceBlockingStub = VariantServiceGrpc.newBlockingStub(channel);
+
+            Query query = VariantStorageManager.getVariantQuery(params);
+            Map<String, String> queryMap = new HashMap<>();
+            Map<String, String> queryOptionsMap = new HashMap<>();
+            for (String key : params.keySet()) {
+                if (query.containsKey(key)) {
+                    queryMap.put(key, query.getString(key));
+                } else {
+                    queryOptionsMap.put(key, params.getString(key));
+                }
+            }
+
+            // We create the OpenCGA gRPC request object with the query, queryOptions and sessionId
+            GenericServiceModel.Request request = GenericServiceModel.Request.newBuilder()
+                    .putAllQuery(queryMap)
+                    .putAllOptions(queryOptionsMap)
+                    .setSessionId(sessionId)
+                    .build();
+
+            QueryResponse queryResponse;
+            if (queryCommandOptions.count) {
+                ServiceTypesModel.LongResponse countResponse = variantServiceBlockingStub.count(request);
+                ServiceTypesModel.Response response = countResponse.getResponse();
+                queryResponse = new QueryResponse<>("", 0, response.getWarning(), response.getError(), new QueryOptions(params),
+                        Collections.singletonList(
+                                new QueryResult<>(response.getId(), 0, 1, 1, "", "", Collections.singletonList(countResponse.getValue()))));
+                return queryResponse;
+            } else if (queryCommandOptions.samplesMetadata || StringUtils.isNoneEmpty(queryCommandOptions.groupBy) || queryCommandOptions.histogram) {
+                queryResponse = openCGAClient.getVariantClient().genericQuery(params, options);
+            } else {
+                Iterator<VariantProto.Variant> variantIterator = variantServiceBlockingStub.get(request);
+                JsonFormat.Printer printer = JsonFormat.printer();
+                try (PrintStream printStream = new PrintStream(System.out)) {
+                    while (variantIterator.hasNext()) {
+                        VariantProto.Variant next = variantIterator.next();
+                        printStream.println(printer.print(next));
+                    }
+                }
+                queryResponse = null;
+            }
+            channel.shutdown().awaitTermination(2, TimeUnit.SECONDS);
+            return queryResponse;
+        }
+    }
+
+    private boolean usingGrpcMode(String mode) {
+        boolean grpc;
+        switch (mode.toUpperCase()) {
+            case "AUTO":
+                grpc = isGrpcAvailable() == null;
+                if (grpc) {
+                    logger.info("Using GRPC mode");
+                } else {
+                    logger.info("Using REST mode");
+                }
+                break;
+            case "GRPC":
+                RuntimeException exception = isGrpcAvailable();
+                if (exception != null) {
+                    throw exception;
+                }
+                grpc = true;
+                break;
+            case "REST":
+                grpc = false;
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown mode " + mode);
+        }
+        return grpc;
+    }
+
+    protected synchronized ManagedChannel getManagedChannel() {
+        if (channel == null) {
+            // Connecting to the server host and port
+            String grpcServerHost = clientConfiguration.getGrpc().getHost();
+            logger.debug("Connecting to gRPC server at '{}'", grpcServerHost);
+
+            // We create the gRPC channel to the specified server host and port
+            channel = ManagedChannelBuilder.forTarget(grpcServerHost)
+                    .usePlaintext(true)
+                    .build();
+        }
+        return channel;
+    }
+
+    protected RuntimeException isGrpcAvailable() {
+        // Connecting to the server host and port
+        try {
+            ManagedChannel channel = getManagedChannel();
+            AdminServiceGrpc.AdminServiceBlockingStub stub = AdminServiceGrpc.newBlockingStub(channel);
+            ServiceTypesModel.MapResponse status = stub.status(GenericServiceModel.Request.getDefaultInstance());
+            return null;
+        } catch (RuntimeException e) {
+            return e;
         }
     }
 

@@ -314,7 +314,7 @@ public abstract class CatalogIOManager {
                 //createDirectory(projectUri.resolve(SHARED_DATA_FOLDER));
             }
         } catch (CatalogIOException e) {
-            throw new CatalogIOException("createProject(): could not create the project folder: " + e.toString());
+            throw new CatalogIOException("createProject(): could not create the project folder", e);
         }
 
         return projectUri;
@@ -399,7 +399,6 @@ public abstract class CatalogIOManager {
             try {
                 jobUri = createDirectory(jobUri, true);
             } catch (CatalogIOException e) {
-                e.printStackTrace();
                 throw new CatalogIOException("createStudy method: could not create the study folder: " + e.toString(), e);
             }
         } else {
@@ -433,7 +432,7 @@ public abstract class CatalogIOManager {
                 }
             }
         } catch (CatalogIOException e) {
-            throw new CatalogIOException("createFolder(): could not create the directory " + e.toString());
+            throw new CatalogIOException("createFolder(): could not create the directory", e);
         }
 
         return folderUri;

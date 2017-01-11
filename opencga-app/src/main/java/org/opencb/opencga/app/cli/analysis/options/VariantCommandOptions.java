@@ -251,6 +251,9 @@ public class VariantCommandOptions {
         @Parameter(names = {"--interval"}, description = "Histogram interval size. Default:2000", arity = 1)
         public String interval;
 
+        @Parameter(names = {"--mode"}, description = "Communication mode. grpc|rest|auto.")
+        public String mode = "auto";
+
     }
 
 }

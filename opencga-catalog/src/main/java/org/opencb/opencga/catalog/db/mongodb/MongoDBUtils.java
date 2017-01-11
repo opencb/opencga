@@ -34,6 +34,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.DBAdaptor;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -60,13 +61,15 @@ class MongoDBUtils {
     /**
      * SKIP_CHECK is used when deleting a document. If SKIP_CHECK is set to false, the document will be deleted no matter if other
      * documents might depend on that one.
-     */
-    public static final String SKIP_CHECK = "skipCheck";
-    /**
-     * Deprecated constant. Use SKIP_CHECK instead.
+     * @deprecated Use {@link DBAdaptor#SKIP_CHECK}
      */
     @Deprecated
-    public static final String FORCE = "force";
+    public static final String SKIP_CHECK = DBAdaptor.SKIP_CHECK;
+    /**
+     * @deprecated Use {@link DBAdaptor#FORCE} instead.
+     */
+    @Deprecated
+    public static final String FORCE = DBAdaptor.FORCE;
     /**
      * KEEP_OUTPUT_FILES is used when deleting/removing a job. If it is set to true, it will mean that the output files that have been
      * generated with the job going to be deleted/removed will be kept. Otherwise, those files will be also deleted/removed.

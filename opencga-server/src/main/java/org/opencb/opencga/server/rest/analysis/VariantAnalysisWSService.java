@@ -268,15 +268,18 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
     public Response getVariants(@ApiParam(name = "params", value = "Query parameters", required = true) VariantQueryParams params) {
-
+        logger.info("count {} , limit {} , skip {}", count, limit, skip);
         try {
             List<QueryResult> queryResults = new LinkedList<>();
             QueryResult queryResult;
             // Get all query options
-            //new ObjectMap(jsonObjectMapper.writeValueAsString(updateParams))
-            QueryOptions queryOptions = new QueryOptions(jsonObjectMapper.writeValueAsString(params));
-            queryOptions.putAll(uriInfo.getQueryParameters());
-            Query query = VariantStorageManager.getVariantQuery(queryOptions);
+            QueryOptions postParams = new QueryOptions(jsonObjectMapper.writeValueAsString(params));
+            QueryOptions queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
+            Query query = VariantStorageManager.getVariantQuery(postParams);
+
+            logger.info("query " + query.toJson());
+            logger.info("postParams " + postParams.toJson());
+            logger.info("queryOptions " + queryOptions.toJson());
 
             if (count) {
                 queryResult = variantManager.count(query, sessionId);

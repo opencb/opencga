@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.DBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -219,8 +220,14 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         try {
             catalogIOManagerFactory.getDefault().createProject(userId, Long.toString(project.getId()));
         } catch (CatalogIOException e) {
-            e.printStackTrace();
-            projectDBAdaptor.delete(project.getId(), new QueryOptions());
+            try {
+                QueryOptions deleteOptions = new QueryOptions(DBAdaptor.SKIP_CHECK, true).append(DBAdaptor.FORCE, true);
+                projectDBAdaptor.delete(project.getId(), deleteOptions);
+            } catch (Exception e1) {
+                logger.error("Error deleting project from catalog after failing creating the folder in the filesystem", e1);
+                throw e;
+            }
+            throw e;
         }
         userDBAdaptor.updateUserLastModified(userId);
 //        auditManager.recordCreation(AuditRecord.Resource.project, queryResult.first().getId(), userId, queryResult.first(), null, null);
