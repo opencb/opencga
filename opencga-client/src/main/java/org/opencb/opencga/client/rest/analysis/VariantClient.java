@@ -27,10 +27,11 @@ public class VariantClient extends AbstractParentClient {
         return execute(VARIANT_URL, "index", params, GET, Job.class);
     }
 
-    public QueryResponse<Variant> query(ObjectMap bodyParams, QueryOptions options) throws CatalogException, IOException {
-        ObjectMap params = new ObjectMap(options);
-        params.putIfNotNull("body", bodyParams);
-        return execute(VARIANT_URL, "query", params, POST, Variant.class);
+    public QueryResponse<Variant> query(ObjectMap params, QueryOptions options) throws CatalogException, IOException {
+        if (options != null) {
+            params.putAll(options);
+        }
+        return execute(VARIANT_URL, "query", params, GET, Variant.class);
     }
 
     public QueryResponse<Long> count(ObjectMap bodyParams, QueryOptions options) throws CatalogException, IOException {

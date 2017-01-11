@@ -112,6 +112,11 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
             if (StringUtils.isNotEmpty(sessionId)) {
                 Map<String, List<String>> studies = new HashMap<>();
                 QueryResponse<Project> projects = openCGAClient.getUserClient().getProjects(QueryOptions.empty());
+
+                if (projects.getResponse().get(0).getNumResults() == 0) {
+                    // We try to fetch shared projects and studies instead when the user does not owe any project or study
+                    projects = openCGAClient.getUserClient().getProjects(new QueryOptions("shared", true));
+                }
                 for (Project project : projects.getResponse().get(0).getResult()) {
                     if (!studies.containsKey(project.getAlias())) {
                         studies.put(project.getAlias(), new ArrayList<>());

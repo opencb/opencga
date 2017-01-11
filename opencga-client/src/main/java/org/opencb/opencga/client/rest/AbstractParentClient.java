@@ -19,6 +19,7 @@ package org.opencb.opencga.client.rest;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
@@ -56,7 +57,9 @@ public abstract class AbstractParentClient {
 
     private static ObjectMapper jsonObjectMapper;
 
-    private static final int BATCH_SIZE = 2000;
+    private static int timeout = 10000;
+    private static int batchSize = 2000;
+    private static int defaultLimit = 2000;
     private static final int DEFAULT_SKIP = 0;
     protected static final String GET = "GET";
     protected static final String POST = "POST";
@@ -75,6 +78,18 @@ public abstract class AbstractParentClient {
         this.logger = LoggerFactory.getLogger(this.getClass().toString());
         this.client = ClientBuilder.newClient();
         jsonObjectMapper = new ObjectMapper();
+
+        if (configuration.getRest() != null) {
+            if (configuration.getRest().getTimeout() > 0) {
+                timeout = configuration.getRest().getTimeout();
+            }
+            if (configuration.getRest().getBatchQuerySize() > 0) {
+                batchSize = configuration.getRest().getBatchQuerySize();
+            }
+            if (configuration.getRest().getDefaultLimit() > 0) {
+                defaultLimit = configuration.getRest().getDefaultLimit();
+            }
+        }
     }
 
     protected <T> QueryResponse<T> execute(String category, String action, Map<String, Object> params, String method, Class<T> clazz)
@@ -105,6 +120,9 @@ public abstract class AbstractParentClient {
 //            }
 //        }
 
+        client.property(ClientProperties.CONNECT_TIMEOUT, 1000);
+        client.property(ClientProperties.READ_TIMEOUT, timeout);
+
         // Build the basic URL
         WebTarget path = client
                 .target(configuration.getRest().getHost())
@@ -130,8 +148,8 @@ public abstract class AbstractParentClient {
         // Add the last URL part, the 'action'
         path = path.path(action);
 
-        int numRequiredFeatures = params.getInt(QueryOptions.LIMIT, Integer.MAX_VALUE);
-        int limit = Math.min(numRequiredFeatures, BATCH_SIZE);
+        int numRequiredFeatures = params.getInt(QueryOptions.LIMIT, defaultLimit);
+        int limit = Math.min(numRequiredFeatures, batchSize);
 
         int skip = params.getInt(QueryOptions.SKIP, DEFAULT_SKIP);
 
@@ -146,6 +164,7 @@ public abstract class AbstractParentClient {
         while (true) {
             params.put(QueryOptions.SKIP, skip);
             params.put(QueryOptions.LIMIT, limit);
+            params.put(QueryOptions.TIMEOUT, timeout);
 
             if (!action.equals("upload")) {
                 queryResponse = callRest(path, params, clazz, method);
@@ -170,8 +189,8 @@ public abstract class AbstractParentClient {
 
             // DO NOT CHANGE THE ORDER OF THE FOLLOWING CODE
             skip += numResults;
-            if (skip + BATCH_SIZE < numRequiredFeatures) {
-                limit = BATCH_SIZE;
+            if (skip + batchSize < numRequiredFeatures) {
+                limit = batchSize;
             } else {
                 limit = numRequiredFeatures - numTotalResults;
             }
