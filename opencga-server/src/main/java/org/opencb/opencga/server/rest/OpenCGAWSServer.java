@@ -352,6 +352,9 @@ public class OpenCGAWSServer {
                 case QueryOptions.LIMIT:
                     limit = Integer.parseInt(value);
                     break;
+                case QueryOptions.TIMEOUT:
+                    queryOptions.put(entry.getKey(), Integer.parseInt(value));
+                    break;
                 case QueryOptions.SKIP:
                     int skip = Integer.parseInt(value);
                     queryOptions.put(entry.getKey(), (skip >= 0) ? skip : -1);
