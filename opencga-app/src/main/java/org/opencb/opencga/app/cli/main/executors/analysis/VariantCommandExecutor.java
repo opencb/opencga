@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.server.grpc.AdminServiceGrpc;
 import org.opencb.opencga.server.grpc.GenericServiceModel;
 import org.opencb.opencga.server.grpc.VariantServiceGrpc;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
@@ -46,6 +47,7 @@ import java.util.concurrent.TimeUnit;
 public class VariantCommandExecutor extends OpencgaCommandExecutor {
 
     private VariantCommandOptions variantCommandOptions;
+    private ManagedChannel channel = null;
 
     public VariantCommandExecutor(VariantCommandOptions variantCommandOptions) {
         super(variantCommandOptions.commonCommandOptions);
@@ -168,7 +170,9 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         params.put("histogram", queryCommandOptions.histogram);
         params.putIfNotEmpty("interval", queryCommandOptions.interval);
 
-        if (!queryCommandOptions.grpc) {
+        boolean grpc = usingGrpcMode(queryCommandOptions.mode);
+
+        if (!grpc) {
             if (queryCommandOptions.count) {
                 return openCGAClient.getVariantClient().count(params, options);
             } else if (queryCommandOptions.samplesMetadata || StringUtils.isNoneEmpty(queryCommandOptions.groupBy)
@@ -178,15 +182,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                 return openCGAClient.getVariantClient().query(params, options);
             }
         } else {
-
-            // Connecting to the server host and port
-            String grpcServerHost = clientConfiguration.getGrpc().getHost();
-            logger.debug("Connecting to gRPC server at '{}'", grpcServerHost);
-
-            // We create the gRPC channel to the specified server host and port
-            ManagedChannel channel = ManagedChannelBuilder.forTarget(grpcServerHost)
-                    .usePlaintext(true)
-                    .build();
+            ManagedChannel channel = getManagedChannel();
 
             // We use a blocking stub to execute the query to gRPC
             VariantServiceGrpc.VariantServiceBlockingStub variantServiceBlockingStub = VariantServiceGrpc.newBlockingStub(channel);
@@ -232,6 +228,59 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             }
             channel.shutdown().awaitTermination(2, TimeUnit.SECONDS);
             return queryResponse;
+        }
+    }
+
+    private boolean usingGrpcMode(String mode) {
+        boolean grpc;
+        switch (mode.toUpperCase()) {
+            case "AUTO":
+                grpc = isGrpcAvailable() == null;
+                if (grpc) {
+                    logger.info("Using GRPC mode");
+                } else {
+                    logger.info("Using REST mode");
+                }
+                break;
+            case "GRPC":
+                RuntimeException exception = isGrpcAvailable();
+                if (exception != null) {
+                    throw exception;
+                }
+                grpc = true;
+                break;
+            case "REST":
+                grpc = false;
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown mode " + mode);
+        }
+        return grpc;
+    }
+
+    protected synchronized ManagedChannel getManagedChannel() {
+        if (channel == null) {
+            // Connecting to the server host and port
+            String grpcServerHost = clientConfiguration.getGrpc().getHost();
+            logger.debug("Connecting to gRPC server at '{}'", grpcServerHost);
+
+            // We create the gRPC channel to the specified server host and port
+            channel = ManagedChannelBuilder.forTarget(grpcServerHost)
+                    .usePlaintext(true)
+                    .build();
+        }
+        return channel;
+    }
+
+    protected RuntimeException isGrpcAvailable() {
+        // Connecting to the server host and port
+        try {
+            ManagedChannel channel = getManagedChannel();
+            AdminServiceGrpc.AdminServiceBlockingStub stub = AdminServiceGrpc.newBlockingStub(channel);
+            ServiceTypesModel.MapResponse status = stub.status(GenericServiceModel.Request.getDefaultInstance());
+            return null;
+        } catch (RuntimeException e) {
+            return e;
         }
     }
 

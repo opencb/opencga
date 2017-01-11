@@ -450,7 +450,7 @@ public class VariantStorageManager extends StorageManager {
         return regions;
     }
 
-    public static Query getVariantQuery(QueryOptions queryOptions) {
+    public static <T extends ObjectMap> Query getVariantQuery(T queryOptions) {
         Query query = new Query();
 
         for (VariantQueryParams queryParams : VariantQueryParams.values()) {
