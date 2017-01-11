@@ -18,6 +18,7 @@ package org.opencb.opencga.client.rest.catalog;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
@@ -40,18 +41,11 @@ public class IndividualClient extends AnnotationClient<Individual, IndividualAcl
         this.aclClass = IndividualAclEntry.class;
     }
 
-    public QueryResponse<Individual> create(String studyId, String individualName, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "study", studyId, "name", individualName);
-        return execute(INDIVIDUALS_URL, "create", params, GET, Individual.class);
-    }
-
-    public QueryResponse<Individual> annotate(String individualId, String annotateSetName, ObjectMap params)
-            throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "annotateSetName", annotateSetName);
-        if (params.containsKey("method") && params.get("method").equals("GET")) {
-                execute(INDIVIDUALS_URL, individualId, "annotate", params, GET, Individual.class);
-        }
-        return execute(INDIVIDUALS_URL, individualId, "annotate", params, POST, Individual.class);
+    public QueryResponse<Individual> create(String studyId, ObjectMap bodyParams) throws CatalogException, IOException {
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull(IndividualDBAdaptor.QueryParams.STUDY.key(), studyId);
+        params.putIfNotNull("body", bodyParams);
+        return execute(INDIVIDUALS_URL, "create", params, POST, Individual.class);
     }
 
     public QueryResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws CatalogException, IOException {

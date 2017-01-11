@@ -134,7 +134,7 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Creating individual");
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.STUDY.key(), individualsCommandOptions.createCommandOptions.study);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.NAME.key(), individualsCommandOptions.createCommandOptions.name);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.createCommandOptions.family);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), individualsCommandOptions.createCommandOptions.fatherId);
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.MOTHER_ID.key(), individualsCommandOptions.createCommandOptions.motherId);
@@ -149,27 +149,38 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         }
 
         params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.createCommandOptions.ethnicity);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_COMMON_NAME.key(),
-                individualsCommandOptions.createCommandOptions.speciesCommonName);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_SCIENTIFIC_NAME.key(),
-                individualsCommandOptions.createCommandOptions.speciesScientificName);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.SPECIES_TAXONOMY_CODE.key(),
-                individualsCommandOptions.createCommandOptions.speciesTaxonomyCode);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_NAME.key(),
-                individualsCommandOptions.createCommandOptions.populationName);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_SUBPOPULATION.key(),
-                individualsCommandOptions.createCommandOptions.populationSubpopulation);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.POPULATION_DESCRIPTION.key(),
-                individualsCommandOptions.createCommandOptions.populationDescription);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(),
-                individualsCommandOptions.createCommandOptions.karyotypicSex);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(),
-                individualsCommandOptions.createCommandOptions.lifeStatus);
-        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(),
-                individualsCommandOptions.createCommandOptions.affectationStatus);
 
-        return openCGAClient.getIndividualClient().create(individualsCommandOptions.createCommandOptions.study,
-                individualsCommandOptions.createCommandOptions.name, params);
+        IndividualCommandOptions.CreateCommandOptions commandOptions = individualsCommandOptions.createCommandOptions;
+
+        Individual.Species species = new Individual.Species();
+        if (commandOptions.speciesCommonName != null) {
+            species.setCommonName(commandOptions.speciesCommonName);
+        }
+        if (commandOptions.speciesScientificName != null) {
+            species.setScientificName(commandOptions.speciesScientificName);
+        }
+        if (commandOptions.speciesTaxonomyCode != null) {
+            species.setTaxonomyCode(commandOptions.speciesTaxonomyCode);
+        }
+        params.put(IndividualDBAdaptor.QueryParams.SPECIES.key(), species);
+
+        Individual.Population population = new Individual.Population();
+        if (commandOptions.populationName != null) {
+            population.setName(commandOptions.populationName);
+        }
+        if (commandOptions.populationSubpopulation != null) {
+            population.setSubpopulation(commandOptions.populationSubpopulation);
+        }
+        if (commandOptions.populationDescription != null) {
+            population.setDescription(commandOptions.populationDescription);
+        }
+        params.put("population", population);
+
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(), commandOptions.karyotypicSex);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(), commandOptions.lifeStatus);
+        params.putIfNotEmpty(IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), commandOptions.affectationStatus);
+
+        return openCGAClient.getIndividualClient().create(commandOptions.study, params);
     }
 
     private QueryResponse<Individual> info() throws CatalogException, IOException {

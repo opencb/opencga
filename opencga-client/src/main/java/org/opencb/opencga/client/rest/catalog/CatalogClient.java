@@ -60,6 +60,7 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
             throws CatalogException, IOException {
         //TODO Check that everything is correct
         if (params.containsKey("method") && params.get("method").equals("GET")) {
+            params.remove("method");
             return execute(category, id, "update", params, GET, clazz);
         }
         ObjectMapper mapper = new ObjectMapper();

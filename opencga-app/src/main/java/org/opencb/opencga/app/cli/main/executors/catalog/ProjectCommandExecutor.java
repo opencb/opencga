@@ -78,6 +78,8 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap params = new ObjectMap();
         // First we populate the organism information using the client configuration
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.NAME.key(), projectsCommandOptions.createCommandOptions.name);
+        params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ALIAS.key(), projectsCommandOptions.createCommandOptions.alias);
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(),
                 clientConfiguration.getOrganism().getScientificName());
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(), clientConfiguration.getOrganism().getCommonName());
@@ -97,8 +99,7 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.createCommandOptions.description);
         params.putIfNotEmpty(ProjectDBAdaptor.QueryParams.ORGANIZATION.key(), projectsCommandOptions.createCommandOptions.organization);
 
-        return openCGAClient.getProjectClient().create(projectsCommandOptions.createCommandOptions.name,
-                projectsCommandOptions.createCommandOptions.alias, params);
+        return openCGAClient.getProjectClient().create(params);
     }
 
     private QueryResponse<Project> info() throws CatalogException, IOException {
