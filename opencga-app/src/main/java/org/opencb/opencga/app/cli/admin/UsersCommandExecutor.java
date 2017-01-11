@@ -154,10 +154,10 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         CatalogManager catalogManager = new CatalogManager(configuration);
         catalogManager.getUserManager().validatePassword("admin", configuration.getAdmin().getPassword(), true);
 
-        User user = catalogManager.createUser(usersCommandOptions.createUserCommandOptions.userId,
+        User user = catalogManager.getUserManager().create(usersCommandOptions.createUserCommandOptions.userId,
                 usersCommandOptions.createUserCommandOptions.userName, usersCommandOptions.createUserCommandOptions.userEmail,
                 usersCommandOptions.createUserCommandOptions.userPassword, usersCommandOptions.createUserCommandOptions.userOrganization,
-                userQuota, null).first();
+                userQuota, usersCommandOptions.createUserCommandOptions.type, null).first();
         System.out.println("The user has been successfully created: " + user.toString() + "\n");
     }
 
