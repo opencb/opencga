@@ -360,9 +360,12 @@ public class OpenCGAWSServer {
                     queryOptions.put(entry.getKey(), value);
                     break;
                 case "count":
+                    count = Boolean.parseBoolean(value);
+                    queryOptions.put(entry.getKey(), count);
+                    break;
                 case "lazy":
-                    boolean booleanValue = Boolean.parseBoolean(value);
-                    queryOptions.put(entry.getKey(), booleanValue);
+                    lazy = Boolean.parseBoolean(value);
+                    queryOptions.put(entry.getKey(), lazy);
                     break;
                 default:
                     // Query

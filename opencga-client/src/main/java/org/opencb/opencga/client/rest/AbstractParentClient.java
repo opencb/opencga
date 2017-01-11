@@ -164,7 +164,7 @@ public abstract class AbstractParentClient {
             }
 
             int numTotalResults = queryResponse.getResponse().isEmpty() ? 0 : finalQueryResponse.getResponse().get(0).getNumResults();
-            if (numResults < limit || numTotalResults == numRequiredFeatures || numResults == 0) {
+            if (numResults < limit || numTotalResults >= numRequiredFeatures || numResults == 0) {
                 break;
             }
 
