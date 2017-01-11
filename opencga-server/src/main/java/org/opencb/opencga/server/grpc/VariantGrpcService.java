@@ -36,8 +36,8 @@ import org.slf4j.LoggerFactory;
 public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBase {
 
     private GenericGrpcService genericGrpcService;
+
     private final Logger logger = LoggerFactory.getLogger(getClass());
-    private final VariantAvroToVariantProtoConverter converter = new VariantAvroToVariantProtoConverter();
 
     public VariantGrpcService(Configuration configuration, StorageConfiguration storageConfiguration) {
         genericGrpcService = new GenericGrpcService(configuration, storageConfiguration);
@@ -65,13 +65,14 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
     @Override
     public void get(GenericServiceModel.Request request, StreamObserver<VariantProto.Variant> responseObserver) {
         try {
+            VariantAvroToVariantProtoConverter converter = new VariantAvroToVariantProtoConverter();
             Query query = genericGrpcService.createQuery(request);
             QueryOptions queryOptions = genericGrpcService.createQueryOptions(request);
             logger.info("Get variants query : {} , queryOptions : {}" , query.toJson(), queryOptions.toJson());
             try (VariantDBIterator iterator = genericGrpcService.variantStorageManager.iterator(query, queryOptions, request.getSessionId())) {
                 while (iterator.hasNext()) {
                     Variant variant = iterator.next();
-                    responseObserver.onNext(convert(variant));
+                    responseObserver.onNext(converter.convert(variant));
                 }
             }
             responseObserver.onCompleted();
@@ -84,10 +85,6 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
     @Override
     public void groupBy(GenericServiceModel.Request request, StreamObserver<ServiceTypesModel.GroupResponse> responseObserver) {
         super.groupBy(request, responseObserver);
-    }
-
-    private VariantProto.Variant convert(org.opencb.biodata.models.variant.Variant var) {
-        return converter.convert(var);
     }
 
 }

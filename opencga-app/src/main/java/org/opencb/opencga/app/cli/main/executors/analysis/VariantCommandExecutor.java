@@ -187,6 +187,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
             // We use a blocking stub to execute the query to gRPC
             VariantServiceGrpc.VariantServiceBlockingStub variantServiceBlockingStub = VariantServiceGrpc.newBlockingStub(channel);
 
+            params.putAll(options);
             Query query = VariantStorageManager.getVariantQuery(params);
             Map<String, String> queryMap = new HashMap<>();
             Map<String, String> queryOptionsMap = new HashMap<>();
