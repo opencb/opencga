@@ -192,6 +192,8 @@ public abstract class CommandExecutor {
             RollingFileAppender rollingFileAppender = new RollingFileAppender(stderr.getLayout(), this.configuration.getLogFile(), true);
             rootLogger.addAppender(rollingFileAppender);
             rollingFileAppender.setThreshold(Level.toLevel(configuration.getLogLevel(), Level.INFO));
+            rollingFileAppender.setMaxFileSize("100MB");
+            rollingFileAppender.setMaxBackupIndex(10);
         }
     }
 
