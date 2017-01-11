@@ -20,12 +20,14 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 
 /**
@@ -43,9 +45,14 @@ public class CohortClient extends AnnotationClient<Cohort, CohortAclEntry> {
         this.aclClass = CohortAclEntry.class;
     }
 
-    public QueryResponse<Cohort> create(String studyId, String cohortName, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "study", studyId, "name", cohortName);
-        return execute(COHORT_URL, "create", params, GET, Cohort.class);
+    public QueryResponse<Cohort> create(String studyId, @Nullable String variableSetId, @Nullable String variable, ObjectMap bodyParams)
+            throws CatalogException, IOException {
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull("body", bodyParams);
+        params.putIfNotNull(CohortDBAdaptor.QueryParams.STUDY.key(), studyId);
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId);
+        params.putIfNotEmpty(variable, variable);
+        return execute(COHORT_URL, "create", params, POST, Cohort.class);
     }
 
     public QueryResponse<Object> getStats(String cohortId, Query query, QueryOptions options) throws CatalogException, IOException {
