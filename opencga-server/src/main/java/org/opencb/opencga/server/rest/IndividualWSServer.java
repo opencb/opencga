@@ -134,10 +134,28 @@ public class IndividualWSServer extends OpenCGAWSServer {
                 studyStr = studyIdStr;
             }
             long studyId = catalogManager.getStudyId(studyStr, sessionId);
+
+            String scientificName = "";
+            String commonName = "";
+            String taxonomyCode = "";
+            if (params.species != null) {
+                commonName = params.species.getCommonName();
+                scientificName = params.species.getScientificName();
+                taxonomyCode = params.species.getTaxonomyCode();
+            }
+
+            String populationName = "";
+            String subpopulationName = "";
+            String description = "";
+            if (params.population != null) {
+                populationName = params.population.getName();
+                subpopulationName = params.population.getSubpopulation();
+                description = params.population.getDescription();
+            }
+
             QueryResult<Individual> queryResult = individualManager.create(studyId, params.name, params.family, params.fatherId,
-                    params.motherId, params.sex, params.ethnicity, params.species.getCommonName(), params.species.getScientificName(),
-                    params.species.getTaxonomyCode(), params.population.getName(), params.population.getSubpopulation(),
-                    params.population.getDescription(), params.karyotypicSex, params.lifeStatus, params.affectationStatus, queryOptions,
+                    params.motherId, params.sex, params.ethnicity, commonName, scientificName, taxonomyCode, populationName,
+                    subpopulationName, description, params.karyotypicSex, params.lifeStatus, params.affectationStatus, queryOptions,
                     sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {

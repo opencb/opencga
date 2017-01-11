@@ -120,7 +120,8 @@ public class SampleCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-n", "--name"}, description = "Name for the sample, this must be unique in the study", required = true, arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "Name for the sample, this must be unique in the study", required = true,
+                arity = 1)
         public String name;
 
         @Parameter(names = {"--source"}, description = "Source from which this sample is created such as VCF file", arity = 1)

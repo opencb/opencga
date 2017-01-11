@@ -136,12 +136,12 @@ public class SampleCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Sample> create() throws CatalogException, IOException {
         logger.debug("Creating sample");
 
-        ObjectMap objectMap = new ObjectMap();
-        objectMap.putIfNotEmpty(SampleDBAdaptor.QueryParams.DESCRIPTION.key(), samplesCommandOptions.createCommandOptions.description);
-        objectMap.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.createCommandOptions.source);
-        objectMap.putIfNotEmpty(SampleDBAdaptor.QueryParams.STUDY.key(), samplesCommandOptions.createCommandOptions.study);
-        return openCGAClient.getSampleClient().create(samplesCommandOptions.createCommandOptions.study,
-                samplesCommandOptions.createCommandOptions.name, objectMap);
+        ObjectMap params = new ObjectMap();
+        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.DESCRIPTION.key(), samplesCommandOptions.createCommandOptions.description);
+        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.createCommandOptions.source);
+        params.putIfNotEmpty(SampleDBAdaptor.QueryParams.NAME.key(), samplesCommandOptions.createCommandOptions.name);
+
+        return openCGAClient.getSampleClient().create(samplesCommandOptions.createCommandOptions.study, params);
     }
 
     private QueryResponse<Sample> load() throws CatalogException, IOException {

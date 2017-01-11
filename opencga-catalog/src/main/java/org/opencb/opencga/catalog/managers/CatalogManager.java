@@ -345,16 +345,7 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<User> createUser(String id, String name, String email, String password, String organization, Long quota,
                                         QueryOptions options) throws CatalogException {
-//        catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(catalogConfiguration.getAdmin().getPassword());
-        return userManager.create(id, name, email, password, organization, quota, options,
-                configuration.getAdmin().getPassword());
-    }
-
-    @Deprecated
-    public QueryResult<User> createUser(String id, String name, String email, String password, String organization, Long quota,
-                                        QueryOptions options, String sessionId)
-            throws CatalogException {
-        return userManager.create(id, name, email, password, organization, quota, options, sessionId);
+        return userManager.create(id, name, email, password, organization, quota, Account.FULL, options);
     }
 
     @Deprecated
