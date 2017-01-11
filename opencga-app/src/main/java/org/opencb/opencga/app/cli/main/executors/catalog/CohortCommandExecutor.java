@@ -160,31 +160,14 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Cohort> create() throws CatalogException, IOException {
         logger.debug("Creating a new cohort");
 
-        String studyId = cohortsCommandOptions.createCommandOptions.study;
-        String cohortName = cohortsCommandOptions.createCommandOptions.name;
-        String variableSetId = cohortsCommandOptions.createCommandOptions.variableSetId;
-        String sampleIds = cohortsCommandOptions.createCommandOptions.sampleIds;
-        String variable = cohortsCommandOptions.createCommandOptions.variable;
-
         ObjectMap params = new ObjectMap();
-        params.append(CohortDBAdaptor.QueryParams.TYPE.key(), cohortsCommandOptions.createCommandOptions.type);
-        params.append(CohortDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), cohortsCommandOptions.createCommandOptions.variableSetId);
-        params.append(CohortDBAdaptor.QueryParams.DESCRIPTION.key(), cohortsCommandOptions.createCommandOptions.description);
-        params.append("sampleIds", sampleIds);
-        params.append("variable", variable);
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.NAME.key(), cohortsCommandOptions.createCommandOptions.name);
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.createCommandOptions.sampleIds);
+        params.putIfNotNull(CohortDBAdaptor.QueryParams.TYPE.key(), cohortsCommandOptions.createCommandOptions.type);
+        params.putIfNotEmpty(CohortDBAdaptor.QueryParams.DESCRIPTION.key(), cohortsCommandOptions.createCommandOptions.description);
 
-        if (cohortName == null){
-            if(sampleIds != null) {
-                logger.warn("Error: The name parameter is required when you create the cohort from samples");
-                return null;
-            }else if (variableSetId != null && variable != null){
-                cohortName = "Cohort";
-            }else{
-                logger.warn("Error: Please, Insert the corrects params for create the cohort.");
-                return null;
-            }
-        }
-        return openCGAClient.getCohortClient().create(studyId, cohortName, params);
+        return openCGAClient.getCohortClient().create(cohortsCommandOptions.createCommandOptions.study,
+                cohortsCommandOptions.createCommandOptions.variableSetId, cohortsCommandOptions.createCommandOptions.variable, params);
     }
 
     private QueryResponse<Cohort> info() throws CatalogException, IOException {

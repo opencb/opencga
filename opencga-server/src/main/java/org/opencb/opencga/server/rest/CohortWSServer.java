@@ -92,7 +92,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                     Query samplesQuery = new Query(SampleDBAdaptor.QueryParams.ANNOTATION.key() + "." + variableName, s)
                             .append("variableSetId", variableSetId);
 
-                    cohorts.add(createCohort(studyId, s, type, cohortDescription, samplesQuery, samplesQOptions));
+                    cohorts.add(createCohort(studyId, cohortName + "_" + s, type, cohortDescription, samplesQuery, samplesQOptions));
                 }
             } else {
                 //Create empty cohort
@@ -114,25 +114,29 @@ public class CohortWSServer extends OpenCGAWSServer {
                                              String studyIdStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                         @QueryParam("study") String studyStr,
-                                 @ApiParam(value = "name", required = true) @QueryParam("name") String cohortName,
+                                 @ApiParam(value = "Name of the cohort.", required = true) @QueryParam ("name") String cohortName,
                                  @ApiParam(value = "type", required = false) @QueryParam("type") @DefaultValue("COLLECTION")
                                              Study.Type type,
                                  @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
                                  @ApiParam(value = "description", required = false) @QueryParam("description") String cohortDescription,
-                                 @ApiParam(value = "sampleIds", required = false) @QueryParam("sampleIds") String sampleIdsStr,
+                                 @ApiParam(value = "(DEPRECATED) sampleIds", required = false) @QueryParam("sampleIds") String sampleIdsStr,
+                                 @ApiParam(value = "Samples", required = false) @QueryParam("samples") String samplesStr,
                                  @ApiParam(value = "Variable name", required = false) @QueryParam("variable") String variableName) {
 
         if (StringUtils.isNotEmpty(studyIdStr)) {
             studyStr = studyIdStr;
         }
-        return createCohort(studyStr, cohortName, type, variableSetId, cohortDescription, sampleIdsStr, variableName);
+        if (StringUtils.isNotEmpty(sampleIdsStr)) {
+            samplesStr = sampleIdsStr;
+        }
+        return createCohort(studyStr, cohortName, type, variableSetId, cohortDescription, samplesStr, variableName);
     }
 
     private static class CohortParameters {
         public String name;
         public Study.Type type;
         public String description;
-        public String sampleIds;
+        public String samples;
     }
 
     @POST
@@ -150,7 +154,8 @@ public class CohortWSServer extends OpenCGAWSServer {
         if (StringUtils.isNotEmpty(studyIdStr)) {
             studyStr = studyIdStr;
         }
-        return createCohort(studyStr, params.name, params.type, variableSetId, params.description, params.sampleIds, variableName);
+
+        return createCohort(studyStr, params.name, params.type, variableSetId, params.description, params.samples, variableName);
     }
 
     @GET
