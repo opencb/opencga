@@ -210,6 +210,9 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         }
     }
 
+    /**
+     * Do not use native values (like boolean or int), so they are null by default.
+     */
     private static class VariantQueryParams {
         public String ids;
         public String region;
@@ -227,7 +230,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         public String mgf;
         public String missingAlleles;
         public String missingGenotypes;
-        public boolean annotationExists;
+        public Boolean annotationExists;
         public String genotype;
         public String annot_ct;
         public String annot_xref;
@@ -249,12 +252,12 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         public String drug;
         public String functional;
         public String unknownGenotype;
-        public boolean samplesMetadata;
-        public boolean sort;
+        public Boolean samplesMetadata;
+        public Boolean sort;
         public String groupBy;
-        public boolean histogram;
-        public int interval;
-        public boolean merge;
+        public Boolean histogram;
+        public Integer interval;
+        public Boolean merge;
     }
 
     @POST

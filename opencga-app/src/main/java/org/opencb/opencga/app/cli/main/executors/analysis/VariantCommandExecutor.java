@@ -106,7 +106,6 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         VariantCommandOptions.QueryVariantCommandOptions queryCommandOptions = variantCommandOptions.queryCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putAll(variantCommandOptions.commonCommandOptions.params);
 
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ID.key(), queryCommandOptions.ids);
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.REGION.key(), queryCommandOptions.region);
@@ -164,6 +163,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         options.putIfNotEmpty(QueryOptions.LIMIT, queryCommandOptions.limit);
         options.putIfNotEmpty(QueryOptions.SKIP, queryCommandOptions.skip);
         options.put("count", queryCommandOptions.count);
+        options.putAll(variantCommandOptions.commonCommandOptions.params);
 
         params.put("samplesMetadata", queryCommandOptions.samplesMetadata);
         params.putIfNotEmpty("groupBy", queryCommandOptions.groupBy);
