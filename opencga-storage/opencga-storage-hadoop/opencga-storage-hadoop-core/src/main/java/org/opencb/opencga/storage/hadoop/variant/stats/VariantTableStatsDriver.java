@@ -11,8 +11,11 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.AbstractAnalysisTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Collections;
 
 /**
@@ -49,15 +52,15 @@ public class VariantTableStatsDriver extends AbstractAnalysisTableDriver {
     }
 
     @Override
-    protected void preExecution() throws IOException, StorageEngineException {
-        super.preExecution();
+    protected void preExecution(String variantTable) throws IOException, StorageEngineException {
         String defaultCohortName = StudyEntry.DEFAULT_COHORT;
-        // TODO needs to be remove after integration
+        // TODO needs to be removed after integration
 
         int studyId = getHelper().getStudyId();
         long lock = getStudyConfigurationManager().lockStudy(studyId);
+        StudyConfiguration sc = null;
         try {
-            StudyConfiguration sc = loadStudyConfiguration();
+            sc = loadStudyConfiguration();
             BiMap<String, Integer> indexedSamples = StudyConfiguration.getIndexedSamples(sc);
 
             final Integer defaultCohortId;
@@ -78,6 +81,14 @@ public class VariantTableStatsDriver extends AbstractAnalysisTableDriver {
             getStudyConfigurationManager().updateStudyConfiguration(sc, new QueryOptions());
         } finally {
             getStudyConfigurationManager().unLockStudy(studyId, lock);
+        }
+        // update PHOENIX definition with statistic columns
+        VariantPhoenixHelper variantPhoenixHelper = new VariantPhoenixHelper(getHelper());
+        try(Connection connection = variantPhoenixHelper.newJdbcConnection()){
+            variantPhoenixHelper.updateStatsColumns(connection, variantTable, sc);
+        } catch (SQLException | ClassNotFoundException e) {
+            getLog().error("Problems updating PHOENIX table!!!", e);
+            throw new IllegalStateException("Problems updating PHOENIX table", e);
         }
     }
 

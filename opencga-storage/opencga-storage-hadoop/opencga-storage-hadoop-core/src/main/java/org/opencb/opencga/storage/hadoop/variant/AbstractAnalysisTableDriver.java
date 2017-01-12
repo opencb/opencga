@@ -100,7 +100,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         boolean addDependencyJar = conf.getBoolean(GenomeHelper.CONFIG_HBASE_ADD_DEPENDENCY_JARS, true);
         initMapReduceJob(variantTable, job, scan, addDependencyJar);
 
-        preExecution();
+        preExecution(variantTable);
 
         boolean succeed = executeJob(job);
         if (!succeed) {
@@ -112,7 +112,7 @@ public abstract class AbstractAnalysisTableDriver extends Configured implements 
         return succeed ? 0 : 1;
     }
 
-    protected void preExecution() throws IOException, StorageEngineException {
+    protected void preExecution(String variantTable) throws IOException, StorageEngineException {
         // do nothing
     }
 
