@@ -21,15 +21,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
+import org.opencb.opencga.storage.core.manager.variant.operations.StorageOperation;
 import org.opencb.opencga.catalog.models.tool.Manifest;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
-import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.Logger;
 
@@ -122,12 +122,12 @@ public abstract class OpenCGAAnalysis {
 
     //TODO: Return a VariantDBAdaptor which checks catalog permissions
     protected final VariantDBAdaptor getVariantDBAdaptor(long studyId)
-            throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, 
-            StorageManagerException {
+            throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException,
+            StorageEngineException {
 
         StorageManagerFactory storageManagerFactory = this.storageManagerFactory;
         
-        DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
+        DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
         String storageEngine = dataStore.getStorageEngine();
         String dbName = dataStore.getDbName();
 

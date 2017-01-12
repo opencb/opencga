@@ -27,14 +27,13 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.io.VariantAnnotationDBWriter;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
@@ -87,7 +86,7 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
         ANNOTATION_EXISTS("annotationExists", BOOLEAN,
                 "Specify if the variant annotation must exists."),
         ANNOT_CONSEQUENCE_TYPE("annot-ct", TEXT_ARRAY,
-                "Consequence type SO term list. e.g. SO:0000045,SO:0000046"),
+                "Consequence type SO term list. e.g. missense_variant,stop_lost or SO:0001583,SO:0001578"),
         ANNOT_XREF("annot-xref", TEXT_ARRAY,
                 "External references."),
         ANNOT_BIOTYPE("annot-biotype", TEXT_ARRAY,
@@ -169,7 +168,7 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
      * @param dataWriter Deprecated param
      */
     @Deprecated
-    void setDataWriter(DataWriter dataWriter);
+    default void setDataWriter(DataWriter dataWriter) {}
 
     /**
      * This method inserts Variants into the given Study. If the Study already exists then it just adds the new Sample
@@ -309,11 +308,7 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
     QueryResult groupBy(Query query, List<String> fields, QueryOptions options);
 
     default List<Integer> getReturnedStudies(Query query, QueryOptions options) {
-        List<Integer> studyIds = getDBAdaptorUtils().getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options);
-        if (studyIds.isEmpty()) {
-            studyIds = getDBAdaptorUtils().getStudyIds(getStudyConfigurationManager().getStudyNames(options), options);
-        }
-        return studyIds;
+        return getDBAdaptorUtils().getReturnedStudies(query, options);
     }
     /**
      * Returns all the possible samples to be returned by an specific query.
@@ -323,30 +318,13 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
      * @return  Map key: StudyId, value: list of sampleIds
      */
     default Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
-        List<Integer> studyIds = getReturnedStudies(query, options);
-
-        List<String> returnedSamples = query.getAsStringList(VariantQueryParams.RETURNED_SAMPLES.key())
-                .stream().map(s -> s.contains(":") ? s.split(":")[1] : s).collect(Collectors.toList());
-        LinkedHashSet<String> returnedSamplesSet = new LinkedHashSet<>(returnedSamples);
-
-        Map<Integer, List<Integer>> samples = new HashMap<>(studyIds.size());
-        for (Integer studyId : studyIds) {
-            StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(studyId, options).first();
-            if (sc == null) {
-                continue;
-            }
-            LinkedHashMap<String, Integer> returnedSamplesPosition = StudyConfiguration.getReturnedSamplesPosition(sc, returnedSamplesSet);
-            List<Integer> sampleNames = Arrays.asList(new Integer[returnedSamplesPosition.size()]);
-            returnedSamplesPosition.forEach((sample, position) -> sampleNames.set(position, sc.getSampleIds().get(sample)));
-            samples.put(studyId, sampleNames);
-        }
-
-        return samples;
+        return getDBAdaptorUtils().getReturnedSamples(query, options);
     }
 
-    default void preUpdateStats(StudyConfiguration studyConfiguration) throws IOException {}
-
-    QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions);
+    @Deprecated
+    default QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
+        return updateStats(variantStatsWrappers, studyName, queryOptions);
+    }
 
     QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions);
 
@@ -354,13 +332,10 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
 
     QueryResult deleteStats(String studyName, String cohortName, QueryOptions options);
 
+    @Deprecated
     QueryResult addAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
 
     QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
-
-    default VariantAnnotationDBWriter annotationLoader(QueryOptions options) {
-        return new VariantAnnotationDBWriter(this, options, null);
-    }
 
     /**
      * Update custom annotation for all the variants with in a given region.
@@ -373,12 +348,11 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
      */
     QueryResult updateCustomAnnotations(Query query, String name, AdditionalAttribute attribute, QueryOptions options);
 
+    @Deprecated
     QueryResult deleteAnnotation(String annotationId, Query query, QueryOptions queryOptions);
 
 
-    default VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
-        throw new UnsupportedOperationException();
-    }
+    VariantSourceDBAdaptor getVariantSourceDBAdaptor();
 
     StudyConfigurationManager getStudyConfigurationManager();
 

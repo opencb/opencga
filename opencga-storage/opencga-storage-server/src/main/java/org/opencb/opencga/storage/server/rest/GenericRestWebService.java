@@ -31,7 +31,7 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.variant.io.json.*;
+import org.opencb.opencga.storage.core.variant.io.json.mixin.*;
 import org.opencb.opencga.storage.server.common.AuthManager;
 import org.opencb.opencga.storage.server.common.DefaultAuthManager;
 import org.opencb.opencga.storage.server.common.exceptions.NotAuthorizedHostException;
@@ -114,6 +114,7 @@ public class GenericRestWebService {
         // Only one StorageManagerFactory is needed, this acts as a simple Singleton pattern which improves the performance significantly
         if (storageManagerFactory == null) {
             privLogger.debug("Creating the StorageManagerFactory object");
+            // TODO: We will need to pass catalog manager once storage starts doing things over catalog
             storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
         }
 

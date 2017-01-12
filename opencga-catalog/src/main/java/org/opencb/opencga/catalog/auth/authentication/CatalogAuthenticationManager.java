@@ -19,7 +19,7 @@ package org.opencb.opencga.catalog.auth.authentication;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.StringUtils;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.MetaDBAdaptor;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
@@ -39,12 +39,12 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
 
     protected final UserDBAdaptor userDBAdaptor;
     protected final MetaDBAdaptor metaDBAdaptor;
-    protected final CatalogConfiguration catalogConfiguration;
+    protected final Configuration configuration;
 
-    public CatalogAuthenticationManager(DBAdaptorFactory dbAdaptorFactory, CatalogConfiguration catalogConfiguration) {
+    public CatalogAuthenticationManager(DBAdaptorFactory dbAdaptorFactory, Configuration configuration) {
         this.userDBAdaptor = dbAdaptorFactory.getCatalogUserDBAdaptor();
         this.metaDBAdaptor = dbAdaptorFactory.getCatalogMetaDBAdaptor();
-        this.catalogConfiguration = catalogConfiguration;
+        this.configuration = configuration;
     }
 
     public static String cypherPassword(String password) throws CatalogException {
@@ -149,10 +149,10 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
         String mailHost = catalogProperties.getProperty(CatalogManager.CATALOG_MAIL_HOST);
         String mailPort = catalogProperties.getProperty(CatalogManager.CATALOG_MAIL_PORT);
 */
-        String mailUser = catalogConfiguration.getEmailServer().getFrom();
-        String mailPassword = catalogConfiguration.getEmailServer().getPassword();
-        String mailHost = catalogConfiguration.getEmailServer().getHost();
-        String mailPort = catalogConfiguration.getEmailServer().getPort();
+        String mailUser = configuration.getEmail().getFrom();
+        String mailPassword = configuration.getEmail().getPassword();
+        String mailHost = configuration.getEmail().getHost();
+        String mailPort = configuration.getEmail().getPort();
 
         MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort);
 

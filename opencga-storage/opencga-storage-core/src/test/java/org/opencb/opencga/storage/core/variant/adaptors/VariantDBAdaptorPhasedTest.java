@@ -23,24 +23,24 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 
 /**
  * Created on 13/05/16
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public abstract class VariantDBAdaptorPhasedTest extends VariantStorageManagerTestUtils {
+public abstract class VariantDBAdaptorPhasedTest extends VariantStorageBaseTest {
 
 
     @Before
     public void setUp() throws Exception {
         clearDB(DB_NAME);
-        VariantStorageManager variantStorageManager = getVariantStorageManager();
-        ObjectMap options = new ObjectMap(VariantStorageManager.Options.ANNOTATE.key(), false)
-                .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
-                .append(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), "DP,PS");
+        VariantStorageEngine variantStorageManager = getVariantStorageManager();
+        ObjectMap options = new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false)
+                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
+                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DP,PS");
         runDefaultETL(getResourceUri("variant-test-phased.vcf"), variantStorageManager, newStudyConfiguration(), options);
 
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);

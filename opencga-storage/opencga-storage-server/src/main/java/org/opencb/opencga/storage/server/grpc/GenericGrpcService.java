@@ -63,6 +63,7 @@ public class GenericGrpcService {
         // Only one StorageManagerFactory is needed, this acts as a simple Singleton pattern which improves the performance significantly
         if (storageManagerFactory == null) {
             privLogger.debug("Creating the StorageManagerFactory object");
+            // TODO: We will need to pass catalog manager once storage starts doing things over catalog
             storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
         }
 

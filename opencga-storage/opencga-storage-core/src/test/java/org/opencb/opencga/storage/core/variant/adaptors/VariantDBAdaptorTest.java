@@ -28,21 +28,21 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.StorageETLResult;
+import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
-import org.opencb.opencga.storage.core.variant.annotation.CellBaseVariantAnnotator;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
-import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
+import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
@@ -63,7 +63,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Ignore
-public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtils {
+public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     private static final int QUERIES_LIM = 50;
     //    private static final String GENOMES_PHASE_3 = "1000GENOMES_phase_3";
@@ -93,66 +93,72 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             studyConfiguration = newStudyConfiguration();
 //            variantSource = new VariantSource(smallInputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
             clearDB(DB_NAME);
-            ObjectMap params = new ObjectMap(VariantStorageManager.Options.STUDY_TYPE.key(), VariantStudy.StudyType.FAMILY)
-                    .append(VariantStorageManager.Options.ANNOTATE.key(), true)
-                    .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, CellBaseVariantAnnotator.class.getName())
-                    .append(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json")
-                    .append(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
+            ObjectMap params = new ObjectMap(VariantStorageEngine.Options.STUDY_TYPE.key(), VariantStudy.StudyType.FAMILY)
+                    .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
+                    .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, CellBaseRestVariantAnnotator.class.getName())
+                    .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "json")
+                    .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
             params.putAll(getOtherParams());
-            StorageETLResult etlResult = runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration, params);
+            StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration, params);
             source = variantStorageManager.getVariantReaderUtils().readVariantSource(Paths.get(etlResult.getTransformResult().getPath()).toUri());
             NUM_VARIANTS = getExpectedNumLoadedVariants(source);
             fileIndexed = true;
             Integer indexedFileId = studyConfiguration.getIndexedFiles().iterator().next();
 
-            VariantStatisticsManager vsm = new VariantStatisticsManager();
-
-            QueryOptions options = new QueryOptions(VariantStorageManager.Options.STUDY_ID.key(), STUDY_ID)
-                .append(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 100);
-            Iterator<Integer> iterator = studyConfiguration.getSamplesInFiles().get(indexedFileId).iterator();
-
-            /** Create cohorts **/
-            HashSet<String> cohort1 = new HashSet<>();
-            cohort1.add(studyConfiguration.getSampleIds().inverse().get(iterator.next()));
-            cohort1.add(studyConfiguration.getSampleIds().inverse().get(iterator.next()));
-
-            HashSet<String> cohort2 = new HashSet<>();
-            cohort2.add(studyConfiguration.getSampleIds().inverse().get(iterator.next()));
-            cohort2.add(studyConfiguration.getSampleIds().inverse().get(iterator.next()));
-
-            Map<String, Set<String>> cohorts = new HashMap<>();
-            Map<String, Integer> cohortIds = new HashMap<>();
-            cohorts.put("cohort1", cohort1);
-            cohorts.put("cohort2", cohort2);
-            cohortIds.put("cohort1", 10);
-            cohortIds.put("cohort2", 11);
 
             //Calculate stats
-            if (getOtherParams().getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key(), true)) {
-                URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort1.cohort2.stats"), cohorts, cohortIds, studyConfiguration,
-                        options);
-                vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
+            if (getOtherParams().getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)) {
+                QueryOptions options = new QueryOptions(VariantStorageEngine.Options.STUDY_ID.key(), STUDY_ID)
+                        .append(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100)
+                        .append(DefaultVariantStatisticsManager.OUTPUT, outputUri)
+                        .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, "cohort1.cohort2.stats");
+                Iterator<Integer> iterator = studyConfiguration.getSamplesInFiles().get(indexedFileId).iterator();
+
+                /** Create cohorts **/
+                HashSet<Integer> cohort1 = new HashSet<>();
+                cohort1.add(iterator.next());
+                cohort1.add(iterator.next());
+
+                HashSet<Integer> cohort2 = new HashSet<>();
+                cohort2.add(iterator.next());
+                cohort2.add(iterator.next());
+
+                Map<String, Integer> cohortIds = new HashMap<>();
+                cohortIds.put("cohort1", 10);
+                cohortIds.put("cohort2", 11);
+
+                studyConfiguration.getCohortIds().putAll(cohortIds);
+                studyConfiguration.getCohorts().put(10, cohort1);
+                studyConfiguration.getCohorts().put(11, cohort2);
+
+                dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, QueryOptions.empty());
+
+                variantStorageManager.calculateStats(studyConfiguration.getStudyName(),
+                        new ArrayList<>(cohortIds.keySet()), DB_NAME, options);
+
             }
+            if (params.getBoolean(VariantStorageEngine.Options.ANNOTATE.key())) {
+                for (int i = 0; i < 30  ; i++) {
+                    allVariants = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.SORT, true));
+                    Long annotated = dbAdaptor.count(new Query(ANNOTATION_EXISTS.key(), true)).first();
+                    Long all = dbAdaptor.count(new Query()).first();
 
-            for (int i = 0; i < 30  ; i++) {
-                allVariants = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.SORT, true));
-                Long annotated = dbAdaptor.count(new Query(ANNOTATION_EXISTS.key(), true)).first();
-                Long all = dbAdaptor.count(new Query()).first();
+                    System.out.println("count annotated = " + annotated);
+                    System.out.println("count           = " + all);
+                    System.out.println("get             = " + allVariants.getNumResults());
 
-                System.out.println("count annotated = " + annotated);
-                System.out.println("count           = " + all);
-                System.out.println("get             = " + allVariants.getNumResults());
-
-                for (Variant variant : allVariants.getResult()) {
-                    if (variant.getAnnotation() == null) {
-                        System.out.println("no annotation for variant = " + variant);
+                    List<Variant> nonAnnotatedVariants = allVariants.getResult()
+                            .stream()
+                            .filter(variant -> variant.getAnnotation() == null)
+                            .collect(Collectors.toList());
+                    if (!nonAnnotatedVariants.isEmpty()) {
+                        System.out.println(nonAnnotatedVariants.size() + " variants not annotated:");
+                        System.out.println("Variants not annotated: " + nonAnnotatedVariants);
+                    }
+                    if (Objects.equals(annotated, all)) {
+                        break;
                     }
                 }
-                if (Objects.equals(annotated, all)) {
-                    break;
-                }
-            }
-            if (params.getBoolean(VariantStorageManager.Options.ANNOTATE.key())) {
                 assertEquals(dbAdaptor.count(new Query(ANNOTATION_EXISTS.key(), true)).first(), dbAdaptor.count(new Query()).first());
             }
         }
@@ -462,6 +468,11 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasSO(anyOf(hasItem("SO:0001566"), hasItem("SO:0001583"))))));
         assertThat(queryResult, numResults(gt(0)));
 //        assertEquals(947, queryResult.getNumResults());
+
+        query = new Query(ANNOT_CONSEQUENCE_TYPE.key(), ConsequenceTypeMappings.accessionToTerm.get(1566) + ",SO:0001583");
+        queryResult = dbAdaptor.get(query, options);
+        assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasSO(anyOf(hasItem("SO:0001566"), hasItem("SO:0001583"))))));
+        assertThat(queryResult, numResults(gt(0)));
 
         query = new Query(ANNOT_CONSEQUENCE_TYPE.key(), "1566,SO:0001583");
         queryResult = dbAdaptor.get(query, options);
@@ -944,15 +955,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         queryResult = dbAdaptor.get(query, options);
         assertEquals(2, queryResult.getNumResults());
 
-        query = new Query(REGION.key(), "1:14000000-160000000");
-        queryResult = dbAdaptor.get(query, options);
-        assertThat(queryResult, everyResult(allVariants, overlaps(new Region("1:14000000-160000000"))));
-
         query = new Query(CHROMOSOME.key(), "1");
-        queryResult = dbAdaptor.get(query, options);
-        assertThat(queryResult, everyResult(allVariants, overlaps(new Region("1"))));
-
-        query = new Query(REGION.key(), "1");
         queryResult = dbAdaptor.get(query, options);
         assertThat(queryResult, everyResult(allVariants, overlaps(new Region("1"))));
 
@@ -967,6 +970,32 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             assertTrue(lastStart <= variant.getStart());
             lastStart = variant.getStart();
         }
+
+        // Basic queries
+        checkRegion(new Region("1:1000000-2000000"));
+        checkRegion(new Region("1:10000000-20000000"));
+        checkRegion(new Region("1:14000000-160000000"));
+        checkRegion(new Region("1"));
+        checkRegion(new Region("X"));
+        checkRegion(new Region("30"));
+        checkRegion(new Region("3:1-200000000"));
+        checkRegion(new Region("X:1-200000000"));
+
+        // Exactly in the limits
+        checkRegion(new Region("20:238441-7980390"));
+
+        // Just inside the limits
+        checkRegion(new Region("20:238440-7980391"));
+
+        // Just outside the limits
+        checkRegion(new Region("20:238441-7980389"));
+        checkRegion(new Region("20:238442-7980390"));
+        checkRegion(new Region("20:238442-7980389"));
+    }
+
+    public void checkRegion(Region region) {
+        queryResult = dbAdaptor.get(new Query(REGION.key(), region), null);
+        assertThat(queryResult, everyResult(allVariants, overlaps(region)));
     }
 
     @Test

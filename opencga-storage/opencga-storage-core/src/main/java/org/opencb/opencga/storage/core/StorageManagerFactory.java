@@ -16,10 +16,11 @@
 
 package org.opencb.opencga.storage.core;
 
-import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +32,7 @@ import java.util.stream.Collectors;
 
 /**
  * Creates StorageManagers by reflexion.
- * The StorageManager's className is read from <opencga-home>/conf/storage.properties
+ * The StorageEngine's className is read from <opencga-home>/conf/storage-configuration.yml
  */
 public final class StorageManagerFactory {
 
@@ -39,8 +40,8 @@ public final class StorageManagerFactory {
     private static StorageConfiguration storageConfigurationDefault;
     private StorageConfiguration storageConfiguration;
 
-    private Map<String, AlignmentStorageManager> alignmentStorageManagerMap = new HashMap<>();
-    private Map<String, VariantStorageManager> variantStorageManagerMap = new HashMap<>();
+    private Map<String, AlignmentStorageEngine> alignmentStorageManagerMap = new HashMap<>();
+    private Map<String, VariantStorageEngine> variantStorageManagerMap = new HashMap<>();
     protected static Logger logger = LoggerFactory.getLogger(StorageConfiguration.class);
 
     private StorageManagerFactory(StorageConfiguration storageConfiguration) {
@@ -51,6 +52,7 @@ public final class StorageManagerFactory {
         storageConfigurationDefault = configuration;
     }
 
+    @Deprecated
     public static StorageManagerFactory get() {
 //        if (storageConfigurationDefault == null) {
 //            try {
@@ -71,6 +73,8 @@ public final class StorageManagerFactory {
                 storageConfiguration = storageConfigurationDefault;
             }
             Objects.requireNonNull(storageConfiguration, "Storage configuration needed");
+            // TODO: Uncomment the line below once variantStorageManager starts needing to know catalog
+//            Objects.requireNonNull(catalogManager, "Catalog manager needed");
             storageManagerFactory = new StorageManagerFactory(storageConfiguration);
             return storageManagerFactory;
 
@@ -78,36 +82,38 @@ public final class StorageManagerFactory {
         return storageManagerFactory;
     }
 
-    public AlignmentStorageManager getAlignmentStorageManager()
+    public AlignmentStorageEngine getAlignmentStorageManager()
             throws IllegalAccessException, InstantiationException, ClassNotFoundException {
         return getAlignmentStorageManager(null);
     }
 
-    public AlignmentStorageManager getAlignmentStorageManager(String storageEngineName)
+    public AlignmentStorageEngine getAlignmentStorageManager(String storageEngineName)
             throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         return getStorageManager("ALIGNMENT", storageEngineName, alignmentStorageManagerMap);
     }
 
 
-    public VariantStorageManager getVariantStorageManager()
+    public VariantStorageEngine getVariantStorageManager()
             throws IllegalAccessException, InstantiationException, ClassNotFoundException {
         return getVariantStorageManager(null);
     }
 
-    public VariantStorageManager getVariantStorageManager(String storageEngineName)
+    public VariantStorageEngine getVariantStorageManager(String storageEngineName)
             throws ClassNotFoundException, IllegalAccessException, InstantiationException {
         return getStorageManager("VARIANT", storageEngineName, variantStorageManagerMap);
     }
 
 
-    private <T extends StorageManager> T getStorageManager(String bioformat, String storageEngineName, Map<String, T> storageManagerMap)
+    private <T extends StorageEngine> T getStorageManager(String bioformat, String storageEngineName, Map<String, T> storageManagerMap)
             throws ClassNotFoundException, IllegalAccessException, InstantiationException {
-
         /*
          * This new block of code use new StorageConfiguration system, it must replace older one
          */
         if (this.storageConfiguration == null) {
             throw new NullPointerException();
+        }
+        if (StringUtils.isEmpty(storageEngineName)) {
+            storageEngineName = getDefaultStorageManagerName();
         }
         if (!storageManagerMap.containsKey(storageEngineName)) {
             String clazz = null;
@@ -128,30 +134,6 @@ public final class StorageManagerFactory {
             storageManagerMap.put(storageEngineName, storageManager);
         }
         return storageManagerMap.get(storageEngineName);
-//        // OLD CODE!!!
-//
-//        // Get a valid StorageEngine name
-//        storageEngineName = parseStorageEngineName(storageEngineName);
-//        if(storageEngineName == null) {
-//            return null;
-//        }
-//
-//
-//        // Check if this already has been created
-//        if(!storageManagerMap.containsKey(storageEngineName)) {
-//            String key = "OPENCGA.STORAGE." + storageEngineName;
-//            Properties storageProperties = Config.getStorageProperties();
-//            String storageManagerClassName = storageProperties.getProperty(key + "." + bioformat + ".MANAGER");
-//            String propertiesPath = storageProperties.getProperty(key + ".CONF");
-//
-//            // Specific VariantStorageManager is created by reflection using the Class name from the properties file.
-//            // The conf file is passed to the storage engine
-//            T storageManager = (T) Class.forName(storageManagerClassName).newInstance();
-//            storageManager.addConfigUri(URI.create(Config.getOpenCGAHome() + "/").resolve("conf/").resolve(propertiesPath));
-//
-//            storageManagerMap.put(storageEngineName, storageManager);
-//        }
-//        return storageManagerMap.get(storageEngineName);
     }
 
     public String getDefaultStorageManagerName() {
@@ -167,7 +149,11 @@ public final class StorageManagerFactory {
 //        return Config.getStorageProperties().getProperty("OPENCGA.STORAGE.ENGINES").split(",");
     }
 
-//    private static String parseStorageEngineName(String storageEngineName) {
+    public StorageConfiguration getStorageConfiguration() {
+        return storageConfiguration;
+    }
+
+    //    private static String parseStorageEngineName(String storageEngineName) {
 //        String[] storageEngineNames = Config.getStorageProperties().getProperty("OPENCGA.STORAGE.ENGINES").split(",");
 //        if(storageEngineName == null || storageEngineName.isEmpty()) {
 //            return storageEngineNames[0].toUpperCase();
@@ -182,4 +168,19 @@ public final class StorageManagerFactory {
 //        }
 //    }
 
+    public void registerStorageManager(VariantStorageEngine variantStorageManager) {
+        variantStorageManagerMap.put(variantStorageManager.getStorageEngineId(), variantStorageManager);
+    }
+
+    public VariantStorageEngine unregisterVariantStorageManager(String storageEngineId) {
+        return variantStorageManagerMap.remove(storageEngineId);
+    }
+
+    public void registerStorageManager(AlignmentStorageEngine alignmentStorageManager) {
+        alignmentStorageManagerMap.put(alignmentStorageManager.getStorageEngineId(), alignmentStorageManager);
+    }
+
+    public AlignmentStorageEngine unregisterAlignmentStorageManager(String storageEngineId) {
+        return alignmentStorageManagerMap.remove(storageEngineId);
+    }
 }

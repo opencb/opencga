@@ -86,7 +86,7 @@ public class WSTestServer {
         catalogManagerResource = catalogManagerTest.catalogManagerResource;
         catalogManagerResource.before();
 
-        catalogManagerResource.getCatalogConfiguration().serialize(new FileOutputStream(opencgaHome.resolve("conf").resolve("catalog-configuration.yml").toFile()));
+        catalogManagerResource.getConfiguration().serialize(new FileOutputStream(opencgaHome.resolve("conf").resolve("configuration.yml").toFile()));
 //        InputStream inputStream = new ByteArrayInputStream((AnalysisJobExecutor.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
 //                AnalysisFileIndexer.OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX + "=" + DATABASE_PREFIX).getBytes());
 //        Files.copy(inputStream, opencgaHome.resolve("conf").resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);

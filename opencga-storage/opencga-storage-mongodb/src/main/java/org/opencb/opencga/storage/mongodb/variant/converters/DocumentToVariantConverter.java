@@ -22,7 +22,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
-import org.opencb.opencga.storage.mongodb.variant.VariantMongoDBWriter;
+import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBWriter;
 
 import java.util.*;
 
@@ -118,7 +118,7 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
     private Set<Integer> returnStudies;
     private DocumentToVariantAnnotationConverter variantAnnotationConverter;
     private DocumentToVariantStatsConverter statsConverter;
-    private final VariantStringIdComplexTypeConverter idConverter = new VariantStringIdComplexTypeConverter();
+    private final VariantStringIdConverter idConverter = new VariantStringIdConverter();
 
     // Add default variant ID if it is missing. Use CHR:POS:REF:ALT
     private boolean addDefaultId;
@@ -301,9 +301,11 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
 //        // Annotations
         mongoVariant.append(ANNOTATION_FIELD, Collections.emptyList());
         if (variantAnnotationConverter != null) {
-            if (variant.getAnnotation() != null) {
+            if (variant.getAnnotation() != null
+                    && variant.getAnnotation().getConsequenceTypes() != null
+                    && !variant.getAnnotation().getConsequenceTypes().isEmpty()) {
                 Document annotation = variantAnnotationConverter.convertToStorageType(variant.getAnnotation());
-                mongoVariant.append(ANNOTATION_FIELD, annotation);
+                mongoVariant.append(ANNOTATION_FIELD, Collections.singletonList(annotation));
             }
         }
 

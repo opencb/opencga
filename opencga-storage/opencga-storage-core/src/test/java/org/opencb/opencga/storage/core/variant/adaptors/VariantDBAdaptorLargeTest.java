@@ -30,8 +30,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -49,7 +49,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Ignore
-public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTestUtils {
+public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
 
     protected static final Integer file1 = 1;
     protected static final Integer file2 = 2;
@@ -82,30 +82,30 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
             studyConfiguration3 = new StudyConfiguration(3, "Study3");
 
             ObjectMap options = new ObjectMap()
-                    .append(VariantStorageManager.Options.STUDY_TYPE.key(), VariantStudy.StudyType.CONTROL)
-                    .append(VariantStorageManager.Options.CALCULATE_STATS.key(), true)
-                    .append(VariantStorageManager.Options.ANNOTATE.key(), false);
+                    .append(VariantStorageEngine.Options.STUDY_TYPE.key(), VariantStudy.StudyType.CONTROL)
+                    .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true)
+                    .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
             //Study1
             runDefaultETL(getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                    variantStorageManager, studyConfiguration1, options.append(VariantStorageManager.Options.FILE_ID.key(), file1));
+                    variantStorageManager, studyConfiguration1, options.append(VariantStorageEngine.Options.FILE_ID.key(), file1));
             assertEquals(500, studyConfiguration1.getCohorts().get(studyConfiguration1.getCohortIds().get(StudyEntry.DEFAULT_COHORT))
                     .size());
             runDefaultETL(getResourceUri("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                    variantStorageManager, studyConfiguration1, options.append(VariantStorageManager.Options.FILE_ID.key(), file2));
+                    variantStorageManager, studyConfiguration1, options.append(VariantStorageEngine.Options.FILE_ID.key(), file2));
             assertEquals(1000, studyConfiguration1.getCohorts().get(studyConfiguration1.getCohortIds().get(StudyEntry.DEFAULT_COHORT))
                     .size());
             //Study2
             runDefaultETL(getResourceUri("1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                    variantStorageManager, studyConfiguration2, options.append(VariantStorageManager.Options.FILE_ID.key(), file3));
+                    variantStorageManager, studyConfiguration2, options.append(VariantStorageEngine.Options.FILE_ID.key(), file3));
             assertEquals(500, studyConfiguration2.getCohorts().get(studyConfiguration2.getCohortIds().get(StudyEntry.DEFAULT_COHORT))
                     .size());
             runDefaultETL(getResourceUri("1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                    variantStorageManager, studyConfiguration2, options.append(VariantStorageManager.Options.FILE_ID.key(), file4));
+                    variantStorageManager, studyConfiguration2, options.append(VariantStorageEngine.Options.FILE_ID.key(), file4));
             assertEquals(1000, studyConfiguration2.getCohorts().get(studyConfiguration2.getCohortIds().get(StudyEntry.DEFAULT_COHORT))
                     .size());
             //Study3
             runDefaultETL(getResourceUri("1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
-                    variantStorageManager, studyConfiguration3, options.append(VariantStorageManager.Options.FILE_ID.key(), file5));
+                    variantStorageManager, studyConfiguration3, options.append(VariantStorageEngine.Options.FILE_ID.key(), file5));
             assertEquals(504, studyConfiguration3.getCohorts().get(studyConfiguration3.getCohortIds().get(StudyEntry.DEFAULT_COHORT))
                     .size());
 

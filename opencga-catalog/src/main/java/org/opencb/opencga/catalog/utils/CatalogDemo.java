@@ -16,8 +16,9 @@
 
 package org.opencb.opencga.catalog.utils;
 
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Study;
 
@@ -36,12 +37,12 @@ public final class CatalogDemo {
     /**
      * Populates the database with dummy data.
      *
-     * @param catalogConfiguration Catalog configuration file.
+     * @param configuration Catalog configuration file.
      * @param force Used in the case where a database already exists with the same name. When force = true, it will override it.
      * @throws CatalogException when there is already a database with the same name and force is false.
      */
-    public static void createDemoDatabase(CatalogConfiguration catalogConfiguration, boolean force) throws CatalogException {
-        CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
+    public static void createDemoDatabase(Configuration configuration, boolean force) throws CatalogException {
+        CatalogManager catalogManager = new CatalogManager(configuration);
         if (catalogManager.existsCatalogDB()) {
             if (force) {
                 catalogManager.deleteCatalogDB(force);
@@ -67,14 +68,15 @@ public final class CatalogDemo {
             String password = id + "_pass";
             String email = id + "@gmail.com";
             catalogManager.createUser(id, name, email, password, "organization", 2000L, null);
-            userSessions.put(id, (String) catalogManager.login(id, password, "localhost").first().get("sessionId"));
+            userSessions.put(id, catalogManager.login(id, password, "localhost").first().getId());
         }
 
         // Create one project per user
         Map<String, Long> projects = new HashMap<>(5);
         for (Map.Entry<String, String> userSession : userSessions.entrySet()) {
-            projects.put(userSession.getKey(), catalogManager.createProject("DefaultProject", "default",
-                    "Description", "Organization", null, userSession.getValue()).first().getId());
+            projects.put(userSession.getKey(), catalogManager.getProjectManager().create("DefaultProject", "default",
+                    "Description", "Organization", "Homo sapiens", null, null, "GrCh38",
+                    new QueryOptions(), userSession.getValue()).first().getId());
         }
 
         // Create two studies per user

@@ -1,10 +1,10 @@
 ---
-defaultStorageEngineId: "${OPENCGA.STORAGE.ENGINE.DEFAULT}"
+defaultStorageEngineId: "${OPENCGA.STORAGE.DEFAULT_ENGINE}"
 logLevel: "info"
 logFile: ""
 
 ## This value can be set up using maven profiles in your .m2/settings.xml
-studyMetadataManager: "${OPENCGA.STORAGE.STUDY.METADATA.MANAGER}"
+studyMetadataManager: "${OPENCGA.STORAGE.STUDY_METADATA_MANAGER}"
 
 ## CellBase client configuration, this is used mainly when annotating variants
 ## This can be set up using maven profiles in your .m2/settings.xml
@@ -33,6 +33,25 @@ server:
   authorizedHosts: ["0.0.0.0"]
   options: {}
 
+## Cache Configuration
+cache:
+  host: ${OPENCGA.STORAGE.CACHE.HOST}
+  active: true
+  serialization: "json"
+  slowThreshold: 50
+  allowedTypes: "aln,var"
+  maxResultSize: 5000
+  password: ""
+
+## Search Configuration
+search:
+  host: ${OPENCGA.STORAGE.SEARCH.HOST}
+  active: true
+  collection: "variants"
+  user: ""
+  password: ""
+  rows: 100000
+
 benchmark:
   storageEngine: "mongodb"
   numRepetitions: 3
@@ -54,7 +73,8 @@ storageEngines:
 - id: "mongodb"
   options: {}     ## this field is intended to be removed, try not to use it.
   alignment:
-    manager: "org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager"
+#    manager: "org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageEngine"
+    manager: "org.opencb.opencga.storage.core.alignment.local.DefaultAlignmentStorageEngine"
     options:
       database.name: "opencga"
       tools.samtools: "${OPENCGA.INSTALLATION.DIR}/tools/samtools/samtools"
@@ -68,16 +88,18 @@ storageEngines:
       password: "${OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD}"
       options: {}
   variant:
-    manager: "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager"
+    manager: "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine"
     options:
       database.name: "opencga"
+      dbadaptor.max_timeout : 30000 #(ms) Max allowed timeout for DBAdaptor operations.
+      dbadaptor.default_timeout : 10000 #(ms) Default timeout for DBAdaptor operations. Only used if none is provided.
       collection.variants: "variants"
       collection.studies: "studies"
       collection.files: "files"
       include.stats: false
       annotator: cellbase_rest
-      species: "hsapiens"
-      assembly: "GRCh37"
+      species: ${OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME}
+      assembly: ${OPENCGA.CLIENT.ORGANISM.ASSEMBLY}
       transform.batch.size: 200
       transform.threads: 4
       transform.format: "avro"
@@ -91,40 +113,41 @@ storageEngines:
       user: "${OPENCGA.STORAGE.VARIANT.DB.USER}"
       password: "${OPENCGA.STORAGE.VARIANT.DB.PASSWORD}"
       options:    ## This is intended for database specific options such as --authenticationDatabase in MongoDB
-        authenticationDatabase: ${OPENCGA.STORAGE.VARIANT.DB.AUTHENTICATION_DATABASE}
+        authenticationDatabase: ${OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION_DATABASE}
+        connectionsPerHost: ${OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST}
         readPreference: "secondaryPreferred"
 
 ## For using this plugin you need to have a Hadoop cluster and run the CLI from a well configured Hadoop client
 - id: "hadoop"
   options: {}
   alignment:
-    manager: "org.opencb.opencga.storage.hadoop.alignment.MongoDBAlignmentStorageManager"
+    manager: "org.opencb.opencga.storage.hadoop.alignment.MongoDBAlignmentStorageEngine"
     options: {}
     database:
       hosts:
-      - "${OPENCGA.STORAGE.VARIANT.DB.HOSTS}"
-      user: "${OPENCGA.STORAGE.VARIANT.DB.USER}"
-      password: "${OPENCGA.STORAGE.VARIANT.DB.PASSWORD}"
+      - "${OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS}"
+      user: "${OPENCGA.STORAGE.ALIGNMENT.DB.USER}"
+      password: "${OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD}"
   variant:
-    manager: "org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager"
+    manager: "org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine"
     options:
       #Generic options
       database.name: "opencga"
       annotator: cellbase_rest
-      species: "hsapiens"
-      assembly: "GRCh37"
+      species: ${OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME}
+      assembly: ${OPENCGA.CLIENT.ORGANISM.ASSEMBLY}
       #Plugin specific options
       hadoop.bin: "hadoop"
 #      hadoop.env: # See opencga-env.sh
 #      - "HADOOP_USER_CLASSPATH_FIRST=true"
 #      - "HADOOP_CLASSPATH=$HADOOP_CLASSPATH:${OPENCGA.INSTALLATION.DIR}/libs/protobuf-java-${google.protobuf}.jar"
 #      - ....
-      opencga.storage.hadoop.jar-with-dependencies: "opencga-storage-hadoop-${opencga.version}-jar-with-dependencies.jar"
+      opencga.storage.hadoop.jar-with-dependencies: "opencga-storage-hadoop-core-${opencga.version}-jar-with-dependencies.jar"
       opencga.archive.chunk_size: 1000
       opencga.archive.table.compression: "snappy"
       opencga.variant.table.compression: "snappy"
-      opencga.storage.hadoop.hbase.namespace: "${OPENCGA.STORAGE.HADOOP.HBASE.NAMESPACE}"
-      opencga.storage.hadoop.hbase.archive.table.prefix: "${OPENCGA.STORAGE.HADOOP.HBASE.ARCHIVE.TABLE.PREFIX}"
+      opencga.storage.hadoop.variant.hbase.namespace: "${OPENCGA.STORAGE.HADOOP.VARIANT.HBASE.NAMESPACE}"
+      opencga.storage.hadoop.variant.archive.table.prefix: "${OPENCGA.STORAGE.HADOOP.VARIANT.ARCHIVE.TABLE.PREFIX}"
       # Increase the ScannerTimeoutPeriod from 60000 (1min) to 300000 (5min) to avoid ScannerTimeoutExceptions
       # See opencb/opencga#352 for more info.
       opencga.storage.hadoop.mapreduce.scanner.timeout: 300000

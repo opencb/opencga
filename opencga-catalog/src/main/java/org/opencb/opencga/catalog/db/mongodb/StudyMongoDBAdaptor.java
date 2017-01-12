@@ -285,7 +285,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                         "$group",
                         BasicDBObjectBuilder
                                 .start("_id", "$" + PRIVATE_STUDY_ID)
-                                .append("diskUsage",
+                                .append("size",
                                         new BasicDBObject(
                                                 "$sum",
                                                 "$diskUsage"
@@ -294,7 +294,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         );*/
         List<Bson> operations = new ArrayList<>();
         operations.add(Aggregates.match(Filters.eq(PRIVATE_STUDY_ID, studyId)));
-        operations.add(Aggregates.group("$" + PRIVATE_STUDY_ID, Accumulators.sum("diskUsage", "$diskUsage")));
+        operations.add(Aggregates.group("$" + PRIVATE_STUDY_ID, Accumulators.sum("size", "$diskUsage")));
 
 //        Bson match = Aggregates.match(Filters.eq(PRIVATE_STUDY_ID, studyId));
 //        Aggregates.group()
@@ -302,13 +302,13 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         QueryResult<Document> aggregate = dbAdaptorFactory.getCatalogFileDBAdaptor().getFileCollection()
                 .aggregate(operations, null);
         if (aggregate.getNumResults() == 1) {
-            Object diskUsage = aggregate.getResult().get(0).get("diskUsage");
-            if (diskUsage instanceof Integer) {
-                return ((Integer) diskUsage).longValue();
-            } else if (diskUsage instanceof Long) {
-                return ((Long) diskUsage);
+            Object size = aggregate.getResult().get(0).get("size");
+            if (size instanceof Integer) {
+                return ((Integer) size).longValue();
+            } else if (size instanceof Long) {
+                return ((Long) size);
             } else {
-                return Long.parseLong(diskUsage.toString());
+                return Long.parseLong(size.toString());
             }
         } else {
             return 0;
@@ -1153,7 +1153,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
         String[] acceptedParams = {"name", "creationDate", "creationId", "description", "status", "lastModified", "cipher"};
         filterStringParams(parameters, studyParameters, acceptedParams);
 
-        String[] acceptedLongParams = {"diskUsage"};
+        String[] acceptedLongParams = {"size"};
         filterLongParams(parameters, parameters, acceptedLongParams);
 
         String[] acceptedMapParams = {"attributes", "stats"};
@@ -1188,7 +1188,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 QueryParams.CIPHER.key(), };
         filterStringParams(parameters, studyParameters, acceptedParams);
 
-        String[] acceptedLongParams = {QueryParams.DISK_USAGE.key()};
+        String[] acceptedLongParams = {QueryParams.SIZE.key()};
         filterLongParams(parameters, studyParameters, acceptedLongParams);
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
@@ -1551,6 +1551,9 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
+            if (queryParam == null) {
+                continue;
+            }
             try {
                 switch (queryParam) {
                     case ID:
@@ -1570,9 +1573,47 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
-
-                    default:
+                    case NAME:
+                    case ALIAS:
+                    case CREATION_DATE:
+                    case DESCRIPTION:
+                    case CIPHER:
+                    case STATUS_NAME:
+                    case STATUS_MSG:
+                    case STATUS_DATE:
+                    case LAST_MODIFIED:
+                    case DATASTORES:
+                    case SIZE:
+                    case URI:
+                    case ACL:
+                    case ACL_MEMBER:
+                    case ACL_PERMISSIONS:
+                    case STATS:
+                    case TYPE:
+                    case GROUPS:
+                    case GROUP_NAME:
+                    case GROUP_USER_IDS:
+                    case ROLES:
+                    case ROLES_ID:
+                    case ROLES_USERS:
+                    case ROLES_PERMISSIONS:
+                    case EXPERIMENT_ID:
+                    case EXPERIMENT_NAME:
+                    case EXPERIMENT_TYPE:
+                    case EXPERIMENT_PLATFORM:
+                    case EXPERIMENT_MANUFACTURER:
+                    case EXPERIMENT_DATE:
+                    case EXPERIMENT_LAB:
+                    case EXPERIMENT_CENTER:
+                    case EXPERIMENT_RESPONSIBLE:
+                    case COHORTS:
+                    case VARIABLE_SET:
+                    case VARIABLE_SET_ID:
+                    case VARIABLE_SET_NAME:
+                    case VARIABLE_SET_DESCRIPTION:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    default:
                         break;
                 }
             } catch (Exception e) {
@@ -1592,18 +1633,18 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     }
 
     /***
-     * This method is called every time a file has been inserted, modified or deleted to keep track of the current study diskUsage.
+     * This method is called every time a file has been inserted, modified or deleted to keep track of the current study size.
      *
      * @param studyId   Study Identifier
-     * @param diskUsage disk usage of a new created, updated or deleted file belonging to studyId. This argument
-     *                  will be > 0 to increment the diskUsage field in the study collection or < 0 to decrement it.
+     * @param size disk usage of a new created, updated or deleted file belonging to studyId. This argument
+     *                  will be > 0 to increment the size field in the study collection or < 0 to decrement it.
      * @throws CatalogDBException An exception is launched when the update crashes.
      */
-    public void updateDiskUsage(long studyId, long diskUsage) throws CatalogDBException {
+    public void updateDiskUsage(long studyId, long size) throws CatalogDBException {
         Bson query = new Document(QueryParams.ID.key(), studyId);
-        Bson update = Updates.inc(QueryParams.DISK_USAGE.key(), diskUsage);
+        Bson update = Updates.inc(QueryParams.SIZE.key(), size);
         if (studyCollection.update(query, update, null).getNumTotalResults() == 0) {
-            throw new CatalogDBException("CatalogMongoStudyDBAdaptor updateDiskUsage: Couldn't update the diskUsage field of"
+            throw new CatalogDBException("CatalogMongoStudyDBAdaptor updateDiskUsage: Couldn't update the size field of"
                     + " the study " + studyId);
         }
     }

@@ -64,7 +64,9 @@ public class OpenCGAWSServerTest {
 
         //Drop default user mongoDB database.
         String databaseName = WSServerTestUtils.DATABASE_PREFIX + TEST_SERVER_USER + "_" + ProjectWSServerTest.PROJECT_ALIAS;
-        new MongoDataStoreManager("localhost", 27017).drop(databaseName);
+        MongoDataStoreManager dataStoreManager = new MongoDataStoreManager("localhost", 27017);
+        dataStoreManager.get(databaseName);
+        dataStoreManager.drop(databaseName);
 
 //        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
@@ -140,7 +142,7 @@ public class OpenCGAWSServerTest {
 //        for (Variant variant : variants) {
 //            for (StudyEntry sourceEntry : variant.getStudies()) {
 //                assertEquals(sampleNames.size(), sourceEntry.getSamplesData().size());
-//                assertNotNull("Stats must be calculated", sourceEntry.getStats(StudyEntry.DEFAULT_COHORT));
+//                assertNotNull("Stats must be calculated", sourceEntry.stats(StudyEntry.DEFAULT_COHORT));
 //            }
 //            assertNotNull("Must be annotated", variant.getAnnotation());
 //        }
@@ -162,7 +164,7 @@ public class OpenCGAWSServerTest {
 //        for (Variant variant : variants) {
 //            for (StudyEntry sourceEntry : variant.getStudies()) {
 //                assertEquals(2, sourceEntry.getSamplesData().size());
-//                assertNotNull("Stats must be calculated", sourceEntry.getStats(StudyEntry.DEFAULT_COHORT));
+//                assertNotNull("Stats must be calculated", sourceEntry.stats(StudyEntry.DEFAULT_COHORT));
 //            }
 //            assertNotNull("Must be annotated", variant.getAnnotation());
 //        }

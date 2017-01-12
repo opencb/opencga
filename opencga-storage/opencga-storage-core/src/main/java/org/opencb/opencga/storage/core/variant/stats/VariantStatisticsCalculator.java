@@ -153,7 +153,7 @@ public class VariantStatisticsCalculator {
 //                study.setAttributes(removeAttributePrefix(study.getAttributes()));
                 aggregatedCalculator.calculate(variant, study);
             }
-//            if (overwrite || file.getStats() == null) {
+//            if (overwrite || file.stats() == null) {
 //                VariantStats allVariantStats = new VariantStats(variant);
 //                file.setCohortStats(VariantSourceEntry.DEFAULT_COHORT
 //                        , allVariantStats.calculate(file.getSamplesData(), file.getAttributes(), null));

@@ -32,6 +32,16 @@ import java.util.function.Consumer;
  */
 public interface DBAdaptor<T> extends Iterable<T> {
 
+    /**
+     * SKIP_CHECK is used when deleting a document. If SKIP_CHECK is set to false, the document will be deleted no matter if other
+     * documents might depend on that one.
+     */
+    String SKIP_CHECK = "skipCheck";
+    /**
+     * Deprecated constant. Use SKIP_CHECK instead.
+     */
+    @Deprecated
+    String FORCE = "force";
 
     default QueryResult<Long> count() throws CatalogDBException {
         return count(new Query());

@@ -176,7 +176,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         filterMapParams(parameters, sampleParams, acceptedMapParams);
 
         if (sampleParams.containsKey(QueryParams.INDIVIDUAL_ID.key())) {
-            int individualId = parameters.getInt(QueryParams.INDIVIDUAL_ID.key());
+            long individualId = parameters.getInt(QueryParams.INDIVIDUAL_ID.key());
             if (individualId > 0 && !dbAdaptorFactory.getCatalogIndividualDBAdaptor().exists(individualId)) {
                 throw CatalogDBException.idNotFound("Individual", individualId);
             }
@@ -195,7 +195,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
             }
         }
 
-        return endQuery("Modify sample", startTime, get(sampleId, parameters));
+        return endQuery("Modify sample", startTime, get(sampleId, new QueryOptions()));
     }
 
     public void unsetSampleAcl(long sampleId, List<String> members, List<String> permissions) throws CatalogDBException {
@@ -681,7 +681,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
             QueryParams queryParam =  QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
             if (queryParam == null) {
-                throw CatalogDBException.queryParamNotFound(key, "Samples");
+                continue;
             }
             try {
                 switch (queryParam) {
@@ -702,6 +702,10 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
+                    case ONTOLOGIES:
+                    case ONTOLOGY_TERMS:
+                        addOntologyQueryFilter(QueryParams.ONTOLOGY_TERMS.key(), queryParam.key(), query, andBsonList);
+                        break;
                     case VARIABLE_SET_ID:
                         addOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), annotationList);
                         break;
@@ -718,8 +722,25 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
                     case ANNOTATION_SET_NAME:
                         addOrQuery("name", queryParam.key(), query, queryParam.type(), annotationList);
                         break;
-                    default:
+                    case NAME:
+                    case SOURCE:
+                    case INDIVIDUAL_ID:
+                    case DESCRIPTION:
+                    case STATUS_NAME:
+                    case STATUS_MSG:
+                    case STATUS_DATE:
+                    case ACL:
+                    case ACL_MEMBER:
+                    case ACL_PERMISSIONS:
+                    case ONTOLOGY_TERMS_ID:
+                    case ONTOLOGY_TERMS_NAME:
+                    case ONTOLOGY_TERMS_SOURCE:
+                    case ONTOLOGY_TERMS_AGE_OF_ONSET:
+                    case ONTOLOGY_TERMS_MODIFIERS:
+                    case ANNOTATION_SETS:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    default:
                         break;
                 }
             } catch (Exception e) {

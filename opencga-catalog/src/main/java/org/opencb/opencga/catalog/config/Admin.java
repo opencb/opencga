@@ -16,11 +16,6 @@
 
 package org.opencb.opencga.catalog.config;
 
-import org.opencb.opencga.catalog.models.Session;
-
-import java.util.Collections;
-import java.util.List;
-
 /**
  * Created by imedina on 18/04/16.
  */
@@ -28,7 +23,7 @@ public class Admin {
 
     private String password;
     private String email;
-    private List<Session> sessions;
+//    private List<Session> sessions;
 
     public Admin() {
     }
@@ -36,7 +31,7 @@ public class Admin {
     public Admin(String password, String email) {
         this.password = password;
         this.email = email;
-        this.sessions = Collections.emptyList();
+//        this.sessions = Collections.emptyList();
     }
 
     public String getPassword() {
@@ -57,21 +52,21 @@ public class Admin {
         return this;
     }
 
-    public List<Session> getSessions() {
-        return sessions;
-    }
-
-    public Admin setSessions(List<Session> sessions) {
-        this.sessions = sessions;
-        return this;
-    }
+//    public List<Session> getSessions() {
+//        return sessions;
+//    }
+//
+//    public Admin setSessions(List<Session> sessions) {
+//        this.sessions = sessions;
+//        return this;
+//    }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Admin{");
         sb.append("password='").append(password).append('\'');
         sb.append(", email='").append(email).append('\'');
-        sb.append(", sessions=").append(sessions);
+//        sb.append(", sessions=").append(sessions);
         sb.append('}');
         return sb.toString();
     }

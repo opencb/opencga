@@ -25,15 +25,16 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
-import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
-import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
+import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngineOld;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,7 +44,7 @@ import java.util.List;
 public class AlignmentCommandExecutor extends CommandExecutor {
 
     private StorageEngineConfiguration storageConfiguration;
-    private AlignmentStorageManager alignmentStorageManager;
+    private AlignmentStorageEngine alignmentStorageManager;
 
     private CliOptionsParser.AlignmentCommandOptions commandOptions;
 
@@ -57,7 +58,7 @@ public class AlignmentCommandExecutor extends CommandExecutor {
         this.logFile = commonOptions.logFile;
 
         /**
-         * Getting VariantStorageManager
+         * Getting VariantStorageEngine
          * We need to find out the Storage Engine Id to be used
          * If not storage engine is passed then the default is taken from storage-configuration.yml file
          **/
@@ -68,6 +69,7 @@ public class AlignmentCommandExecutor extends CommandExecutor {
 
         this.storageConfiguration = configuration.getStorageEngine(storageEngine);
 
+        // TODO: Start passing catalogManager
         StorageManagerFactory storageManagerFactory = StorageManagerFactory.get(configuration);
         if (storageEngine == null || storageEngine.isEmpty()) {
             this.alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager();
@@ -98,7 +100,7 @@ public class AlignmentCommandExecutor extends CommandExecutor {
 
     }
 
-    private void index() throws URISyntaxException, StorageManagerException, IOException, FileFormatException {
+    private void index() throws Exception {
         CliOptionsParser.IndexAlignmentsCommandOptions indexAlignmentsCommandOptions = commandOptions.indexAlignmentsCommandOptions;
 
         URI inputUri = UriUtils.createUri(indexAlignmentsCommandOptions.input.get(0));
@@ -116,22 +118,23 @@ public class AlignmentCommandExecutor extends CommandExecutor {
              */
         ObjectMap alignmentOptions = storageConfiguration.getAlignment().getOptions();
         if (Integer.parseInt(indexAlignmentsCommandOptions.fileId) != 0) {
-            alignmentOptions.put(AlignmentStorageManager.Options.FILE_ID.key(), indexAlignmentsCommandOptions.fileId);
+            alignmentOptions.put(AlignmentStorageEngineOld.Options.FILE_ID.key(), indexAlignmentsCommandOptions.fileId);
         }
         if (indexAlignmentsCommandOptions.dbName != null && !indexAlignmentsCommandOptions.dbName.isEmpty()) {
-            alignmentOptions.put(AlignmentStorageManager.Options.DB_NAME.key(), indexAlignmentsCommandOptions.dbName);
+            alignmentOptions.put(AlignmentStorageEngineOld.Options.DB_NAME.key(), indexAlignmentsCommandOptions.dbName);
         }
         if (indexAlignmentsCommandOptions.commonOptions.params != null) {
             alignmentOptions.putAll(indexAlignmentsCommandOptions.commonOptions.params);
         }
 
-        alignmentOptions.put(AlignmentStorageManager.Options.PLAIN.key(), false);
-        alignmentOptions.put(AlignmentStorageManager.Options.INCLUDE_COVERAGE.key(), indexAlignmentsCommandOptions.calculateCoverage);
+        alignmentOptions.put(AlignmentStorageEngineOld.Options.PLAIN.key(), false);
+        alignmentOptions.put(AlignmentStorageEngineOld.Options.INCLUDE_COVERAGE.key(), indexAlignmentsCommandOptions.calculateCoverage);
         if (indexAlignmentsCommandOptions.meanCoverage != null && !indexAlignmentsCommandOptions.meanCoverage.isEmpty()) {
-            alignmentOptions.put(AlignmentStorageManager.Options.MEAN_COVERAGE_SIZE_LIST.key(), indexAlignmentsCommandOptions.meanCoverage);
+            alignmentOptions.put(AlignmentStorageEngineOld.Options.MEAN_COVERAGE_SIZE_LIST.key(),
+                    indexAlignmentsCommandOptions.meanCoverage);
         }
-        alignmentOptions.put(AlignmentStorageManager.Options.COPY_FILE.key(), false);
-        alignmentOptions.put(AlignmentStorageManager.Options.ENCRYPT.key(), "null");
+        alignmentOptions.put(AlignmentStorageEngineOld.Options.COPY_FILE.key(), false);
+        alignmentOptions.put(AlignmentStorageEngineOld.Options.ENCRYPT.key(), "null");
         logger.debug("Configuration options: {}", alignmentOptions.toJson());
 
 
@@ -149,31 +152,33 @@ public class AlignmentCommandExecutor extends CommandExecutor {
             load = indexAlignmentsCommandOptions.load;
         }
 
+        StoragePipeline storagePipeline = alignmentStorageManager.newStoragePipeline(true);
+
         if (extract) {
             logger.info("-- Extract alignments -- {}", inputUri);
-            nextFileUri = alignmentStorageManager.extract(inputUri, outdirUri);
+            nextFileUri = storagePipeline.extract(inputUri, outdirUri);
         }
 
         if (transform) {
             logger.info("-- PreTransform alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.preTransform(nextFileUri);
+            nextFileUri = storagePipeline.preTransform(nextFileUri);
             logger.info("-- Transform alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.transform(nextFileUri, null, outdirUri);
+            nextFileUri = storagePipeline.transform(nextFileUri, null, outdirUri);
             logger.info("-- PostTransform alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.postTransform(nextFileUri);
+            nextFileUri = storagePipeline.postTransform(nextFileUri);
         }
 
         if (load) {
             logger.info("-- PreLoad alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.preLoad(nextFileUri, outdirUri);
+            nextFileUri = storagePipeline.preLoad(nextFileUri, outdirUri);
             logger.info("-- Load alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.load(nextFileUri);
+            nextFileUri = storagePipeline.load(nextFileUri);
             logger.info("-- PostLoad alignments -- {}", nextFileUri);
-            nextFileUri = alignmentStorageManager.postLoad(nextFileUri, outdirUri);
+            nextFileUri = storagePipeline.postLoad(nextFileUri, outdirUri);
         }
     }
 
-    private void query() throws StorageManagerException, FileFormatException {
+    private void query() throws StorageEngineException, FileFormatException {
         CliOptionsParser.QueryAlignmentsCommandOptions queryAlignmentsCommandOptions = commandOptions.queryAlignmentsCommandOptions;
         AlignmentDBAdaptor dbAdaptor = alignmentStorageManager.getDBAdaptor(queryAlignmentsCommandOptions.dbName);
 

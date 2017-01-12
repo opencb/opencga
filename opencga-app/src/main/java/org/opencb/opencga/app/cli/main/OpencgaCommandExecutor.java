@@ -16,21 +16,16 @@
 
 package org.opencb.opencga.app.cli.main;
 
-import com.beust.jcommander.JCommander;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.CommandExecutor;
-import org.opencb.opencga.app.cli.main.io.IWriter;
-import org.opencb.opencga.app.cli.main.io.JsonWriter;
-import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.main.io.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Created on 27/05/16.
@@ -41,56 +36,74 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
     protected OpenCGAClient openCGAClient;
     protected CatalogManager catalogManager;
-    protected ClientConfiguration clientConfiguration;
-    protected IWriter writer;
 
-    public OpencgaCommandExecutor(OpencgaCliOptionsParser.OpencgaCommonCommandOptions options) {
+    protected AbstractOutputWriter writer;
+
+    public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
         this(options, false);
     }
 
-    public OpencgaCommandExecutor(OpencgaCliOptionsParser.OpencgaCommonCommandOptions options, boolean skipDuration) {
-        super(options);
-        init(skipDuration);
+    public OpencgaCommandExecutor(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) {
+        super(options, true);
+
+        init(options, skipDuration);
     }
 
-    public OpencgaCommandExecutor(String logLevel, boolean verbose, String conf, boolean skipDuration) {
-        super(logLevel, verbose, conf);
-        init(skipDuration);
-    }
+    private void init(GeneralCliOptions.CommonCommandOptions options, boolean skipDuration) {
 
-    private void init(boolean skipDuration) {
         try {
-            this.writer = new JsonWriter();
+            WriterConfiguration writerConfiguration = new WriterConfiguration();
+            writerConfiguration.setMetadata(options.metadata);
+            writerConfiguration.setHeader(!options.noHeader);
 
-            loadClientConfiguration();
-            loadCatalogConfiguration();
+            switch (options.outputFormat.toLowerCase()) {
+                case "json_pretty":
+                    writerConfiguration.setPretty(true);
+                case "json":
+                    this.writer = new JsonOutputWriter(writerConfiguration);
+                    break;
+                case "yaml":
+                    this.writer = new YamlOutputWriter(writerConfiguration);
+                    break;
+                case "text":
+                default:
+                    this.writer = new TextOutputWriter(writerConfiguration);
+                    break;
+            }
 
-            SessionFile sessionFile = loadSessionFile();
-            logger.debug("sessionFile = " + sessionFile);
-            if (sessionFile != null) {
-                if (sessionFile.getLogout() == null) {
+//            CliSession cliSession = loadCliSessionFile();
+            logger.debug("sessionFile = " + cliSession);
+            if (cliSession != null) {
+                // 'logout' field is only null or empty while no logout is executed
+                if (StringUtils.isEmpty(cliSession.getLogout())) {
+                    // no timeout checks
                     if (skipDuration) {
-                        openCGAClient = new OpenCGAClient(sessionFile.getSessionId(), clientConfiguration);
-                        openCGAClient.setUserId(sessionFile.getUserId());
+                        openCGAClient = new OpenCGAClient(cliSession.getSessionId(), clientConfiguration);
+                        openCGAClient.setUserId(cliSession.getUserId());
+                        if (options.sessionId == null) {
+                            options.sessionId = cliSession.getSessionId();
+                        }
                     } else {
                         int sessionDuration = clientConfiguration.getSessionDuration() * 1000;
-                        long timestamp = sessionFile.getTimestamp();
+                        long timestamp = cliSession.getTimestamp();
                         long now = System.currentTimeMillis();
                         if ((now - timestamp) >= sessionDuration) {
                             logger.warn("Session expired, too much time with not action");
-                            openCGAClient = new OpenCGAClient(sessionFile.getSessionId(), clientConfiguration);
-                            openCGAClient.setUserId(sessionFile.getUserId());
+                            openCGAClient = new OpenCGAClient(cliSession.getSessionId(), clientConfiguration);
+                            openCGAClient.setUserId(cliSession.getUserId());
                             openCGAClient.logout();
-                            logoutSessionFile();
-//                        logoutSession();
+                            logoutCliSessionFile();
                         } else {
                             logger.debug("Session ok!!");
-                            this.sessionId = sessionFile.getSessionId();
-                            openCGAClient = new OpenCGAClient(sessionFile.getSessionId(), clientConfiguration);
-                            openCGAClient.setUserId(sessionFile.getUserId());
+//                            this.sessionId = cliSession.getSessionId();
+                            openCGAClient = new OpenCGAClient(cliSession.getSessionId(), clientConfiguration);
+                            openCGAClient.setUserId(cliSession.getUserId());
 
+                            if (options.sessionId == null) {
+                                options.sessionId = cliSession.getSessionId();
+                            }
                             // Some operations such as copy and link are run in the server side and need Catalog Manager
-                            catalogManager = new CatalogManager(catalogConfiguration);
+                            catalogManager = new CatalogManager(configuration);
                         }
                     }
                 } else {
@@ -101,70 +114,16 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                 logger.debug("No Session file");
                 openCGAClient = new OpenCGAClient(clientConfiguration);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (CatalogException e) {
+        } catch (IOException | CatalogException e) {
             e.printStackTrace();
         }
     }
 
-    /**
-     * This method attempts to first data configuration from CLI parameter, if not present then uses
-     * the configuration from installation directory, if not exists then loads JAR storage-configuration.yml.
-     *
-     * @throws IOException If any IO problem occurs
-     */
-    public void loadClientConfiguration() throws IOException {
-        // We load configuration file either from app home folder or from the JAR
-        Path path = Paths.get(this.conf).resolve("client-configuration.yml");
-        if (path != null && Files.exists(path)) {
-            logger.debug("Loading configuration from '{}'", path.toAbsolutePath());
-            this.clientConfiguration = ClientConfiguration.load(new FileInputStream(path.toFile()));
-        } else {
-            logger.debug("Loading configuration from JAR file");
-            this.clientConfiguration = ClientConfiguration
-                    .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("client-configuration.yml"));
-        }
-    }
 
     public void createOutput(QueryResponse queryResponse) {
         if (queryResponse != null) {
-            writer.print(queryResponse, true);
+            writer.print(queryResponse);
         }
     }
 
-    @Deprecated
-    protected void checkSessionValid() throws Exception {
-        SessionFile sessionFile = loadSessionFile();
-        if (sessionFile == null || sessionFile.getLogout() != null) {
-            System.out.println("No logged, please login first");
-        } else {
-            int sessionDuration = clientConfiguration.getSessionDuration();
-            long timestamp = sessionFile.getTimestamp();
-            long now = System.currentTimeMillis();
-            if ((now - timestamp) >= sessionDuration * 1000) {
-                System.out.println("Too much time with not action");
-                logoutSession();
-                throw new Exception("Logged out");
-            }
-        }
-    }
-
-    @Deprecated
-    protected void logoutSession() throws IOException {
-        SessionFile sessionFile = loadSessionFile();
-        openCGAClient.logout();
-
-        super.logoutSessionFile();
-    }
-
-    public static String getParsedSubCommand(JCommander jCommander) {
-        String parsedCommand = jCommander.getParsedCommand();
-        if (jCommander.getCommands().containsKey(parsedCommand)) {
-            String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
-            return subCommand != null ? subCommand: "";
-        } else {
-            return "";
-        }
-    }
 }

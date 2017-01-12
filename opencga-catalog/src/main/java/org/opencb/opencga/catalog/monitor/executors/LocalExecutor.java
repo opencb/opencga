@@ -31,6 +31,8 @@ import java.io.IOException;
  */
 public class LocalExecutor extends AbstractExecutor {
 
+    private static int threadInitNumber;
+
     public LocalExecutor() {
         logger = LoggerFactory.getLogger(LocalExecutor.class);
     }
@@ -79,8 +81,12 @@ public class LocalExecutor extends AbstractExecutor {
                 logger.error("Could not create the output/error files");
             }
         };
-        Thread thread = new Thread(runnable);
+        Thread thread = new Thread(runnable, "LocalExecutor-" + nextThreadNum());
         thread.start();
+    }
+
+    private static synchronized int nextThreadNum() {
+        return threadInitNumber++;
     }
 
     @Override

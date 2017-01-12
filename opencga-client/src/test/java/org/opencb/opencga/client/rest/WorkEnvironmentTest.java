@@ -21,15 +21,14 @@ import org.apache.commons.lang.RandomStringUtils;
 import org.junit.rules.ExternalResource;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.demo.AnalysisDemo;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
 import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.server.RestServer;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -47,9 +46,8 @@ public class WorkEnvironmentTest extends ExternalResource {
     protected OpenCGAClient openCGAClient;
     protected Path opencgaHome;
     protected CatalogManager catalogManager;
-    protected Configuration configuration;
     protected ClientConfiguration clientConfiguration;
-    protected CatalogConfiguration catalogConfiguration;
+    protected Configuration configuration;
     protected StorageConfiguration storageConfiguration;
     protected RestServer restServer;
 
@@ -62,19 +60,18 @@ public class WorkEnvironmentTest extends ExternalResource {
     private void isolateOpenCGA() throws Exception {
         opencgaHome = Paths.get("target/test-data").resolve("junit_opencga_home_" + RandomStringUtils.randomAlphabetic(10));
         Files.createDirectories(opencgaHome);
-        configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
         storageConfiguration = StorageConfiguration.load(getClass().getResource("/storage-configuration.yml").openStream());
-        catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration-test.yml").openStream());
-        catalogConfiguration.setDataDir(opencgaHome.resolve("sessions").toUri().toString());
-        catalogConfiguration.setTempJobsDir(opencgaHome.resolve("jobs").toUri().toString());
-        catalogConfiguration.getDatabase().setDatabase("opencga_client_test");
+        configuration = Configuration.load(getClass().getResource("/configuration-test.yml").openStream());
+        configuration.setDataDir(opencgaHome.resolve("sessions").toUri().toString());
+        configuration.setTempJobsDir(opencgaHome.resolve("jobs").toUri().toString());
+        configuration.getCatalog().setDatabase("opencga_client_test");
 
         // Copy the conf files
         Files.createDirectories(opencgaHome.resolve("conf"));
-//            InputStream inputStream = getClass().getResource("/catalog-configuration-test.yml").openStream();
-//            Files.copy(inputStream, opencgaHome.resolve("conf").resolve("catalog-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
-        catalogConfiguration.serialize(
-                new FileOutputStream(opencgaHome.resolve("conf").resolve("catalog-configuration.yml").toString()));
+//            InputStream inputStream = getClass().getResource("/configuration-test.yml").openStream();
+//            Files.copy(inputStream, opencgaHome.resolve("conf").resolve("configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
+        configuration.serialize(
+                new FileOutputStream(opencgaHome.resolve("conf").resolve("configuration.yml").toString()));
 
         InputStream inputStream = getClass().getResource("/storage-configuration.yml").openStream();
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("storage-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
@@ -102,12 +99,12 @@ public class WorkEnvironmentTest extends ExternalResource {
         Files.copy(inputStream, opencgaHome.resolve("examples")
                 .resolve("1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), StandardCopyOption.REPLACE_EXISTING);
 
-        CatalogDemo.createDemoDatabase(catalogConfiguration, true);
+        CatalogDemo.createDemoDatabase(configuration, true);
 
         restServer = new RestServer(opencgaHome.resolve("conf"));
         restServer.start();
 
-        catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager = new CatalogManager(configuration);
         clientConfiguration = ClientConfiguration.load(getClass().getResourceAsStream("/client-configuration-test.yml"));
         openCGAClient = new OpenCGAClient("user1", "user1_pass", clientConfiguration);
 //            AnalysisDemo.insertVariantFile(catalogManager, 6L,
@@ -127,13 +124,13 @@ public class WorkEnvironmentTest extends ExternalResource {
         }
     }
 
-    protected void loadTestPedigreeFile() throws CatalogException, StorageManagerException {
+    protected void loadTestPedigreeFile() throws CatalogException, StorageEngineException {
         AnalysisDemo.insertPedigreeFile(catalogManager, 6L, opencgaHome.resolve("examples/20130606_g1k.ped"),
                 openCGAClient.getSessionId());
     }
 
     protected void loadTestVariantFile()
-            throws StorageManagerException, AnalysisExecutionException, CatalogException, JsonProcessingException {
+            throws StorageEngineException, AnalysisExecutionException, CatalogException, JsonProcessingException {
         AnalysisDemo.insertVariantFile(catalogManager, 6L,
                 opencgaHome.resolve("examples/1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
                 openCGAClient.getSessionId());

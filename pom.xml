@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>1.0.0-rc2.1</version>
+    <version>1.0.0-rc3</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -36,12 +36,12 @@
     </modules>
 
     <properties>
-        <opencga.version>1.0.0-rc2.1</opencga.version>
+        <opencga.version>1.0.0-rc3</opencga.version>
         <java.version>1.8</java.version>
-        <biodata.version>0.8.5</biodata.version>
-        <cellbase.version>4.5.0-beta.1</cellbase.version>
-        <java-common-libs.version>3.3.2</java-common-libs.version>
-        <hpg-bigdata.version>1.0.0-alpha</hpg-bigdata.version>
+        <biodata.version>0.9.0</biodata.version>
+        <cellbase.version>4.5.0-rc</cellbase.version>
+        <java-common-libs.version>3.4.0</java-common-libs.version>
+        <hpg-bigdata.version>1.0.0-beta1</hpg-bigdata.version>
         <jackson.version>2.6.6</jackson.version>
         <jersey.version>2.23</jersey.version>
         <hadoop.version>2.7.1</hadoop.version>
@@ -50,8 +50,8 @@
         <!--<phoenix.version>4.7.0-HBase-1.1</phoenix.version>-->
         <phoenix.version>4.7.0.2.5.0.0-1245</phoenix.version>
         <avro.version>1.7.7</avro.version>
-        <google.protobuf>3.0.0-beta-1</google.protobuf> <!--DO NOT UPGRADE! HBase may not work with a higher version-->
-        <google.grpc>0.13.2</google.grpc>
+        <google.protobuf>3.1.0</google.protobuf> <!--DO NOT UPGRADE! HBase may not work with a higher version-->
+        <google.grpc>1.0.1</google.grpc>
         <slf4j.version>1.7.21</slf4j.version>
         <junit.version>4.12</junit.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -194,42 +194,8 @@
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
-                <artifactId>opencga-storage-hadoop</artifactId>
+                <artifactId>opencga-storage-hadoop-core</artifactId>
                 <version>${opencga.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>javax.servlet</groupId>
-                        <artifactId>servlet-api</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.mortbay.jetty</groupId>
-                        <artifactId>servlet-api</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.sun.jersey</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.hadoop</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.hbase</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <!--<exclusion>-->
-                    <!--<groupId>org.apache.phoenix</groupId>-->
-                    <!--<artifactId>*</artifactId>-->
-                    <!--</exclusion>-->
-                    <!--<exclusion>-->
-                    <!--<groupId>org.apache.spark</groupId>-->
-                    <!--<artifactId>*</artifactId>-->
-                    <!--</exclusion>-->
-                    <exclusion>
-                        <groupId>org.apache.zookeeper</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
 
             <!-- OpenCB dependencies -->
@@ -322,7 +288,7 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>15.0</version>
+                <version>18.0</version>
                 <!--DO NOT UPGRADE! HBase requires this guava version-->
             </dependency>
             <dependency>
@@ -359,11 +325,6 @@
                 <groupId>com.fasterxml.jackson.dataformat</groupId>
                 <artifactId>jackson-dataformat-xml</artifactId>
                 <version>${jackson.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.amazonaws</groupId>
-                <artifactId>aws-java-sdk</artifactId>
-                <version>1.3.19</version>
             </dependency>
             <dependency>
                 <groupId>org.xerial</groupId>
@@ -421,7 +382,7 @@
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
-                <version>1.9.0</version>
+                <version>2.2.27</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>
@@ -467,6 +428,16 @@
                     <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.19.1</version>
+                <configuration>
+                    <forkCount>1</forkCount>
+                    <reuseForks>false</reuseForks>
+                    <!--<argLine>-Xmx1024m -XX:MaxPermSize=256m</argLine>-->
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
@@ -503,42 +474,67 @@
             <properties>
                 <opencga.war.name>opencga-${opencga.version}</opencga.war.name>
 
+                <!-- General -->
+                <OPENCGA.INSTALLATION.DIR>/opt/opencga</OPENCGA.INSTALLATION.DIR>
+                <OPENCGA.USER.WORKSPACE>file:///opt/opencga/sessions/</OPENCGA.USER.WORKSPACE>
+                <OPENCGA.JOBS.DIR>${OPENCGA.USER.WORKSPACE}/jobs/</OPENCGA.JOBS.DIR>
+                <OPENCGA.DB.PREFIX>opencga</OPENCGA.DB.PREFIX>
+                <OPENCGA.EXECUTION.MODE>LOCAL</OPENCGA.EXECUTION.MODE>
+
+                <!-- Client -->
+                <OPENCGA.CLIENT.REST.HOST>http://localhost:8080/${opencga.war.name}</OPENCGA.CLIENT.REST.HOST>
+                <OPENCGA.CLIENT.GRPC.HOST>localhost:9091</OPENCGA.CLIENT.GRPC.HOST>
+                <OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME></OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME>
+                <OPENCGA.CLIENT.ORGANISM.COMMON_NAME></OPENCGA.CLIENT.ORGANISM.COMMON_NAME>
+                <OPENCGA.CLIENT.ORGANISM.TAXONOMY_CODE></OPENCGA.CLIENT.ORGANISM.TAXONOMY_CODE>
+                <OPENCGA.CLIENT.ORGANISM.ASSEMBLY></OPENCGA.CLIENT.ORGANISM.ASSEMBLY>
+
+                <OPENCGA.SERVER.REST.PORT>9090</OPENCGA.SERVER.REST.PORT>
+                <OPENCGA.SERVER.GRPC.PORT>9091</OPENCGA.SERVER.GRPC.PORT>
+                <OPENCGA.MONITOR.PORT>9092</OPENCGA.MONITOR.PORT>
+
+                <!-- Catalog -->
                 <OPENCGA.CATALOG.DB.HOSTS>localhost:27017</OPENCGA.CATALOG.DB.HOSTS>
-                <!-- Deprecated: use PREFIX instead -->
-                <OPENCGA.CATALOG.DB.DATABASE>opencga_catalog</OPENCGA.CATALOG.DB.DATABASE>
                 <OPENCGA.CATALOG.DB.USER></OPENCGA.CATALOG.DB.USER>
                 <OPENCGA.CATALOG.DB.PASSWORD></OPENCGA.CATALOG.DB.PASSWORD>
                 <OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE></OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE>
+                <OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST>20</OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST>
 
-                <OPENCGA.INSTALLATION.DIR>/opt/opencga</OPENCGA.INSTALLATION.DIR>
-                <OPENCGA.CATALOG.DB.PREFIX>opencga</OPENCGA.CATALOG.DB.PREFIX>
-                <OPENCGA.CATALOG.ROOTDIR>file:///opt/opencga/sessions/</OPENCGA.CATALOG.ROOTDIR>
-                <OPENCGA.CATALOG.JOBS.ROOTDIR>${OPENCGA.CATALOG.ROOTDIR}/jobs/</OPENCGA.CATALOG.JOBS.ROOTDIR>
+                <!-- Storage -->
+                <OPENCGA.STORAGE.DEFAULT_ENGINE>mongodb</OPENCGA.STORAGE.DEFAULT_ENGINE>
+                <OPENCGA.STORAGE.CACHE.HOST>localhost:6379</OPENCGA.STORAGE.CACHE.HOST>
+                <OPENCGA.STORAGE.SEARCH.HOST>http://localhost:8983/solr/</OPENCGA.STORAGE.SEARCH.HOST>
+                <OPENCGA.STORAGE.STUDY_METADATA_MANAGER></OPENCGA.STORAGE.STUDY_METADATA_MANAGER>
 
-                <OPENCGA.STORAGE.STUDY.METADATA.MANAGER></OPENCGA.STORAGE.STUDY.METADATA.MANAGER>
+                <!-- Storage Variants general -->
                 <OPENCGA.STORAGE.VARIANT.DB.HOSTS>localhost:27017</OPENCGA.STORAGE.VARIANT.DB.HOSTS>
                 <OPENCGA.STORAGE.VARIANT.DB.USER></OPENCGA.STORAGE.VARIANT.DB.USER>
                 <OPENCGA.STORAGE.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.VARIANT.DB.PASSWORD>
-                <OPENCGA.STORAGE.VARIANT.DB.AUTHENTICATION_DATABASE></OPENCGA.STORAGE.VARIANT.DB.AUTHENTICATION_DATABASE>
 
-                <!--If empty, will use the ZOOKEEPER_QUORUM read from the hbase configuration files-->
-                <OPENCGA.STORAGE.HADOOP.VARIANT.DB.HOSTS></OPENCGA.STORAGE.HADOOP.VARIANT.DB.HOSTS>
-                <OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER></OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER>
-                <OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD>
-                <OPENCGA.STORAGE.HADOOP.HBASE.NAMESPACE></OPENCGA.STORAGE.HADOOP.HBASE.NAMESPACE>
-                <OPENCGA.STORAGE.HADOOP.HBASE.ARCHIVE.TABLE.PREFIX>${OPENCGA.CATALOG.DB.PREFIX}_study</OPENCGA.STORAGE.HADOOP.HBASE.ARCHIVE.TABLE.PREFIX>
-
+                <!-- Storage Alignments general -->
                 <OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS>localhost:27017</OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS>
                 <OPENCGA.STORAGE.ALIGNMENT.DB.USER></OPENCGA.STORAGE.ALIGNMENT.DB.USER>
                 <OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD></OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD>
 
-                <OPENCGA.ANALYSIS.EXECUTION.MANAGER>LOCAL</OPENCGA.ANALYSIS.EXECUTION.MANAGER>
+                <!-- Storage-mongodb -->
+                <OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION_DATABASE></OPENCGA.STORAGE.MONGODB.VARIANT.DB.AUTHENTICATION_DATABASE>
+                <OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST>20</OPENCGA.STORAGE.MONGODB.VARIANT.DB.CONNECTIONS_PER_HOST>
 
-                <OPENCGA.CLIENT.HOST>http://localhost:8080/${opencga.war.name}</OPENCGA.CLIENT.HOST>
+                <!-- Storage-hadoop -->
+                <!--If empty, will use the ZOOKEEPER_QUORUM read from the hbase configuration files-->
+                <OPENCGA.STORAGE.HADOOP.VARIANT.DB.HOSTS></OPENCGA.STORAGE.HADOOP.VARIANT.DB.HOSTS>
+                <OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER></OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER>
+                <OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD>
+                <OPENCGA.STORAGE.HADOOP.VARIANT.HBASE.NAMESPACE></OPENCGA.STORAGE.HADOOP.VARIANT.HBASE.NAMESPACE>
+                <OPENCGA.STORAGE.HADOOP.VARIANT.ARCHIVE.TABLE.PREFIX>${OPENCGA.DB.PREFIX}_study</OPENCGA.STORAGE.HADOOP.VARIANT.ARCHIVE.TABLE.PREFIX>
 
-                <OPENCGA.SERVER.REST.PORT>9090</OPENCGA.SERVER.REST.PORT>
-                <OPENCGA.SERVER.GRPC.PORT>9091</OPENCGA.SERVER.GRPC.PORT>
+                <!-- Email server -->
+                <OPENCGA.MAIL.HOST></OPENCGA.MAIL.HOST>
+                <OPENCGA.MAIL.PORT></OPENCGA.MAIL.PORT>
+                <OPENCGA.MAIL.USER></OPENCGA.MAIL.USER>
+                <OPENCGA.MAIL.PASSWORD></OPENCGA.MAIL.PASSWORD>
 
+                <!-- cellbase -->
                 <OPENCGA.CELLBASE.VERSION>v4</OPENCGA.CELLBASE.VERSION>
                 <OPENCGA.CELLBASE.REST.HOST>http://bioinfodev.hpc.cam.ac.uk/cellbase-4.5.0-beta1.1/</OPENCGA.CELLBASE.REST.HOST>
                 <OPENCGA.CELLBASE.DB.HOST>localhost:27017</OPENCGA.CELLBASE.DB.HOST>
@@ -546,8 +542,6 @@
                 <OPENCGA.CELLBASE.DB.PASSWORD></OPENCGA.CELLBASE.DB.PASSWORD>
                 <OPENCGA.CELLBASE.DB.AUTHENTICATION_DATABASE></OPENCGA.CELLBASE.DB.AUTHENTICATION_DATABASE>
                 <OPENCGA.CELLBASE.DB.READ_PREFERENCE>secondaryPreferred</OPENCGA.CELLBASE.DB.READ_PREFERENCE>
-
-                <OPENCGA.STORAGE.ENGINE.DEFAULT>mongodb</OPENCGA.STORAGE.ENGINE.DEFAULT>
             </properties>
         </profile>
         <profile>

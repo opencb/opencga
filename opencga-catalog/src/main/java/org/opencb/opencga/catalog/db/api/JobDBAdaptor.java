@@ -138,7 +138,7 @@ public interface JobDBAdaptor extends AclDBAdaptor<Job, JobAclEntry> {
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
-        DISK_USAGE("diskUsage", DECIMAL, ""),
+        SIZE("size", DECIMAL, ""),
         OUT_DIR_ID("outDirId", INTEGER_ARRAY, ""),
         TMP_OUT_DIR_URI("tmpOutDirUri", TEXT_ARRAY, ""),
         INPUT("input", INTEGER_ARRAY, ""),
@@ -154,7 +154,8 @@ public interface JobDBAdaptor extends AclDBAdaptor<Job, JobAclEntry> {
         ERROR("error", TEXT_ARRAY, ""),
         ERROR_DESCRIPTION("errorDescription", TEXT_ARRAY, ""),
 
-        STUDY_ID("studyId", INTEGER_ARRAY, "");
+        STUDY_ID("studyId", INTEGER_ARRAY, ""),
+        STUDY("study", INTEGER_ARRAY, ""); // Alias to studyId in the database. Only for the webservices.
 
         private static Map<String, QueryParams> map = new HashMap<>();
         static {

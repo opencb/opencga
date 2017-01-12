@@ -16,7 +16,12 @@
 
 package org.opencb.opencga.app.cli;
 
+import com.beust.jcommander.DynamicParameter;
 import com.beust.jcommander.Parameter;
+import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created on 03/05/16
@@ -42,18 +47,75 @@ public class GeneralCliOptions {
         @Parameter(names = {"-h", "--help"}, description = "Print this help", help = true)
         public boolean help;
 
-        @Parameter(names = {"-L", "--log-level"}, description = "One of the following: 'error', 'warn', 'info', 'debug', 'trace'")
-        public String logLevel = "info";
+        @Parameter(names = {"-L", "--log-level"}, description = "One of the following: 'error', 'warn', 'info', 'debug', 'trace' [info]")
+        public String logLevel;
 
         @Parameter(names = {"--log-file"}, description = "Set the file to write the log")
         public String logFile;
 
-        @Parameter(names = {"-C", "--conf"}, description = "Configuration folder that contains opencga.yml, catalog-configuration.yaml, storage-configuration.yml and client-configuration.yaml files.")
+        @Parameter(names = {"-C", "--conf"}, description = "Configuration folder that contains opencga.yml, catalog-configuration.yaml, "
+                + "storage-configuration.yml and client-configuration.yaml files.")
         public String conf;
 
         @Deprecated
         @Parameter(names = {"-v", "--verbose"}, description = "Increase the verbosity of logs")
         public boolean verbose = false;
 
+        @Parameter(names = {"--of", "--output-format"}, description = "Output format. one of {JSON, JSON_PRETTY, TEXT, YAML}", arity = 1)
+        public String outputFormat = "TEXT";
+
+        @Parameter(names = {"-S", "--sid", "--session-id"}, description = "Token session id, NOTE: parameter --sid will be delete soon", arity = 1)
+        public String sessionId;
+
+        @Parameter(names = {"-M", "--metadata"}, description = "Include metadata information", required = false, arity = 0)
+        public boolean metadata = false;
+
+        @Parameter(names = {"--no-header"}, description = "Not include headers in the output (not applicable to json output-format)",
+                required = false, arity = 0)
+        public boolean noHeader = false;
+
+        @DynamicParameter(names = "-D", description = "Storage engine specific parameters go here comma separated, ie. -Dmongodb" +
+                ".compression=snappy", hidden = false)
+        public Map<String, String> params = new HashMap<>(); //Dynamic parameters must be initialized
     }
+
+    public static class StudyOption {
+
+        @Parameter(names = {"-s", "--study"}, description = "Study [[user@]project:]study where study and project can be either the id or"
+                + " the alias.", arity = 1)
+        public String study;
+
+    }
+
+    public static class StudyListOption {
+
+        @Parameter(names = {"-s", "--study"}, description = "Study list [[user@]project:]study where study and project can be either the id"
+                + " or alias.", arity = 1)
+        public String study;
+
+    }
+
+    public static class DataModelOptions {
+
+        @Parameter(names = {"-I", "--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+        public String include;
+
+        @Parameter(names = {"-E", "--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+        public String exclude;
+
+    }
+
+    public static class NumericOptions {
+
+        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
+        public String skip;
+
+        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
+        public String limit;
+
+        @Parameter(names = {"--count"}, description = "Total number of results. Default = false", arity = 0)
+        public boolean count;
+
+    }
+
 }

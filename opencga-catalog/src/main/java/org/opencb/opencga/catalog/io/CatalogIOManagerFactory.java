@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.io;
 
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.UriUtils;
 import org.slf4j.Logger;
@@ -35,16 +35,16 @@ public class CatalogIOManagerFactory {
 
     protected static Logger logger = LoggerFactory.getLogger(CatalogIOManagerFactory.class);
     private final Properties properties;
-    private final CatalogConfiguration catalogConfiguration;
+    private final Configuration configuration;
     private final URI mainRootdir;
     private String defaultCatalogScheme = "file";
     private Map<String, CatalogIOManager> catalogIOManagers = new HashMap<>();
 
-    public CatalogIOManagerFactory(CatalogConfiguration catalogConfiguration) throws CatalogIOException {
+    public CatalogIOManagerFactory(Configuration configuration) throws CatalogIOException {
         this.properties = null;
-        this.catalogConfiguration = catalogConfiguration;
+        this.configuration = configuration;
         try {
-            mainRootdir = UriUtils.createDirectoryUri(catalogConfiguration.getDataDir());
+            mainRootdir = UriUtils.createDirectoryUri(configuration.getDataDir());
         } catch (URISyntaxException e) {
             throw new CatalogIOException("Malformed URI 'OPENCGA.CATALOG.MAIN.ROOTDIR'", e);
         }
@@ -71,10 +71,10 @@ public class CatalogIOManagerFactory {
         if (!catalogIOManagers.containsKey(io)) {
             switch (io) {
                 case "file":
-                    catalogIOManagers.put("file", new PosixCatalogIOManager(catalogConfiguration));
+                    catalogIOManagers.put("file", new PosixCatalogIOManager(configuration));
                     break;
                 case "hdfs":
-                    catalogIOManagers.put("hdfs", new HdfsCatalogIOManager(catalogConfiguration));
+                    catalogIOManagers.put("hdfs", new HdfsCatalogIOManager(configuration));
                     break;
                 default:
                     throw new UnsupportedOperationException("Unsupported file system : " + io);

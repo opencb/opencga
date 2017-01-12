@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage</artifactId>
-        <version>1.0.0-rc2.1</version>
+        <version>1.0.0-rc3</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -218,7 +218,7 @@
             <dependencies>
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
-                    <artifactId>opencga-storage-hadoop</artifactId>
+                    <artifactId>opencga-storage-hadoop-core</artifactId>
                     <version>${opencga.version}</version>
                 </dependency>
             </dependencies>

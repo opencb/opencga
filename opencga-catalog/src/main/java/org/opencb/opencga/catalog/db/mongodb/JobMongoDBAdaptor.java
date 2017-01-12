@@ -419,7 +419,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         String[] acceptedIntParams = {QueryParams.VISITS.key(), };
         filterIntParams(parameters, jobParameters, acceptedIntParams);
 
-        String[] acceptedLongParams = {QueryParams.START_TIME.key(), QueryParams.END_TIME.key(), QueryParams.DISK_USAGE.key()};
+        String[] acceptedLongParams = {QueryParams.START_TIME.key(), QueryParams.END_TIME.key(), QueryParams.SIZE.key()};
         filterLongParams(parameters, jobParameters, acceptedLongParams);
 
         String[] acceptedIntegerListParams = {QueryParams.OUTPUT.key()};
@@ -636,6 +636,9 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             QueryParams queryParam = (QueryParams.getParam(entry.getKey()) != null)
                     ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
+            if (queryParam == null) {
+                continue;
+            }
             try {
                 switch (queryParam) {
                     case ID:
@@ -658,8 +661,36 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
-                    default:
+                    case NAME:
+                    case USER_ID:
+                    case TOOL_NAME:
+                    case TYPE:
+                    case CREATION_DATE:
+                    case DESCRIPTION:
+                    case START_TIME:
+                    case END_TIME:
+                    case OUTPUT_ERROR:
+                    case EXECUTION:
+                    case COMMAND_LINE:
+                    case VISITS:
+                    case STATUS:
+                    case STATUS_NAME:
+                    case STATUS_MSG:
+                    case STATUS_DATE:
+                    case SIZE:
+                    case OUT_DIR_ID:
+                    case TMP_OUT_DIR_URI:
+                    case INPUT:
+                    case OUTPUT:
+                    case TAGS:
+                    case ACL:
+                    case ACL_MEMBER:
+                    case ACL_PERMISSIONS:
+                    case ERROR:
+                    case ERROR_DESCRIPTION:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
+                        break;
+                    default:
                         break;
                 }
             } catch (Exception e) {

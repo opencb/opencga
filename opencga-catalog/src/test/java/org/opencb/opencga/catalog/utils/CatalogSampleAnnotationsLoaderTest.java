@@ -30,7 +30,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 
@@ -53,9 +53,9 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
 
     @BeforeClass
     public static void beforeClass() throws IOException, CatalogException, URISyntaxException {
-        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(CatalogSampleAnnotationsLoaderTest.class.getClassLoader()
-                .getClass().getResource("/catalog-configuration-test.yml").openStream());
-        catalogManager = new CatalogManager(catalogConfiguration);
+        Configuration configuration = Configuration.load(CatalogSampleAnnotationsLoaderTest.class.getClassLoader()
+                .getClass().getResource("/configuration-test.yml").openStream());
+        catalogManager = new CatalogManager(configuration);
         catalogManager.deleteCatalogDB(true);
         catalogManager.installCatalogDB();
         loader = new CatalogSampleAnnotationsLoader(catalogManager);
@@ -67,7 +67,8 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         ObjectMap session = catalogManager.loginAsAnonymous("localHost").getResult().get(0);
         sessionId = session.getString("sessionId");
         userId = session.getString("userId");
-        Project project = catalogManager.createProject("default", "def", "", "ACME", null, sessionId).getResult().get(0);
+        Project project = catalogManager.getProjectManager().create("default", "def", "", "ACME", "Homo sapiens",
+                null, null, "GRCh38", new QueryOptions(), sessionId).getResult().get(0);
         Study study = catalogManager.createStudy(project.getId(), "default", "def", Study.Type.FAMILY, "", sessionId).getResult().get(0);
         studyId = study.getId();
         pedFile = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.OTHER_PED, "data/" + pedFileName, "", true, -1,

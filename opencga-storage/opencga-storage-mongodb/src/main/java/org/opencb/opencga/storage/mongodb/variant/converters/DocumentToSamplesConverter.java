@@ -26,8 +26,8 @@ import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
+import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +38,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.zip.DataFormatException;
 
-import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager.MongoDBVariantOptions.DEFAULT_GENOTYPE;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
@@ -418,11 +418,7 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
         }
     }
 
-    public Document convertToStorageType(StudyEntry studyEntry, int studyId, int fileId, Document otherFields) {
-        return convertToStorageType(studyEntry, studyId, fileId, otherFields, new HashSet<>());
-    }
-
-    public Document convertToStorageType(StudyEntry studyEntry, int studyId, int fileId, Document otherFields, Set<String> samplesInFile) {
+    public Document convertToStorageType(StudyEntry studyEntry, int studyId, Document otherFields, LinkedHashSet<String> samplesInFile) {
         Map<String, List<Integer>> genotypeCodes = new HashMap<>();
 
         final StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
@@ -486,8 +482,8 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
         //Position for samples in this file
         HashBiMap<String, Integer> samplesPosition = HashBiMap.create();
         int position = 0;
-        for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fileId)) {
-            samplesPosition.put(studyConfiguration.getSampleIds().inverse().get(sampleId), position++);
+        for (String sample : samplesInFile) {
+            samplesPosition.put(sample, position++);
         }
 
         List<String> extraFields = studyConfiguration.getAttributes()

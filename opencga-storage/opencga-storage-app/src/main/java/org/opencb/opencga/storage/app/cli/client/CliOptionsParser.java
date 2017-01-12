@@ -23,7 +23,8 @@ import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.storage.app.cli.OptionsParser;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -59,6 +60,7 @@ public class CliOptionsParser extends OptionsParser {
         variantSubCommands.addCommand("index", variantCommandOptions.indexVariantsCommandOptions);
         variantSubCommands.addCommand("query", variantCommandOptions.queryVariantsCommandOptions);
         variantSubCommands.addCommand("query-grpc", variantCommandOptions.queryGrpCVariantsCommandOptions);
+        variantSubCommands.addCommand("import", variantCommandOptions.importVariantsCommandOptions);
         variantSubCommands.addCommand("annotation", variantCommandOptions.annotateVariantsCommandOptions);
         variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantsCommandOptions);
         variantSubCommands.addCommand("benchmark", variantCommandOptions.benchmarkCommandOptions);
@@ -101,6 +103,7 @@ public class CliOptionsParser extends OptionsParser {
         IndexVariantsCommandOptions indexVariantsCommandOptions;
         QueryVariantsCommandOptions queryVariantsCommandOptions;
         QueryGrpCVariantsCommandOptions queryGrpCVariantsCommandOptions;
+        ImportVariantsCommandOptions importVariantsCommandOptions;
         AnnotateVariantsCommandOptions annotateVariantsCommandOptions;
         StatsVariantsCommandOptions statsVariantsCommandOptions;
         BenchmarkCommandOptions benchmarkCommandOptions;
@@ -111,6 +114,7 @@ public class CliOptionsParser extends OptionsParser {
             this.indexVariantsCommandOptions = new IndexVariantsCommandOptions();
             this.queryVariantsCommandOptions = new QueryVariantsCommandOptions();
             this.queryGrpCVariantsCommandOptions = new QueryGrpCVariantsCommandOptions();
+            this.importVariantsCommandOptions = new ImportVariantsCommandOptions();
             this.annotateVariantsCommandOptions = new AnnotateVariantsCommandOptions();
             this.statsVariantsCommandOptions = new StatsVariantsCommandOptions();
             this.benchmarkCommandOptions = new BenchmarkCommandOptions();
@@ -180,10 +184,10 @@ public class CliOptionsParser extends OptionsParser {
         public String study;
 
         @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = false, arity = 1)
-        public String studyId = VariantStorageManager.Options.STUDY_ID.defaultValue().toString();
+        public String studyId = VariantStorageEngine.Options.STUDY_ID.defaultValue().toString();
 
         @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = false, arity = 1)
-        public String fileId = VariantStorageManager.Options.FILE_ID.defaultValue().toString();
+        public String fileId = VariantStorageEngine.Options.FILE_ID.defaultValue().toString();
 
         @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
         public String pedigree;
@@ -233,7 +237,7 @@ public class CliOptionsParser extends OptionsParser {
         public boolean annotate;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
-        public org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource annotator = null;
+        public VariantAnnotatorFactory.AnnotationSource annotator = null;
 
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         public boolean overwriteAnnotations;
@@ -241,6 +245,9 @@ public class CliOptionsParser extends OptionsParser {
         @Deprecated
         @Parameter(names = {"--annotator-config"}, description = "Path to the file with the configuration of the annotator")
         public String annotatorConfigFile;
+
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation", arity = 0)
+        public boolean resume;
     }
 
 
@@ -283,7 +290,7 @@ public class CliOptionsParser extends OptionsParser {
         public String credentials;
 
         @Deprecated
-        @Parameter(names = {"-b", "--backend"}, description = "StorageManager plugin used to index files into: mongodb (default), hbase " +
+        @Parameter(names = {"-b", "--backend"}, description = "StorageEngine plugin used to index files into: mongodb (default), hbase " +
                 "(pending)", required = false, arity = 1)
         public String backend = "mongodb";
 
@@ -451,6 +458,20 @@ public class CliOptionsParser extends OptionsParser {
 
     }
 
+    @Parameters(commandNames = {"import"}, commandDescription = "Import a variants dataset into an empty database")
+    public class ImportVariantsCommandOptions {
+
+        @ParametersDelegate
+        public CommonOptions commonOptions = CliOptionsParser.this.commonOptions;
+
+        @Parameter(names = {"-i", "--input"}, description = "File to import in the selected backend", required = true)
+        public String input;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name to load the data", arity = 1)
+        public String dbName;
+
+    }
+
     @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Create and load variant annotations into the database")
     public class AnnotateVariantsCommandOptions {
 
@@ -465,7 +486,7 @@ public class CliOptionsParser extends OptionsParser {
         public String load = null;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
-        public org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource annotator;
+        public VariantAnnotatorFactory.AnnotationSource annotator;
 
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         public boolean overwriteAnnotations = false;
@@ -592,7 +613,7 @@ public class CliOptionsParser extends OptionsParser {
                 ".core.StudyConfiguration", required = false, arity = 1)
         String studyConfigurationFile;
 
-        @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic or EVS (optional)", arity = 1)
+        @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
         VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
 
         @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")

@@ -18,7 +18,7 @@ package org.opencb.opencga.catalog.io;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
@@ -48,25 +48,25 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         super(properties);
     }
 
-    public PosixCatalogIOManager(CatalogConfiguration catalogConfiguration) throws CatalogIOException {
-        super(catalogConfiguration);
+    public PosixCatalogIOManager(Configuration configuration) throws CatalogIOException {
+        super(configuration);
     }
 
     @Override
-    protected void setConfiguration(CatalogConfiguration catalogConfiguration) throws CatalogIOException {
+    protected void setConfiguration(Configuration configuration) throws CatalogIOException {
         try {
-            rootDir = UriUtils.createDirectoryUri(catalogConfiguration.getDataDir());
+            rootDir = UriUtils.createDirectoryUri(configuration.getDataDir());
         } catch (URISyntaxException e) {
             throw new CatalogIOException("Malformed URI 'OPENCGA.CATALOG.MAIN.ROOTDIR'", e);
         }
         if (!rootDir.getScheme().equals("file")) {
             throw new CatalogIOException("wrong posix file system in catalog.properties: " + rootDir);
         }
-        if (catalogConfiguration.getTempJobsDir().isEmpty()) {
+        if (configuration.getTempJobsDir().isEmpty()) {
             jobsDir = rootDir.resolve(DEFAULT_OPENCGA_JOBS_FOLDER);
         } else {
             try {
-                jobsDir = UriUtils.createDirectoryUri(catalogConfiguration.getTempJobsDir());
+                jobsDir = UriUtils.createDirectoryUri(configuration.getTempJobsDir());
             } catch (URISyntaxException e) {
                 throw new CatalogIOException("Malformed URI 'OPENCGA.CATALOG.MAIN.ROOTDIR'", e);
             }
@@ -380,7 +380,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         try {
             Files.copy(inputStream, Paths.get(fileUri), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            throw new CatalogIOException("create file failed at copying file " + fileUri);
+            throw new CatalogIOException("create file failed at copying file " + fileUri, e);
         }
     }
 
@@ -490,7 +490,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 //        }
 //        try {
 //            Files.copy(tmpFile, fullFilePath);
-//            file.setDiskUsage(Files.size(fullFilePath));
+//            file.setSize(Files.size(fullFilePath));
 //        } catch (IOException e) {
 //            e.printStackTrace();
 //            throw new CatalogIOManagerException("createObject(): Copying from tmp folder to bucket folder");
@@ -588,7 +588,6 @@ public class PosixCatalogIOManager extends CatalogIOManager {
                 throw new CatalogIOException("md5sum failed with exit value : " + p.exitValue() + ". ERROR: " + br.readLine());
             }
         } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
             //TODO: Handle error in checksum
             throw new CatalogIOException("Checksum error in file " + file, e);
         }

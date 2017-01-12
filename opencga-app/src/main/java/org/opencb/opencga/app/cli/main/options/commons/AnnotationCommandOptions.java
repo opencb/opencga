@@ -19,14 +19,14 @@ package org.opencb.opencga.app.cli.main.options.commons;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
 
 /**
  * Created by pfurio on 27/07/16.
  */
 public class AnnotationCommandOptions {
 
-    private OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonCommandOptions;
+    private GeneralCliOptions.CommonCommandOptions commonCommandOptions;
 
     private AnnotationSetsCreateCommandOptions createCommandOptions;
     private AnnotationSetsAllInfoCommandOptions allInfoCommandOptions;
@@ -35,13 +35,14 @@ public class AnnotationCommandOptions {
     private AnnotationSetsInfoCommandOptions infoCommandOptions;
     private AnnotationSetsUpdateCommandOptions updateCommandOptions;
 
-    public AnnotationCommandOptions(OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonCommandOptions) {
+    public AnnotationCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions) {
         this.commonCommandOptions = commonCommandOptions;
     }
 
-    public class BaseCommandOptions {
+    public class BaseCommandOptions extends GeneralCliOptions.StudyListOption {
+
         @ParametersDelegate
-        public OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "Id of the resource", required = true, arity = 1)
         public String id;
@@ -61,8 +62,6 @@ public class AnnotationCommandOptions {
 
     @Parameters(commandNames = {"annotation-sets-all-info"}, commandDescription = "Retrieve all the annotation sets from the resource")
     public class AnnotationSetsAllInfoCommandOptions extends BaseCommandOptions {
-        @Parameter(names = {"--as-map"}, description = "Boolean indicating whether to show the annotations as key-value pairs", arity = 0)
-        public boolean asMap;
     }
 
     @Parameters(commandNames = {"annotation-sets-search"}, commandDescription = "Search annotation sets from the resource")
@@ -73,9 +72,6 @@ public class AnnotationCommandOptions {
 
         @Parameter(names = {"--annotation"}, description = "Annotation",  arity = 1)
         public String annotation;
-
-        @Parameter(names = {"--as-map"}, description = "Boolean indicating whether to show the annotations as key-value pairs", arity = 0)
-        public boolean asMap;
     }
 
     @Parameters(commandNames = {"annotation-sets-delete"}, commandDescription = "Remove an entire annotation set or just some annotations")
@@ -94,9 +90,6 @@ public class AnnotationCommandOptions {
 
         @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name", required = true, arity = 1)
         public String annotationSetName;
-
-        @Parameter(names = {"--as-map"}, description = "Boolean indicating whether to show the annotations as key-value pairs", arity = 0)
-        public boolean asMap;
     }
 
     @Parameters(commandNames = {"annotation-sets-update"}, commandDescription = "Update the value of some annotations")

@@ -1,14 +1,25 @@
 ---
-## number of seconds that session remain open
-sessionDuration: 12000
+logLevel: "INFO"
+logFile: null
+
+sessionDuration: 12000  # number of seconds that session remains open
+defaultStudy: ""
+
+# The default organism values can be defined here.
+organism:
+  taxonomyCode: ${OPENCGA.CLIENT.ORGANISM.TAXONOMY_CODE}
+  scientificName: ${OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME}
+  commonName: ${OPENCGA.CLIENT.ORGANISM.COMMON_NAME}
+  assembly: ${OPENCGA.CLIENT.ORGANISM.ASSEMBLY}
+
 
 ## REST client configuration options
 rest:
-  host: "${OPENCGA.CLIENT.HOST}"
+  host: "${OPENCGA.CLIENT.REST.HOST}"
   batchQuerySize: 200
   timeout: 10000
   defaultLimit: 2000
 
 ## gRPC configuration options
 grpc:
-  host: "localhost:9091"
+  host: "${OPENCGA.CLIENT.GRPC.HOST}"
