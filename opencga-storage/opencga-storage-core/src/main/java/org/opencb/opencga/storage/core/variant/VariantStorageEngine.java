@@ -101,7 +101,10 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         UPDATE_STATS("updateStats", false),                //Calculate missing stats
         ANNOTATE("annotate", false),
 
-        RESUME("resume", false);
+        RESUME("resume", false),
+
+        DEFAULT_TIMEOUT("dbadaptor.default_timeout", 10000), // Default timeout for DBAdaptor operations. Only used if none is provided.
+        MAX_TIMEOUT("dbadaptor.max_timeout", 30000);         // Max allowed timeout for DBAdaptor operations
 
         private final String key;
         private final Object value;

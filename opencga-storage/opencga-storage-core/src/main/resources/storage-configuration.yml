@@ -91,6 +91,8 @@ storageEngines:
     manager: "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine"
     options:
       database.name: "opencga"
+      dbadaptor.max_timeout : 30000 #(ms) Max allowed timeout for DBAdaptor operations.
+      dbadaptor.default_timeout : 10000 #(ms) Default timeout for DBAdaptor operations. Only used if none is provided.
       collection.variants: "variants"
       collection.studies: "studies"
       collection.files: "files"
