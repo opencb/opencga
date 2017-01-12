@@ -1108,16 +1108,16 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
     }
 
-    @Test
-    public void testQuerySampleAnnotationFail1() throws CatalogException {
-        Query query = new Query();
-        query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ":nestedObject.stringList", "lo,lu,LL");
-
-        thrown.expect(CatalogDBException.class);
-        thrown.expectMessage("annotation:nestedObject does not exist");
-        catalogManager.getSampleManager().search(Long.toString(studyId), query, null, sessionIdUser);
-        catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
-    }
+//    @Test
+//    public void testQuerySampleAnnotationFail1() throws CatalogException {
+//        Query query = new Query();
+//        query.put(SampleDBAdaptor.QueryParams.ANNOTATION.key() + ":nestedObject.stringList", "lo,lu,LL");
+//
+//        thrown.expect(CatalogDBException.class);
+//        thrown.expectMessage("annotation:nestedObject does not exist");
+//        QueryResult<Sample> search = catalogManager.getSampleManager().search(Long.toString(studyId), query, null, sessionIdUser);
+//        catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
+//    }
 
 //    @Test
 //    public void testQuerySampleAnnotationFail2() throws CatalogException {
@@ -1307,8 +1307,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testModifySampleBadIndividual() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId(null, "user@1000G:phase1");
-        long sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        long sampleId1 = catalogManager.getSampleManager().create("user@1000G:phase1", "SAMPLE_1", "", "", null, new QueryOptions(),
+                sessionIdUser).first().getId();
 
         thrown.expect(CatalogDBException.class);
         catalogManager.getSampleManager()
@@ -1317,8 +1317,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testModifySampleUnknownIndividual() throws CatalogException {
-        long studyId = catalogManager.getStudyManager().getId(null, "user@1000G:phase1");
-        long sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
+        long sampleId1 = catalogManager.getSampleManager().create("user@1000G:phase1", "SAMPLE_1", "", "", null, new QueryOptions(),
+                sessionIdUser).first().getId();
 
         // It will not modify anything as the individualId is already -1
         thrown.expect(CatalogDBException.class);

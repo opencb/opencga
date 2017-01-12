@@ -115,36 +115,6 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
-    @Deprecated
-    public QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogDBException {
-        checkParameter(userId, "userId");
-        checkParameter(password, "password");
-        long startTime = startQuery();
-//        QueryResult<Long> count = userCollection.count(BasicDBObjectBuilder.start("id", userId).append("password", password).get());
-//        Bson and = Filters.and(Filters.eq("id", userId), Filters.eq("password", password));
-        Query query = new Query(QueryParams.ID.key(), userId).append(QueryParams.PASSWORD.key(), password);
-        //QueryResult queryResult = nativeGet(query, new QueryOptions());
-
-        QueryResult<Long> count = count(query);
-        if (count.getResult().get(0) == 0) {
-            throw new CatalogDBException("Bad user or password");
-        } else {
-            query = new Query(QueryParams.SESSION_ID.key(), session.getId());
-//            QueryResult<Long> countSessions = userCollection.count(new BasicDBObject("sessions.id", session.getId()));
-            QueryResult<Long> countSessions = count(query);
-            if (countSessions.getResult().get(0) != 0) {
-                throw new CatalogDBException("Already logged in");
-            } else {
-                addSession(userId, session);
-                ObjectMap resultObjectMap = new ObjectMap();
-                resultObjectMap.put("sessionId", session.getId());
-                resultObjectMap.put("userId", userId);
-                return endQuery("Login", startTime, Collections.singletonList(resultObjectMap));
-            }
-        }
-    }
-
-    @Override
     public QueryResult<Session> addSession(String userId, Session session) throws CatalogDBException {
         long startTime = startQuery();
 
