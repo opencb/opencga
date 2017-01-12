@@ -30,7 +30,7 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-hadoop-deps</artifactId>
-            <version>${opencga.version}-SNAPSHOT</version>
+            <version>${opencga.version}</version>
             <classifier>shaded</classifier>
         </dependency>
 

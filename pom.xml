@@ -38,10 +38,10 @@
     <properties>
         <opencga.version>1.0.0-rc3</opencga.version>
         <java.version>1.8</java.version>
-        <biodata.version>0.9.0-SNAPSHOT</biodata.version>
-        <cellbase.version>4.5.0-rc-SNAPSHOT</cellbase.version>
-        <java-common-libs.version>3.4.0-SNAPSHOT</java-common-libs.version>
-        <hpg-bigdata.version>1.0.0-beta-SNAPSHOT</hpg-bigdata.version>
+        <biodata.version>0.9.0</biodata.version>
+        <cellbase.version>4.5.0-rc</cellbase.version>
+        <java-common-libs.version>3.4.0</java-common-libs.version>
+        <hpg-bigdata.version>1.0.0-beta1</hpg-bigdata.version>
         <jackson.version>2.6.6</jackson.version>
         <jersey.version>2.23</jersey.version>
         <hadoop.version>2.7.1</hadoop.version>
