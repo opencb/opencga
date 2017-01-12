@@ -75,7 +75,7 @@ public class VariantTableStatsDriver extends AbstractAnalysisTableDriver {
                     }
                 }
             } else {
-               throw new IllegalStateException("No default cohort found!!!");
+                throw new IllegalStateException("No default cohort found!!!");
             }
             sc.getCohorts().put(defaultCohortId, indexedSamples.values());
             getStudyConfigurationManager().updateStudyConfiguration(sc, new QueryOptions());
@@ -84,7 +84,7 @@ public class VariantTableStatsDriver extends AbstractAnalysisTableDriver {
         }
         // update PHOENIX definition with statistic columns
         VariantPhoenixHelper variantPhoenixHelper = new VariantPhoenixHelper(getHelper());
-        try(Connection connection = variantPhoenixHelper.newJdbcConnection()){
+        try (Connection connection = variantPhoenixHelper.newJdbcConnection()) {
             variantPhoenixHelper.updateStatsColumns(connection, variantTable, sc);
         } catch (SQLException | ClassNotFoundException e) {
             getLog().error("Problems updating PHOENIX table!!!", e);
