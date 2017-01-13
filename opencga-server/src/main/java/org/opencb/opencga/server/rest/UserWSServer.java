@@ -59,9 +59,7 @@ public class UserWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "User name", required = true) @QueryParam("name") String name,
                                @ApiParam(value = "User's email", required = true) @QueryParam("email") String email,
                                @ApiParam(value = "User's password", required = true) @QueryParam("password") String password,
-                               @ApiParam(value = "User's organization") @QueryParam("organization") String organization,
-                               @ApiParam(value = "[PENDING] Create a default project after creating the user", defaultValue = "false")
-                                   @QueryParam("createDefaultProject") boolean defaultProject) {
+                               @ApiParam(value = "User's organization") @QueryParam("organization") String organization) {
         try {
             queryOptions.remove("password");
             QueryResult queryResult = catalogManager.createUser(userId, name, email, password, organization, null, queryOptions);
@@ -106,9 +104,9 @@ public class UserWSServer extends OpenCGAWSServer {
                     dataType = "string", paramType = "query"),
     })
     public Response getInfo(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
-                            @ApiParam(value = "[DEPRECATED] This parameter shows the last time the user information was modified. When "
+                            @ApiParam(value = "This parameter shows the last time the user information was modified. When "
                                     + "the value passed corresponds with the user's last activity registered, an empty result will be "
-                                    + "returned meaning that the client already has the most up to date user information.")
+                                    + "returned meaning that the client already has the most up to date user information.", hidden = true)
                             @QueryParam ("lastModified") String lastModified) {
         try {
             QueryResult result = catalogManager.getUser(userId, lastModified, queryOptions, sessionId);
@@ -136,8 +134,8 @@ public class UserWSServer extends OpenCGAWSServer {
                     .append("ip", queryResult.first().getIp())
                     .append("date", queryResult.first().getDate());
 
-            QueryResult<ObjectMap> login = new QueryResult<>("login", queryResult.getDbTime(), 1, 1, queryResult.getWarningMsg(),
-                    queryResult.getErrorMsg(), Arrays.asList(sessionMap));
+            QueryResult<ObjectMap> login = new QueryResult<>("You successfully logged in", queryResult.getDbTime(), 1, 1,
+                    queryResult.getWarningMsg(), queryResult.getErrorMsg(), Arrays.asList(sessionMap));
 
             return createOkResponse(login);
         } catch (Exception e) {
@@ -166,8 +164,8 @@ public class UserWSServer extends OpenCGAWSServer {
                     .append("ip", queryResult.first().getIp())
                     .append("date", queryResult.first().getDate());
 
-            QueryResult<ObjectMap> login = new QueryResult<>("login", queryResult.getDbTime(), 1, 1, queryResult.getWarningMsg(),
-                    queryResult.getErrorMsg(), Arrays.asList(sessionMap));
+            QueryResult<ObjectMap> login = new QueryResult<>("You successfully logged in", queryResult.getDbTime(), 1, 1, queryResult
+                    .getWarningMsg(), queryResult.getErrorMsg(), Arrays.asList(sessionMap));
 
             return createOkResponse(login);
         } catch (Exception e) {
@@ -181,6 +179,7 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response logout(@ApiParam(value = "userId", required = true) @PathParam("user") String userId) {
         try {
             QueryResult result = catalogManager.logout(userId, sessionId);
+            result.setId("You successfully logged out");
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -212,7 +211,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Reset password", notes = "Reset the user's password and send a new random one to the e-mail stored in catalog.")
     public Response resetPassword(@ApiParam(value = "User id", required = true) @PathParam("user") String userId) {
         try {
-            QueryResult result = catalogManager.resetPassword(userId);
+            QueryResult result = catalogManager.getUserManager().resetPassword(userId, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

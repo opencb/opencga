@@ -29,9 +29,10 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.FileIndex;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
-import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStoragePipeline;
@@ -149,7 +150,67 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
     }
 
     @Test
-    public void testIndexWithError() throws Exception {
+    public void testIndexWithTransformError() throws Exception {
+        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
+                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+
+        DummyVariantStoragePipeline storageETL = mockVariantStorageETL();
+        List<File> files = Arrays.asList(getFile(0), getFile(1));
+        StorageEngineException transformException = StorageEngineException.unableToExecute("transform", 0, "");
+        Mockito.doThrow(transformException).when(storageETL)
+                .transform(ArgumentMatchers.argThat(argument -> argument.toString().contains(files.get(1).getName())), Mockito.any(), Mockito.any());
+
+        try {
+            indexFiles(files, queryOptions, outputId);
+        } catch (StoragePipelineException exception) {
+            assertEquals(files.size(), exception.getResults().size());
+
+            assertTrue(exception.getResults().get(0).isTransformExecuted());
+            assertNull(exception.getResults().get(0).getTransformError());
+
+            assertTrue(exception.getResults().get(1).isTransformExecuted());
+            assertSame(transformException, exception.getResults().get(1).getTransformError());
+
+            for (int i = files.size(); i > 0; i--) {
+                assertFalse(exception.getResults().get(1).isLoadExecuted());
+                assertNull(exception.getResults().get(1).getLoadError());
+            }
+
+        }
+
+        mockVariantStorageETL();
+        // File 0 already transformed.
+        // Expecting to transform and load only file 1
+        indexFiles(files, singletonList(files.get(1)), queryOptions, outputId);
+    }
+
+    @Test
+    public void testTransformTransformingFiles() throws Exception {
+        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
+                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+
+        List<File> files = Arrays.asList(getFile(0), getFile(1));
+        catalogManager.getFileManager().updateFileIndexStatus(getFile(1), FileIndex.IndexStatus.TRANSFORMING, "", sessionId);
+
+        // Expect both files to be loaded
+        indexFiles(files, Arrays.asList(getFile(0)), queryOptions, outputId);
+    }
+
+    @Test
+    public void testResumeTransformTransformingFiles() throws Exception {
+        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
+                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
+                .append(VariantStorageEngine.Options.RESUME.key(), true);
+
+        List<File> files = Arrays.asList(getFile(0), getFile(1));
+        catalogManager.getFileManager().updateFileIndexStatus(getFile(1), FileIndex.IndexStatus.TRANSFORMING, "", sessionId);
+
+        // Expect only the first file to be loaded
+        indexFiles(files, files, queryOptions, outputId);
+    }
+
+    @Test
+    public void testIndexWithLoadError() throws Exception {
         QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
 

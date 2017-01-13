@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.client.rest.catalog;
 
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
@@ -24,12 +23,10 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.FileTree;
-import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;
-import java.net.URI;
 
 /**
  * Created by swaathi on 10/05/16.
@@ -50,16 +47,6 @@ public class FileClient extends CatalogClient<File, FileAclEntry> {
         params = addParamsToObjectMap(params, FileDBAdaptor.QueryParams.STUDY.key(), studyId, "folders", paths);
         return execute(FILES_URL, "create-folder", params, GET, File.class);
     }
-
-    @Deprecated
-    public QueryResponse<Job> index(String fileId, ObjectMap params) throws CatalogException, IOException {
-        return execute(FILES_URL, fileId.replace("/", ":"), "index", params, GET, Job.class);
-    }
-
-//    public QueryResponse<File> link(String studyId, String uri, String studyPath, ObjectMap params) throws CatalogException, IOException {
-//        params = addParamsToObjectMap(params, FileDBAdaptor.QueryParams.STUDY.key(), studyId, "uri", uri, "path", studyPath);
-//        return execute(FILES_URL, "link", params, GET, File.class);
-//    }
 
     public QueryResponse<File> relink(String fileId, String uri, QueryOptions options) throws CatalogException, IOException {
         ObjectMap params = new ObjectMap(options);
@@ -90,10 +77,6 @@ public class FileClient extends CatalogClient<File, FileAclEntry> {
         return execute(FILES_URL, folderId, "list", options, GET, File.class);
     }
 
-    public QueryResponse<File> getFiles(String fileId, QueryOptions options) throws CatalogException, IOException {
-        return execute(FILES_URL, fileId.replace("/", ":"), "files", options, GET, File.class);
-    }
-
     public QueryResponse<File> delete(String fileId, ObjectMap params) throws CatalogException, IOException {
         return execute(FILES_URL, fileId.replace("/", ":"), "delete", params, GET, File.class);
     }
@@ -114,25 +97,6 @@ public class FileClient extends CatalogClient<File, FileAclEntry> {
     public QueryResponse<File> groupBy(String studyId, String fields, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, FileDBAdaptor.QueryParams.STUDY.key(), studyId, "fields", fields);
         return execute(FILES_URL, "groupBy", params, GET, File.class);
-    }
-
-    /**
-     * @deprecated  As of release 0.8, replaced by {@link #get(String id, QueryOptions options)}
-     * @param fileId fileId.
-     * @param options options.
-     * @return queryResponse.
-     * @throws CatalogException catalogException.
-     * @throws IOException IOException.
-     */
-    @Deprecated
-    public QueryResponse<URI> getURI(String fileId, QueryOptions options) throws CatalogException, IOException {
-        QueryResponse<URI> uri = execute(FILES_URL, fileId.replace("/", ":"), "uri", options, GET, URI.class);
-        return uri;
-    }
-
-    @Deprecated
-    public QueryResponse<Variant> getVariants(String fileId, QueryOptions options) throws CatalogException, IOException {
-        return execute(FILES_URL, fileId.replace("/", ":"), "variants", options, GET, Variant.class);
     }
 
 }

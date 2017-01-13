@@ -127,7 +127,7 @@ public class OpencgaCliOptionsParser {
         fileCommandOptions = new FileCommandOptions(this.commonCommandOptions,dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("files", fileCommandOptions);
         JCommander fileSubCommands = jCommander.getCommands().get("files");
-        fileSubCommands.addCommand("copy", fileCommandOptions.copyCommandOptions);
+//        fileSubCommands.addCommand("copy", fileCommandOptions.copyCommandOptions);
         fileSubCommands.addCommand("create-folder", fileCommandOptions.createFolderCommandOptions);
         fileSubCommands.addCommand("info", fileCommandOptions.infoCommandOptions);
         fileSubCommands.addCommand("download", fileCommandOptions.downloadCommandOptions);
@@ -135,8 +135,7 @@ public class OpencgaCliOptionsParser {
         fileSubCommands.addCommand("search", fileCommandOptions.searchCommandOptions);
         fileSubCommands.addCommand("list", fileCommandOptions.listCommandOptions);
         fileSubCommands.addCommand("tree", fileCommandOptions.treeCommandOptions);
-        fileSubCommands.addCommand("index", fileCommandOptions.indexCommandOptions);
-        fileSubCommands.addCommand("alignment", fileCommandOptions.alignmentCommandOptions);
+//        fileSubCommands.addCommand("index", fileCommandOptions.indexCommandOptions);
         fileSubCommands.addCommand("content", fileCommandOptions.contentCommandOptions);
 //        fileSubCommands.addCommand("fetch", fileCommandOptions.fetchCommandOptions);
         fileSubCommands.addCommand("update", fileCommandOptions.updateCommandOptions);
@@ -146,7 +145,7 @@ public class OpencgaCliOptionsParser {
         fileSubCommands.addCommand("relink", fileCommandOptions.relinkCommandOptions);
         fileSubCommands.addCommand("delete", fileCommandOptions.deleteCommandOptions);
         fileSubCommands.addCommand("refresh", fileCommandOptions.refreshCommandOptions);
-        fileSubCommands.addCommand("variants", fileCommandOptions.variantsCommandOptions);
+//        fileSubCommands.addCommand("variants", fileCommandOptions.variantsCommandOptions);
         fileSubCommands.addCommand("acl", fileCommandOptions.aclsCommandOptions);
         fileSubCommands.addCommand("acl-create", fileCommandOptions.aclsCreateCommandOptions);
         fileSubCommands.addCommand("acl-member-delete", fileCommandOptions.aclsMemberDeleteCommandOptions);
@@ -178,6 +177,7 @@ public class OpencgaCliOptionsParser {
         individualSubCommands.addCommand("update", individualCommandOptions.updateCommandOptions);
         individualSubCommands.addCommand("delete", individualCommandOptions.deleteCommandOptions);
         individualSubCommands.addCommand("group-by", individualCommandOptions.groupByCommandOptions);
+        individualSubCommands.addCommand("samples", individualCommandOptions.sampleCommandOptions);
         individualSubCommands.addCommand("acl", individualCommandOptions.aclsCommandOptions);
         individualSubCommands.addCommand("acl-create", individualCommandOptions.aclsCreateCommandOptions);
         individualSubCommands.addCommand("acl-member-delete", individualCommandOptions.aclsMemberDeleteCommandOptions);
@@ -200,6 +200,7 @@ public class OpencgaCliOptionsParser {
         sampleSubCommands.addCommand("update", sampleCommandOptions.updateCommandOptions);
         sampleSubCommands.addCommand("delete", sampleCommandOptions.deleteCommandOptions);
         sampleSubCommands.addCommand("group-by", sampleCommandOptions.groupByCommandOptions);
+        sampleSubCommands.addCommand("individuals", sampleCommandOptions.individualCommandOptions);
         sampleSubCommands.addCommand("acl", sampleCommandOptions.aclsCommandOptions);
         sampleSubCommands.addCommand("acl-create", sampleCommandOptions.aclsCreateCommandOptions);
         sampleSubCommands.addCommand("acl-member-delete", sampleCommandOptions.aclsMemberDeleteCommandOptions);

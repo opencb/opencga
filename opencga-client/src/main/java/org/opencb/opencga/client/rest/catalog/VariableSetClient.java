@@ -22,7 +22,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.VariableSet;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 
 /**
@@ -39,16 +38,15 @@ public class VariableSetClient extends CatalogClient<VariableSet, VariableSet> {
         this.clazz = VariableSet.class;
     }
 
-    public QueryResponse<VariableSet> create(String studyId, String variableSetName, Object variables, ObjectMap params)
-            throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "study", studyId, "name", variableSetName, "body", variables);
+    public QueryResponse<VariableSet> create(String studyId, ObjectMap bodyParams) throws CatalogException, IOException {
+        ObjectMap params = new ObjectMap();
+        params = addParamsToObjectMap(params, "study", studyId, "body", bodyParams);
         return execute(VARIABLES_URL, "create", params, POST, VariableSet.class);
     }
 
-    public QueryResponse<VariableSet> update(String id, @Nullable Object variables, ObjectMap params) throws CatalogException, IOException {
-        if (variables != null) {
-            params.append("body", variables);
-        }
+    public QueryResponse<VariableSet> update(String id, String study, ObjectMap bodyParams) throws CatalogException, IOException {
+        ObjectMap params = new ObjectMap();
+        params.put("body", bodyParams);
         return execute(category, id, "update", params, POST, clazz);
     }
 

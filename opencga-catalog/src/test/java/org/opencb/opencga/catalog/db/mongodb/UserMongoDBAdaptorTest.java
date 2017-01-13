@@ -21,6 +21,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
+import org.opencb.opencga.catalog.auth.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -84,7 +86,7 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertFalse(user.first().getProjects().isEmpty());
 
         user = catalogUserDBAdaptor.get(user3.getId(), new QueryOptions("exclude", Arrays.asList("projects")), null);
-        assertNull(user.first().getProjects());
+        assertEquals(0, user.first().getProjects().size());
 
         user = catalogUserDBAdaptor.get(user3.getId(), null, user.first().getLastModified());
         assertTrue(user.getResult().isEmpty());
@@ -94,57 +96,47 @@ public class UserMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void loginTest() throws CatalogDBException, IOException {
+    public void loginTest() throws CatalogException, IOException {
         String userId = user1.getId();
         Session sessionJCOLL = new Session("127.0.0.1", 20);
-        QueryResult<ObjectMap> login = catalogUserDBAdaptor.login(userId, "1234", sessionJCOLL);
-        assertEquals(userId, login.first().getString("userId"));
+        catalogUserDBAdaptor.addSession(userId, sessionJCOLL);
 
-        thrown.expect(CatalogDBException.class);
-        catalogUserDBAdaptor.login(userId, "INVALID_PASSWORD", sessionJCOLL);
-    }
-
-    @Test
-    public void loginTest2() throws CatalogDBException, IOException {
-        String userId = user1.getId();
-        Session sessionJCOLL = new Session("127.0.0.1", 20);
-        QueryResult<ObjectMap> login = catalogUserDBAdaptor.login(userId, "1234", sessionJCOLL);
-        assertEquals(userId, login.first().getString("userId"));
-
-        thrown.expect(CatalogDBException.class); //Already logged
-        catalogUserDBAdaptor.login(userId, "1234", sessionJCOLL);
+        // Check password is correct in the database
+        String storedPassword = catalogUserDBAdaptor.get(userId, new QueryOptions(QueryOptions.INCLUDE, "password"), null).first()
+                .getPassword();
+        assertEquals("1234", storedPassword);
     }
 
     @Test
     public void logoutTest() throws CatalogDBException, IOException {
         String userId = user1.getId();
-        Session sessionJCOLL = new Session("127.0.0.1", 20);
-        QueryResult<ObjectMap> login = catalogUserDBAdaptor.login(userId, "1234", sessionJCOLL);
-        assertEquals(userId, login.first().getString("userId"));
 
-        QueryResult logout = catalogUserDBAdaptor.logout(userId, sessionJCOLL.getId());
-        assertEquals(0, logout.getResult().size());
+        Session sessionJCOLL = new Session("127.0.0.1", 20);
+        catalogUserDBAdaptor.addSession(userId, sessionJCOLL);
+
+        QueryResult<Session> logout = catalogUserDBAdaptor.logout(userId, sessionJCOLL.getId());
+        assertEquals(1, logout.getResult().size());
 
         //thrown.expect(CatalogDBException.class);
-        QueryResult falseSession = catalogUserDBAdaptor.logout(userId, "FalseSession");
+        QueryResult<Session> falseSession = catalogUserDBAdaptor.logout(userId, "FalseSession");
         assertTrue(falseSession.getWarningMsg() != null && !falseSession.getWarningMsg().isEmpty());
+        assertEquals("Session not found", falseSession.getWarningMsg());
     }
 
     @Test
     public void getUserIdBySessionId() throws CatalogDBException {
         String userId = user1.getId();
 
-        catalogUserDBAdaptor.login(userId, "1234", new Session("127.0.0.1", 20)); //Having multiple conections
-        catalogUserDBAdaptor.login(userId, "1234", new Session("127.0.0.1", 20));
-        catalogUserDBAdaptor.login(userId, "1234", new Session("127.0.0.1", 20));
+        catalogUserDBAdaptor.addSession(userId, new Session("127.0.0.1", 20)); //Having multiple conections
+        catalogUserDBAdaptor.addSession(userId, new Session("127.0.0.1", 20));
+        catalogUserDBAdaptor.addSession(userId, new Session("127.0.0.1", 20));
 
         Session sessionJCOLL = new Session("127.0.0.1", 20);
-        QueryResult<ObjectMap> login = catalogUserDBAdaptor.login(userId, "1234", sessionJCOLL);
-        assertEquals(userId, login.first().getString("userId"));
+        catalogUserDBAdaptor.addSession(userId, sessionJCOLL);
 
         assertEquals(user1.getId(), catalogUserDBAdaptor.getUserIdBySessionId(sessionJCOLL.getId()));
         QueryResult logout = catalogUserDBAdaptor.logout(userId, sessionJCOLL.getId());
-        assertEquals(0, logout.getResult().size());
+        assertEquals(1, logout.getResult().size());
 
         assertEquals("", catalogUserDBAdaptor.getUserIdBySessionId(sessionJCOLL.getId()));
     }

@@ -91,13 +91,15 @@ storageEngines:
     manager: "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine"
     options:
       database.name: "opencga"
+      dbadaptor.max_timeout : 30000 #(ms) Max allowed timeout for DBAdaptor operations.
+      dbadaptor.default_timeout : 10000 #(ms) Default timeout for DBAdaptor operations. Only used if none is provided.
       collection.variants: "variants"
       collection.studies: "studies"
       collection.files: "files"
       include.stats: false
       annotator: cellbase_rest
-      species: ${OPENCGA.ORGANISM.SCIENTIFIC_NAME}
-      assembly: ${OPENCGA.ORGANISM.ASSEMBLY}
+      species: ${OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME}
+      assembly: ${OPENCGA.CLIENT.ORGANISM.ASSEMBLY}
       transform.batch.size: 200
       transform.threads: 4
       transform.format: "avro"
@@ -132,8 +134,8 @@ storageEngines:
       #Generic options
       database.name: "opencga"
       annotator: cellbase_rest
-      species: ${OPENCGA.ORGANISM.SCIENTIFIC_NAME}
-      assembly: ${OPENCGA.ORGANISM.ASSEMBLY}
+      species: ${OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME}
+      assembly: ${OPENCGA.CLIENT.ORGANISM.ASSEMBLY}
       #Plugin specific options
       hadoop.bin: "hadoop"
 #      hadoop.env: # See opencga-env.sh

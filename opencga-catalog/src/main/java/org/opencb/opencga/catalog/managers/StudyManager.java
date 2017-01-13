@@ -125,7 +125,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         } else {
 
             String[] split = studyStr.split(":");
-            long projectId;
+            List<Long> projectIds;
             if (split.length > 2) {
                 throw new CatalogException("More than one : separator found. Format: [[user@]project:]study");
             }
@@ -159,27 +159,22 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
             if (!userId.equals("anonymous")) {
                 if (aliasProject != null) {
-                    projectId = catalogManager.getProjectManager().getId(userId, aliasProject);
-                    projectDBAdaptor.checkId(projectId);
+                    projectIds = Arrays.asList(catalogManager.getProjectManager().getId(userId, aliasProject));
                 } else {
                     // Obtain the projects of the user
                     QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, ProjectDBAdaptor.QueryParams.ID.key());
                     QueryResult<Project> projectQueryResult = projectDBAdaptor.get(userId, options);
-                    if (projectQueryResult.getNumResults() == 1) {
-                        projectId = projectQueryResult.first().getId();
+                    if (projectQueryResult.getNumResults() == 0) {
+                        throw new CatalogException("No projects found for user " + userId);
                     } else {
-                        if (projectQueryResult.getNumResults() == 0) {
-                            throw new CatalogException("No projects found for user " + userId);
-                        } else {
-                            throw new CatalogException("More than one project found for user " + userId);
-                        }
+                        projectIds = projectQueryResult.getResult().stream().map(project -> project.getId()).collect(Collectors.toList());
                     }
                 }
-                query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId);
+                query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectIds);
             } else {
                 // Anonymous user
                 if (aliasProject != null) {
-                    List<Long> projectIds = catalogManager.getProjectManager().getIds(userId, aliasProject);
+                    projectIds = catalogManager.getProjectManager().getIds(userId, aliasProject);
                     query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectIds);
                 }
 
@@ -217,7 +212,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         }
         List<Long> ids = getIds(userId, studyStr);
         if (ids.size() > 1) {
-            throw new CatalogException("More than one study was found");
+            throw new CatalogException("More than one study was found for study '" + studyStr + '\'');
         } else {
             return ids.get(0);
         }
@@ -313,8 +308,12 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             try {
                 uri = catalogIOManager.createStudy(userId, Long.toString(projectId), Long.toString(study.getId()));
             } catch (CatalogIOException e) {
-                e.printStackTrace();
-                studyDBAdaptor.delete(study.getId(), new QueryOptions());
+                try {
+                    QueryOptions deleteOptions = new QueryOptions(DBAdaptor.SKIP_CHECK, true).append(DBAdaptor.FORCE, true);
+                    studyDBAdaptor.delete(study.getId(), deleteOptions);
+                } catch (Exception e1) {
+                    logger.error("Can't delete study after failure creating study", e1);
+                }
                 throw e;
             }
         }

@@ -93,19 +93,6 @@ public class UserCommandOptions {
 
         @Parameter(names = {"-o", "--organization"}, description = "User organization", required = false, arity = 1)
         public String organization;
-
-        @Parameter(names = {"--project-name"}, description = "Project name. Default: Default", required = false, arity = 1)
-        public String projectName;
-
-        @Parameter(names = {"--project-alias"}, description = "Project alias: Default: default", required = false, arity = 1)
-        public String projectAlias;
-
-        @Parameter(names = {"--project-description"}, description = "Project description.", required = false, arity = 1)
-        public String projectDescription;
-
-        @Parameter(names = {"--project-organization"}, description = "Project organization", required = false, arity = 1)
-        public String projectOrganization;
-
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get complete information of the user together with owned and shared projects"
@@ -151,7 +138,7 @@ public class UserCommandOptions {
         public String npassword;
     }
 
-    @Parameters(commandNames = {"delete"}, commandDescription = "Delete a user [NOT TESTED]")
+    @Parameters(commandNames = {"delete"}, commandDescription = "[PENDING] Delete a user")
     public class DeleteCommandOptions extends BaseUserCommand {
 
     }

@@ -89,6 +89,9 @@ public class ParamUtils {
         if (alias == null || alias.isEmpty() || !alias.matches("^[_A-Za-z0-9-\\+]+$")) {
             throw new CatalogParameterException("Error in alias: Invalid alias for '" + name + "'.");
         }
+        if (StringUtils.isNumeric(alias)) {
+            throw new CatalogParameterException("Error in alias: Invalid alias for '" + name + "'. Alias cannot be numeric.");
+        }
     }
 
     public static String defaultString(String string, String defaultValue) {

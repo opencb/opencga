@@ -138,6 +138,10 @@ public class UserManager extends AbstractManager implements IUserManager {
 //        checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(oldPassword, "oldPassword");
         ParamUtils.checkParameter(newPassword, "newPassword");
+        if (oldPassword == newPassword) {
+            throw new CatalogException("New password is the same as the old password.");
+        }
+
         userDBAdaptor.checkId(userId);
         String authOrigin = getAuthenticationOriginId(userId);
         authenticationManagerMap.get(authOrigin).changePassword(userId, oldPassword, newPassword);
@@ -164,11 +168,12 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult<User> create(String id, String name, String email, String password, String organization, Long quota,
-                                    QueryOptions options, String adminPassword) throws CatalogException {
+    public QueryResult<User> create(String id, String name, String email, String password, String organization, Long quota, String
+            accountType, QueryOptions options) throws CatalogException {
 
         // Check if the users can be registered publicly or just the admin.
         if (!catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().isRegisterOpen()) {
+            String adminPassword = configuration.getAdmin().getPassword();
             if (adminPassword != null && !adminPassword.isEmpty()) {
                 authenticationManagerMap.get(INTERNAL_AUTHORIZATION).authenticate("admin", adminPassword, true);
             } else {
@@ -185,12 +190,19 @@ public class UserManager extends AbstractManager implements IUserManager {
 
         User user = new User(id, name, email, "", organization, User.UserStatus.READY);
         user.getAccount().setAuthOrigin(INTERNAL_AUTHORIZATION);
+        // Check account type
+        if (accountType != null) {
+            if (!Account.FULL.equalsIgnoreCase(accountType) && !Account.GUEST.equalsIgnoreCase(accountType)) {
+                throw new CatalogException("The account type specified does not correspond with any of the valid ones. Valid account types:"
+                        + Account.FULL + " and " + Account.GUEST);
+            }
+            user.getAccount().setType(accountType);
+        }
 
         if (quota != null && quota > 0L) {
             user.setQuota(quota);
         }
 
-        // TODO: If the registration is closed, we have to check the sessionId to see if it corresponds with the admin in order to continue.
         String userId = id;
 
 //        switch (creationUserPolicy) {
@@ -501,7 +513,11 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult resetPassword(String userId) throws CatalogException {
+    public QueryResult resetPassword(String userId, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(userId, "userId");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        checkSessionId(userId, sessionId);
+
         String authOrigin = getAuthenticationOriginId(userId);
         return authenticationManagerMap.get(authOrigin).resetPassword(userId);
     }

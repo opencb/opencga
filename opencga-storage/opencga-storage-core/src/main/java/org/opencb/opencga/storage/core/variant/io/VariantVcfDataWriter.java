@@ -36,7 +36,9 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.db.VariantDBReader;
@@ -95,7 +97,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         this.studyConfiguration = studyConfiguration;
         this.sourceDBAdaptor = sourceDBAdaptor;
         this.outputStream = outputStream;
-        this.queryOptions = queryOptions;
+        this.queryOptions = queryOptions == null ? new QueryOptions() : queryOptions;
         studyId = this.studyConfiguration.getStudyId();
         studyIdString = Integer.toString(studyId);
     }
@@ -213,8 +215,8 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
 
         /* FORMAT */
         meta.add(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "Genotype"));
-        meta.add(new VCFFormatHeaderLine("PF", VCFHeaderLineCount.A, VCFHeaderLineType.Integer,
-                "variant was PASS filter in original sample gvcf"));
+        meta.add(new VCFFormatHeaderLine("PF", 1, VCFHeaderLineType.Integer,
+                "Variant was PASS (1) filter in original vcf"));
 
         final VCFHeader header = new VCFHeader(meta, names);
         final SAMSequenceDictionary sequenceDictionary = header.getSequenceDictionary();
@@ -226,6 +228,16 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
                 .unsetOption(Options.INDEX_ON_THE_FLY);
         if (sampleNames.isEmpty() || !this.exportGenotype.get()) {
             builder.setOption(Options.DO_NOT_WRITE_GENOTYPES);
+        }
+        List<String> formatFields = studyConfiguration.getAttributes()
+                .getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key());
+        List<String> formatFieldsType = studyConfiguration.getAttributes()
+                .getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key());
+        for (int i = 0; i < formatFields.size(); i++) {
+            String id = formatFields.get(i);
+            if (header.getFormatHeaderLine(id) == null) {
+                header.addMetaDataLine(new VCFFormatHeaderLine(id, 1, VCFHeaderLineType.valueOf(formatFieldsType.get(i)), ""));
+            }
         }
 
         writer = builder.build();
@@ -311,6 +323,61 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
     public boolean close() {
         writer.close();
         return true;
+    }
+
+//    private VCFHeader getVcfHeader(StudyConfiguration studyConfiguration, QueryOptions options) throws IOException {
+//        List<String> returnedSamples = getReturnedSamples(studyConfiguration, options);
+//        //        get header from studyConfiguration
+//        Collection<String> headers = studyConfiguration.getHeaders().values();
+//        String fileHeader;
+//        if (headers.isEmpty()) {
+//            Iterator<VariantSource> iterator = sourceDBAdaptor.iterator(
+//                    new Query(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId()),
+//                    new QueryOptions());
+//            if (iterator.hasNext()) {
+//                VariantSource source = iterator.next();
+//                fileHeader = source.getMetadata().get(VariantFileUtils.VARIANT_FILE_HEADER).toString();
+//            } else {
+//                fileHeader = null;
+//            }
+////            else {
+////                throw new IllegalStateException("file headers not available for study " + studyConfiguration.getStudyName()
+////                        + ". note: check files: " + studyConfiguration.getFileIds().values().toString());
+////            }
+//        } else {
+//            fileHeader = headers.iterator().next();
+//        }
+//
+//        if (fileHeader != null) {
+//            int lastLineIndex = fileHeader.lastIndexOf("#CHROM");
+//            if (lastLineIndex >= 0) {
+//                String substring = fileHeader.substring(0, lastLineIndex);
+//
+//                String samples = String.join("\t", returnedSamples);
+//                logger.debug("export will be done on samples: [{}]", samples);
+//
+//                if (returnedSamples.isEmpty()) {
+//                    fileHeader = substring + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\t";
+//                } else {
+//                    fileHeader = substring + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" + samples;
+//                }
+//            }
+//
+//            return VariantFileMetadataToVCFHeaderConverter.parseVcfHeader(fileHeader);
+//        } else {
+//            HashSet<VCFHeaderLine> metaData = new HashSet<>();
+//            VCFHeader vcfHeader = new VCFHeader(metaData, returnedSamples);
+//            return vcfHeader;
+//        }
+//    }
+
+    private List<String> getReturnedSamples(StudyConfiguration studyConfiguration, QueryOptions options) {
+        Map<Integer, List<Integer>> returnedSamplesMap =
+                VariantDBAdaptorUtils.getReturnedSamples(new Query(options), options, studyConfiguration);
+        List<String> returnedSamples = returnedSamplesMap.get(studyConfiguration.getStudyId()).stream()
+                .map(sampleId -> studyConfiguration.getSampleIds().inverse().get(sampleId))
+                .collect(Collectors.toList());
+        return returnedSamples;
     }
 
     protected List<String> getSamples(QueryOptions options) {
@@ -513,6 +580,14 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
             if (genotypeFilter != null) {
                 builder.attribute("PF", genotypeFilter);
             }
+            for (String id : studyEntry.getFormat()) {
+                if (id.equals("GT") || id.equals("FT")) {
+                    continue;
+                }
+                String value = studyEntry.getSampleData(sampleName, id);
+                builder.attribute(id, value);
+            }
+
             genotypes.add(builder.make());
         }
 

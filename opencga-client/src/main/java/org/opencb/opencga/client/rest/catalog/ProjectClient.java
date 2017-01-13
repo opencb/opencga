@@ -40,10 +40,10 @@ public class ProjectClient extends CatalogClient<Project, Project> {
         this.clazz = Project.class;
     }
 
-    public QueryResponse<Project> create(String projectName, String projectAlias, ObjectMap params)
-            throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "name", projectName, "alias", projectAlias);
-        return execute(PROJECTS_URL, "create", params, GET, Project.class);
+    public QueryResponse<Project> create(ObjectMap bodyParams) throws CatalogException, IOException {
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull("body", bodyParams);
+        return execute(PROJECTS_URL, "create", params, POST, Project.class);
     }
 
     public QueryResponse<Study> getStudies(String projectId, QueryOptions options) throws CatalogException, IOException {

@@ -80,7 +80,8 @@ public class AnalysisMainTest {
 
         User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null, null).first();
         sessionId = catalogManager.login(userId, "user", "localhost").first().getId();
-        projectId = catalogManager.createProject("p1", "p1", "Project 1", "ACME", null, sessionId).first().getId();
+        projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
+                null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
 
         Map<File.Bioformat, DataStore> datastores = new HashMap<>();
         datastores.put(File.Bioformat.VARIANT, new DataStore(STORAGE_ENGINE, dbNameVariants));

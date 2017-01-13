@@ -82,7 +82,8 @@ public class ProjectCommandOptions {
         @Parameter(names = {"-o", "--organization"}, description = "Organization", required = false, arity = 1)
         public String organization;
 
-        @Parameter(names = {"--organism-scientific-name"}, description = "Organism scientific name", required = false, arity = 1)
+        @Parameter(names = {"--organism-scientific-name"}, description = "Organism scientific name. Mandatory parameter if not defined "
+                + "in the client configuration file.", required = false, arity = 1)
         public String scientificName;
 
         @Parameter(names = {"--organism-common-name"}, description = "Organism common name", required = false, arity = 1)
@@ -91,7 +92,8 @@ public class ProjectCommandOptions {
         @Parameter(names = {"--organism-taxonomy-code"}, description = "Organism taxonomy code", required = false, arity = 1)
         public String taxonomyCode;
 
-        @Parameter(names = {"--organism-assembly"}, description = "Organism assembly", required = false, arity = 1)
+        @Parameter(names = {"--organism-assembly"}, description = "Organism assembly. Mandatory parameter if not defined "
+                + "in the client configuration file.", required = false, arity = 1)
         public String assembly;
     }
 
@@ -142,7 +144,7 @@ public class ProjectCommandOptions {
         public String assembly;
     }
 
-    @Parameters(commandNames = {"delete"}, commandDescription = "Delete a project")
+    @Parameters(commandNames = {"delete"}, commandDescription = "[PENDING] Delete a project")
     public class DeleteCommandOptions extends BaseProjectCommand {
 
     }

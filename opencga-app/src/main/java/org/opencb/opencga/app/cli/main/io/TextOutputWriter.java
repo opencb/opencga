@@ -77,6 +77,8 @@ public class TextOutputWriter extends AbstractOutputWriter {
                 break;
             default:
                 System.err.println(ANSI_RED + "Error: " + clazz + " not yet supported in text format" + ANSI_RESET);
+                YamlOutputWriter yamlOutputWriter = new YamlOutputWriter(writerConfiguration);
+                yamlOutputWriter.print(queryResponse);
                 break;
         }
 

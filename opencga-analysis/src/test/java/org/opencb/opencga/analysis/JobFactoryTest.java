@@ -19,6 +19,7 @@ package org.opencb.opencga.analysis;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -56,7 +57,8 @@ public class JobFactoryTest {
 
         User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null, null).first();
         sessionId = catalogManager.login(userId, "user", "localhost").first().getId();
-        projectId = catalogManager.createProject("p1", "p1", "Project 1", "ACME", null, sessionId).first().getId();
+        projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
+                null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
         studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, "Study 1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", DB_NAME)), null, null, null, sessionId).first().getId();
         output = catalogManager.createFolder(studyId, Paths.get("data", "index"), false, null, sessionId).first();
 

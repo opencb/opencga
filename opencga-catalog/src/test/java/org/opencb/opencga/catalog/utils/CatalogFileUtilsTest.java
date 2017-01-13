@@ -82,7 +82,8 @@ public class CatalogFileUtilsTest {
         catalogManager.createUser("user", "name", "mi@mail.com", "asdf", "", null, null);
         userSessionId = catalogManager.login("user", "asdf", "--").getResult().get(0).getId();
 //        adminSessionId = catalogManager.login("admin", "admin", "--").getResult().get(0).getString("sessionId");
-        long projectId = catalogManager.createProject("proj", "proj", "", "", null, userSessionId).getResult().get(0).getId();
+        long projectId = catalogManager.getProjectManager().create("proj", "proj", "", "", "Homo sapiens",
+                null, null, "GRCh38", new QueryOptions(), userSessionId).getResult().get(0).getId();
         studyId = catalogManager.createStudy(projectId, "std", "std", Study.Type.CONTROL_SET, "", userSessionId).getResult().get(0).getId();
 
         catalogFileUtils = new CatalogFileUtils(catalogManager);

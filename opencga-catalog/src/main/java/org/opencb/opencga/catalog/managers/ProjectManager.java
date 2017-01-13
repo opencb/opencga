@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.DBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -71,7 +72,9 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     @Override
     public long getId(String userId, String projectStr) throws CatalogException {
         if (StringUtils.isNumeric(projectStr)) {
-            return Long.parseLong(projectStr);
+            long projectId = Long.parseLong(projectStr);
+            projectDBAdaptor.checkId(projectId);
+            return projectId;
         }
 
         String userOwner;
@@ -175,6 +178,8 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             throws CatalogException {
 
         ParamUtils.checkParameter(name, "name");
+        ParamUtils.checkParameter(scientificName, "organism.scientificName");
+        ParamUtils.checkParameter(assembly, "organism.assembly");
         ParamUtils.checkAlias(alias, "alias");
         ParamUtils.checkParameter(sessionId, "sessionId");
 
@@ -199,18 +204,12 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         organization = organization != null ? organization : "";
 
         // Organism
-        Project.Organism organism;
-        if (!StringUtils.isEmpty(scientificName) || !StringUtils.isEmpty(commonName) || !StringUtils.isEmpty(taxonomyCode)
-                || !StringUtils.isEmpty(assembly)) {
-            organism = new Project.Organism(scientificName, commonName);
-            if (StringUtils.isNumeric(taxonomyCode)) {
-                organism.setTaxonomyCode(Integer.parseInt(taxonomyCode));
-            }
-            if (StringUtils.isNotEmpty(assembly)) {
-                organism.setAssembly(assembly);
-            }
-        } else {
-            organism = configuration.getOrganism();
+        Project.Organism organism = new Project.Organism(scientificName, assembly);
+        if (StringUtils.isNumeric(taxonomyCode)) {
+            organism.setTaxonomyCode(Integer.parseInt(taxonomyCode));
+        }
+        if (StringUtils.isNotEmpty(commonName)) {
+            organism.setCommonName(assembly);
         }
 
         Project project = new Project(name, alias, description, new Status(), organization, organism);
@@ -221,8 +220,14 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         try {
             catalogIOManagerFactory.getDefault().createProject(userId, Long.toString(project.getId()));
         } catch (CatalogIOException e) {
-            e.printStackTrace();
-            projectDBAdaptor.delete(project.getId(), new QueryOptions());
+            try {
+                QueryOptions deleteOptions = new QueryOptions(DBAdaptor.SKIP_CHECK, true).append(DBAdaptor.FORCE, true);
+                projectDBAdaptor.delete(project.getId(), deleteOptions);
+            } catch (Exception e1) {
+                logger.error("Error deleting project from catalog after failing creating the folder in the filesystem", e1);
+                throw e;
+            }
+            throw e;
         }
         userDBAdaptor.updateUserLastModified(userId);
 //        auditManager.recordCreation(AuditRecord.Resource.project, queryResult.first().getId(), userId, queryResult.first(), null, null);

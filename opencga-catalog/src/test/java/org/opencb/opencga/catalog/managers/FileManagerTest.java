@@ -125,10 +125,13 @@ public class FileManagerTest extends GenericTest {
         sessionIdUser2 = catalogManager.login("user2", PASSWORD, "127.0.0.1").first().getId();
         sessionIdUser3 = catalogManager.login("user3", PASSWORD, "127.0.0.1").first().getId();
 
-        projectId = catalogManager.createProject("Project about some genomes", "1000G", "", "ACME", null, sessionIdUser).first().getId();
-        Project project2 = catalogManager.createProject("Project Management Project", "pmp", "life art intelligent system",
-                "myorg", null, sessionIdUser2).first();
-        Project project3 = catalogManager.createProject("project 1", "p1", "", "", null, sessionIdUser3).first();
+        projectId = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
+                null, null, "GRCh38", new QueryOptions(), sessionIdUser).first()
+                .getId();
+        Project project2 = catalogManager.getProjectManager().create("Project Management Project", "pmp", "life art intelligent system",
+                "myorg", "Homo sapiens",null, null, "GRCh38", new QueryOptions(), sessionIdUser2).first();
+        Project project3 = catalogManager.getProjectManager().create("project 1", "p1", "", "", "Homo sapiens",
+                null, null, "GRCh38", new QueryOptions(), sessionIdUser3).first();
 
         studyId = catalogManager.createStudy(projectId, "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser).first().getId();
         studyId2 = catalogManager.createStudy(projectId, "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser).first().getId();

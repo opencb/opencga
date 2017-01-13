@@ -59,13 +59,6 @@ catalog:
     authenticationDatabase: ${OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE}
     connectionsPerHost: ${OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST}
 
-# The default organism values can be defined here.
-organism:
-  taxonomyCode: ${OPENCGA.ORGANISM.TAXONOMY_CODE}
-  scientificName: ${OPENCGA.ORGANISM.SCIENTIFIC_NAME}
-  commonName: ${OPENCGA.ORGANISM.COMMON_NAME}
-  assembly: ${OPENCGA.ORGANISM.ASSEMBLY}
-
 # LDAP configuration example
 #authenticationOrigins:
 #- id: ldap            # Any id

@@ -49,13 +49,13 @@ public class AlignmentCommandOptions {
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index alignment file")
-    public class IndexAlignmentCommandOptions {
+    public class IndexAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
 
-        @Parameter(names = {"-i", "--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
+        @Parameter(names = {"-i", "--file"}, description = "Unique ID for the file", required = true, arity = 1)
         public String fileId;
 
         @Parameter(names = "--calculate-coverage", description = "Calculate coverage while indexing")
@@ -74,13 +74,10 @@ public class AlignmentCommandOptions {
         @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
         public boolean load = false;
 
-        @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = false, arity = 1)
-        public String studyId;
-
     }
 
     @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed alignments")
-    public class QueryAlignmentCommandOptions {
+    public class QueryAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
@@ -89,7 +86,7 @@ public class AlignmentCommandOptions {
                 + "that does not work, it will try with REST", required = false, arity = 1)
         public String rpc;
 
-        @Parameter(names = {"--file-id"}, description = "Id of the alignment file in catalog", required = true, arity = 1)
+        @Parameter(names = {"--file"}, description = "Id of the alignment file in catalog", required = true, arity = 1)
         public String fileId;
 
         @Parameter(names = {"--min-mapq"}, description = "Minimum mapping quality", arity = 1)
@@ -120,13 +117,13 @@ public class AlignmentCommandOptions {
     }
 
     @Parameters(commandNames = {"stats"}, commandDescription = "Obtain the global stats of an alignment")
-    public class StatsAlignmentCommandOptions {
+    public class StatsAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
 
-        @Parameter(names = {"--file-id"}, description = "Id of the alignment file in catalog", required = true, arity = 1)
+        @Parameter(names = {"--file"}, description = "Id of the alignment file in catalog", required = true, arity = 1)
         public String fileId;
 
         @Parameter(names = {"--min-mapq"}, description = "Minimum mapping quality", arity = 1)
@@ -141,13 +138,13 @@ public class AlignmentCommandOptions {
     }
 
     @Parameters(commandNames = {"coverage"}, commandDescription = "Obtain the coverage of an alignment")
-    public class CoverageAlignmentCommandOptions {
+    public class CoverageAlignmentCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = analysisCommonOptions;
 
 
-        @Parameter(names = {"--file-id"}, description = "Id of the alignment file in catalog", required = true, arity = 1)
+        @Parameter(names = {"--file"}, description = "Id of the alignment file in catalog", required = true, arity = 1)
         public String fileId;
 
         @Parameter(names = {"--min-mapq"}, description = "Minimum mapping quality", arity = 1)

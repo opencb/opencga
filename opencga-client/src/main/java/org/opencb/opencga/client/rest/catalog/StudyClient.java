@@ -69,6 +69,7 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
         if (params.containsKey("method")) {
             if (params.get("method").equals("GET")) {
                 params = addParamsToObjectMap(params, "projectId", projectId, "name", studyName, "alias", studyAlias);
+                params.remove("method");
                 return execute(STUDY_URL, "create", params, GET, Study.class);
             } else {
                 params.remove("method");
@@ -179,9 +180,10 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
         return execute(STUDY_URL, studyId, "groups", groupId, "info", objectMap, GET, ObjectMap.class);
     }
 
-    public QueryResponse<Study> update(String studyId, ObjectMap params) throws CatalogException, IOException {
+    public QueryResponse<Study> update(String studyId, String study, ObjectMap params) throws CatalogException, IOException {
         if (params.containsKey("method")) {
             if (params.get("method").equals("GET")) {
+                params.remove("method");
                 return execute(STUDY_URL, studyId, "update", params, GET, Study.class);
             }
         }

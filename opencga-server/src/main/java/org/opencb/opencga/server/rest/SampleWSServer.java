@@ -104,6 +104,32 @@ public class SampleWSServer extends OpenCGAWSServer {
         }
     }
 
+    private static class SampleParameters {
+        public String name;
+        public String source;
+        public String description;
+    }
+
+    @POST
+    @Path("/create")
+    @ApiOperation(value = "Create sample", position = 2, response = Sample.class)
+    public Response createSamplePOST(
+            @ApiParam(value = "DEPRECATED: studyId", required = false) @QueryParam("studyId") String studyIdStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+                    String studyStr,
+            @ApiParam(value="JSON containing sample information", required = true)  SampleParameters params) {
+        try {
+            if (StringUtils.isNotEmpty(studyIdStr)) {
+                studyStr = studyIdStr;
+            }
+            QueryResult<Sample> queryResult = sampleManager.create(studyStr, params.name, params.source, params.description, null, null,
+                    sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     @GET
     @Path("/load")
     @ApiOperation(value = "Load samples from a ped file", position = 3)
@@ -143,7 +169,7 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "lazy", value = "False to return the entire individual object", defaultValue = "true", dataType = "boolean", paramType = "query")
     })
-    public Response search(@ApiParam(value = "DEPRECATED: use study instead") @DefaultValue("") @QueryParam("studyId") String studyIdStr,
+    public Response search(@ApiParam(value = "DEPRECATED: use study instead") @QueryParam("studyId") String studyIdStr,
                            @ApiParam(value = "Study [[user@]project:]{study1,study2|*}  where studies and project can be either the id or"
                                           + " alias.", required = false) @QueryParam("study") String studyStr,
                            @Deprecated
@@ -155,7 +181,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "DEPRECATED: use individual.id instead") @QueryParam("individualId") String individualIdOld,
                            @ApiParam(value = "Individual id or name") @QueryParam("individual.id") String individual,
                            @ApiParam(value = "Ontology terms") @QueryParam("ontologies") String ontologies,
-                           @ApiParam(value = "annotationSetName") @QueryParam("annotationSetName") String annotationSetName,
+                           @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
                            @ApiParam(value = "variableSetId") @QueryParam("variableSetId") String variableSetId,
                            @ApiParam(value = "annotation") @QueryParam("annotation") String annotation
     ) {
@@ -273,7 +299,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                             @Deprecated
                             @ApiParam(value = "DEPRECATED: use indiviudal.id instead") @QueryParam("individualId") String individualIdOld,
                             @ApiParam(value = "Individual id or name") @QueryParam("individual.id") String individualId,
-                            @ApiParam(value = "annotationSetName") @QueryParam("annotationSetName") String annotationSetName,
+                            @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
                             @ApiParam(value = "variableSetId") @QueryParam("variableSetId") String variableSetId,
                             @ApiParam(value = "annotation") @QueryParam("annotation") String annotation) {
         try {
@@ -294,7 +320,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{sample}/annotationSets/search")
+    @Path("/{sample}/annotationsets/search")
     @ApiOperation(value = "Search annotation sets [NOT TESTED]", position = 11)
     public Response searchAnnotationSetGET(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
                                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -315,7 +341,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{sample}/annotationSets/info")
+    @Path("/{sample}/annotationsets/info")
     @ApiOperation(value = "Return the annotation sets of the sample [NOT TESTED]", position = 12)
     public Response infoAnnotationSetGET(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
                                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -334,18 +360,19 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{sample}/annotationSets/create")
+    @Path("/{sample}/annotationsets/create")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create an annotation set for the sample [NOT TESTED]", position = 13)
-    public Response annotateSamplePOST(@ApiParam(value = "SampleId", required = true) @PathParam("sample") String sampleStr,
-                                       @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                       @QueryParam("study") String studyStr,
-                                       @ApiParam(value = "VariableSetId of the new annotation", required = true) @QueryParam("variableSetId") long variableSetId,
-                                       @ApiParam(value = "Annotation set name. Must be unique for the sample", required = true) @QueryParam("annotateSetName") String annotateSetName,
-                                       Map<String, Object> annotations) {
+    public Response annotateSamplePOST(
+            @ApiParam(value = "SampleId", required = true) @PathParam("sample") String sampleStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+                    String studyStr,
+            @ApiParam(value = "VariableSetId of the new annotation", required = true) @QueryParam("variableSetId") long variableSetId,
+            @ApiParam(value="JSON containing the annotation set name and the array of annotations. The name should be unique for the "
+                    + "sample", required = true) CohortWSServer.AnnotationsetParameters params) {
         try {
-            QueryResult<AnnotationSet> queryResult = sampleManager.createAnnotationSet(sampleStr, studyStr, variableSetId, annotateSetName,
-                    annotations, Collections.emptyMap(), sessionId);
+            QueryResult<AnnotationSet> queryResult = sampleManager.createAnnotationSet(sampleStr, studyStr, variableSetId, params.name,
+                    params.annotations, Collections.emptyMap(), sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -353,19 +380,19 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{sample}/annotationSets/{annotationSetName}/delete")
+    @Path("/{sample}/annotationsets/{annotationsetName}/delete")
     @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [NOT TESTED]", position = 14)
     public Response deleteAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
                                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                         @QueryParam("study") String studyStr,
-                                        @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
+                                        @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName") String annotationsetName,
                                         @ApiParam(value = "[NOT IMPLEMENTED] Comma separated list of annotation names to be deleted", required = false) @QueryParam("annotations") String annotations) {
         try {
             QueryResult<AnnotationSet> queryResult;
             if (annotations != null) {
-                queryResult = sampleManager.deleteAnnotations(sampleStr, studyStr, annotationSetName, annotations, sessionId);
+                queryResult = sampleManager.deleteAnnotations(sampleStr, studyStr, annotationsetName, annotations, sessionId);
             } else {
-                queryResult = sampleManager.deleteAnnotationSet(sampleStr, studyStr, annotationSetName, sessionId);
+                queryResult = sampleManager.deleteAnnotationSet(sampleStr, studyStr, annotationsetName, sessionId);
             }
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
@@ -374,17 +401,17 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{sample}/annotationSets/{annotationSetName}/update")
+    @Path("/{sample}/annotationsets/{annotationsetName}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update the annotations [NOT TESTED]", position = 15)
     public Response updateAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleIdStr,
                                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                         @QueryParam("study") String studyStr,
-                                        @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
+                                        @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName") String annotationsetName,
 //                                        @ApiParam(value = "reset", required = false) @QueryParam("reset") String reset,
                                         Map<String, Object> annotations) {
         try {
-            QueryResult<AnnotationSet> queryResult = sampleManager.updateAnnotationSet(sampleIdStr, studyStr, annotationSetName,
+            QueryResult<AnnotationSet> queryResult = sampleManager.updateAnnotationSet(sampleIdStr, studyStr, annotationsetName,
                     annotations, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
@@ -393,20 +420,20 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{sample}/annotationSets/{annotationSetName}/info")
+    @Path("/{sample}/annotationsets/{annotationsetName}/info")
     @ApiOperation(value = "Return the annotation set [NOT TESTED]", position = 16)
     public Response infoAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
                                       @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                       @QueryParam("study") String studyStr,
-                                      @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
+                                      @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName") String annotationsetName,
                                       @ApiParam(value = "Indicates whether to show the annotations as key-value",
                                               defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
-                return createOkResponse(catalogManager.getSampleManager().getAnnotationSetAsMap(sampleStr, studyStr, annotationSetName,
+                return createOkResponse(catalogManager.getSampleManager().getAnnotationSetAsMap(sampleStr, studyStr, annotationsetName,
                         sessionId));
             } else {
-                return createOkResponse(catalogManager.getSampleManager().getAnnotationSet(sampleStr, studyStr, annotationSetName,
+                return createOkResponse(catalogManager.getSampleManager().getAnnotationSet(sampleStr, studyStr, annotationsetName,
                         sessionId));
             }
         } catch (CatalogException e) {
@@ -432,13 +459,32 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{samples}/acl/create")
     @ApiOperation(value = "Define a set of permissions for a list of members", position = 19)
-    public Response createRole(@ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("samples") String sampleIdsStr,
+    public Response createRole(@ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("samples")
+                                           String sampleIdsStr,
                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                @QueryParam("study") String studyStr,
-                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
-                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
+                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list")
+                                   @DefaultValue("") @QueryParam("permissions") String permissions,
+                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true)
+                                   @DefaultValue("") @QueryParam("members") String members) {
         try {
             return createOkResponse(catalogManager.createSampleAcls(sampleIdsStr, studyStr, members, permissions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{samples}/acl/create")
+    @ApiOperation(value = "Define a set of permissions for a list of members", position = 19)
+    public Response createRolePOST(
+            @ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("samples") String sampleIdsStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+                    String studyStr,
+            @ApiParam(value="JSON containing the parameters defined in GET. Mandatory keys: 'members'", required = true)
+                    StudyWSServer.CreateAclCommands params) {
+        try {
+            return createOkResponse(catalogManager.createSampleAcls(sampleIdsStr, studyStr, params.members, params.permissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -471,6 +517,24 @@ public class SampleWSServer extends OpenCGAWSServer {
         try {
             return createOkResponse(catalogManager.updateSampleAcl(sampleIdStr, studyStr, memberId, addPermissions, removePermissions,
                     setPermissions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{sample}/acl/{memberId}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    public Response updateAclPOST(
+            @ApiParam(value = "Sample id or name", required = true) @PathParam("sample") String sampleIdStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+                    String studyStr,
+            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
+            @ApiParam(value="JSON containing one of the keys 'addPermissions', 'setPermissions' or 'removePermissions'", required = true)
+                    StudyWSServer.MemberAclUpdate params) {
+        try {
+            return createOkResponse(catalogManager.updateSampleAcl(sampleIdStr, studyStr, memberId, params.addPermissions,
+                    params.removePermissions, params.setPermissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

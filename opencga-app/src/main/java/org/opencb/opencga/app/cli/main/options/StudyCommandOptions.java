@@ -21,6 +21,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 
 import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
@@ -52,18 +53,16 @@ public class StudyCommandOptions {
     public GroupsInfoCommandOptions groupsInfoCommandOptions;
     public GroupsUpdateCommandOptions groupsUpdateCommandOptions;
 
-    public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
-    public AclCommandOptions.AclsCreateCommandOptionsTemplate aclsCreateCommandOptions;
-    public AclCommandOptions.AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
-    public AclCommandOptions.AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
-    public AclCommandOptions.AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
+    public AclsCommandOptions aclsCommandOptions;
+    public AclsCreateCommandOptions aclsCreateCommandOptions;
+    public AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
+    public AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
+    public AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
 
     public JCommander jCommander;
     public CommonCommandOptions commonCommandOptions;
     public DataModelOptions commonDataModelOptions;
     public NumericOptions commonNumericOptions;
-
-    private AclCommandOptions aclCommandOptions;
 
     public StudyCommandOptions(CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions, NumericOptions numericOptions,
                                JCommander jCommander) {
@@ -94,12 +93,11 @@ public class StudyCommandOptions {
         this.groupsInfoCommandOptions = new GroupsInfoCommandOptions();
         this.groupsUpdateCommandOptions = new GroupsUpdateCommandOptions();
 
-        aclCommandOptions = new AclCommandOptions(commonCommandOptions);
-        this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
-        this.aclsCreateCommandOptions = aclCommandOptions.getAclsCreateCommandOptionsTemplate();
-        this.aclsMemberDeleteCommandOptions = aclCommandOptions.getAclsMemberDeleteCommandOptions();
-        this.aclsMemberInfoCommandOptions = aclCommandOptions.getAclsMemberInfoCommandOptions();
-        this.aclsMemberUpdateCommandOptions = aclCommandOptions.getAclsMemberUpdateCommandOptions();
+        this.aclsCommandOptions = new AclsCommandOptions();
+        this.aclsCreateCommandOptions = new AclsCreateCommandOptions();
+        this.aclsMemberDeleteCommandOptions = new AclsMemberDeleteCommandOptions();
+        this.aclsMemberInfoCommandOptions = new AclsMemberInfoCommandOptions();
+        this.aclsMemberUpdateCommandOptions = new AclsMemberUpdateCommandOptions();
     }
 
     public abstract class BaseStudyCommand extends StudyOption {
@@ -115,7 +113,8 @@ public class StudyCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-p", "--project"}, description = "Project identifier, this parameter is optional when only one project exist", arity = 1)
+        @Parameter(names = {"-p", "--project"}, description = "Project identifier, this parameter is optional when only one project exist",
+                arity = 1)
         public String project;
 
         @Parameter(names = {"-n", "--name"}, description = "Study name", required = true, arity = 1)
@@ -150,7 +149,7 @@ public class StudyCommandOptions {
         @ParametersDelegate
         public NumericOptions numericOptions = commonNumericOptions;
 
-        @Parameter(names = {"-p", "--project"}, description = "Project ID or alias", arity = 1)
+        @Parameter(names = {"-p", "--project"}, description = "Project id or alias", arity = 1)
         public String project;
 
         @Parameter(names = {"-n", "--name"}, description = "Study name.", arity = 1)
@@ -228,9 +227,6 @@ public class StudyCommandOptions {
         @Parameter(names = {"--directory"}, description = "Directory", arity = 1)
         public String directory;
 
-        @Parameter(names = {"--owner-id"}, description = "owner Id", arity = 1)
-        public String ownerId;
-
         @Parameter(names = {"--creation-date"}, description = "Creation date.", arity = 1)
         public String creationDate;
 
@@ -286,7 +282,7 @@ public class StudyCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"delete"}, commandDescription = "Delete a study [PENDING]")
+    @Parameters(commandNames = {"delete"}, commandDescription = "[PENDING] Delete a study")
     public class DeleteCommandOptions extends BaseStudyCommand {
 
     }
@@ -317,8 +313,8 @@ public class StudyCommandOptions {
         @Parameter(names = {"--owner-id"}, description = "User that created the job", arity = 1)
         public String ownerId;
 
-        /*@Parameter(names = {"--date"}, description = "Creation date of the job", arity = 1)
-        public String date;*/
+        @Parameter(names = {"--date"}, description = "Creation date of the job", arity = 1)
+        public String date;
 
         @Deprecated
         @Parameter(names = {"--input-files"}, description = "[DEPRECATED] Comma separated list of input file ids", arity = 1)
@@ -435,8 +431,8 @@ public class StudyCommandOptions {
                 + "(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1", arity = 1)
         public String genotype;
 
-        @Parameter(names = {"--annot-ct"}, description = "Consequence type SO term list. e.g. missense_variant,stop_lost or SO:0001583,SO:0001578",
-                arity = 1)
+        @Parameter(names = {"--annot-ct"},
+                description = "Consequence type SO term list. e.g. missense_variant,stop_lost or SO:0001583,SO:0001578", arity = 1)
         public String annot_ct;
 
         @Parameter(names = {"--annot-xref"}, description = "XRef", arity = 1)
@@ -546,10 +542,12 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"groups-create"}, commandDescription = "Create a group")
     public class GroupsCreateCommandOptions extends BaseStudyCommand {
 
-        @Parameter(names = {"--group-id"}, description = "Group id, group id corresponds to the name of the group", required = true, arity = 1)
+        @Parameter(names = {"--group"}, description = "Group id, group id corresponds to the name of the group", required = true,
+                arity = 1)
         public String groupId;
 
-        @Parameter(names = {"--users"}, description = "Comma separated list of members that will form the group", required = true, arity = 1)
+        @Parameter(names = {"--users"}, description = "Comma separated list of members that will form the group", required = true,
+                arity = 1)
         public String users;
 
     }
@@ -557,7 +555,8 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"groups-delete"}, commandDescription = "Delete group")
     public class GroupsDeleteCommandOptions extends BaseStudyCommand {
 
-        @Parameter(names = {"--group-id"}, description = "Group id, group id corresponds to the name of the group ", required = true, arity = 1)
+        @Parameter(names = {"--group"}, description = "Group id, group id corresponds to the name of the group ", required = true,
+                arity = 1)
         public String groupId;
 
     }
@@ -565,7 +564,8 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"groups-info"}, commandDescription = "Return the group")
     public class GroupsInfoCommandOptions extends BaseStudyCommand {
 
-        @Parameter(names = {"--group-id"}, description = "Group id, group id corresponds to the name of the group", required = true, arity = 1)
+        @Parameter(names = {"--group"}, description = "Group id, group id corresponds to the name of the group", required = true,
+                arity = 1)
         public String groupId;
 
     }
@@ -573,7 +573,8 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"groups-update"}, commandDescription = "Updates the members of the group")
     public class GroupsUpdateCommandOptions extends BaseStudyCommand {
 
-        @Parameter(names = {"--group-id"}, description = "Group id, group id corresponds to the name of the group", required = true, arity = 1)
+        @Parameter(names = {"--group"}, description = "Group id, group id corresponds to the name of the group", required = true,
+                arity = 1)
         public String groupId;
 
         @Parameter(names = {"--add-users"}, description = "Comma separated list of users that will be added to the group", arity = 1)
@@ -584,5 +585,55 @@ public class StudyCommandOptions {
 
         @Parameter(names = {"--remove-users"}, description = "Comma separated list of users that will be added to the group", arity = 1)
         public String removeUsers;
+    }
+
+    @Parameters(commandNames = {"acl"}, commandDescription = "Return the acl of the resource")
+    public class AclsCommandOptions extends BaseStudyCommand {
+
+    }
+
+    @Parameters(commandNames = {"acl-create"}, commandDescription = "Define a set of permissions for a list of users or groups")
+    public class AclsCreateCommandOptions extends AclsCommandOptions {
+        @Parameter(names = {"--members"},
+                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true, arity = 1)
+        public String members;
+
+        @Parameter(names = {"--permissions"}, description = "Comma separated list of accepted permissions for the resource", arity = 1)
+        public String permissions;
+
+        @Parameter(names = {"--template"}, description = "Template of permissions to be used (admin, analyst or view_only)", arity = 1)
+        public String templateId;
+    }
+
+    @Parameters(commandNames = {"acl-member-delete"}, commandDescription = "Delete all the permissions granted for the user or group")
+    public class AclsMemberDeleteCommandOptions extends AclsCommandOptions {
+
+        @Parameter(names = {"--member"}, description = "Member id ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
+        public String memberId;
+    }
+
+    @Parameters(commandNames = {"acl-member-info"},
+            commandDescription = "Return the set of permissions granted for the user or group")
+    public class AclsMemberInfoCommandOptions extends AclsCommandOptions {
+
+        @Parameter(names = {"--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
+        public String memberId;
+    }
+
+    @Parameters(commandNames = {"acl-member-update"},
+            commandDescription = "Update the set of permissions granted for the user or group")
+    public class AclsMemberUpdateCommandOptions extends AclsCommandOptions {
+
+        @Parameter(names = {"--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
+        public String memberId;
+
+        @Parameter(names = {"--add-permissions"}, description = "Comma separated list of permissions to add", arity = 1)
+        public String addPermissions;
+
+        @Parameter(names = {"--remove-permissions"}, description = "Comma separated list of permissions to remove", arity = 1)
+        public String removePermissions;
+
+        @Parameter(names = {"--set-permissions"}, description = "Comma separated list of permissions to set", arity = 1)
+        public String setPermissions;
     }
 }

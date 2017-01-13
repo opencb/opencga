@@ -53,13 +53,13 @@ public interface IUserManager extends ResourceManager<String, User> {
      * @param password     Encrypted Password
      * @param organization Optional organization
      * @param quota    Maximum user disk quota
+     * @param type     User account type. Full or guest.
      * @param options      Optional options
-     * @param adminPassword    Optional admin password.
      * @return The created user
      * @throws CatalogException If user already exists, or unable to create a new user.
      */
-    QueryResult<User> create(String userId, String name, String email, String password, String organization, Long quota,
-                             QueryOptions options, String adminPassword) throws CatalogException;
+    QueryResult<User> create(String userId, String name, String email, String password, String organization, Long quota, String type,
+                             QueryOptions options) throws CatalogException;
 
     /**
      * This method can only be run by the admin user. It will import users from other authentication origins such as LDAP, Kerberos, etc
@@ -114,7 +114,7 @@ public interface IUserManager extends ResourceManager<String, User> {
      */
     QueryResult<Session> getNewUserSession(String sessionId, String userId) throws CatalogException;
 
-    QueryResult resetPassword(String userId) throws CatalogException;
+    QueryResult resetPassword(String userId, String sessionId) throws CatalogException;
 
     void validatePassword(String userId, String password, boolean throwException) throws CatalogException;
 

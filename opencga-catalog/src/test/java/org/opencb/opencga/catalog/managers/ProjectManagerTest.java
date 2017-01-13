@@ -5,6 +5,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
@@ -56,10 +57,13 @@ public class ProjectManagerTest extends GenericTest {
         sessionIdUser2 = catalogManager.login("user2", PASSWORD, "127.0.0.1").first().getId();
         sessionIdUser3 = catalogManager.login("user3", PASSWORD, "127.0.0.1").first().getId();
 
-        project1 = catalogManager.createProject("Project about some genomes", "1000G", "", "ACME", null, sessionIdUser).first().getId();
-        project2 = catalogManager.createProject("Project Management Project", "pmp", "life art intelligent system", "myorg", null,
+        project1 = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
+                null, null, "GRCh38", new QueryOptions(), sessionIdUser).first().getId();
+        project2 = catalogManager.getProjectManager().create("Project Management Project", "pmp", "life art intelligent system",
+                "myorg", "Homo sapiens", null, null, "GRCh38", new QueryOptions(),
                 sessionIdUser2).first().getId();
-        project3 = catalogManager.createProject("project 1", "p1", "", "", null, sessionIdUser3).first().getId();
+        project3 = catalogManager.getProjectManager().create("project 1", "p1", "", "", "Homo sapiens",
+                null, null, "GRCh38", new QueryOptions(), sessionIdUser3).first().getId();
 
         studyId = catalogManager.createStudy(project1, "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser).first().getId();
         studyId2 = catalogManager.createStudy(project1, "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser).first().getId();
@@ -108,36 +112,35 @@ public class ProjectManagerTest extends GenericTest {
 
     @Test
     public void updateOrganismInProject() throws CatalogException {
-        Project pr = catalogManager.getProjectManager().create("Project about some genomes", "project2", "", "ACME", null,
-                "commonName", null, null, null, sessionIdUser).first();
+        Project pr = catalogManager.getProjectManager().create("Project about some genomes", "project2", "", "ACME", "Homo sapiens",
+                null, null, "GRCh38", null, sessionIdUser).first();
 
         long myProject = pr.getId();
 
-        assertEquals("", pr.getOrganism().getScientificName());
-        assertEquals("commonName", pr.getOrganism().getCommonName());
-        assertEquals("", pr.getOrganism().getAssembly());
+        assertEquals("Homo sapiens", pr.getOrganism().getScientificName());
+        assertEquals("", pr.getOrganism().getCommonName());
+        assertEquals("GRCh38", pr.getOrganism().getAssembly());
         assertEquals(-1, pr.getOrganism().getTaxonomyCode());
 
         ObjectMap objectMap = new ObjectMap();
-        objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_SCIENTIFIC_NAME.key(), "scientific");
         objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_TAXONOMY_CODE.key(), 55);
         QueryResult<Project> update = catalogManager.getProjectManager().update(myProject, objectMap, null, sessionIdUser);
 
         assertEquals(1, update.getNumResults());
-        assertEquals("scientific", update.first().getOrganism().getScientificName());
-        assertEquals("commonName", update.first().getOrganism().getCommonName());
-        assertEquals("", update.first().getOrganism().getAssembly());
+        assertEquals("Homo sapiens", update.first().getOrganism().getScientificName());
+        assertEquals("", update.first().getOrganism().getCommonName());
+        assertEquals("GRCh38", update.first().getOrganism().getAssembly());
         assertEquals(55, update.first().getOrganism().getTaxonomyCode());
 
         objectMap = new ObjectMap();
-        objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_ASSEMBLY.key(), "assembly");
+        objectMap.put(ProjectDBAdaptor.QueryParams.ORGANISM_COMMON_NAME.key(), "common");
 
         update = catalogManager.getProjectManager().update(myProject, objectMap, null, sessionIdUser);
 
         assertEquals(1, update.getNumResults());
-        assertEquals("scientific", update.first().getOrganism().getScientificName());
-        assertEquals("commonName", update.first().getOrganism().getCommonName());
-        assertEquals("assembly", update.first().getOrganism().getAssembly());
+        assertEquals("Homo sapiens", update.first().getOrganism().getScientificName());
+        assertEquals("common", update.first().getOrganism().getCommonName());
+        assertEquals("GRCh38", update.first().getOrganism().getAssembly());
         assertEquals(55, update.first().getOrganism().getTaxonomyCode());
 
         objectMap = new ObjectMap();

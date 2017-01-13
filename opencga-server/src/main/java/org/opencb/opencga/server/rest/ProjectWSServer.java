@@ -55,14 +55,12 @@ public class ProjectWSServer extends OpenCGAWSServer {
                                           required = true) @QueryParam("alias") String alias,
                                   @ApiParam(value = "Project description") @QueryParam("description") String description,
                                   @ApiParam(value = "Project organization") @QueryParam("organization") String organization,
-                                  @ApiParam(value = "Scientific name of the organism for which the project is intended")
-                                      @QueryParam("organism.scientificName") String scientificName,
-                                  @ApiParam(value = "Common name of the organism for which the project is intended")
-                                      @QueryParam("organism.commonName") String commonName,
-                                  @ApiParam(value = "Taxonomy code of the organism for which the project is intended")
-                                      @QueryParam("organism.taxonomyCode") String taxonomyCode,
-                                  @ApiParam(value = "Assembly of the organism for which the project is intended")
-                                      @QueryParam("organism.assembly") String assembly) {
+                                  @ApiParam(value = "Organism scientific name", required = true) @QueryParam("organism.scientificName")
+                                              String scientificName,
+                                  @ApiParam(value = "Organism common name") @QueryParam("organism.commonName") String commonName,
+                                  @ApiParam(value = "Organism taxonomy code") @QueryParam("organism.taxonomyCode") String taxonomyCode,
+                                  @ApiParam(value = "Organism assembly", required = true) @QueryParam("organism.assembly")
+                                              String assembly) {
         try {
             QueryResult queryResult = catalogManager.getProjectManager()
                     .create(name, alias, description, organization, scientificName, commonName, taxonomyCode, assembly, queryOptions,
@@ -77,15 +75,9 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @POST
     @Path("/create")
     @ApiOperation(value = "Create a new project", response = Project.class)
-    public Response createProjectPOST(@ApiParam(value = "JSON containing the mandatory parameters 'name', and 'alias' and optionally, the"
-            + " parameters 'description', 'organization', 'organism.scientificName', 'organism.commonName', 'organism.taxonomyCode'"
-            + " and 'organism.assembly'", required = true) ObjectMap map) {
-
-        if (StringUtils.isEmpty(map.getString("name")) || StringUtils.isEmpty(map.getString("alias"))) {
-            return createErrorResponse(new CatalogException("Parameters name and alias are both mandatory. At least one of them not "
-                    + "present."));
-        }
-
+    public Response createProjectPOST(@ApiParam(value = "JSON containing the mandatory parameters 'name', 'alias', "
+            + "'organism.scientificName' and 'organism.assembly', and optionally, the parameters 'description', 'organization', "
+            + "'organism.commonName' and 'organism.taxonomyCode'", required = true) ObjectMap map) {
         try {
             QueryResult queryResult = catalogManager.getProjectManager()
                     .create(map.getString("name"), map.getString("alias"), map.getString("description"), map.getString("organization"),

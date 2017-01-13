@@ -118,7 +118,8 @@ public abstract class StorageManager {
 
             // Get file path
             QueryOptions fileOptions = new QueryOptions(QueryOptions.INCLUDE,
-                    Arrays.asList(FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.NAME.key()));
+                    Arrays.asList(FileDBAdaptor.QueryParams.URI.key(), FileDBAdaptor.QueryParams.NAME.key(),
+                            FileDBAdaptor.QueryParams.BIOFORMAT.key(), FileDBAdaptor.QueryParams.FORMAT.key()));
             QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(fileId, fileOptions, sessionId);
 
             if (fileQueryResult.getNumResults() != 1) {
@@ -132,7 +133,8 @@ public abstract class StorageManager {
 
             fileInfo.setPath(path);
             fileInfo.setName(fileQueryResult.first().getName());
-
+            fileInfo.setBioformat(fileQueryResult.first().getBioformat());
+            fileInfo.setFormat(fileQueryResult.first().getFormat());
 
             fileInfos.add(fileInfo);
         }

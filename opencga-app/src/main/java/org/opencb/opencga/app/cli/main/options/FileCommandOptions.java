@@ -31,21 +31,20 @@ import static org.opencb.opencga.app.cli.GeneralCliOptions.*;
 /**
  * Created by sgallego on 6/14/16.
  */
-@Parameters(commandNames = {"files"}, commandDescription = "Files commands")
+@Parameters(commandNames = {"files"}, commandDescription = "File commands")
 public class FileCommandOptions {
 
-    public CopyCommandOptions copyCommandOptions;
+//    public CopyCommandOptions copyCommandOptions;
     public CreateFolderCommandOptions createFolderCommandOptions;
     public InfoCommandOptions infoCommandOptions;
     public DownloadCommandOptions downloadCommandOptions;
     public GrepCommandOptions grepCommandOptions;
     public SearchCommandOptions searchCommandOptions;
     public ListCommandOptions listCommandOptions;
-    public IndexCommandOptions indexCommandOptions;
+//    public IndexCommandOptions indexCommandOptions;
     public TreeCommandOptions treeCommandOptions;
-    public AlignmentCommandOptions alignmentCommandOptions;
     public ContentCommandOptions contentCommandOptions;
-    public FetchCommandOptions fetchCommandOptions;
+//    public FetchCommandOptions fetchCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
     public UploadCommandOptions uploadCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
@@ -54,7 +53,7 @@ public class FileCommandOptions {
     public UnlinkCommandOptions unlinkCommandOptions;
     public RefreshCommandOptions refreshCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
-    public VariantsCommandOptions variantsCommandOptions;
+//    public VariantsCommandOptions variantsCommandOptions;
 
     public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
     public AclCommandOptions.AclsCreateCommandOptions aclsCreateCommandOptions;
@@ -77,18 +76,17 @@ public class FileCommandOptions {
         this.commonNumericOptions = numericOptions;
         this.jCommander = jCommander;
 
-        this.copyCommandOptions = new CopyCommandOptions();
+//        this.copyCommandOptions = new CopyCommandOptions();
         this.createFolderCommandOptions = new CreateFolderCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.downloadCommandOptions = new DownloadCommandOptions();
         this.grepCommandOptions = new GrepCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
         this.listCommandOptions = new ListCommandOptions();
-        this.indexCommandOptions = new IndexCommandOptions();
+//        this.indexCommandOptions = new IndexCommandOptions();
         this.treeCommandOptions = new TreeCommandOptions();
-        this.alignmentCommandOptions = new AlignmentCommandOptions();
         this.contentCommandOptions = new ContentCommandOptions();
-        this.fetchCommandOptions = new FetchCommandOptions();
+//        this.fetchCommandOptions = new FetchCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
         this.relinkCommandOptions = new RelinkCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
@@ -97,7 +95,7 @@ public class FileCommandOptions {
         this.linkCommandOptions = new LinkCommandOptions();
         this.uploadCommandOptions = new UploadCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
-        this.variantsCommandOptions = new VariantsCommandOptions();
+//        this.variantsCommandOptions = new VariantsCommandOptions();
 
         aclCommandOptions = new AclCommandOptions(commonCommandOptions);
         this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
@@ -158,7 +156,8 @@ public class FileCommandOptions {
         @Parameter(names = {"--path"}, description = "Path where the folder will be created", required = true, arity = 1)
         public String folder = "";
 
-        @Parameter(names = {"-P", "--parents"}, description = "Create the parent directories if they do not exist. Default: false", arity = 0)
+        @Parameter(names = {"-P", "--parents"}, description = "Create the parent directories if they do not exist. Default: false",
+                arity = 0)
         public boolean parents;
     }
 
@@ -276,6 +275,7 @@ public class FileCommandOptions {
 
     }
 
+    @Deprecated
     @Parameters(commandNames = {"index"}, commandDescription = "Index file in the selected StorageEngine")
     public class IndexCommandOptions extends BaseFileCommand {
 
@@ -339,17 +339,6 @@ public class FileCommandOptions {
 //
 //        @Parameter(names = "--annotate", description = "Annotate new variants", arity = 0)
 //        public boolean annotate;
-    }
-
-    @Parameters(commandNames = {"alignments"}, commandDescription = "Fetch alignments from a BAM file")
-    public class AlignmentCommandOptions extends BaseFileCommand {
-
-        @ParametersDelegate
-        public DataModelOptions dataModelOptions = commonDataModelOptions;
-
-        @ParametersDelegate
-        public NumericOptions numericOptions = commonNumericOptions;
-
     }
 
     @Parameters(commandNames = {"content"}, commandDescription = "Show the content of a file (up to a limit)")
@@ -479,7 +468,8 @@ public class FileCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"link"}, commandDescription = "Link an external file or folder into catalog.")
+    @Parameters(commandNames = {"link"}, commandDescription = "Link an external file or folder into catalog. Only works with direct " +
+            "access to the database installation.")
     public class LinkCommandOptions extends StudyOption {
 
         @ParametersDelegate
@@ -602,6 +592,7 @@ public class FileCommandOptions {
         public String nattributes;
     }
 
+    @Deprecated
     @Parameters(commandNames = {"variants"}, commandDescription = "Fetch variants from a VCF/gVCF file")
     public class VariantsCommandOptions extends BaseFileCommand {
 

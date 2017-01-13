@@ -114,8 +114,7 @@ public class CohortCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-n", "--name"}, description = "cohort name. This parameter is required when you create the cohort from samples",
-                required = false, arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "Cohort name.", required = true, arity = 1)
         public String name;
 
         @Parameter(names = {"--type"}, description = "Cohort type", required = false, arity = 1)
@@ -127,7 +126,7 @@ public class CohortCommandOptions {
         @Parameter(names = {"-d", "--description"}, description = "cohort description", required = false, arity = 1)
         public String description;
 
-        @Parameter(names = {"--sample-ids"}, description = "Sample ids for the cohort (CSV)", required = false, arity = 1)
+        @Parameter(names = {"--samples"}, description = "Sample ids for the cohort (CSV)", required = false, arity = 1)
         public String sampleIds;
 
         @Parameter(names = {"--variable"}, description = "Categorical variable name to use to create cohorts, must go together the "

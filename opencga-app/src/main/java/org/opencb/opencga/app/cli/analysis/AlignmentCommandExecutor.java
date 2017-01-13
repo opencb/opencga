@@ -99,7 +99,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
 
         org.opencb.opencga.storage.core.manager.AlignmentStorageManager alignmentStorageManager =
                 new org.opencb.opencga.storage.core.manager.AlignmentStorageManager(catalogManager, storageManagerFactory);
-        alignmentStorageManager.index(null, cliOptions.fileId, params, sessionId);
+        alignmentStorageManager.index(cliOptions.study, cliOptions.fileId, params, sessionId);
     }
 
 //    @Deprecated
@@ -196,6 +196,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         ObjectMap objectMap = new ObjectMap();
 //        objectMap.putIfNotNull("fileId", alignmentCommandOptions.queryAlignmentCommandOptions.fileId);
         objectMap.putIfNotNull("sid", alignmentCommandOptions.queryAlignmentCommandOptions.commonOptions.sessionId);
+        objectMap.putIfNotNull("study", alignmentCommandOptions.queryAlignmentCommandOptions.study);
         objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), alignmentCommandOptions.queryAlignmentCommandOptions.region);
         objectMap.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(),
                 alignmentCommandOptions.queryAlignmentCommandOptions.minMappingQuality);
@@ -359,6 +360,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         ObjectMap objectMap = new ObjectMap();
 //        objectMap.putIfNotNull("fileId", alignmentCommandOptions.statsAlignmentCommandOptions.fileId);
         objectMap.putIfNotNull("sid", alignmentCommandOptions.statsAlignmentCommandOptions.commonOptions.sessionId);
+        objectMap.putIfNotNull("study", alignmentCommandOptions.statsAlignmentCommandOptions.study);
         objectMap.putIfNotNull("region", alignmentCommandOptions.statsAlignmentCommandOptions.region);
         objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.statsAlignmentCommandOptions.minMappingQuality);
         if (alignmentCommandOptions.statsAlignmentCommandOptions.contained) {
@@ -378,6 +380,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         ObjectMap objectMap = new ObjectMap();
 //        objectMap.putIfNotNull("fileId", alignmentCommandOptions.coverageAlignmentCommandOptions.fileId);
         objectMap.putIfNotNull("sid", alignmentCommandOptions.coverageAlignmentCommandOptions.commonOptions.sessionId);
+        objectMap.putIfNotNull("study", alignmentCommandOptions.coverageAlignmentCommandOptions.study);
         objectMap.putIfNotNull("region", alignmentCommandOptions.coverageAlignmentCommandOptions.region);
         objectMap.putIfNotNull("minMapQ", alignmentCommandOptions.coverageAlignmentCommandOptions.minMappingQuality);
         if (alignmentCommandOptions.coverageAlignmentCommandOptions.contained) {

@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>1.0.0-rc3</version>
+        <version>1.0.0-rc4</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -200,6 +200,10 @@
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
+                            <jvmSettings>
+                                <initialMemorySize>256m</initialMemorySize>
+                                <maxMemorySize>4096m</maxMemorySize>
+                            </jvmSettings>
                         </program>
                     </programs>
                 </configuration>
@@ -237,6 +241,7 @@
                                 <exec executable="mkdir">
                                     <arg value="-p"/>
                                     <arg value="${build.dir}/conf"/>
+                                    <arg value="${build.dir}/test"/>
                                 </exec>
 
                                 <echo>Copying to ${build.dir}</echo>
@@ -248,7 +253,7 @@
                                     <arg value="${project.basedir}/target/conf"/>
                                     <arg value="${app.dir}/examples"/>
                                     <arg value="${app.dir}/tools"/>
-                                    <arg value="${project.basedir}/../opencga-storage/build/bin"/>
+                                    <!--<arg value="${project.basedir}/../opencga-storage/build/bin"/>-->
                                     <arg value="${project.basedir}/../LICENSE"/>
                                     <arg value="${project.basedir}/../README.md"/>
                                     <arg value="${build.dir}"/>
@@ -268,6 +273,21 @@
                                     <arg value="${project.basedir}/../opencga-server/target/${opencga.war.name}.war"/>
                                     <arg value="${build.dir}"/>
                                 </exec>
+
+                                <echo>Coping Acceptance testing files</echo>
+                                <exec executable="mvn">
+                                    <arg value="-f"/>
+                                    <arg value="${project.basedir}/../opencga-test/pom.xml"/>
+                                    <arg value="install"/>
+                                </exec>
+                                <exec executable="cp">
+                                    <arg value="-r"/>
+                                    <arg value="${project.basedir}/../opencga-test/target/appassembler/bin"/>
+                                    <arg value="${project.basedir}/../opencga-test/target/appassembler/dependencies"/>
+                                    <arg value="${project.basedir}/../opencga-test/README.md"/>
+                                    <arg value="${project.basedir}/../opencga-test/fitnesse"/>
+                                    <arg value="${build.dir}/test"/>
+                                </exec>
                             </target>
                         </configuration>
                         <goals>
@@ -280,6 +300,39 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>storage-binaries</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.8</version>
+                        <executions>
+                            <execution>
+                                <id>install-storage-binaries</id>
+                                <phase>install</phase>
+                                <configuration>
+                                    <target>
+                                        <echo>Copying to ${build.dir}</echo>
+                                        <exec executable="cp">
+                                            <arg value="-r"/>
+                                            <arg value="${project.basedir}/../opencga-storage/build/bin"/>
+                                            <arg value="${build.dir}"/>
+                                        </exec>
+                                    </target>
+                                </configuration>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <profile>
             <id>storage-mongodb</id>
             <activation>

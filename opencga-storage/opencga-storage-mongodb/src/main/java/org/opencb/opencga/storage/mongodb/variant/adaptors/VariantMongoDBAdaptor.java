@@ -83,6 +83,8 @@ import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.MULTI;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.UPSERT;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.DEFAULT_TIMEOUT;
+import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.MAX_TIMEOUT;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.COLLECTION_STAGE;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE;
@@ -94,8 +96,6 @@ import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEn
  */
 public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
-    public static final String DEFAULT_TIMEOUT = "dbadaptor.default_timeout";
-    public static final String MAX_TIMEOUT = "dbadaptor.max_timeout";
     private final CellBaseClient cellBaseClient;
     private boolean closeConnection;
     private final MongoDataStoreManager mongoManager;
@@ -289,8 +289,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //        logger.info("Query to be executed: '{}'", mongoQuery.toJson(new JsonWriterSettings(JsonMode.SHELL, true)));
         options.putIfAbsent(QueryOptions.SKIP_COUNT, true);
 
-        int defaultTimeout = configuration.getInt(DEFAULT_TIMEOUT, 3_000);
-        int maxTimeout = configuration.getInt(MAX_TIMEOUT, 30_000);
+        int defaultTimeout = configuration.getInt(DEFAULT_TIMEOUT.key(), DEFAULT_TIMEOUT.defaultValue());
+        int maxTimeout = configuration.getInt(MAX_TIMEOUT.key(), MAX_TIMEOUT.defaultValue());
         int timeout = options.getInt(QueryOptions.TIMEOUT, defaultTimeout);
         if (timeout > maxTimeout || timeout < 0) {
             timeout = maxTimeout;

@@ -323,7 +323,11 @@ public class VariantDBAdaptorUtils {
 //            System.out.println("includeList = " + includeList);
             returnedFields = new HashSet<>();
             for (String include : includeList) {
-                String includeAlias = VariantFields.get(include).fieldName();
+                VariantFields variantFields = VariantFields.get(include);
+                if (variantFields == null) {
+                    continue;
+                }
+                String includeAlias = variantFields.fieldName();
                 if (includeAlias != null) {
                     returnedFields.add(includeAlias);
                 } else {
@@ -343,7 +347,11 @@ public class VariantDBAdaptorUtils {
 //                System.out.println("excludeList = " + excludeList);
                 returnedFields = new HashSet<>(VariantFields.valuesString());
                 for (String exclude : excludeList) {
-                    returnedFields.remove(VariantFields.get(exclude).fieldName());
+                    VariantFields variantFields = VariantFields.get(exclude);
+                    if (variantFields == null) {
+                        continue;
+                    }
+                    returnedFields.remove(variantFields.fieldName());
                 }
             } else {
                 returnedFields = new HashSet<>(VariantFields.valuesString());
@@ -370,6 +378,17 @@ public class VariantDBAdaptorUtils {
         return getReturnedSamples(query, options, returnedStudies, studyId -> getStudyConfigurationManager()
                 .getStudyConfiguration(studyId, options).first());
 
+    }
+
+    public static Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options, StudyConfiguration... studies) {
+        return getReturnedSamples(query, options, Arrays.asList(studies));
+    }
+
+    public static Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options,
+                                                                 Collection<StudyConfiguration> studies) {
+        Map<Integer, StudyConfiguration> map = studies.stream()
+                .collect(Collectors.toMap(StudyConfiguration::getStudyId, Function.identity()));
+        return getReturnedSamples(query, options, map.keySet(), map::get);
     }
 
     public static Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options, Collection<Integer> studyIds,

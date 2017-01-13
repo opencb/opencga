@@ -345,16 +345,7 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<User> createUser(String id, String name, String email, String password, String organization, Long quota,
                                         QueryOptions options) throws CatalogException {
-//        catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(catalogConfiguration.getAdmin().getPassword());
-        return userManager.create(id, name, email, password, organization, quota, options,
-                configuration.getAdmin().getPassword());
-    }
-
-    @Deprecated
-    public QueryResult<User> createUser(String id, String name, String email, String password, String organization, Long quota,
-                                        QueryOptions options, String sessionId)
-            throws CatalogException {
-        return userManager.create(id, name, email, password, organization, quota, options, sessionId);
+        return userManager.create(id, name, email, password, organization, quota, Account.FULL, options);
     }
 
     @Deprecated
@@ -384,10 +375,6 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult changeEmail(String userId, String nEmail, String sessionId) throws CatalogException {
         return userManager.update(userId, new ObjectMap("email", nEmail), null, sessionId);
-    }
-
-    public QueryResult resetPassword(String userId) throws CatalogException {
-        return userManager.resetPassword(userId);
     }
 
     public QueryResult<User> getUser(String userId, String lastModified, String sessionId) throws CatalogException {
@@ -420,11 +407,6 @@ public class CatalogManager implements AutoCloseable {
      * Project methods
      * ***************************
      */
-
-    public QueryResult<Project> createProject(String name, String alias, String description, String organization, QueryOptions options,
-                                              String sessionId) throws CatalogException {
-        return projectManager.create(name, alias, description, organization, null, null, null, null, options, sessionId);
-    }
 
     @Deprecated
     public List<Long> getProjectIds(List<String> projectIds, String sessionId) throws CatalogException {

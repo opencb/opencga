@@ -38,6 +38,7 @@ public class SampleCommandOptions {
     public UpdateCommandOptions updateCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
+    public IndividualCommandOptions individualCommandOptions;
 
     public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
     public AclCommandOptions.AclsCreateCommandOptions aclsCreateCommandOptions;
@@ -75,6 +76,7 @@ public class SampleCommandOptions {
         this.updateCommandOptions = new UpdateCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
+        this.individualCommandOptions = new IndividualCommandOptions();
 
         this.annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
         this.annotationCreateCommandOptions = this.annotationCommandOptions.getCreateCommandOptions();
@@ -118,7 +120,8 @@ public class SampleCommandOptions {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-n", "--name"}, description = "Name for the sample, this must be unique in the study", required = true, arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "Name for the sample, this must be unique in the study", required = true,
+                arity = 1)
         public String name;
 
         @Parameter(names = {"--source"}, description = "Source from which this sample is created such as VCF file", arity = 1)
@@ -227,6 +230,19 @@ public class SampleCommandOptions {
 
         @Parameter(names = {"--variable-set-id"}, description = "Variable set ids", required = false, arity = 1)
         public String variableSetId;
+    }
+
+    @Parameters(commandNames = {"individuals"}, commandDescription = "Get the individuals of a list of samples.")
+    public class IndividualCommandOptions extends StudyOption {
+
+        @ParametersDelegate
+        public CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
+
+        @Parameter(names = {"--sample"}, description = "List of sample ids or aliases", required = true, arity = 1)
+        public String sample;
     }
 
 }

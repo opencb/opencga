@@ -84,8 +84,8 @@ public class Project {
         public Organism() {
         }
 
-        public Organism(String scientificName, String commonName) {
-            this(scientificName, commonName, -1, "");
+        public Organism(String scientificName, String assembly) {
+            this(scientificName, "", -1, assembly);
         }
 
         public Organism(String scientificName, String commonName, int taxonomyCode, String assembly) {

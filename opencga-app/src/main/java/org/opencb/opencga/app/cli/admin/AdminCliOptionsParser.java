@@ -421,42 +421,32 @@ public class AdminCliOptionsParser {
      * USER SUB-COMMANDS
      */
 
-    @Parameters(commandNames = {"create"}, commandDescription = "Create a new user with a default project in Catalog database and the workspace")
+    @Parameters(commandNames = {"create"}, commandDescription = "Create a new user")
     public class CreateUserCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
-        @Parameter(names = {"-u", "--user-id"}, description = "User id", required = true, arity = 1)
+        @Parameter(names = {"-u", "--id"}, description = "User id", required = true, arity = 1)
         public String userId;
 
-        @Parameter(names = {"--user-name"}, description = "User name", required = true, arity = 1)
+        @Parameter(names = {"--name"}, description = "User name", required = true, arity = 1)
         public String userName;
 
-//        @Parameter(names = {"--user-password"}, description = "User password", required = true, password = true, arity = 0)
         @Parameter(names = {"--user-password"}, description = "User password", required = true, arity = 1)
         public String userPassword;
 
-        @Parameter(names = {"--user-email"}, description = "User email", required = true, arity = 1)
+        @Parameter(names = {"--type"}, description = "User account type of the user (guest or full).", arity = 1)
+        public String type = Account.FULL;
+
+        @Parameter(names = {"--email"}, description = "User email", required = true, arity = 1)
         public String userEmail;
 
-        @Parameter(names = {"--user-organization"}, description = "User organization", required = false, arity = 1)
+        @Parameter(names = {"--organization"}, description = "User organization", required = false, arity = 1)
         public String userOrganization;
 
-        @Parameter(names = {"--user-Quota"}, description = "User disk quota", required = false, arity = 1)
+        @Parameter(names = {"--quota"}, description = "User disk quota", required = false, arity = 1)
         public Long userQuota;
-
-        @Parameter(names = {"--project-name"}, description = "Project name. Default: Default", required = false, arity = 1)
-        public String projectName;
-
-        @Parameter(names = {"--project-alias"}, description = "Project alias: Default: default", required = false, arity = 1)
-        public String projectAlias;
-
-        @Parameter(names = {"--project-description"}, description = "Project description.", required = false, arity = 1)
-        public String projectDescription;
-
-        @Parameter(names = {"--project-organization"}, description = "Project organization", required = false, arity = 1)
-        public String projectOrganization;
 
     }
 

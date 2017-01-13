@@ -58,6 +58,7 @@ public class AlignmentStorageManager extends StorageManager {
         StopWatch watch = new StopWatch();
 
         StudyInfo studyInfo = getStudyInfo(studyIdStr, fileIdStr, sessionId);
+        checkAlignmentBioformat(studyInfo.getFileInfos());
         FileInfo fileInfo = studyInfo.getFileInfo();
 //        ObjectMap fileAndStudyId = getFileAndStudyId(studyIdStr, fileIdStr, sessionId);
 //        long studyId = fileAndStudyId.getLong("studyId");
@@ -113,6 +114,7 @@ public class AlignmentStorageManager extends StorageManager {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         StudyInfo studyInfo = getStudyInfo(studyIdStr, fileIdStr, sessionId);
+        checkAlignmentBioformat(studyInfo.getFileInfos());
 //        ObjectMap fileAndStudyId = getFileAndStudyId(studyIdStr, fileIdStr, sessionId);
 //        long fileId = fileAndStudyId.getLong("fileId");
 //        Path filePath = getFilePath(fileId, sessionId);
@@ -131,6 +133,7 @@ public class AlignmentStorageManager extends StorageManager {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         StudyInfo studyInfo = getStudyInfo(studyIdStr, fileIdStr, sessionId);
+        checkAlignmentBioformat(studyInfo.getFileInfos());
 //        ObjectMap fileAndStudyId = getFileAndStudyId(studyIdStr, fileIdStr, sessionId);
 //        long fileId = fileAndStudyId.getLong("fileId");
 //        Path filePath = getFilePath(fileId, sessionId);
@@ -145,6 +148,7 @@ public class AlignmentStorageManager extends StorageManager {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         StudyInfo studyInfo = getStudyInfo(studyIdStr, fileIdStr, sessionId);
+        checkAlignmentBioformat(studyInfo.getFileInfos());
         FileInfo fileInfo = studyInfo.getFileInfo();
 //        ObjectMap fileAndStudyId = getFileAndStudyId(studyIdStr, fileIdStr, sessionId);
 //        long studyId = fileAndStudyId.getLong("studyId");
@@ -184,6 +188,7 @@ public class AlignmentStorageManager extends StorageManager {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         StudyInfo studyInfo = getStudyInfo(studyIdStr, fileIdStr, sessionId);
+        checkAlignmentBioformat(studyInfo.getFileInfos());
         FileInfo fileInfo = studyInfo.getFileInfo();
 //        ObjectMap fileAndStudyId = getFileAndStudyId(studyIdStr, fileIdStr, sessionId);
 //        long studyId = fileAndStudyId.getLong("studyId");
@@ -207,6 +212,14 @@ public class AlignmentStorageManager extends StorageManager {
 //        Path filePath = getFilePath(fileId, sessionId);
 
         return alignmentStorageManager.getDBAdaptor().count(studyInfo.getFileInfo().getPath(), query, options);
+    }
+
+    private void checkAlignmentBioformat(List<FileInfo> fileInfo) throws CatalogException {
+        for (FileInfo file : fileInfo) {
+            if (!file.getBioformat().equals(File.Bioformat.ALIGNMENT)) {
+                throw new CatalogException("File " + file.getName() + " not supported. Expecting an alignment file.");
+            }
+        }
     }
 
     @Override
