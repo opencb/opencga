@@ -15,17 +15,14 @@
  */
 
 var opencga = {
-    host: "bioinfodev.hpc.cam.ac.uk/hgva-0.8",
+    host: "bioinfodev.hpc.cam.ac.uk/hgva-1.0.0",
     version: "v1",
-    cookies: {
-        userId: "opencga_userId",
-        sessionId: "opencga_sId"
-    }
+    cookiePrefix: "opencga"
 };
 
 var application = {
     title: "Catalog",
-    version: "v0.8.0",
+    version: "v1.0.0",
     logo: "images/opencb-logo.png",
     menu: [
         {
