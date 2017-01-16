@@ -1001,6 +1001,16 @@ public class FileManager extends AbstractManager implements IFileManager {
             authorizationManager.memberHasPermissionsInStudy(studyId, userId);
         }
 
+        // The samples introduced could be either ids or names. As so, we should use the smart resolutor to do this.
+        // FIXME: Although the search method is multi-study, we can only use the smart resolutor for one study at the moment.
+        if (StringUtils.isNotEmpty(query.getString(FileDBAdaptor.QueryParams.SAMPLE_IDS.key()))
+                && studyIds.size() == 1) {
+            MyResourceIds resourceIds = catalogManager.getSampleManager().getIds(
+                    query.getString(FileDBAdaptor.QueryParams.SAMPLE_IDS.key()), Long.toString(studyIds.get(0)), sessionId);
+            query.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), resourceIds.getResourceIds());
+        }
+
+
         QueryResult<File> queryResult = null;
         for (Long studyId : studyIds) {
             query.append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
