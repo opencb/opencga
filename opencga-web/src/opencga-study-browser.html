@@ -31,13 +31,19 @@
                 </span>
             </h3>
 
-            <ul id="myTabs" class="nav nav-pills" role="tablist">
+            <ul id="myTabs" class="nav nav-tabs" role="tablist">
                 <li role="presentation" class="active"><a href="#{{prefix}}studyInfo" role="tab" data-toggle="tab">Summary</a></li>
-                <li role="presentation"><a href="#{{prefix}}dashboardFiles" role="tab" data-toggle="tab">Files<span class="badge">{{study.files}}</span></a></li>
-                <li role="presentation"><a id="{{prefix}}SampleTab" href="#{{prefix}}dashboardSamples" role="tab" data-toggle="tab">Samples</a></li>
-                <li role="presentation"><a href="#{{prefix}}dashboardJobs" role="tab" data-toggle="tab">Jobs</a></li>
-                <li role="presentation"><a href="#{{prefix}}dashboardPanels" role="tab" data-toggle="tab">Panels</a></li>
-                <li role="presentation"><a href="#{{prefix}}dashboardFilters" role="tab" data-toggle="tab">Filter annotation</a></li>
+                <li role="presentation"><a href="#{{prefix}}dashboardFiles" role="tab" data-toggle="tab">
+                    <i class="fa fa-file-text-o" aria-hidden="true"></i> Files
+                    <span class="badge">{{study.files}}</span></a></li>
+                <li role="presentation"><a id="{{prefix}}SampleTab" href="#{{prefix}}dashboardSamples" role="tab" data-toggle="tab">
+                    <i class="fa fa-users" aria-hidden="true"></i> Samples</a></li>
+                <li role="presentation"><a href="#{{prefix}}dashboardJobs" role="tab" data-toggle="tab">
+                    <i class="fa fa-tasks" aria-hidden="true"></i> Jobs</a></li>
+                <li role="presentation"><a href="#{{prefix}}dashboardPanels" role="tab" data-toggle="tab">
+                    <i class="fa fa-list-alt" aria-hidden="true"></i> Panels</a></li>
+                <li role="presentation"><a href="#{{prefix}}dashboardFilters" role="tab" data-toggle="tab">
+                    <i class="fa fa-user-md" aria-hidden="true"></i> Clinical data</a></li>
             </ul>
 
             <div class="tab-content">
