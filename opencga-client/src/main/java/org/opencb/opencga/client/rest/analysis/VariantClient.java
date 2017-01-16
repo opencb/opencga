@@ -34,16 +34,18 @@ public class VariantClient extends AbstractParentClient {
         return execute(VARIANT_URL, "query", params, GET, Variant.class);
     }
 
-    public QueryResponse<Long> count(ObjectMap bodyParams, QueryOptions options) throws CatalogException, IOException {
-        ObjectMap params = new ObjectMap(options);
-        params.putIfNotNull("body", bodyParams);
-        return execute(VARIANT_URL, "query", params, POST, Long.class);
+    public QueryResponse<Long> count(ObjectMap params, QueryOptions options) throws CatalogException, IOException {
+        if (options != null) {
+            params.putAll(options);
+        }
+        return execute(VARIANT_URL, "query", params, GET, Long.class);
     }
 
-    public QueryResponse<ObjectMap> genericQuery(ObjectMap bodyParams, QueryOptions options) throws CatalogException, IOException {
-        ObjectMap params = new ObjectMap(options);
-        params.putIfNotNull("body", bodyParams);
-        return execute(VARIANT_URL, "query", params, POST, ObjectMap.class);
+    public QueryResponse<ObjectMap> genericQuery(ObjectMap params, QueryOptions options) throws CatalogException, IOException {
+        if (options != null) {
+            params.putAll(options);
+        }
+        return execute(VARIANT_URL, "query", params, GET, ObjectMap.class);
     }
 
 }
