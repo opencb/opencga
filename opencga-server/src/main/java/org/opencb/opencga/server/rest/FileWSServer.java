@@ -149,7 +149,9 @@ public class FileWSServer extends OpenCGAWSServer {
             for (String folder : folderList) {
                 try {
                     java.nio.file.Path folderPath = Paths.get(folder);
-                    queryResultList.add(catalogManager.createFolder(studyId, folderPath, parents, queryOptions, sessionId));
+                    QueryResult<File> newFolder = catalogManager.createFolder(studyId, folderPath, parents, queryOptions, sessionId);
+                    newFolder.setId("Create folder");
+                    queryResultList.add(newFolder);
                 } catch (CatalogException e) {
                     queryResultList.add(new QueryResult<>("Create folder", -1, 0, 0, "", e.getMessage(), Collections.emptyList()));
                 }
