@@ -24,7 +24,12 @@
         <style is="custom-style" include="jso-styles"></style>
 
         <div style="margin: 10px">
-            <h2>{{study.name}}</h2>
+            <h3>{{study.name}}
+                <span style="float: right; font-size: 20px; display: block; cursor: pointer;" on-click="backToDashboard">
+                    <i class="fa fa-undo" aria-hidden="true"></i>
+                    <span>Back to user dashboard</span>
+                </span>
+            </h3>
 
             <ul id="myTabs" class="nav nav-pills" role="tablist">
                 <li role="presentation" class="active"><a href="#{{prefix}}studyInfo" role="tab" data-toggle="tab">Summary</a></li>
@@ -81,6 +86,9 @@
                 if (typeof this.prefix === "undefined" || this.prefix == "") {
                     this.prefix = Utils.randomString(6);
                 }
+            },
+            backToDashboard: function() {
+                window.location.hash = "dashboard";
             }
         });
     </script>
