@@ -844,13 +844,20 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         long phastCons = countConservationScore("phastCons", allVariants, s -> s > 0.5);
         assertTrue(phastCons > 0);
-        System.out.println("countFunctionalScore(\"phastCons\", allVariants, s -> s > 0.5) = " + phastCons);
 
         checkConservationScore(new Query(ANNOT_CONSERVATION.key(), "phylop>0.5"), s -> s > 0.5, "phylop");
 
         checkConservationScore(new Query(ANNOT_CONSERVATION.key(), "phastCons<0.5"), s1 -> s1 < 0.5, "phastCons");
 
         checkConservationScore(new Query(ANNOT_CONSERVATION.key(), "gerp<=0.5"), s -> s <= 0.5, "gerp");
+        checkScore(new Query(ANNOT_CONSERVATION.key(), "gerp<=0.5,phastCons<0.5"),
+                ((Predicate<List<Score>>) scores -> scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("gerp") && s.getScore() <= 0.5))
+                        .or(scores -> scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("phastCons") && s.getScore() < 0.5)), VariantAnnotation::getConservation);
+
+        checkScore(new Query(ANNOT_CONSERVATION.key(), "gerp<=0.5;phastCons<0.5"),
+                ((Predicate<List<Score>>) scores -> scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("gerp") && s.getScore() <= 0.5))
+                        .and(scores -> scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("phastCons") && s.getScore() < 0.5)),
+                VariantAnnotation::getConservation);
     }
 
     public void checkConservationScore(Query query, Predicate<Double> doublePredicate, String source) {
@@ -862,10 +869,14 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     public void checkScore(Query query, Predicate<Double> doublePredicate, String source, Function<VariantAnnotation, List<Score>> mapper) {
+        checkScore(query, scores -> scores.stream().anyMatch(score -> score.getSource().equalsIgnoreCase(source) && doublePredicate.test(score.getScore())), mapper);
+    }
+
+    public void checkScore(Query query, Predicate<List<Score>> scorePredicate, Function<VariantAnnotation, List<Score>> mapper) {
         QueryResult<Variant> result = dbAdaptor.get(query, null);
-        long expected = countScore(source, allVariants, doublePredicate, mapper);
-        long actual = countScore(source, result, doublePredicate, mapper);
-        assertTrue(expected > 0);
+        long expected = countScore(allVariants, scorePredicate, mapper);
+        long actual = countScore(result, scorePredicate, mapper);
+        assertTrue("Expecting a query returning some value.", expected > 0);
         assertEquals(expected, result.getNumResults());
         assertEquals(expected, actual);
     }
@@ -879,16 +890,16 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     private long countScore(String source, QueryResult<Variant> variantQueryResult, Predicate<Double> doublePredicate, Function<VariantAnnotation, List<Score>> mapper) {
+        return countScore(variantQueryResult, scores -> scores.stream().anyMatch(score -> score.getSource().equalsIgnoreCase(source) && doublePredicate.test(score.getScore())), mapper);
+    }
+
+    private long countScore(QueryResult<Variant> variantQueryResult, Predicate<List<Score>> predicate, Function<VariantAnnotation, List<Score>> mapper) {
         long c = 0;
         for (Variant variant : variantQueryResult.getResult()) {
             List<Score> list = mapper.apply(variant.getAnnotation());
             if (list != null) {
-                for (Score score : list) {
-                    if (score.getSource().equalsIgnoreCase(source)) {
-                        if (doublePredicate.test(score.getScore())) {
-                            c++;
-                        }
-                    }
+                if (predicate.test(list)) {
+                    c++;
                 }
             }
         }
