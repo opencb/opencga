@@ -2061,15 +2061,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     /**
-     * Accepts a list of filters separated with "," or ";" with the expression: {SCORE}{OPERATION}{VALUE}.
+     * Accepts a list of filters separated with "," or ";" with the expression: {SOURCE}{OPERATION}{VALUE}.
      *
-     * @param value        Value to parse
-     * @param builder      QueryBuilder
-     * @param conservation
-     * @param source
+     * @param value         Value to parse
+     * @param builder       QueryBuilder
+     * @param scoreParam    Score VariantQueryParam
+     * @param defaultSource Default source value. If null, must be present in the filter. If not, must not be present.
      * @return QueryBuilder
      */
-    private QueryBuilder addScoreFilter(String value, QueryBuilder builder, VariantQueryParams conservation, String source) {
+    private QueryBuilder addScoreFilter(String value, QueryBuilder builder, VariantQueryParams scoreParam, final String defaultSource) {
         final List<String> list;
         QueryOperation operation = checkOperator(value);
         list = splitValue(value, operation);
@@ -2077,20 +2077,22 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         List<DBObject> dbObjects = new ArrayList<>();
         for (String elem : list) {
             String[] score = VariantDBAdaptorUtils.splitOperator(elem);
-            String scoreValue;
+            String source;
             String op;
+            String scoreValue;
             // No given score
             if (StringUtils.isEmpty(score[0])) {
-                if (source == null) {
+                if (defaultSource == null) {
                     logger.error("Bad score filter: " + elem);
-                    throw VariantQueryException.malformedParam(conservation, value);
+                    throw VariantQueryException.malformedParam(scoreParam, value);
                 }
+                source = defaultSource;
                 op = score[1];
                 scoreValue = score[2];
             } else {
-                if (source != null) {
+                if (defaultSource != null) {
                     logger.error("Bad score filter: " + elem);
-                    throw VariantQueryException.malformedParam(conservation, value);
+                    throw VariantQueryException.malformedParam(scoreParam, value);
                 }
                 source = score[0];
                 op = score[1];
@@ -2100,7 +2102,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             String key = DocumentToVariantAnnotationConverter.SCORE_FIELD_MAP.get(source);
             if (key == null) {
                 // Unknown score
-                throw VariantQueryException.malformedParam(conservation, value);
+                throw VariantQueryException.malformedParam(scoreParam, value);
             }
 
             QueryBuilder scoreBuilder = new QueryBuilder();
