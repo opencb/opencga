@@ -98,6 +98,8 @@ storageEngines:
       collection.files: "files"
       include.stats: false
       annotator: cellbase_rest
+      annotator.cellbase.exclude: "expression"
+      annotator.cellbase.use_cache: true
       species: ${OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME}
       assembly: ${OPENCGA.CLIENT.ORGANISM.ASSEMBLY}
       transform.batch.size: 200
@@ -134,6 +136,8 @@ storageEngines:
       #Generic options
       database.name: "opencga"
       annotator: cellbase_rest
+      annotator.cellbase.exclude: "expression"
+      annotator.cellbase.use_cache: true
       species: ${OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME}
       assembly: ${OPENCGA.CLIENT.ORGANISM.ASSEMBLY}
       #Plugin specific options

@@ -5,7 +5,6 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
@@ -21,7 +20,6 @@ import java.util.stream.Collectors;
  */
 public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotator {
     private static final int TIMEOUT = 10000;
-    private final QueryOptions queryOptions = new QueryOptions("post", true).append("exclude", "expression");
 
     private CellBaseClient cellBaseClient = null;
 
@@ -29,6 +27,9 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
         super(storageConfiguration, options);
 
         List<String> hosts = storageConfiguration.getCellbase().getHosts();
+        if (hosts.isEmpty()) {
+            throw new VariantAnnotatorException("Missing defaultValue \"CellBase Hosts\"");
+        }
 
         String cellbaseRest = hosts.get(0);
         checkNotNull(cellbaseRest, "cellbase hosts");
