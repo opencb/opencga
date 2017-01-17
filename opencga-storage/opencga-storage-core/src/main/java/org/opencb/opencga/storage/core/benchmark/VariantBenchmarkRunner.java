@@ -20,7 +20,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -53,9 +53,9 @@ public class VariantBenchmarkRunner extends BenchmarkRunner {
 
     private void init(String storageEngine)
             throws IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
-        StorageManagerFactory storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
-        VariantStorageEngine variantStorageManager = storageManagerFactory.getVariantStorageManager(storageEngine);
-        variantDBAdaptor = variantStorageManager.getDBAdaptor(storageConfiguration.getBenchmark().getDatabaseName());
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
+        VariantStorageEngine variantStorageEngine = storageEngineFactory.getVariantStorageEngine(storageEngine);
+        variantDBAdaptor = variantStorageEngine.getDBAdaptor(storageConfiguration.getBenchmark().getDatabaseName());
     }
 
 

@@ -40,7 +40,7 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
     AtomicReference<MongoDBVariantStorageEngine> manager = new AtomicReference<>(null);
     List<MongoDBVariantStorageEngine> managers = Collections.synchronizedList(new ArrayList<>());
 
-    default MongoDBVariantStorageEngine getVariantStorageManager() throws Exception {
+    default MongoDBVariantStorageEngine getVariantStorageEngine() throws Exception {
         synchronized (manager) {
             MongoDBVariantStorageEngine storageManager = manager.get();
             if (storageManager == null) {
@@ -78,7 +78,7 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
     }
 
     default void clearDB(String dbName) throws Exception {
-        MongoCredentials credentials = getVariantStorageManager().getMongoCredentials(dbName);
+        MongoCredentials credentials = getVariantStorageEngine().getMongoCredentials(dbName);
         logger.info("Cleaning MongoDB {}", credentials.getMongoDbName());
         try (MongoDataStoreManager mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses())) {
             mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
@@ -95,7 +95,7 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
 
 
     default MongoDataStoreManager getMongoDataStoreManager(String dbName) throws Exception {
-        MongoCredentials credentials = getVariantStorageManager().getMongoCredentials(dbName);
+        MongoCredentials credentials = getVariantStorageEngine().getMongoCredentials(dbName);
         return new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
     }
 }

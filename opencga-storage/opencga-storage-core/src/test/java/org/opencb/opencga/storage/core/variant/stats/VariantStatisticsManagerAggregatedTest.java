@@ -60,10 +60,10 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
         studyConfiguration.setAggregation(getAggregationType());
         clearDB(DB_NAME);
         inputUri = getInputUri();
-        runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration,
+        runDefaultETL(inputUri, getVariantStorageEngine(), studyConfiguration,
                 new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false)
                         .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false));
-        dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+        dbAdaptor = getVariantStorageEngine().getDBAdaptor(DB_NAME);
     }
 
     protected URI getInputUri() throws IOException {

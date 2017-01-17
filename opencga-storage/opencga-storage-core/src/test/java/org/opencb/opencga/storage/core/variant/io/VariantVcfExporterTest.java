@@ -91,13 +91,13 @@ public abstract class VariantVcfExporterTest extends VariantStorageBaseTest {
         }
         for (int i = 0; i < VCF_TEST_FILE_NAMES.length; i++) {
             if (etlResult[i] == null) {
-                etlResult[i] = runDefaultETL(inputUri[i], getVariantStorageManager(), studyConfiguration,
+                etlResult[i] = runDefaultETL(inputUri[i], getVariantStorageEngine(), studyConfiguration,
                         new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false)
                                 .append(VariantStorageEngine.Options.FILE_ID.key(), i)
                                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false));
             }
         }
-        dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+        dbAdaptor = getVariantStorageEngine().getDBAdaptor(DB_NAME);
     }
 
     @After

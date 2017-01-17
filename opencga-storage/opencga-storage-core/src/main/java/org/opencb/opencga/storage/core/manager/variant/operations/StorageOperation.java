@@ -27,7 +27,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
 import org.opencb.opencga.catalog.utils.FileScanner;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.CatalogStudyConfigurationFactory;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -52,13 +52,13 @@ public abstract class StorageOperation {
     public static final String CATALOG_PATH = "catalogPath";
 
     protected final CatalogManager catalogManager;
-    protected final StorageManagerFactory storageManagerFactory;
+    protected final StorageEngineFactory storageEngineFactory;
     protected final Logger logger;
     private ObjectMapper objectMapper = new ObjectMapper();
 
-    public StorageOperation(CatalogManager catalogManager, StorageManagerFactory storageManagerFactory, Logger logger) {
+    public StorageOperation(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory, Logger logger) {
         this.catalogManager = catalogManager;
-        this.storageManagerFactory = storageManagerFactory;
+        this.storageEngineFactory = storageEngineFactory;
         this.logger = logger;
     }
 
@@ -103,7 +103,7 @@ public abstract class StorageOperation {
             throws IOException, CatalogException, StorageEngineException {
 
         CatalogStudyConfigurationFactory studyConfigurationFactory = new CatalogStudyConfigurationFactory(catalogManager);
-        try (VariantDBAdaptor dbAdaptor = StorageManagerFactory.get().getVariantStorageManager(dataStore.getStorageEngine())
+        try (VariantDBAdaptor dbAdaptor = StorageEngineFactory.get().getVariantStorageEngine(dataStore.getStorageEngine())
                 .getDBAdaptor(dataStore.getDbName());
              StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager()) {
 
@@ -217,7 +217,7 @@ public abstract class StorageOperation {
             }
 
             String dbName = prefix + userId + '_' + alias;
-            dataStore = new DataStore(StorageManagerFactory.get().getDefaultStorageManagerName(), dbName);
+            dataStore = new DataStore(StorageEngineFactory.get().getDefaultStorageManagerName(), dbName);
         }
         return dataStore;
     }

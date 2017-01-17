@@ -34,7 +34,7 @@ public class VariantExporterTest extends VariantStorageBaseTest {
     }
 
     @Override
-    public VariantStorageEngine getVariantStorageManager() throws Exception {
+    public VariantStorageEngine getVariantStorageEngine() throws Exception {
         try (InputStream is = DummyVariantStorageEngine.class.getClassLoader().getResourceAsStream("storage-configuration.yml")) {
             StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
             DummyVariantStorageEngine storageManager = new DummyVariantStorageEngine();

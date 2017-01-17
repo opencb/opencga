@@ -27,7 +27,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -50,7 +50,7 @@ public abstract class OpenCGAAnalysis {
     private CatalogManager catalogManager;
     private String sessionId;
     private boolean initialized;
-    private StorageManagerFactory storageManagerFactory;
+    private StorageEngineFactory storageEngineFactory;
     private long studyId;
 
     public Manifest getManifest() {
@@ -91,14 +91,14 @@ public abstract class OpenCGAAnalysis {
      */
 
     final void init(Logger logger, ObjectMap configuration, CatalogManager catalogManager,
-                    StorageManagerFactory storageManagerFactory, long studyId, String sessionId) {
+                    StorageEngineFactory storageEngineFactory, long studyId, String sessionId) {
         if (initialized) {
             throw new IllegalStateException("The plugin was already initialized! Can't init twice");
         }
         this.logger = logger;
         this.configuration = configuration;
         this.catalogManager = catalogManager;
-        this.storageManagerFactory = storageManagerFactory;
+        this.storageEngineFactory = storageEngineFactory;
         this.studyId = studyId;
         this.sessionId = sessionId;
         initialized = true;
@@ -125,13 +125,13 @@ public abstract class OpenCGAAnalysis {
             throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException,
             StorageEngineException {
 
-        StorageManagerFactory storageManagerFactory = this.storageManagerFactory;
+        StorageEngineFactory storageEngineFactory = this.storageEngineFactory;
         
         DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
         String storageEngine = dataStore.getStorageEngine();
         String dbName = dataStore.getDbName();
 
-        return storageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
+        return storageEngineFactory.getVariantStorageEngine(storageEngine).getDBAdaptor(dbName);
     }
 
     //TODO: Return an AlignmentDBAdaptor which checks catalog permissions

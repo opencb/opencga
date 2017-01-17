@@ -37,7 +37,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -329,7 +329,7 @@ public class AnalysisFileIndexer {
         if (!simulate) {
             try {
                 if (inputFile.getBioformat().equals(File.Bioformat.VARIANT)) {
-                    StudyConfigurationManager studyConfigurationManager = StorageManagerFactory.get().getVariantStorageManager(dataStore.getStorageEngine())
+                    StudyConfigurationManager studyConfigurationManager = StorageEngineFactory.get().getVariantStorageEngine(dataStore.getStorageEngine())
                             .getDBAdaptor(dataStore.getDbName()).getStudyConfigurationManager();
                     new CatalogStudyConfigurationFactory(catalogManager).updateStudyConfigurationFromCatalog(studyIdByOutDirId, studyConfigurationManager, sessionId);
                 }

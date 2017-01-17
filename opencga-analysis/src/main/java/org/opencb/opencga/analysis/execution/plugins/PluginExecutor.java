@@ -19,7 +19,7 @@ package org.opencb.opencga.analysis.execution.plugins;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +52,7 @@ public class PluginExecutor {
         //TODO: Use CatalogClient?
         CatalogManager catalogManager = this.catalogManager;
 
-        plugin.init(logger, configuration, catalogManager, StorageManagerFactory.get(),
+        plugin.init(logger, configuration, catalogManager, StorageEngineFactory.get(),
                 catalogManager.getStudyIdByJobId(job.getId()), sessionId);
 
         int result;

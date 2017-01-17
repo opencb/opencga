@@ -37,7 +37,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
@@ -132,7 +132,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
                 new StorageEtlConfiguration(DummyVariantStorageEngine.class.getName(), new ObjectMap(), new DatabaseCredentials()),
                 new ObjectMap()
         ));
-        StorageManagerFactory factory = StorageManagerFactory.get(storageConfiguration);
+        StorageEngineFactory factory = StorageEngineFactory.get(storageConfiguration);
         factory.unregisterVariantStorageManager(DummyVariantStorageEngine.STORAGE_ENGINE_ID);
 
         DummyStudyConfigurationManager.clear();
@@ -332,7 +332,7 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
     protected DummyVariantStorageEngine mockVariantStorageManager() {
         DummyVariantStorageEngine vsm = spy(new DummyVariantStorageEngine());
         vsm.setConfiguration(opencga.getStorageConfiguration(), DummyVariantStorageEngine.STORAGE_ENGINE_ID);
-        StorageManagerFactory.get(opencga.getStorageConfiguration()).registerStorageManager(vsm);
+        StorageEngineFactory.get(opencga.getStorageConfiguration()).registerStorageManager(vsm);
         return vsm;
     }
 

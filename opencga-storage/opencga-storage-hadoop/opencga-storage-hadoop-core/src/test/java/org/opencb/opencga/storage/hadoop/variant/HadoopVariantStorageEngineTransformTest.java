@@ -48,7 +48,7 @@ public class HadoopVariantStorageEngineTransformTest extends VariantStorageManag
                 .append("transform.proto.parallel", true);
         URI outputUri = newOutputUri();
 
-        VariantStorageEngine variantStorageManager = getVariantStorageManager();
+        VariantStorageEngine variantStorageManager = getVariantStorageEngine();
         StoragePipelineResult etlResult = runETL(variantStorageManager, smallInputUri, outputUri, params, true, true, false);
         System.out.println("etlResult = " + etlResult);
 

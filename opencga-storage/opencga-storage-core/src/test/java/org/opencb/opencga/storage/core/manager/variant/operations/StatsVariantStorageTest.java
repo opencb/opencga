@@ -35,7 +35,7 @@ import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -444,7 +444,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
     }
 
     public static void checkCalculatedStats(Map<String, Cohort> cohorts, CatalogManager catalogManager, String dbName, String sessionId) throws Exception {
-        VariantDBAdaptor dbAdaptor = StorageManagerFactory.get().getVariantStorageManager().getDBAdaptor(dbName);
+        VariantDBAdaptor dbAdaptor = StorageEngineFactory.get().getVariantStorageEngine().getDBAdaptor(dbName);
 
         for (Variant variant : dbAdaptor) {
             for (StudyEntry sourceEntry : variant.getStudies()) {
@@ -466,7 +466,7 @@ public class StatsVariantStorageTest extends AbstractVariantStorageOperationTest
     }
 
     public static void checkCalculatedAggregatedStats(Set<String> cohortNames, String dbName) throws Exception {
-        VariantDBAdaptor dbAdaptor = StorageManagerFactory.get().getVariantStorageManager().getDBAdaptor(dbName);
+        VariantDBAdaptor dbAdaptor = StorageEngineFactory.get().getVariantStorageEngine().getDBAdaptor(dbName);
 
         for (Variant variant : dbAdaptor) {
             for (StudyEntry sourceEntry : variant.getStudies()) {

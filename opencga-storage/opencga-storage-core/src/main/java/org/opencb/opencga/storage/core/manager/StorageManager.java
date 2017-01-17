@@ -28,7 +28,7 @@ import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.cache.CacheManager;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -51,28 +51,28 @@ public abstract class StorageManager {
     protected final CatalogUtils catalogUtils;
     protected final CacheManager cacheManager;
     protected final StorageConfiguration storageConfiguration;
-    protected final StorageManagerFactory storageManagerFactory;
+    protected final StorageEngineFactory storageEngineFactory;
 
     protected final Logger logger;
 
     public StorageManager(Configuration configuration, StorageConfiguration storageConfiguration) throws CatalogException {
-        this(new CatalogManager(configuration), StorageManagerFactory.get(storageConfiguration));
+        this(new CatalogManager(configuration), StorageEngineFactory.get(storageConfiguration));
     }
 
-    public StorageManager(CatalogManager catalogManager, StorageManagerFactory storageManagerFactory) {
-        this(catalogManager, null, storageManagerFactory.getStorageConfiguration(),
-                storageManagerFactory);
+    public StorageManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory) {
+        this(catalogManager, null, storageEngineFactory.getStorageConfiguration(),
+                storageEngineFactory);
     }
 
     protected StorageManager(CatalogManager catalogManager, CacheManager cacheManager, StorageConfiguration storageConfiguration,
-                             StorageManagerFactory storageManagerFactory) {
+                             StorageEngineFactory storageEngineFactory) {
         this.catalogManager = catalogManager;
         this.cacheManager = cacheManager == null ? new CacheManager(storageConfiguration) : cacheManager;
         this.catalogUtils = new CatalogUtils(catalogManager);
         this.storageConfiguration = storageConfiguration;
-        this.storageManagerFactory = storageManagerFactory == null
-                ? StorageManagerFactory.get(storageConfiguration)
-                : storageManagerFactory;
+        this.storageEngineFactory = storageEngineFactory == null
+                ? StorageEngineFactory.get(storageConfiguration)
+                : storageEngineFactory;
         logger = LoggerFactory.getLogger(getClass());
     }
 

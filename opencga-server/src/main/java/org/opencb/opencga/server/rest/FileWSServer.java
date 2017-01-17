@@ -899,7 +899,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
                     AlignmentDBAdaptor dbAdaptor;
                     try {
-                        AlignmentStorageEngine alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
+                        AlignmentStorageEngine alignmentStorageManager = storageEngineFactory.getAlignmentStorageEngine(storageEngine);
                         dbAdaptor = alignmentStorageManager.getDBAdaptor(dbName);
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageEngineException e) {
                         return createErrorResponse(e);
@@ -946,7 +946,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
                     VariantDBAdaptor dbAdaptor;
                     try {
-                        dbAdaptor = storageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
+                        dbAdaptor = storageEngineFactory.getVariantStorageEngine(storageEngine).getDBAdaptor(dbName);
 //                        dbAdaptor = new CatalogVariantDBAdaptor(catalogManager, dbAdaptor);
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageEngineException e) {
                         return createErrorResponse(e);

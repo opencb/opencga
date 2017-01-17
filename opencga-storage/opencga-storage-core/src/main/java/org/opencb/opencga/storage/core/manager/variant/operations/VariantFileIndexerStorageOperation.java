@@ -35,7 +35,7 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -76,14 +76,14 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
     }
 
     public VariantFileIndexerStorageOperation(CatalogManager catalogManager, StorageConfiguration storageConfiguration) {
-        super(catalogManager, StorageManagerFactory.get(storageConfiguration),
+        super(catalogManager, StorageEngineFactory.get(storageConfiguration),
                 LoggerFactory.getLogger(VariantFileIndexerStorageOperation.class));
         this.fileManager = catalogManager.getFileManager();
     }
 
     public VariantFileIndexerStorageOperation(Configuration configuration, StorageConfiguration storageConfiguration)
             throws CatalogException {
-        super(new CatalogManager(configuration), StorageManagerFactory.get(storageConfiguration),
+        super(new CatalogManager(configuration), StorageEngineFactory.get(storageConfiguration),
                 LoggerFactory.getLogger(VariantFileIndexerStorageOperation.class));
         this.fileManager = catalogManager.getFileManager();
     }
@@ -176,13 +176,13 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         options.put(VariantStorageEngine.Options.DB_NAME.key(), dataStore.getDbName());
         options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyIdByInputFileId);
 
-        VariantStorageEngine variantStorageManager;
+        VariantStorageEngine variantStorageEngine;
         try {
-            variantStorageManager = storageManagerFactory.getVariantStorageManager(dataStore.getStorageEngine());
+            variantStorageEngine = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine());
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
             throw new StorageEngineException("Unable to create StorageEngine", e);
         }
-        variantStorageManager.getOptions().putAll(options);
+        variantStorageEngine.getOptions().putAll(options);
         boolean calculateStats = options.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key())
                 && (step.equals(Type.LOAD) || step.equals(Type.INDEX));
 
@@ -265,7 +265,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         // Save exception to throw at the end
         StorageEngineException exception = null;
         try {
-            storagePipelineResults = variantStorageManager.index(fileUris, outdir.toUri(), false, transform, load);
+            storagePipelineResults = variantStorageEngine.index(fileUris, outdir.toUri(), false, transform, load);
         } catch (StoragePipelineException e) {
             logger.error("Error executing " + step, e);
             storagePipelineResults = e.getResults();

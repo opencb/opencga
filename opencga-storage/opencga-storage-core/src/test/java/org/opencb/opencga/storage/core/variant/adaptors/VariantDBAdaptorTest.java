@@ -88,7 +88,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @Before
     public void before() throws Exception {
 
-        dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+        dbAdaptor = getVariantStorageEngine().getDBAdaptor(DB_NAME);
         if (!fileIndexed) {
             studyConfiguration = newStudyConfiguration();
 //            variantSource = new VariantSource(smallInputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
@@ -99,7 +99,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                     .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "json")
                     .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
             params.putAll(getOtherParams());
-            StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration, params);
+            StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyConfiguration, params);
             source = variantStorageManager.getVariantReaderUtils().readVariantSource(Paths.get(etlResult.getTransformResult().getPath()).toUri());
             NUM_VARIANTS = getExpectedNumLoadedVariants(source);
             fileIndexed = true;
