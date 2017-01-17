@@ -84,7 +84,7 @@ public class VariantExportStorageOperation extends StorageOperation {
             outputFile = outdirUri.resolve(outputFileName);
             outdir = Paths.get(outdirUri);
 
-            outdirMustBeEmpty(outdir);
+            outdirMustBeEmpty(outdir, options);
 
             hook = buildHook(outdir);
             writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));

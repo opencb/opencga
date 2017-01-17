@@ -74,7 +74,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         // Outdir must be empty
         URI outdirUri = UriUtils.createDirectoryUri(outdirStr);
         final Path outdir = Paths.get(outdirUri);
-        outdirMustBeEmpty(outdir);
+        outdirMustBeEmpty(outdir, options);
 
         Aggregation aggregation = getAggregation(studyId, options, sessionId);
         List<Long> cohortIds = checkCohorts(studyId, aggregation, cohorts, options, sessionId);

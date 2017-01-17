@@ -58,7 +58,7 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
         // Outdir must be empty
         URI outdirUri = UriUtils.createDirectoryUri(outdirStr);
         final Path outdir = Paths.get(outdirUri);
-        outdirMustBeEmpty(outdir);
+        outdirMustBeEmpty(outdir, options);
 
         List<File> newFiles;
         Thread hook = buildHook(outdir);

@@ -62,7 +62,13 @@ public abstract class StorageOperation {
         this.logger = logger;
     }
 
-    protected void outdirMustBeEmpty(Path outdir) throws CatalogIOException, StorageEngineException {
+
+    protected void outdirMustBeEmpty(Path outdir, ObjectMap options) throws CatalogIOException, StorageEngineException {
+        if (!isCatalogPathDefined(options)) {
+            // This restriction is only necessary if the output files are going to be moved to Catalog.
+            // If CATALOG_PATH is NOT defined, output does not need to be empty.
+            return;
+        }
         List<URI> uris = catalogManager.getCatalogIOManagerFactory().get(outdir.toUri()).listFiles(outdir.toUri());
         if (!uris.isEmpty()) {
             // Only allow stdout and stderr files
@@ -70,15 +76,19 @@ public abstract class StorageOperation {
                 // Obtain the extension
                 int i = uri.toString().lastIndexOf(".");
                 if (i <= 0) {
-                    throw new StorageEngineException("Unable to execute index. Outdir '" + outdir + "' must be empty!");
+                    throw new StorageEngineException("Unable to execute storage operation. Outdir '" + outdir + "' must be empty!");
                 }
                 String extension = uri.toString().substring(i);
                 // If the extension is not one of the ones created by the daemons, throw the exception.
                 if (!ERR_LOG_EXTENSION.equalsIgnoreCase(extension) && !OUT_LOG_EXTENSION.equalsIgnoreCase(extension)) {
-                    throw new StorageEngineException("Unable to execute index. Outdir '" + outdir + "' must be empty!");
+                    throw new StorageEngineException("Unable to execute storage operation. Outdir '" + outdir + "' must be empty!");
                 }
             }
         }
+    }
+
+    private boolean isCatalogPathDefined(ObjectMap options) {
+        return options != null && StringUtils.isNotEmpty(options.getString(CATALOG_PATH));
     }
 
     protected Long getCatalogOutdirId(long studyId, ObjectMap options, String sessionId) throws CatalogException {
@@ -87,7 +97,7 @@ public abstract class StorageOperation {
 
     protected Long getCatalogOutdirId(String studyStr, ObjectMap options, String sessionId) throws CatalogException {
         Long catalogOutDirId;
-        if (options != null && StringUtils.isNoneEmpty(options.getString(CATALOG_PATH))) {
+        if (isCatalogPathDefined(options)) {
             String catalogOutDirIdStr = options.getString(CATALOG_PATH);
             catalogOutDirId = catalogManager.getFileManager().getId(catalogOutDirIdStr, studyStr, sessionId).getResourceId();
             if (catalogOutDirId <= 0) {

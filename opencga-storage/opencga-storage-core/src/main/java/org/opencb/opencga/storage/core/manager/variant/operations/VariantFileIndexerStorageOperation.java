@@ -104,7 +104,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         }
 
         // Outdir must be empty
-        outdirMustBeEmpty(outdir);
+        outdirMustBeEmpty(outdir, options);
 
         writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
 
