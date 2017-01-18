@@ -993,7 +993,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //                                + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_POLYPHEN_FIELD
 //                                + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD,
 //                        value, builder);
-                addScoreFilter(value, builder, VariantQueryParams.ANNOT_POLYPHEN, DocumentToVariantAnnotationConverter.POLYPHEN);
+                addScoreFilter(value, builder, VariantQueryParams.ANNOT_POLYPHEN, DocumentToVariantAnnotationConverter.POLYPHEN, true);
             }
 
             if (isValidParam(query, VariantQueryParams.ANNOT_SIFT)) {
@@ -1002,17 +1002,17 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
 //                        + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_SIFT_FIELD + "."
 //                        + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, value, builder);
-                addScoreFilter(value, builder, VariantQueryParams.ANNOT_SIFT, DocumentToVariantAnnotationConverter.SIFT);
+                addScoreFilter(value, builder, VariantQueryParams.ANNOT_SIFT, DocumentToVariantAnnotationConverter.SIFT, true);
             }
 
             if (isValidParam(query, VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION)) {
                 String value = query.getString(VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key());
-                addScoreFilter(value, builder, VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION);
+                addScoreFilter(value, builder, VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION, true);
             }
 
             if (isValidParam(query, VariantQueryParams.ANNOT_CONSERVATION)) {
                 String value = query.getString(VariantQueryParams.ANNOT_CONSERVATION.key());
-                addScoreFilter(value, builder, VariantQueryParams.ANNOT_CONSERVATION);
+                addScoreFilter(value, builder, VariantQueryParams.ANNOT_CONSERVATION, false);
             }
 
             if (isValidParam(query, VariantQueryParams.ANNOT_TRANSCRIPTION_FLAGS)) {
@@ -1101,7 +1101,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (isValidParam(query, VariantQueryParams.ANNOT_FUNCTIONAL_SCORE)) {
                 String value = query.getString(VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key());
-                addScoreFilter(value, builder, VariantQueryParams.ANNOT_FUNCTIONAL_SCORE);
+                addScoreFilter(value, builder, VariantQueryParams.ANNOT_FUNCTIONAL_SCORE, false);
             }
 
             if (isValidParam(query, VariantQueryParams.ANNOT_CUSTOM)) {
@@ -2053,11 +2053,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      *
      * @param value        Value to parse
      * @param builder      QueryBuilder
-     * @param conservation
+     * @param scoreParam Score query param
+     * @param allowDescriptionFilter Use string values as filters for the score description
      * @return QueryBuilder
      */
-    private QueryBuilder addScoreFilter(String value, QueryBuilder builder, VariantQueryParams conservation) {
-        return addScoreFilter(value, builder, conservation, null);
+    private QueryBuilder addScoreFilter(String value, QueryBuilder builder, VariantQueryParams scoreParam,
+                                        boolean allowDescriptionFilter) {
+        return addScoreFilter(value, builder, scoreParam, null, allowDescriptionFilter);
     }
 
     /**
@@ -2067,13 +2069,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * @param builder       QueryBuilder
      * @param scoreParam    Score VariantQueryParam
      * @param defaultSource Default source value. If null, must be present in the filter. If not, must not be present.
+     * @param allowDescriptionFilter Use string values as filters for the score description
      * @return QueryBuilder
      */
-    private QueryBuilder addScoreFilter(String value, QueryBuilder builder, VariantQueryParams scoreParam, final String defaultSource) {
+    private QueryBuilder addScoreFilter(String value, QueryBuilder builder, VariantQueryParams scoreParam, final String defaultSource,
+                                        boolean allowDescriptionFilter) {
         final List<String> list;
         QueryOperation operation = checkOperator(value);
         list = splitValue(value, operation);
-
         List<DBObject> dbObjects = new ArrayList<>();
         for (String elem : list) {
             String[] score = VariantDBAdaptorUtils.splitOperator(elem);
@@ -2110,10 +2113,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 // Query by score
                 key += '.' + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD;
                 addCompQueryFilter(key, scoreValue, scoreBuilder, op);
-            } else {
+            } else if (allowDescriptionFilter) {
                 // Query by description
                 key += '.' + DocumentToVariantAnnotationConverter.SCORE_DESCRIPTION_FIELD;
                 addStringCompQueryFilter(key, scoreValue, scoreBuilder);
+            } else {
+                throw VariantQueryException.malformedParam(scoreParam, value);
             }
             dbObjects.add(scoreBuilder.get());
         }

@@ -830,8 +830,17 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
-    public void testGetAllVariants_functionalScore_wrong() {
+    public void testGetAllVariants_functionalScore_wrongSource() {
         String value = "cad<=0.5";
+        VariantQueryException expected = VariantQueryException.malformedParam(ANNOT_FUNCTIONAL_SCORE, value);
+        thrown.expect(expected.getClass());
+        thrown.expectMessage(expected.getMessage());
+        dbAdaptor.get(new Query(ANNOT_FUNCTIONAL_SCORE.key(), value), null);
+    }
+
+    @Test
+    public void testGetAllVariants_functionalScore_wrongValue() {
+        String value = "cadd_scaled<=A";
         VariantQueryException expected = VariantQueryException.malformedParam(ANNOT_FUNCTIONAL_SCORE, value);
         thrown.expect(expected.getClass());
         thrown.expectMessage(expected.getMessage());
@@ -858,6 +867,22 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                 ((Predicate<List<Score>>) scores -> scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("gerp") && s.getScore() <= 0.5))
                         .and(scores -> scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("phastCons") && s.getScore() < 0.5)),
                 VariantAnnotation::getConservation);
+    }
+
+    @Test
+    public void testGetAllVariants_conservationScoreWrongSource() {
+        VariantQueryException e = VariantQueryException.malformedParam(ANNOT_CONSERVATION, "phast<0.5");
+        thrown.expect(e.getClass());
+        thrown.expectMessage(e.getMessage());
+        dbAdaptor.get(new Query(ANNOT_CONSERVATION.key(), "phast<0.5"), null);
+    }
+
+    @Test
+    public void testGetAllVariants_conservationScoreWrongValue() {
+        VariantQueryException e = VariantQueryException.malformedParam(ANNOT_CONSERVATION, "phastCons<a");
+        thrown.expect(e.getClass());
+        thrown.expectMessage(e.getMessage());
+        dbAdaptor.get(new Query(ANNOT_CONSERVATION.key(), "phastCons<a"), null);
     }
 
     public void checkConservationScore(Query query, Predicate<Double> doublePredicate, String source) {
