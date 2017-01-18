@@ -973,10 +973,24 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (isValidParam(query, VariantQueryParams.ANNOT_CONSEQUENCE_TYPE)) {
                 String value = query.getString(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key());
-                addQueryFilter(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD, value, builder, QueryOperation.AND,
-                        VariantDBAdaptorUtils::parseConsequenceType);
+                if (isValidParam(query, VariantQueryParams.GENE)) {
+                    QueryBuilder ctBuilder = new QueryBuilder();
+                    addQueryFilter(DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD, value, ctBuilder, QueryOperation.AND,
+                            VariantDBAdaptorUtils::parseConsequenceType);
+                    addQueryStringFilter(DocumentToVariantAnnotationConverter.CT_GENE_NAME_FIELD,
+                            query.getString(VariantQueryParams.GENE.key()), ctBuilder, QueryOperation.OR);
+                    addQueryStringFilter(DocumentToVariantAnnotationConverter.CT_ENSEMBL_GENE_ID_FIELD,
+                            query.getString(VariantQueryParams.GENE.key()), ctBuilder, QueryOperation.OR);
+                    addQueryStringFilter(DocumentToVariantAnnotationConverter.CT_ENSEMBL_TRANSCRIPT_ID_FIELD,
+                            query.getString(VariantQueryParams.GENE.key()), ctBuilder, QueryOperation.OR);
+                    builder.and(DocumentToVariantConverter.ANNOTATION_FIELD
+                            + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD).elemMatch(ctBuilder.get());
+                } else {
+                    addQueryFilter(DocumentToVariantConverter.ANNOTATION_FIELD
+                                    + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
+                                    + "." + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD, value, builder, QueryOperation.AND,
+                            VariantDBAdaptorUtils::parseConsequenceType);
+                }
             }
 
             if (isValidParam(query, VariantQueryParams.ANNOT_BIOTYPE)) {

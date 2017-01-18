@@ -21,6 +21,8 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import htsjdk.variant.variantcontext.VariantContext;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
 import org.junit.*;
 import org.opencb.biodata.models.core.Region;
@@ -486,6 +488,38 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         assertThat(queryResult, numResults(gt(0)));
 
 //        assertEquals(396, queryResult.getNumResults());
+    }
+
+    @Test
+    public void testGetAllVariants_ct_gene() {
+        List<Pair<String, String>> list = Arrays.asList(
+                Pair.of("BIRC6", "SO:0001566"), // Should return 0 results
+                Pair.of("BIRC6", "SO:0001583"),
+                Pair.of("DNAJC6", "SO:0001819"),
+                Pair.of("SH2D5", "SO:0001632"),
+                Pair.of("ERMAP,SH2D5", "SO:0001632")
+        );
+
+        for (Pair<String, String> pair : list) {
+            String gene = pair.getLeft();
+            String so = pair.getRight();
+
+            Query query = new Query(ANNOT_CONSEQUENCE_TYPE.key(), so).append(GENE.key(), gene);
+            queryResult = dbAdaptor.get(query, null);
+            System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+
+            Matcher<String> geneMatcher;
+            if (gene.contains(",")) {
+                geneMatcher = anyOf(Arrays.stream(gene.split(",")).map(CoreMatchers::is).collect(Collectors.toList()));
+            } else {
+                geneMatcher = is(gene);
+            }
+            assertThat(queryResult, everyResult(allVariants, hasAnnotation(
+                    withAny("consequence type", VariantAnnotation::getConsequenceTypes, allOf(
+                            with("gene", ConsequenceType::getGeneName, geneMatcher),
+                            withAny("SO", ConsequenceType::getSequenceOntologyTerms,
+                                    with("accession", SequenceOntologyTerm::getAccession, is(so))))))));
+        }
     }
 
     @Test
