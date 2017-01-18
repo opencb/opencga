@@ -209,6 +209,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
     protected List<Long> checkCohorts(long studyId, Aggregation aggregation, List<String> cohorts, QueryOptions options, String sessionId)
             throws CatalogException, IOException {
         List<Long> cohortIds;
+        String userId = catalogManager.getUserManager().getId(sessionId);
 
         // Check aggregation mapping properties
         String tagMap = options.getString(Options.AGGREGATION_MAPPING_PROPERTIES.key());
@@ -239,7 +240,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
                 if (!cohort.contains(":")) {
                     cohort = studyId + ":" + cohort;
                 }
-                long cohortId = catalogManager.getCohortId(cohort, sessionId);
+                long cohortId = catalogManager.getCohortManager().getId(userId, cohort);
                 if (cohortId < 0) {
                     throw new CatalogException("Cohort '" + cohort + "' not found");
                 }
