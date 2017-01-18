@@ -285,11 +285,12 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         // Only if we are not transforming or if a path has been passed, we will update catalog information
         if (!step.equals(Type.TRANSFORM) || catalogOutDirId != null) {
-            if (catalogOutDirId != null) {
+            boolean saveIntermediateFiles = catalogOutDirId != null;
+            if (saveIntermediateFiles) {
                 // Copy results to catalog
                 copyResults(outdir, catalogOutDirId, sessionId);
             }
-            updateFileInfo(study, filesToIndex, storagePipelineResults, outdir, options, sessionId);
+            updateFileInfo(study, filesToIndex, storagePipelineResults, outdir, saveIntermediateFiles, options, sessionId);
             if (calculateStats) {
                 updateDefaultCohortStatus(sessionId, study, exception);
             }
@@ -385,7 +386,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
     }
 
     private void updateFileInfo(Study study, List<File> filesToIndex, List<StoragePipelineResult> storagePipelineResults, Path outdir,
-                                QueryOptions options, String sessionId) throws CatalogException, IOException {
+                                boolean saveIntermediateFiles, QueryOptions options, String sessionId)
+            throws CatalogException, IOException {
 
         Map<String, StoragePipelineResult> map;
         try {
@@ -455,7 +457,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                     case FileIndex.IndexStatus.INDEXING:
                         if (jobFailed) {
                             // If transform was executed, restore status to Transformed.
-                            if (transformedSuccess) {
+                            if (transformedSuccess && saveIntermediateFiles) {
+//                            if (transformedSuccess) {
                                 indexStatusName = FileIndex.IndexStatus.TRANSFORMED;
                             } else {
                                 indexStatusName = FileIndex.IndexStatus.NONE;
@@ -651,8 +654,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                                 filteredFiles.add(file);
                             }
                             break;
-                        case FileIndex.IndexStatus.LOADING:
                         case FileIndex.IndexStatus.TRANSFORMED:
+                        case FileIndex.IndexStatus.LOADING:
                         case FileIndex.IndexStatus.READY:
                         default:
                             logger.warn("We can only transform VCF files not transformed, the status is {}",
@@ -710,7 +713,9 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                         break;
                     case FileIndex.IndexStatus.TRANSFORMED:
                         // We will attempt to use the avro file registered in catalog
-                        long avroId = file.getIndex().getTransformedFile().getId();
+                        long avroId = file.getIndex() != null && file.getIndex().getTransformedFile() != null
+                                ? file.getIndex().getTransformedFile().getId()
+                                : -1;
                         if (avroId == -1) {
                             logger.error("This code should never be executed. Every vcf file containing the transformed status should have"
                                     + " a registered avro file");
