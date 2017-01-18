@@ -1251,7 +1251,7 @@ public class FileWSServer extends OpenCGAWSServer {
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                             @QueryParam("study") String studyStr) throws CatalogException {
         try {
-            QueryResult<File> queryResult = catalogManager.unlink(fileIdStr, studyStr, queryOptions, sessionId);
+            QueryResult<File> queryResult = catalogManager.getFileManager().unlink(fileIdStr, studyStr, sessionId);
             return createOkResponse(new QueryResult<>("unlink", 0, 1, 1, null, null, queryResult.getResult()));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1341,10 +1341,11 @@ public class FileWSServer extends OpenCGAWSServer {
                               @ApiParam(value="Skip trash and delete the files/folders from disk directly (CANNOT BE RECOVERED)",
                                       required = false) @DefaultValue("false") @QueryParam("skipTrash") boolean skipTrash) {
         try {
-            QueryOptions qOptions = new QueryOptions(queryOptions)
+//            QueryOptions qOptions = new QueryOptions(queryOptions)
+            ObjectMap params = new ObjectMap()
                     .append(FileManager.DELETE_EXTERNAL_FILES, deleteExternal)
                     .append(FileManager.SKIP_TRASH, skipTrash);
-            List<QueryResult<File>> result = fileManager.delete(fileIdStr, studyStr, qOptions, sessionId);
+            List<QueryResult<File>> result = fileManager.delete(fileIdStr, studyStr, params, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

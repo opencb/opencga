@@ -936,11 +936,6 @@ public class CatalogManager implements AutoCloseable {
         return fileManager.link(uriOrigin, pathDestiny, studyId, params, sessionId);
     }
 
-    public QueryResult<File> unlink(String fileIdStr, @Nullable String studyStr, QueryOptions qOptions, String sessionId)
-            throws CatalogException, IOException {
-        return fileManager.unlink(fileIdStr, studyStr, qOptions, sessionId);
-    }
-
 //    public QueryResult shareDatasets(String datasetIds, String members, List<String> permissions, String sessionId, boolean override)
 //            throws CatalogException {
 //        String userId = getUserIdBySessionId(sessionId);

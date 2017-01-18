@@ -1207,7 +1207,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 //    }
 
     @Override
-    public List<QueryResult<File>> delete(String fileIdStr, @Nullable String studyStr, QueryOptions options, String sessionId)
+    public List<QueryResult<File>> delete(String fileIdStr, @Nullable String studyStr, ObjectMap params, String sessionId)
             throws CatalogException, IOException {
         /*
          * This method checks:
@@ -1218,10 +1218,9 @@ public class FileManager extends AbstractManager implements IFileManager {
          * 5. Root folders cannot be deleted.
          * 6. No external files or folders are found within the path.
          */
-
         QueryResult<File> deletedFileResult = new QueryResult<>("Delete file", -1, 0, 0, "", "No changes made", Collections.emptyList());
 
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        params = ParamUtils.defaultObject(params, ObjectMap::new);
 
         AbstractManager.MyResourceIds resource = catalogManager.getFileManager().getIds(fileIdStr, studyStr, sessionId);
         String userId = resource.getUser();
@@ -1236,7 +1235,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.DELETE);
 
             // Check if we can obtain the file from the dbAdaptor properly.
-            QueryResult<File> fileQueryResult = fileDBAdaptor.get(fileId, options);
+            QueryResult<File> fileQueryResult = fileDBAdaptor.get(fileId, QueryOptions.empty());
             if (fileQueryResult == null || fileQueryResult.getNumResults() != 1) {
                 throw new CatalogException("Cannot delete file '" + fileIdStr + "'. There was an error with the database.");
             }
@@ -1246,9 +1245,9 @@ public class FileManager extends AbstractManager implements IFileManager {
             // If file is not externally linked or if it is external but with DELETE_EXTERNAL_FILES set to true then can be deleted.
             // This prevents external linked files to be accidentally deleted.
             // If file is linked externally and DELETE_EXTERNAL_FILES is false then we just unlink the file.
-            if (file.isExternal() && !options.getBoolean(DELETE_EXTERNAL_FILES, false)) {
+            if (file.isExternal() && !params.getBoolean(DELETE_EXTERNAL_FILES, false)) {
                 queryResultList.add(unlink(StringUtils.join(resource.getResourceIds(), ","), Long.toString(resource.getStudyId()),
-                        options, sessionId));
+                        sessionId));
                 continue;
             }
 
@@ -1303,13 +1302,13 @@ public class FileManager extends AbstractManager implements IFileManager {
                 }
             }
 
-            if (options.getBoolean(SKIP_TRASH, false)) {
-                deletedFileResult = deleteFromDisk(file, userId, options);
+            if (params.getBoolean(SKIP_TRASH, false)) {
+                deletedFileResult = deleteFromDisk(file, userId, params);
             } else {
                 if (fileStatus.equalsIgnoreCase(File.FileStatus.READY)) {
 
                     if (file.getType().equals(File.Type.FILE)) {
-                        deletedFileResult = fileDBAdaptor.delete(fileId, new QueryOptions());
+                        deletedFileResult = fileDBAdaptor.delete(fileId, QueryOptions.empty());
                     } else {
                         if (studyId == -1) {
                             studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
@@ -1325,11 +1324,11 @@ public class FileManager extends AbstractManager implements IFileManager {
 
                         if (allFiles != null && allFiles.getNumResults() > 0) {
                             for (File fileToDelete : allFiles.getResult()) {
-                                fileDBAdaptor.delete(fileToDelete.getId(), new QueryOptions());
+                                fileDBAdaptor.delete(fileToDelete.getId(), QueryOptions.empty());
                             }
                         }
 
-                        deletedFileResult = fileDBAdaptor.get(fileId, new QueryOptions());
+                        deletedFileResult = fileDBAdaptor.get(fileId, QueryOptions.empty());
                     }
                 }
             }
@@ -1354,7 +1353,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         return null;
     }
 
-    private QueryResult<File> deleteFromDisk(File fileOrDirectory, String userId, QueryOptions options)
+    private QueryResult<File> deleteFromDisk(File fileOrDirectory, String userId, ObjectMap params)
             throws CatalogException, IOException {
         QueryResult<File> removedFileResult;
 
@@ -1375,7 +1374,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             // 1. Set the file status to deleting
             ObjectMap update = new ObjectMap()
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETING);
-            fileDBAdaptor.delete(fileOrDirectory.getId(), update, options);
+            fileDBAdaptor.delete(fileOrDirectory.getId(), update, QueryOptions.empty());
 
             // 2. Delete the file from disk
             ioManager.deleteFile(fileUri);
@@ -1384,11 +1383,11 @@ public class FileManager extends AbstractManager implements IFileManager {
             update = new ObjectMap()
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED)
                     .append(FileDBAdaptor.QueryParams.PATH.key(), fileOrDirectory.getPath() + suffixName);
-            removedFileResult = fileDBAdaptor.delete(fileOrDirectory.getId(), update, options);
+            removedFileResult = fileDBAdaptor.delete(fileOrDirectory.getId(), update, QueryOptions.empty());
         } else {
             // Directories can be marked to be deferred removed by setting FORCE_DELETE to false, then File daemon will remove it.
             // In this mode directory is just renamed and URIs and Paths updated in Catalog. By default removal is deferred.
-            if (!options.getBoolean(FORCE_DELETE, false)
+            if (!params.getBoolean(FORCE_DELETE, false)
                     && !fileOrDirectory.getStatus().getName().equals(File.FileStatus.PENDING_DELETE)) {
                 // Rename the directory in the filesystem.
                 URI newURI = Paths.get(Paths.get(fileUri).toString() + suffixName).toUri();
@@ -1426,14 +1425,14 @@ public class FileManager extends AbstractManager implements IFileManager {
                                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.PENDING_DELETE)
                                 .append(FileDBAdaptor.QueryParams.URI.key(), newUri)
                                 .append(FileDBAdaptor.QueryParams.PATH.key(), newPath);
-                        fileDBAdaptor.delete(file.getId(), update, new QueryOptions());
+                        fileDBAdaptor.delete(file.getId(), update, QueryOptions.empty());
                     }
                 } else {
                     // The uri in the disk has been changed but not in the database !!
                     throw new CatalogException("ERROR: Could not retrieve all the files and folders hanging from " + fileUri.toString());
                 }
 
-            } else if (options.getBoolean(FORCE_DELETE, false)) {
+            } else if (params.getBoolean(FORCE_DELETE, false)) {
                 // Physically delete all the files hanging from the folder
                 Files.walkFileTree(filesystemPath, new SimpleFileVisitor<Path>() {
                     @Override
@@ -1461,7 +1460,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                             // 1. Set the file status to deleting
                             ObjectMap update = new ObjectMap()
                                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETING);
-                            fileDBAdaptor.delete(file.getId(), update, new QueryOptions());
+                            fileDBAdaptor.delete(file.getId(), update, QueryOptions.empty());
 
                             logger.debug("Deleting file '" + path.toString() + "' from filesystem and Catalog");
 
@@ -1472,7 +1471,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                             update = new ObjectMap()
                                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED);
 
-                            QueryResult<File> deleteQueryResult = fileDBAdaptor.delete(file.getId(), update, new QueryOptions());
+                            QueryResult<File> deleteQueryResult = fileDBAdaptor.delete(file.getId(), update, QueryOptions.empty());
 
                             if (deleteQueryResult == null || deleteQueryResult.getNumResults() != 1) {
                                 // The file could not be removed from catalog. This should ONLY be happening when the file that
@@ -1507,7 +1506,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                                             .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                                             .append(FileDBAdaptor.QueryParams.URI.key(), folderUri);
 
-                                    QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
+                                    QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, QueryOptions.empty());
 
                                     if (fileQueryResult == null || fileQueryResult.getNumResults() == 0) {
                                         logger.debug("Cannot remove " + dir.toString() + ". The directory could not be found in catalog.");
@@ -1529,7 +1528,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                                             .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED);
 //                                            .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "");
 
-                                    QueryResult<File> deleteQueryResult = fileDBAdaptor.delete(file.getId(), update, new QueryOptions());
+                                    QueryResult<File> deleteQueryResult = fileDBAdaptor.delete(file.getId(), update, QueryOptions.empty());
 
                                     if (deleteQueryResult == null || deleteQueryResult.getNumResults() != 1) {
                                         // The file could not be removed from catalog. This should ONLY be happening when the file that
@@ -1557,7 +1556,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                     }
                 });
             }
-            removedFileResult = fileDBAdaptor.get(fileOrDirectory.getId(), new QueryOptions());
+            removedFileResult = fileDBAdaptor.get(fileOrDirectory.getId(), QueryOptions.empty());
         }
         return removedFileResult;
     }
@@ -1910,10 +1909,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     }
 
-    public QueryResult<File> unlink(String fileIdStr, @Nullable String studyStr, QueryOptions options, String sessionId)
-            throws CatalogException, IOException {
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
+    public QueryResult<File> unlink(String fileIdStr, @Nullable String studyStr, String sessionId) throws CatalogException, IOException {
         AbstractManager.MyResourceId resource = catalogManager.getFileManager().getId(fileIdStr, studyStr, sessionId);
         String userId = resource.getUser();
         long fileId = resource.getResourceId();
@@ -1923,7 +1919,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.DELETE);
 
         // Check if we can obtain the file from the dbAdaptor properly.
-        QueryResult<File> fileQueryResult = fileDBAdaptor.get(fileId, options);
+        QueryResult<File> fileQueryResult = fileDBAdaptor.get(fileId, QueryOptions.empty());
         if (fileQueryResult == null || fileQueryResult.getNumResults() != 1) {
             throw new CatalogException("Cannot delete file '" + fileIdStr + "'. There was an error with the database.");
         }
@@ -1978,7 +1974,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED)
                                 .append(FileDBAdaptor.QueryParams.PATH.key(), file.getPath().replaceFirst(basePath, suffixedPath));
 
-                        fileDBAdaptor.delete(file.getId(), update, new QueryOptions());
+                        fileDBAdaptor.delete(file.getId(), update, QueryOptions.empty());
 
                         logger.debug("{} unlinked", file.toString());
                     } catch (CatalogDBException e) {
