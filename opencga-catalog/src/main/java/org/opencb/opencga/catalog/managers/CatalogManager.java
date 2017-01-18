@@ -1296,16 +1296,6 @@ public class CatalogManager implements AutoCloseable {
         return individualManager.updateAnnotation(individualId, annotationSetName, annotations, sessionId);
     }
 
-    public QueryResult<AnnotationSet> deleteSampleAnnotation(long sampleId, String annotationId, String sessionId)
-            throws CatalogException {
-        return sampleManager.deleteAnnotation(sampleId, annotationId, sessionId);
-    }
-
-    public QueryResult<AnnotationSet> deleteIndividualAnnotation(long individualId, String annotationId, String sessionId)
-            throws CatalogException {
-        return individualManager.deleteAnnotation(individualId, annotationId, sessionId);
-    }
-
     @Deprecated
     public QueryResult<Sample> deleteSample(long sampleId, QueryOptions options, String sessionId) throws CatalogException {
         return null;
@@ -1443,34 +1433,6 @@ public class CatalogManager implements AutoCloseable {
         AbstractManager.MyResourceId resource = cohortManager.getId(cohortIdStr, studyStr, sessionId);
         return authorizationManager.updateCohortAcl(resource.getUser(), resource.getResourceId(), member, addPermissions, removePermissions,
                 setPermissions);
-    }
-
-    public long getCohortId(String cohortStr, String sessionId) throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        return cohortManager.getId(userId, cohortStr);
-    }
-
-    public List<Long> getCohortIds(String cohortStr, String sessionId) throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        return cohortManager.getIds(userId, cohortStr);
-    }
-
-    /*
-     * Tools methods
-     * ***************************
-     */
-
-    public QueryResult<Tool> createTool(String alias, String description, Object manifest, Object result,
-                                        String path, boolean openTool, String sessionId) throws CatalogException {
-        return jobManager.createTool(alias, description, manifest, result, path, openTool, sessionId);
-    }
-
-    public QueryResult<Tool> getTool(long id, String sessionId) throws CatalogException {
-        return jobManager.getTool(id, sessionId);
-    }
-
-    public QueryResult<Tool> getAllTools(Query query, QueryOptions queryOptions, String sessionId) throws CatalogException {
-        return jobManager.getTools(query, queryOptions, sessionId);
     }
 
     /*

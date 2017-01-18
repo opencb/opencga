@@ -78,7 +78,7 @@ public class AdminMain {
                             commandExecutor = new ServerCommandExecutor(cliOptionsParser.getServerCommandOptions());
                             break;
                         default:
-                            System.out.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
+                            System.out.printf(String.format("ERROR: not valid command passed: '%s'", parsedCommand));
                             break;
                     }
 
