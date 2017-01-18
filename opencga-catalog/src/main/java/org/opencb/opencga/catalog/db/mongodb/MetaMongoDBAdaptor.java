@@ -40,10 +40,7 @@ import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -119,7 +116,8 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         try {
             bufferedReader.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Error closing the buffer reader", e);
+            throw new UncheckedIOException(e);
         }
 
         createIndexes(dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection(), indexes.get("user"));

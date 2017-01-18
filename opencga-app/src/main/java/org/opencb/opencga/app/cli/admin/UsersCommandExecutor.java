@@ -101,25 +101,31 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             throw new CatalogException("At least, users or groups should be provided to start importing.");
         }
 
-        CatalogManager catalogManager = new CatalogManager(configuration);
-        ObjectMap params = new ObjectMap();
-        params.putIfNotNull("users", executor.users);
-        params.putIfNotNull("groups", executor.groups);
-        params.putIfNotNull("expirationDate", executor.expDate);
-        params.putIfNotNull("studies", executor.studies);
-        List<QueryResult<User>> resultList = catalogManager.getUserManager().importFromExternalAuthOrigin(executor.authOrigin,
-                executor.type, params, configuration.getAdmin().getPassword());
+        CatalogManager catalogManager = null;
+        try {
+            catalogManager = new CatalogManager(configuration);
+            ObjectMap params = new ObjectMap();
+            params.putIfNotNull("users", executor.users);
+            params.putIfNotNull("groups", executor.groups);
+            params.putIfNotNull("expirationDate", executor.expDate);
+            params.putIfNotNull("studies", executor.studies);
+            List<QueryResult<User>> resultList = catalogManager.getUserManager().importFromExternalAuthOrigin(executor.authOrigin,
+                    executor.type, params, configuration.getAdmin().getPassword());
 
-        System.out.println("\n" + resultList.size() + " users have been imported");
-        // Print the user names if less than 10 users have been imported.
-        if (resultList.size() <= 10) {
-            for (QueryResult<User> userQueryResult : resultList) {
-                if (userQueryResult.getNumResults() == 0) {
-                    System.out.println(userQueryResult.getErrorMsg());
-                } else {
-                    System.out.println(userQueryResult.first().getName() + " user account created.");
+
+            System.out.println("\n" + resultList.size() + " users have been imported");
+            // Print the user names if less than 10 users have been imported.
+            if (resultList.size() <= 10) {
+                for (QueryResult<User> userQueryResult : resultList) {
+                    if (userQueryResult.getNumResults() == 0) {
+                        System.out.println(userQueryResult.getErrorMsg());
+                    } else {
+                        System.out.println(userQueryResult.first().getName() + " user account created.");
+                    }
                 }
             }
+        } finally {
+            catalogManager.close();
         }
     }
 
@@ -151,14 +157,22 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             userQuota = configuration.getUserDefaultQuota();
         }
 
-        CatalogManager catalogManager = new CatalogManager(configuration);
-        catalogManager.getUserManager().validatePassword("admin", configuration.getAdmin().getPassword(), true);
+        CatalogManager catalogManager = null;
+        try {
+            new CatalogManager(configuration);
 
-        User user = catalogManager.getUserManager().create(usersCommandOptions.createUserCommandOptions.userId,
-                usersCommandOptions.createUserCommandOptions.userName, usersCommandOptions.createUserCommandOptions.userEmail,
-                usersCommandOptions.createUserCommandOptions.userPassword, usersCommandOptions.createUserCommandOptions.userOrganization,
-                userQuota, usersCommandOptions.createUserCommandOptions.type, null).first();
-        System.out.println("The user has been successfully created: " + user.toString() + "\n");
+            catalogManager.getUserManager().validatePassword("admin", configuration.getAdmin().getPassword(), true);
+
+            User user = catalogManager.getUserManager().create(usersCommandOptions.createUserCommandOptions.userId,
+                    usersCommandOptions.createUserCommandOptions.userName, usersCommandOptions.createUserCommandOptions.userEmail,
+                    usersCommandOptions.createUserCommandOptions.userPassword,
+                    usersCommandOptions.createUserCommandOptions.userOrganization, userQuota,
+                    usersCommandOptions.createUserCommandOptions.type, null).first();
+
+            System.out.println("The user has been successfully created: " + user.toString() + "\n");
+        } finally {
+            catalogManager.close();
+        }
     }
 
     private void delete() throws CatalogException, IOException {
@@ -182,18 +196,23 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             throw new CatalogException("No admin password found. Please, insert your password.");
         }
 
-        CatalogManager catalogManager = new CatalogManager(configuration);
-        catalogManager.getUserManager().validatePassword("admin", configuration.getAdmin().getPassword(), true);
+        CatalogManager catalogManager = null;
+        try {
+            new CatalogManager(configuration);
+            catalogManager.getUserManager().validatePassword("admin", configuration.getAdmin().getPassword(), true);
 
-        List<QueryResult<User>> deletedUsers = catalogManager.getUserManager()
-                .delete(usersCommandOptions.deleteUserCommandOptions.userId, new QueryOptions("force", true), null);
-        for (QueryResult<User> deletedUser : deletedUsers) {
-            User user = deletedUser.first();
-            if (user != null) {
-                System.out.println("The user has been successfully deleted from the database: " + user.toString());
-            } else {
-                System.out.println(deletedUser.getErrorMsg());
+            List<QueryResult<User>> deletedUsers = catalogManager.getUserManager()
+                    .delete(usersCommandOptions.deleteUserCommandOptions.userId, new QueryOptions("force", true), null);
+            for (QueryResult<User> deletedUser : deletedUsers) {
+                User user = deletedUser.first();
+                if (user != null) {
+                    System.out.println("The user has been successfully deleted from the database: " + user.toString());
+                } else {
+                    System.out.println(deletedUser.getErrorMsg());
+                }
             }
+        } finally {
+            catalogManager.close();
         }
     }
 
@@ -218,13 +237,19 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             throw new CatalogException("No admin password found. Please, insert your password.");
         }
 
-        CatalogManager catalogManager = new CatalogManager(configuration);
-        catalogManager.getUserManager().validatePassword("admin", configuration.getAdmin().getPassword(), true);
-        
-        User user = catalogManager.modifyUser(usersCommandOptions.QuotaUserCommandOptions.userId,
-                new ObjectMap(UserDBAdaptor.QueryParams.QUOTA.key(),
-                        usersCommandOptions.QuotaUserCommandOptions.quota *  1073741824), null).first();
-        System.out.println("The disk quota has been properly updated: " + user.toString());
+        CatalogManager catalogManager = null;
+        try {
+            new CatalogManager(configuration);
+            catalogManager.getUserManager().validatePassword("admin", configuration.getAdmin().getPassword(), true);
+
+            User user = catalogManager.modifyUser(usersCommandOptions.QuotaUserCommandOptions.userId,
+                    new ObjectMap(UserDBAdaptor.QueryParams.QUOTA.key(), usersCommandOptions.QuotaUserCommandOptions.quota * 1073741824),
+                    null).first();
+
+            System.out.println("The disk quota has been properly updated: " + user.toString());
+        } finally {
+            catalogManager.close();
+        }
     }
 
 }

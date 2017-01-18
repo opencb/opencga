@@ -16,19 +16,21 @@
 
 package org.opencb.opencga.server.rest.analysis;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.server.rest.FileWSServer;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -232,41 +234,59 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         public String missingGenotypes;
         public Boolean annotationExists;
         public String genotype;
+        @JsonProperty("annot-ct")
+//        @ApiModelProperty(name = "annot-ct")
         public String annot_ct;
+        @JsonProperty("annot-xref")
         public String annot_xref;
+        @JsonProperty("annot-biotype")
         public String annot_biotype;
         public String polyphen;
         public String sift;
-        public String protein_substitution;
+//        public String protein_substitution;
         public String conservation;
+        @JsonProperty("annot-population-maf")
         public String annotPopulationMaf;
         public String alternate_frequency;
         public String reference_frequency;
+        @JsonProperty("annot-transcription-flags")
         public String transcriptionFlags;
+        @JsonProperty("annot-gene-trait-id")
         public String geneTraitId;
+        @JsonProperty("annot-gene-trait-name")
         public String geneTraitName;
+        @JsonProperty("annot-hpo")
         public String hpo;
+        @JsonProperty("annot-go")
         public String go;
+        @JsonProperty("annot-expression")
         public String expression;
+        @JsonProperty("annot-protein-keywords")
         public String proteinKeyword;
+        @JsonProperty("annot-drug")
         public String drug;
+        @JsonProperty("annot-functional-score")
         public String functional;
         public String unknownGenotype;
-        public Boolean samplesMetadata;
-        public Boolean sort;
+        public boolean samplesMetadata = false;
+        public boolean sort = false;
         public String groupBy;
-        public Boolean histogram;
-        public Integer interval;
-        public Boolean merge;
+        public boolean histogram = false;
+        public int interval = 2000;
+        public boolean merge = false;
+
     }
 
     @POST
     @Path("/query")
     @ApiOperation(value = "Fetch variants from a VCF/gVCF file", position = 15, response = Variant[].class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
+                    example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
+                    example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer",
+                    paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })

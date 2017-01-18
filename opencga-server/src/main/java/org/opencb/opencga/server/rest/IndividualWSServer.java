@@ -27,8 +27,6 @@ import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.api.IIndividualManager;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
-import org.opencb.opencga.catalog.models.Variable;
-import org.opencb.opencga.catalog.models.VariableSet;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -42,7 +40,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 22/06/15.
@@ -260,24 +257,26 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                        @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete")
                                            @DefaultValue("false") boolean delete,
                                        Map<String, Object> annotations) {
-        try {
-            long individualId = catalogManager.getIndividualId(individualStr, sessionId);
-            QueryResult<AnnotationSet> queryResult;
-            if (update && delete) {
-                return createErrorResponse("Annotate individual", "Unable to update and delete annotations at the same"
-                        + " time");
-            } else if (update) {
-                queryResult = catalogManager.updateIndividualAnnotation(individualId, annotateSetName, annotations, sessionId);
-            } else if (delete) {
-                queryResult = catalogManager.deleteIndividualAnnotation(individualId, annotateSetName, sessionId);
-            } else {
-                queryResult = catalogManager.annotateIndividual(individualId, annotateSetName, variableSetId,
-                        annotations, Collections.emptyMap(), sessionId);
-            }
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+        return createErrorResponse(new CatalogException("Webservice no longer supported. Please, use "
+                + "/{individual}/annotationsets/..."));
+//        try {
+//            long individualId = catalogManager.getIndividualId(individualStr, sessionId);
+//            QueryResult<AnnotationSet> queryResult;
+//            if (update && delete) {
+//                return createErrorResponse("Annotate individual", "Unable to update and delete annotations at the same"
+//                        + " time");
+//            } else if (update) {
+//                queryResult = catalogManager.updateIndividualAnnotation(individualId, annotateSetName, annotations, sessionId);
+//            } else if (delete) {
+//                queryResult = catalogManager.deleteIndividualAnnotation(individualId, annotateSetName, sessionId);
+//            } else {
+//                queryResult = catalogManager.annotateIndividual(individualId, annotateSetName, variableSetId,
+//                        annotations, Collections.emptyMap(), sessionId);
+//            }
+//            return createOkResponse(queryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
     }
 
     @Deprecated
@@ -285,7 +284,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @Path("/{individual}/annotate")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Annotate an individual [DEPRECATED]", position = 5)
-    public Response annotateSampleGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
+    public Response annotateSampleGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual")
+                                                  String individualStr,
                                       @ApiParam(value = "Annotation set name. Must be unique", required = true)
                                       @QueryParam("annotateSetName") String annotateSetName,
                                       @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
@@ -293,43 +293,45 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                           @DefaultValue("false") boolean update,
                                       @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete")
                                           @DefaultValue("false") boolean delete) {
-        try {
-            long individualId = catalogManager.getIndividualId(individualStr, sessionId);
-            QueryResult<AnnotationSet> queryResult;
-            if (update && delete) {
-                return createErrorResponse("Annotate individual", "Unable to update and delete annotations at the same"
-                        + " time");
-            } else if (delete) {
-                queryResult = catalogManager.deleteIndividualAnnotation(individualId, annotateSetName, sessionId);
-            } else {
-                if (update) {
-                    for (AnnotationSet annotationset : catalogManager.getIndividual(individualId, null, sessionId).first()
-                            .getAnnotationSets()) {
-                        if (annotationset.getName().equals(annotateSetName)) {
-                            variableSetId = annotationset.getVariableSetId();
-                        }
-                    }
-                }
-                QueryResult<VariableSet> variableSetResult = catalogManager.getVariableSet(variableSetId, null, sessionId);
-                if(variableSetResult.getResult().isEmpty()) {
-                    return createErrorResponse("sample annotate", "VariableSet not find.");
-                }
-                Map<String, Object> annotations = variableSetResult.getResult().get(0).getVariables().stream()
-                        .filter(variable -> params.containsKey(variable.getName()))
-                        .collect(Collectors.toMap(Variable::getName, variable -> params.getFirst(variable.getName())));
-
-                if (update) {
-                    queryResult = catalogManager.updateIndividualAnnotation(individualId, annotateSetName, annotations, sessionId);
-                } else {
-                    queryResult = catalogManager.annotateIndividual(individualId, annotateSetName, variableSetId,
-                            annotations, Collections.emptyMap(), sessionId);
-                }
-            }
-
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+        return createErrorResponse(new CatalogException("Webservice no longer supported. Please, use "
+                + "/{individual}/annotationsets/..."));
+//        try {
+//            long individualId = catalogManager.getIndividualId(individualStr, sessionId);
+//            QueryResult<AnnotationSet> queryResult;
+//            if (update && delete) {
+//                return createErrorResponse("Annotate individual", "Unable to update and delete annotations at the same"
+//                        + " time");
+//            } else if (delete) {
+//                queryResult = catalogManager.deleteIndividualAnnotation(individualId, annotateSetName, sessionId);
+//            } else {
+//                if (update) {
+//                    for (AnnotationSet annotationset : catalogManager.getIndividual(individualId, null, sessionId).first()
+//                            .getAnnotationSets()) {
+//                        if (annotationset.getName().equals(annotateSetName)) {
+//                            variableSetId = annotationset.getVariableSetId();
+//                        }
+//                    }
+//                }
+//                QueryResult<VariableSet> variableSetResult = catalogManager.getVariableSet(variableSetId, null, sessionId);
+//                if(variableSetResult.getResult().isEmpty()) {
+//                    return createErrorResponse("sample annotate", "VariableSet not find.");
+//                }
+//                Map<String, Object> annotations = variableSetResult.getResult().get(0).getVariables().stream()
+//                        .filter(variable -> params.containsKey(variable.getName()))
+//                        .collect(Collectors.toMap(Variable::getName, variable -> params.getFirst(variable.getName())));
+//
+//                if (update) {
+//                    queryResult = catalogManager.updateIndividualAnnotation(individualId, annotateSetName, annotations, sessionId);
+//                } else {
+//                    queryResult = catalogManager.annotateIndividual(individualId, annotateSetName, variableSetId,
+//                            annotations, Collections.emptyMap(), sessionId);
+//                }
+//            }
+//
+//            return createOkResponse(queryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
     }
 
     @GET

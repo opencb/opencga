@@ -37,12 +37,11 @@
             }
 
             .center {
-                margin: auto;
+                margin: 10px;
                 text-align: justify;
-                font-size: 18px;
+                font-size: 16px;
                 color: #797979;
             }
-
 
         </style>
 
@@ -82,7 +81,8 @@
                                     <!-- If there is a submney we create a dropdown menu item -->
                                     <template is="dom-if" if="{{menuItem.submenu}}">
                                         <li class="dropdown">
-                                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{{menuItem.title}} <span class="caret"></span></a>
+                                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+                                               aria-expanded="false">{{menuItem.title}} <span class="caret"></span></a>
                                             <ul class="dropdown-menu">
                                                 <template is="dom-repeat" items="{{menuItem.submenu}}" filter="_isMenuItemVisible" >
                                                     <template is="dom-if" if="{{!item.separator}}">
@@ -179,9 +179,7 @@
 
 
             <!--Breadcrumb-->
-            <!--<template is="dom-if" if="{{_isBreadcrumbVisible}}">-->
-            <ol hidden$="{{!_isBreadcrumbVisible}}" id="breadcrumb" class="breadcrumb" style="margin-bottom: 1px;padding-left: 40px"></ol>
-            <!--</template>-->
+            <ol hidden$="{{!_isBreadcrumbVisible}}" id="breadcrumb" class="breadcrumb" style="margin-bottom: 1px; padding-left: 40px"></ol>
 
 
             <!-- This is where main application is rendered -->
@@ -203,7 +201,8 @@
                     <!--<opencga-projects projects="{{projects}}" on-project="updateProject" on-study="updateStudy"></opencga-projects>-->
                 <!--</div>-->
                 <div class="collapse content" id="projectInfo">
-                    <opencga-project opencga-client="{{opencgaClient}}" project="{{selectedProject}}" on-study="updateStudy"></opencga-project>
+                    <opencga-project opencga-client="{{opencgaClient}}" project="{{selectedProject}}"
+                                     on-study="updateStudy"></opencga-project>
                 </div>
                 <div class="collapse content" id="studyInfo">
                     <opencga-study-browser study="{{study}}" opencga-client="{{opencgaClient}}"></opencga-study-browser>
@@ -282,7 +281,8 @@
                 },
                 _logged: {
                     type: Boolean,
-                    value: false
+                    value: false,
+                    observer: '_checkBreadcrumbVisible'
                 },
                 _isBreadcrumbVisible: {
                     type: Boolean,
@@ -426,7 +426,7 @@
                 let hashFrag = this.tool;
                 if (typeof this.project != "undefined" && this.project != "") {
                     hashFrag += "/" + this.project;
-                    if (typeof this.study != "undefined" && this.study.alias != "") {
+                    if (typeof this.study != "undefined" && typeof this.study.alias != "undefined" && this.study.alias != "") {
                         hashFrag += "/" + this.study.alias;
                     }
                 }
@@ -459,6 +459,10 @@
 //                                }
 //                            }
                         }
+                    } else {
+                        this.project = "";
+                        this.selectedProject = {};
+                        this.study = {};
                     }
 
                     this.tool = hashTool;
@@ -488,10 +492,11 @@
             },
 
             updateStudy: function(e) {
-                this.selectedProject = e.detail.project;
-//                this.study = e.detail.study;
-//                debugger
-                window.location.hash = "dashboard/" + this.selectedProject.alias + "/" + e.detail.study.alias;
+                if (typeof e.detail.project !== "undefined") {
+                    this.selectedProject = e.detail.project;
+                    this.project = this.selectedProject.alias;
+                }
+                window.location.hash = "dashboard/" + this.project + "/" + e.detail.study.alias;
             },
 //            projectStudyChanged: function() {
 ////                console.log("Project study changed");
@@ -505,17 +510,26 @@
                 if (breadcrumbElement != null && this.config !== undefined) {
                     // we empty everything
                     Polymer.dom(breadcrumbElement).innerHTML = "";
-                    // we add the 'Projects' link
-                    let projects = this._createBreadcrumbElement(this.config.breadcrumb.title, false);
-                    Polymer.dom(breadcrumbElement).appendChild(projects);
 
                     // We first check if one study is selected, for this study must be defined and have at least one key
                     if (typeof this.study === "undefined" || Object.keys(this.study).length == 0) {
                         if (typeof this.project !== "undefined" && this.project != null && this.project != "") {
+                            // we add the 'title' link
+                            let title = this._createBreadcrumbElement(this.config.breadcrumb.title, false);
+                            Polymer.dom(breadcrumbElement).appendChild(title);
+
                             let project = this._createBreadcrumbElement(this.project, true); // render only project if exists
                             Polymer.dom(breadcrumbElement).appendChild(project);
+                        } else {
+                            // we add the 'title' link
+                            let title = this._createBreadcrumbElement(this.config.breadcrumb.title, true);
+                            Polymer.dom(breadcrumbElement).appendChild(title);
                         }
                     } else {
+                        // we add the 'title' link
+                        let title = this._createBreadcrumbElement(this.config.breadcrumb.title, false);
+                        Polymer.dom(breadcrumbElement).appendChild(title);
+
                         let project = this._createBreadcrumbElement(this.project, false);
                         Polymer.dom(breadcrumbElement).appendChild(project);
 
@@ -544,8 +558,8 @@
                                 break;
                             case _this.project:
                                 _this.study = {};
-                                debugger
                                 window.location.hash = "dashboard/" + _this.project;
+                                _this.project = "";
 //                                $('#projectInfo').show();
                                 break;
                             case _this.study.alias:
@@ -556,9 +570,10 @@
                     });
                 }
             },
-            _createBreadcrumbElement(name, active) {
+
+            _createBreadcrumbElement: function(name, active) {
                 var li = document.createElement("li");
-                if (active == true) {
+                if (active === true) {
                     li.setAttribute("class", "active");
                     li.textContent = name;
                 } else {
@@ -570,6 +585,7 @@
                 }
                 return li;
             },
+
             _isMenuItemVisible: function(item) {
                 switch(item.visibility) {
                     case 'public':

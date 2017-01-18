@@ -139,13 +139,13 @@ public interface IFileManager extends ResourceManager<Long, File> {
      *
      * @param ids       Comma separated list of ids corresponding to the objects to delete
      * @param studyStr  Study string.
-     * @param options   Deleting options.
+     * @param params   Deleting options.
      * @param sessionId sessionId
      * @return A list with the deleted objects
      * @throws CatalogException CatalogException
      * @throws IOException IOException.
      */
-    List<QueryResult<File>> delete(String ids, @Nullable String studyStr, QueryOptions options, String sessionId)
+    List<QueryResult<File>> delete(String ids, @Nullable String studyStr, ObjectMap params, String sessionId)
             throws CatalogException, IOException;
 
     boolean isExternal(File file) throws CatalogException;
@@ -209,8 +209,7 @@ public interface IFileManager extends ResourceManager<Long, File> {
     @Deprecated
     QueryResult<File> unlink(long fileId, String sessionId) throws CatalogException;
 
-    QueryResult<File> unlink(String fileIdStr, @Nullable String studyStr, QueryOptions options, String sessionId)
-            throws CatalogException, IOException;
+    QueryResult<File> unlink(String fileIdStr, @Nullable String studyStr, String sessionId) throws CatalogException, IOException;
 
     /**
      * Retrieve the file Acls for the given members in the file.
