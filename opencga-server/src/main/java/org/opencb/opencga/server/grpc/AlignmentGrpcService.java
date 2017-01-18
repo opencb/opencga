@@ -21,7 +21,7 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
 
     public AlignmentGrpcService(Configuration configuration, StorageConfiguration storageConfiguration) {
         genericGrpcService = new GenericGrpcService(configuration, storageConfiguration);
-        alignmentStorageManager = new AlignmentStorageManager(genericGrpcService.catalogManager, GenericGrpcService.storageManagerFactory);
+        alignmentStorageManager = new AlignmentStorageManager(genericGrpcService.catalogManager, GenericGrpcService.storageEngineFactory);
     }
 
     @Override

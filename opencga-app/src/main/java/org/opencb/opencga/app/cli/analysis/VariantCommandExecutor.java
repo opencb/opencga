@@ -23,7 +23,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.core.common.UriUtils;
@@ -55,7 +54,7 @@ import static org.opencb.opencga.storage.core.manager.variant.operations.Variant
 public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 
     private AnalysisCliOptionsParser.VariantCommandOptions variantCommandOptions;
-    private VariantStorageEngine variantStorageManager;
+    private VariantStorageEngine variantStorageEngine;
 
     public VariantCommandExecutor(AnalysisCliOptionsParser.VariantCommandOptions variantCommandOptions) {
         super(variantCommandOptions.commonOptions);
@@ -109,11 +108,11 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 
         String storageEngine = dataStore.getStorageEngine();
         if (isEmpty(storageEngine)) {
-            this.variantStorageManager = storageManagerFactory.getVariantStorageManager();
+            this.variantStorageEngine = storageEngineFactory.getVariantStorageEngine();
         } else {
-            this.variantStorageManager = storageManagerFactory.getVariantStorageManager(storageEngine);
+            this.variantStorageEngine = storageEngineFactory.getVariantStorageEngine(storageEngine);
         }
-        return variantStorageManager;
+        return variantStorageEngine;
     }
 
 
@@ -152,7 +151,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         QueryOptions queryOptions = VariantQueryCommandUtils.parseQueryOptions(cliOptions);
 
         org.opencb.opencga.storage.core.manager.variant.VariantStorageManager variantManager =
-                new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageManagerFactory);
+                new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageEngineFactory);
 
         if (cliOptions.count) {
             QueryResult<Long> result = variantManager.count(query, sessionId);
@@ -181,7 +180,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 
 
         org.opencb.opencga.storage.core.manager.variant.VariantStorageManager variantManager =
-                new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageManagerFactory);
+                new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageEngineFactory);
 
         variantManager.importData(UriUtils.createUri(importVariantOptions.input), importVariantOptions.study, sessionId);
 
@@ -218,7 +217,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         queryOptions.putAll(cliOptions.commonOptions.params);
 
         org.opencb.opencga.storage.core.manager.variant.VariantStorageManager variantManager =
-                new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageManagerFactory);
+                new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageEngineFactory);
 
         variantManager.index(cliOptions.study, cliOptions.fileId, cliOptions.outdir, queryOptions, sessionId);
 
@@ -229,7 +228,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         AnalysisCliOptionsParser.StatsVariantCommandOptions cliOptions = variantCommandOptions.statsVariantCommandOptions;
 
         org.opencb.opencga.storage.core.manager.variant.VariantStorageManager variantManager =
-                new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageManagerFactory);
+                new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageEngineFactory);
 
         QueryOptions options = new QueryOptions()
                 .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, cliOptions.fileName)
@@ -259,7 +258,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 
         AnalysisCliOptionsParser.AnnotateVariantCommandOptions cliOptions = variantCommandOptions.annotateVariantCommandOptions;
         org.opencb.opencga.storage.core.manager.variant.VariantStorageManager variantManager =
-                new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageManagerFactory);
+                new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageEngineFactory);
 
         Query query = new Query()
                 .append(VariantDBAdaptor.VariantQueryParams.REGION.key(), cliOptions.filterRegion)

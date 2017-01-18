@@ -37,7 +37,7 @@ public abstract class VariantDBAdaptorPhasedTest extends VariantStorageBaseTest 
     @Before
     public void setUp() throws Exception {
         clearDB(DB_NAME);
-        VariantStorageEngine variantStorageManager = getVariantStorageManager();
+        VariantStorageEngine variantStorageManager = getVariantStorageEngine();
         ObjectMap options = new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
                 .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DP,PS");

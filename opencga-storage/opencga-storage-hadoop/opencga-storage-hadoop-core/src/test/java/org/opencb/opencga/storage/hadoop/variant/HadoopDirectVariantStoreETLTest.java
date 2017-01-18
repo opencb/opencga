@@ -105,7 +105,7 @@ public class HadoopDirectVariantStoreETLTest implements HadoopVariantStorageTest
      * @see org.opencb.opencga.storage.core.variant.VariantStorageTest#getVariantStorageManager()
      */
     @Override
-    public HadoopVariantStorageEngine getVariantStorageManager() throws Exception {
+    public HadoopVariantStorageEngine getVariantStorageEngine() throws Exception {
         HadoopVariantStorageEngine manager = new HadoopVariantStorageEngine();
         return manager;
     }

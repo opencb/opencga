@@ -13,7 +13,7 @@ import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
 public class VariantAnnotationStorageOperation extends StorageOperation {
 
     public VariantAnnotationStorageOperation(CatalogManager catalogManager, StorageConfiguration storageConfiguration) {
-        super(catalogManager, StorageManagerFactory.get(storageConfiguration),
+        super(catalogManager, StorageEngineFactory.get(storageConfiguration),
                 LoggerFactory.getLogger(VariantAnnotationStorageOperation.class));
     }
 
@@ -58,7 +58,7 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
         // Outdir must be empty
         URI outdirUri = UriUtils.createDirectoryUri(outdirStr);
         final Path outdir = Paths.get(outdirUri);
-        outdirMustBeEmpty(outdir);
+        outdirMustBeEmpty(outdir, options);
 
         List<File> newFiles;
         Thread hook = buildHook(outdir);
@@ -145,8 +145,8 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
 
 //            StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyId, dataStore);
 
-            VariantStorageEngine variantStorageManager = storageManagerFactory.getVariantStorageManager(dataStore.getStorageEngine());
-            variantStorageManager.annotate(dataStore.getDbName(), annotationQuery, annotationOptions);
+            VariantStorageEngine variantStorageEngine = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine());
+            variantStorageEngine.annotate(dataStore.getDbName(), annotationQuery, annotationOptions);
 
             if (catalogOutDirId != null) {
                 newFiles = copyResults(Paths.get(outdirUri), catalogOutDirId, sessionId);

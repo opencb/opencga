@@ -35,7 +35,7 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -76,14 +76,14 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
     }
 
     public VariantFileIndexerStorageOperation(CatalogManager catalogManager, StorageConfiguration storageConfiguration) {
-        super(catalogManager, StorageManagerFactory.get(storageConfiguration),
+        super(catalogManager, StorageEngineFactory.get(storageConfiguration),
                 LoggerFactory.getLogger(VariantFileIndexerStorageOperation.class));
         this.fileManager = catalogManager.getFileManager();
     }
 
     public VariantFileIndexerStorageOperation(Configuration configuration, StorageConfiguration storageConfiguration)
             throws CatalogException {
-        super(new CatalogManager(configuration), StorageManagerFactory.get(storageConfiguration),
+        super(new CatalogManager(configuration), StorageEngineFactory.get(storageConfiguration),
                 LoggerFactory.getLogger(VariantFileIndexerStorageOperation.class));
         this.fileManager = catalogManager.getFileManager();
     }
@@ -104,7 +104,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         }
 
         // Outdir must be empty
-        outdirMustBeEmpty(outdir);
+        outdirMustBeEmpty(outdir, options);
 
         writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
 
@@ -176,13 +176,13 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         options.put(VariantStorageEngine.Options.DB_NAME.key(), dataStore.getDbName());
         options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyIdByInputFileId);
 
-        VariantStorageEngine variantStorageManager;
+        VariantStorageEngine variantStorageEngine;
         try {
-            variantStorageManager = storageManagerFactory.getVariantStorageManager(dataStore.getStorageEngine());
+            variantStorageEngine = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine());
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
             throw new StorageEngineException("Unable to create StorageEngine", e);
         }
-        variantStorageManager.getOptions().putAll(options);
+        variantStorageEngine.getOptions().putAll(options);
         boolean calculateStats = options.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key())
                 && (step.equals(Type.LOAD) || step.equals(Type.INDEX));
 
@@ -265,7 +265,7 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         // Save exception to throw at the end
         StorageEngineException exception = null;
         try {
-            storagePipelineResults = variantStorageManager.index(fileUris, outdir.toUri(), false, transform, load);
+            storagePipelineResults = variantStorageEngine.index(fileUris, outdir.toUri(), false, transform, load);
         } catch (StoragePipelineException e) {
             logger.error("Error executing " + step, e);
             storagePipelineResults = e.getResults();
@@ -285,11 +285,12 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
 
         // Only if we are not transforming or if a path has been passed, we will update catalog information
         if (!step.equals(Type.TRANSFORM) || catalogOutDirId != null) {
-            if (catalogOutDirId != null) {
+            boolean saveIntermediateFiles = catalogOutDirId != null;
+            if (saveIntermediateFiles) {
                 // Copy results to catalog
                 copyResults(outdir, catalogOutDirId, sessionId);
             }
-            updateFileInfo(study, filesToIndex, storagePipelineResults, outdir, options, sessionId);
+            updateFileInfo(study, filesToIndex, storagePipelineResults, outdir, saveIntermediateFiles, options, sessionId);
             if (calculateStats) {
                 updateDefaultCohortStatus(sessionId, study, exception);
             }
@@ -385,7 +386,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
     }
 
     private void updateFileInfo(Study study, List<File> filesToIndex, List<StoragePipelineResult> storagePipelineResults, Path outdir,
-                                QueryOptions options, String sessionId) throws CatalogException, IOException {
+                                boolean saveIntermediateFiles, QueryOptions options, String sessionId)
+            throws CatalogException, IOException {
 
         Map<String, StoragePipelineResult> map;
         try {
@@ -455,7 +457,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                     case FileIndex.IndexStatus.INDEXING:
                         if (jobFailed) {
                             // If transform was executed, restore status to Transformed.
-                            if (transformedSuccess) {
+                            if (transformedSuccess && saveIntermediateFiles) {
+//                            if (transformedSuccess) {
                                 indexStatusName = FileIndex.IndexStatus.TRANSFORMED;
                             } else {
                                 indexStatusName = FileIndex.IndexStatus.NONE;
@@ -651,8 +654,8 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                                 filteredFiles.add(file);
                             }
                             break;
-                        case FileIndex.IndexStatus.LOADING:
                         case FileIndex.IndexStatus.TRANSFORMED:
+                        case FileIndex.IndexStatus.LOADING:
                         case FileIndex.IndexStatus.READY:
                         default:
                             logger.warn("We can only transform VCF files not transformed, the status is {}",
@@ -710,7 +713,9 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
                         break;
                     case FileIndex.IndexStatus.TRANSFORMED:
                         // We will attempt to use the avro file registered in catalog
-                        long avroId = file.getIndex().getTransformedFile().getId();
+                        long avroId = file.getIndex() != null && file.getIndex().getTransformedFile() != null
+                                ? file.getIndex().getTransformedFile().getId()
+                                : -1;
                         if (avroId == -1) {
                             logger.error("This code should never be executed. Every vcf file containing the transformed status should have"
                                     + " a registered avro file");

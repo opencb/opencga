@@ -22,7 +22,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.server.grpc.GenericServiceModel.Request;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
 import org.slf4j.Logger;
@@ -39,7 +39,7 @@ public class GenericGrpcService {
 
     protected CatalogManager catalogManager;
     protected VariantStorageManager variantStorageManager;
-    protected static StorageManagerFactory storageManagerFactory;
+    protected static StorageEngineFactory storageEngineFactory;
 
 //    protected AuthManager authManager;
 //    protected Set<String> authorizedHosts;
@@ -68,12 +68,12 @@ public class GenericGrpcService {
         }
 
         // Only one StorageManagerFactory is needed, this acts as a simple Singleton pattern which improves the performance significantly
-        if (storageManagerFactory == null) {
+        if (storageEngineFactory == null) {
             privLogger.debug("Creating the StorageManagerFactory object");
-            storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
+            storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
         }
 
-        variantStorageManager = new VariantStorageManager(catalogManager, storageManagerFactory);
+        variantStorageManager = new VariantStorageManager(catalogManager, storageEngineFactory);
 
 
 //        if (authorizedHosts == null) {

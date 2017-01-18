@@ -25,7 +25,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.util.*;
@@ -54,7 +54,7 @@ public abstract class CatalogVariantDBAdaptor implements VariantDBAdaptor {
         File file = catalogManager.getFile(id, sessionId).getResult().get(0);
         String dbName = file.getAttributes().get("dbName").toString();
         String storageEngine = file.getAttributes().get("storageEngine").toString();
-        return StorageManagerFactory.get().getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
+        return StorageEngineFactory.get().getVariantStorageEngine(storageEngine).getDBAdaptor(dbName);
     }
 
     @Override

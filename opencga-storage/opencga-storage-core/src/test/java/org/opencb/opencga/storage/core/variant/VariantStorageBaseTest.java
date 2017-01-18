@@ -199,7 +199,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     @Before
     public final void _before() throws Exception {
         printActiveThreadsNumber();
-        variantStorageManager = getVariantStorageManager();
+        variantStorageManager = getVariantStorageEngine();
     }
 
 

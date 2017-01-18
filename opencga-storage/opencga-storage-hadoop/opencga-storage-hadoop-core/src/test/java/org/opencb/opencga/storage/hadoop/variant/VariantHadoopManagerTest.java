@@ -69,7 +69,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
 
     @BeforeClass
     public static void beforeClass() throws Exception {
-        HadoopVariantStorageEngine variantStorageManager = externalResource.getVariantStorageManager();
+        HadoopVariantStorageEngine variantStorageManager = externalResource.getVariantStorageEngine();
         externalResource.clearDB(variantStorageManager.getVariantTableName(DB_NAME));
         externalResource.clearDB(variantStorageManager.getArchiveTableName(STUDY_ID));
 
@@ -231,7 +231,7 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
 
     @Test
     public void checkArchiveTable() throws Exception {
-        String tableName = getVariantStorageManager().getArchiveTableName(STUDY_ID);
+        String tableName = getVariantStorageEngine().getArchiveTableName(STUDY_ID);
         System.out.println("Query from archive HBase " + tableName);
         HBaseManager hm = new HBaseManager(configuration.get());
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();

@@ -29,7 +29,7 @@ import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.common.Config;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.slf4j.Logger;
@@ -56,7 +56,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
     private boolean storageHadoop;
     Logger logger = LoggerFactory.getLogger(OpenCGATestExternalResource.class);
     private StorageConfiguration storageConfiguration;
-    private StorageManagerFactory storageManagerFactory;
+    private StorageEngineFactory storageEngineFactory;
 
 
 //    public HadoopVariantStorageTest.HadoopExternalResource hadoopExternalResource;
@@ -114,8 +114,8 @@ public class OpenCGATestExternalResource extends ExternalResource {
         return catalogManagerExternalResource.getCatalogManager();
     }
 
-    public StorageManagerFactory getStorageManagerFactory() {
-        return storageManagerFactory;
+    public StorageEngineFactory getStorageEngineFactory() {
+        return storageEngineFactory;
     }
 
     public StorageConfiguration getStorageConfiguration() {
@@ -159,7 +159,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
         try (OutputStream os = new FileOutputStream(conf.resolve("storage-configuration.yml").toFile())) {
             storageConfiguration.serialize(os);
         }
-        storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
+        storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
 
 //        inputStream = StorageEngine.class.getClassLoader().getResourceAsStream("client-configuration-test.yml");
 //        Files.copy(inputStream, conf.resolve("client-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);

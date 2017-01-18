@@ -19,7 +19,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.alignment.iterators.AlignmentIterator;
 import org.opencb.opencga.storage.core.alignment.local.LocalAlignmentStorageEngine;
@@ -45,8 +45,8 @@ public class AlignmentStorageManager extends StorageManager {
 
     private static final String GLOBAL_STATS = "globalStats";
 
-    public AlignmentStorageManager(CatalogManager catalogManager, StorageManagerFactory storageManagerFactory) {
-        super(catalogManager, storageManagerFactory);
+    public AlignmentStorageManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory) {
+        super(catalogManager, storageEngineFactory);
 
         // TODO: Create this alignmentStorageManager by reflection
         this.alignmentStorageManager = new LocalAlignmentStorageEngine();

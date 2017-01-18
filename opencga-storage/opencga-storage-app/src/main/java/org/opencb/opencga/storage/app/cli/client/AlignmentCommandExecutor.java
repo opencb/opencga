@@ -26,7 +26,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
 import org.opencb.opencga.storage.core.StoragePipeline;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngineOld;
@@ -70,11 +70,11 @@ public class AlignmentCommandExecutor extends CommandExecutor {
         this.storageConfiguration = configuration.getStorageEngine(storageEngine);
 
         // TODO: Start passing catalogManager
-        StorageManagerFactory storageManagerFactory = StorageManagerFactory.get(configuration);
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(configuration);
         if (storageEngine == null || storageEngine.isEmpty()) {
-            this.alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager();
+            this.alignmentStorageManager = storageEngineFactory.getAlignmentStorageEngine();
         } else {
-            this.alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
+            this.alignmentStorageManager = storageEngineFactory.getAlignmentStorageEngine(storageEngine);
         }
     }
 

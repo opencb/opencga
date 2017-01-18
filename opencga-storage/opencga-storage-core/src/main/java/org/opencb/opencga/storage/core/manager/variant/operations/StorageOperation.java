@@ -27,7 +27,7 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
 import org.opencb.opencga.catalog.utils.FileScanner;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.variant.CatalogStudyConfigurationFactory;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -52,17 +52,23 @@ public abstract class StorageOperation {
     public static final String CATALOG_PATH = "catalogPath";
 
     protected final CatalogManager catalogManager;
-    protected final StorageManagerFactory storageManagerFactory;
+    protected final StorageEngineFactory storageEngineFactory;
     protected final Logger logger;
     private ObjectMapper objectMapper = new ObjectMapper();
 
-    public StorageOperation(CatalogManager catalogManager, StorageManagerFactory storageManagerFactory, Logger logger) {
+    public StorageOperation(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory, Logger logger) {
         this.catalogManager = catalogManager;
-        this.storageManagerFactory = storageManagerFactory;
+        this.storageEngineFactory = storageEngineFactory;
         this.logger = logger;
     }
 
-    protected void outdirMustBeEmpty(Path outdir) throws CatalogIOException, StorageEngineException {
+
+    protected void outdirMustBeEmpty(Path outdir, ObjectMap options) throws CatalogIOException, StorageEngineException {
+        if (!isCatalogPathDefined(options)) {
+            // This restriction is only necessary if the output files are going to be moved to Catalog.
+            // If CATALOG_PATH is NOT defined, output does not need to be empty.
+            return;
+        }
         List<URI> uris = catalogManager.getCatalogIOManagerFactory().get(outdir.toUri()).listFiles(outdir.toUri());
         if (!uris.isEmpty()) {
             // Only allow stdout and stderr files
@@ -70,15 +76,19 @@ public abstract class StorageOperation {
                 // Obtain the extension
                 int i = uri.toString().lastIndexOf(".");
                 if (i <= 0) {
-                    throw new StorageEngineException("Unable to execute index. Outdir '" + outdir + "' must be empty!");
+                    throw new StorageEngineException("Unable to execute storage operation. Outdir '" + outdir + "' must be empty!");
                 }
                 String extension = uri.toString().substring(i);
                 // If the extension is not one of the ones created by the daemons, throw the exception.
                 if (!ERR_LOG_EXTENSION.equalsIgnoreCase(extension) && !OUT_LOG_EXTENSION.equalsIgnoreCase(extension)) {
-                    throw new StorageEngineException("Unable to execute index. Outdir '" + outdir + "' must be empty!");
+                    throw new StorageEngineException("Unable to execute storage operation. Outdir '" + outdir + "' must be empty!");
                 }
             }
         }
+    }
+
+    private boolean isCatalogPathDefined(ObjectMap options) {
+        return options != null && StringUtils.isNotEmpty(options.getString(CATALOG_PATH));
     }
 
     protected Long getCatalogOutdirId(long studyId, ObjectMap options, String sessionId) throws CatalogException {
@@ -87,7 +97,7 @@ public abstract class StorageOperation {
 
     protected Long getCatalogOutdirId(String studyStr, ObjectMap options, String sessionId) throws CatalogException {
         Long catalogOutDirId;
-        if (options != null && StringUtils.isNoneEmpty(options.getString(CATALOG_PATH))) {
+        if (isCatalogPathDefined(options)) {
             String catalogOutDirIdStr = options.getString(CATALOG_PATH);
             catalogOutDirId = catalogManager.getFileManager().getId(catalogOutDirIdStr, studyStr, sessionId).getResourceId();
             if (catalogOutDirId <= 0) {
@@ -103,7 +113,7 @@ public abstract class StorageOperation {
             throws IOException, CatalogException, StorageEngineException {
 
         CatalogStudyConfigurationFactory studyConfigurationFactory = new CatalogStudyConfigurationFactory(catalogManager);
-        try (VariantDBAdaptor dbAdaptor = StorageManagerFactory.get().getVariantStorageManager(dataStore.getStorageEngine())
+        try (VariantDBAdaptor dbAdaptor = StorageEngineFactory.get().getVariantStorageEngine(dataStore.getStorageEngine())
                 .getDBAdaptor(dataStore.getDbName());
              StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager()) {
 
@@ -217,7 +227,7 @@ public abstract class StorageOperation {
             }
 
             String dbName = prefix + userId + '_' + alias;
-            dataStore = new DataStore(StorageManagerFactory.get().getDefaultStorageManagerName(), dbName);
+            dataStore = new DataStore(StorageEngineFactory.get().getDefaultStorageManagerName(), dbName);
         }
         return dataStore;
     }
