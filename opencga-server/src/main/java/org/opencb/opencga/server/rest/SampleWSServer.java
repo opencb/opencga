@@ -137,7 +137,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                 @QueryParam("study") String studyStr,
                                 @ApiParam(value = "DEPRECATED: use file instead", hidden = true) @QueryParam("fileId") String fileIdStr,
-                                @ApiParam(value = "file", required = false) @QueryParam("file") String fileStr,
+                                @ApiParam(value = "file", required = true) @QueryParam("file") String fileStr,
                                 @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") Long variableSetId) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
