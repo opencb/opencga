@@ -70,7 +70,7 @@
                             </platforms>
                             <commandLineArguments>
                                 <commandLineArgument>-p 7070</commandLineArgument>
-                                <commandLineArgument>-d ../../../fitnesse</commandLineArgument>
+                                <commandLineArgument>-d fitnesse</commandLineArgument>
                             </commandLineArguments>
                         </program>
                     </programs>
