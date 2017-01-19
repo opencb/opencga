@@ -26,7 +26,9 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.QueryResult;
 
 import java.util.*;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.*;
@@ -309,6 +311,51 @@ public class VariantMatchers {
             @Override
             protected Float featureValueOf(VariantStats actual) {
                 return actual.getMgf();
+            }
+        };
+    }
+
+    public static <T, R> Matcher<T> with(String name, Function<T, R> f, Matcher<? super R> subMatcher) {
+        return new FeatureMatcher<T, R>(subMatcher, "with " + name, name) {
+            @Override
+            protected R featureValueOf(T actual) {
+                return f.apply(actual);
+            }
+        };
+    }
+
+    public static <T, R> Matcher<T> withAny(String name, Function<T, Iterable<? super R>> f, Matcher<? super R> subMatcher) {
+        Matcher<Iterable<? super R>> iterableMatcher = hasItem(subMatcher);
+        return new FeatureMatcher<T, Iterable<? super R>>(iterableMatcher, "with " + name, name) {
+            @Override
+            protected Iterable<? super R> featureValueOf(T actual) {
+                return f.apply(actual);
+            }
+        };
+    }
+
+    public static <T> Matcher<T> matcher(Predicate<T> predicate, final String describe) {
+        return matcher((t, description) -> {
+            if (predicate.test(t)) {
+                return true;
+            } else {
+                description.appendText("is " + t);
+                return false;
+            }
+        }, describe);
+    }
+
+    public static <T> Matcher<T> matcher(BiPredicate<T, Description> predicate, final String describe) {
+        Objects.requireNonNull(predicate);
+        return new TypeSafeDiagnosingMatcher<T>() {
+            @Override
+            protected boolean matchesSafely(T item, Description mismatchDescription) {
+                return predicate.test(item, mismatchDescription);
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText(describe);
             }
         };
     }

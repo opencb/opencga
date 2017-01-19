@@ -16,17 +16,15 @@
 
 package org.opencb.opencga.storage.core.variant.annotation.annotators;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
-import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantAnnotationMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,28 +36,31 @@ import java.util.List;
  */
 public abstract class AbstractCellBaseVariantAnnotator extends VariantAnnotator {
 
-
-    private final JsonFactory factory;
-    private ObjectMapper jsonObjectMapper;
+    public static final String ANNOTATOR_CELLBASE_USE_CACHE = "annotator.cellbase.use_cache";
+    public static final String ANNOTATOR_CELLBASE_INCLUDE = "annotator.cellbase.include";
+    public static final String ANNOTATOR_CELLBASE_EXCLUDE = "annotator.cellbase.exclude";
 
     protected static Logger logger = LoggerFactory.getLogger(AbstractCellBaseVariantAnnotator.class);
     protected final String species;
     protected final String assembly;
     protected final String cellbaseVersion;
+    protected final QueryOptions queryOptions;
 
-    public AbstractCellBaseVariantAnnotator(StorageConfiguration storageConfiguration, ObjectMap options) throws VariantAnnotatorException {
-        super(storageConfiguration, options);
+    public AbstractCellBaseVariantAnnotator(StorageConfiguration storageConfiguration, ObjectMap params) throws VariantAnnotatorException {
+        super(storageConfiguration, params);
 
-        this.factory = new JsonFactory();
-        this.jsonObjectMapper = new ObjectMapper(factory);
-        jsonObjectMapper.addMixIn(VariantAnnotation.class, VariantAnnotationMixin.class);
-        jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        species = toCellBaseSpeciesName(options.getString(VariantAnnotationManager.SPECIES));
-        assembly = options.getString(VariantAnnotationManager.ASSEMBLY);
+        species = toCellBaseSpeciesName(params.getString(VariantAnnotationManager.SPECIES));
+        assembly = params.getString(VariantAnnotationManager.ASSEMBLY);
         cellbaseVersion = storageConfiguration.getCellbase().getVersion();
-        List<String> hosts = storageConfiguration.getCellbase().getHosts();
-        if (hosts.isEmpty()) {
-            throw new VariantAnnotatorException("Missing defaultValue \"CellBase Hosts\"");
+
+        queryOptions = new QueryOptions();
+        if (StringUtils.isNotEmpty(params.getString(ANNOTATOR_CELLBASE_INCLUDE))) {
+            queryOptions.put(QueryOptions.INCLUDE, params.getString(ANNOTATOR_CELLBASE_INCLUDE));
+        } else if (StringUtils.isNotEmpty(params.getString(ANNOTATOR_CELLBASE_EXCLUDE))) {
+            queryOptions.put(QueryOptions.EXCLUDE, params.getString(ANNOTATOR_CELLBASE_EXCLUDE));
+        }
+        if (!params.getBoolean(ANNOTATOR_CELLBASE_USE_CACHE)) {
+            queryOptions.append("useCache", false);
         }
 
         checkNotNull(cellbaseVersion, "cellbase version");

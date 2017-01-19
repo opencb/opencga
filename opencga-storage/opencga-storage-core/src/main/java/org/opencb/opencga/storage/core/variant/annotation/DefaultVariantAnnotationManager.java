@@ -28,6 +28,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.io.DataReader;
@@ -89,10 +90,10 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
     }
 
     @Override
-    public void annotate(Query query, QueryOptions options) throws VariantAnnotatorException, IOException, StorageEngineException {
+    public void annotate(Query query, ObjectMap params) throws VariantAnnotatorException, IOException, StorageEngineException {
 
-        String annotationFileStr = options.getString(LOAD_FILE);
-        boolean doCreate = options.getBoolean(CREATE);
+        String annotationFileStr = params.getString(LOAD_FILE);
+        boolean doCreate = params.getBoolean(CREATE);
         boolean doLoad = StringUtils.isNotEmpty(annotationFileStr);
         if (!doCreate && !doLoad) {
             doCreate = true;
@@ -105,9 +106,9 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
             logger.info("Starting annotation creation");
             logger.info("Query : {} ", query.toJson());
             annotationFile = createAnnotation(
-                    Paths.get(options.getString(OUT_DIR, "/tmp")),
-                    options.getString(FILE_NAME, "annotation_" + TimeUtils.getTime()),
-                    query, options);
+                    Paths.get(params.getString(OUT_DIR, "/tmp")),
+                    params.getString(FILE_NAME, "annotation_" + TimeUtils.getTime()),
+                    query, params);
             logger.info("Finished annotation creation {}ms, generated file {}", System.currentTimeMillis() - start, annotationFile);
         } else {
             try {
@@ -120,7 +121,7 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
         if (doLoad) {
             long start = System.currentTimeMillis();
             logger.info("Starting annotation load");
-            loadAnnotation(annotationFile, options);
+            loadAnnotation(annotationFile, params);
             logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
         }
     }
@@ -131,14 +132,14 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
      * @param outDir   File outdir.
      * @param fileName Generated file name.
      * @param query    Query for those variants to annotate.
-     * @param options  Specific options.
+     * @param params   Specific params.
      * @return URI of the generated file.
      * @throws VariantAnnotatorException IOException thrown
      */
-    public URI createAnnotation(Path outDir, String fileName, Query query, QueryOptions options) throws VariantAnnotatorException {
+    public URI createAnnotation(Path outDir, String fileName, Query query, ObjectMap params) throws VariantAnnotatorException {
 
-        boolean gzip = options == null || options.getBoolean("gzip", true);
-        boolean avro = options == null || options.getBoolean("annotation.file.avro", false);
+        boolean gzip = params == null || params.getBoolean("gzip", true);
+        boolean avro = params == null || params.getBoolean("annotation.file.avro", false);
         Path path = Paths.get(outDir != null
                 ? outDir.toString()
                 : "/tmp", fileName + ".annot" + (avro ? ".avro" : ".json") + (gzip ? ".gz" : ""));
@@ -146,19 +147,19 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
 
         /** Getting iterator from OpenCGA Variant database. **/
         QueryOptions iteratorQueryOptions;
-        if (options == null) {
+        if (params == null) {
             iteratorQueryOptions = new QueryOptions();
         } else {
-            iteratorQueryOptions = new QueryOptions(options);
+            iteratorQueryOptions = new QueryOptions(params);
         }
         List<String> include = Arrays.asList("chromosome", "start", "end", "alternate", "reference");
         iteratorQueryOptions.add("include", include);
 
         int batchSize = 200;
         int numThreads = 8;
-        if (options != null) { //Parse query options
-            batchSize = options.getInt(BATCH_SIZE, batchSize);
-            numThreads = options.getInt(NUM_THREADS, numThreads);
+        if (params != null) { //Parse query options
+            batchSize = params.getInt(BATCH_SIZE, batchSize);
+            numThreads = params.getInt(NUM_THREADS, numThreads);
         }
 
         try {
@@ -201,13 +202,13 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
     }
 
 
-    public void loadAnnotation(URI uri, QueryOptions options) throws IOException, StorageEngineException {
+    public void loadAnnotation(URI uri, ObjectMap params) throws IOException, StorageEngineException {
         Path path = Paths.get(uri);
         String fileName = path.getFileName().toString().toLowerCase();
         if (VariantReaderUtils.isAvro(fileName) || VariantReaderUtils.isJson(fileName)) {
-            loadVariantAnnotation(uri, options);
+            loadVariantAnnotation(uri, params);
         } else {
-            loadCustomAnnotation(uri, options);
+            loadCustomAnnotation(uri, params);
         }
     }
 
@@ -215,14 +216,14 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
      * Loads variant annotations from an specified file into the selected Variant DataBase.
      *
      * @param uri     URI of the annotation file
-     * @param options Specific options.
+     * @param params  Specific params.
      * @throws IOException IOException thrown
      * @throws StorageEngineException if there is a problem creating or running the {@link ParallelTaskRunner}
      */
-    public void loadVariantAnnotation(URI uri, QueryOptions options) throws IOException, StorageEngineException {
+    public void loadVariantAnnotation(URI uri, ObjectMap params) throws IOException, StorageEngineException {
 
-        final int batchSize = options.getInt(DefaultVariantAnnotationManager.BATCH_SIZE, 100);
-        final int numConsumers = options.getInt(DefaultVariantAnnotationManager.NUM_WRITERS, 6);
+        final int batchSize = params.getInt(DefaultVariantAnnotationManager.BATCH_SIZE, 100);
+        final int numConsumers = params.getInt(DefaultVariantAnnotationManager.NUM_WRITERS, 6);
 
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
                 .setNumTasks(numConsumers)
@@ -235,7 +236,8 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
         try {
             ProgressLogger progressLogger = new ProgressLogger("Loaded annotations: ");
             ParallelTaskRunner<VariantAnnotation, Object> ptr = new ParallelTaskRunner<>(reader,
-                    () -> newVariantAnnotationDBWriter(dbAdaptor, options).setProgressLogger(progressLogger), null, config);
+                    () -> newVariantAnnotationDBWriter(dbAdaptor, new QueryOptions(params))
+                            .setProgressLogger(progressLogger), null, config);
             ptr.run();
         } catch (ExecutionException e) {
             throw new StorageEngineException("Error loading variant annotation");
@@ -266,15 +268,15 @@ public class DefaultVariantAnnotationManager implements VariantAnnotationManager
      * Loads custom variant annotations from an specified file into the selected Variant DataBase.
      *
      * @param uri     URI of the annotation file
-     * @param options Specific options.
+     * @param params  Specific params.
      * @throws IOException IOException thrown
      * @throws StorageEngineException if there is a problem creating or running the {@link ParallelTaskRunner}
      */
-    public void loadCustomAnnotation(URI uri, QueryOptions options) throws IOException, StorageEngineException {
+    public void loadCustomAnnotation(URI uri, ObjectMap params) throws IOException, StorageEngineException {
 
-        final int batchSize = options.getInt(BATCH_SIZE, 100);
-        final int numConsumers = options.getInt(NUM_WRITERS, 6);
-        final String key = options.getString(CUSTOM_ANNOTATION_KEY, "default");
+        final int batchSize = params.getInt(BATCH_SIZE, 100);
+        final int numConsumers = params.getInt(NUM_WRITERS, 6);
+        final String key = params.getString(CUSTOM_ANNOTATION_KEY, "default");
 
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
                 .setNumTasks(numConsumers)

@@ -33,7 +33,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
 import org.opencb.opencga.storage.app.cli.OptionsParser;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.benchmark.BenchmarkManager;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
@@ -70,7 +70,7 @@ import java.util.stream.Collectors;
 public class VariantCommandExecutor extends CommandExecutor {
 
     private StorageEngineConfiguration storageConfiguration;
-    private VariantStorageEngine variantStorageManager;
+    private VariantStorageEngine variantStorageEngine;
 
     private CliOptionsParser.VariantCommandOptions variantCommandOptions;
 
@@ -96,11 +96,11 @@ public class VariantCommandExecutor extends CommandExecutor {
         this.storageConfiguration = configuration.getStorageEngine(storageEngine);
 
         // TODO: Start passing catalogManager
-        StorageManagerFactory storageManagerFactory = StorageManagerFactory.get(configuration);
+        StorageEngineFactory storageEngineFactory = StorageEngineFactory.get(configuration);
         if (storageEngine == null || storageEngine.isEmpty()) {
-            this.variantStorageManager = storageManagerFactory.getVariantStorageManager();
+            this.variantStorageEngine = storageEngineFactory.getVariantStorageEngine();
         } else {
-            this.variantStorageManager = storageManagerFactory.getVariantStorageManager(storageEngine);
+            this.variantStorageEngine = storageEngineFactory.getVariantStorageEngine(storageEngine);
         }
     }
 
@@ -234,7 +234,7 @@ public class VariantCommandExecutor extends CommandExecutor {
             doLoad = indexVariantsCommandOptions.load;
         }
 
-        variantStorageManager.index(inputUris, outdirUri, doExtract, doTransform, doLoad);
+        variantStorageEngine.index(inputUris, outdirUri, doExtract, doTransform, doLoad);
 
     }
 
@@ -243,7 +243,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 
         storageConfiguration.getVariant().getOptions().putAll(queryVariantsCommandOptions.commonOptions.params);
 
-        VariantDBAdaptor variantDBAdaptor = variantStorageManager.getDBAdaptor(queryVariantsCommandOptions.dbName);
+        VariantDBAdaptor variantDBAdaptor = variantStorageEngine.getDBAdaptor(queryVariantsCommandOptions.dbName);
         List<String> studyNames = variantDBAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
 
         Query query = VariantQueryCommandUtils.parseQuery(queryVariantsCommandOptions, studyNames);
@@ -268,14 +268,14 @@ public class VariantCommandExecutor extends CommandExecutor {
             }
             VariantWriterFactory.VariantOutputFormat of = VariantWriterFactory
                     .toOutputFormat(queryVariantsCommandOptions.outputFormat, queryVariantsCommandOptions.output);
-            variantStorageManager.exportData(uri, of, queryVariantsCommandOptions.dbName, query, options);
+            variantStorageEngine.exportData(uri, of, queryVariantsCommandOptions.dbName, query, options);
         }
     }
 
     private void queryGrpc() throws Exception {
         CliOptionsParser.QueryGrpCVariantsCommandOptions queryGrpcCommandOptions = variantCommandOptions.queryGrpCVariantsCommandOptions;
 
-        VariantDBAdaptor variantDBAdaptor = variantStorageManager.getDBAdaptor(queryGrpcCommandOptions.dbName);
+        VariantDBAdaptor variantDBAdaptor = variantStorageEngine.getDBAdaptor(queryGrpcCommandOptions.dbName);
         List<String> studyNames = variantDBAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
 
         // We prepare and build the needed objects: query, queryOptions and outputStream to print results
@@ -359,7 +359,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         URI uri = UriUtils.createUri(importVariantsOptions.input);
         ObjectMap options = new ObjectMap();
         options.putAll(variantCommandOptions.commonOptions.params);
-        variantStorageManager.importData(uri, importVariantsOptions.dbName, options);
+        variantStorageEngine.importData(uri, importVariantsOptions.dbName, options);
 
     }
 
@@ -367,7 +367,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         CliOptionsParser.AnnotateVariantsCommandOptions annotateVariantsCommandOptions
                 = variantCommandOptions.annotateVariantsCommandOptions;
 
-        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(annotateVariantsCommandOptions.dbName);
+        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor(annotateVariantsCommandOptions.dbName);
 
         /*
          * Create Annotator
@@ -497,7 +497,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         /**
          * Create DBAdaptor
          */
-        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(options.getString(VariantStorageEngine.Options.DB_NAME.key()));
+        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor(options.getString(VariantStorageEngine.Options.DB_NAME.key()));
 //        dbAdaptor.setConstantSamples(Integer.toString(statsVariantsCommandOptions.fileId));    // TODO jmmut: change to studyId when we
 // remove fileId
         StudyConfiguration studyConfiguration = dbAdaptor.getStudyConfigurationManager()

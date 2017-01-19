@@ -18,12 +18,13 @@
 
 <link rel="import" href="jso-styles.html">
 
-<link rel="import" href="../lib/jsorolla/src/lib/opencga/catalog/opencga-projects.html">
-<link rel="import" href="../lib/jsorolla/src/lib/opencga/catalog/opencga-project.html">
+<!-- Components of interaction -->
 <link rel="import" href="../lib/jsorolla/src/lib/opencga/catalog/opencga-login.html">
 
+<!-- Direct content shown -->
 <link rel="import" href="welcome.html">
 <link rel="import" href="opencga-dashboard.html">
+<link rel="import" href="../lib/jsorolla/src/lib/opencga/catalog/opencga-project.html">
 <link rel="import" href="opencga-study-browser.html">
 
 <dom-module id="opencga-catalog">
@@ -36,13 +37,11 @@
             }
 
             .center {
-                margin: auto;
+                margin: 10px;
                 text-align: justify;
-                max-width: 95%;
-                font-size: 18px;
+                font-size: 16px;
                 color: #797979;
             }
-
 
         </style>
 
@@ -53,7 +52,8 @@
 
                         <!-- Brand and toggle get grouped for better mobile display -->
                         <div class="navbar-header">
-                            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                                    data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
                                 <span class="sr-only">Toggle navigation</span>
                                 <span class="icon-bar"></span>
                                 <span class="icon-bar"></span>
@@ -62,7 +62,8 @@
                             <a href="#home" class="navbar-brand" style="padding-top: 10px" on-click="changeView">
                                 <img src="{{config.logo}}" width="100px">
                             </a>
-                            <a class="navbar-brand" href="#home" on-click="changeView"><b>{{config.title}} {{config.version}}</b></a>
+                            <a class="navbar-brand" href="#home"
+                               on-click="changeView"><b>{{config.title}} {{config.version}}</b></a>
                         </div>
 
                         <!-- Collect the nav links, forms, and other content for toggling -->
@@ -80,7 +81,8 @@
                                     <!-- If there is a submney we create a dropdown menu item -->
                                     <template is="dom-if" if="{{menuItem.submenu}}">
                                         <li class="dropdown">
-                                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{{menuItem.title}} <span class="caret"></span></a>
+                                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true"
+                                               aria-expanded="false">{{menuItem.title}} <span class="caret"></span></a>
                                             <ul class="dropdown-menu">
                                                 <template is="dom-repeat" items="{{menuItem.submenu}}" filter="_isMenuItemVisible" >
                                                     <template is="dom-if" if="{{!item.separator}}">
@@ -102,48 +104,48 @@
                                 <template is="dom-if" if="{{_logged}}">
                                     <li><a href="#" role="button">Logged as '{{userId}}'</a></li>
 
-                                    <!--Project dropdown menu-->
-                                    <li class="dropdown">
-                                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
-                                            Projects <span class="caret"></span>
-                                        </a>
-                                        <ul class="dropdown-menu">
-                                            <template is="dom-repeat" items="{{projects}}" as="proj">
-                                                <li class="dropdown-submenu">
-                                                    <a href="#">{{proj.name}}</a>
-                                                    <ul class="dropdown-menu">
-                                                        <template is="dom-repeat" items="{{proj.studies}}" as="std">
-                                                            <li><a href="#" data-id="{{std.id}}" on-click="setProjectStudy">{{std.alias}}</a></li>
-                                                        </template>
-                                                    </ul>
-                                                </li>
-                                            </template>
-                                        </ul>
-                                    </li>
+                                    <!--&lt;!&ndash;Project dropdown menu&ndash;&gt;-->
+                                    <!--<li class="dropdown">-->
+                                        <!--<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">-->
+                                            <!--Projects <span class="caret"></span>-->
+                                        <!--</a>-->
+                                        <!--<ul class="dropdown-menu">-->
+                                            <!--<template is="dom-repeat" items="{{projects}}" as="proj">-->
+                                                <!--<li class="dropdown-submenu">-->
+                                                    <!--<a href="#">{{proj.name}}</a>-->
+                                                    <!--<ul class="dropdown-menu">-->
+                                                        <!--<template is="dom-repeat" items="{{proj.studies}}" as="std">-->
+                                                            <!--<li><a href="#" data-id="{{std.id}}" on-click="setProjectStudy">{{std.alias}}</a></li>-->
+                                                        <!--</template>-->
+                                                    <!--</ul>-->
+                                                <!--</li>-->
+                                            <!--</template>-->
+                                        <!--</ul>-->
+                                    <!--</li>-->
 
                                 </template>
 
 
-                                <form class="navbar-form navbar-left" role="search">
-                                    <template is="dom-if" if="{{_isMenuItemVisible(config.search.visibility)}}">
-                                        <div class="form-group">
-                                            <input type="text" class="form-control" placeholder="{{config.search.placeholder}}">
-                                            <a href="#">
-                                                <span class="fa fa-search" aria-hidden="true"></span>
-                                            </a>
-                                        </div>
-                                    </template>
-                                    <!--<button type="submit" class="btn btn-default">Submit</button>-->
-                                </form>
+                                <!--<form class="navbar-form navbar-left" role="search">-->
+                                    <!--<template is="dom-if" if="{{_isMenuItemVisible(config.search.visibility)}}">-->
+                                        <!--<div class="form-group">-->
+                                            <!--<input type="text" class="form-control" placeholder="{{config.search.placeholder}}">-->
+                                            <!--<a href="#">-->
+                                                <!--<span class="fa fa-search" aria-hidden="true"></span>-->
+                                            <!--</a>-->
+                                        <!--</div>-->
+                                    <!--</template>-->
+                                    <!--&lt;!&ndash;<button type="submit" class="btn btn-default">Submit</button>&ndash;&gt;-->
+                                <!--</form>-->
 
-                                <!-- Setting modal window -->
-                                <template is="dom-if" if="{{_isMenuItemVisible(config.settings.visibility)}}">
-                                    <li>
-                                        <a href="#" data-toggle="modal" role="button" data-placement="bottom" data-target="#myModal" title="Settings ...">
-                                            <i class="fa fa-cog"></i>
-                                        </a>
-                                    </li>
-                                </template>
+                                <!--&lt;!&ndash; Setting modal window &ndash;&gt;-->
+                                <!--<template is="dom-if" if="{{_isMenuItemVisible(config.settings.visibility)}}">-->
+                                    <!--<li>-->
+                                        <!--<a href="#" data-toggle="modal" role="button" data-placement="bottom" data-target="#myModal" title="Settings ...">-->
+                                            <!--<i class="fa fa-cog"></i>-->
+                                        <!--</a>-->
+                                    <!--</li>-->
+                                <!--</template>-->
 
                                 <!-- About dropdown menu-->
                                 <li class="dropdown">
@@ -177,9 +179,7 @@
 
 
             <!--Breadcrumb-->
-            <!--<template is="dom-if" if="{{_isBreadcrumbVisible}}">-->
-            <ol hidden$="{{!_isBreadcrumbVisible}}" id="breadcrumb" class="breadcrumb" style="margin-bottom: 1px;padding-left: 40px"></ol>
-            <!--</template>-->
+            <ol hidden$="{{!_isBreadcrumbVisible}}" id="breadcrumb" class="breadcrumb" style="margin-bottom: 1px; padding-left: 40px"></ol>
 
 
             <!-- This is where main application is rendered -->
@@ -188,19 +188,21 @@
                     <welcome-web></welcome-web>
                 </div>
                 <div class="collapse content" id="dashboard">
-                    <!--<opencga-dashboard opencga-client="{{opencgaClient}}" projects="{{projects}}" on-project="updateProject" on-study="updateStudy"></opencga-dashboard>-->
-                    <opencga-dashboard projects="{{projects}}" on-project="updateProject" on-study="updateStudy"></opencga-dashboard>
+                    <!--<opencga-dashboard projects="{{projects}}" on-project="updateProject" on-study="updateStudy"></opencga-dashboard>-->
+                    <opencga-dashboard user="{{userId}}" opencga-client="{{opencgaClient}}" on-project="updateProject"
+                                       on-study="updateStudy"></opencga-dashboard>
                 </div>
             </div>
 
 
             <div class="center">
                 <!--BreadCrumb reference-->
-                <div class="collapse content" id="projectList">
-                    <opencga-projects projects="{{projects}}" on-project="updateProject" on-study="updateStudy"></opencga-projects>
-                </div>
+                <!--<div class="collapse content" id="projectList">-->
+                    <!--<opencga-projects projects="{{projects}}" on-project="updateProject" on-study="updateStudy"></opencga-projects>-->
+                <!--</div>-->
                 <div class="collapse content" id="projectInfo">
-                    <opencga-project opencga-client="{{opencgaClient}}" project="{{selectedProject}}" on-study="updateStudy"></opencga-project>
+                    <opencga-project opencga-client="{{opencgaClient}}" project="{{selectedProject}}"
+                                     on-study="updateStudy"></opencga-project>
                 </div>
                 <div class="collapse content" id="studyInfo">
                     <opencga-study-browser study="{{study}}" opencga-client="{{opencgaClient}}"></opencga-study-browser>
@@ -228,28 +230,28 @@
         </div>
 
 
-        <!-- Modal dialog for Settings -->
-        <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                        <h4 class="modal-title" id="myModalLabel">Settings</h4>
-                    </div>
-                    <div class="modal-body">
-                        <p></p>
-                        <div class="input-group">
-                            <span class="input-group-addon" id="opencga-host">OpenCGA</span>
-                            <input type="text" class="form-control" placeholder="Username" aria-describedby="basic-addon1" value="{{opencga.host}}">
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary">OK</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!--&lt;!&ndash; Modal dialog for Settings &ndash;&gt;-->
+        <!--<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">-->
+            <!--<div class="modal-dialog" role="document">-->
+                <!--<div class="modal-content">-->
+                    <!--<div class="modal-header">-->
+                        <!--<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>-->
+                        <!--<h4 class="modal-title" id="myModalLabel">Settings</h4>-->
+                    <!--</div>-->
+                    <!--<div class="modal-body">-->
+                        <!--<p></p>-->
+                        <!--<div class="input-group">-->
+                            <!--<span class="input-group-addon" id="opencga-host">OpenCGA</span>-->
+                            <!--<input type="text" class="form-control" placeholder="Username" aria-describedby="basic-addon1" value="{{opencga.host}}">-->
+                        <!--</div>-->
+                    <!--</div>-->
+                    <!--<div class="modal-footer">-->
+                        <!--<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>-->
+                        <!--<button type="button" class="btn btn-primary">OK</button>-->
+                    <!--</div>-->
+                <!--</div>-->
+            <!--</div>-->
+        <!--</div>-->
 
     </template>
     <script>
@@ -265,12 +267,13 @@
                 },
                 project: {
                     type: String,
-                    value: "",
-                    observer: 'projectStudyChanged'
+                    value: ""
+//                    observer: 'projectStudyChanged'
                 },
                 study: {
                     type: Object,
-                    observer: 'projectStudyChanged'
+                    value: {}
+//                    observer: 'projectStudyChanged'
                 },
                 tool: {
                     type: String,
@@ -278,15 +281,23 @@
                 },
                 _logged: {
                     type: Boolean,
-                    value: false
+                    value: false,
+                    observer: '_checkBreadcrumbVisible'
                 },
                 _isBreadcrumbVisible: {
                     type: Boolean,
                     value: false
+                },
+                prefix: {
+                    type: String
                 }
             },
 
             ready: function() {
+                if (typeof this.prefix === "undefined" || this.prefix == "") {
+                    this.prefix = Utils.randomString(6);
+                }
+
                 // Copy 'application' object from config.js file
                 this.config = application;
                 this.config.opencga = opencga;
@@ -301,35 +312,40 @@
 
                 this.init();
 
-                let sid = Cookies.get(this.config.opencga.cookies.sessionId);
+                let sid = Cookies.get(this.opencgaClientConfig.cookieSessionId);
                 if (typeof sid !== "undefined" && sid != "") {
-                    this.userId = Cookies.get(this.config.opencga.cookies.userId);
+                    this.userId = Cookies.get(this.opencgaClientConfig.cookieUserId);
                     this.sessionId = sid;
                     this.opencgaClient._config.sessionId = sid;
 
                     this._logged = true;
-                    this.getProjects();
+                    window.location.hash = "dashboard";
+//                    this.getProjects();
                 }
             },
             attached: function() {
                 this.renderBreadcrumb();
             },
             init: function() {
+                // Initialize the configuration file and the js client
                 this.opencgaClientConfig = new OpenCGAClientConfig(this.config.opencga.host, this.config.opencga.version, true,
-                        this.config.opencga.cookies.sessionId, this.config.opencga.cookies.userId);
+                        this.config.opencga.cookiePrefix);
                 this.opencgaClient = new OpenCGAClient(this.opencgaClientConfig);
 
-                if (typeof this.config.opencga.user !== "undefined" && this.config.opencga.user != ""
-                        && typeof this.config.opencga.projects !== "undefined" && this.config.opencga.projects.length > 0) {
-                    // This web site is set up for browsing public data
-                    this.project = opencga.projects[0];
-                    this._logged = false;
-                    // get the studies for each project
-                    // ...
-                } else {
-                    this.project = "";
-                    this.study = {};
-                }
+//                this.project = "";
+//                this.study = {};
+//                if (typeof this.config.opencga.user !== "undefined" && this.config.opencga.user != ""
+//                        && typeof this.config.opencga.projects !== "undefined" && this.config.opencga.projects.length > 0) {
+//                    debugger
+//                    this.project = opencga.projects[0];
+//                    this._logged = false;
+//                    // get the studies for each project
+//                    // ...
+//                } else {
+//                    debugger
+//                    this.project = "";
+//                    this.study = {};
+//                }
 
                 // go to home page
                 $('.content').hide();
@@ -348,7 +364,8 @@
 //                $('.content').hide();
 //                $('#home').show();
                 this._logged = true;
-                this.getProjects();
+                window.location.hash = "dashboard";
+//                this.getProjects();
 //                window.location.hash = "home";
             },
             logout: function() {
@@ -373,13 +390,19 @@
                     this.tool = e.target.attributes.href.value;
                 } else {
                     this.tool = "#home";
-                    $("#home").show(); // get the href and use it find which div to show
+                    $(this.tool).show(); // get the href and use it find which div to show
                 }
 
                 this.renderHashFragments();
             },
+            /**
+             * @deprecated. Projects should be retrieved withing the opencga-dashboard.
+             */
             getProjects: function () {
+                // We do this to notify opencga-dashboard that there was a change in the opencgaClient. This way, the information of the
+                // new user will be fetched again.
                 document.querySelector('opencga-dashboard').opencgaClient = this.opencgaClient;
+
                 var _this = this;
                 this.opencgaClient.users().getProjects(this.userId)
                         .then(function (response) {
@@ -394,7 +417,7 @@
 
                             window.location.hash = "dashboard";
                         })
-                        .catch(function (response) {
+                        .catch(function () {
                             _this.logout();
                             window.location.hash = "home";
                         });
@@ -403,7 +426,7 @@
                 let hashFrag = this.tool;
                 if (typeof this.project != "undefined" && this.project != "") {
                     hashFrag += "/" + this.project;
-                    if (typeof this.study != "undefined" && this.study.alias != "") {
+                    if (typeof this.study != "undefined" && typeof this.study.alias != "undefined" && this.study.alias != "") {
                         hashFrag += "/" + this.study.alias;
                     }
                 }
@@ -420,18 +443,26 @@
                         ctx.project = hashProject;
                         window = "#projectInfo";
                         if (arr.length > 2) {
-                            for (let i = 0; i < ctx.projects.length; i++) {
-                                if (ctx.projects[i].name == ctx.project || ctx.projects[i].alias == ctx.project) {
-                                    for (let j = 0; j < ctx.projects[i].studies.length; j++) {
-                                        if (ctx.projects[i].studies[j].name == arr[2] || ctx.projects[i].studies[j].alias == arr[2]) {
-                                            ctx.study = ctx.projects[i].studies[j];
+                            ctx.study = this.study;
+                            window = "#studyInfo";
+//                            for (let i = 0; i < ctx.projects.length; i++) {
+//                                if (ctx.projects[i].name == ctx.project || ctx.projects[i].alias == ctx.project) {
+                                    for (let j = 0; j < this.selectedProject.studies.length; j++) {
+                                        if (this.selectedProject.studies[j].name == arr[2]
+                                            || this.selectedProject.studies[j].alias == arr[2]) {
+//                                            ctx.study = ctx.projects[i].studies[j];
+                                            this.study = this.selectedProject.studies[j];
                                             window = "#studyInfo";
                                             break;
                                         }
                                     }
-                                }
-                            }
+//                                }
+//                            }
                         }
+                    } else {
+                        this.project = "";
+                        this.selectedProject = {};
+                        this.study = {};
                     }
 
                     this.tool = hashTool;
@@ -442,32 +473,36 @@
                     $(window).show();
                 }
             },
-            setProjectStudy: function(e) {
-                e.preventDefault(); // prevents the hash change to "#" and allows to manipulate the hash fragment as needed
-                for (let i = 0; i < this.projects.length; i++) {
-                    if (this.projects[i].name == this.project || this.projects[i].alias == this.project) {
-                        this.selectedProject = this.projects[i];
-                        for (let j = 0; j < this.projects[i].studies.length; j++) {
-                            if (this.projects[i].studies[j].name == e.target.innerHTML || this.projects[i].studies[j].alias == e.target.innerHTML) {
-                                this.study = this.projects[i].studies[j];
-                            }
-                        }
-                    }
-                }
-            },
+//            setProjectStudy: function(e) {
+//                e.preventDefault(); // prevents the hash change to "#" and allows to manipulate the hash fragment as needed
+//                for (let i = 0; i < this.projects.length; i++) {
+//                    if (this.projects[i].name == this.project || this.projects[i].alias == this.project) {
+//                        this.selectedProject = this.projects[i];
+//                        for (let j = 0; j < this.projects[i].studies.length; j++) {
+//                            if (this.projects[i].studies[j].name == e.target.innerHTML || this.projects[i].studies[j].alias == e.target.innerHTML) {
+//                                this.study = this.projects[i].studies[j];
+//                            }
+//                        }
+//                    }
+//                }
+//            },
             updateProject: function(e) {
                 this.selectedProject = e.detail.project;
                 window.location.hash = "dashboard/" + this.selectedProject.alias;
             },
+
             updateStudy: function(e) {
-                this.selectedProject = e.detail.project;
-                window.location.hash = "dashboard/" + this.selectedProject.alias + "/" + e.detail.study.alias;
+                if (typeof e.detail.project !== "undefined") {
+                    this.selectedProject = e.detail.project;
+                    this.project = this.selectedProject.alias;
+                }
+                window.location.hash = "dashboard/" + this.project + "/" + e.detail.study.alias;
             },
-            projectStudyChanged: function() {
-//                console.log("Project study changed");
-//                this.renderHashFragments();
-//                this.renderBreadcrumb();
-            },
+//            projectStudyChanged: function() {
+////                console.log("Project study changed");
+////                this.renderHashFragments();
+////                this.renderBreadcrumb();
+//            },
             renderBreadcrumb: function() {
                 console.log("Render changed");
                 var breadcrumbElement = Polymer.dom(this.root).querySelector("#breadcrumb");
@@ -475,17 +510,26 @@
                 if (breadcrumbElement != null && this.config !== undefined) {
                     // we empty everything
                     Polymer.dom(breadcrumbElement).innerHTML = "";
-                    // we add the 'Projects' link
-                    let projects = this._createBreadcrumbElement(this.config.breadcrumb.title, false);
-                    Polymer.dom(breadcrumbElement).appendChild(projects);
 
                     // We first check if one study is selected, for this study must be defined and have at least one key
                     if (typeof this.study === "undefined" || Object.keys(this.study).length == 0) {
                         if (typeof this.project !== "undefined" && this.project != null && this.project != "") {
+                            // we add the 'title' link
+                            let title = this._createBreadcrumbElement(this.config.breadcrumb.title, false);
+                            Polymer.dom(breadcrumbElement).appendChild(title);
+
                             let project = this._createBreadcrumbElement(this.project, true); // render only project if exists
                             Polymer.dom(breadcrumbElement).appendChild(project);
+                        } else {
+                            // we add the 'title' link
+                            let title = this._createBreadcrumbElement(this.config.breadcrumb.title, true);
+                            Polymer.dom(breadcrumbElement).appendChild(title);
                         }
                     } else {
+                        // we add the 'title' link
+                        let title = this._createBreadcrumbElement(this.config.breadcrumb.title, false);
+                        Polymer.dom(breadcrumbElement).appendChild(title);
+
                         let project = this._createBreadcrumbElement(this.project, false);
                         Polymer.dom(breadcrumbElement).appendChild(project);
 
@@ -514,8 +558,8 @@
                                 break;
                             case _this.project:
                                 _this.study = {};
-                                debugger
                                 window.location.hash = "dashboard/" + _this.project;
+                                _this.project = "";
 //                                $('#projectInfo').show();
                                 break;
                             case _this.study.alias:
@@ -526,9 +570,10 @@
                     });
                 }
             },
-            _createBreadcrumbElement(name, active) {
+
+            _createBreadcrumbElement: function(name, active) {
                 var li = document.createElement("li");
-                if (active == true) {
+                if (active === true) {
                     li.setAttribute("class", "active");
                     li.textContent = name;
                 } else {
@@ -540,6 +585,7 @@
                 }
                 return li;
             },
+
             _isMenuItemVisible: function(item) {
                 switch(item.visibility) {
                     case 'public':

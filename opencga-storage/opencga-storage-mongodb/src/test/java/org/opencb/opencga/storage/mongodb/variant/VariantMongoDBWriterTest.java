@@ -92,7 +92,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         inputFile = VariantStorageBaseTest.getResourceUri("variant-test-file.vcf.gz").getPath();
 
         clearDB(VariantStorageBaseTest.DB_NAME);
-        variantStorageManager = getVariantStorageManager();
+        variantStorageManager = getVariantStorageEngine();
 
         source1 = new VariantSource(getFileName(fileId1), fileId1.toString(), studyId1.toString(), studyName1);
         studyConfiguration = new StudyConfiguration(studyId1, studyName1);

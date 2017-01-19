@@ -25,7 +25,7 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.StorageEngine;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -145,7 +145,7 @@ public abstract class CatalogVariantStorageEngine extends StorageEngine<VariantD
         try {
             QueryResult<File> file = getCatalogManager().getFile(params.getInt("fileId"), params.getString("sessionId"));
             String storageEngine = file.getResult().get(0).getAttributes().get("storageEngine").toString();
-            return StorageManagerFactory.get().getVariantStorageManager(storageEngine);
+            return StorageEngineFactory.get().getVariantStorageEngine(storageEngine);
         } catch (Exception e) {
             throw new StorageEngineException("Can't get StorageEngine", e);
         }

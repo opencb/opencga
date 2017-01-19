@@ -109,9 +109,9 @@ public class AnalysisDemo {
 //                .append(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), cliOptions.excludeGenotype)
 
         QueryResult<Job> result = analysisFileIndexer.index(inputFileId, outDirId, sessionId, options);
-        if (queue) {
-            System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result));
-        }
+//        if (queue) {
+//            System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result));
+//        }
     }
 
 }

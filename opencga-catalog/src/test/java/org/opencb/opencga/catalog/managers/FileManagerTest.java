@@ -406,7 +406,7 @@ public class FileManagerTest extends GenericTest {
         System.out.println("Number of files/folders linked = " + fileQueryResultLinked.getNumResults());
 
         // Now we try to unlink them
-        catalogManager.unlink("myDirectory/data/", Long.toString(studyId), null, sessionIdUser);
+        catalogManager.getFileManager().unlink("myDirectory/data/", Long.toString(studyId), sessionIdUser);
         fileQueryResultLinked = catalogManager.searchFile(studyId, query, sessionIdUser);
         assertEquals(1, fileQueryResultLinked.getNumResults());
 

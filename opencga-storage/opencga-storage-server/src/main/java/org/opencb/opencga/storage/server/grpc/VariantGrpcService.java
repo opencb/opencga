@@ -145,8 +145,8 @@ public class VariantGrpcService extends VariantServiceGrpc.VariantServiceImplBas
 
         // Creating the VariantDBAdaptor to the parsed storageEngine and database
         long start = System.currentTimeMillis();
-        VariantStorageEngine variantStorageManager = genericGrpcService.storageManagerFactory.getVariantStorageManager(storageEngine);
-        VariantDBAdaptor variantDBAdaptor = variantStorageManager.getDBAdaptor(database);
+        VariantStorageEngine variantStorageEngine = genericGrpcService.storageEngineFactory.getVariantStorageEngine(storageEngine);
+        VariantDBAdaptor variantDBAdaptor = variantStorageEngine.getDBAdaptor(database);
 //        logger.debug("Connection to {}:{} in {}ms", storageEngine, database, System.currentTimeMillis() - start);
 
         return variantDBAdaptor;

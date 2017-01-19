@@ -149,7 +149,9 @@ public class FileWSServer extends OpenCGAWSServer {
             for (String folder : folderList) {
                 try {
                     java.nio.file.Path folderPath = Paths.get(folder);
-                    queryResultList.add(catalogManager.createFolder(studyId, folderPath, parents, queryOptions, sessionId));
+                    QueryResult<File> newFolder = catalogManager.createFolder(studyId, folderPath, parents, queryOptions, sessionId);
+                    newFolder.setId("Create folder");
+                    queryResultList.add(newFolder);
                 } catch (CatalogException e) {
                     queryResultList.add(new QueryResult<>("Create folder", -1, 0, 0, "", e.getMessage(), Collections.emptyList()));
                 }
@@ -897,7 +899,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
                     AlignmentDBAdaptor dbAdaptor;
                     try {
-                        AlignmentStorageEngine alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager(storageEngine);
+                        AlignmentStorageEngine alignmentStorageManager = storageEngineFactory.getAlignmentStorageEngine(storageEngine);
                         dbAdaptor = alignmentStorageManager.getDBAdaptor(dbName);
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageEngineException e) {
                         return createErrorResponse(e);
@@ -944,7 +946,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
                     VariantDBAdaptor dbAdaptor;
                     try {
-                        dbAdaptor = storageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
+                        dbAdaptor = storageEngineFactory.getVariantStorageEngine(storageEngine).getDBAdaptor(dbName);
 //                        dbAdaptor = new CatalogVariantDBAdaptor(catalogManager, dbAdaptor);
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageEngineException e) {
                         return createErrorResponse(e);
@@ -1250,7 +1252,7 @@ public class FileWSServer extends OpenCGAWSServer {
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                             @QueryParam("study") String studyStr) throws CatalogException {
         try {
-            QueryResult<File> queryResult = catalogManager.unlink(fileIdStr, studyStr, queryOptions, sessionId);
+            QueryResult<File> queryResult = catalogManager.getFileManager().unlink(fileIdStr, studyStr, sessionId);
             return createOkResponse(new QueryResult<>("unlink", 0, 1, 1, null, null, queryResult.getResult()));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1340,10 +1342,11 @@ public class FileWSServer extends OpenCGAWSServer {
                               @ApiParam(value="Skip trash and delete the files/folders from disk directly (CANNOT BE RECOVERED)",
                                       required = false) @DefaultValue("false") @QueryParam("skipTrash") boolean skipTrash) {
         try {
-            QueryOptions qOptions = new QueryOptions(queryOptions)
+//            QueryOptions qOptions = new QueryOptions(queryOptions)
+            ObjectMap params = new ObjectMap()
                     .append(FileManager.DELETE_EXTERNAL_FILES, deleteExternal)
                     .append(FileManager.SKIP_TRASH, skipTrash);
-            List<QueryResult<File>> result = fileManager.delete(fileIdStr, studyStr, qOptions, sessionId);
+            List<QueryResult<File>> result = fileManager.delete(fileIdStr, studyStr, params, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -31,17 +31,22 @@ import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.FileIndex;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
+import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.manager.variant.AbstractVariantStorageOperationTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.dummy.DummyVariantStoragePipeline;
+import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.*;
@@ -210,6 +215,39 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
     }
 
     @Test
+    public void testIndexWithLoadErrorExternalOutputFolder() throws Exception {
+        QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
+                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+
+        DummyVariantStoragePipeline storageETL = mockVariantStorageETL();
+        List<File> files = Arrays.asList(getFile(0), getFile(1));
+        StorageEngineException loadException = StorageEngineException.unableToExecute("load", 0, "");
+        Mockito.doThrow(loadException).when(storageETL)
+                .load(ArgumentMatchers.argThat(argument -> argument.toString().contains(files.get(1).getName())));
+        List<String> fileIds = files.stream().map(File::getId).map(Object::toString).collect(Collectors.toList());
+        try {
+            String outdir = opencga.createTmpOutdir(studyId, "_INDEX_", sessionId);
+            List<StoragePipelineResult> etlResults = variantManager.index(String.valueOf(studyId), fileIds, outdir, queryOptions, sessionId);
+        } catch (StoragePipelineException exception) {
+            assertEquals(files.size(), exception.getResults().size());
+
+            for (int i = 0; i < files.size(); i++) {
+                assertTrue(exception.getResults().get(i).isTransformExecuted());
+                assertNull(exception.getResults().get(i).getTransformError());
+            }
+
+            assertTrue(exception.getResults().get(0).isLoadExecuted());
+            assertNull(exception.getResults().get(0).getLoadError());
+
+            assertTrue(exception.getResults().get(1).isLoadExecuted());
+            assertSame(loadException, exception.getResults().get(1).getLoadError());
+        }
+
+        mockVariantStorageETL();
+        indexFiles(files, singletonList(files.get(1)), queryOptions, outputId);
+    }
+
+    @Test
     public void testIndexWithLoadError() throws Exception {
         QueryOptions queryOptions = new QueryOptions(VariantStorageEngine.Options.ANNOTATE.key(), false)
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
@@ -225,9 +263,9 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
         } catch (StoragePipelineException exception) {
             assertEquals(files.size(), exception.getResults().size());
 
-            for (int i = files.size(); i > 0; i--) {
-                assertTrue(exception.getResults().get(1).isTransformExecuted());
-                assertNull(exception.getResults().get(1).getTransformError());
+            for (int i = 0; i < files.size(); i++) {
+                assertTrue(exception.getResults().get(i).isTransformExecuted());
+                assertNull(exception.getResults().get(i).getTransformError());
             }
 
             assertTrue(exception.getResults().get(0).isLoadExecuted());
@@ -245,18 +283,25 @@ public class VariantFileIndexerStorageOperationTest extends AbstractVariantStora
 
     @Test
     public void testIndexByStepsExternallyTransformed() throws Exception {
-        QueryOptions queryOptions = new QueryOptions()
+        QueryOptions queryOptions = new QueryOptions(VariantFileIndexerStorageOperation.TRANSFORM, true)
                 // TODO: Should work without isolating transformation?
                 .append(VariantStorageEngine.Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
 
-        File transformFile = transformFile(getFile(0), queryOptions);
-        Query searchQuery = new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), transformFile.getJob().getId())
-                .append(FileDBAdaptor.QueryParams.NAME.key(), "~file.(json|avro)");
-        File transformSourceFile = catalogManager.getAllFiles(studyId, searchQuery, new QueryOptions(), sessionId).first();
+//        File transformFile = transformFile(getFile(0), queryOptions);
+        String outdir = opencga.createTmpOutdir(studyId, "_TRANSFORM_", sessionId);
+        List<StoragePipelineResult> etlResults = variantManager.index(String.valueOf(studyId), getFile(0).getPath(),
+                outdir, queryOptions, sessionId);
 
+        File transformFile = null;
         create(studyId2, catalogManager.getFileUri(getFile(0)));
-        create(studyId2, catalogManager.getFileUri(transformSourceFile));
-        transformFile = create(studyId2, catalogManager.getFileUri(transformFile));
+        for (java.io.File file : Paths.get(UriUtils.createUri(outdir)).toFile().listFiles()) {
+            File f = create(studyId2, file.toURI());
+            if (VariantReaderUtils.isTransformedVariants(file.toString())) {
+                assertNull(transformFile);
+                transformFile = f;
+            }
+        }
+        assertNotNull(transformFile);
         catalogManager.getFileManager().matchUpVariantFiles(singletonList(transformFile), sessionId);
 
         queryOptions = new QueryOptions().append(VariantStorageEngine.Options.ANNOTATE.key(), false)

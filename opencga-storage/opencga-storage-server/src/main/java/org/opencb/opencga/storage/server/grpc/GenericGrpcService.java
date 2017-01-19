@@ -19,7 +19,7 @@ package org.opencb.opencga.storage.server.grpc;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.server.common.AuthManager;
 import org.opencb.opencga.storage.server.common.DefaultAuthManager;
@@ -40,7 +40,7 @@ public class GenericGrpcService {
     protected StorageConfiguration storageConfiguration;
     protected String defaultStorageEngine;
 
-    protected static StorageManagerFactory storageManagerFactory;
+    protected static StorageEngineFactory storageEngineFactory;
 
     protected AuthManager authManager;
     protected Set<String> authorizedHosts;
@@ -61,10 +61,10 @@ public class GenericGrpcService {
         this.defaultStorageEngine = defaultStorageEngine;
 
         // Only one StorageManagerFactory is needed, this acts as a simple Singleton pattern which improves the performance significantly
-        if (storageManagerFactory == null) {
+        if (storageEngineFactory == null) {
             privLogger.debug("Creating the StorageManagerFactory object");
             // TODO: We will need to pass catalog manager once storage starts doing things over catalog
-            storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
+            storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
         }
 
         if (authorizedHosts == null) {

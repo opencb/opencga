@@ -41,7 +41,7 @@ public abstract class VariantStorageManagerTransformTest extends VariantStorageB
         ObjectMap params = new ObjectMap();
         URI outputUri = newOutputUri();
 
-        VariantStorageEngine variantStorageManager = getVariantStorageManager();
+        VariantStorageEngine variantStorageManager = getVariantStorageEngine();
         variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getDatabase()
                 .setHosts(Collections.singletonList("1.1.1.1"));
         StoragePipelineResult etlResult = runETL(variantStorageManager, smallInputUri, outputUri, params, true, true, false);
@@ -65,7 +65,7 @@ public abstract class VariantStorageManagerTransformTest extends VariantStorageB
 
         thrown.expect(StoragePipelineException.class);
         try {
-            runETL(getVariantStorageManager(), corruptedInputUri, outputUri, params, true, true, false);
+            runETL(getVariantStorageEngine(), corruptedInputUri, outputUri, params, true, true, false);
         } catch (StoragePipelineException e) {
             assertEquals(1, e.getResults().size());
 
@@ -90,7 +90,7 @@ public abstract class VariantStorageManagerTransformTest extends VariantStorageB
 
         ObjectMap params = new ObjectMap(VariantStorageEngine.Options.TRANSFORM_FAIL_ON_MALFORMED_VARIANT.key(), false);
         URI outputUri = newOutputUri();
-        StoragePipelineResult result = runETL(getVariantStorageManager(), corruptedInputUri, outputUri, params, true, true, false);
+        StoragePipelineResult result = runETL(getVariantStorageEngine(), corruptedInputUri, outputUri, params, true, true, false);
 
         String[] malformedFiles = Paths.get(outputUri).toFile().list((dir, name) -> name.contains(MALFORMED_FILE));
         assertEquals(1, malformedFiles.length);

@@ -34,33 +34,33 @@ public final class VariantAnnotatorFactory {
 
     public static VariantAnnotator buildVariantAnnotator(StorageConfiguration configuration, String storageEngineId, ObjectMap options)
             throws VariantAnnotatorException {
-        ObjectMap storageOptions = new ObjectMap(configuration.getStorageEngine(storageEngineId).getVariant().getOptions());
+        ObjectMap storageOptions = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
         if (options != null) {
             storageOptions.putAll(options);
         }
-        options = storageOptions;
-        String defaultValue = options.containsKey(VARIANT_ANNOTATOR_CLASSNAME)
+        String defaultValue = storageOptions.containsKey(VARIANT_ANNOTATOR_CLASSNAME)
                 ? AnnotationSource.OTHER.name()
                 : AnnotationSource.CELLBASE_REST.name();
-        AnnotationSource annotationSource = AnnotationSource.valueOf(options.getString(ANNOTATION_SOURCE, defaultValue).toUpperCase());
+        AnnotationSource annotationSource =
+                AnnotationSource.valueOf(storageOptions.getString(ANNOTATION_SOURCE, defaultValue).toUpperCase());
 
         logger.info("Annotating with {}", annotationSource);
 
         switch (annotationSource) {
             case CELLBASE_DB_ADAPTOR:
-                return new CellBaseDirectVariantAnnotator(configuration, options);
+                return new CellBaseDirectVariantAnnotator(configuration, storageOptions);
             case CELLBASE_REST:
-                return new CellBaseRestVariantAnnotator(configuration, options);
+                return new CellBaseRestVariantAnnotator(configuration, storageOptions);
             case VEP:
                 return VepVariantAnnotator.buildVepAnnotator();
             case OTHER:
             default:
-                String className = options.getString(VARIANT_ANNOTATOR_CLASSNAME);
+                String className = storageOptions.getString(VARIANT_ANNOTATOR_CLASSNAME);
                 try {
                     Class<?> clazz = Class.forName(className);
                     if (VariantAnnotator.class.isAssignableFrom(clazz)) {
                         return (VariantAnnotator) clazz.getConstructor(StorageConfiguration.class, ObjectMap.class)
-                                .newInstance(configuration, options);
+                                .newInstance(configuration, storageOptions);
                     } else {
                         throw new VariantAnnotatorException("Invalid VariantAnnotator class: " + className);
                     }

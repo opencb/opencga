@@ -297,7 +297,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         try {
             filterEnumParams(parameters, fileParameters, acceptedEnums);
         } catch (CatalogDBException e) {
-            e.printStackTrace();
+            logger.error("Error updating files", e);
             throw new CatalogDBException("File update: It was impossible updating the files. " + e.getMessage());
         }
 

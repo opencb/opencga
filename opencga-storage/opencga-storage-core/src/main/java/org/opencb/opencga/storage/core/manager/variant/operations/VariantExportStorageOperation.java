@@ -10,7 +10,7 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 public class VariantExportStorageOperation extends StorageOperation {
 
     public VariantExportStorageOperation(CatalogManager catalogManager, StorageConfiguration storageConfiguration) {
-        super(catalogManager, StorageManagerFactory.get(storageConfiguration),
+        super(catalogManager, StorageEngineFactory.get(storageConfiguration),
                 LoggerFactory.getLogger(VariantExportStorageOperation.class));
     }
 
@@ -84,7 +84,7 @@ public class VariantExportStorageOperation extends StorageOperation {
             outputFile = outdirUri.resolve(outputFileName);
             outdir = Paths.get(outdirUri);
 
-            outdirMustBeEmpty(outdir);
+            outdirMustBeEmpty(outdir, options);
 
             hook = buildHook(outdir);
             writeJobStatus(outdir, new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
@@ -112,8 +112,8 @@ public class VariantExportStorageOperation extends StorageOperation {
                 StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyInfo.getStudyId(), dataStore);
             }
 
-            VariantStorageEngine variantStorageManager = storageManagerFactory.getVariantStorageManager(dataStore.getStorageEngine());
-            variantStorageManager.exportData(outputFile, outputFormat, dataStore.getDbName(), query, new QueryOptions(options));
+            VariantStorageEngine variantStorageEngine = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine());
+            variantStorageEngine.exportData(outputFile, outputFormat, dataStore.getDbName(), query, new QueryOptions(options));
 
             if (catalogOutDirId != null && outdir != null) {
                 copyResults(outdir, catalogOutDirId, sessionId).stream().map(File::getUri);
@@ -155,15 +155,15 @@ public class VariantExportStorageOperation extends StorageOperation {
 
         try {
             DataStore dataStore = studyInfo.getDataStores().get(File.Bioformat.VARIANT);
-            VariantStorageEngine variantStorageManager = storageManagerFactory.getVariantStorageManager(dataStore.getStorageEngine());
-            ObjectMap options = variantStorageManager.getOptions()
+            VariantStorageEngine variantStorageEngine = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine());
+            ObjectMap options = variantStorageEngine.getOptions()
                     .append(VariantStorageEngine.Options.DB_NAME.key(), dataStore.getDbName());
             ExportMetadata exportMetadata;
-            try (StudyConfigurationManager scm = variantStorageManager.getStudyConfigurationManager(options)) {
+            try (StudyConfigurationManager scm = variantStorageEngine.getStudyConfigurationManager(options)) {
                 exportMetadata = variantMetadataImporter.importMetaData(inputUri, scm);
             }
 
-            variantStorageManager.importData(inputUri, exportMetadata, dataStore.getDbName(), options);
+            variantStorageEngine.importData(inputUri, exportMetadata, dataStore.getDbName(), options);
 
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
             throw new StorageEngineException("Error importing data", e);

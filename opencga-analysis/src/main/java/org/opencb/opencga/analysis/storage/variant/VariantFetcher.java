@@ -32,7 +32,7 @@ import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
@@ -55,16 +55,16 @@ public class VariantFetcher implements AutoCloseable {
 
     public static final String SAMPLES_METADATA = "samplesMetadata";
     private final CatalogManager catalogManager;
-    private final StorageManagerFactory storageManagerFactory;
+    private final StorageEngineFactory storageEngineFactory;
     private final Logger logger;
 
     public static final int LIMIT_DEFAULT = 1000;
     public static final int LIMIT_MAX = 5000;
     private final ConcurrentHashMap<String, VariantDBAdaptor> variantDBAdaptor = new ConcurrentHashMap<>();
 
-    public VariantFetcher(CatalogManager catalogManager, StorageManagerFactory storageManagerFactory) {
+    public VariantFetcher(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory) {
         this.catalogManager = catalogManager;
-        this.storageManagerFactory = storageManagerFactory;
+        this.storageEngineFactory = storageEngineFactory;
         logger = LoggerFactory.getLogger(VariantFetcher.class);
     }
 
@@ -347,7 +347,7 @@ public class VariantFetcher implements AutoCloseable {
             try {
                 this.variantDBAdaptor.computeIfAbsent(key, (str) -> {
                     try {
-                        return storageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
+                        return storageEngineFactory.getVariantStorageEngine(storageEngine).getDBAdaptor(dbName);
                     } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageEngineException e) {
                         throw new IllegalStateException("Unable to get VariantDBAdaptor", e);
                     }

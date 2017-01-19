@@ -25,7 +25,7 @@ import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 public abstract class AnalysisStorageCommandExecutor extends AnalysisCommandExecutor {
 
     protected CatalogManager catalogManager;
-    protected StorageManagerFactory storageManagerFactory;
+    protected StorageEngineFactory storageEngineFactory;
 
 
     public AnalysisStorageCommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
@@ -52,7 +52,7 @@ public abstract class AnalysisStorageCommandExecutor extends AnalysisCommandExec
         catalogManager = new CatalogManager(configuration);
 
         // Creating StorageManagerFactory
-        storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
+        storageEngineFactory = StorageEngineFactory.get(storageConfiguration);
 
     }
 

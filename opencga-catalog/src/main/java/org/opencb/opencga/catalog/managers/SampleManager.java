@@ -364,6 +364,15 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             authorizationManager.memberHasPermissionsInStudy(studyId, userId);
         }
 
+        // The individuals introduced could be either ids or names. As so, we should use the smart resolutor to do this.
+        // FIXME: Although the search method is multi-study, we can only use the smart resolutor for one study at the moment.
+        if (StringUtils.isNotEmpty(query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()))
+                && studyIds.size() == 1) {
+            MyResourceIds resourceIds = catalogManager.getIndividualManager().getIds(
+                    query.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()), Long.toString(studyIds.get(0)), sessionId);
+            query.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), resourceIds.getResourceIds());
+        }
+
         QueryResult<Sample> queryResult = null;
         for (Long studyId : studyIds) {
             query.append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);

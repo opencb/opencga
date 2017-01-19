@@ -23,11 +23,11 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.StorageEngine;
+import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.metadata.ExportMetadata;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -252,18 +252,18 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
      *
      * @param dbName    database name to annotate.
      * @param query     Query to select variants to annotate
-     * @param options   Other options
+     * @param params    Other params
      * @throws VariantAnnotatorException    If the annotation goes wrong
-     * @throws StorageEngineException      If there is any problem related with the StorageEngine
+     * @throws StorageEngineException       If there is any problem related with the StorageEngine
      * @throws IOException                  If there is any IO problem
      */
-    public void annotate(String dbName, Query query, QueryOptions options)
+    public void annotate(String dbName, Query query, ObjectMap params)
             throws VariantAnnotatorException, StorageEngineException, IOException {
 
-        VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(configuration, getStorageEngineId(), options);
+        VariantAnnotator annotator = VariantAnnotatorFactory.buildVariantAnnotator(configuration, getStorageEngineId(), params);
         try (VariantDBAdaptor dbAdaptor = getDBAdaptor(dbName)) {
             VariantAnnotationManager annotationManager = newVariantAnnotationManager(annotator, dbAdaptor);
-            annotationManager.annotate(query, options);
+            annotationManager.annotate(query, params);
         }
     }
 

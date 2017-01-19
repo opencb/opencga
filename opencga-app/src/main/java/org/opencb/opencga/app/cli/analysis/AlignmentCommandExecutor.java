@@ -24,9 +24,6 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.analysis.options.AlignmentCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.rest.OpenCGAClient;
-import org.opencb.opencga.server.grpc.AlignmentServiceGrpc;
-import org.opencb.opencga.server.grpc.GenericAlignmentServiceModel;
-import org.opencb.opencga.server.grpc.ServiceTypesModel;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 
 import java.io.IOException;
@@ -98,7 +95,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
         String sessionId = cliOptions.commonOptions.sessionId;
 
         org.opencb.opencga.storage.core.manager.AlignmentStorageManager alignmentStorageManager =
-                new org.opencb.opencga.storage.core.manager.AlignmentStorageManager(catalogManager, storageManagerFactory);
+                new org.opencb.opencga.storage.core.manager.AlignmentStorageManager(catalogManager, storageEngineFactory);
         alignmentStorageManager.index(cliOptions.study, cliOptions.fileId, params, sessionId);
     }
 

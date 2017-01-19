@@ -29,7 +29,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -57,7 +57,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Optio
 public class VariantStatsStorageOperation extends StorageOperation {
 
     public VariantStatsStorageOperation(CatalogManager catalogManager, StorageConfiguration storageConfiguration) {
-        super(catalogManager, StorageManagerFactory.get(storageConfiguration), LoggerFactory.getLogger(VariantStatsStorageOperation.class));
+        super(catalogManager, StorageEngineFactory.get(storageConfiguration), LoggerFactory.getLogger(VariantStatsStorageOperation.class));
     }
 
     public void calculateStats(long studyId, List<String> cohorts, String outdirStr,
@@ -74,7 +74,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
         // Outdir must be empty
         URI outdirUri = UriUtils.createDirectoryUri(outdirStr);
         final Path outdir = Paths.get(outdirUri);
-        outdirMustBeEmpty(outdir);
+        outdirMustBeEmpty(outdir, options);
 
         Aggregation aggregation = getAggregation(studyId, options, sessionId);
         List<Long> cohortIds = checkCohorts(studyId, aggregation, cohorts, options, sessionId);
@@ -115,10 +115,10 @@ public class VariantStatsStorageOperation extends StorageOperation {
             updateCohorts(cohortIds, sessionId, Cohort.CohortStatus.CALCULATING, "Start calculating stats");
 
             calculateStatsOptions.put(DefaultVariantStatisticsManager.OUTPUT, outdirUri.resolve(outputFileName));
-            VariantStorageEngine variantStorageManager
-                    = storageManagerFactory.getVariantStorageManager(dataStore.getStorageEngine());
+            VariantStorageEngine variantStorageEngine
+                    = storageEngineFactory.getVariantStorageEngine(dataStore.getStorageEngine());
             List<String> cohortsName = cohortsMap.values().stream().map(Cohort::getName).collect(Collectors.toList());
-            variantStorageManager.calculateStats(studyConfiguration.getStudyName(), cohortsName, dataStore.getDbName(),
+            variantStorageEngine.calculateStats(studyConfiguration.getStudyName(), cohortsName, dataStore.getDbName(),
                     calculateStatsOptions);
 
 //            DefaultVariantStatisticsManager variantStatisticsManager = new DefaultVariantStatisticsManager(dbAdaptor);
@@ -209,6 +209,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
     protected List<Long> checkCohorts(long studyId, Aggregation aggregation, List<String> cohorts, QueryOptions options, String sessionId)
             throws CatalogException, IOException {
         List<Long> cohortIds;
+        String userId = catalogManager.getUserManager().getId(sessionId);
 
         // Check aggregation mapping properties
         String tagMap = options.getString(Options.AGGREGATION_MAPPING_PROPERTIES.key());
@@ -239,7 +240,7 @@ public class VariantStatsStorageOperation extends StorageOperation {
                 if (!cohort.contains(":")) {
                     cohort = studyId + ":" + cohort;
                 }
-                long cohortId = catalogManager.getCohortId(cohort, sessionId);
+                long cohortId = catalogManager.getCohortManager().getId(userId, cohort);
                 if (cohortId < 0) {
                     throw new CatalogException("Cohort '" + cohort + "' not found");
                 }

@@ -35,7 +35,7 @@ import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.StorageManager;
@@ -60,8 +60,8 @@ public class VariantStorageManager extends StorageManager {
     public static final int LIMIT_DEFAULT = 1000;
     public static final int LIMIT_MAX = 5000;
 
-    public VariantStorageManager(CatalogManager catalogManager, StorageManagerFactory storageManagerFactory) {
-        super(catalogManager, storageManagerFactory);
+    public VariantStorageManager(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory) {
+        super(catalogManager, storageEngineFactory);
     }
 
     public void clearCache(String studyId, String type, String sessionId) throws CatalogException {
@@ -338,7 +338,7 @@ public class VariantStorageManager extends StorageManager {
         String storageEngine = dataStore.getStorageEngine();
         String dbName = dataStore.getDbName();
         try {
-            return storageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
+            return storageEngineFactory.getVariantStorageEngine(storageEngine).getDBAdaptor(dbName);
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
             throw new StorageEngineException("Unable to get VariantDBAdaptor", e);
         }

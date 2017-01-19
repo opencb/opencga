@@ -113,9 +113,8 @@ public interface DBAdaptor<T> extends Iterable<T> {
         try {
             return iterator(new Query(), new QueryOptions());
         } catch (CatalogDBException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-        return null;
     }
 
     DBIterator<T> iterator(Query query, QueryOptions options) throws CatalogDBException;
@@ -139,7 +138,7 @@ public interface DBAdaptor<T> extends Iterable<T> {
         try {
             forEach(new Query(), action, new QueryOptions());
         } catch (CatalogDBException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 

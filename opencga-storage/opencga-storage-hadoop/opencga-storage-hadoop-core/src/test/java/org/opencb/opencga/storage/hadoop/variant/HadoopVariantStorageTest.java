@@ -303,7 +303,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
     }
 
     @Override
-    default HadoopVariantStorageEngine getVariantStorageManager() throws Exception {
+    default HadoopVariantStorageEngine getVariantStorageEngine() throws Exception {
         synchronized (manager) {
             if (manager.get() == null) {
                 manager.set(new HadoopVariantStorageEngine());

@@ -21,6 +21,8 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import htsjdk.variant.variantcontext.VariantContext;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
 import org.junit.*;
 import org.opencb.biodata.models.core.Region;
@@ -88,7 +90,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     @Before
     public void before() throws Exception {
 
-        dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+        dbAdaptor = getVariantStorageEngine().getDBAdaptor(DB_NAME);
         if (!fileIndexed) {
             studyConfiguration = newStudyConfiguration();
 //            variantSource = new VariantSource(smallInputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
@@ -99,7 +101,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
                     .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "json")
                     .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
             params.putAll(getOtherParams());
-            StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration, params);
+            StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyConfiguration, params);
             source = variantStorageManager.getVariantReaderUtils().readVariantSource(Paths.get(etlResult.getTransformResult().getPath()).toUri());
             NUM_VARIANTS = getExpectedNumLoadedVariants(source);
             fileIndexed = true;
@@ -489,6 +491,38 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
+    public void testGetAllVariants_ct_gene() {
+        List<Pair<String, String>> list = Arrays.asList(
+                Pair.of("BIRC6", "SO:0001566"), // Should return 0 results
+                Pair.of("BIRC6", "SO:0001583"),
+                Pair.of("DNAJC6", "SO:0001819"),
+                Pair.of("SH2D5", "SO:0001632"),
+                Pair.of("ERMAP,SH2D5", "SO:0001632")
+        );
+
+        for (Pair<String, String> pair : list) {
+            String gene = pair.getLeft();
+            String so = pair.getRight();
+
+            Query query = new Query(ANNOT_CONSEQUENCE_TYPE.key(), so).append(GENE.key(), gene);
+            queryResult = dbAdaptor.get(query, null);
+            System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+
+            Matcher<String> geneMatcher;
+            if (gene.contains(",")) {
+                geneMatcher = anyOf(Arrays.stream(gene.split(",")).map(CoreMatchers::is).collect(Collectors.toList()));
+            } else {
+                geneMatcher = is(gene);
+            }
+            assertThat(queryResult, everyResult(allVariants, hasAnnotation(
+                    withAny("consequence type", VariantAnnotation::getConsequenceTypes, allOf(
+                            with("gene", ConsequenceType::getGeneName, geneMatcher),
+                            withAny("SO", ConsequenceType::getSequenceOntologyTerms,
+                                    with("accession", SequenceOntologyTerm::getAccession, is(so))))))));
+        }
+    }
+
+    @Test
     public void testGetAllVariants_transcriptionAnnotationFlags() {
         //ANNOT_TRANSCRIPTION_FLAGS
         Query query;
@@ -830,8 +864,17 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
-    public void testGetAllVariants_functionalScore_wrong() {
+    public void testGetAllVariants_functionalScore_wrongSource() {
         String value = "cad<=0.5";
+        VariantQueryException expected = VariantQueryException.malformedParam(ANNOT_FUNCTIONAL_SCORE, value);
+        thrown.expect(expected.getClass());
+        thrown.expectMessage(expected.getMessage());
+        dbAdaptor.get(new Query(ANNOT_FUNCTIONAL_SCORE.key(), value), null);
+    }
+
+    @Test
+    public void testGetAllVariants_functionalScore_wrongValue() {
+        String value = "cadd_scaled<=A";
         VariantQueryException expected = VariantQueryException.malformedParam(ANNOT_FUNCTIONAL_SCORE, value);
         thrown.expect(expected.getClass());
         thrown.expectMessage(expected.getMessage());
@@ -844,13 +887,36 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
         long phastCons = countConservationScore("phastCons", allVariants, s -> s > 0.5);
         assertTrue(phastCons > 0);
-        System.out.println("countFunctionalScore(\"phastCons\", allVariants, s -> s > 0.5) = " + phastCons);
 
         checkConservationScore(new Query(ANNOT_CONSERVATION.key(), "phylop>0.5"), s -> s > 0.5, "phylop");
 
         checkConservationScore(new Query(ANNOT_CONSERVATION.key(), "phastCons<0.5"), s1 -> s1 < 0.5, "phastCons");
 
         checkConservationScore(new Query(ANNOT_CONSERVATION.key(), "gerp<=0.5"), s -> s <= 0.5, "gerp");
+        checkScore(new Query(ANNOT_CONSERVATION.key(), "gerp<=0.5,phastCons<0.5"),
+                ((Predicate<List<Score>>) scores -> scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("gerp") && s.getScore() <= 0.5))
+                        .or(scores -> scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("phastCons") && s.getScore() < 0.5)), VariantAnnotation::getConservation);
+
+        checkScore(new Query(ANNOT_CONSERVATION.key(), "gerp<=0.5;phastCons<0.5"),
+                ((Predicate<List<Score>>) scores -> scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("gerp") && s.getScore() <= 0.5))
+                        .and(scores -> scores.stream().anyMatch(s -> s.getSource().equalsIgnoreCase("phastCons") && s.getScore() < 0.5)),
+                VariantAnnotation::getConservation);
+    }
+
+    @Test
+    public void testGetAllVariants_conservationScoreWrongSource() {
+        VariantQueryException e = VariantQueryException.malformedParam(ANNOT_CONSERVATION, "phast<0.5");
+        thrown.expect(e.getClass());
+        thrown.expectMessage(e.getMessage());
+        dbAdaptor.get(new Query(ANNOT_CONSERVATION.key(), "phast<0.5"), null);
+    }
+
+    @Test
+    public void testGetAllVariants_conservationScoreWrongValue() {
+        VariantQueryException e = VariantQueryException.malformedParam(ANNOT_CONSERVATION, "phastCons<a");
+        thrown.expect(e.getClass());
+        thrown.expectMessage(e.getMessage());
+        dbAdaptor.get(new Query(ANNOT_CONSERVATION.key(), "phastCons<a"), null);
     }
 
     public void checkConservationScore(Query query, Predicate<Double> doublePredicate, String source) {
@@ -862,10 +928,14 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     public void checkScore(Query query, Predicate<Double> doublePredicate, String source, Function<VariantAnnotation, List<Score>> mapper) {
+        checkScore(query, scores -> scores.stream().anyMatch(score -> score.getSource().equalsIgnoreCase(source) && doublePredicate.test(score.getScore())), mapper);
+    }
+
+    public void checkScore(Query query, Predicate<List<Score>> scorePredicate, Function<VariantAnnotation, List<Score>> mapper) {
         QueryResult<Variant> result = dbAdaptor.get(query, null);
-        long expected = countScore(source, allVariants, doublePredicate, mapper);
-        long actual = countScore(source, result, doublePredicate, mapper);
-        assertTrue(expected > 0);
+        long expected = countScore(allVariants, scorePredicate, mapper);
+        long actual = countScore(result, scorePredicate, mapper);
+        assertTrue("Expecting a query returning some value.", expected > 0);
         assertEquals(expected, result.getNumResults());
         assertEquals(expected, actual);
     }
@@ -879,16 +949,16 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     private long countScore(String source, QueryResult<Variant> variantQueryResult, Predicate<Double> doublePredicate, Function<VariantAnnotation, List<Score>> mapper) {
+        return countScore(variantQueryResult, scores -> scores.stream().anyMatch(score -> score.getSource().equalsIgnoreCase(source) && doublePredicate.test(score.getScore())), mapper);
+    }
+
+    private long countScore(QueryResult<Variant> variantQueryResult, Predicate<List<Score>> predicate, Function<VariantAnnotation, List<Score>> mapper) {
         long c = 0;
         for (Variant variant : variantQueryResult.getResult()) {
             List<Score> list = mapper.apply(variant.getAnnotation());
             if (list != null) {
-                for (Score score : list) {
-                    if (score.getSource().equalsIgnoreCase(source)) {
-                        if (doublePredicate.test(score.getScore())) {
-                            c++;
-                        }
-                    }
+                if (predicate.test(list)) {
+                    c++;
                 }
             }
         }

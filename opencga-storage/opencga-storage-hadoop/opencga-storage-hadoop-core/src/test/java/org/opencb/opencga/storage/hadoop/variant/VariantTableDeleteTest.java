@@ -47,17 +47,17 @@ public class VariantTableDeleteTest extends VariantStorageBaseTest implements Ha
     @Before
     public void setUp() throws Exception {
         clearDB(DB_NAME);
-        clearDB(getVariantStorageManager().getArchiveTableName(STUDY_ID));
+        clearDB(getVariantStorageEngine().getArchiveTableName(STUDY_ID));
     }
 
     private VariantSource loadFile(String resource, StudyConfiguration studyConfiguration, Map<? extends String, ?> map) throws Exception {
-        return VariantHbaseTestUtils.loadFile(getVariantStorageManager(), DB_NAME, outputUri, resource, studyConfiguration, map);
+        return VariantHbaseTestUtils.loadFile(getVariantStorageEngine(), DB_NAME, outputUri, resource, studyConfiguration, map);
     }
 
     private void removeFile(String file, StudyConfiguration studyConfiguration, Map<? extends String, ?> map) throws Exception {
         Integer fileId = studyConfiguration.getFileIds().get(file);
         System.out.printf("Remove File ID %s for %s", fileId, file);
-        VariantHbaseTestUtils.removeFile(getVariantStorageManager(), DB_NAME, fileId, studyConfiguration, map);
+        VariantHbaseTestUtils.removeFile(getVariantStorageEngine(), DB_NAME, fileId, studyConfiguration, map);
     }
 
     @Test
@@ -84,7 +84,7 @@ public class VariantTableDeleteTest extends VariantStorageBaseTest implements Ha
         assertEquals("0/1", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s1", "GT"));
         assertEquals("0/0", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s2", "GT"));
 
-        VariantHbaseTestUtils.printVariantsFromVariantsTable(getVariantStorageManager().getDBAdaptor(DB_NAME));
+        VariantHbaseTestUtils.printVariantsFromVariantsTable(getVariantStorageEngine().getDBAdaptor(DB_NAME));
         // delete
         removeFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());
         variants = buildVariantsIdx();
@@ -114,11 +114,11 @@ public class VariantTableDeleteTest extends VariantStorageBaseTest implements Ha
         assertTrue(variants.containsKey("1:10013:T:C"));
         assertEquals("0/1", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s1", "GT"));
 
-        VariantHbaseTestUtils.printVariantsFromVariantsTable(getVariantStorageManager().getDBAdaptor(DB_NAME));
+        VariantHbaseTestUtils.printVariantsFromVariantsTable(getVariantStorageEngine().getDBAdaptor(DB_NAME));
         // delete
         removeFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
 
-        VariantHbaseTestUtils.printVariantsFromVariantsTable(getVariantStorageManager().getDBAdaptor(DB_NAME));
+        VariantHbaseTestUtils.printVariantsFromVariantsTable(getVariantStorageEngine().getDBAdaptor(DB_NAME));
 
         System.out.println("studyConfiguration = " + studyConfiguration);
         System.out.println("studyConfiguration.getAttributes().toJson() = " + studyConfiguration.getAttributes().toJson());
@@ -129,7 +129,7 @@ public class VariantTableDeleteTest extends VariantStorageBaseTest implements Ha
     }
 
     private Map<String, Variant> buildVariantsIdx() throws Exception {
-        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor(DB_NAME);
         Map<String, Variant> variants = new HashMap<>();
         System.out.println("Build Variant map");
         for (Variant variant : dbAdaptor) {

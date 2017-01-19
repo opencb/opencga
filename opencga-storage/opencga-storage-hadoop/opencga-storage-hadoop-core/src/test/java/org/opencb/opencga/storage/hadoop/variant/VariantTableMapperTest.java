@@ -45,12 +45,12 @@ public class VariantTableMapperTest extends VariantStorageBaseTest implements Ha
     private VariantHadoopDBAdaptor dbAdaptor;
 
     private VariantSource loadFile(String resource, StudyConfiguration studyConfiguration, Map<? extends String, ?> map) throws Exception {
-        return VariantHbaseTestUtils.loadFile(getVariantStorageManager(), DB_NAME, outputUri, resource, studyConfiguration, map);
+        return VariantHbaseTestUtils.loadFile(getVariantStorageEngine(), DB_NAME, outputUri, resource, studyConfiguration, map);
     }
 
     @Before
     public void setUp() throws Exception {
-        HadoopVariantStorageEngine variantStorageManager = getVariantStorageManager();
+        HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
         clearDB(variantStorageManager.getVariantTableName(DB_NAME));
         clearDB(variantStorageManager.getArchiveTableName(STUDY_ID));
         //Force HBaseConverter to fail if something goes wrong

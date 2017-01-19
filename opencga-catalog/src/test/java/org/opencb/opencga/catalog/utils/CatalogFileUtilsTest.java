@@ -311,7 +311,7 @@ public class CatalogFileUtilsTest {
         // Now we try to unlink it
         thrown.expect(CatalogException.class);
         thrown.expectMessage("Only previously linked files can be unlinked. Please, use delete instead.");
-        catalogManager.unlink(Long.toString(file.getId()), Long.toString(studyId), new QueryOptions(), userSessionId);
+        catalogManager.getFileManager().unlink(Long.toString(file.getId()), Long.toString(studyId), userSessionId);
     }
 
     @Test
