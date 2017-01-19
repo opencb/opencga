@@ -60,7 +60,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create variable set", position = 1, response = VariableSet.class)
     public Response createSet(
-            @ApiParam(value = "DEPRECATED: studyId", required = true) @QueryParam("studyId") String studyIdStr,
+            @ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
             @ApiParam(value="JSON containing the variableSet information", required = true) VariableSetParameters params) {

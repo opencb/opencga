@@ -61,7 +61,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @GET
     @Path("/create")
     @ApiOperation(value = "Create individual", position = 1, response = Individual.class)
-    public Response createIndividual(@ApiParam(value = "(DEPRECATED) Use study instead") @QueryParam("studyId")
+    public Response createIndividual(@ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId")
                                                  String studyIdStr,
                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                             @QueryParam("study") String studyStr,
@@ -122,7 +122,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @Path("/create")
     @ApiOperation(value = "Create individual", position = 1, response = Individual.class)
     public Response createIndividualPOST(
-            @ApiParam(value = "(DEPRECATED) Use study instead") @QueryParam("studyId") String studyIdStr,
+            @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
             @ApiParam(value="JSON containing individual information", required = true) IndividualParameters params){
@@ -199,10 +199,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
-    public Response searchIndividuals(@ApiParam(value = "(DEPRECATED) Use study instead") @QueryParam("studyId") String studyIdStr,
+    public Response searchIndividuals(@ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
                                       @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
                                               + "alias") @QueryParam("study") String studyStr,
-                                      @ApiParam(value = "DEPRECATED: id", required = false) @QueryParam("id") String id,
+                                      @ApiParam(value = "DEPRECATED: id", hidden = true) @QueryParam("id") String id,
                                       @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                                       @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") String fatherId,
                                       @ApiParam(value = "motherId", required = false) @QueryParam("motherId") String motherId,
@@ -247,7 +247,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{individual}/annotate")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Annotate an individual [DEPRECATED]", position = 4)
+    @ApiOperation(value = "Annotate an individual [DEPRECATED]", position = 4, hidden = true)
     public Response annotateSamplePOST(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                        @ApiParam(value = "Annotation set name. Must be unique for the individual", required = true)
                                        @QueryParam("annotateSetName") String annotateSetName,
@@ -283,7 +283,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{individual}/annotate")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Annotate an individual [DEPRECATED]", position = 5)
+    @ApiOperation(value = "Annotate an individual [DEPRECATED]", position = 5, hidden = true)
     public Response annotateSampleGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual")
                                                   String individualStr,
                                       @ApiParam(value = "Annotation set name. Must be unique", required = true)
@@ -569,7 +569,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Group individuals by several fields", position = 10)
     public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
                                 @QueryParam("fields") String fields,
-                            @ApiParam(value = "(DEPRECATED) Use study instead") @QueryParam("studyId") String studyIdStr,
+                            @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                 @QueryParam("study") String studyStr,
                             @ApiParam(value = "name", required = false) @QueryParam("name") String names,
