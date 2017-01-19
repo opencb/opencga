@@ -63,12 +63,12 @@ public class VariantAnalysisWSService extends AnalysisWSService {
     @GET
     @Path("/index")
     @ApiOperation(value = "Index variant files", position = 14, response = QueryResponse.class)
-    public Response index(@ApiParam("(DEPRECATED) Comma separated list of file ids (files or directories)", hidden = true) @QueryParam(value = "fileId")
-                                      String fileIdStrOld,
+    public Response index(@ApiParam(value = "(DEPRECATED) Comma separated list of file ids (files or directories)", hidden = true)
+                              @QueryParam (value = "fileId") String fileIdStrOld,
                           @ApiParam(value = "Comma separated list of file ids (files or directories)", required = true)
                           @QueryParam(value = "file") String fileIdStr,
                           // Study id is not ingested by the analysis index command line. No longer needed.
-                          @ApiParam("(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
+                          @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                               @QueryParam("study") String studyStr,
                           @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr,

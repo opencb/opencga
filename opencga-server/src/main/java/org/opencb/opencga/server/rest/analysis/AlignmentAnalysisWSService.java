@@ -62,7 +62,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @ApiOperation(value = "Index alignment files", position = 14, response = QueryResponse.class)
     public Response index(@ApiParam(value = "Comma separated list of file ids (files or directories)", required = true)
                               @QueryParam(value = "file") String fileIdStr,
-                          @ApiParam("(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
+                          @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                               @QueryParam("study") String studyStr,
                           @ApiParam("Boolean indicating that only the transform step will be run") @DefaultValue("false") @QueryParam("transform") boolean transform,
