@@ -1426,7 +1426,8 @@ public class FileWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
                                        required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
-            return createOkResponse(catalogManager.createFileAcls(fileIdStr, studyStr, members, permissions, sessionId));
+            return createOkResponse(catalogManager.getFileManager().createAcls(fileIdStr, studyStr, members, permissions,
+                    sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1442,7 +1443,8 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value="JSON containing the parameters defined in GET. Mandatory keys: 'members'", required = true)
                     StudyWSServer.CreateAclCommands params) {
         try {
-            return createOkResponse(catalogManager.createFileAcls(fileIdStr, studyStr, params.members, params.permissions, sessionId));
+            return createOkResponse(catalogManager.getFileManager().createAcls(fileIdStr, studyStr, params.members, params.permissions,
+                    sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

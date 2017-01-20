@@ -859,19 +859,6 @@ public class CatalogManager implements AutoCloseable {
         return aclList;
     }
 
-    public List<QueryResult<FileAclEntry>> createFileAcls(String fileIdsStr, @Nullable String studyStr, String members, String permissions,
-                                                          String sessionId) throws CatalogException {
-        AbstractManager.MyResourceIds resource = fileManager.getIds(fileIdsStr, studyStr, sessionId);
-        List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(resource.getResourceIds().size());
-        for (int i = 0; i < resource.getResourceIds().size(); i++) {
-            Long fileId = resource.getResourceIds().get(i);
-            QueryResult<FileAclEntry> fileAcls = authorizationManager.createFileAcls(resource.getUser(), fileId, members, permissions);
-            fileAcls.setId(Long.toString(resource.getResourceIds().get(i)));
-            fileAclList.add(fileAcls);
-        }
-        return fileAclList;
-    }
-
     public List<QueryResult<FileAclEntry>> removeFileAcl(String fileIdsStr, @Nullable String studyStr, String member, String sessionId)
             throws CatalogException {
         AbstractManager.MyResourceIds resource = fileManager.getIds(fileIdsStr, studyStr, sessionId);

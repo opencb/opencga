@@ -1402,44 +1402,60 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         return sampleDBAdaptor.getAcl(sampleId, Arrays.asList(member));
     }
 
-    @Override
-    public QueryResult<FileAclEntry> createFileAcls(String userId, long fileId, List<String> members, List<String> permissions)
-            throws CatalogException {
-        fileDBAdaptor.checkId(fileId);
-
-        // Check if the userId has proper permissions for all the files.
-        checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.SHARE);
-
-        // Check if all the members have a permission already set at the study level.
-        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
-        for (String member : members) {
-            if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
-                throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
-                        + "defined for that member.");
-            }
-        }
-
-        // Check all the members exist in all the possible different studies
-        checkMembers(dbAdaptorFactory, studyId, members);
-
-        // Check if any of the members already have permissions set in the file
-        if (anyMemberHasPermissions(studyId, fileId, members, fileDBAdaptor)) {
-            throw new CatalogException("Cannot create ACL. At least one of the members already have some permissions set for this "
-                    + "particular file. Please, use update instead.");
-        }
-
-        // Set the permissions
-        int timeSpent = 0;
-        List<FileAclEntry> fileAclList = new ArrayList<>(members.size());
-        for (String member : members) {
-            FileAclEntry fileAcl = new FileAclEntry(member, permissions);
-            QueryResult<FileAclEntry> fileAclQueryResult = fileDBAdaptor.createAcl(fileId, fileAcl);
-            timeSpent += fileAclQueryResult.getDbTime();
-            fileAclList.add(fileAclQueryResult.first());
-        }
-
-        return new QueryResult<>("create file acl", timeSpent, fileAclList.size(), fileAclList.size(), "", "", fileAclList);
-    }
+//    @Override
+//    public List<QueryResult<FileAclEntry>> createFileAcls(AbstractManager.MyResourceIds resourceIds, List<String> members,
+//                                                          List<String> permissions) throws CatalogException {
+//        String userId = resourceIds.getUser();
+//        long studyId = resourceIds.getStudyId();
+//
+//        // Check all the members are valid members
+//        checkMembers(dbAdaptorFactory, studyId, members);
+//
+//        // Check that all the members have permissions defined at the study level
+//        for (String member : members) {
+//            if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
+//                throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
+//                        + "defined for that member.");
+//            }
+//        }
+//
+//        List<QueryResult<FileAclEntry>> retQueryResultList = new ArrayList<>(members.size());
+//
+//        for (Long fileId : resourceIds.getResourceIds()) {
+//            try {
+//                // Check if the userId has proper permissions for all the files.
+//                checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.SHARE);
+//
+//                // Check if any of the members already have permissions set in the file
+//                if (anyMemberHasPermissions(studyId, fileId, members, fileDBAdaptor)) {
+//                    throw new CatalogException("Cannot create ACL. At least one of the members already have some permissions set for this"
+//                            + " particular file. Please, use update instead.");
+//                }
+//
+//                // Set the permissions
+//                int timeSpent = 0;
+//                List<FileAclEntry> fileAclList = new ArrayList<>(members.size());
+//                for (String member : members) {
+//                    FileAclEntry fileAcl = new FileAclEntry(member, permissions);
+//                    QueryResult<FileAclEntry> fileAclQueryResult = fileDBAdaptor.createAcl(fileId, fileAcl);
+//                    timeSpent += fileAclQueryResult.getDbTime();
+//                    fileAclList.add(fileAclQueryResult.first());
+//                }
+//
+//                retQueryResultList.add(
+//                        new QueryResult<>("Create file ACL", timeSpent, fileAclList.size(), fileAclList.size(), "", "", fileAclList));
+//
+//            } catch (CatalogException e) {
+//                QueryResult<FileAclEntry> queryResult = new QueryResult<>();
+//                queryResult.setErrorMsg(e.getMessage());
+//                queryResult.setId("Create file ACL");
+//
+//                retQueryResultList.add(queryResult);
+//            }
+//        }
+//
+//        return retQueryResultList;
+//    }
 
     @Override
     public QueryResult<FileAclEntry> getAllFileAcls(String userId, long fileId) throws CatalogException {
@@ -2410,16 +2426,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         return panelDBAdaptor.getAcl(panelId, Arrays.asList(member));
     }
 
-    /**
-     * Checks whether any of the members already have any permission set for the particular document.
-     *
-     * @param studyId study id where the main id belongs to.
-     * @param id id of the document that is going to be checked (file id, sample id, cohort id...)
-     * @param members List of members (users or groups) that will be checked.
-     * @param dbAdaptor Mongo db adaptor to make the mongo query.
-     * @return a boolean indicating whether any of the members already have permissions.
-     */
-    private boolean anyMemberHasPermissions(long studyId, long id, List<String> members, AclDBAdaptor dbAdaptor)
+    @Override
+    public boolean anyMemberHasPermissions(long studyId, long id, List<String> members, AclDBAdaptor dbAdaptor)
             throws CatalogException {
 
         List<String> allMembers = new ArrayList<>(members.size());

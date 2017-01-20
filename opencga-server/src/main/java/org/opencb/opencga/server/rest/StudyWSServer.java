@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.catalog.utils.FileScanner;
@@ -561,7 +562,8 @@ public class StudyWSServer extends OpenCGAWSServer {
             File file;
             URI fileUri;
             try {
-                fileIdNum = catalogManager.getFileId(fileId);
+                AbstractManager.MyResourceId resource = catalogManager.getFileManager().getId(fileId, Long.toString(studyId), sessionId);
+                fileIdNum = resource.getResourceId();
                 QueryResult<File> queryResult = catalogManager.getFile(fileIdNum, sessionId);
                 file = queryResult.getResult().get(0);
                 fileUri = catalogManager.getFileUri(file);

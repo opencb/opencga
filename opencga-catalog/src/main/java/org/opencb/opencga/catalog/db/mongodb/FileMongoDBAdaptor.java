@@ -48,6 +48,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
@@ -129,7 +130,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         }
         Bson bson;
         try {
-            bson = parseQuery(query);
+            bson = parseQuery(query, false);
         } catch (NumberFormatException e) {
             throw new CatalogDBException("Get file: Could not parse all the arguments from query - " + e.getMessage(), e.getCause());
         }
@@ -240,13 +241,13 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
     @Override
     public List<Long> getStudyIdsByFileIds(String fileIds) throws CatalogDBException {
-        Bson query = parseQuery(new Query(QueryParams.ID.key(), fileIds));
+        Bson query = parseQuery(new Query(QueryParams.ID.key(), fileIds), false);
         return fileCollection.distinct(PRIVATE_STUDY_ID, query, Long.class).getResult();
     }
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query);
+        Bson bson = parseQuery(query, false);
         QueryOptions qOptions;
         if (options != null) {
             qOptions = options;
@@ -280,7 +281,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         }
 
         // We perform the update.
-        Bson queryBson = parseQuery(query);
+        Bson queryBson = parseQuery(query, false);
         Map<String, Object> fileParameters = new HashMap<>();
 
         String[] acceptedParams = {
@@ -599,13 +600,13 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
-        Bson bson = parseQuery(query);
+        Bson bson = parseQuery(query, false);
         return fileCollection.count(bson);
     }
 
     @Override
     public QueryResult distinct(Query query, String field) throws CatalogDBException {
-        Bson bsonDocument = parseQuery(query);
+        Bson bsonDocument = parseQuery(query, false);
         return fileCollection.distinct(field, bsonDocument);
     }
 
@@ -616,33 +617,33 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
     @Override
     public DBIterator<File> iterator(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query);
+        Bson bson = parseQuery(query, false);
         MongoCursor<Document> iterator = fileCollection.nativeQuery().find(bson, options).iterator();
         return new MongoDBIterator<>(iterator, fileConverter);
     }
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query);
+        Bson bson = parseQuery(query, false);
         MongoCursor<Document> iterator = fileCollection.nativeQuery().find(bson, options).iterator();
         return new MongoDBIterator<>(iterator);
     }
 
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, false);
         return rank(fileCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, false);
         return groupBy(fileCollection, bsonQuery, field, "name", options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, false);
         return groupBy(fileCollection, bsonQuery, fields, "name", options);
     }
 
@@ -658,8 +659,12 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
     // Auxiliar methods
 
-    private Bson parseQuery(Query query) throws CatalogDBException {
+    private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
+
+        if (isolated) {
+            andBsonList.add(new Document("$isolated", 1));
+        }
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
@@ -885,7 +890,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
     public QueryResult<Long> extractSampleFromFiles(Query query, List<Long> sampleIds) throws CatalogDBException {
         long startTime = startQuery();
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, false);
         Bson update = new Document("$pull", new Document(QueryParams.SAMPLE_IDS.key(), new Document("$in", sampleIds)));
         QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
         QueryResult<UpdateResult> updateQueryResult = fileCollection.update(bsonQuery, update, multi);
@@ -895,8 +900,46 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     @Override
     public QueryResult<FileAclEntry> createAcl(long id, FileAclEntry acl) throws CatalogDBException {
         long startTime = startQuery();
-//        CatalogMongoDBUtils.createAcl(id, acl, fileCollection, "FileAcl");
         return endQuery("create file Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
+    }
+
+    // This createAcl method is to create multiple acls at once for the files matching the query
+    @Override
+    public void createAcl(Query query, List<FileAclEntry> aclEntryList) throws CatalogDBException {
+        Bson queryDocument = parseQuery(query, true);
+
+        // First we take out all possible acls that could be present for any of the members.
+        List<String> memberList = aclEntryList.stream().map(fileAclEntry -> fileAclEntry.getMember()).collect(Collectors.toList());
+
+        Document update = new Document("$pull", new Document(QueryParams.ACL.key(),
+                new Document(AclMongoDBAdaptor.QueryParams.MEMBER.key(), new Document("$in", memberList))));
+        logger.debug("Create Acl: Query {}, Pull {}",
+                queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        QueryResult<UpdateResult> pullUpdate = fileCollection.update(queryDocument, update, new QueryOptions("multi", true));
+
+        logger.debug("{} out of {} file acls removed", pullUpdate.first().getModifiedCount(), pullUpdate.first().getMatchedCount());
+
+        // Now we push all the new acls
+        List<Document> aclDocumentList = new ArrayList<>(aclEntryList.size());
+        for (FileAclEntry fileAclEntry : aclEntryList) {
+            aclDocumentList.add(MongoDBUtils.getMongoDBDocument(fileAclEntry, "ACL"));
+        }
+
+        update = new Document("$push", new Document(QueryParams.ACL.key(), new Document("$each", aclDocumentList)));
+
+        logger.debug("Create Acl: Query {}, Push {}",
+                queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        QueryResult<UpdateResult> pushUpdate = fileCollection.update(queryDocument, update, new QueryOptions("multi", true));
+
+        logger.debug("{} out of {} file acls created", pushUpdate.first().getModifiedCount(), pushUpdate.first().getMatchedCount());
+
+        if (pushUpdate.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("Create Acl: An error occurred when trying to create file acls");
+        }
     }
 
     @Override

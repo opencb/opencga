@@ -26,7 +26,6 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.permissions.DatasetAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 
 import javax.annotation.Nullable;
@@ -211,26 +210,6 @@ public interface IFileManager extends ResourceManager<Long, File> {
 
     QueryResult<File> unlink(String fileIdStr, @Nullable String studyStr, String sessionId) throws CatalogException, IOException;
 
-    /**
-     * Retrieve the file Acls for the given members in the file.
-     *
-     * @param fileStr File id of which the acls will be obtained.
-     * @param members userIds/groupIds for which the acls will be retrieved. When this is null, it will obtain all the acls.
-     * @param sessionId Session of the user that wants to retrieve the acls.
-     * @return A queryResult containing the file acls.
-     * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
-     * the file id is not valid or the members given do not exist.
-     */
-    QueryResult<FileAclEntry> getAcls(String fileStr, List<String> members, String sessionId) throws CatalogException;
-    default List<QueryResult<FileAclEntry>> getAcls(List<String> fileIds, List<String> members, String sessionId)
-            throws CatalogException {
-        List<QueryResult<FileAclEntry>> result = new ArrayList<>(fileIds.size());
-        for (String fileStr : fileIds) {
-            result.add(getAcls(fileStr, members, sessionId));
-        }
-        return result;
-    }
-
     @Deprecated
     QueryResult move(long fileId, String newPath, QueryOptions options, String sessionId)
             throws CatalogException;
@@ -314,26 +293,6 @@ public interface IFileManager extends ResourceManager<Long, File> {
         return datasetIds;
     }
 
-    /**
-     * Retrieve the dataset Acls for the given members in the dataset.
-     *
-     * @param datasetStr Dataset id of which the acls will be obtained.
-     * @param members userIds/groupIds for which the acls will be retrieved. When this is null, it will obtain all the acls.
-     * @param sessionId Session of the user that wants to retrieve the acls.
-     * @return A queryResult containing the file acls.
-     * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
-     * the dataset id is not valid or the members given do not exist.
-     */
-    QueryResult<DatasetAclEntry> getDatasetAcls(String datasetStr, List<String> members, String sessionId) throws CatalogException;
-    default List<QueryResult<DatasetAclEntry>> getDatasetAcls(List<String> datasetIds, List<String> members, String sessionId)
-            throws CatalogException {
-        List<QueryResult<DatasetAclEntry>> result = new ArrayList<>(datasetIds.size());
-        for (String datasetId : datasetIds) {
-            result.add(getDatasetAcls(datasetId, members, sessionId));
-        }
-        return result;
-    }
-
     DataInputStream grep(long fileId, String pattern, QueryOptions options, String sessionId) throws CatalogException;
 
     DataInputStream download(long fileId, int offset, int limit, QueryOptions options, String sessionId) throws CatalogException;
@@ -360,5 +319,9 @@ public interface IFileManager extends ResourceManager<Long, File> {
     void setModificationDate(long fileId, String date, String sessionId) throws CatalogException;
 
     void setUri(long fileId, String uri, String sessionId) throws CatalogException;
+
+    // -------------- ACLs -------------------
+    List<QueryResult<FileAclEntry>> createAcls(String fileIdsStr, @Nullable String studyStr, String members, String permissions,
+                                               String sessionId) throws CatalogException;
 
 }

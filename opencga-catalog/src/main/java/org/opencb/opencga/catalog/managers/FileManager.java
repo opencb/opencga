@@ -64,6 +64,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.opencb.opencga.catalog.utils.CatalogMemberValidator.checkMembers;
 import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_STATS;
 
 /**
@@ -198,23 +199,6 @@ public class FileManager extends AbstractManager implements IFileManager {
     public Long getStudyId(long fileId) throws CatalogException {
         return fileDBAdaptor.getStudyIdByFileId(fileId);
     }
-
-//    @Deprecated
-//    @Override
-//    public Long getId(String fileStr, long studyId, String sessionId) throws CatalogException {
-//        String userId = catalogManager.getUserManager().getId(sessionId);
-//
-//        logger.info("Looking for file {}", fileStr);
-//        if (StringUtils.isNumeric(fileStr)) {
-//            return Long.parseLong(fileStr);
-//        }
-//
-//        // Resolve the studyIds and filter the fileStr
-//        ObjectMap parsedSampleStr = parseFeatureId(userId, fileStr);
-//        String fileName = parsedSampleStr.getString("featureName");
-//
-//        return smartResolutor(fileName, studyId);
-//    }
 
     @Override
     public MyResourceId getId(String fileStr, @Nullable String studyStr, String sessionId) throws CatalogException {
@@ -499,8 +483,9 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     @Override
     public void setStatus(String id, String status, String message, String sessionId) throws CatalogException {
-        String userId = userManager.getId(sessionId);
-        long fileId = getId(userId, id);
+        MyResourceId resource = getId(id, null, sessionId);
+        String userId = resource.getUser();
+        long fileId = resource.getResourceId();
 
         authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.UPDATE);
 
@@ -2279,106 +2264,6 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<DatasetAclEntry> getDatasetAcls(String datasetStr, List<String> members, String sessionId) throws CatalogException {
-        long startTime = System.currentTimeMillis();
-        String userId = userManager.getId(sessionId);
-        Long datasetId = getDatasetId(userId, datasetStr);
-        authorizationManager.checkDatasetPermission(datasetId, userId, DatasetAclEntry.DatasetPermissions.SHARE);
-        Long studyId = getStudyIdByDataset(datasetId);
-
-        // Split and obtain the set of members (users + groups), users and groups
-        Set<String> memberSet = new HashSet<>();
-        Set<String> userIds = new HashSet<>();
-        Set<String> groupIds = new HashSet<>();
-
-        for (String member: members) {
-            memberSet.add(member);
-            if (!member.startsWith("@")) {
-                userIds.add(member);
-            } else {
-                groupIds.add(member);
-            }
-        }
-
-
-        // Obtain the groups the user might belong to in order to be able to get the permissions properly
-        // (the permissions might be given to the group instead of the user)
-        // Map of group -> users
-        Map<String, List<String>> groupUsers = new HashMap<>();
-
-        if (userIds.size() > 0) {
-            List<String> tmpUserIds = userIds.stream().collect(Collectors.toList());
-            QueryResult<Group> groups = studyDBAdaptor.getGroup(studyId, null, tmpUserIds);
-            // We add the groups where the users might belong to to the memberSet
-            if (groups.getNumResults() > 0) {
-                for (Group group : groups.getResult()) {
-                    for (String tmpUserId : group.getUserIds()) {
-                        if (userIds.contains(tmpUserId)) {
-                            memberSet.add(group.getName());
-
-                            if (!groupUsers.containsKey(group.getName())) {
-                                groupUsers.put(group.getName(), new ArrayList<>());
-                            }
-                            groupUsers.get(group.getName()).add(tmpUserId);
-                        }
-                    }
-                }
-            }
-        }
-        List<String> memberList = memberSet.stream().collect(Collectors.toList());
-        QueryResult<DatasetAclEntry> datasetAclQueryResult = datasetDBAdaptor.getAcl(datasetId, memberList);
-
-        if (members.size() == 0) {
-            return datasetAclQueryResult;
-        }
-
-        // For the cases where the permissions were given at group level, we obtain the user and return it as if they were given to the user
-        // instead of the group.
-        // We loop over the results and recreate one sampleAcl per member
-        Map<String, DatasetAclEntry> datasetAclHashMap = new HashMap<>();
-        for (DatasetAclEntry datasetAcl : datasetAclQueryResult.getResult()) {
-            if (memberList.contains(datasetAcl.getMember())) {
-                if (datasetAcl.getMember().startsWith("@")) {
-                    // Check if the user was demanding the group directly or a user belonging to the group
-                    if (groupIds.contains(datasetAcl.getMember())) {
-                        datasetAclHashMap.put(datasetAcl.getMember(),
-                                new DatasetAclEntry(datasetAcl.getMember(), datasetAcl.getPermissions()));
-                    } else {
-                        // Obtain the user(s) belonging to that group whose permissions wanted the userId
-                        if (groupUsers.containsKey(datasetAcl.getMember())) {
-                            for (String tmpUserId : groupUsers.get(datasetAcl.getMember())) {
-                                if (userIds.contains(tmpUserId)) {
-                                    datasetAclHashMap.put(tmpUserId, new DatasetAclEntry(tmpUserId, datasetAcl.getPermissions()));
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    // Add the user
-                    datasetAclHashMap.put(datasetAcl.getMember(), new DatasetAclEntry(datasetAcl.getMember(), datasetAcl.getPermissions()));
-                }
-            }
-        }
-
-        // We recreate the output that is in DatasetAclHashMap but in the same order the members were queried.
-        List<DatasetAclEntry> datasetAclList = new ArrayList<>(datasetAclHashMap.size());
-        for (String member : members) {
-            if (datasetAclHashMap.containsKey(member)) {
-                datasetAclList.add(datasetAclHashMap.get(member));
-            }
-        }
-
-        // Update queryResult info
-        datasetAclQueryResult.setId(datasetStr);
-        datasetAclQueryResult.setNumResults(datasetAclList.size());
-        datasetAclQueryResult.setNumTotalResults(datasetAclList.size());
-        datasetAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
-        datasetAclQueryResult.setResult(datasetAclList);
-
-        return datasetAclQueryResult;
-    }
-
-    @Override
     public DataInputStream grep(long fileId, String pattern, QueryOptions options, String sessionId) throws CatalogException {
         String userId = userManager.getId(sessionId);
         authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.VIEW);
@@ -2642,102 +2527,78 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<FileAclEntry> getAcls(String fileStr, List<String> members, String sessionId) throws CatalogException {
-        long startTime = System.currentTimeMillis();
-        String userId = userManager.getId(sessionId);
-        Long fileId = getId(userId, fileStr);
-        authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.SHARE);
-        Long studyId = getStudyId(fileId);
+    public List<QueryResult<FileAclEntry>> createAcls(String fileIdsStr, @Nullable String studyStr, String membersStr,
+                                                      String permissionsStr, String sessionId) throws CatalogException {
 
-        // Split and obtain the set of members (users + groups), users and groups
-        Set<String> memberSet = new HashSet<>();
-        Set<String> userIds = new HashSet<>();
-        Set<String> groupIds = new HashSet<>();
+        AbstractManager.MyResourceIds resourceIds = getIds(fileIdsStr, studyStr, sessionId);
+        List<String> members = Arrays.asList(StringUtils.split(membersStr, ","));
+        List<String> permissions = Arrays.asList(StringUtils.split(permissionsStr, ","));
+        //        return authorizationManager.createFileAcls(resource, Arrays.asList(StringUtils.split(members)),
+//                Arrays.asList(StringUtils.split(permissions)));
 
-        for (String member: members) {
-            memberSet.add(member);
-            if (!member.startsWith("@")) {
-                userIds.add(member);
-            } else {
-                groupIds.add(member);
-            }
-        }
+        String userId = resourceIds.getUser();
+        long studyId = resourceIds.getStudyId();
 
+        // Check all the members are valid members
+        checkMembers(catalogDBAdaptorFactory, studyId, members);
 
-        // Obtain the groups the user might belong to in order to be able to get the permissions properly
-        // (the permissions might be given to the group instead of the user)
-        // Map of group -> users
-        Map<String, List<String>> groupUsers = new HashMap<>();
-
-        if (userIds.size() > 0) {
-            List<String> tmpUserIds = userIds.stream().collect(Collectors.toList());
-            QueryResult<Group> groups = studyDBAdaptor.getGroup(studyId, null, tmpUserIds);
-            // We add the groups where the users might belong to to the memberSet
-            if (groups.getNumResults() > 0) {
-                for (Group group : groups.getResult()) {
-                    for (String tmpUserId : group.getUserIds()) {
-                        if (userIds.contains(tmpUserId)) {
-                            memberSet.add(group.getName());
-
-                            if (!groupUsers.containsKey(group.getName())) {
-                                groupUsers.put(group.getName(), new ArrayList<>());
-                            }
-                            groupUsers.get(group.getName()).add(tmpUserId);
-                        }
-                    }
-                }
-            }
-        }
-        List<String> memberList = memberSet.stream().collect(Collectors.toList());
-        QueryResult<FileAclEntry> fileAclQueryResult = fileDBAdaptor.getAcl(fileId, memberList);
-
-        if (members.size() == 0) {
-            return fileAclQueryResult;
-        }
-
-        // For the cases where the permissions were given at group level, we obtain the user and return it as if they were given to the user
-        // instead of the group.
-        // We loop over the results and recreate one fileAcl per member
-        Map<String, FileAclEntry> fileAclHashMap = new HashMap<>();
-        for (FileAclEntry fileAcl : fileAclQueryResult.getResult()) {
-            if (memberList.contains(fileAcl.getMember())) {
-                if (fileAcl.getMember().startsWith("@")) {
-                    // Check if the user was demanding the group directly or a user belonging to the group
-                    if (groupIds.contains(fileAcl.getMember())) {
-                        fileAclHashMap.put(fileAcl.getMember(), new FileAclEntry(fileAcl.getMember(), fileAcl.getPermissions()));
-                    } else {
-                        // Obtain the user(s) belonging to that group whose permissions wanted the userId
-                        if (groupUsers.containsKey(fileAcl.getMember())) {
-                            for (String tmpUserId : groupUsers.get(fileAcl.getMember())) {
-                                if (userIds.contains(tmpUserId)) {
-                                    fileAclHashMap.put(tmpUserId, new FileAclEntry(tmpUserId, fileAcl.getPermissions()));
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    // Add the user
-                    fileAclHashMap.put(fileAcl.getMember(), new FileAclEntry(fileAcl.getMember(), fileAcl.getPermissions()));
-                }
-            }
-        }
-
-        // We recreate the output that is in fileAclHashMap but in the same order the members were queried.
-        List<FileAclEntry> fileAclList = new ArrayList<>(fileAclHashMap.size());
+        // Check that all the members have permissions defined at the study level
         for (String member : members) {
-            if (fileAclHashMap.containsKey(member)) {
-                fileAclList.add(fileAclHashMap.get(member));
+            if (!member.equals("*") && !member.equals("anonymous") && !authorizationManager.memberHasPermissionsInStudy(studyId, member)) {
+                throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
+                        + "defined for that member.");
             }
         }
 
-        // Update queryResult info
-        fileAclQueryResult.setId(fileStr);
-        fileAclQueryResult.setNumResults(fileAclList.size());
-        fileAclQueryResult.setNumTotalResults(fileAclList.size());
-        fileAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
-        fileAclQueryResult.setResult(fileAclList);
+        List<QueryResult<FileAclEntry>> retQueryResultList = new ArrayList<>(members.size());
 
-        return fileAclQueryResult;
+        // We create the list of permissions
+        List<FileAclEntry> fileAclEntryList = new ArrayList<>(permissions.size());
+        for (String member : members) {
+            fileAclEntryList.add(new FileAclEntry(member, permissions));
+        }
+
+        for (Long fileId : resourceIds.getResourceIds()) {
+            try {
+                // Check if the userId has proper permissions for all the files.
+                authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.SHARE);
+
+                // Check if any of the members already have permissions set in the file
+                if (authorizationManager.anyMemberHasPermissions(studyId, fileId, members, fileDBAdaptor)) {
+                    throw new CatalogException("Cannot create ACL. At least one of the members already have some permissions set for this "
+                            + "particular file. Please, use update instead.");
+                }
+
+                QueryResult<File> fileQueryResult = fileDBAdaptor.get(fileId, new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor
+                        .QueryParams.PATH.key()));
+                if (fileQueryResult.getNumResults() != 1) {
+                    throw new CatalogException("An unexpected error occured. File " + fileId + " not found when trying to create new ACLs");
+                }
+
+                // We create those ACLs for the whole path contained (propagate the acls in case of a directory)
+                Query query = new Query()
+                        .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + fileQueryResult.first().getPath());
+                fileDBAdaptor.createAcl(query, fileAclEntryList);
+
+                QueryResult<FileAclEntry> aclEntryQueryResult = fileDBAdaptor.getAcl(fileId, members);
+                aclEntryQueryResult.setId("Create file ACLs");
+                retQueryResultList.add(aclEntryQueryResult);
+
+            } catch (CatalogException e) {
+                QueryResult<FileAclEntry> queryResult = new QueryResult<>();
+                queryResult.setErrorMsg(e.getMessage());
+                queryResult.setId("Create file ACL");
+
+                retQueryResultList.add(queryResult);
+            }
+        }
+
+        return retQueryResultList;
+
+
+
+
     }
 
 }

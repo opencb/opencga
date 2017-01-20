@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 import java.util.*;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER_ARRAY;
+import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT;
 import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.PRIVATE_ID;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.PRIVATE_STUDY_ID;
@@ -62,6 +63,7 @@ public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdapt
     enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),
         ACL("acl", TEXT_ARRAY, ""),
+        MEMBER("member", TEXT, ""),
         ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
         ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, "");
 
@@ -127,8 +129,7 @@ public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdapt
     public List<T> getAcl(long resourceId, List<String> members) {
         List<Bson> aggregation = new ArrayList<>();
         aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, resourceId)));
-        aggregation.add(Aggregates.project(Projections.include(QueryParams.ID.key(),
-                QueryParams.ACL.key())));
+        aggregation.add(Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACL.key())));
         aggregation.add(Aggregates.unwind("$" + QueryParams.ACL.key()));
 
         List<Bson> filters = new ArrayList<>();
@@ -147,16 +148,14 @@ public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdapt
 
         QueryResult<Document> aggregate = collection.aggregate(aggregation, null);
 
-        AbstractAcl<T> aclResource = null;
+        List<T> retList = new ArrayList<>();
         if (aggregate.getNumResults() > 0) {
-            aclResource = converter.convertToDataModelType(aggregate.first());
+            for (Document document : aggregate.getResult()) {
+                retList.add((T) converter.convertToDataModelType(document).getAcl().get(0));
+            }
         }
 
-        if (aclResource != null) {
-            return aclResource.getAcl();
-        }
-
-        return Collections.emptyList();
+        return retList;
     }
 
     @Override

@@ -234,6 +234,8 @@ public interface FileDBAdaptor extends AclDBAdaptor<File, FileAclEntry> {
      * ***************************
      */
 
+    void createAcl(Query query, List<FileAclEntry> aclEntryList) throws CatalogDBException;
+
     /***
      * Retrieves the AclEntries of the files and users given.
      *
