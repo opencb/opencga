@@ -123,7 +123,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/create-folder")
     @ApiOperation(value = "Create a folder in the catalog environment", position = 2, response = File.class)
-    public Response createFolder(@ApiParam(value = "(DEPRECATED) Use study instead")
+    public Response createFolder(@ApiParam(value = "(DEPRECATED) Use study instead", hidden = true)
                                      @QueryParam("studyId") String studyIdStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                     @QueryParam("study") String studyStr,
@@ -192,7 +192,8 @@ public class FileWSServer extends OpenCGAWSServer {
     @Deprecated
     @GET
     @Path("/{fileId}/uri")
-    @ApiOperation(value = "File uri [DEPRECATED]", position = 3, notes = "Deprecated method. Use /info with include query options instead.")
+    @ApiOperation(value = "File uri [DEPRECATED]", position = 3, notes = "Deprecated method. Use /info with include query options instead.",
+            hidden = true)
     public Response getUri(@ApiParam(value = "fileId") @PathParam(value = "fileId") String fileStr,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                     @QueryParam("study") String studyStr) {
@@ -251,7 +252,8 @@ public class FileWSServer extends OpenCGAWSServer {
                                        String fileFormat,
                                 @ApiParam(value = "bioformat", required = true) @DefaultValue("") @FormDataParam("bioformat")
                                        String bioformat,
-                                @ApiParam(value = "(DEPRECATED) Use study instead") @FormDataParam("studyId") String studyIdStr,
+                                @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @FormDataParam("studyId")
+                                       String studyIdStr,
                                 @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                     @FormDataParam("study") String studyStr,
                                 @ApiParam(value = "Path within catalog where the file will be located (default: root folder)",
@@ -543,7 +545,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @Deprecated
     @GET
     @Path("/{file}/set-header")
-    @ApiOperation(value = "Set file header [DEPRECATED]", position = 10, notes = "Deprecated method. Moved to update.")
+    @ApiOperation(value = "Set file header [DEPRECATED]", position = 10, notes = "Deprecated method. Moved to update.", hidden = true)
     public Response setHeader(@PathParam(value = "file") @FormDataParam("fileId") String fileStr,
                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                     @QueryParam("study") String studyStr,
@@ -591,7 +593,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @Deprecated
     @GET
     @Path("/{folder}/files")
-    @ApiOperation(value = "File content [DEPRECATED]", position = 11, notes = "Deprecated method. Moved to /list.")
+    @ApiOperation(value = "File content [DEPRECATED]", position = 11, notes = "Deprecated method. Moved to /list.", hidden = true)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
                     example = "name,attributes", dataType = "string", paramType = "query"),
@@ -626,14 +628,12 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
     public Response search(@ApiParam(value = "Comma separated list of file ids", required = false) @DefaultValue("") @QueryParam("id") String id,
-                           @ApiParam(value = "(DEPRECATED) Use study instead") @QueryParam("studyId")
+                           @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId")
                                    String studyIdStr,
                            @ApiParam(value = "Study [[user@]project:]{study1,study2|*}  where studies and project can be either the id or"
                                    + " alias.") @QueryParam("study") String studyStr,
-                           // This can now be done using just the ids field
-                           @Deprecated @ApiParam(value = "Comma separated list of file names", required = false) @DefaultValue("") @QueryParam("name") String name,
-                           // This can now be done using just the ids field
-                           @Deprecated @ApiParam(value = "Comma separated list of paths", required = false) @DefaultValue("") @QueryParam("path") String path,
+                           @ApiParam(value = "Comma separated list of file names") @DefaultValue("") @QueryParam("name") String name,
+                           @ApiParam(value = "Comma separated list of paths", required = false) @DefaultValue("") @QueryParam("path") String path,
                            @ApiParam(value = "Available types (FILE, DIRECTORY)", required = false) @DefaultValue("") @QueryParam("type") String type,
                            @ApiParam(value = "Comma separated Bioformat values. For existing Bioformats see files/help", required = false) @DefaultValue("") @QueryParam("bioformat") String bioformat,
                            @ApiParam(value = "Comma separated Format values. For existing Formats see files/help", required = false) @DefaultValue("") @QueryParam("format") String formats,
@@ -643,9 +643,9 @@ public class FileWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss)", required = false) @DefaultValue("") @QueryParam("modificationDate") String modificationDate,
                            @ApiParam(value = "Description", required = false) @DefaultValue("") @QueryParam("description") String description,
                            @ApiParam(value = "Size", required = false) @DefaultValue("") @QueryParam("size") Long size,
-                           @ApiParam(value = "DEPRECATED: use sample instead", required = false) @DefaultValue("") @QueryParam("sampleIds") String sampleIds,
+                           @ApiParam(value = "DEPRECATED: use sample instead", hidden = true) @DefaultValue("") @QueryParam("sampleIds") String sampleIds,
                            @ApiParam(value = "Comma separated list of sample ids", required = false) @DefaultValue("") @QueryParam("sample") String samples,
-                           @ApiParam(value = "(DEPRECATED) Job id that created the file(s) or folder(s)", required = false) @QueryParam("jobId") String jobIdOld,
+                           @ApiParam(value = "(DEPRECATED) Job id that created the file(s) or folder(s)", hidden = true) @QueryParam("jobId") String jobIdOld,
                            @ApiParam(value = "Job id that created the file(s) or folder(s)", required = false) @QueryParam("job.id") String jobId,
                            @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
                            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("") @QueryParam("nattributes") String nattributes) {
@@ -702,7 +702,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{file}/index")
     @ApiOperation(value = "Index variant files [DEPRECATED]", position = 14, notes = "Moved to analysis/[variant|alignment]/{file}/index",
-            response = QueryResponse.class)
+            hidden = true, response = QueryResponse.class)
     public Response index(@ApiParam("Comma separated list of file ids (files or directories)") @PathParam(value = "file") String fileIdStr,
                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                             @QueryParam("study") String studyStr,
@@ -814,7 +814,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{file}/fetch")
     @ApiOperation(value = "File fetch [DEPRECATED]", notes = "DEPRECATED. Use .../files/{fileId}/[variants|alignments] or "
-            + ".../studies/{studyId}/[variants|alignments] instead", position = 15)
+            + ".../studies/{studyId}/[variants|alignments] instead", hidden = true, position = 15)
     public Response fetch(@PathParam(value = "file") @DefaultValue("") String fileIds,
                           @ApiParam(value = "region", allowMultiple = true, required = true) @DefaultValue("") @QueryParam("region") String region,
                           @ApiParam(value = "view_as_pairs", required = false) @DefaultValue("false") @QueryParam("view_as_pairs") boolean view_as_pairs,
@@ -990,7 +990,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{file}/variants")
     @ApiOperation(value = "Fetch variants from a VCF/gVCF file [DEPRECATED]", position = 15,
-            notes = "Moved to analysis/variants/query", response = QueryResponse.class)
+            notes = "Moved to analysis/variants/query", hidden = true, response = QueryResponse.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
                     example = "name,attributes", dataType = "string", paramType = "query"),
@@ -1124,7 +1124,7 @@ public class FileWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Attributes", required = false) @QueryParam("attributes") String attributes,
                            @ApiParam(value = "Stats", required = false) @QueryParam("stats") String stats,
                            @ApiParam(value = "Sample ids", required = false) @QueryParam("sampleIds") String sampleIds,
-                           @ApiParam(value = "(DEPRECATED) Job id", required = false) @QueryParam("jobId") String jobIdOld,
+                           @ApiParam(value = "(DEPRECATED) Job id", hidden = true) @QueryParam("jobId") String jobIdOld,
                            @ApiParam(value = "Job id", required = false) @QueryParam("job.id") String jobId) {
         try {
             /*ObjectMap parameters = new ObjectMap();
@@ -1357,7 +1357,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Group files by several fields", position = 24, response = QueryResponse.class)
     public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
                                 @QueryParam("fields") String fields,
-                            @ApiParam(value = "(DEPRECATED) Use study instead") @DefaultValue("") @QueryParam("studyId")
+                            @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @DefaultValue("") @QueryParam("studyId")
                                     String studyIdStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                 @QueryParam("study") String studyStr,
@@ -1383,7 +1383,7 @@ public class FileWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "size", required = false) @DefaultValue("") @QueryParam("size") Long size,
                             @ApiParam(value = "Comma separated sampleIds", required = false) @DefaultValue("") @QueryParam("sampleIds")
                                         String sampleIds,
-                            @ApiParam(value = "(DEPRECATED) Job id", required = false) @QueryParam("jobId") String jobIdOld,
+                            @ApiParam(value = "(DEPRECATED) Job id", hidden = true) @QueryParam("jobId") String jobIdOld,
                             @ApiParam(value = "Job id", required = false) @QueryParam("job.id") String jobId,
                             @ApiParam(value = "attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
                             @ApiParam(value = "numerical attributes", required = false) @DefaultValue("") @QueryParam("nattributes")

@@ -334,7 +334,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     public Response getAllSamples(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
                                           required = true) @PathParam("study") String studyStr,
                                   @ApiParam(value = "Sample name") @QueryParam("name") String name,
-                                  @Deprecated @ApiParam(value = "source") @QueryParam("source") String source,
+                                  @Deprecated @ApiParam(value = "source", hidden = true) @QueryParam("source") String source,
                                   @ApiParam(value = "individualId") @QueryParam("individualId") String individualId,
                                   @ApiParam(value = "annotationSetName") @QueryParam("annotationSetName") String annotationSetName,
                                   @ApiParam(value = "variableSetId") @QueryParam("variableSetId") String variableSetId,
@@ -384,7 +384,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Deprecated
     @GET
     @Path("/{study}/variants")
-    @ApiOperation(value = "[DEPRECATED]: use analysis/variant/query instead", position = 10, response = Variant[].class)
+    @ApiOperation(value = "[DEPRECATED]: use analysis/variant/query instead", position = 10, hidden = true, response = Variant[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
                     example = "name,attributes", dataType = "string", paramType = "query"),
@@ -506,7 +506,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Deprecated
     @GET
     @Path("/{study}/alignments")
-    @ApiOperation(value = "[DEPCRATED]: use analysis/alignment/query instead", position = 11, response = Alignment[].class)
+    @ApiOperation(value = "[DEPCRATED]: use analysis/alignment/query instead", position = 11, hidden = true, response = Alignment[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
                     example = "name,attributes", dataType = "string", paramType = "query"),

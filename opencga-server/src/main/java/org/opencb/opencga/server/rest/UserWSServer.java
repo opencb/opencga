@@ -53,7 +53,6 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @Deprecated
     @ApiOperation(value = "Create a new user", response = User.class)
     public Response createUser(@ApiParam(value = "User id", required = true) @QueryParam("userId") String userId,
                                @ApiParam(value = "User name", required = true) @QueryParam("name") String name,

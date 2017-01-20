@@ -87,7 +87,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/create")
     @ApiOperation(value = "Create sample", position = 2, response = Sample.class)
-    public Response createSample(@ApiParam(value = "DEPRECATED: studyId", required = false) @QueryParam("studyId") String studyIdStr,
+    public Response createSample(@ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                  @QueryParam("study") String studyStr,
                                  @ApiParam(value = "name", required = true) @QueryParam("name") String name,
@@ -114,7 +114,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Path("/create")
     @ApiOperation(value = "Create sample", position = 2, response = Sample.class)
     public Response createSamplePOST(
-            @ApiParam(value = "DEPRECATED: studyId", required = false) @QueryParam("studyId") String studyIdStr,
+            @ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
             @ApiParam(value="JSON containing sample information", required = true)  SampleParameters params) {
@@ -133,11 +133,11 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/load")
     @ApiOperation(value = "Load samples from a ped file", position = 3)
-    public Response loadSamples(@ApiParam(value = "DEPRECATED: studyId", required = false) @QueryParam("studyId") String studyIdStr,
+    public Response loadSamples(@ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
                                 @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                 @QueryParam("study") String studyStr,
-                                @ApiParam(value = "DEPRECATED: use file instead", required = false) @QueryParam("fileId") String fileIdStr,
-                                @ApiParam(value = "file", required = false) @QueryParam("file") String fileStr,
+                                @ApiParam(value = "DEPRECATED: use file instead", hidden = true) @QueryParam("fileId") String fileIdStr,
+                                @ApiParam(value = "file", required = true) @QueryParam("file") String fileStr,
                                 @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") Long variableSetId) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
@@ -169,16 +169,16 @@ public class SampleWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query"),
             @ApiImplicitParam(name = "lazy", value = "False to return the entire individual object", defaultValue = "true", dataType = "boolean", paramType = "query")
     })
-    public Response search(@ApiParam(value = "DEPRECATED: use study instead") @QueryParam("studyId") String studyIdStr,
+    public Response search(@ApiParam(value = "DEPRECATED: use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
                            @ApiParam(value = "Study [[user@]project:]{study1,study2|*}  where studies and project can be either the id or"
                                           + " alias.", required = false) @QueryParam("study") String studyStr,
-                           @Deprecated
-                           @ApiParam(value = "DEPRECATED: use /info instead") @QueryParam("id") String id,
+                           @ApiParam(value = "DEPRECATED: use /info instead", hidden = true) @QueryParam("id") String id,
                            @ApiParam(value = "name") @QueryParam("name") String name,
                            @ApiParam(value = "source") @QueryParam("source") String source,
 //                                  @ApiParam(value = "acls") @QueryParam("acls") String acls,
 //                                  @ApiParam(value = "acls.users") @QueryParam("acls.users") String acl_userIds,
-                           @ApiParam(value = "DEPRECATED: use individual.id instead") @QueryParam("individualId") String individualIdOld,
+                           @ApiParam(value = "DEPRECATED: use individual.id instead", hidden = true) @QueryParam("individualId")
+                                       String individualIdOld,
                            @ApiParam(value = "Individual id or name") @QueryParam("individual.id") String individual,
                            @ApiParam(value = "Ontology terms") @QueryParam("ontologies") String ontologies,
                            @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
@@ -212,7 +212,8 @@ public class SampleWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
                            @ApiParam(value = "source", required = false) @QueryParam("source") String source,
-                           @ApiParam(value = "DEPRECATED: use individual.id instead") @QueryParam("individualId") String individualIdOld,
+                           @ApiParam(value = "DEPRECATED: use individual.id instead", hidden = true) @QueryParam("individualId")
+                                       String individualIdOld,
                            @ApiParam(value = "Individual id or name", required = false) @QueryParam("individual.id") String individualId,
                            @ApiParam(value = "Attributes", required = false) @QueryParam("attributes") String attributes) {
         try {
@@ -272,7 +273,8 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{sample}/delete")
     @ApiOperation(value = "Delete a sample", position = 9)
-    public Response delete(@ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("sample") String sampleStr,
+    public Response delete(@ApiParam(value = "Comma separated list of sample IDs or names", required = true) @PathParam("sample")
+                                       String sampleStr,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                            @QueryParam("study") String studyStr) {
         try {
@@ -288,16 +290,15 @@ public class SampleWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Group samples by several fields", position = 10)
     public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
                             @QueryParam("fields") String fields,
-                            @ApiParam(value = "DEPRECATED: use study instead", required = false) @DefaultValue("") @QueryParam("studyId")
+                            @ApiParam(value = "DEPRECATED: use study instead", hidden = true) @DefaultValue("") @QueryParam("studyId")
                                     String studyIdStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                             @QueryParam("study") String studyStr,
-                            @Deprecated
-                            @ApiParam(value = "DEPRECATED: Comma separated list of ids.") @QueryParam("id") String id,
+                            @ApiParam(value = "DEPRECATED: Comma separated list of ids.", hidden = true) @QueryParam("id") String id,
                             @ApiParam(value = "Comma separated list of names.") @QueryParam("name") String name,
                             @ApiParam(value = "source") @QueryParam("source") String source,
-                            @Deprecated
-                            @ApiParam(value = "DEPRECATED: use indiviudal.id instead") @QueryParam("individualId") String individualIdOld,
+                            @ApiParam(value = "DEPRECATED: use indiviudal.id instead", hidden = true) @QueryParam("individualId")
+                                        String individualIdOld,
                             @ApiParam(value = "Individual id or name") @QueryParam("individual.id") String individualId,
                             @ApiParam(value = "annotationsetName") @QueryParam("annotationsetName") String annotationsetName,
                             @ApiParam(value = "variableSetId") @QueryParam("variableSetId") String variableSetId,

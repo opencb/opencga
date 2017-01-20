@@ -110,16 +110,16 @@ public class CohortWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Create a cohort", position = 1, notes = "A cohort can be created by providing a list of SampleIds, " +
             "or providing a categorical variable (both variableSetId and variable). " +
             "If none of this is given, an empty cohort will be created.", response = Cohort.class)
-    public Response createCohort(@ApiParam(value = "(DEPRECATED) Use study instead", required = true) @QueryParam("studyId")
+    public Response createCohort(@ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId")
                                              String studyIdStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                        @QueryParam("study") String studyStr,
+                                 @QueryParam("study") String studyStr,
                                  @ApiParam(value = "Name of the cohort.", required = true) @QueryParam ("name") String cohortName,
                                  @ApiParam(value = "type", required = false) @QueryParam("type") @DefaultValue("COLLECTION")
                                              Study.Type type,
                                  @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
                                  @ApiParam(value = "description", required = false) @QueryParam("description") String cohortDescription,
-                                 @ApiParam(value = "(DEPRECATED) sampleIds", required = false) @QueryParam("sampleIds") String sampleIdsStr,
+                                 @ApiParam(value = "(DEPRECATED) sampleIds", hidden = true) @QueryParam("sampleIds") String sampleIdsStr,
                                  @ApiParam(value = "Samples", required = false) @QueryParam("samples") String samplesStr,
                                  @ApiParam(value = "Variable name", required = false) @QueryParam("variable") String variableName) {
 
@@ -145,7 +145,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             "or providing a categorical variable (both variableSetId and variable). " +
             "If none of this is given, an empty cohort will be created.", response = Cohort.class)
     public Response createCohort(
-            @ApiParam(value = "(DEPRECATED) Use study instead", required = true) @QueryParam("studyId") String studyIdStr,
+            @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
             @ApiParam(value = "variableSetId") @QueryParam("variableSetId") long variableSetId,
@@ -489,7 +489,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Group cohorts by several fields", position = 24)
     public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
                                 @QueryParam("fields") String fields,
-                            @ApiParam(value = "(DEPRECATED) Use study instead", required = true) @DefaultValue("") @QueryParam("studyId")
+                            @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @DefaultValue("") @QueryParam("studyId")
                                     String studyIdStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                 @QueryParam("study") String studyStr,
