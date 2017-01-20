@@ -55,6 +55,10 @@ public class VariantDBAdaptorUtils {
     public static final String STATS_FIELD = VariantFields.STATS.fieldName();
     public static final String ANNOTATION_FIELD = VariantFields.ANNOTATION.fieldName();
 
+    private static final int GENE_EXTRA_REGION = 5000;
+
+    private VariantDBAdaptor adaptor;
+
     public enum VariantFields {
         IDS,
         CHROMOSOME,
@@ -115,9 +119,20 @@ public class VariantDBAdaptorUtils {
         }
     }
 
-    private static final int GENE_EXTRA_REGION = 5000;
+    public enum QueryOperation {
+        AND(VariantDBAdaptorUtils.AND),
+        OR(VariantDBAdaptorUtils.OR);
 
-    private VariantDBAdaptor adaptor;
+        private final String separator;
+
+        QueryOperation(String separator) {
+            this.separator = separator;
+        }
+
+        public String separator() {
+            return separator;
+        }
+    }
 
     /**
      * Check if the object query contains the value param, is not null and, if is an string or a list, is not empty.
@@ -140,19 +155,24 @@ public class VariantDBAdaptorUtils {
                 || value instanceof Collection && ((Collection) value).isEmpty());
     }
 
-    public enum QueryOperation {
-        AND(VariantDBAdaptorUtils.AND),
-        OR(VariantDBAdaptorUtils.OR);
+    /**
+     * Determines if the filter is negated.
+     *
+     * @param value Value to check
+     * @return If the value is negated
+     */
+    public static boolean isNegated(String value) {
+        return value.startsWith("!");
+    }
 
-        private final String separator;
-
-        QueryOperation(String separator) {
-            this.separator = separator;
-        }
-
-        public String separator() {
-            return separator;
-        }
+    /**
+     * Determines if the given value is a known variant accession or not.
+     *
+     * @param value Value to check
+     * @return      If is a known accession
+     */
+    public static boolean isVariantAccession(String value) {
+        return value.startsWith("rs");
     }
 
     public VariantDBAdaptorUtils(VariantDBAdaptor variantDBAdaptor) {
@@ -245,10 +265,6 @@ public class VariantDBAdaptorUtils {
             throw VariantQueryException.studyNotFound(studyId, studies.keySet());
         }
         return studyId;
-    }
-
-    public static boolean isNegated(String value) {
-        return value.startsWith("!");
     }
 
     /**

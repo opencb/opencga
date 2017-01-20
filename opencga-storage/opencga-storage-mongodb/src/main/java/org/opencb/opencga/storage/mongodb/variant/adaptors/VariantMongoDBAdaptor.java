@@ -973,16 +973,29 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (isValidParam(query, VariantQueryParams.ANNOT_CONSEQUENCE_TYPE)) {
                 String value = query.getString(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key());
-                if (isValidParam(query, VariantQueryParams.GENE)) {
+                List<String> genes = new ArrayList<>(query.getAsStringList(VariantQueryParams.GENE.key()));
+                genes.addAll(query.getAsStringList(VariantQueryParams.ANNOT_XREF.key())
+                        .stream()
+                        .filter(s -> !isVariantAccession(s))
+                        .collect(Collectors.toList()));
+                if (!genes.isEmpty()) {
                     QueryBuilder ctBuilder = new QueryBuilder();
                     addQueryFilter(DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD, value, ctBuilder, QueryOperation.AND,
                             VariantDBAdaptorUtils::parseConsequenceType);
-                    addQueryStringFilter(DocumentToVariantAnnotationConverter.CT_GENE_NAME_FIELD,
-                            query.getString(VariantQueryParams.GENE.key()), ctBuilder, QueryOperation.OR);
-                    addQueryStringFilter(DocumentToVariantAnnotationConverter.CT_ENSEMBL_GENE_ID_FIELD,
-                            query.getString(VariantQueryParams.GENE.key()), ctBuilder, QueryOperation.OR);
-                    addQueryStringFilter(DocumentToVariantAnnotationConverter.CT_ENSEMBL_TRANSCRIPT_ID_FIELD,
-                            query.getString(VariantQueryParams.GENE.key()), ctBuilder, QueryOperation.OR);
+
+                    DBObject[] or = new DBObject[3];
+                    if (genes.size() > 1) {
+                        BasicDBObject in = new BasicDBObject("$in", genes);
+                        or[0] = new BasicDBObject(DocumentToVariantAnnotationConverter.CT_GENE_NAME_FIELD, in);
+                        or[1] = new BasicDBObject(DocumentToVariantAnnotationConverter.CT_ENSEMBL_GENE_ID_FIELD, in);
+                        or[2] = new BasicDBObject(DocumentToVariantAnnotationConverter.CT_ENSEMBL_TRANSCRIPT_ID_FIELD, in);
+                    } else {
+                        String gene = genes.get(0);
+                        or[0] = new BasicDBObject(DocumentToVariantAnnotationConverter.CT_GENE_NAME_FIELD, gene);
+                        or[1] = new BasicDBObject(DocumentToVariantAnnotationConverter.CT_ENSEMBL_GENE_ID_FIELD, gene);
+                        or[2] = new BasicDBObject(DocumentToVariantAnnotationConverter.CT_ENSEMBL_TRANSCRIPT_ID_FIELD, gene);
+                    }
+                    ctBuilder.or(or);
                     builder.and(DocumentToVariantConverter.ANNOTATION_FIELD
                             + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD).elemMatch(ctBuilder.get());
                 } else {

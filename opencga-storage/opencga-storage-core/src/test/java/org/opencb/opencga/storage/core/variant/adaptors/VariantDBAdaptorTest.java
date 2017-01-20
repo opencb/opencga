@@ -21,7 +21,6 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import htsjdk.variant.variantcontext.VariantContext;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
 import org.junit.*;
@@ -492,34 +491,47 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testGetAllVariants_ct_gene() {
-        List<Pair<String, String>> list = Arrays.asList(
-                Pair.of("BIRC6", "SO:0001566"), // Should return 0 results
-                Pair.of("BIRC6", "SO:0001583"),
-                Pair.of("DNAJC6", "SO:0001819"),
-                Pair.of("SH2D5", "SO:0001632"),
-                Pair.of("ERMAP,SH2D5", "SO:0001632")
-        );
+        queryGeneCT("BIRC6", "SO:0001566");  // Should return 0 results
+        queryGeneCT("BIRC6", "SO:0001583");
+        queryGeneCT("DNAJC6", "SO:0001819");
+        queryGeneCT("SH2D5", "SO:0001632");
+        queryGeneCT("ERMAP,SH2D5", "SO:0001632");
 
-        for (Pair<String, String> pair : list) {
-            String gene = pair.getLeft();
-            String so = pair.getRight();
+        queryGeneCT("ERMAP,SH2D5", "SO:0001632", new Query()
+                .append(ANNOT_XREF.key(), "ERMAP,SH2D5,rs1171830")
+                .append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001632"));
 
-            Query query = new Query(ANNOT_CONSEQUENCE_TYPE.key(), so).append(GENE.key(), gene);
-            queryResult = dbAdaptor.get(query, null);
-            System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+//        //TODO: Should this query work?
+//        queryGeneCT("ERMAP,SH2D5", "SO:0001632", new Query()
+//                .append(GENE.key(), "ERMAP")
+//                .append(ANNOT_XREF.key(), "SH2D5,rs12345")
+//                .append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001632"));
 
-            Matcher<String> geneMatcher;
-            if (gene.contains(",")) {
-                geneMatcher = anyOf(Arrays.stream(gene.split(",")).map(CoreMatchers::is).collect(Collectors.toList()));
-            } else {
-                geneMatcher = is(gene);
-            }
-            assertThat(queryResult, everyResult(allVariants, hasAnnotation(
-                    withAny("consequence type", VariantAnnotation::getConsequenceTypes, allOf(
-                            with("gene", ConsequenceType::getGeneName, geneMatcher),
-                            withAny("SO", ConsequenceType::getSequenceOntologyTerms,
-                                    with("accession", SequenceOntologyTerm::getAccession, is(so))))))));
+        assertThat(dbAdaptor.get(new Query(ANNOT_XREF.key(), "rs1171830").append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001566"), null),
+                everyResult(allVariants, allOf(
+                        with("id", Variant::getId, is("rs1171830")),
+                        hasAnnotation(hasSO(hasItem(is("SO:0001566")))))));
+    }
+
+    private void queryGeneCT(String gene, String so) {
+        queryGeneCT(gene, so, new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), so).append(GENE.key(), gene));
+    }
+
+    private void queryGeneCT(String gene, String so, Query query) {
+        queryResult = dbAdaptor.get(query, null);
+        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+
+        Matcher<String> geneMatcher;
+        if (gene.contains(",")) {
+            geneMatcher = anyOf(Arrays.stream(gene.split(",")).map(CoreMatchers::is).collect(Collectors.toList()));
+        } else {
+            geneMatcher = is(gene);
         }
+        assertThat(queryResult, everyResult(allVariants, hasAnnotation(
+                withAny("consequence type", VariantAnnotation::getConsequenceTypes, allOf(
+                        with("gene", ConsequenceType::getGeneName, geneMatcher),
+                        withAny("SO", ConsequenceType::getSequenceOntologyTerms,
+                                with("accession", SequenceOntologyTerm::getAccession, is(so))))))));
     }
 
     @Test
