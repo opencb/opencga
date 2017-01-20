@@ -16,13 +16,14 @@
 
 package org.opencb.opencga.catalog.auth.authorization;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.api.AclDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -208,33 +209,54 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         // We obtain all the paths from our current position to the root folder
         List<String> paths = FileManager.getParentPaths(file.getPath());
-        // We obtain a map with the permissions
+        // We obtain a map of path -> member -> permissions
         Map<String, Map<String, FileAclEntry>> pathAclMap = getFileAcls(studyAuthenticationContext, userId, studyId, groupId, paths);
 
-        FileAclEntry fileAcl = null;
+        EnumSet<FileAclEntry.FilePermissions> permissions = EnumSet.noneOf(FileAclEntry.FilePermissions.class);
+        boolean flagPermissionFound = false;
+        // We loop through the list backwards
         for (int i = paths.size() - 1; i >= 0; i--) {
             String path = paths.get(i);
             if (pathAclMap.containsKey(path)) {
-                Map<String, FileAclEntry> aclMap = pathAclMap.get(path);
-                if (aclMap.get(userId) != null) {
-                    fileAcl = aclMap.get(userId);
-                } else if (aclMap.get(groupId) != null) {
-                    fileAcl = aclMap.get(groupId);
-                } else if (aclMap.get(OTHER_USERS_ID) != null) {
-                    fileAcl = aclMap.get(OTHER_USERS_ID);
+                Map<String, FileAclEntry> userAclMap = pathAclMap.get(path);
+
+                if (userId.equals(ANONYMOUS)) {
+                    if (userAclMap.get(userId) != null) {
+                        return userAclMap.get(userId);
+                    } else {
+                        continue;
+                    }
                 }
-                if (fileAcl != null) {
-                    break;
+
+                // Registered user
+                if (userAclMap.get(userId) != null) {
+                    permissions.addAll(userAclMap.get(userId).getPermissions());
+                    flagPermissionFound = true;
+                }
+                if (StringUtils.isNotEmpty(groupId) && userAclMap.get(groupId) != null) {
+                    permissions.addAll(userAclMap.get(groupId).getPermissions());
+                    flagPermissionFound = true;
+                }
+                if (userAclMap.get(ANONYMOUS) != null) {
+                    permissions.addAll(userAclMap.get(ANONYMOUS).getPermissions());
+                    flagPermissionFound = true;
+                }
+                if (userAclMap.get(OTHER_USERS_ID) != null) {
+                    permissions.addAll(userAclMap.get(OTHER_USERS_ID).getPermissions());
+                    flagPermissionFound = true;
+                }
+
+                if (flagPermissionFound) {
+                    return new FileAclEntry(userId, permissions);
+                } else {
+                    continue;
                 }
             }
         }
 
-        if (fileAcl == null) {
-            StudyAclEntry studyAcl = getStudyAclBelonging(studyId, userId, groupId);
-            fileAcl = transformStudyAclToFileAcl(studyAcl);
-        }
-
-        return fileAcl;
+        // No ACLs found in any of the path directories
+        StudyAclEntry studyAcl = getStudyAclBelonging(studyId, userId, groupId);
+        return transformStudyAclToFileAcl(studyAcl);
     }
 
     @Override
@@ -296,8 +318,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         List<String> userIds = (groupId == null)
-                ? Arrays.asList(userId, OTHER_USERS_ID)
-                : Arrays.asList(userId, groupId, OTHER_USERS_ID);
+                ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
+                : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
         List<SampleAclEntry> sampleAclList = sampleDBAdaptor.getAcl(sampleId, userIds).getResult();
 
         Map<String, SampleAclEntry> userAclMap = new HashMap<>();
@@ -310,12 +332,37 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private SampleAclEntry resolveSamplePermissions(long studyId, String userId, String groupId, Map<String, SampleAclEntry> userAclMap)
             throws CatalogException {
+        if (userId.equals(ANONYMOUS)) {
+            if (userAclMap.containsKey(userId)) {
+                return userAclMap.get(userId);
+            } else {
+                return transformStudyAclToSampleAcl(getStudyAclBelonging(studyId, userId, groupId));
+            }
+        }
+
+        // Registered user
+        EnumSet<SampleAclEntry.SamplePermissions> permissions = EnumSet.noneOf(SampleAclEntry.SamplePermissions.class);
+        boolean flagPermissionFound = false;
+
         if (userAclMap.containsKey(userId)) {
-            return userAclMap.get(userId);
-        } else if (groupId != null && userAclMap.containsKey(groupId)) {
-            return userAclMap.get(groupId);
-        } else if (userAclMap.containsKey(OTHER_USERS_ID)) {
-            return userAclMap.get(OTHER_USERS_ID);
+            permissions.addAll(userAclMap.get(userId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (StringUtils.isNotEmpty(groupId) && userAclMap.containsKey(groupId)) {
+            permissions.addAll(userAclMap.get(groupId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(ANONYMOUS)) {
+            permissions.addAll(userAclMap.get(ANONYMOUS).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(OTHER_USERS_ID)) {
+            permissions.addAll(userAclMap.get(OTHER_USERS_ID).getPermissions());
+            flagPermissionFound = true;
+        }
+
+        if (flagPermissionFound) {
+            return new SampleAclEntry(userId, permissions);
         } else {
             return transformStudyAclToSampleAcl(getStudyAclBelonging(studyId, userId, groupId));
         }
@@ -370,8 +417,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         List<String> userIds = (groupId == null)
-                ? Arrays.asList(userId, OTHER_USERS_ID)
-                : Arrays.asList(userId, groupId, OTHER_USERS_ID);
+                ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
+                : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
         List<IndividualAclEntry> individualAcls = individualDBAdaptor.getAcl(individualId, userIds).getResult();
 
         Map<String, IndividualAclEntry> userAclMap = new HashMap<>();
@@ -384,12 +431,37 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private IndividualAclEntry resolveIndividualPermissions(long studyId, String userId, String groupId, Map<String,
             IndividualAclEntry> userAclMap) throws CatalogException {
+        if (userId.equals(ANONYMOUS)) {
+            if (userAclMap.containsKey(userId)) {
+                return userAclMap.get(userId);
+            } else {
+                return transformStudyAclToIndividualAcl(getStudyAclBelonging(studyId, userId, groupId));
+            }
+        }
+
+        // Registered user
+        EnumSet<IndividualAclEntry.IndividualPermissions> permissions = EnumSet.noneOf(IndividualAclEntry.IndividualPermissions.class);
+        boolean flagPermissionFound = false;
+
         if (userAclMap.containsKey(userId)) {
-            return userAclMap.get(userId);
-        } else if (groupId != null && userAclMap.containsKey(groupId)) {
-            return userAclMap.get(groupId);
-        } else if (userAclMap.containsKey(OTHER_USERS_ID)) {
-            return userAclMap.get(OTHER_USERS_ID);
+            permissions.addAll(userAclMap.get(userId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (StringUtils.isNotEmpty(groupId) && userAclMap.containsKey(groupId)) {
+            permissions.addAll(userAclMap.get(groupId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(ANONYMOUS)) {
+            permissions.addAll(userAclMap.get(ANONYMOUS).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(OTHER_USERS_ID)) {
+            permissions.addAll(userAclMap.get(OTHER_USERS_ID).getPermissions());
+            flagPermissionFound = true;
+        }
+
+        if (flagPermissionFound) {
+            return new IndividualAclEntry(userId, permissions);
         } else {
             return transformStudyAclToIndividualAcl(getStudyAclBelonging(studyId, userId, groupId));
         }
@@ -444,8 +516,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         List<String> userIds = (groupId == null)
-                ? Arrays.asList(userId, OTHER_USERS_ID)
-                : Arrays.asList(userId, groupId, OTHER_USERS_ID);
+                ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
+                : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
         List<JobAclEntry> jobAcls = jobDBAdaptor.getAcl(jobId, userIds).getResult();
 
         Map<String, JobAclEntry> userAclMap = new HashMap<>();
@@ -458,12 +530,37 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private JobAclEntry resolveJobPermissions(long studyId, String userId, String groupId, Map<String, JobAclEntry> userAclMap)
             throws CatalogException {
+        if (userId.equals(ANONYMOUS)) {
+            if (userAclMap.containsKey(userId)) {
+                return userAclMap.get(userId);
+            } else {
+                return transformStudyAclToJobAcl(getStudyAclBelonging(studyId, userId, groupId));
+            }
+        }
+
+        // Registered user
+        EnumSet<JobAclEntry.JobPermissions> permissions = EnumSet.noneOf(JobAclEntry.JobPermissions.class);
+        boolean flagPermissionFound = false;
+
         if (userAclMap.containsKey(userId)) {
-            return userAclMap.get(userId);
-        } else if (groupId != null && userAclMap.containsKey(groupId)) {
-            return userAclMap.get(groupId);
-        } else if (userAclMap.containsKey(OTHER_USERS_ID)) {
-            return userAclMap.get(OTHER_USERS_ID);
+            permissions.addAll(userAclMap.get(userId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (StringUtils.isNotEmpty(groupId) && userAclMap.containsKey(groupId)) {
+            permissions.addAll(userAclMap.get(groupId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(ANONYMOUS)) {
+            permissions.addAll(userAclMap.get(ANONYMOUS).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(OTHER_USERS_ID)) {
+            permissions.addAll(userAclMap.get(OTHER_USERS_ID).getPermissions());
+            flagPermissionFound = true;
+        }
+
+        if (flagPermissionFound) {
+            return new JobAclEntry(userId, permissions);
         } else {
             return transformStudyAclToJobAcl(getStudyAclBelonging(studyId, userId, groupId));
         }
@@ -517,8 +614,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         List<String> userIds = (groupId == null)
-                ? Arrays.asList(userId, OTHER_USERS_ID)
-                : Arrays.asList(userId, groupId, OTHER_USERS_ID);
+                ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
+                : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
         List<CohortAclEntry> cohortAcls = cohortDBAdaptor.getAcl(cohortId, userIds).getResult();
 
         Map<String, CohortAclEntry> userAclMap = new HashMap<>();
@@ -531,12 +628,37 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private CohortAclEntry resolveCohortPermissions(long studyId, String userId, String groupId, Map<String, CohortAclEntry> userAclMap)
             throws CatalogException {
+        if (userId.equals(ANONYMOUS)) {
+            if (userAclMap.containsKey(userId)) {
+                return userAclMap.get(userId);
+            } else {
+                return transformStudyAclToCohortAcl(getStudyAclBelonging(studyId, userId, groupId));
+            }
+        }
+
+        // Registered user
+        EnumSet<CohortAclEntry.CohortPermissions> permissions = EnumSet.noneOf(CohortAclEntry.CohortPermissions.class);
+        boolean flagPermissionFound = false;
+
         if (userAclMap.containsKey(userId)) {
-            return userAclMap.get(userId);
-        } else if (groupId != null && userAclMap.containsKey(groupId)) {
-            return userAclMap.get(groupId);
-        } else if (userAclMap.containsKey(OTHER_USERS_ID)) {
-            return userAclMap.get(OTHER_USERS_ID);
+            permissions.addAll(userAclMap.get(userId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (StringUtils.isNotEmpty(groupId) && userAclMap.containsKey(groupId)) {
+            permissions.addAll(userAclMap.get(groupId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(ANONYMOUS)) {
+            permissions.addAll(userAclMap.get(ANONYMOUS).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(OTHER_USERS_ID)) {
+            permissions.addAll(userAclMap.get(OTHER_USERS_ID).getPermissions());
+            flagPermissionFound = true;
+        }
+
+        if (flagPermissionFound) {
+            return new CohortAclEntry(userId, permissions);
         } else {
             return transformStudyAclToCohortAcl(getStudyAclBelonging(studyId, userId, groupId));
         }
@@ -591,8 +713,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         List<String> userIds = (groupId == null)
-                ? Arrays.asList(userId, OTHER_USERS_ID)
-                : Arrays.asList(userId, groupId, OTHER_USERS_ID);
+                ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
+                : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
         List<DatasetAclEntry> datasetAcls = datasetDBAdaptor.getAcl(datasetId, userIds).getResult();
 
         Map<String, DatasetAclEntry> userAclMap = new HashMap<>();
@@ -605,12 +727,37 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private DatasetAclEntry resolveDatasetPermissions(long studyId, String userId, String groupId, Map<String, DatasetAclEntry> userAclMap)
             throws CatalogException {
+        if (userId.equals(ANONYMOUS)) {
+            if (userAclMap.containsKey(userId)) {
+                return userAclMap.get(userId);
+            } else {
+                return transformStudyAclToDatasetAcl(getStudyAclBelonging(studyId, userId, groupId));
+            }
+        }
+
+        // Registered user
+        EnumSet<DatasetAclEntry.DatasetPermissions> permissions = EnumSet.noneOf(DatasetAclEntry.DatasetPermissions.class);
+        boolean flagPermissionFound = false;
+
         if (userAclMap.containsKey(userId)) {
-            return userAclMap.get(userId);
-        } else if (groupId != null && userAclMap.containsKey(groupId)) {
-            return userAclMap.get(groupId);
-        } else if (userAclMap.containsKey(OTHER_USERS_ID)) {
-            return userAclMap.get(OTHER_USERS_ID);
+            permissions.addAll(userAclMap.get(userId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (StringUtils.isNotEmpty(groupId) && userAclMap.containsKey(groupId)) {
+            permissions.addAll(userAclMap.get(groupId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(ANONYMOUS)) {
+            permissions.addAll(userAclMap.get(ANONYMOUS).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(OTHER_USERS_ID)) {
+            permissions.addAll(userAclMap.get(OTHER_USERS_ID).getPermissions());
+            flagPermissionFound = true;
+        }
+
+        if (flagPermissionFound) {
+            return new DatasetAclEntry(userId, permissions);
         } else {
             return transformStudyAclToDatasetAcl(getStudyAclBelonging(studyId, userId, groupId));
         }
@@ -665,8 +812,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         List<String> userIds = (groupId == null)
-                ? Arrays.asList(userId, OTHER_USERS_ID)
-                : Arrays.asList(userId, groupId, OTHER_USERS_ID);
+                ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
+                : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
         List<DiseasePanelAclEntry> panelAcls = panelDBAdaptor.getAcl(panelId, userIds).getResult();
 
         Map<String, DiseasePanelAclEntry> userAclMap = new HashMap<>();
@@ -679,12 +826,38 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private DiseasePanelAclEntry resolveDiseasePanelPermissions(long studyId, String userId, String groupId,
                                                                 Map<String, DiseasePanelAclEntry> userAclMap) throws CatalogException {
+        if (userId.equals(ANONYMOUS)) {
+            if (userAclMap.containsKey(userId)) {
+                return userAclMap.get(userId);
+            } else {
+                return transformStudyAclToDiseasePanelAcl(getStudyAclBelonging(studyId, userId, groupId));
+            }
+        }
+
+        // Registered user
+        EnumSet<DiseasePanelAclEntry.DiseasePanelPermissions> permissions =
+                EnumSet.noneOf(DiseasePanelAclEntry.DiseasePanelPermissions.class);
+        boolean flagPermissionFound = false;
+
         if (userAclMap.containsKey(userId)) {
-            return userAclMap.get(userId);
-        } else if (groupId != null && userAclMap.containsKey(groupId)) {
-            return userAclMap.get(groupId);
-        } else if (userAclMap.containsKey(OTHER_USERS_ID)) {
-            return userAclMap.get(OTHER_USERS_ID);
+            permissions.addAll(userAclMap.get(userId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (StringUtils.isNotEmpty(groupId) && userAclMap.containsKey(groupId)) {
+            permissions.addAll(userAclMap.get(groupId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(ANONYMOUS)) {
+            permissions.addAll(userAclMap.get(ANONYMOUS).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(OTHER_USERS_ID)) {
+            permissions.addAll(userAclMap.get(OTHER_USERS_ID).getPermissions());
+            flagPermissionFound = true;
+        }
+
+        if (flagPermissionFound) {
+            return new DiseasePanelAclEntry(userId, permissions);
         } else {
             return transformStudyAclToDiseasePanelAcl(getStudyAclBelonging(studyId, userId, groupId));
         }
@@ -2273,8 +2446,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public boolean memberHasPermissionsInStudy(long studyId, String member) throws CatalogException {
-        List<String> memberList = new ArrayList<>();
-        memberList.add(member);
+        String userId = member;
+        String groupId = null;
         if (!member.startsWith("@")) { // User
             if (member.equals(ADMIN) || isStudyOwner(studyId, member)) {
                 return true;
@@ -2282,11 +2455,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             if (!member.equals("anonymous") && !member.equals("*")) {
                 QueryResult<Group> groupBelonging = getGroupBelonging(studyId, member);
                 if (groupBelonging.getNumResults() > 0) {
-                    memberList.add(groupBelonging.first().getName()); // Add the groupId to the memberList
+                    groupId = groupBelonging.first().getName();
                 }
             }
         }
-        StudyAclEntry studyAcl = getStudyAclBelonging(studyId, memberList);
+        StudyAclEntry studyAcl = getStudyAclBelonging(studyId, userId, groupId);
         return studyAcl != null;
     }
 
@@ -2335,7 +2508,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             if (studyAuthenticationContext.pathUserAclMap.containsKey(path)) {
                 Map<String, FileAclEntry> userAclMap = studyAuthenticationContext.pathUserAclMap.get(path);
                 if (userAclMap.containsKey(userId) && (groupId == null || userAclMap.containsKey(groupId))
-                        && userAclMap.containsKey(OTHER_USERS_ID)) {
+                        && userAclMap.containsKey(OTHER_USERS_ID) && userAclMap.containsKey(ANONYMOUS)) {
                     iterator.remove();
                 }
             }
@@ -2344,10 +2517,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         // We obtain the Acls for the paths for which we still don't have them.
         if (!pathsClone.isEmpty()) {
             // We make a query to obtain the ACLs of all the pathsClone for userId, groupId and *
-            List<String> userIds = (groupId == null)
-                    ? Arrays.asList(userId, OTHER_USERS_ID)
-                    : Arrays.asList(userId, groupId, OTHER_USERS_ID);
-            Map<String, Map<String, FileAclEntry>> map = fileDBAdaptor.getAcls(studyId, pathsClone, userIds).first();
+            List<String> members = (groupId == null)
+                    ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
+                    : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
+            Map<String, Map<String, FileAclEntry>> map = fileDBAdaptor.getAcls(studyId, pathsClone, members).first();
             for (String path : pathsClone) {
                 Map<String, FileAclEntry> stringAclEntryMap;
                 if (map.containsKey(path)) {
@@ -2360,6 +2533,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                     stringAclEntryMap.putIfAbsent(groupId, null);
                 }
                 stringAclEntryMap.putIfAbsent(OTHER_USERS_ID, null);
+                stringAclEntryMap.putIfAbsent(ANONYMOUS, null);
 
                 if (studyAuthenticationContext.pathUserAclMap.containsKey(path)) {
                     studyAuthenticationContext.pathUserAclMap.get(path).putAll(stringAclEntryMap);
@@ -2403,22 +2577,44 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      * @throws CatalogException when there is any database error.
      */
     StudyAclEntry getStudyAclBelonging(long studyId, String userId, @Nullable String groupId) throws CatalogException {
-        List<String> members = groupId != null ? Arrays.asList(userId, groupId) : Arrays.asList(userId);
-        return getStudyAclBelonging(studyId, members);
-    }
+        List<String> members = (groupId != null)
+                ? Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS)
+                : Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS);
 
-    /**
-     * Retrieves the studyAcl for the members.
-     *
-     * @param studyId study id.
-     * @param members Might be one user, one group or one user and the group where the user belongs to.
-     * @return the studyAcl of the user/group.
-     * @throws CatalogException when there is a database error.
-     */
-    StudyAclEntry getStudyAclBelonging(long studyId, List<String> members) throws CatalogException {
         QueryResult<StudyAclEntry> studyQueryResult = studyDBAdaptor.getAcl(studyId, members);
-        if (studyQueryResult.getNumResults() > 0) {
-            return studyQueryResult.first();
+        Map<String, StudyAclEntry> userAclMap = studyQueryResult.getResult().stream().collect(Collectors.toMap(StudyAclEntry::getMember,
+                Function.identity()));
+
+        if (userId.equals(ANONYMOUS)) {
+            if (userAclMap.containsKey(userId)) {
+                return userAclMap.get(userId);
+            }
+            return null;
+        }
+
+        // Registered user
+        EnumSet<StudyAclEntry.StudyPermissions> permissions = EnumSet.noneOf(StudyAclEntry.StudyPermissions.class);
+        boolean flagPermissionFound = false;
+
+        if (userAclMap.containsKey(userId)) {
+            permissions.addAll(userAclMap.get(userId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (StringUtils.isNotEmpty(groupId) && userAclMap.containsKey(groupId)) {
+            permissions.addAll(userAclMap.get(groupId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(ANONYMOUS)) {
+            permissions.addAll(userAclMap.get(ANONYMOUS).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(OTHER_USERS_ID)) {
+            permissions.addAll(userAclMap.get(OTHER_USERS_ID).getPermissions());
+            flagPermissionFound = true;
+        }
+
+        if (flagPermissionFound) {
+            return new StudyAclEntry(userId, permissions);
         }
         return null;
     }
