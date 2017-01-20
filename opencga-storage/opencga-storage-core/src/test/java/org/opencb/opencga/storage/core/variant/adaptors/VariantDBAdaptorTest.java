@@ -498,14 +498,13 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         queryGeneCT("ERMAP,SH2D5", "SO:0001632");
 
         queryGeneCT("ERMAP,SH2D5", "SO:0001632", new Query()
-                .append(ANNOT_XREF.key(), "ERMAP,SH2D5,rs1171830")
+                .append(ANNOT_XREF.key(), "ERMAP,rs1171830,SH2D5,RCV000036856,4:42895308:G:A,COSM3760638")
                 .append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001632"));
 
-//        //TODO: Should this query work?
-//        queryGeneCT("ERMAP,SH2D5", "SO:0001632", new Query()
-//                .append(GENE.key(), "ERMAP")
-//                .append(ANNOT_XREF.key(), "SH2D5,rs12345")
-//                .append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001632"));
+        queryGeneCT("ERMAP,SH2D5", "SO:0001632", new Query()
+                .append(GENE.key(), "ERMAP")
+                .append(ANNOT_XREF.key(), "SH2D5,rs12345")
+                .append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001632"));
 
         assertThat(dbAdaptor.get(new Query(ANNOT_XREF.key(), "rs1171830").append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001566"), null),
                 everyResult(allVariants, allOf(
@@ -519,7 +518,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     private void queryGeneCT(String gene, String so, Query query) {
         queryResult = dbAdaptor.get(query, null);
-        System.out.println("queryResult.getNumResults() = " + queryResult.getNumResults());
+        logger.info(query.toJson() + " -> numResults " + queryResult.getNumResults());
 
         Matcher<String> geneMatcher;
         if (gene.contains(",")) {
