@@ -103,7 +103,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse query() throws CatalogException, IOException, InterruptedException {
         logger.debug("Listing variants of a study.");
 
-        VariantCommandOptions.QueryVariantCommandOptions queryCommandOptions = variantCommandOptions.queryCommandOptions;
+        VariantCommandOptions.QueryVariantCommandOptionsOld queryCommandOptions = variantCommandOptions.queryVariantCommandOptionsOld;
 
         ObjectMap params = new ObjectMap();
 

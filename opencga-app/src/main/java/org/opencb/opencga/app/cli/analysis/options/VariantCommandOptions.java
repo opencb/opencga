@@ -7,6 +7,7 @@ import com.beust.jcommander.ParametersDelegate;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.storage.app.cli.client.CliOptionsParser;
 
 /**
  * Created by pfurio on 23/11/16.
@@ -17,13 +18,13 @@ public class VariantCommandOptions {
     public JCommander jCommander;
     public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
     public IndexCommandOptions indexCommandOptions;
-    public QueryVariantCommandOptions queryCommandOptions;
+    public QueryVariantCommandOptionsOld queryVariantCommandOptionsOld;
 
     public VariantCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, JCommander jCommander) {
         this.commonCommandOptions = commonCommandOptions;
         this.jCommander = jCommander;
         this.indexCommandOptions = new IndexCommandOptions();
-        this.queryCommandOptions = new QueryVariantCommandOptions();
+        this.queryVariantCommandOptionsOld = new QueryVariantCommandOptionsOld();
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index VCF files")
@@ -84,8 +85,9 @@ public class VariantCommandOptions {
         public boolean resume;
     }
 
+    @Deprecated
     @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed variants")
-    public class QueryVariantCommandOptions {
+    public class QueryVariantCommandOptionsOld {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -256,5 +258,6 @@ public class VariantCommandOptions {
         public String mode = "auto";
 
     }
+
 
 }

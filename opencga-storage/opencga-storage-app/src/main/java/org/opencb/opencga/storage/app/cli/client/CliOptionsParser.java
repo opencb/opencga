@@ -356,11 +356,6 @@ public class CliOptionsParser extends OptionsParser {
         @Parameter(names = {"-t", "--type"}, description = "Whether the variant is a: SNV, INDEL or SV", required = false)
         public String type;
 
-
-//        @Parameter(names = {"--include-annotations"}, description = "Add variant annotation to the INFO column", required = false,
-// arity = 0)
-//        public boolean includeAnnotations;
-
         @Parameter(names = {"--annotations"}, description = "Set variant annotation to return in the INFO column. " +
                 "Accepted values include 'all', 'default' aor a comma-separated list such as 'gene,biotype,consequenceType'", required = false, arity = 1)
         public String annotations;
@@ -384,6 +379,30 @@ public class CliOptionsParser extends OptionsParser {
                 "phastCons>0.5,phylop<0.1", required = false, arity = 1)
         public String conservation;
 
+        @Parameter(names = {"--transcript-flag"}, description = "List of transcript annotation flags. e.g. CCDS, basic, cds_end_NF, mRNA_end_NF, cds_start_NF, mRNA_start_NF, seleno", required = false, arity = 1)
+        public String flags;
+
+        @Parameter(names = {"--gene-trait-id"}, description = "List of gene trait association names. e.g. \"Cardiovascular Diseases\"", required = false, arity = 1)
+        public String geneTraitId;
+
+        @Parameter(names = {"--gene-trait-name"}, description = "List of gene trait association id. e.g. \"umls:C0007222\" , \"OMIM:269600\"", required = false, arity = 1)
+        public String geneTraitName;
+
+        @Parameter(names = {"--hpo"}, description = "List of HPO terms. e.g. \"HP:0000545\" , \"HP:0002812\"", required = false, arity = 1)
+        public String hpo;
+
+        @Parameter(names = {"--go"}, description = "List of GO (Genome Ontology) terms. e.g. \"GO:0002020\"", required = false, arity = 1)
+        public String go;
+
+        @Parameter(names = {"--expression"}, description = "List of tissues of interest. e.g. \"tongue\"", required = false, arity = 1)
+        public String expression;
+
+        @Parameter(names = {"--protein-keywords"}, description = "List of protein variant annotation keywords", required = false, arity = 1)
+        public String proteinKeywords;
+
+        @Parameter(names = {"--drug"}, description = "List of drug names", required = false, arity = 1)
+        public String drugs;
+
         @Parameter(names = {"--ps", "--protein-substitution"}, description = "", required = false, arity = 1)
         public String proteinSubstitution;
 
@@ -395,7 +414,6 @@ public class CliOptionsParser extends OptionsParser {
 
         @Parameter(names = {"--clinvar"}, description = "", required = false, arity = 1)
         public String clinvar;
-
 
         @Deprecated
         @Parameter(names = {"--stats"}, description = " [CSV]", required = false)
@@ -441,6 +459,29 @@ public class CliOptionsParser extends OptionsParser {
 
         @Parameter(names = {"--unknown-genotype"}, description = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]", required = false)
         public String unknownGenotype = "./.";
+
+        @Parameter(names = {"--histogram"}, description = "Calculate histogram. Requires one region.", arity = 0)
+        public boolean histogram;
+
+        @Parameter(names = {"--interval"}, description = "Histogram interval size. Default:2000", arity = 1)
+        public String interval;
+
+        @Parameter(names = {"--annot-functional-score"}, description = "Functional score: {functional_score}[<|>|<=|>=]{number} "
+                + "e.g. cadd_scaled>5.2 , cadd_raw<=0.3", arity = 1)
+        public String functionalScore;
+
+        @Parameter(names = {"--annot-xref"}, description = "XRef", arity = 1)
+        public String annot_xref;
+
+        @Parameter(names = {"--samples-metadata"}, description = "Returns the samples metadata group by studyId, instead of the variants",
+                arity = 0)
+        public boolean samplesMetadata;
+
+
+
+
+        @Parameter(names = {"--mode"}, description = "Communication mode. grpc|rest|auto.")
+        public String mode = "auto";
 
         @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, json or json.gz", required = false, arity = 1)
         public String outputFormat = "vcf";
