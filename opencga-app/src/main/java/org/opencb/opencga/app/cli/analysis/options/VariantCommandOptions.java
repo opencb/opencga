@@ -7,7 +7,7 @@ import com.beust.jcommander.ParametersDelegate;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.storage.app.cli.client.CliOptionsParser;
+import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 
 /**
  * Created by pfurio on 23/11/16.
@@ -260,4 +260,11 @@ public class VariantCommandOptions {
     }
 
 
+    public class QueryVariantCommandOptions {
+
+        @ParametersDelegate
+        public StorageVariantCommandOptions.QueryVariantsCommandOptions commonOptions = null;
+
+
+    }
 }

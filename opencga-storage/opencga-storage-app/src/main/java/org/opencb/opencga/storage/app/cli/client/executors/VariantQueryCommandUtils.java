@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.app.cli.client;
+package org.opencb.opencga.storage.app.cli.client.executors;
 
 import com.beust.jcommander.ParameterException;
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.commons.utils.FileUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,17 +45,17 @@ public class VariantQueryCommandUtils {
 
     private static Logger logger = LoggerFactory.getLogger("org.opencb.opencga.storage.app.cli.client.VariantQueryCommandUtils");
 
-    public static Query parseQuery(CliOptionsParser.QueryVariantsCommandOptions queryVariantsOptions, List<String> studyNames)
+    public static Query parseQuery(StorageVariantCommandOptions.QueryVariantsCommandOptions queryVariantsOptions, List<String> studyNames)
             throws Exception {
         Query query = new Query();
 
         /*
          * Parse Variant parameters
          */
-        if (queryVariantsOptions.region != null && !queryVariantsOptions.region.isEmpty()) {
-            query.put(REGION.key(), queryVariantsOptions.region);
-        } else if (queryVariantsOptions.regionFile != null && !queryVariantsOptions.regionFile.isEmpty()) {
-            Path gffPath = Paths.get(queryVariantsOptions.regionFile);
+        if (queryVariantsOptions.commonQueryOptions.region != null && !queryVariantsOptions.commonQueryOptions.region.isEmpty()) {
+            query.put(REGION.key(), queryVariantsOptions.commonQueryOptions.region);
+        } else if (queryVariantsOptions.commonQueryOptions.regionFile != null && !queryVariantsOptions.commonQueryOptions.regionFile.isEmpty()) {
+            Path gffPath = Paths.get(queryVariantsOptions.commonQueryOptions.regionFile);
             FileUtils.checkFile(gffPath);
             String regionsFromFile = Files.readAllLines(gffPath).stream().map(line -> {
                 String[] array = line.split("\t");
@@ -64,7 +65,7 @@ public class VariantQueryCommandUtils {
         }
 
         addParam(query, ID, queryVariantsOptions.id);
-        addParam(query, GENE, queryVariantsOptions.gene);
+        addParam(query, GENE, queryVariantsOptions.commonQueryOptions.gene);
         addParam(query, TYPE, queryVariantsOptions.type);
 
 
@@ -171,7 +172,7 @@ public class VariantQueryCommandUtils {
         addParam(query, MISSING_GENOTYPES, queryVariantsOptions.missingGenotypeCount);
 
 
-        boolean returnVariants = !queryVariantsOptions.count && StringUtils.isEmpty(queryVariantsOptions.groupBy)
+        boolean returnVariants = !queryVariantsOptions.commonQueryOptions.count && StringUtils.isEmpty(queryVariantsOptions.groupBy)
                 && StringUtils.isEmpty(queryVariantsOptions.rank);
 
 
@@ -201,29 +202,29 @@ public class VariantQueryCommandUtils {
         return query;
     }
 
-    public static QueryOptions parseQueryOptions(CliOptionsParser.QueryVariantsCommandOptions queryVariantsOptions) {
+    public static QueryOptions parseQueryOptions(StorageVariantCommandOptions.QueryVariantsCommandOptions queryVariantsOptions) {
         QueryOptions queryOptions = new QueryOptions(new HashMap<>(queryVariantsOptions.commonOptions.params));
 
-        if (StringUtils.isNotEmpty(queryVariantsOptions.include)) {
-            queryOptions.add("include", queryVariantsOptions.include);
+        if (StringUtils.isNotEmpty(queryVariantsOptions.commonQueryOptions.include)) {
+            queryOptions.add("include", queryVariantsOptions.commonQueryOptions.include);
         }
 
-        if (StringUtils.isNotEmpty(queryVariantsOptions.exclude)) {
-            queryOptions.add("exclude", queryVariantsOptions.exclude + ",_id");
+        if (StringUtils.isNotEmpty(queryVariantsOptions.commonQueryOptions.exclude)) {
+            queryOptions.add("exclude", queryVariantsOptions.commonQueryOptions.exclude + ",_id");
         }
 //        else {
 //            queryOptions.put("exclude", "_id");
 //        }
 
-        if (queryVariantsOptions.skip > 0) {
-            queryOptions.add("skip", queryVariantsOptions.skip);
+        if (queryVariantsOptions.commonQueryOptions.skip > 0) {
+            queryOptions.add("skip", queryVariantsOptions.commonQueryOptions.skip);
         }
 
-        if (queryVariantsOptions.limit > 0) {
-            queryOptions.add("limit", queryVariantsOptions.limit);
+        if (queryVariantsOptions.commonQueryOptions.limit > 0) {
+            queryOptions.add("limit", queryVariantsOptions.commonQueryOptions.limit);
         }
 
-        if (queryVariantsOptions.count) {
+        if (queryVariantsOptions.commonQueryOptions.count) {
             queryOptions.add("count", true);
         }
 
@@ -231,7 +232,7 @@ public class VariantQueryCommandUtils {
     }
 
     @Deprecated
-    public static OutputStream getOutputStream(CliOptionsParser.QueryVariantsCommandOptions queryVariantsOptions) throws IOException {
+    public static OutputStream getOutputStream(StorageVariantCommandOptions.QueryVariantsCommandOptions queryVariantsOptions) throws IOException {
         /*
          * Output parameters
          */
@@ -254,14 +255,14 @@ public class VariantQueryCommandUtils {
 
         // output format has priority over output name
         OutputStream outputStream;
-        if (queryVariantsOptions.output == null || queryVariantsOptions.output.isEmpty()) {
+        if (queryVariantsOptions.commonQueryOptions.output == null || queryVariantsOptions.commonQueryOptions.output.isEmpty()) {
             outputStream = System.out;
         } else {
-            if (gzip && !queryVariantsOptions.output.endsWith(".gz")) {
-                queryVariantsOptions.output += ".gz";
+            if (gzip && !queryVariantsOptions.commonQueryOptions.output.endsWith(".gz")) {
+                queryVariantsOptions.commonQueryOptions.output += ".gz";
             }
-            outputStream = new FileOutputStream(queryVariantsOptions.output);
-            logger.debug("writing to %s", queryVariantsOptions.output);
+            outputStream = new FileOutputStream(queryVariantsOptions.commonQueryOptions.output);
+            logger.debug("writing to %s", queryVariantsOptions.commonQueryOptions.output);
         }
 
         // If compressed a GZip output stream is used

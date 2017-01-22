@@ -125,8 +125,8 @@
                         <configuration>
                             <configLocation>checkstyle.xml</configLocation>
                             <excludes>
-                                org/opencb/opencga/storage/app/cli/client/CliOptionsParser.java,
-                                org/opencb/opencga/storage/app/cli/server/ServerCliOptionsParser.java,
+                                org/opencb/opencga/storage/app/cli/client/**,
+                                org/opencb/opencga/storage/app/cli/server/**,
                                 org/opencb/opencga/storage/app/cli/OptionsParser.java,
                                 org/opencb/opencga/storage/core/variant/io/VariantFieldsProtos.java,
                                 org/opencb/opencga/storage/core/variant/io/VariantEffectProtos.java,

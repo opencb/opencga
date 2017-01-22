@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.app.cli.client;
+package org.opencb.opencga.storage.app.cli.client.executors;
 
 import org.opencb.biodata.formats.feature.gff.Gff;
 import org.opencb.biodata.formats.feature.gff.io.GffReader;
@@ -25,8 +25,10 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
-import org.opencb.opencga.storage.core.StoragePipeline;
+import org.opencb.opencga.storage.app.cli.client.CliOptionsParser;
+import org.opencb.opencga.storage.app.cli.client.options.StorageAlignmentCommandOptions;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
+import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.alignment.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngine;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageEngineOld;
@@ -46,11 +48,11 @@ public class AlignmentCommandExecutor extends CommandExecutor {
     private StorageEngineConfiguration storageConfiguration;
     private AlignmentStorageEngine alignmentStorageManager;
 
-    private CliOptionsParser.AlignmentCommandOptions commandOptions;
+    private StorageAlignmentCommandOptions alignmentCommandOptions;
 
-    public AlignmentCommandExecutor(CliOptionsParser.AlignmentCommandOptions commandOptions) {
-        super(commandOptions.commonOptions);
-        this.commandOptions = commandOptions;
+    public AlignmentCommandExecutor(StorageAlignmentCommandOptions alignmentCommandOptions) {
+        super(alignmentCommandOptions.commonCommandOptions);
+        this.alignmentCommandOptions = alignmentCommandOptions;
     }
 
     private void configure(CliOptionsParser.CommonOptions commonOptions) throws Exception {
@@ -83,14 +85,15 @@ public class AlignmentCommandExecutor extends CommandExecutor {
     public void execute() throws Exception {
         logger.debug("Executing alignment command line");
 
-        String subCommandString = commandOptions.getParsedSubCommand();
+//        String subCommandString = alignmentCommandOptions.getParsedSubCommand();
+        String subCommandString = getParsedSubCommand(alignmentCommandOptions.jCommander);
         switch (subCommandString) {
             case "index":
-                configure(commandOptions.indexAlignmentsCommandOptions.commonOptions);
+                configure(alignmentCommandOptions.indexAlignmentsCommandOptions.commonOptions);
                 index();
                 break;
             case "query":
-                configure(commandOptions.queryAlignmentsCommandOptions.commonOptions);
+                configure(alignmentCommandOptions.queryAlignmentsCommandOptions.commonOptions);
                 query();
                 break;
             default:
@@ -101,13 +104,13 @@ public class AlignmentCommandExecutor extends CommandExecutor {
     }
 
     private void index() throws Exception {
-        CliOptionsParser.IndexAlignmentsCommandOptions indexAlignmentsCommandOptions = commandOptions.indexAlignmentsCommandOptions;
+        StorageAlignmentCommandOptions.IndexAlignmentsCommandOptions indexAlignmentsCommandOptions = alignmentCommandOptions.indexAlignmentsCommandOptions;
 
-        URI inputUri = UriUtils.createUri(indexAlignmentsCommandOptions.input.get(0));
+        URI inputUri = UriUtils.createUri(indexAlignmentsCommandOptions.commonIndexOptions.input.get(0));
 //        FileUtils.checkFile(Paths.get(inputUri.getPath()));
 
-        URI outdirUri = (indexAlignmentsCommandOptions.outdir != null && !indexAlignmentsCommandOptions.outdir.isEmpty())
-                ? UriUtils.createDirectoryUri(indexAlignmentsCommandOptions.outdir)
+        URI outdirUri = (indexAlignmentsCommandOptions.commonIndexOptions.outdir != null && !indexAlignmentsCommandOptions.commonIndexOptions.outdir.isEmpty())
+                ? UriUtils.createDirectoryUri(indexAlignmentsCommandOptions.commonIndexOptions.outdir)
                 // Get parent folder from input file
                 : inputUri.resolve(".");
 //        FileUtils.checkDirectory(Paths.get(outdirUri.getPath()));
@@ -120,8 +123,8 @@ public class AlignmentCommandExecutor extends CommandExecutor {
         if (Integer.parseInt(indexAlignmentsCommandOptions.fileId) != 0) {
             alignmentOptions.put(AlignmentStorageEngineOld.Options.FILE_ID.key(), indexAlignmentsCommandOptions.fileId);
         }
-        if (indexAlignmentsCommandOptions.dbName != null && !indexAlignmentsCommandOptions.dbName.isEmpty()) {
-            alignmentOptions.put(AlignmentStorageEngineOld.Options.DB_NAME.key(), indexAlignmentsCommandOptions.dbName);
+        if (indexAlignmentsCommandOptions.commonIndexOptions.dbName != null && !indexAlignmentsCommandOptions.commonIndexOptions.dbName.isEmpty()) {
+            alignmentOptions.put(AlignmentStorageEngineOld.Options.DB_NAME.key(), indexAlignmentsCommandOptions.commonIndexOptions.dbName);
         }
         if (indexAlignmentsCommandOptions.commonOptions.params != null) {
             alignmentOptions.putAll(indexAlignmentsCommandOptions.commonOptions.params);
@@ -141,15 +144,15 @@ public class AlignmentCommandExecutor extends CommandExecutor {
         boolean extract, transform, load;
         URI nextFileUri = inputUri;
 
-        if (!indexAlignmentsCommandOptions.load && !indexAlignmentsCommandOptions.transform) {  // if not present --transform nor --load,
+        if (!indexAlignmentsCommandOptions.commonIndexOptions.load && !indexAlignmentsCommandOptions.commonIndexOptions.transform) {  // if not present --transform nor --load,
             // do both
             extract = true;
             transform = true;
             load = true;
         } else {
-            extract = indexAlignmentsCommandOptions.transform;
-            transform = indexAlignmentsCommandOptions.transform;
-            load = indexAlignmentsCommandOptions.load;
+            extract = indexAlignmentsCommandOptions.commonIndexOptions.transform;
+            transform = indexAlignmentsCommandOptions.commonIndexOptions.transform;
+            load = indexAlignmentsCommandOptions.commonIndexOptions.load;
         }
 
         StoragePipeline storagePipeline = alignmentStorageManager.newStoragePipeline(true);
@@ -179,16 +182,16 @@ public class AlignmentCommandExecutor extends CommandExecutor {
     }
 
     private void query() throws StorageEngineException, FileFormatException {
-        CliOptionsParser.QueryAlignmentsCommandOptions queryAlignmentsCommandOptions = commandOptions.queryAlignmentsCommandOptions;
-        AlignmentDBAdaptor dbAdaptor = alignmentStorageManager.getDBAdaptor(queryAlignmentsCommandOptions.dbName);
+        StorageAlignmentCommandOptions.QueryAlignmentsCommandOptions queryAlignmentsCommandOptions = alignmentCommandOptions.queryAlignmentsCommandOptions;
+        AlignmentDBAdaptor dbAdaptor = alignmentStorageManager.getDBAdaptor(queryAlignmentsCommandOptions.commonQueryOptions.dbName);
 
         /**
          * Parse Regions
          */
         GffReader gffReader = null;
         List<Region> regions = null;
-        if (queryAlignmentsCommandOptions.region != null && !queryAlignmentsCommandOptions.region.isEmpty()) {
-            regions = Region.parseRegions(queryAlignmentsCommandOptions.region);
+        if (queryAlignmentsCommandOptions.commonQueryOptions.region != null && !queryAlignmentsCommandOptions.commonQueryOptions.region.isEmpty()) {
+            regions = Region.parseRegions(queryAlignmentsCommandOptions.commonQueryOptions.region);
             logger.debug("Processed regions: '{}'", regions);
 //            regions = new LinkedList<>();
 //            for (String csvRegion : queryAlignmentsCommandOptions.regions) {
@@ -198,9 +201,9 @@ public class AlignmentCommandExecutor extends CommandExecutor {
 //                    logger.info("Parsed region: {}", region);
 //                }
 //            }
-        } else if (queryAlignmentsCommandOptions.regionFile != null && !queryAlignmentsCommandOptions.regionFile.isEmpty()) {
+        } else if (queryAlignmentsCommandOptions.commonQueryOptions.regionFile != null && !queryAlignmentsCommandOptions.commonQueryOptions.regionFile.isEmpty()) {
             try {
-                gffReader = new GffReader(queryAlignmentsCommandOptions.regionFile);
+                gffReader = new GffReader(queryAlignmentsCommandOptions.commonQueryOptions.regionFile);
             } catch (NoSuchMethodException e) {
                 e.printStackTrace();
             } catch (IOException e) {

@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.app.cli.client;
+package org.opencb.opencga.storage.app.cli.client.executors;
 
 import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.grpc.ManagedChannel;
-import io.grpc.ManagedChannelBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.variant.Variant;
@@ -33,9 +31,8 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
 import org.opencb.opencga.storage.app.cli.OptionsParser;
+import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
-import org.opencb.opencga.storage.core.benchmark.BenchmarkManager;
-import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
@@ -50,18 +47,16 @@ import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnno
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
-import org.opencb.opencga.storage.server.grpc.GenericServiceModel;
-import org.opencb.opencga.storage.server.grpc.VariantProto;
-import org.opencb.opencga.storage.server.grpc.VariantServiceGrpc;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -72,10 +67,10 @@ public class VariantCommandExecutor extends CommandExecutor {
     private StorageEngineConfiguration storageConfiguration;
     private VariantStorageEngine variantStorageEngine;
 
-    private CliOptionsParser.VariantCommandOptions variantCommandOptions;
+    private StorageVariantCommandOptions variantCommandOptions;
 
-    public VariantCommandExecutor(CliOptionsParser.VariantCommandOptions variantCommandOptions) {
-        super(variantCommandOptions.commonOptions);
+    public VariantCommandExecutor(StorageVariantCommandOptions variantCommandOptions) {
+        super(variantCommandOptions.commonCommandOptions);
         this.variantCommandOptions = variantCommandOptions;
     }
 
@@ -109,7 +104,8 @@ public class VariantCommandExecutor extends CommandExecutor {
     public void execute() throws Exception {
         logger.debug("Executing variant command line");
 
-        String subCommandString = variantCommandOptions.getParsedSubCommand();
+//        String subCommandString = variantCommandOptions.getParsedSubCommand();
+        String subCommandString = getParsedSubCommand(variantCommandOptions.jCommander);
         switch (subCommandString) {
             case "index":
                 configure(variantCommandOptions.indexVariantsCommandOptions.commonOptions);
@@ -119,10 +115,10 @@ public class VariantCommandExecutor extends CommandExecutor {
                 configure(variantCommandOptions.queryVariantsCommandOptions.commonOptions);
                 query();
                 break;
-            case "query-grpc":
-                configure(variantCommandOptions.queryVariantsCommandOptions.commonOptions);
-                queryGrpc();
-                break;
+//            case "query-grpc":
+//                configure(variantCommandOptions.queryVariantsCommandOptions.commonOptions);
+//                queryGrpc();
+//                break;
             case "import":
                 configure(variantCommandOptions.importVariantsCommandOptions.commonOptions);
                 importData();
@@ -135,10 +131,10 @@ public class VariantCommandExecutor extends CommandExecutor {
                 configure(variantCommandOptions.statsVariantsCommandOptions.commonOptions);
                 stats();
                 break;
-            case "benchmark":
-                configure(variantCommandOptions.statsVariantsCommandOptions.commonOptions);
-                benchmark();
-                break;
+//            case "benchmark":
+//                configure(variantCommandOptions.statsVariantsCommandOptions.commonOptions);
+//                benchmark();
+//                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -147,9 +143,9 @@ public class VariantCommandExecutor extends CommandExecutor {
     }
 
     private void index() throws URISyntaxException, IOException, StorageEngineException, FileFormatException {
-        CliOptionsParser.IndexVariantsCommandOptions indexVariantsCommandOptions = variantCommandOptions.indexVariantsCommandOptions;
+        StorageVariantCommandOptions.IndexVariantsCommandOptions indexVariantsCommandOptions = variantCommandOptions.indexVariantsCommandOptions;
         List<URI> inputUris = new LinkedList<>();
-        for (String uri : indexVariantsCommandOptions.input) {
+        for (String uri : indexVariantsCommandOptions.commonIndexOptions.input) {
             URI variantsUri = UriUtils.createUri(uri);
             if (variantsUri.getScheme().startsWith("file") || variantsUri.getScheme().isEmpty()) {
                 FileUtils.checkFile(Paths.get(variantsUri));
@@ -164,8 +160,8 @@ public class VariantCommandExecutor extends CommandExecutor {
             FileUtils.checkFile(Paths.get(pedigreeUri));
         }
 
-        URI outdirUri = (indexVariantsCommandOptions.outdir != null && !indexVariantsCommandOptions.outdir.isEmpty())
-                ? UriUtils.createDirectoryUri(indexVariantsCommandOptions.outdir)
+        URI outdirUri = (indexVariantsCommandOptions.commonIndexOptions.outdir != null && !indexVariantsCommandOptions.commonIndexOptions.outdir.isEmpty())
+                ? UriUtils.createDirectoryUri(indexVariantsCommandOptions.commonIndexOptions.outdir)
                 // Get parent folder from input file
                 : inputUris.get(0).resolve(".");
         if (outdirUri.getScheme().startsWith("file") || outdirUri.getScheme().isEmpty()) {
@@ -178,37 +174,37 @@ public class VariantCommandExecutor extends CommandExecutor {
 // indexVariantsCommandOptions.aggregated);
 
         /** Add CLi options to the variant options **/
-        ObjectMap variantOptions = storageConfiguration.getVariant().getOptions();
-        variantOptions.put(VariantStorageEngine.Options.STUDY_NAME.key(), indexVariantsCommandOptions.study);
-        variantOptions.put(VariantStorageEngine.Options.STUDY_ID.key(), indexVariantsCommandOptions.studyId);
-        variantOptions.put(VariantStorageEngine.Options.FILE_ID.key(), indexVariantsCommandOptions.fileId);
-        variantOptions.put(VariantStorageEngine.Options.SAMPLE_IDS.key(), indexVariantsCommandOptions.sampleIds);
-        variantOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), indexVariantsCommandOptions.calculateStats);
-        variantOptions.put(VariantStorageEngine.Options.INCLUDE_STATS.key(), indexVariantsCommandOptions.includeStats);
+        ObjectMap params = storageConfiguration.getVariant().getOptions();
+        params.put(VariantStorageEngine.Options.STUDY_NAME.key(), indexVariantsCommandOptions.study);
+        params.put(VariantStorageEngine.Options.STUDY_ID.key(), indexVariantsCommandOptions.studyId);
+        params.put(VariantStorageEngine.Options.FILE_ID.key(), indexVariantsCommandOptions.fileId);
+        params.put(VariantStorageEngine.Options.SAMPLE_IDS.key(), indexVariantsCommandOptions.sampleIds);
+        params.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), indexVariantsCommandOptions.calculateStats);
+        params.put(VariantStorageEngine.Options.INCLUDE_STATS.key(), indexVariantsCommandOptions.includeStats);
 //        variantOptions.put(VariantStorageEngine.Options.INCLUDE_GENOTYPES.key(), indexVariantsCommandOptions.includeGenotype);
-        variantOptions.put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), indexVariantsCommandOptions.extraFields);
+        params.put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), indexVariantsCommandOptions.extraFields);
 //        variantOptions.put(VariantStorageEngine.Options.INCLUDE_SRC.key(), indexVariantsCommandOptions.includeSrc);
 //        variantOptions.put(VariantStorageEngine.Options.COMPRESS_GENOTYPES.key(), indexVariantsCommandOptions.compressGenotypes);
-        variantOptions.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), indexVariantsCommandOptions.aggregated);
-        if (indexVariantsCommandOptions.dbName != null) {
-            variantOptions.put(VariantStorageEngine.Options.DB_NAME.key(), indexVariantsCommandOptions.dbName);
-        }
-        variantOptions.put(VariantStorageEngine.Options.ANNOTATE.key(), indexVariantsCommandOptions.annotate);
+        params.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), indexVariantsCommandOptions.aggregated);
+
+        params.putIfNotEmpty(VariantStorageEngine.Options.DB_NAME.key(), indexVariantsCommandOptions.commonIndexOptions.dbName);
+
+        params.put(VariantStorageEngine.Options.ANNOTATE.key(), indexVariantsCommandOptions.annotate);
         if (indexVariantsCommandOptions.annotator != null) {
-            variantOptions.put(VariantAnnotationManager.ANNOTATION_SOURCE, indexVariantsCommandOptions.annotator);
+            params.put(VariantAnnotationManager.ANNOTATION_SOURCE, indexVariantsCommandOptions.annotator);
         }
-        variantOptions.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, indexVariantsCommandOptions.overwriteAnnotations);
-        if (indexVariantsCommandOptions.studyConfigurationFile != null && !indexVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
-            variantOptions.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, indexVariantsCommandOptions.studyConfigurationFile);
+        params.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, indexVariantsCommandOptions.overwriteAnnotations);
+        if (indexVariantsCommandOptions.commonIndexOptions.studyConfigurationFile != null && !indexVariantsCommandOptions.commonIndexOptions.studyConfigurationFile.isEmpty()) {
+            params.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, indexVariantsCommandOptions.commonIndexOptions.studyConfigurationFile);
         }
-        variantOptions.put(VariantStorageEngine.Options.RESUME.key(), indexVariantsCommandOptions.resume);
+        params.put(VariantStorageEngine.Options.RESUME.key(), indexVariantsCommandOptions.resume);
 
         if (indexVariantsCommandOptions.aggregationMappingFile != null) {
             // TODO move this options to new configuration.yml
             Properties aggregationMappingProperties = new Properties();
             try {
                 aggregationMappingProperties.load(new FileInputStream(indexVariantsCommandOptions.aggregationMappingFile));
-                variantOptions.put(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), aggregationMappingProperties);
+                params.put(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), aggregationMappingProperties);
             } catch (FileNotFoundException e) {
                 logger.error("Aggregation mapping file {} not found. Population stats won't be parsed.", indexVariantsCommandOptions
                         .aggregationMappingFile);
@@ -216,22 +212,22 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
 
         if (indexVariantsCommandOptions.commonOptions.params != null) {
-            variantOptions.putAll(indexVariantsCommandOptions.commonOptions.params);
+            params.putAll(indexVariantsCommandOptions.commonOptions.params);
         }
-        logger.debug("Configuration options: {}", variantOptions.toJson());
+        logger.debug("Configuration options: {}", params.toJson());
 
 
         /** Execute ETL steps **/
         boolean doExtract, doTransform, doLoad;
 
-        if (!indexVariantsCommandOptions.load && !indexVariantsCommandOptions.transform) {
+        if (!indexVariantsCommandOptions.commonIndexOptions.load && !indexVariantsCommandOptions.commonIndexOptions.transform) {
             doExtract = true;
             doTransform = true;
             doLoad = true;
         } else {
-            doExtract = indexVariantsCommandOptions.transform;
-            doTransform = indexVariantsCommandOptions.transform;
-            doLoad = indexVariantsCommandOptions.load;
+            doExtract = indexVariantsCommandOptions.commonIndexOptions.transform;
+            doTransform = indexVariantsCommandOptions.commonIndexOptions.transform;
+            doLoad = indexVariantsCommandOptions.commonIndexOptions.load;
         }
 
         variantStorageEngine.index(inputUris, outdirUri, doExtract, doTransform, doLoad);
@@ -239,17 +235,17 @@ public class VariantCommandExecutor extends CommandExecutor {
     }
 
     private void query() throws Exception {
-        CliOptionsParser.QueryVariantsCommandOptions queryVariantsCommandOptions = variantCommandOptions.queryVariantsCommandOptions;
+        StorageVariantCommandOptions.QueryVariantsCommandOptions queryVariantsCommandOptions = variantCommandOptions.queryVariantsCommandOptions;
 
         storageConfiguration.getVariant().getOptions().putAll(queryVariantsCommandOptions.commonOptions.params);
 
-        VariantDBAdaptor variantDBAdaptor = variantStorageEngine.getDBAdaptor(queryVariantsCommandOptions.dbName);
+        VariantDBAdaptor variantDBAdaptor = variantStorageEngine.getDBAdaptor(queryVariantsCommandOptions.commonQueryOptions.dbName);
         List<String> studyNames = variantDBAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
 
         Query query = VariantQueryCommandUtils.parseQuery(queryVariantsCommandOptions, studyNames);
         QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(queryVariantsCommandOptions);
 
-        if (queryVariantsCommandOptions.count) {
+        if (queryVariantsCommandOptions.commonQueryOptions.count) {
             QueryResult<Long> result = variantDBAdaptor.count(query);
             System.out.println("Num. results\t" + result.getResult().get(0));
         } else if (StringUtils.isNotEmpty(queryVariantsCommandOptions.rank)) {
@@ -259,112 +255,112 @@ public class VariantCommandExecutor extends CommandExecutor {
             QueryResult groupBy = variantDBAdaptor.groupBy(query, queryVariantsCommandOptions.groupBy, options);
             System.out.println("groupBy = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(groupBy));
         } else {
-            URI uri = StringUtils.isEmpty(queryVariantsCommandOptions.output)
+            URI uri = StringUtils.isEmpty(queryVariantsCommandOptions.commonQueryOptions.output)
                     ? null
-                    : UriUtils.createUri(queryVariantsCommandOptions.output);
+                    : UriUtils.createUri(queryVariantsCommandOptions.commonQueryOptions.output);
 
             if (queryVariantsCommandOptions.annotations != null) {
                 options.add("annotations", queryVariantsCommandOptions.annotations);
             }
             VariantWriterFactory.VariantOutputFormat of = VariantWriterFactory
-                    .toOutputFormat(queryVariantsCommandOptions.outputFormat, queryVariantsCommandOptions.output);
-            variantStorageEngine.exportData(uri, of, queryVariantsCommandOptions.dbName, query, options);
+                    .toOutputFormat(queryVariantsCommandOptions.outputFormat, queryVariantsCommandOptions.commonQueryOptions.output);
+            variantStorageEngine.exportData(uri, of, queryVariantsCommandOptions.commonQueryOptions.dbName, query, options);
         }
     }
 
-    private void queryGrpc() throws Exception {
-        CliOptionsParser.QueryGrpCVariantsCommandOptions queryGrpcCommandOptions = variantCommandOptions.queryGrpCVariantsCommandOptions;
-
-        VariantDBAdaptor variantDBAdaptor = variantStorageEngine.getDBAdaptor(queryGrpcCommandOptions.dbName);
-        List<String> studyNames = variantDBAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
-
-        // We prepare and build the needed objects: query, queryOptions and outputStream to print results
-        Query query = VariantQueryCommandUtils.parseQuery(queryGrpcCommandOptions, studyNames);
-        QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(queryGrpcCommandOptions);
-        OutputStream outputStream = VariantQueryCommandUtils.getOutputStream(queryGrpcCommandOptions);
-        PrintStream printStream = new PrintStream(outputStream);
-
-        // Query object implements a Map<String, Object> while gRPC request object is a Map<String, String>,
-        // we need to convert all parsed query fields into String, Lists are taken care of to avoid square brackets
-        Map<String, String> queryString = new HashMap<>();
-        query.keySet().stream().forEach(s ->  {
-            if (query.get(s) instanceof ArrayList || query.get(s) instanceof LinkedList) {
-                String replace = query.getString(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key())
-                        .replace(" ", "").replace("[", "").replace("]", "");
-                queryString.put(s, replace);
-            } else {
-                queryString.put(s, String.valueOf(query.get(s)));
-            }
-        });
-        logger.debug("Query object: {}", queryString);
-
-        Map<String, String> queryOptionsString = new HashMap<>();
-        options.keySet().stream().forEach(s -> queryOptionsString.put(s, String.valueOf(options.get(s))));
-        logger.debug("QueryOption object: {}", queryOptionsString);
-
-        // Setting the storageEngine and database to execute the query, this are passed to the gRPC in the request object
-        String storageEngine = configuration.getDefaultStorageEngineId();
-        if (StringUtils.isNotEmpty(queryGrpcCommandOptions.commonOptions.storageEngine)) {
-            storageEngine = queryGrpcCommandOptions.commonOptions.storageEngine;
-        }
-
-        String database = configuration.getStorageEngine(storageEngine).getVariant().getOptions().getString("database.name");
-        if (StringUtils.isNotEmpty(queryGrpcCommandOptions.dbName)) {
-            database = queryGrpcCommandOptions.dbName;
-        }
-
-        // We create the OpenCGA gRPC request object with the query, queryOptions, storageEngine and database
-        GenericServiceModel.Request request = GenericServiceModel.Request.newBuilder()
-                .setStorageEngine(storageEngine)
-                .setDatabase(database)
-                .putAllQuery(queryString)
-                .putAllOptions(queryOptionsString)
-                .build();
-
-
-        // Connecting to the server host and port
-        String grpcServerHost = "localhost";
-        if (StringUtils.isNotEmpty(queryGrpcCommandOptions.host)) {
-            grpcServerHost = queryGrpcCommandOptions.host;
-        }
-
-        int grpcServerPort = configuration.getServer().getGrpc();
-        if (queryGrpcCommandOptions.port > 0) {
-            grpcServerPort = queryGrpcCommandOptions.port;
-        }
-        logger.debug("Connecting to gRPC server at '{}:{}' to database '{}:{}'", grpcServerHost, grpcServerPort, storageEngine, database);
-
-        // We create the gRPC channel to the specified server host and port
-        ManagedChannel channel = ManagedChannelBuilder.forAddress(grpcServerHost, grpcServerPort)
-                .usePlaintext(true)
-                .build();
-
-
-        // We use a blocking stub to execute the query to gRPC
-        VariantServiceGrpc.VariantServiceBlockingStub geneServiceBlockingStub = VariantServiceGrpc.newBlockingStub(channel);
-        Iterator<VariantProto.Variant> variantIterator = geneServiceBlockingStub.get(request);
-        while (variantIterator.hasNext()) {
-            VariantProto.Variant next = variantIterator.next();
-            printStream.println(next.toString());
-        }
-
-        // Close open resources
-        printStream.close();
-        channel.shutdown().awaitTermination(2, TimeUnit.SECONDS);
-    }
+//    private void queryGrpc() throws Exception {
+//        StorageVariantCommandOptions.QueryGrpCVariantsCommandOptions queryGrpcCommandOptions = variantCommandOptions.queryGrpCVariantsCommandOptions;
+//
+//        VariantDBAdaptor variantDBAdaptor = variantStorageEngine.getDBAdaptor(queryGrpcCommandOptions.dbName);
+//        List<String> studyNames = variantDBAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
+//
+//        // We prepare and build the needed objects: query, queryOptions and outputStream to print results
+//        Query query = VariantQueryCommandUtils.parseQuery(queryGrpcCommandOptions, studyNames);
+//        QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(queryGrpcCommandOptions);
+//        OutputStream outputStream = VariantQueryCommandUtils.getOutputStream(queryGrpcCommandOptions);
+//        PrintStream printStream = new PrintStream(outputStream);
+//
+//        // Query object implements a Map<String, Object> while gRPC request object is a Map<String, String>,
+//        // we need to convert all parsed query fields into String, Lists are taken care of to avoid square brackets
+//        Map<String, String> queryString = new HashMap<>();
+//        query.keySet().stream().forEach(s ->  {
+//            if (query.get(s) instanceof ArrayList || query.get(s) instanceof LinkedList) {
+//                String replace = query.getString(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key())
+//                        .replace(" ", "").replace("[", "").replace("]", "");
+//                queryString.put(s, replace);
+//            } else {
+//                queryString.put(s, String.valueOf(query.get(s)));
+//            }
+//        });
+//        logger.debug("Query object: {}", queryString);
+//
+//        Map<String, String> queryOptionsString = new HashMap<>();
+//        options.keySet().stream().forEach(s -> queryOptionsString.put(s, String.valueOf(options.get(s))));
+//        logger.debug("QueryOption object: {}", queryOptionsString);
+//
+//        // Setting the storageEngine and database to execute the query, this are passed to the gRPC in the request object
+//        String storageEngine = configuration.getDefaultStorageEngineId();
+//        if (StringUtils.isNotEmpty(queryGrpcCommandOptions.commonOptions.storageEngine)) {
+//            storageEngine = queryGrpcCommandOptions.commonOptions.storageEngine;
+//        }
+//
+//        String database = configuration.getStorageEngine(storageEngine).getVariant().getOptions().getString("database.name");
+//        if (StringUtils.isNotEmpty(queryGrpcCommandOptions.dbName)) {
+//            database = queryGrpcCommandOptions.dbName;
+//        }
+//
+//        // We create the OpenCGA gRPC request object with the query, queryOptions, storageEngine and database
+//        GenericServiceModel.Request request = GenericServiceModel.Request.newBuilder()
+//                .setStorageEngine(storageEngine)
+//                .setDatabase(database)
+//                .putAllQuery(queryString)
+//                .putAllOptions(queryOptionsString)
+//                .build();
+//
+//
+//        // Connecting to the server host and port
+//        String grpcServerHost = "localhost";
+//        if (StringUtils.isNotEmpty(queryGrpcCommandOptions.host)) {
+//            grpcServerHost = queryGrpcCommandOptions.host;
+//        }
+//
+//        int grpcServerPort = configuration.getServer().getGrpc();
+//        if (queryGrpcCommandOptions.port > 0) {
+//            grpcServerPort = queryGrpcCommandOptions.port;
+//        }
+//        logger.debug("Connecting to gRPC server at '{}:{}' to database '{}:{}'", grpcServerHost, grpcServerPort, storageEngine, database);
+//
+//        // We create the gRPC channel to the specified server host and port
+//        ManagedChannel channel = ManagedChannelBuilder.forAddress(grpcServerHost, grpcServerPort)
+//                .usePlaintext(true)
+//                .build();
+//
+//
+//        // We use a blocking stub to execute the query to gRPC
+//        VariantServiceGrpc.VariantServiceBlockingStub geneServiceBlockingStub = VariantServiceGrpc.newBlockingStub(channel);
+//        Iterator<VariantProto.Variant> variantIterator = geneServiceBlockingStub.get(request);
+//        while (variantIterator.hasNext()) {
+//            VariantProto.Variant next = variantIterator.next();
+//            printStream.println(next.toString());
+//        }
+//
+//        // Close open resources
+//        printStream.close();
+//        channel.shutdown().awaitTermination(2, TimeUnit.SECONDS);
+//    }
 
     private void importData() throws URISyntaxException, StorageEngineException, IOException {
-        CliOptionsParser.ImportVariantsCommandOptions importVariantsOptions = variantCommandOptions.importVariantsCommandOptions;
+        StorageVariantCommandOptions.ImportVariantsCommandOptions importVariantsOptions = variantCommandOptions.importVariantsCommandOptions;
 
         URI uri = UriUtils.createUri(importVariantsOptions.input);
         ObjectMap options = new ObjectMap();
-        options.putAll(variantCommandOptions.commonOptions.params);
+        options.putAll(importVariantsOptions.commonOptions.params);
         variantStorageEngine.importData(uri, importVariantsOptions.dbName, options);
 
     }
 
     private void annotation() throws StorageEngineException, IOException, URISyntaxException, VariantAnnotatorException {
-        CliOptionsParser.AnnotateVariantsCommandOptions annotateVariantsCommandOptions
+        StorageVariantCommandOptions.AnnotateVariantsCommandOptions annotateVariantsCommandOptions
                 = variantCommandOptions.annotateVariantsCommandOptions;
 
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor(annotateVariantsCommandOptions.dbName);
@@ -449,7 +445,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 
     private void stats() throws IOException, URISyntaxException, StorageEngineException, IllegalAccessException, InstantiationException,
             ClassNotFoundException {
-        CliOptionsParser.StatsVariantsCommandOptions statsVariantsCommandOptions = variantCommandOptions.statsVariantsCommandOptions;
+        StorageVariantCommandOptions.StatsVariantsCommandOptions statsVariantsCommandOptions = variantCommandOptions.statsVariantsCommandOptions;
 
         ObjectMap options = storageConfiguration.getVariant().getOptions();
         if (statsVariantsCommandOptions.dbName != null && !statsVariantsCommandOptions.dbName.isEmpty()) {
@@ -552,7 +548,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 
 
     private void executeRank(Query query, VariantDBAdaptor variantDBAdaptor,
-                             CliOptionsParser.QueryVariantsCommandOptions queryVariantsCommandOptions) throws JsonProcessingException {
+                             StorageVariantCommandOptions.QueryVariantsCommandOptions queryVariantsCommandOptions) throws JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
         String field = queryVariantsCommandOptions.rank;
         boolean asc = false;
@@ -564,8 +560,8 @@ public class VariantCommandExecutor extends CommandExecutor {
             }
         }
         int limit = 10;
-        if (queryVariantsCommandOptions.limit > 0) {
-            limit = queryVariantsCommandOptions.limit;
+        if (queryVariantsCommandOptions.commonQueryOptions.limit > 0) {
+            limit = queryVariantsCommandOptions.commonQueryOptions.limit;
         }
         QueryResult rank = variantDBAdaptor.rank(query, field, limit, asc);
         System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rank));
@@ -579,52 +575,52 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
     }
 
-    private void benchmark() throws StorageEngineException, InterruptedException, ExecutionException, InstantiationException,
-            IllegalAccessException, ClassNotFoundException {
-        CliOptionsParser.BenchmarkCommandOptions benchmarkCommandOptions = variantCommandOptions.benchmarkCommandOptions;
-
-// Overwrite default options from configuration.yaml with CLI parameters
-        if (benchmarkCommandOptions.commonOptions.storageEngine != null && !benchmarkCommandOptions.commonOptions.storageEngine.isEmpty()) {
-            configuration.getBenchmark().setStorageEngine(benchmarkCommandOptions.commonOptions.storageEngine);
-        } else {
-            configuration.getBenchmark().setStorageEngine(configuration.getDefaultStorageEngineId());
-            logger.debug("Storage Engine for benchmarking set to '{}'", configuration.getDefaultStorageEngineId());
-        }
-
-        if (benchmarkCommandOptions.repetition > 0) {
-            configuration.getBenchmark().setNumRepetitions(benchmarkCommandOptions.repetition);
-        }
-
-        if (benchmarkCommandOptions.database != null && !benchmarkCommandOptions.database.isEmpty()) {
-            configuration.getBenchmark().setDatabaseName(benchmarkCommandOptions.database);
-        }
-
-        if (benchmarkCommandOptions.table != null && !benchmarkCommandOptions.table.isEmpty()) {
-            configuration.getBenchmark().setTable(benchmarkCommandOptions.table);
-        }
-
-        if (benchmarkCommandOptions.queries != null) {
-            configuration.getBenchmark().setQueries(Arrays.asList(benchmarkCommandOptions.queries.split(",")));
-        }
-
-        DatabaseCredentials databaseCredentials = configuration.getBenchmark().getDatabase();
-        if (benchmarkCommandOptions.host != null && !benchmarkCommandOptions.host.isEmpty()) {
-            databaseCredentials.setHosts(Arrays.asList(benchmarkCommandOptions.host.split(",")));
-        }
-
-        if (benchmarkCommandOptions.concurrency > 0) {
-            configuration.getBenchmark().setConcurrency(benchmarkCommandOptions.concurrency);
-        }
-
-        logger.debug("Benchmark configuration: {}", configuration.getBenchmark());
-
-        // validate
-        checkParams();
-
-//        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(benchmarkCommandOptions.storageEngine);
-        BenchmarkManager benchmarkManager = new BenchmarkManager(configuration);
-        benchmarkManager.variantBenchmark();
-    }
+//    private void benchmark() throws StorageEngineException, InterruptedException, ExecutionException, InstantiationException,
+//            IllegalAccessException, ClassNotFoundException {
+//        StorageVariantCommandOptions.BenchmarkCommandOptions benchmarkCommandOptions = variantCommandOptions.benchmarkCommandOptions;
+//
+//// Overwrite default options from configuration.yaml with CLI parameters
+//        if (benchmarkCommandOptions.commonOptions.storageEngine != null && !benchmarkCommandOptions.commonOptions.storageEngine.isEmpty()) {
+//            configuration.getBenchmark().setStorageEngine(benchmarkCommandOptions.commonOptions.storageEngine);
+//        } else {
+//            configuration.getBenchmark().setStorageEngine(configuration.getDefaultStorageEngineId());
+//            logger.debug("Storage Engine for benchmarking set to '{}'", configuration.getDefaultStorageEngineId());
+//        }
+//
+//        if (benchmarkCommandOptions.repetition > 0) {
+//            configuration.getBenchmark().setNumRepetitions(benchmarkCommandOptions.repetition);
+//        }
+//
+//        if (benchmarkCommandOptions.database != null && !benchmarkCommandOptions.database.isEmpty()) {
+//            configuration.getBenchmark().setDatabaseName(benchmarkCommandOptions.database);
+//        }
+//
+//        if (benchmarkCommandOptions.table != null && !benchmarkCommandOptions.table.isEmpty()) {
+//            configuration.getBenchmark().setTable(benchmarkCommandOptions.table);
+//        }
+//
+//        if (benchmarkCommandOptions.queries != null) {
+//            configuration.getBenchmark().setQueries(Arrays.asList(benchmarkCommandOptions.queries.split(",")));
+//        }
+//
+//        DatabaseCredentials databaseCredentials = configuration.getBenchmark().getDatabase();
+//        if (benchmarkCommandOptions.host != null && !benchmarkCommandOptions.host.isEmpty()) {
+//            databaseCredentials.setHosts(Arrays.asList(benchmarkCommandOptions.host.split(",")));
+//        }
+//
+//        if (benchmarkCommandOptions.concurrency > 0) {
+//            configuration.getBenchmark().setConcurrency(benchmarkCommandOptions.concurrency);
+//        }
+//
+//        logger.debug("Benchmark configuration: {}", configuration.getBenchmark());
+//
+//        // validate
+//        checkParams();
+//
+////        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(benchmarkCommandOptions.storageEngine);
+//        BenchmarkManager benchmarkManager = new BenchmarkManager(configuration);
+//        benchmarkManager.variantBenchmark();
+//    }
 
     private void checkParams() {
         if (configuration.getBenchmark().getDatabaseName() == null || configuration.getBenchmark().getDatabaseName().isEmpty()) {
