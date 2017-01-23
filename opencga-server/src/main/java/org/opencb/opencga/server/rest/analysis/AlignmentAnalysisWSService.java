@@ -62,7 +62,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @ApiOperation(value = "Index alignment files", position = 14, response = QueryResponse.class)
     public Response index(@ApiParam(value = "Comma separated list of file ids (files or directories)", required = true)
                               @QueryParam(value = "file") String fileIdStr,
-                          @ApiParam("(DEPRECATED) Study id") @QueryParam("studyId") String studyId,
+                          @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                               @QueryParam("study") String studyStr,
                           @ApiParam("Boolean indicating that only the transform step will be run") @DefaultValue("false") @QueryParam("transform") boolean transform,
@@ -101,7 +101,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     })
     public Response getAlignments(@ApiParam(value = "Id of the alignment file in catalog", required = true) @QueryParam("file")
                                           String fileIdStr,
-                                  @ApiParam(value = "(DEPRECATED) Study id", required = false) @QueryParam("studyId") String studyId,
+                                  @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
                                   @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                       @QueryParam("study") String studyStr,
                                   @ApiParam(value = "Region 'chr:start-end'", required = false) @QueryParam("region") String region,
@@ -143,7 +143,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @ApiOperation(value = "Fetch the stats of an alignment file", position = 15, response = AlignmentGlobalStats.class)
     public Response getStats(@ApiParam(value = "Id of the alignment file in catalog", required = true) @QueryParam("file")
                                           String fileIdStr,
-                             @ApiParam(value = "(DEPRECATED) Study id", required = false) @QueryParam("studyId") String studyId,
+                             @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                  @QueryParam("study") String studyStr,
                              @ApiParam(value = "Region 'chr:start-end'", required = false) @QueryParam("region") String region,
@@ -199,7 +199,7 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
     @ApiOperation(value = "Fetch the coverage of an alignment file", position = 15, response = RegionCoverage.class)
     public Response getCoverage(@ApiParam(value = "Id of the alignment file in catalog", required = true) @QueryParam("file")
                                      String fileIdStr,
-                                @ApiParam(value = "(DEPRECATED) Study id", required = false) @QueryParam("studyId") String studyId,
+                                @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
                                 @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                     @QueryParam("study") String studyStr,
                                 @ApiParam(value = "Region 'chr:start-end'", required = false) @QueryParam("region") String region,

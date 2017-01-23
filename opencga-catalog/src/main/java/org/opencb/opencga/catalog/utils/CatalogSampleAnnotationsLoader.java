@@ -50,6 +50,10 @@ public class CatalogSampleAnnotationsLoader {
 
     public QueryResult<Sample> loadSampleAnnotations(File pedFile, Long variableSetId, String sessionId) throws CatalogException {
 
+        if (!pedFile.getFormat().equals(File.Format.PED)) {
+            throw new CatalogException(pedFile.getId() + " is not a pedigree file");
+        }
+
         URI fileUri = catalogManager.getFileUri(pedFile);
         long studyId = catalogManager.getStudyIdByFileId(pedFile.getId());
         long auxTime;

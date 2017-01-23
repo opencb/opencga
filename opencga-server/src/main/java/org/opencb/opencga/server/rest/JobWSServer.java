@@ -99,7 +99,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Register an executed job with POST method", position = 1,
             notes = "Registers a job that has been previously run outside catalog into catalog. <br>"
                     + "Required values: [name, toolName, commandLine, outDirId]", response = Job.class)
-    public Response createJobPOST(@ApiParam(value = "DEPRECATED: studyId") @QueryParam("studyId") String studyIdStr,
+    public Response createJobPOST(@ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
                                   @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                   @QueryParam("study") String studyStr,
                                   @ApiParam(value = "job", required = true) InputJob job) {
@@ -130,7 +130,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @Path("/create")
     @ApiOperation(value = "Create job [PENDING]", position = 1, response = Job.class)
     public Response createJob(@ApiParam(value = "name", required = true) @DefaultValue("") @QueryParam("name") String name,
-                              @ApiParam(value = "DEPRECATED: studyId", required = true) @QueryParam("studyId")
+                              @ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId")
                                       String studyIdStr,
                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                   @QueryParam("study") String studyStr,
@@ -270,7 +270,7 @@ public class JobWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
-    public Response search(@ApiParam(value = "DEPRECATED: studyId") @QueryParam("studyId") String studyId,
+    public Response search(@ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyId,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                @QueryParam("study") String studyStr,
                            @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
@@ -332,7 +332,7 @@ public class JobWSServer extends OpenCGAWSServer {
     public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
                                 @QueryParam("fields") String fields,
                             @ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
-                            @ApiParam(value = "DEPRECATED: studyId") @DefaultValue("") @QueryParam("studyId") String studyId,
+                            @ApiParam(value = "DEPRECATED: studyId", hidden = true) @DefaultValue("") @QueryParam("studyId") String studyId,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                 @QueryParam("study") String studyStr,
                             @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,

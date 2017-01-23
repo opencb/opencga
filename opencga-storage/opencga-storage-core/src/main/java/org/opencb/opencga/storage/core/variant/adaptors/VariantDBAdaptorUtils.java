@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.cellbase.core.api.GeneDBAdaptor;
 import org.opencb.commons.datastore.core.Query;
@@ -26,6 +27,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -54,6 +57,11 @@ public class VariantDBAdaptorUtils {
     public static final String STUDIES_FIELD = VariantFields.STUDIES.fieldName();
     public static final String STATS_FIELD = VariantFields.STATS.fieldName();
     public static final String ANNOTATION_FIELD = VariantFields.ANNOTATION.fieldName();
+
+    private static final int GENE_EXTRA_REGION = 5000;
+    private static Logger logger = LoggerFactory.getLogger(VariantDBAdaptorUtils.class);
+
+    private VariantDBAdaptor adaptor;
 
     public enum VariantFields {
         IDS,
@@ -115,9 +123,24 @@ public class VariantDBAdaptorUtils {
         }
     }
 
-    private static final int GENE_EXTRA_REGION = 5000;
+    public enum QueryOperation {
+        AND(VariantDBAdaptorUtils.AND),
+        OR(VariantDBAdaptorUtils.OR);
 
-    private VariantDBAdaptor adaptor;
+        private final String separator;
+
+        QueryOperation(String separator) {
+            this.separator = separator;
+        }
+
+        public String separator() {
+            return separator;
+        }
+    }
+
+    public VariantDBAdaptorUtils(VariantDBAdaptor variantDBAdaptor) {
+        adaptor = variantDBAdaptor;
+    }
 
     /**
      * Check if the object query contains the value param, is not null and, if is an string or a list, is not empty.
@@ -140,23 +163,74 @@ public class VariantDBAdaptorUtils {
                 || value instanceof Collection && ((Collection) value).isEmpty());
     }
 
-    public enum QueryOperation {
-        AND(VariantDBAdaptorUtils.AND),
-        OR(VariantDBAdaptorUtils.OR);
-
-        private final String separator;
-
-        QueryOperation(String separator) {
-            this.separator = separator;
-        }
-
-        public String separator() {
-            return separator;
-        }
+    /**
+     * Determines if the filter is negated.
+     *
+     * @param value Value to check
+     * @return If the value is negated
+     */
+    public static boolean isNegated(String value) {
+        return value.startsWith("!");
     }
 
-    public VariantDBAdaptorUtils(VariantDBAdaptor variantDBAdaptor) {
-        adaptor = variantDBAdaptor;
+    /**
+     * Determines if the given value is a known variant accession or not.
+     *
+     * @param value Value to check
+     * @return      If is a known accession
+     */
+    public static boolean isVariantAccession(String value) {
+        return value.startsWith("rs") || value.startsWith("VAR_");
+    }
+
+    /**
+     * Determines if the given value is a known clinical accession or not.
+     *
+     * ClinVar accession starts with RCV
+     * COSMIC mutationId starts with RCV
+     *
+     * @param value Value to check
+     * @return      If is a known accession
+     */
+    public static boolean isClinicalAccession(String value) {
+        return value.startsWith("RCV") || value.startsWith("COSM");
+    }
+
+    /**
+     * Determines if the given value is a variant id or not.
+     *
+     * chr:pos:ref:alt
+     *
+     * @param value Value to check
+     * @return      If is a variant id
+     */
+    public static boolean isVariantId(String value) {
+        int count = StringUtils.countMatches(value, ':');
+        return count == 3;
+    }
+
+    /**
+     * Determines if the given value is a variant id or not.
+     *
+     * chr:pos:ref:alt
+     *
+     * @param value Value to check
+     * @return      If is a variant id
+     */
+    public static Variant toVariant(String value) {
+        Variant variant = null;
+        if (isVariantId(value)) {
+            if (value.contains(":")) {
+                try {
+                    variant = new Variant(value);
+                } catch (IllegalArgumentException ignore) {
+                    variant = null;
+                    // TODO: Should this throw an exception?
+                    logger.info("Wrong variant " + value, ignore);
+                }
+            }
+        }
+        return variant;
     }
 
     public StudyConfigurationManager getStudyConfigurationManager() {
@@ -245,10 +319,6 @@ public class VariantDBAdaptorUtils {
             throw VariantQueryException.studyNotFound(studyId, studies.keySet());
         }
         return studyId;
-    }
-
-    public static boolean isNegated(String value) {
-        return value.startsWith("!");
     }
 
     /**

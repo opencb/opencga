@@ -219,8 +219,8 @@ public class TextOutputWriter extends AbstractOutputWriter {
         StringBuilder sb = new StringBuilder();
         for (QueryResult<File> queryResult : queryResultList) {
             // Write header
-            sb.append("#NAME\tTYPE\tFORMAT\tBIOFORMAT\tDESCRIPTION\tPATH\tURI\tID\tSTATUS\tSIZE\tINDEX_STATUS\tRELATED_FILES\t"
-                    + "SAMPLES\n");
+            sb.append("#NAME\tTYPE\tFORMAT\tBIOFORMAT\tDESCRIPTION\tCATALOG_PATH\tFILE_SYSTEM_URI\tID\tSTATUS\tSIZE\tINDEX_STATUS"
+                    + "\tRELATED_FILES\tSAMPLES\n");
 
             printFiles(queryResult.getResult(), sb, "");
         }

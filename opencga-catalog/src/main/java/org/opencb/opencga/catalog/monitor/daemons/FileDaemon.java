@@ -90,9 +90,9 @@ public class FileDaemon extends MonitorParentDaemon {
 //                            logger.info("Deleting file {} from study {id: {}, alias: {}}", file, study.getId(), study.getAlias());
                     catalogFileUtils.delete(file, sessionId);
                 } else {
-                            logger.info("Don't delete file {id: {}, path: '{}', attributes: {}}}", file.getId(), file.getPath(),
-                                    file.getAttributes());
-                            logger.info("{}s", (currentTimeMillis - deleteTimeMillis) / 1000);
+                    logger.info("Don't delete file {id: {}, path: '{}', attributes: {}}}", file.getId(), file.getPath(),
+                            file.getAttributes());
+                    logger.info("{}s", (currentTimeMillis - deleteTimeMillis) / 1000);
                 }
             } catch (Exception e) {
                 e.printStackTrace();

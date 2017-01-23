@@ -882,26 +882,22 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 getRegionFilter(regions, builder);
             }
 
+            // List with all MongoIds from ID and XREF filters
+            List<String> mongoIds = new ArrayList<>();
+
             if (isValidParam(query, VariantQueryParams.ID)) {
                 List<String> idsList = query.getAsStringList(VariantQueryParams.ID.key());
                 List<String> otherIds = new ArrayList<>(idsList.size());
-                List<String> mongoIds = new ArrayList<>(idsList.size());
-                for (String id : idsList) {
-                    Variant variant = null;
-                    if (id.contains(":")) {
-                        try {
-                            variant = new Variant(id);
-                        } catch (IllegalArgumentException ignore) {
-                            variant = null;
-                            logger.info("Wrong variant " + id);
-                        }
-                    }
+
+                for (String value : idsList) {
+                    Variant variant = toVariant(value);
                     if (variant != null) {
                         mongoIds.add(MongoDBVariantStageLoader.STRING_ID_CONVERTER.buildId(variant));
                     } else {
-                        otherIds.add(id);
+                        otherIds.add(value);
                     }
                 }
+
                 if (!otherIds.isEmpty()) {
                     String ids = otherIds.stream().collect(Collectors.joining(","));
                     addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
@@ -909,7 +905,29 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                             + "." + DocumentToVariantAnnotationConverter.XREF_ID_FIELD, ids, builder, QueryOperation.OR);
                     addQueryStringFilter(DocumentToVariantConverter.IDS_FIELD, ids, builder, QueryOperation.OR);
                 }
-                if (!mongoIds.isEmpty()) {
+            }
+
+            if (isValidParam(query, VariantQueryParams.ANNOT_XREF)) {
+                List<String> xrefs = query.getAsStringList(VariantQueryParams.ANNOT_XREF.key());
+                List<String> otherXrefs = new ArrayList<>();
+                for (String value : xrefs) {
+                    Variant variant = toVariant(value);
+                    if (variant != null) {
+                        mongoIds.add(MongoDBVariantStageLoader.STRING_ID_CONVERTER.buildId(variant));
+                    } else {
+                        otherXrefs.add(value);
+                    }
+                }
+                addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
+                                + '.' + DocumentToVariantAnnotationConverter.XREFS_FIELD
+                                + '.' + DocumentToVariantAnnotationConverter.XREF_ID_FIELD,
+                        String.join(",", otherXrefs), builder, QueryOperation.OR);
+            }
+
+            if (!mongoIds.isEmpty()) {
+                if (mongoIds.size() == 1) {
+                    builder.or(new QueryBuilder().and("_id").is(mongoIds.get(0)).get());
+                } else {
                     builder.or(new QueryBuilder().and("_id").in(mongoIds).get());
                 }
             }
@@ -964,19 +982,39 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 builder.exists(query.getBoolean(VariantQueryParams.ANNOTATION_EXISTS.key()));
             }
 
-            if (isValidParam(query, VariantQueryParams.ANNOT_XREF)) {
-                String xrefs = query.getString(VariantQueryParams.ANNOT_XREF.key());
-                addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.XREFS_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.XREF_ID_FIELD, xrefs, builder, QueryOperation.AND);
-            }
-
             if (isValidParam(query, VariantQueryParams.ANNOT_CONSEQUENCE_TYPE)) {
                 String value = query.getString(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key());
-                addQueryFilter(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD, value, builder, QueryOperation.AND,
-                        VariantDBAdaptorUtils::parseConsequenceType);
+                List<String> genes = new ArrayList<>(query.getAsStringList(VariantQueryParams.GENE.key()));
+                genes.addAll(query.getAsStringList(VariantQueryParams.ANNOT_XREF.key())
+                        .stream()
+                        .filter(v -> !isVariantAccession(v) && !isVariantId(v) && !isClinicalAccession(v))
+                        .collect(Collectors.toList()));
+                if (!genes.isEmpty()) {
+                    QueryBuilder ctBuilder = new QueryBuilder();
+                    addQueryFilter(DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD, value, ctBuilder, QueryOperation.AND,
+                            VariantDBAdaptorUtils::parseConsequenceType);
+
+                    DBObject[] or = new DBObject[5];
+                    Object geneQuery;
+                    if (genes.size() > 1) {
+                        geneQuery = new BasicDBObject("$in", genes);
+                    } else {
+                        geneQuery = genes.get(0);
+                    }
+                    or[0] = new BasicDBObject(DocumentToVariantAnnotationConverter.CT_GENE_NAME_FIELD, geneQuery);
+                    or[1] = new BasicDBObject(DocumentToVariantAnnotationConverter.CT_ENSEMBL_GENE_ID_FIELD, geneQuery);
+                    or[2] = new BasicDBObject(DocumentToVariantAnnotationConverter.CT_ENSEMBL_TRANSCRIPT_ID_FIELD, geneQuery);
+                    or[3] = new BasicDBObject(DocumentToVariantAnnotationConverter.CT_PROTEIN_UNIPROT_ACCESSION, geneQuery);
+                    or[4] = new BasicDBObject(DocumentToVariantAnnotationConverter.CT_PROTEIN_UNIPROT_NAME, geneQuery);
+                    ctBuilder.or(or);
+                    builder.and(DocumentToVariantConverter.ANNOTATION_FIELD
+                            + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD).elemMatch(ctBuilder.get());
+                } else {
+                    addQueryFilter(DocumentToVariantConverter.ANNOTATION_FIELD
+                                    + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
+                                    + "." + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD, value, builder, QueryOperation.AND,
+                            VariantDBAdaptorUtils::parseConsequenceType);
+                }
             }
 
             if (isValidParam(query, VariantQueryParams.ANNOT_BIOTYPE)) {

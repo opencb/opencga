@@ -32,7 +32,8 @@ public class VariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--file"}, description = "Comma separated list of file ids (files or directories)", required = true, arity = 1)
+        @Parameter(names = {"--file"}, description = "Comma separated list of file ids, names or paths in catalog", required = true,
+                arity = 1)
         public String fileIds;
 
         @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
