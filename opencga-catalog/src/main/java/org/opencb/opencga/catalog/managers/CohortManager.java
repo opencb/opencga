@@ -83,7 +83,7 @@ public class CohortManager extends AbstractManager implements ICohortManager {
             }
         }
         String userId = userManager.getId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_COHORTS);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_COHORTS);
         Cohort cohort = new Cohort(name, type, TimeUtils.getTime(), description, sampleIds, attributes);
         QueryResult<Cohort> queryResult = cohortDBAdaptor.insert(cohort, studyId, null);
 //        auditManager.recordCreation(AuditRecord.Resource.cohort, queryResult.first().getId(), userId, queryResult.first(), null, new
@@ -478,7 +478,7 @@ public class CohortManager extends AbstractManager implements ICohortManager {
 
         MyResourceId resource = getId(id, studyStr, sessionId);
         authorizationManager.checkCohortPermission(resource.getResourceId(), resource.getUser(),
-                CohortAclEntry.CohortPermissions.CREATE_ANNOTATIONS);
+                CohortAclEntry.CohortPermissions.WRITE_ANNOTATIONS);
 
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
 
@@ -545,7 +545,7 @@ public class CohortManager extends AbstractManager implements ICohortManager {
 
         MyResourceId resource = getId(id, studyStr, sessionId);
         long cohortId = resource.getResourceId();
-        authorizationManager.checkCohortPermission(cohortId, resource.getUser(), CohortAclEntry.CohortPermissions.UPDATE_ANNOTATIONS);
+        authorizationManager.checkCohortPermission(cohortId, resource.getUser(), CohortAclEntry.CohortPermissions.WRITE_ANNOTATIONS);
 
         // Update the annotation
         QueryResult<AnnotationSet> queryResult =

@@ -54,25 +54,19 @@ public interface AuthorizationManager {
 
     static EnumSet<StudyAclEntry.StudyPermissions> getAnalystAcls() {
         return EnumSet.of(StudyAclEntry.StudyPermissions.VIEW_STUDY, StudyAclEntry.StudyPermissions.UPDATE_STUDY,
-                StudyAclEntry.StudyPermissions.CREATE_VARIABLE_SET, StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET,
-                StudyAclEntry.StudyPermissions.UPDATE_VARIABLE_SET, StudyAclEntry.StudyPermissions.CREATE_FILES,
-                StudyAclEntry.StudyPermissions.VIEW_FILE_HEADERS, StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENTS,
-                StudyAclEntry.StudyPermissions.VIEW_FILES, StudyAclEntry.StudyPermissions.UPDATE_FILES,
+                StudyAclEntry.StudyPermissions.WRITE_VARIABLE_SET, StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET,
+                StudyAclEntry.StudyPermissions.WRITE_FILES, StudyAclEntry.StudyPermissions.VIEW_FILE_HEADERS,
+                StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENTS, StudyAclEntry.StudyPermissions.VIEW_FILES,
                 StudyAclEntry.StudyPermissions.DOWNLOAD_FILES, StudyAclEntry.StudyPermissions.UPLOAD_FILES,
-                StudyAclEntry.StudyPermissions.CREATE_JOBS, StudyAclEntry.StudyPermissions.VIEW_JOBS,
-                StudyAclEntry.StudyPermissions.UPDATE_JOBS, StudyAclEntry.StudyPermissions.CREATE_SAMPLES,
-                StudyAclEntry.StudyPermissions.VIEW_SAMPLES, StudyAclEntry.StudyPermissions.UPDATE_SAMPLES,
-                StudyAclEntry.StudyPermissions.CREATE_SAMPLE_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS,
-                StudyAclEntry.StudyPermissions.UPDATE_SAMPLE_ANNOTATIONS, StudyAclEntry.StudyPermissions.CREATE_INDIVIDUALS,
-                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS, StudyAclEntry.StudyPermissions.UPDATE_INDIVIDUALS,
-                StudyAclEntry.StudyPermissions.CREATE_INDIVIDUAL_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS,
-                StudyAclEntry.StudyPermissions.UPDATE_INDIVIDUAL_ANNOTATIONS, StudyAclEntry.StudyPermissions.CREATE_COHORTS,
-                StudyAclEntry.StudyPermissions.VIEW_COHORTS, StudyAclEntry.StudyPermissions.UPDATE_COHORTS,
-                StudyAclEntry.StudyPermissions.CREATE_COHORT_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS,
-                StudyAclEntry.StudyPermissions.UPDATE_COHORT_ANNOTATIONS, StudyAclEntry.StudyPermissions.CREATE_DATASETS,
-                StudyAclEntry.StudyPermissions.VIEW_DATASETS, StudyAclEntry.StudyPermissions.UPDATE_DATASETS,
-                StudyAclEntry.StudyPermissions.CREATE_PANELS, StudyAclEntry.StudyPermissions.VIEW_PANELS,
-                StudyAclEntry.StudyPermissions.UPDATE_PANELS);
+                StudyAclEntry.StudyPermissions.WRITE_JOBS, StudyAclEntry.StudyPermissions.VIEW_JOBS,
+                StudyAclEntry.StudyPermissions.WRITE_SAMPLES, StudyAclEntry.StudyPermissions.VIEW_SAMPLES,
+                StudyAclEntry.StudyPermissions.WRITE_SAMPLE_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS,
+                StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS,
+                StudyAclEntry.StudyPermissions.WRITE_INDIVIDUAL_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS,
+                StudyAclEntry.StudyPermissions.WRITE_COHORTS, StudyAclEntry.StudyPermissions.VIEW_COHORTS,
+                StudyAclEntry.StudyPermissions.WRITE_COHORT_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS,
+                StudyAclEntry.StudyPermissions.WRITE_DATASETS, StudyAclEntry.StudyPermissions.VIEW_DATASETS,
+                StudyAclEntry.StudyPermissions.WRITE_PANELS, StudyAclEntry.StudyPermissions.VIEW_PANELS);
     }
 
     static EnumSet<StudyAclEntry.StudyPermissions> getViewOnlyAcls() {

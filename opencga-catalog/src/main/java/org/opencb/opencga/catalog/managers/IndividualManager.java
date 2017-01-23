@@ -95,7 +95,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         affectationStatus = ParamUtils.defaultObject(affectationStatus, Individual.AffectationStatus.UNKNOWN);
 
         String userId = userManager.getId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_INDIVIDUALS);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
 
         Individual individual = new Individual(0, name, fatherId, motherId,
                 family, sex, karyotypicSex, ethnicity, new Individual.Species(speciesCommonName, speciesScientificName,
@@ -464,7 +464,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
         String userId = userManager.getId(sessionId);
-        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.CREATE_ANNOTATIONS);
+        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS);
 
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
 
@@ -496,7 +496,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         ParamUtils.checkObj(newAnnotations, "newAnnotations");
 
         String userId = userManager.getId(sessionId);
-        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.UPDATE_ANNOTATIONS);
+        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS);
 
         QueryOptions queryOptions = new QueryOptions("include", "projects.studies.individuals.annotationSets");
 
@@ -708,7 +708,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
         MyResourceId resource = catalogManager.getIndividualManager().getId(id, studyStr, sessionId);
         authorizationManager.checkIndividualPermission(resource.getResourceId(), resource.getUser(),
-                IndividualAclEntry.IndividualPermissions.CREATE_ANNOTATIONS);
+                IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS);
 
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
 
@@ -757,7 +757,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
         MyResourceId resource = getId(id, studyStr, sessionId);
         authorizationManager.checkIndividualPermission(resource.getResourceId(), resource.getUser(),
-                IndividualAclEntry.IndividualPermissions.UPDATE_ANNOTATIONS);
+                IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS);
 
         // Update the annotation
         QueryResult<AnnotationSet> queryResult =

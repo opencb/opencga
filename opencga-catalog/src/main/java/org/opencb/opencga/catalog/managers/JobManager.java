@@ -234,12 +234,12 @@ public class JobManager extends AbstractManager implements IJobManager {
         inputFiles = ParamUtils.defaultObject(inputFiles, Collections.<Long>emptyList());
         outputFiles = ParamUtils.defaultObject(outputFiles, Collections.<Long>emptyList());
 
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_JOBS);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
 
         // FIXME check inputFiles? is a null conceptually valid?
 //        URI tmpOutDirUri = createJobOutdir(studyId, randomString, sessionId);
 
-        authorizationManager.checkFilePermission(outDirId, userId, FileAclEntry.FilePermissions.CREATE);
+        authorizationManager.checkFilePermission(outDirId, userId, FileAclEntry.FilePermissions.WRITE);
         for (Long inputFile : inputFiles) {
             authorizationManager.checkFilePermission(inputFile, userId, FileAclEntry.FilePermissions.VIEW);
         }
@@ -474,7 +474,7 @@ public class JobManager extends AbstractManager implements IJobManager {
     public QueryResult<Job> queue(long studyId, String jobName, String executable, Job.Type type, Map<String, String> params,
                                   List<Long> input, List<Long> output, long outDirId, String userId, Map<String, Object> attributes)
             throws CatalogException {
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_JOBS);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
 
         Job job = new Job(jobName, userId, executable, type, input, output, outDirId, params);
         job.setAttributes(attributes);
