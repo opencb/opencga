@@ -237,15 +237,22 @@ public class VariantCommandExecutor extends CommandExecutor {
     private void query() throws Exception {
         StorageVariantCommandOptions.QueryVariantsCommandOptions queryVariantsCommandOptions = variantCommandOptions.queryVariantsCommandOptions;
 
+        if (true) {
+//            System.out.println(variantCommandOptions.queryVariantsCommandOptions.toString());
+            System.out.println(new ObjectMapper().writer().withDefaultPrettyPrinter().writeValueAsString(variantCommandOptions
+                    .queryVariantsCommandOptions));
+            return;
+        }
+
         storageConfiguration.getVariant().getOptions().putAll(queryVariantsCommandOptions.commonOptions.params);
 
-        VariantDBAdaptor variantDBAdaptor = variantStorageEngine.getDBAdaptor(queryVariantsCommandOptions.commonQueryOptions.dbName);
+        VariantDBAdaptor variantDBAdaptor = variantStorageEngine.getDBAdaptor(queryVariantsCommandOptions.dbName);
         List<String> studyNames = variantDBAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
 
         Query query = VariantQueryCommandUtils.parseQuery(queryVariantsCommandOptions, studyNames);
         QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(queryVariantsCommandOptions);
 
-        if (queryVariantsCommandOptions.commonQueryOptions.count) {
+        if (queryVariantsCommandOptions.count) {
             QueryResult<Long> result = variantDBAdaptor.count(query);
             System.out.println("Num. results\t" + result.getResult().get(0));
         } else if (StringUtils.isNotEmpty(queryVariantsCommandOptions.rank)) {
@@ -255,16 +262,16 @@ public class VariantCommandExecutor extends CommandExecutor {
             QueryResult groupBy = variantDBAdaptor.groupBy(query, queryVariantsCommandOptions.groupBy, options);
             System.out.println("groupBy = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(groupBy));
         } else {
-            URI uri = StringUtils.isEmpty(queryVariantsCommandOptions.commonQueryOptions.output)
+            URI uri = StringUtils.isEmpty(queryVariantsCommandOptions.output)
                     ? null
-                    : UriUtils.createUri(queryVariantsCommandOptions.commonQueryOptions.output);
+                    : UriUtils.createUri(queryVariantsCommandOptions.output);
 
             if (queryVariantsCommandOptions.annotations != null) {
                 options.add("annotations", queryVariantsCommandOptions.annotations);
             }
             VariantWriterFactory.VariantOutputFormat of = VariantWriterFactory
-                    .toOutputFormat(queryVariantsCommandOptions.outputFormat, queryVariantsCommandOptions.commonQueryOptions.output);
-            variantStorageEngine.exportData(uri, of, queryVariantsCommandOptions.commonQueryOptions.dbName, query, options);
+                    .toOutputFormat(queryVariantsCommandOptions.outputFormat, queryVariantsCommandOptions.output);
+            variantStorageEngine.exportData(uri, of, queryVariantsCommandOptions.dbName, query, options);
         }
     }
 
@@ -560,8 +567,8 @@ public class VariantCommandExecutor extends CommandExecutor {
             }
         }
         int limit = 10;
-        if (queryVariantsCommandOptions.commonQueryOptions.limit > 0) {
-            limit = queryVariantsCommandOptions.commonQueryOptions.limit;
+        if (queryVariantsCommandOptions.limit > 0) {
+            limit = queryVariantsCommandOptions.limit;
         }
         QueryResult rank = variantDBAdaptor.rank(query, field, limit, asc);
         System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rank));

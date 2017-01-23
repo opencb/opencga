@@ -554,6 +554,7 @@ public class AnalysisCliOptionsParser {
 
     }
 
+    @Deprecated
     @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed variants")
     public class QueryVariantCommandOptions extends QueryCommandOptions {
 

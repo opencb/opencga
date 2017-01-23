@@ -125,7 +125,7 @@ public class VariantQueryCommandUtils {
 
         // If the studies to be returned is empty then we return the studies being queried
         if (StringUtils.isNotEmpty(queryVariantsOptions.returnStudy)) {
-//            query.put(RETURNED_STUDIES.key(), Arrays.asList(queryVariantsOptions.returnStudy.split(",")));
+//            query.put(RETURNED_STUDIES.key(), Arrays.asList(queryVariantCommandOptions.returnStudy.split(",")));
             List<String> list = new ArrayList<>();
             Collections.addAll(list, queryVariantsOptions.returnStudy.split(","));
             query.put(RETURNED_STUDIES.key(), list);

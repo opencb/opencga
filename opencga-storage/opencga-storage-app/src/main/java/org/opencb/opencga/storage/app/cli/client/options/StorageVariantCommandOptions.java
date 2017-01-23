@@ -140,17 +140,19 @@ public class StorageVariantCommandOptions {
     }
 
     @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed variants")
-    public class QueryVariantsCommandOptions {
-
-        @ParametersDelegate
-        public OptionsParser.CommonOptions commonOptions = commonCommandOptions;
-
-        @ParametersDelegate
-        public OptionsParser.QueryCommandOptions commonQueryOptions = queryCommandOptions;
-
-
+    public static class QueryVariantsOptions {
         @Parameter(names = {"--id"}, description = "CSV list of variant ids", required = false)
         public String id;
+
+        @Parameter(names = {"-r", "--region"}, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000",
+                required = false)
+        public String region;
+
+        @Parameter(names = {"--region-file"}, description = "GFF File with regions", required = false)
+        public String regionFile;
+
+        @Parameter(names = {"-g", "--gene"}, description = "CSV list of genes", required = false)
+        public String gene;
 
         @Parameter(names = {"--group-by"}, description = "Group by gene, ensemblGene or consequence_type", required = false)
         public String groupBy;
@@ -293,7 +295,38 @@ public class StorageVariantCommandOptions {
                 arity = 0)
         public boolean samplesMetadata;
 
+    }
 
+    @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed variants")
+    public class QueryVariantsCommandOptions extends QueryVariantsOptions {
+
+        @ParametersDelegate
+        public OptionsParser.CommonOptions commonOptions = commonCommandOptions;
+
+//        @ParametersDelegate
+//        public OptionsParser.QueryCommandOptions commonQueryOptions = queryCommandOptions;
+
+
+        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", required = false, arity = 1)
+        public String output;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
+        public String dbName;
+
+        @Parameter(names = {"-i", "--include"}, description = "", required = false, arity = 1)
+        public String include;
+
+        @Parameter(names = {"-e", "--exclude"}, description = "", required = false, arity = 1)
+        public String exclude;
+
+        @Parameter(names = {"--skip"}, description = "Skip some number of elements.", required = false, arity = 1)
+        public int skip;
+
+        @Parameter(names = {"--limit"}, description = "Limit the number of returned elements.", required = false, arity = 1)
+        public int limit;
+
+        @Parameter(names = {"--count"}, description = "Count results. Do not return elements.", required = false, arity = 0)
+        public boolean count;
 
 
         @Parameter(names = {"--mode"}, description = "Communication mode. grpc|rest|auto.")

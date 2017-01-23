@@ -171,6 +171,7 @@ public class OptionsParser {
 
     }
 
+    @Deprecated
     public class QueryCommandOptions {
 
         @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", required = false, arity = 1)
@@ -178,16 +179,6 @@ public class OptionsParser {
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = false, arity = 1)
         public String dbName;
-
-        @Parameter(names = {"-r", "--region"}, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000",
-                required = false)
-        public String region;
-
-        @Parameter(names = {"--region-file"}, description = "GFF File with regions", required = false)
-        public String regionFile;
-
-        @Parameter(names = {"-g", "--gene"}, description = "CSV list of genes", required = false)
-        public String gene;
 
         @Parameter(names = {"-i", "--include"}, description = "", required = false, arity = 1)
         public String include;

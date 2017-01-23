@@ -80,6 +80,15 @@ public class StorageAlignmentCommandOptions {
         @ParametersDelegate
         public OptionsParser.QueryCommandOptions commonQueryOptions = queryCommandOptions;
 
+        @Parameter(names = {"-r", "--region"}, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000",
+                required = false)
+        public String region;
+
+        @Parameter(names = {"--region-file"}, description = "GFF File with regions", required = false)
+        public String regionFile;
+
+        @Parameter(names = {"-g", "--gene"}, description = "CSV list of genes", required = false)
+        public String gene;
 
         @Parameter(names = {"-a", "--alias"}, description = "File unique ID.", required = false, arity = 1)
         public String fileId;

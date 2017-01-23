@@ -190,8 +190,8 @@ public class AlignmentCommandExecutor extends CommandExecutor {
          */
         GffReader gffReader = null;
         List<Region> regions = null;
-        if (queryAlignmentsCommandOptions.commonQueryOptions.region != null && !queryAlignmentsCommandOptions.commonQueryOptions.region.isEmpty()) {
-            regions = Region.parseRegions(queryAlignmentsCommandOptions.commonQueryOptions.region);
+        if (queryAlignmentsCommandOptions.region != null && !queryAlignmentsCommandOptions.region.isEmpty()) {
+            regions = Region.parseRegions(queryAlignmentsCommandOptions.region);
             logger.debug("Processed regions: '{}'", regions);
 //            regions = new LinkedList<>();
 //            for (String csvRegion : queryAlignmentsCommandOptions.regions) {
@@ -201,9 +201,9 @@ public class AlignmentCommandExecutor extends CommandExecutor {
 //                    logger.info("Parsed region: {}", region);
 //                }
 //            }
-        } else if (queryAlignmentsCommandOptions.commonQueryOptions.regionFile != null && !queryAlignmentsCommandOptions.commonQueryOptions.regionFile.isEmpty()) {
+        } else if (queryAlignmentsCommandOptions.regionFile != null && !queryAlignmentsCommandOptions.regionFile.isEmpty()) {
             try {
-                gffReader = new GffReader(queryAlignmentsCommandOptions.commonQueryOptions.regionFile);
+                gffReader = new GffReader(queryAlignmentsCommandOptions.regionFile);
             } catch (NoSuchMethodException e) {
                 e.printStackTrace();
             } catch (IOException e) {

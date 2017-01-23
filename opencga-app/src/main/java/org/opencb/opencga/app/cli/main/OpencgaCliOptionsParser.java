@@ -275,11 +275,11 @@ public class OpencgaCliOptionsParser {
         alignmentSubCommands.addCommand("stats", alignmentCommandOptions.statsAlignmentCommandOptions);
         alignmentSubCommands.addCommand("coverage", alignmentCommandOptions.coverageAlignmentCommandOptions);
 
-        variantCommandOptions = new VariantCommandOptions(this.commonCommandOptions, jCommander);
+        variantCommandOptions = new VariantCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("variant", variantCommandOptions);
         JCommander variantSubCommands = jCommander.getCommands().get("variant");
         variantSubCommands.addCommand("index", variantCommandOptions.indexCommandOptions);
-        variantSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptionsOld);
+        variantSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);
 
     }
 

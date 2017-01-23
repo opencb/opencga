@@ -52,10 +52,10 @@ public class VariantQueryCommandUtils {
         /*
          * Parse Variant parameters
          */
-        if (queryVariantsOptions.commonQueryOptions.region != null && !queryVariantsOptions.commonQueryOptions.region.isEmpty()) {
-            query.put(REGION.key(), queryVariantsOptions.commonQueryOptions.region);
-        } else if (queryVariantsOptions.commonQueryOptions.regionFile != null && !queryVariantsOptions.commonQueryOptions.regionFile.isEmpty()) {
-            Path gffPath = Paths.get(queryVariantsOptions.commonQueryOptions.regionFile);
+        if (queryVariantsOptions.region != null && !queryVariantsOptions.region.isEmpty()) {
+            query.put(REGION.key(), queryVariantsOptions.region);
+        } else if (queryVariantsOptions.regionFile != null && !queryVariantsOptions.regionFile.isEmpty()) {
+            Path gffPath = Paths.get(queryVariantsOptions.regionFile);
             FileUtils.checkFile(gffPath);
             String regionsFromFile = Files.readAllLines(gffPath).stream().map(line -> {
                 String[] array = line.split("\t");
@@ -65,7 +65,7 @@ public class VariantQueryCommandUtils {
         }
 
         addParam(query, ID, queryVariantsOptions.id);
-        addParam(query, GENE, queryVariantsOptions.commonQueryOptions.gene);
+        addParam(query, GENE, queryVariantsOptions.gene);
         addParam(query, TYPE, queryVariantsOptions.type);
 
 
@@ -172,7 +172,7 @@ public class VariantQueryCommandUtils {
         addParam(query, MISSING_GENOTYPES, queryVariantsOptions.missingGenotypeCount);
 
 
-        boolean returnVariants = !queryVariantsOptions.commonQueryOptions.count && StringUtils.isEmpty(queryVariantsOptions.groupBy)
+        boolean returnVariants = !queryVariantsOptions.count && StringUtils.isEmpty(queryVariantsOptions.groupBy)
                 && StringUtils.isEmpty(queryVariantsOptions.rank);
 
 
@@ -205,26 +205,26 @@ public class VariantQueryCommandUtils {
     public static QueryOptions parseQueryOptions(StorageVariantCommandOptions.QueryVariantsCommandOptions queryVariantsOptions) {
         QueryOptions queryOptions = new QueryOptions(new HashMap<>(queryVariantsOptions.commonOptions.params));
 
-        if (StringUtils.isNotEmpty(queryVariantsOptions.commonQueryOptions.include)) {
-            queryOptions.add("include", queryVariantsOptions.commonQueryOptions.include);
+        if (StringUtils.isNotEmpty(queryVariantsOptions.include)) {
+            queryOptions.add("include", queryVariantsOptions.include);
         }
 
-        if (StringUtils.isNotEmpty(queryVariantsOptions.commonQueryOptions.exclude)) {
-            queryOptions.add("exclude", queryVariantsOptions.commonQueryOptions.exclude + ",_id");
+        if (StringUtils.isNotEmpty(queryVariantsOptions.exclude)) {
+            queryOptions.add("exclude", queryVariantsOptions.exclude + ",_id");
         }
 //        else {
 //            queryOptions.put("exclude", "_id");
 //        }
 
-        if (queryVariantsOptions.commonQueryOptions.skip > 0) {
-            queryOptions.add("skip", queryVariantsOptions.commonQueryOptions.skip);
+        if (queryVariantsOptions.skip > 0) {
+            queryOptions.add("skip", queryVariantsOptions.skip);
         }
 
-        if (queryVariantsOptions.commonQueryOptions.limit > 0) {
-            queryOptions.add("limit", queryVariantsOptions.commonQueryOptions.limit);
+        if (queryVariantsOptions.limit > 0) {
+            queryOptions.add("limit", queryVariantsOptions.limit);
         }
 
-        if (queryVariantsOptions.commonQueryOptions.count) {
+        if (queryVariantsOptions.count) {
             queryOptions.add("count", true);
         }
 
@@ -255,14 +255,14 @@ public class VariantQueryCommandUtils {
 
         // output format has priority over output name
         OutputStream outputStream;
-        if (queryVariantsOptions.commonQueryOptions.output == null || queryVariantsOptions.commonQueryOptions.output.isEmpty()) {
+        if (queryVariantsOptions.output == null || queryVariantsOptions.output.isEmpty()) {
             outputStream = System.out;
         } else {
-            if (gzip && !queryVariantsOptions.commonQueryOptions.output.endsWith(".gz")) {
-                queryVariantsOptions.commonQueryOptions.output += ".gz";
+            if (gzip && !queryVariantsOptions.output.endsWith(".gz")) {
+                queryVariantsOptions.output += ".gz";
             }
-            outputStream = new FileOutputStream(queryVariantsOptions.commonQueryOptions.output);
-            logger.debug("writing to %s", queryVariantsOptions.commonQueryOptions.output);
+            outputStream = new FileOutputStream(queryVariantsOptions.output);
+            logger.debug("writing to %s", queryVariantsOptions.output);
         }
 
         // If compressed a GZip output stream is used

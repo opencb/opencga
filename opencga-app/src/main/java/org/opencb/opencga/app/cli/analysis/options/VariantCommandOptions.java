@@ -7,6 +7,8 @@ import com.beust.jcommander.ParametersDelegate;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
+import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 
 /**
@@ -15,16 +17,25 @@ import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOp
 @Parameters(commandNames = {"variant"}, commandDescription = "Variant commands")
 public class VariantCommandOptions {
 
-    public JCommander jCommander;
-    public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
     public IndexCommandOptions indexCommandOptions;
     public QueryVariantCommandOptionsOld queryVariantCommandOptionsOld;
+    public QueryVariantCommandOptions queryVariantCommandOptions;
 
-    public VariantCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public JCommander jCommander;
+    public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
+    public DataModelOptions commonDataModelOptions;
+    public NumericOptions commonNumericOptions;
+
+    public VariantCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions, DataModelOptions dataModelOptions,
+                                 NumericOptions numericOptions, JCommander jCommander) {
         this.commonCommandOptions = commonCommandOptions;
+        this.commonDataModelOptions = dataModelOptions;
+        this.commonNumericOptions = numericOptions;
         this.jCommander = jCommander;
+
         this.indexCommandOptions = new IndexCommandOptions();
         this.queryVariantCommandOptionsOld = new QueryVariantCommandOptionsOld();
+        this.queryVariantCommandOptions = new QueryVariantCommandOptions();
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index VCF files")
@@ -263,8 +274,18 @@ public class VariantCommandOptions {
     public class QueryVariantCommandOptions {
 
         @ParametersDelegate
-        public StorageVariantCommandOptions.QueryVariantsCommandOptions commonOptions = null;
+        public StorageVariantCommandOptions.QueryVariantsOptions queryVariantsOptions = new StorageVariantCommandOptions.QueryVariantsOptions();
 
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public DataModelOptions dataModelOptions = commonDataModelOptions;
+
+        @ParametersDelegate
+        public NumericOptions numericOptions = commonNumericOptions;
+
+        @Parameter(names = {"--mode"}, description = "Communication mode. grpc|rest|auto.")
+        public String mode = "auto";
     }
 }
