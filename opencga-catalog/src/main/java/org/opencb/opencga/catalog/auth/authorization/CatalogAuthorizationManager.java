@@ -28,7 +28,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.AbstractManager;
-import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.*;
 
@@ -145,119 +144,100 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkFilePermission(long fileId, String userId, FileAclEntry.FilePermissions permission) throws CatalogException {
-        checkFilePermission(fileId, userId, permission, null);
-    }
-
-    private void checkFilePermission(long fileId, String userId, FileAclEntry.FilePermissions permission,
-                                     StudyAuthenticationContext studyAuthenticationContext) throws CatalogException {
         long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
         if (isStudyOwner(studyId, userId)) {
             return;
         }
 
         FileAclEntry fileAcl = null;
-
         if (userId.equals(ADMIN)) {
             QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList(ADMIN));
             if (studyAclQueryResult.getNumResults() == 1) {
                 fileAcl = transformStudyAclToFileAcl(studyAclQueryResult.first());
             }
         } else {
-            if (studyAuthenticationContext == null) {
-                studyAuthenticationContext = new StudyAuthenticationContext(studyId);
-            }
-            fileAcl = resolveFilePermissions(fileId, userId, studyId, studyAuthenticationContext);
+            fileAcl = resolveFilePermissions(studyId, fileId, userId);
         }
-
 
         if (!fileAcl.getPermissions().contains(permission)) {
             throw CatalogAuthorizationException.deny(userId, permission.toString(), "File", fileId, null);
         }
     }
 
-    /**
-     * Obtains the file permissions of the userId.
-     *
-     * @param fileId file id.
-     * @param userId user id.
-     * @param studyId study id.
-     * @param studyAuthenticationContext Mini cache containing the map of path -> user -> permissions.
-     * @return fileAcl.
-     */
-    private FileAclEntry resolveFilePermissions(long fileId, String userId, long studyId,
-                                                StudyAuthenticationContext studyAuthenticationContext) throws CatalogException {
-        return resolveFilePermissions(fileDBAdaptor.get(fileId, FILE_INCLUDE_QUERY_OPTIONS).first(), userId, studyId,
-                studyAuthenticationContext);
+    private FileAclEntry resolveFilePermissions(long studyId, File file, String userId) throws CatalogException {
+        if (file.getAcl() == null) {
+            return resolveFilePermissions(studyId, file.getId(), userId);
+        } else {
+            String groupId = null;
+            if (!userId.equalsIgnoreCase(ANONYMOUS)) {
+                QueryResult<Group> group = getGroupBelonging(studyId, userId);
+                groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+            }
+
+            Map<String, FileAclEntry> userAclMap = new HashMap<>();
+            for (FileAclEntry fileAcl : file.getAcl()) {
+                userAclMap.put(fileAcl.getMember(), fileAcl);
+            }
+            return resolveFilePermissions(studyId, userId, groupId, userAclMap);
+        }
     }
 
-    /**
-     * Obtains the file permissions of the userId.
-     *
-     * @param file
-     * @param userId
-     * @param studyId
-     * @param studyAuthenticationContext
-     * @return
-     * @throws CatalogException
-     */
-    private FileAclEntry resolveFilePermissions(File file, String userId, long studyId,
-                                                StudyAuthenticationContext studyAuthenticationContext) throws CatalogException {
+    private FileAclEntry resolveFilePermissions(long studyId, long fileId, String userId) throws CatalogException {
         String groupId = null;
         if (!userId.equalsIgnoreCase(ANONYMOUS)) {
             QueryResult<Group> group = getGroupBelonging(studyId, userId);
             groupId = group.getNumResults() == 1 ? group.first().getName() : null;
         }
 
-        // We obtain all the paths from our current position to the root folder
-        List<String> paths = FileManager.getParentPaths(file.getPath());
-        // We obtain a map of path -> member -> permissions
-        Map<String, Map<String, FileAclEntry>> pathAclMap = getFileAcls(studyAuthenticationContext, userId, studyId, groupId, paths);
+        List<String> userIds = (groupId == null)
+                ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
+                : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
+        List<FileAclEntry> fileAclEntryList = fileDBAdaptor.getAcl(fileId, userIds).getResult();
 
-        EnumSet<FileAclEntry.FilePermissions> permissions = EnumSet.noneOf(FileAclEntry.FilePermissions.class);
-        boolean flagPermissionFound = false;
-        // We loop through the list backwards
-        for (int i = paths.size() - 1; i >= 0; i--) {
-            String path = paths.get(i);
-            if (pathAclMap.containsKey(path)) {
-                Map<String, FileAclEntry> userAclMap = pathAclMap.get(path);
+        Map<String, FileAclEntry> userAclMap = new HashMap<>();
+        for (FileAclEntry fileAclEntry : fileAclEntryList) {
+            userAclMap.put(fileAclEntry.getMember(), fileAclEntry);
+        }
 
-                if (userId.equals(ANONYMOUS)) {
-                    if (userAclMap.get(userId) != null) {
-                        return userAclMap.get(userId);
-                    } else {
-                        continue;
-                    }
-                }
+        return resolveFilePermissions(studyId, userId, groupId, userAclMap);
+    }
 
-                // Registered user
-                if (userAclMap.get(userId) != null) {
-                    permissions.addAll(userAclMap.get(userId).getPermissions());
-                    flagPermissionFound = true;
-                }
-                if (StringUtils.isNotEmpty(groupId) && userAclMap.get(groupId) != null) {
-                    permissions.addAll(userAclMap.get(groupId).getPermissions());
-                    flagPermissionFound = true;
-                }
-                if (userAclMap.get(ANONYMOUS) != null) {
-                    permissions.addAll(userAclMap.get(ANONYMOUS).getPermissions());
-                    flagPermissionFound = true;
-                }
-                if (userAclMap.get(OTHER_USERS_ID) != null) {
-                    permissions.addAll(userAclMap.get(OTHER_USERS_ID).getPermissions());
-                    flagPermissionFound = true;
-                }
-
-                if (flagPermissionFound) {
-                    return new FileAclEntry(userId, permissions);
-                } else {
-                    continue;
-                }
+    private FileAclEntry resolveFilePermissions(long studyId, String userId, String groupId, Map<String, FileAclEntry> userAclMap)
+            throws CatalogException {
+        if (userId.equals(ANONYMOUS)) {
+            if (userAclMap.containsKey(userId)) {
+                return userAclMap.get(userId);
+            } else {
+                return transformStudyAclToFileAcl(getStudyAclBelonging(studyId, userId, groupId));
             }
         }
 
-        // No ACLs found in any of the path directories
-        StudyAclEntry studyAcl = getStudyAclBelonging(studyId, userId, groupId);
-        return transformStudyAclToFileAcl(studyAcl);
+        // Registered user
+        EnumSet<FileAclEntry.FilePermissions> permissions = EnumSet.noneOf(FileAclEntry.FilePermissions.class);
+        boolean flagPermissionFound = false;
+
+        if (userAclMap.containsKey(userId)) {
+            permissions.addAll(userAclMap.get(userId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (StringUtils.isNotEmpty(groupId) && userAclMap.containsKey(groupId)) {
+            permissions.addAll(userAclMap.get(groupId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(ANONYMOUS)) {
+            permissions.addAll(userAclMap.get(ANONYMOUS).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(OTHER_USERS_ID)) {
+            permissions.addAll(userAclMap.get(OTHER_USERS_ID).getPermissions());
+            flagPermissionFound = true;
+        }
+
+        if (flagPermissionFound) {
+            return new FileAclEntry(userId, permissions);
+        } else {
+            return transformStudyAclToFileAcl(getStudyAclBelonging(studyId, userId, groupId));
+        }
     }
 
     @Override
@@ -902,8 +882,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 studyIt.remove();
                 continue;
             }
-            StudyAuthenticationContext studyAuthenticationContext = new StudyAuthenticationContext(study.getId());
-            filterFiles(userId, study.getId(), study.getFiles(), studyAuthenticationContext);
+            filterFiles(userId, study.getId(), study.getFiles());
             filterSamples(userId, study.getId(), study.getSamples());
             filterJobs(userId, study.getId(), study.getJobs());
             filterCohorts(userId, study.getId(), study.getCohorts());
@@ -914,11 +893,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void filterFiles(String userId, long studyId, List<File> files) throws CatalogException {
-        filterFiles(userId, studyId, files, new StudyAuthenticationContext(studyId));
-    }
-
-    private void filterFiles(String userId, long studyId, List<File> files, StudyAuthenticationContext studyAuthenticationContext)
-            throws CatalogException {
         if (files == null || files.isEmpty()) {
             return;
         }
@@ -929,12 +903,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
 
-//        getFileAcls(studyAuthenticationContext, userId, files);
-
         Iterator<File> fileIt = files.iterator();
         while (fileIt.hasNext()) {
             File file = fileIt.next();
-            FileAclEntry fileAcl = resolveFilePermissions(file, userId, studyId, studyAuthenticationContext);
+            FileAclEntry fileAcl = resolveFilePermissions(studyId, file, userId);
             if (!fileAcl.getPermissions().contains(FileAclEntry.FilePermissions.VIEW)) {
                 fileIt.remove();
             }
@@ -2603,86 +2575,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private boolean isStudyOwner(long studyId, String userId) throws CatalogDBException {
         return studyDBAdaptor.getOwnerId(studyId).equals(userId);
     }
-
-    /**
-     * This is like a mini cache where we will store the permissions for each path and user. This is useful for single queries trying to
-     * fetch multiple files for example. This way, we only retrieve the permissions once while maintaining the authorization step for each
-     * one.
-     */
-    static class StudyAuthenticationContext {
-        private final long studyId;
-        private final Map<String, Map<String, FileAclEntry>> pathUserAclMap;
-
-        StudyAuthenticationContext(long studyId) {
-            this.studyId = studyId;
-            pathUserAclMap = new HashMap<>();
-        }
-    }
-
-    /**
-     * Return the Acls for the user, group (if any) and {@link #OTHER_USERS_ID}.
-     *
-     * @param studyAuthenticationContext Context with already fetched elements. Will avoid fetch extra data
-     * @param userId                     User id
-     * @param studyId                    Study identifier
-     * @param groupId                    User belonging group. May be null.
-     * @param paths                      List of paths to check
-     * @return Map (Path -> Map (UserId -> FileAcl) )
-     * @throws CatalogDBException
-     */
-    private Map<String, Map<String, FileAclEntry>> getFileAcls(StudyAuthenticationContext studyAuthenticationContext, String userId,
-                                                               long studyId, String groupId, List<String> paths) throws CatalogDBException {
-
-        // Make a copy of the pathsClone
-        List<String> pathsClone = new ArrayList<>(paths.size());
-        for (String path : paths) {
-            pathsClone.add(path);
-        }
-
-        // We first remove the pathsClone for which we already have the ACL
-        for (Iterator<String> iterator = pathsClone.iterator(); iterator.hasNext();) {
-            String path = iterator.next();
-            if (studyAuthenticationContext.pathUserAclMap.containsKey(path)) {
-                Map<String, FileAclEntry> userAclMap = studyAuthenticationContext.pathUserAclMap.get(path);
-                if (userAclMap.containsKey(userId) && (groupId == null || userAclMap.containsKey(groupId))
-                        && userAclMap.containsKey(OTHER_USERS_ID) && userAclMap.containsKey(ANONYMOUS)) {
-                    iterator.remove();
-                }
-            }
-        }
-
-        // We obtain the Acls for the paths for which we still don't have them.
-        if (!pathsClone.isEmpty()) {
-            // We make a query to obtain the ACLs of all the pathsClone for userId, groupId and *
-            List<String> members = (groupId == null)
-                    ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
-                    : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
-            Map<String, Map<String, FileAclEntry>> map = fileDBAdaptor.getAcls(studyId, pathsClone, members).first();
-            for (String path : pathsClone) {
-                Map<String, FileAclEntry> stringAclEntryMap;
-                if (map.containsKey(path)) {
-                    stringAclEntryMap = map.get(path);
-                } else {
-                    stringAclEntryMap = new HashMap<>();
-                }
-                stringAclEntryMap.putIfAbsent(userId, null);
-                if (groupId != null) {
-                    stringAclEntryMap.putIfAbsent(groupId, null);
-                }
-                stringAclEntryMap.putIfAbsent(OTHER_USERS_ID, null);
-                stringAclEntryMap.putIfAbsent(ANONYMOUS, null);
-
-                if (studyAuthenticationContext.pathUserAclMap.containsKey(path)) {
-                    studyAuthenticationContext.pathUserAclMap.get(path).putAll(stringAclEntryMap);
-                } else {
-                    studyAuthenticationContext.pathUserAclMap.put(path, stringAclEntryMap);
-                }
-            }
-        }
-
-        return studyAuthenticationContext.pathUserAclMap;
-    }
-
 
     /*
     ====================================

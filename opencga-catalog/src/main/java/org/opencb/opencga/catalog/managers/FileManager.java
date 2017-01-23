@@ -727,7 +727,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         long parentFileId = fileDBAdaptor.getId(studyId, parentPath);
         boolean newParent = false;
-        if (parentFileId < 0 && StringUtils.isEmpty(parentPath)) {
+        if (parentFileId < 0 && StringUtils.isNotEmpty(parentPath)) {
             if (parents) {
                 newParent = true;
                 parentFileId = create(studyId, File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, parentPath,
@@ -2568,7 +2568,6 @@ public class FileManager extends AbstractManager implements IFileManager {
                                                       String permissionsStr, String sessionId) throws CatalogException {
         AbstractManager.MyResourceIds resourceIds = getIds(fileIdsStr, studyStr, sessionId);
         ParamUtils.checkParameter(membersStr, "members");
-        ParamUtils.checkParameter(permissionsStr, "permissions");
         return authorizationManager.createFileAcls(resourceIds, Arrays.asList(StringUtils.split(membersStr, ",")),
                 Arrays.asList(StringUtils.split(permissionsStr, ",")));
     }
