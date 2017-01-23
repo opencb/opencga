@@ -22,6 +22,7 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
@@ -43,6 +44,7 @@ import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -88,7 +90,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         long startTime = startQuery();
 
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkId(studyId);
-        String ownerId = dbAdaptorFactory.getCatalogStudyDBAdaptor().getOwnerId(studyId);
+//        String ownerId = dbAdaptorFactory.getCatalogStudyDBAdaptor().getOwnerId(studyId);
 
         if (filePathExists(studyId, file.getPath())) {
             throw CatalogDBException.alreadyExists("File", studyId, "path", file.getPath());
@@ -940,6 +942,53 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         if (pushUpdate.first().getModifiedCount() == 0) {
             throw new CatalogDBException("Create Acl: An error occurred when trying to create file acls");
         }
+    }
+
+    @Override
+    public void addAclsToMember(Query query, String member, List<String> permissions) throws CatalogDBException {
+        Query myQuery = new Query(query);
+        myQuery.append(QueryParams.ACL_MEMBER.key(), member);
+        Bson queryDocument = parseQuery(query, true);
+
+        Document update = new Document("$addToSet", new Document("acl.$.permissions", new Document("$each", permissions)));
+        logger.debug("Add Acls: Query {}, Push {}",
+                queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        QueryResult<UpdateResult> pushUpdate = fileCollection.update(queryDocument, update, new QueryOptions("multi", true));
+
+        logger.debug("{} out of {} file acls added to {}", pushUpdate.first().getModifiedCount(), pushUpdate.first().getMatchedCount(),
+                member);
+    }
+
+    @Override
+    public void removeAclsFromMember(Query query, List<String> members, @Nullable List<String> permissions) throws CatalogDBException {
+        if (permissions == null || permissions.size() == 0) {
+            // Remove the members from the acl table
+            Bson queryDocument = parseQuery(query, true);
+            Document update = new Document("$pull", new Document(QueryParams.ACL.key(),
+                    new Document(AclMongoDBAdaptor.QueryParams.MEMBER.key(), new Document("$in", members))));
+            QueryResult<UpdateResult> updateResult = fileCollection.update(queryDocument, update, new QueryOptions("multi", true));
+
+            logger.debug("Remove Acl: {} out of {} removed for members {}", updateResult.first().getModifiedCount(),
+                    updateResult.first().getMatchedCount(), members);
+        } else {
+            // Remove those permissions from member
+            Query myQuery = new Query(query);
+            myQuery.append(QueryParams.ACL_MEMBER.key(), members);
+            Bson queryDocument = parseQuery(query, true);
+
+            Bson update = Updates.pullAll("acl.$.permissions", permissions);
+            logger.debug("Remove Acl: Query {}, Pull {}",
+                    queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+            QueryResult<UpdateResult> pullUpdate = fileCollection.update(queryDocument, update, new QueryOptions("multi", true));
+
+            logger.debug("Remove Acl: {} out of {} file acls removed from {}", pullUpdate.first().getModifiedCount(),
+                    pullUpdate.first().getMatchedCount(), members);
+        }
+
     }
 
     @Override

@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.auth.authorization;
 
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.*;
 
@@ -335,8 +336,8 @@ public interface AuthorizationManager {
 
     //------------------------- File ACL -----------------------------
 
-//    List<QueryResult<FileAclEntry>> createFileAcls(AbstractManager.MyResourceIds resourceIds, List<String> members,
-// List<String> permissions) throws CatalogException;
+    List<QueryResult<FileAclEntry>> createFileAcls(AbstractManager.MyResourceIds resourceIds, List<String> members,
+                                                   List<String> permissions) throws CatalogException;
 
     /**
      * Return all the ACLs defined for the file.
@@ -360,19 +361,19 @@ public interface AuthorizationManager {
     QueryResult<FileAclEntry> getFileAcl(String userId, long fileId, String member) throws CatalogException;
 
     /**
-     * Removes the ACLs defined for the member.
+     * Removes the ACLs defined for the members.
      *
-     * @param userId user asking to remove the ACLs.
-     * @param fileId file id.
-     * @param member member whose permissions will be taken out.
-     * @return the FileAcl prior to the deletion.
+     * @param resourceIds Resource object containing the list of file ids, study and user that wants to perform the action.
+     * @param members List of members.
+     * @return the list of fileAclEntries prior to the deletion.
      * @throws CatalogException if the user asking to remove the ACLs does not have proper permissions or the member does not have any ACL
      *                          defined.
      */
-    QueryResult<FileAclEntry> removeFileAcl(String userId, long fileId, String member) throws CatalogException;
+    List<QueryResult<FileAclEntry>> removeFileAcls(AbstractManager.MyResourceIds resourceIds, List<String> members) throws CatalogException;
 
-    QueryResult<FileAclEntry> updateFileAcl(String userId, long fileId, String member, @Nullable String addPermissions,
-                                            @Nullable String removePermissions, @Nullable String setPermissions) throws CatalogException;
+    List<QueryResult<FileAclEntry>> updateFileAcl(AbstractManager.MyResourceIds resourceIds, String member, @Nullable String addPermissions,
+                                                  @Nullable String removePermissions, @Nullable String setPermissions)
+            throws CatalogException;
 
 
     //------------------------- End of file ACL ----------------------

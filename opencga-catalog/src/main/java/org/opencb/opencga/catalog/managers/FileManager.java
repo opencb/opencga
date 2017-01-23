@@ -64,7 +64,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.utils.CatalogMemberValidator.checkMembers;
 import static org.opencb.opencga.catalog.utils.FileMetadataReader.VARIANT_STATS;
 
 /**
@@ -620,6 +619,17 @@ public class FileManager extends AbstractManager implements IFileManager {
         return fileQueryResult;
     }
 
+    private String getParentPath(String path) {
+        Path parent = Paths.get(path).getParent();
+        String parentPath;
+        if (parent == null) {   //If parent == null, the file is in the root of the study
+            parentPath = "";
+        } else {
+            parentPath = parent.toString() + "/";
+        }
+        return parentPath;
+    }
+
     @Override
     public QueryResult<File> create(long studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path,
                                     String creationDate, String description, File.FileStatus status, long size, long experimentId,
@@ -713,28 +723,20 @@ public class FileManager extends AbstractManager implements IFileManager {
                 new Job().setId(jobId), Collections.emptyList(), Collections.emptyList(), null, stats, attributes);
 
         //Find parent. If parents == true, create folders.
-        Path parent = Paths.get(file.getPath()).getParent();
-        String parentPath;
-//        boolean isRoot = false;
-        if (parent == null) {   //If parent == null, the file is in the root of the study
-            parentPath = "";
-//            isRoot = true;
-        } else {
-            parentPath = parent.toString() + "/";
-        }
+        String parentPath = getParentPath(file.getPath());
 
         long parentFileId = fileDBAdaptor.getId(studyId, parentPath);
         boolean newParent = false;
-        if (parentFileId < 0 && parent != null) {
+        if (parentFileId < 0 && StringUtils.isEmpty(parentPath)) {
             if (parents) {
                 newParent = true;
-                parentFileId = create(studyId, File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, parent.toString(),
+                parentFileId = create(studyId, File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, parentPath,
                         file.getCreationDate(), "", new File.FileStatus(File.FileStatus.READY), 0, -1,
                         Collections.<Long>emptyList(), -1, Collections.<String, Object>emptyMap(),
                         Collections.<String, Object>emptyMap(), true,
                         options, sessionId).first().getId();
             } else {
-                throw new CatalogDBException("Directory not found " + parent.toString());
+                throw new CatalogDBException("Directory not found " + parentPath);
             }
         }
 
@@ -748,6 +750,9 @@ public class FileManager extends AbstractManager implements IFileManager {
             }
         }
 
+        // We obtain the permissions set in the parent folder and set them to the file or folder being created
+        QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(userId, parentFileId);
+        file.setAcl(allFileAcls.getResult());
 
         //Check external file
 //        boolean isExternal = isExternal(file);
@@ -1348,7 +1353,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         // Not external file
         URI fileUri = getUri(fileOrDirectory);
         Path filesystemPath = Paths.get(fileUri);
-//        FileUtils.checkFile(filesystemPath);
+        // FileUtils.checkFile(filesystemPath);
         CatalogIOManager ioManager = catalogIOManagerFactory.get(fileUri);
 
         long studyId = fileDBAdaptor.getStudyIdByFileId(fileOrDirectory.getId());
@@ -1591,13 +1596,18 @@ public class FileManager extends AbstractManager implements IFileManager {
             return;
         }
 
+        String parentPath = getParentPath(stringPath);
+        long parentFileId = fileDBAdaptor.getId(studyId, parentPath);
+        // We obtain the permissions set in the parent folder and set them to the file or folder being created
+        QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(userId, parentFileId);
+
         URI completeURI = Paths.get(studyURI).resolve(path).toUri();
 
         // Create the folder in catalog
         File folder = new File(-1, path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
                 stringPath, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY),
-                false, 0, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(), Collections.emptyList(), null,
-                null, null);
+                false, 0, new Experiment(), Collections.emptyList(), new Job(), Collections.emptyList(),
+                allFileAcls.getResult(), null, null, null);
         fileDBAdaptor.insert(folder, studyId, new QueryOptions());
     }
 
@@ -1740,10 +1750,15 @@ public class FileManager extends AbstractManager implements IFileManager {
             if (fileDBAdaptor.count(query).first() == 0) {
                 long size = Files.size(Paths.get(normalizedUri));
 
+                String parentPath = getParentPath(externalPathDestinyStr);
+                long parentFileId = fileDBAdaptor.getId(studyId, parentPath);
+                // We obtain the permissions set in the parent folder and set them to the file or folder being created
+                QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(userId, parentFileId);
+
                 File subfile = new File(-1, externalPathDestiny.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                         File.Bioformat.NONE, normalizedUri, externalPathDestinyStr, TimeUtils.getTime(), TimeUtils.getTime(), description,
                         new File.FileStatus(File.FileStatus.READY), true, size, new Experiment(), Collections.emptyList(), new Job(),
-                        Collections.emptyList(), Collections.emptyList(), null, Collections.emptyMap(), Collections.emptyMap());
+                        Collections.emptyList(), allFileAcls.getResult(), null, Collections.emptyMap(), Collections.emptyMap());
                 QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, studyId, new QueryOptions());
                 File file = fileMetadataReader.setMetadataInformation(queryResult.first(), queryResult.first().getUri(),
                         new QueryOptions(), sessionId, false);
@@ -1792,10 +1807,21 @@ public class FileManager extends AbstractManager implements IFileManager {
 
                         if (fileDBAdaptor.count(query).first() == 0) {
                             // If the folder does not exist, we create it
+
+                            String parentPath = getParentPath(destinyPath);
+                            long parentFileId = fileDBAdaptor.getId(studyId, parentPath);
+                            // We obtain the permissions set in the parent folder and set them to the file or folder being created
+                            QueryResult<FileAclEntry> allFileAcls;
+                            try {
+                                allFileAcls = authorizationManager.getAllFileAcls(userId, parentFileId);
+                            } catch (CatalogException e) {
+                                throw new RuntimeException(e);
+                            }
+
                             File folder = new File(-1, dir.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
                                     File.Bioformat.NONE, dir.toUri(), destinyPath, TimeUtils.getTime(), TimeUtils.getTime(),
                                     description, new File.FileStatus(File.FileStatus.READY), true, 0, new Experiment(),
-                                    Collections.emptyList(), new Job(), Collections.emptyList(), Collections.emptyList(), null,
+                                    Collections.emptyList(), new Job(), Collections.emptyList(), allFileAcls.getResult(), null,
                                     Collections.emptyMap(), Collections.emptyMap());
                             fileDBAdaptor.insert(folder, studyId, new QueryOptions());
                         }
@@ -1824,10 +1850,21 @@ public class FileManager extends AbstractManager implements IFileManager {
                         if (fileDBAdaptor.count(query).first() == 0) {
                             long size = Files.size(filePath);
                             // If the file does not exist, we create it
+
+                            String parentPath = getParentPath(destinyPath);
+                            long parentFileId = fileDBAdaptor.getId(studyId, parentPath);
+                            // We obtain the permissions set in the parent folder and set them to the file or folder being created
+                            QueryResult<FileAclEntry> allFileAcls;
+                            try {
+                                allFileAcls = authorizationManager.getAllFileAcls(userId, parentFileId);
+                            } catch (CatalogException e) {
+                                throw new RuntimeException(e);
+                            }
+
                             File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, File.Format.UNKNOWN,
                                     File.Bioformat.NONE, filePath.toUri(), destinyPath, TimeUtils.getTime(), TimeUtils.getTime(),
                                     description, new File.FileStatus(File.FileStatus.READY), true, size, new Experiment(),
-                                    Collections.emptyList(), new Job(), Collections.emptyList(), Collections.emptyList(), null,
+                                    Collections.emptyList(), new Job(), Collections.emptyList(), allFileAcls.getResult(), null,
                                     Collections.emptyMap(), Collections.emptyMap());
                             QueryResult<File> queryResult = fileDBAdaptor.insert(subfile, studyId, new QueryOptions());
                             File file = fileMetadataReader.setMetadataInformation(queryResult.first(), queryResult.first().getUri(),
@@ -2529,76 +2566,28 @@ public class FileManager extends AbstractManager implements IFileManager {
     @Override
     public List<QueryResult<FileAclEntry>> createAcls(String fileIdsStr, @Nullable String studyStr, String membersStr,
                                                       String permissionsStr, String sessionId) throws CatalogException {
-
         AbstractManager.MyResourceIds resourceIds = getIds(fileIdsStr, studyStr, sessionId);
-        List<String> members = Arrays.asList(StringUtils.split(membersStr, ","));
-        List<String> permissions = Arrays.asList(StringUtils.split(permissionsStr, ","));
-        //        return authorizationManager.createFileAcls(resource, Arrays.asList(StringUtils.split(members)),
-//                Arrays.asList(StringUtils.split(permissions)));
+        ParamUtils.checkParameter(membersStr, "members");
+        ParamUtils.checkParameter(permissionsStr, "permissions");
+        return authorizationManager.createFileAcls(resourceIds, Arrays.asList(StringUtils.split(membersStr, ",")),
+                Arrays.asList(StringUtils.split(permissionsStr, ",")));
+    }
 
-        String userId = resourceIds.getUser();
-        long studyId = resourceIds.getStudyId();
+    @Override
+    public List<QueryResult<FileAclEntry>> updateAcls(String fileIdsStr, @Nullable String studyStr, String member,
+                                                      @Nullable String addPermissions, @Nullable String removePermissions,
+                                                      @Nullable String setPermissions, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(member, "member");
+        AbstractManager.MyResourceIds resources = getIds(fileIdsStr, studyStr, sessionId);
+        return authorizationManager.updateFileAcl(resources, member, addPermissions, removePermissions, setPermissions);
+    }
 
-        // Check all the members are valid members
-        checkMembers(catalogDBAdaptorFactory, studyId, members);
-
-        // Check that all the members have permissions defined at the study level
-        for (String member : members) {
-            if (!member.equals("*") && !member.equals("anonymous") && !authorizationManager.memberHasPermissionsInStudy(studyId, member)) {
-                throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
-                        + "defined for that member.");
-            }
-        }
-
-        List<QueryResult<FileAclEntry>> retQueryResultList = new ArrayList<>(members.size());
-
-        // We create the list of permissions
-        List<FileAclEntry> fileAclEntryList = new ArrayList<>(permissions.size());
-        for (String member : members) {
-            fileAclEntryList.add(new FileAclEntry(member, permissions));
-        }
-
-        for (Long fileId : resourceIds.getResourceIds()) {
-            try {
-                // Check if the userId has proper permissions for all the files.
-                authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.SHARE);
-
-                // Check if any of the members already have permissions set in the file
-                if (authorizationManager.anyMemberHasPermissions(studyId, fileId, members, fileDBAdaptor)) {
-                    throw new CatalogException("Cannot create ACL. At least one of the members already have some permissions set for this "
-                            + "particular file. Please, use update instead.");
-                }
-
-                QueryResult<File> fileQueryResult = fileDBAdaptor.get(fileId, new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor
-                        .QueryParams.PATH.key()));
-                if (fileQueryResult.getNumResults() != 1) {
-                    throw new CatalogException("An unexpected error occured. File " + fileId + " not found when trying to create new ACLs");
-                }
-
-                // We create those ACLs for the whole path contained (propagate the acls in case of a directory)
-                Query query = new Query()
-                        .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                        .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + fileQueryResult.first().getPath());
-                fileDBAdaptor.createAcl(query, fileAclEntryList);
-
-                QueryResult<FileAclEntry> aclEntryQueryResult = fileDBAdaptor.getAcl(fileId, members);
-                aclEntryQueryResult.setId("Create file ACLs");
-                retQueryResultList.add(aclEntryQueryResult);
-
-            } catch (CatalogException e) {
-                QueryResult<FileAclEntry> queryResult = new QueryResult<>();
-                queryResult.setErrorMsg(e.getMessage());
-                queryResult.setId("Create file ACL");
-
-                retQueryResultList.add(queryResult);
-            }
-        }
-
-        return retQueryResultList;
-
-
-
-
+    @Override
+    public List<QueryResult<FileAclEntry>> removeFileAcls(String fileIdsStr, @Nullable String studyStr, String members, String sessionId)
+            throws CatalogException {
+        AbstractManager.MyResourceIds resources = getIds(fileIdsStr, studyStr, sessionId);
+        ParamUtils.checkParameter(members, "members");
+        return authorizationManager.removeFileAcls(resources, Arrays.asList(StringUtils.split(members, ",")));
     }
 
 }

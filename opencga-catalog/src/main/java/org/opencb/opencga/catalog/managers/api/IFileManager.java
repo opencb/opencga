@@ -324,4 +324,11 @@ public interface IFileManager extends ResourceManager<Long, File> {
     List<QueryResult<FileAclEntry>> createAcls(String fileIdsStr, @Nullable String studyStr, String members, String permissions,
                                                String sessionId) throws CatalogException;
 
+    List<QueryResult<FileAclEntry>> updateAcls(String fileIdsStr, @Nullable String studyStr, String member, @Nullable String addPermissions,
+                                               @Nullable String removePermissions, @Nullable String setPermissions, String sessionId)
+            throws CatalogException;
+
+    List<QueryResult<FileAclEntry>> removeFileAcls(String fileIdsStr, @Nullable String studyStr, String members, String sessionId)
+            throws CatalogException;
+
 }

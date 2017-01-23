@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.*;
@@ -1402,6 +1403,77 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         return sampleDBAdaptor.getAcl(sampleId, Arrays.asList(member));
     }
 
+    @Override
+    public List<QueryResult<FileAclEntry>> createFileAcls(AbstractManager.MyResourceIds resourceIds, List<String> members, List<String>
+            permissions) throws CatalogException {
+
+        checkPermissions(permissions, FileAclEntry.FilePermissions::valueOf);
+
+        String userId = resourceIds.getUser();
+        long studyId = resourceIds.getStudyId();
+
+        // Check all the members are valid members
+        checkMembers(dbAdaptorFactory, studyId, members);
+
+        // Check that all the members have permissions defined at the study level
+        for (String member : members) {
+            if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
+                throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
+                        + "defined for that member.");
+            }
+        }
+
+        List<QueryResult<FileAclEntry>> retQueryResultList = new ArrayList<>(resourceIds.getResourceIds().size());
+
+        // We create the list of permissions
+        List<FileAclEntry> fileAclEntryList = new ArrayList<>(permissions.size());
+        for (String member : members) {
+            fileAclEntryList.add(new FileAclEntry(member, permissions));
+        }
+
+        for (Long fileId : resourceIds.getResourceIds()) {
+            try {
+                // Check if the userId has proper permissions for all the files.
+                checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.SHARE);
+
+                // Check if any of the members already have permissions set in the file
+                if (anyMemberHasPermissions(studyId, fileId, members, fileDBAdaptor)) {
+                    throw new CatalogException("Cannot create ACL. At least one of the members already have some permissions set for this "
+                            + "particular file. Please, use update instead.");
+                }
+
+                QueryResult<File> fileQueryResult = fileDBAdaptor.get(fileId, new QueryOptions(QueryOptions.INCLUDE,
+                        Arrays.asList(FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.TYPE.key())));
+                if (fileQueryResult.getNumResults() != 1) {
+                    throw new CatalogException("An unexpected error occured. File " + fileId + " not found when trying to create new ACLs");
+                }
+
+                // We create those ACLs for the whole path contained (propagate the acls in case of a directory)
+                Query query = new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                if (fileQueryResult.first().getType().equals(File.Type.FILE)) {
+                    query.append(FileDBAdaptor.QueryParams.ID.key(), fileId);
+                } else {
+                    query.append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + fileQueryResult.first().getPath());
+                }
+
+                fileDBAdaptor.createAcl(query, fileAclEntryList);
+
+                QueryResult<FileAclEntry> aclEntryQueryResult = fileDBAdaptor.getAcl(fileId, members);
+                aclEntryQueryResult.setId("Create file ACLs");
+                retQueryResultList.add(aclEntryQueryResult);
+
+            } catch (CatalogException e) {
+                QueryResult<FileAclEntry> queryResult = new QueryResult<>();
+                queryResult.setErrorMsg(e.getMessage());
+                queryResult.setId("Create file ACLs");
+
+                retQueryResultList.add(queryResult);
+            }
+        }
+
+        return retQueryResultList;
+    }
+
 //    @Override
 //    public List<QueryResult<FileAclEntry>> createFileAcls(AbstractManager.MyResourceIds resourceIds, List<String> members,
 //                                                          List<String> permissions) throws CatalogException {
@@ -1518,72 +1590,129 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<FileAclEntry> removeFileAcl(String userId, long fileId, String member) throws CatalogException {
-        fileDBAdaptor.checkId(fileId);
-        checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.SHARE);
+    public List<QueryResult<FileAclEntry>> removeFileAcls(AbstractManager.MyResourceIds resources, List<String> members)
+            throws CatalogException {
+        // Check the member is valid
+        checkMembers(dbAdaptorFactory, resources.getStudyId(), members);
 
-        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
-        checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
+        List<QueryResult<FileAclEntry>> retQueryResultList = new ArrayList<>(resources.getResourceIds().size());
+        for (Long fileId : resources.getResourceIds()) {
+            try {
+                // Check if the userId has proper permissions for all the files.
+                checkFilePermission(fileId, resources.getUser(), FileAclEntry.FilePermissions.SHARE);
 
-        // Obtain the ACLs the member had
-        QueryResult<FileAclEntry> fileAcl = fileDBAdaptor.getAcl(fileId, Arrays.asList(member));
-        if (fileAcl == null || fileAcl.getNumResults() == 0) {
-            throw new CatalogException("Could not remove the ACLs for " + member + ". It seems " + member + " did not have any ACLs "
-                    + "defined");
+                QueryResult<FileAclEntry> aclEntryQueryResult = fileDBAdaptor.getAcl(fileId, members);
+
+                QueryResult<File> fileQueryResult = fileDBAdaptor.get(fileId, new QueryOptions(QueryOptions.INCLUDE,
+                        Arrays.asList(FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.TYPE.key())));
+                if (fileQueryResult.getNumResults() != 1) {
+                    throw new CatalogException("An unexpected error occured. File " + fileId + " not found when trying to delete the ACLs");
+                }
+
+                // We delete those ACLs for the whole path contained (propagate the acls in case of a directory)
+                Query query = new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId());
+                if (fileQueryResult.first().getType().equals(File.Type.FILE)) {
+                    query.append(FileDBAdaptor.QueryParams.ID.key(), fileId);
+                } else {
+                    query.append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + fileQueryResult.first().getPath());
+                }
+
+                fileDBAdaptor.removeAclsFromMember(query, members, null);
+
+                aclEntryQueryResult.setId("Remove file ACLs");
+                retQueryResultList.add(aclEntryQueryResult);
+            } catch (CatalogException e) {
+                QueryResult<FileAclEntry> queryResult = new QueryResult<>();
+                queryResult.setErrorMsg(e.getMessage());
+                queryResult.setId("Remove file ACLs");
+
+                retQueryResultList.add(queryResult);
+            }
         }
 
-        fileDBAdaptor.removeAcl(fileId, member);
-
-        fileAcl.setId("Remove file ACLs");
-        return fileAcl;
+        return retQueryResultList;
     }
 
     @Override
-    public QueryResult<FileAclEntry> updateFileAcl(String userId, long fileId, String member, @Nullable String addPermissions,
-                                                   @Nullable String removePermissions, @Nullable String setPermissions)
-            throws CatalogException {
-        fileDBAdaptor.checkId(fileId);
-        checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.SHARE);
-
-        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
-        checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
-
-        // Check that the member has permissions
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.ID.key(), fileId)
-                .append(FileDBAdaptor.QueryParams.ACL_MEMBER.key(), member);
-        QueryResult<Long> count = fileDBAdaptor.count(query);
-        if (count == null || count.first() == 0) {
-            throw new CatalogException("Could not update ACLs for " + member + ". It seems the member does not have any permissions set "
-                    + "yet.");
-        }
+    public List<QueryResult<FileAclEntry>> updateFileAcl(AbstractManager.MyResourceIds resources, String member, @Nullable String
+            addPermissions, @Nullable String removePermissions, @Nullable String setPermissions) throws CatalogException {
+        // Check the member is valid
+        checkMembers(dbAdaptorFactory, resources.getStudyId(), Arrays.asList(member));
 
         List<String> permissions;
         if (setPermissions != null) {
             permissions = Arrays.asList(setPermissions.split(","));
             // Check if the permissions are correct
             checkPermissions(permissions, FileAclEntry.FilePermissions::valueOf);
-
-            fileDBAdaptor.setAclsToMember(fileId, member, permissions);
         } else {
             if (addPermissions != null) {
                 permissions = Arrays.asList(addPermissions.split(","));
                 // Check if the permissions are correct
                 checkPermissions(permissions, FileAclEntry.FilePermissions::valueOf);
-
-                fileDBAdaptor.addAclsToMember(fileId, member, permissions);
-            }
-
-            if (removePermissions != null) {
+            } else if (removePermissions != null) {
                 permissions = Arrays.asList(removePermissions.split(","));
                 // Check if the permissions are correct
                 checkPermissions(permissions, FileAclEntry.FilePermissions::valueOf);
-
-                fileDBAdaptor.removeAclsFromMember(fileId, member, permissions);
+            } else {
+                throw new CatalogException("No permissions given to be added, removed or set");
             }
         }
 
-        return fileDBAdaptor.getAcl(fileId, Arrays.asList(member));
+        List<QueryResult<FileAclEntry>> retQueryResultList = new ArrayList<>(resources.getResourceIds().size());
+        for (Long fileId : resources.getResourceIds()) {
+            try {
+                checkFilePermission(fileId, resources.getUser(), FileAclEntry.FilePermissions.SHARE);
+
+                // Check that the member has permissions in the file
+                Query query = new Query()
+                        .append(FileDBAdaptor.QueryParams.ID.key(), fileId)
+                        .append(FileDBAdaptor.QueryParams.ACL_MEMBER.key(), member);
+                QueryResult<Long> count = fileDBAdaptor.count(query);
+                if (count == null || count.first() == 0) {
+                    throw new CatalogException("Could not update ACLs for " + member + ". It seems the member does not have any "
+                            + "permissions set yet.");
+                }
+
+                // We create the query to update just the file acl in case of a file or all the files and folders within the folder in other
+                // case
+                QueryResult<File> fileQueryResult = fileDBAdaptor.get(fileId, new QueryOptions(QueryOptions.INCLUDE,
+                        Arrays.asList(FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.TYPE.key())));
+                if (fileQueryResult.getNumResults() != 1) {
+                    throw new CatalogException("An unexpected error occured. File " + fileId + " not found when trying to create new ACLs");
+                }
+
+                // We create those ACLs for the whole path contained (propagate the acls in case of a directory)
+                query = new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId());
+                if (fileQueryResult.first().getType().equals(File.Type.FILE)) {
+                    query.append(FileDBAdaptor.QueryParams.ID.key(), fileId);
+                } else {
+                    query.append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + fileQueryResult.first().getPath());
+                }
+
+                // Update
+                if (setPermissions != null) {
+                    FileAclEntry fileAclEntry = new FileAclEntry(member, permissions);
+                    fileDBAdaptor.createAcl(query, Arrays.asList(fileAclEntry));
+                } else if (addPermissions != null) {
+                    fileDBAdaptor.addAclsToMember(query, member, permissions);
+                } else {
+                    fileDBAdaptor.removeAclsFromMember(query, Arrays.asList(member), permissions);
+                }
+
+                QueryResult<FileAclEntry> aclEntryQueryResult = fileDBAdaptor.getAcl(fileId, member);
+                aclEntryQueryResult.setId("Update file ACLs");
+                retQueryResultList.add(aclEntryQueryResult);
+
+            } catch (CatalogException e) {
+                QueryResult<FileAclEntry> queryResult = new QueryResult<>();
+                queryResult.setErrorMsg(e.getMessage());
+                queryResult.setId("Update file ACLs");
+
+                retQueryResultList.add(queryResult);
+            }
+        }
+
+        return retQueryResultList;
     }
 
     @Override

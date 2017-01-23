@@ -859,32 +859,10 @@ public class CatalogManager implements AutoCloseable {
         return aclList;
     }
 
-    public List<QueryResult<FileAclEntry>> removeFileAcl(String fileIdsStr, @Nullable String studyStr, String member, String sessionId)
-            throws CatalogException {
-        AbstractManager.MyResourceIds resource = fileManager.getIds(fileIdsStr, studyStr, sessionId);
-        List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(resource.getResourceIds().size());
-        for (int i = 0; i < resource.getResourceIds().size(); i++) {
-            Long fileId = resource.getResourceIds().get(i);
-            QueryResult<FileAclEntry> fileAcls = authorizationManager.removeFileAcl(resource.getUser(), fileId, member);
-            fileAcls.setId(Long.toString(resource.getResourceIds().get(i)));
-            fileAclList.add(fileAcls);
-        }
-        return fileAclList;
-    }
-
     public QueryResult<FileAclEntry> getFileAcl(String fileIdStr, @Nullable String studyStr, String member, String sessionId)
             throws CatalogException {
         AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
         return authorizationManager.getFileAcl(resource.getUser(), resource.getResourceId(), member);
-    }
-
-    public QueryResult<FileAclEntry> updateFileAcl(String fileIdStr, @Nullable String studyStr, String member,
-                                                   @Nullable String addPermissions, @Nullable String removePermissions,
-                                                   @Nullable String setPermissions, String sessionId) throws CatalogException {
-        AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
-        return authorizationManager.updateFileAcl(resource.getUser(), resource.getResourceId(), member, addPermissions, removePermissions,
-                setPermissions);
-
     }
 
     /*Require role admin*/
