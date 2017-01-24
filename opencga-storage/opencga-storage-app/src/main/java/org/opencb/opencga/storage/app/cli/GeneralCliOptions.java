@@ -140,7 +140,13 @@ public class GeneralCliOptions {
 
     }
 
-    public class IndexCommandOptions {
+    public class IndexCommandOptions extends GenericIndexCommandOptions {
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name to load the data", required = false, arity = 1)
+        public String dbName;
+    }
+
+    public class GenericIndexCommandOptions {
 
         @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, variableArity = true)
         public List<String> input;
@@ -156,18 +162,6 @@ public class GeneralCliOptions {
 
         @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
         public boolean load = false;
-
-        @Deprecated
-        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required =
-                false, arity = 1)
-        public String credentials;
-
-        @Parameter(names = {"-d", "--database"}, description = "DataBase name to load the data", required = false, arity = 1)
-        public String dbName;
-
-        @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage" +
-                ".core.StudyConfiguration", required = false, arity = 1)
-        public String studyConfigurationFile;
 
     }
 

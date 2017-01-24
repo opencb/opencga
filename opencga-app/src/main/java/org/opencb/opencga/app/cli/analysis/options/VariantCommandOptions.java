@@ -65,20 +65,12 @@ public class VariantCommandOptions {
 //        @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, variableArity = true)
 //        public List<String> input;
 
-//        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1, required = false)
+//        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1)
 //        public String outdir;
 
 //        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
 //        public String fileId;
 
-        @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
-        public boolean transform = false;
-
-        @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
-        public boolean load = false;
-
-//        @Parameter(names = {"--overwrite"}, description = "Reset the database if exists before installing")
-//        public boolean overwrite;
 
 //        @Parameter(names = {"--study-id"}, description = "Unque ID for the study", arity = 1)
 //        public long studyId;
@@ -87,15 +79,25 @@ public class VariantCommandOptions {
         public String fileId = null;
 
         @Parameter(names = {"--transformed-files"}, description = "CSV of paths corresponding to the location of the transformed files.",
-                required = false, arity = 1)
+                arity = 1)
         public String transformedPaths = null;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
         public String outdir = null;
 
         @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
-                + "transformed files will not be registered in catalog.", required = false, arity = 1)
+                + "transformed files will not be registered in catalog.", arity = 1)
         public String catalogPath = null;
+
+
+        //////
+        // Commons
+
+        @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
+        public boolean transform = false;
+
+        @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
+        public boolean load = false;
 
         @Parameter(names = {"--exclude-genotypes"}, description = "Index excluding the genotype information")
         public boolean excludeGenotype = false;
@@ -325,7 +327,7 @@ public class VariantCommandOptions {
         @Parameter(names = {"--mode"}, description = "Communication mode. grpc|rest|auto.")
         public String mode = "auto";
 
-        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", required = false, arity = 1)
+        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
         public String output;
     }
 
@@ -345,10 +347,10 @@ public class VariantCommandOptions {
 //                + "prefix with structure <INPUT_FILENAME>.<TIME>")
 //        public boolean load = false;
 
-        @Parameter(names = {"--overwrite-stats"}, description = "[PENDING] Overwrite stats in variants already present")
+        @Parameter(names = {"--overwrite-stats"}, description = "Overwrite stats in variants already present")
         public boolean overwriteStats = false;
 
-        @Parameter(names = {"--region"}, description = "Region to calculate.")
+        @Parameter(names = {"--region"}, description = "[PENDING] Region to calculate.")
         public String region;
 
         @Parameter(names = {"--update-stats"}, description = "Calculate stats just for missing positions. "
@@ -359,28 +361,25 @@ public class VariantCommandOptions {
                 arity = 1)
         public String studyId;
 
-        @Parameter(names = {"-f", "--file-id"}, description = "Calculate stats only for the selected file", required = false, arity = 1)
+        @Parameter(names = {"-f", "--file-id"}, description = "Calculate stats only for the selected file", arity = 1)
         public String fileId;
 
         @Parameter(names = {"--cohort-ids"}, description = "Cohort Ids for the cohorts to be calculated.")
         public String cohortIds;
 
         // FIXME: Hidden?
-        @Parameter(names = {"--output-filename"}, description = "Output file name. Default: database name", required = false, arity = 1)
+        @Parameter(names = {"--output-filename"}, description = "Output file name. Default: database name", arity = 1)
         public String fileName;
 
-//        @Parameter(names = {"--outdir-id"}, description = "Output directory", required = false, arity = 1)
+//        @Parameter(names = {"--outdir-id"}, description = "Output directory", arity = 1)
 //        public String outdirId;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
         public String outdir = null;
 
         @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
-                + "transformed files will not be registered in catalog.", required = false, arity = 1)
+                + "transformed files will not be registered in catalog.", arity = 1)
         public String catalogPath = null;
-
-//        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
-//        public String outdir = ".";
 
         @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
         public VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
@@ -412,8 +411,11 @@ public class VariantCommandOptions {
         public String outdir = null;
 
         @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
-                + "transformed files will not be registered in catalog.", required = false, arity = 1)
+                + "transformed files will not be registered in catalog.", arity = 1)
         public String catalogPath;
+
+        /////////
+        // Generic
 
         @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by --output-filename)")
         public boolean create = false;
@@ -431,13 +433,13 @@ public class VariantCommandOptions {
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         public boolean overwriteAnnotations = false;
 
-        @Parameter(names = {"--output-filename"}, description = "Output file name. Default: dbName", required = false, arity = 1)
+        @Parameter(names = {"--output-filename"}, description = "Output file name. Default: dbName", arity = 1)
         public String fileName;
 
-        @Parameter(names = {"--species"}, description = "Species. Default hsapiens", required = false, arity = 1)
+        @Parameter(names = {"--species"}, description = "Species. Default hsapiens", arity = 1)
         public String species = "hsapiens";
 
-        @Parameter(names = {"--assembly"}, description = "Assembly. Default GRCh37", required = false, arity = 1)
+        @Parameter(names = {"--assembly"}, description = "Assembly. Default GRCh37", arity = 1)
         public String assembly = "GRCh37";
 
         @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
@@ -468,23 +470,23 @@ public class VariantCommandOptions {
 //        @ParametersDelegate
 //        public QueryCommandOptions queryOptions = new QueryCommandOptions();
 
-//        @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, tsv, tsv.gz, cellbase, cellbase.gz, json or json.gz", required = false, arity = 1)
+//        @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, tsv, tsv.gz, cellbase, cellbase.gz, json or json.gz", arity = 1)
 //        public String outputFormat = "tsv";
 
         @Parameter(names = {"-r", "--region"}, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000",
                 required = false)
         public String region;
 
-        @Parameter(names = {"--region-file"}, description = "GFF File with regions", required = false)
+        @Parameter(names = {"--region-file"}, description = "GFF File with regions")
         public String regionFile;
 
-        @Parameter(names = {"-g", "--gene"}, description = "CSV list of genes", required = false)
+        @Parameter(names = {"-g", "--gene"}, description = "CSV list of genes")
         public String gene;
 
-        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be returned", required = false)
+        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be returned")
         public String studies;
 
-        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", required = false, arity = 1)
+        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
         public String output;
     }
 

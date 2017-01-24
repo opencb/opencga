@@ -181,7 +181,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         params.put(VariantStorageEngine.Options.SAMPLE_IDS.key(), indexVariantsCommandOptions.sampleIds);
         params.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), indexVariantsCommandOptions.calculateStats);
         params.put(VariantStorageEngine.Options.INCLUDE_STATS.key(), indexVariantsCommandOptions.includeStats);
-//        variantOptions.put(VariantStorageEngine.Options.INCLUDE_GENOTYPES.key(), indexVariantsCommandOptions.includeGenotype);
+        params.put(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), indexVariantsCommandOptions.excludeGenotype);
         params.put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), indexVariantsCommandOptions.extraFields);
 //        variantOptions.put(VariantStorageEngine.Options.INCLUDE_SRC.key(), indexVariantsCommandOptions.includeSrc);
 //        variantOptions.put(VariantStorageEngine.Options.COMPRESS_GENOTYPES.key(), indexVariantsCommandOptions.compressGenotypes);
@@ -194,8 +194,8 @@ public class VariantCommandExecutor extends CommandExecutor {
             params.put(VariantAnnotationManager.ANNOTATION_SOURCE, indexVariantsCommandOptions.annotator);
         }
         params.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, indexVariantsCommandOptions.overwriteAnnotations);
-        if (indexVariantsCommandOptions.commonIndexOptions.studyConfigurationFile != null && !indexVariantsCommandOptions.commonIndexOptions.studyConfigurationFile.isEmpty()) {
-            params.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, indexVariantsCommandOptions.commonIndexOptions.studyConfigurationFile);
+        if (indexVariantsCommandOptions.studyConfigurationFile != null && !indexVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
+            params.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, indexVariantsCommandOptions.studyConfigurationFile);
         }
         params.put(VariantStorageEngine.Options.RESUME.key(), indexVariantsCommandOptions.resume);
 
@@ -467,6 +467,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         if (statsVariantsCommandOptions.studyConfigurationFile != null && !statsVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
             options.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, statsVariantsCommandOptions.studyConfigurationFile);
         }
+        options.put(VariantStorageEngine.Options.RESUME.key(), statsVariantsCommandOptions.resume);
 
         if (statsVariantsCommandOptions.commonOptions.params != null) {
             options.putAll(statsVariantsCommandOptions.commonOptions.params);

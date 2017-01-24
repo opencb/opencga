@@ -242,6 +242,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                 .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, cliOptions.fileName)
 //                .append(AnalysisFileIndexer.CREATE, cliOptions.create)
 //                .append(AnalysisFileIndexer.LOAD, cliOptions.load)
+                .append(VariantStorageEngine.Options.OVERWRITE_STATS.key(), cliOptions.overwriteStats)
                 .append(VariantStorageEngine.Options.UPDATE_STATS.key(), cliOptions.updateStats)
                 .append(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), cliOptions.aggregated)
                 .append(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), cliOptions.aggregationMappingFile)
