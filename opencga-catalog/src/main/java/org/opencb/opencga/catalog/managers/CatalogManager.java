@@ -1114,16 +1114,9 @@ public class CatalogManager implements AutoCloseable {
     public List<QueryResult<IndividualAclEntry>> createIndividualAcls(String individualIdsStr, @Nullable String studyStr, String members,
                                                                       String permissions, String sessionId) throws CatalogException {
         AbstractManager.MyResourceIds resource = individualManager.getIds(individualIdsStr, studyStr, sessionId);
-        List<Long> individualIds = resource.getResourceIds();
-        List<QueryResult<IndividualAclEntry>> individualAclList = new ArrayList<>(individualIds.size());
-        for (int i = 0; i < individualIds.size(); i++) {
-            Long individualId = individualIds.get(i);
-            QueryResult<IndividualAclEntry> individualAcls = authorizationManager.createIndividualAcls(resource.getUser(), individualId,
-                    members, permissions);
-            individualAcls.setId(Long.toString(individualId));
-            individualAclList.add(individualAcls);
-        }
-        return individualAclList;
+
+        return authorizationManager.createIndividualAcls(resource, Arrays.asList(StringUtils.split(members, ",")),
+                Arrays.asList(StringUtils.split(permissions, ",")));
     }
 
     public List<QueryResult<IndividualAclEntry>> removeIndividualAcl(String individualIdsStr, @Nullable String studyStr, String member,
@@ -1355,16 +1348,9 @@ public class CatalogManager implements AutoCloseable {
     public List<QueryResult<CohortAclEntry>> createCohortAcls(String cohortIdsStr, @Nullable String studyStr, String members,
                                                               String permissions, String sessionId) throws CatalogException {
         AbstractManager.MyResourceIds resource = cohortManager.getIds(cohortIdsStr, studyStr, sessionId);
-        List<Long> cohortIds = resource.getResourceIds();
-        List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(cohortIds.size());
-        for (int i = 0; i < cohortIds.size(); i++) {
-            Long cohortId = cohortIds.get(i);
-            QueryResult<CohortAclEntry> cohortAcls = authorizationManager.createCohortAcls(resource.getUser(), cohortId, members,
-                    permissions);
-            cohortAcls.setId(Long.toString(cohortId));
-            cohortAclList.add(cohortAcls);
-        }
-        return cohortAclList;
+
+        return authorizationManager.createCohortAcls(resource, Arrays.asList(StringUtils.split(members, ",")),
+                Arrays.asList(StringUtils.split(permissions, ",")));
     }
 
     public List<QueryResult<CohortAclEntry>> removeCohortAcl(String cohortIdsStr, @Nullable String studyStr, String member,

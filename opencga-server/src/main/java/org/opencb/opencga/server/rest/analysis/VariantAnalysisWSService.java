@@ -18,12 +18,15 @@ package org.opencb.opencga.server.rest.analysis;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.*;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
+import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.manager.variant.VariantStorageManager;
@@ -334,5 +337,14 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             return createErrorResponse(e);
         }
     }
+
+
+    @GET
+    @Path("/stats")
+    @ApiOperation(value = "Calculate variant stats [PENDING]", position = 2)
+    public Response stats() {
+        return createErrorResponse(new NotImplementedException("Pending"));
+    }
+
 
 }

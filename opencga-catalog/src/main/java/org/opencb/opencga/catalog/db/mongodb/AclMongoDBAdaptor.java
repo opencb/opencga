@@ -31,16 +31,16 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.auth.authorization.AclDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.acls.AbstractAcl;
 import org.opencb.opencga.catalog.models.acls.permissions.AbstractAclEntry;
 import org.slf4j.Logger;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
-import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER_ARRAY;
-import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT;
-import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
+import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.PRIVATE_ID;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptor.PRIVATE_STUDY_ID;
 
@@ -64,6 +64,7 @@ public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdapt
         ID("id", INTEGER_ARRAY, ""),
         ACL("acl", TEXT_ARRAY, ""),
         MEMBER("member", TEXT, ""),
+        PERMISSIONS("permissions", TEXT_ARRAY, ""),
         ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
         ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, "");
 
@@ -108,6 +109,7 @@ public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdapt
         }
     }
 
+    @Deprecated
     @Override
     public T createAcl(long resourceId, T acl) throws CatalogDBException {
         // Push the new acl to the list of acls.
@@ -123,6 +125,42 @@ public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdapt
 
         logger.debug("Create Acl: {}", acl.toString());
         return acl;
+    }
+
+    @Override
+    public void setAcl(Bson bsonQuery, List<T> aclEntryList) throws CatalogDBException {
+        // First we take out all possible acls that could be present for any of the members.
+        List<String> memberList = aclEntryList.stream().map(fileAclEntry -> fileAclEntry.getMember()).collect(Collectors.toList());
+
+        Document update = new Document("$pull", new Document(FileDBAdaptor.QueryParams.ACL.key(),
+                new Document(AclMongoDBAdaptor.QueryParams.MEMBER.key(), new Document("$in", memberList))));
+        logger.debug("Create Acl: Query {}, Pull {}",
+                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        QueryResult<UpdateResult> pullUpdate = collection.update(bsonQuery, update, new QueryOptions("multi", true));
+
+        logger.debug("{} out of {} file acls removed", pullUpdate.first().getModifiedCount(), pullUpdate.first().getMatchedCount());
+
+        // Now we push all the new acls
+        List<Document> aclDocumentList = new ArrayList<>(aclEntryList.size());
+        for (T aclEntry : aclEntryList) {
+            aclDocumentList.add(MongoDBUtils.getMongoDBDocument(aclEntry, "ACL"));
+        }
+
+        update = new Document("$push", new Document(QueryParams.ACL.key(), new Document("$each", aclDocumentList)));
+
+        logger.debug("Create Acl: Query {}, Push {}",
+                bsonQuery.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+        QueryResult<UpdateResult> pushUpdate = collection.update(bsonQuery, update, new QueryOptions("multi", true));
+
+        logger.debug("{} out of {} file acls created", pushUpdate.first().getModifiedCount(), pushUpdate.first().getMatchedCount());
+
+        if (pushUpdate.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("Create Acl: An error occurred when trying to create acls");
+        }
     }
 
     @Override
@@ -201,6 +239,7 @@ public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdapt
     }
 
     @Override
+    @Deprecated
     public T addAclsToMember(long resourceId, String member, List<String> permissions) throws CatalogDBException {
         Document query = new Document()
                 .append(PRIVATE_ID, resourceId)
@@ -218,6 +257,43 @@ public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdapt
     }
 
     @Override
+    public void addAclsToMembers(List<Long> resourceIds, List<String> members, List<String> permissions) throws CatalogDBException {
+        for (String member : members) {
+            logger.debug("Adding ACLs for {}", member);
+
+            // Try to update and add the new permissions (if the member already had those permissions set)
+            Document queryDocument = new Document()
+                    .append(PRIVATE_ID, resourceIds)
+                    .append(QueryParams.ACL_MEMBER.key(), member);
+
+            Document update = new Document("$addToSet", new Document("acl.$.permissions", new Document("$each", permissions)));
+            logger.debug("Add Acls (addToSet): Query {}, Push {}",
+                    queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+            QueryResult<UpdateResult> pushUpdate = collection.update(queryDocument, update, new QueryOptions("multi", true));
+            logger.debug("{} out of {} acls added to {}", pushUpdate.first().getModifiedCount(), pushUpdate.first().getMatchedCount(),
+                    member);
+
+            // Try to do the same but only for resources where the member was not given any permissions
+            queryDocument.put(QueryParams.ACL_MEMBER.key(), new Document("$ne", member));
+
+            // Create the ACL entry
+            Document aclEntry = new Document()
+                    .append(QueryParams.MEMBER.key(), member)
+                    .append(QueryParams.PERMISSIONS.key(), permissions);
+            update = new Document("$push", new Document(QueryParams.ACL.key(), aclEntry));
+            logger.debug("Add Acls (Push): Query {}, Push {}",
+                    queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+            pushUpdate = collection.update(queryDocument, update, new QueryOptions("multi", true));
+            logger.debug("{} out of {} acls created for {}", pushUpdate.first().getModifiedCount(), pushUpdate.first().getMatchedCount(),
+                    member);
+        }
+    }
+
+    @Override
     public T removeAclsFromMember(long resourceId, String member, List<String> permissions) throws CatalogDBException {
         Document query = new Document()
                 .append(PRIVATE_ID, resourceId)
@@ -230,6 +306,25 @@ public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdapt
 
         logger.debug("Remove Acl for member {}: {}", member, StringUtils.join(permissions, ","));
         return getAcl(resourceId, Arrays.asList(member)).get(0);
+    }
+
+    @Override
+    public void removeAclsFromMembers(List<Long> resourceIds, List<String> members, List<String> permissions) throws CatalogDBException {
+        for (String member : members) {
+            Document queryDocument = new Document()
+                    .append(PRIVATE_ID, resourceIds)
+                    .append(QueryParams.ACL_MEMBER.key(), member);
+
+            Bson update = Updates.pullAll("acl.$.permissions", permissions);
+            logger.debug("Remove Acl: Query {}, Pull {}",
+                    queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
+                    update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+
+            QueryResult<UpdateResult> pullUpdate = collection.update(queryDocument, update, new QueryOptions("multi", true));
+
+            logger.debug("Remove Acl: {} out of {} acls removed from {}", pullUpdate.first().getModifiedCount(),
+                    pullUpdate.first().getMatchedCount(), members);
+        }
     }
 
 }

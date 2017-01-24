@@ -374,28 +374,8 @@ public interface AuthorizationManager {
 
     //------------------------- Individual ACL -----------------------------
 
-    QueryResult<IndividualAclEntry> createIndividualAcls(String userId, long individualId, List<String> members, List<String> permissions)
-            throws CatalogException;
-
-    default QueryResult<IndividualAclEntry> createIndividualAcls(String userId, long individualId, String members, String permissions)
-            throws CatalogException {
-
-        List<String> permissionList;
-        if (permissions != null && !permissions.isEmpty()) {
-            permissionList = Arrays.asList(permissions.split(","));
-        } else {
-            permissionList = Collections.emptyList();
-        }
-
-        List<String> memberList;
-        if (members != null && !members.isEmpty()) {
-            memberList = Arrays.asList(members.split(","));
-        } else {
-            memberList = Collections.emptyList();
-        }
-
-        return createIndividualAcls(userId, individualId, memberList, permissionList);
-    }
+    List<QueryResult<IndividualAclEntry>> createIndividualAcls(AbstractManager.MyResourceIds resourceIds, List<String> members,
+                                                              List<String> permissions) throws CatalogException;
 
     /**
      * Return all the ACLs defined for the individual.
@@ -439,28 +419,8 @@ public interface AuthorizationManager {
 
     //------------------------- Cohort ACL -----------------------------
 
-    QueryResult<CohortAclEntry> createCohortAcls(String userId, long cohortId, List<String> members, List<String> permissions)
-            throws CatalogException;
-
-    default QueryResult<CohortAclEntry> createCohortAcls(String userId, long cohortId, String members, String permissions)
-            throws CatalogException {
-
-        List<String> permissionList;
-        if (permissions != null && !permissions.isEmpty()) {
-            permissionList = Arrays.asList(permissions.split(","));
-        } else {
-            permissionList = Collections.emptyList();
-        }
-
-        List<String> memberList;
-        if (members != null && !members.isEmpty()) {
-            memberList = Arrays.asList(members.split(","));
-        } else {
-            memberList = Collections.emptyList();
-        }
-
-        return createCohortAcls(userId, cohortId, memberList, permissionList);
-    }
+    List<QueryResult<CohortAclEntry>> createCohortAcls(AbstractManager.MyResourceIds resourceIds, List<String> members,
+                                                   List<String> permissions) throws CatalogException;
 
     /**
      * Return all the ACLs defined for the cohort.

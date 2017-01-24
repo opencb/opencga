@@ -35,11 +35,15 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.catalog.models.Status;
+import org.opencb.opencga.catalog.models.Tool;
+import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -169,14 +173,14 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
         // Check for input
         Query query = new Query(QueryParams.INPUT.key(), fileIds);
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, false);
         Bson update = new Document("$pull", new Document(QueryParams.INPUT.key(), new Document("$in", fileIds)));
         QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
         numResults = jobCollection.update(bsonQuery, update, multi).first().getModifiedCount();
 
         // Check for output
         query = new Query(QueryParams.OUTPUT.key(), fileIds);
-        bsonQuery = parseQuery(query);
+        bsonQuery = parseQuery(query, false);
         update = new Document("$pull", new Document(QueryParams.OUTPUT.key(), new Document("$in", fileIds)));
         numResults += jobCollection.update(bsonQuery, update, multi).first().getModifiedCount();
 
@@ -281,7 +285,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         List<Bson> aggregations = Arrays.asList(
                 Aggregates.project(Projections.include("tools")),
                 Aggregates.unwind("$tools"),
-                Aggregates.match(parseQuery(query))
+                Aggregates.match(parseQuery(query, false))
         );
         QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection()
                 .aggregate(aggregations, queryOptions);
@@ -312,13 +316,13 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
-        Bson bsonDocument = parseQuery(query);
+        Bson bsonDocument = parseQuery(query, false);
         return jobCollection.count(bsonDocument);
     }
 
     @Override
     public QueryResult distinct(Query query, String field) throws CatalogDBException {
-        Bson bsonDocument = parseQuery(query);
+        Bson bsonDocument = parseQuery(query, false);
         return jobCollection.distinct(field, bsonDocument);
     }
 
@@ -364,7 +368,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
             query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
-        Bson bson = parseQuery(query);
+        Bson bson = parseQuery(query, false);
         QueryOptions qOptions;
         if (options != null) {
             qOptions = options;
@@ -381,7 +385,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
             query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
-        Bson bson = parseQuery(query);
+        Bson bson = parseQuery(query, false);
         QueryOptions qOptions;
         if (options != null) {
             qOptions = options;
@@ -435,7 +439,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         filterMapParams(parameters, jobParameters, acceptedMapParams);
 
         if (!jobParameters.isEmpty()) {
-            QueryResult<UpdateResult> update = jobCollection.update(parseQuery(query), new Document("$set", jobParameters), null);
+            QueryResult<UpdateResult> update = jobCollection.update(parseQuery(query, false), new Document("$set", jobParameters), null);
             return endQuery("Update job", startTime, Arrays.asList(update.getNumTotalResults()));
         }
         return endQuery("Update job", startTime, new QueryResult<Long>());
@@ -458,7 +462,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Query query = new Query(QueryParams.ID.key(), id);
         QueryResult<Job> jobQueryResult = get(query, null);
         if (jobQueryResult.getResult().size() == 1) {
-            QueryResult<DeleteResult> delete = jobCollection.remove(parseQuery(query), null);
+            QueryResult<DeleteResult> delete = jobCollection.remove(parseQuery(query, false), null);
             if (delete.getResult().size() == 0) {
                 throw CatalogDBException.newInstance("Job id '{}' has not been deleted", id);
             }
@@ -588,33 +592,33 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     @Override
     public DBIterator<Job> iterator(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query);
+        Bson bson = parseQuery(query, false);
         MongoCursor<Document> iterator = jobCollection.nativeQuery().find(bson, options).iterator();
         return new MongoDBIterator<>(iterator, jobConverter);
     }
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query);
+        Bson bson = parseQuery(query, false);
         MongoCursor<Document> iterator = jobCollection.nativeQuery().find(bson, options).iterator();
         return new MongoDBIterator<>(iterator);
     }
 
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, false);
         return rank(jobCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, false);
         return groupBy(jobCollection, bsonQuery, field, "name", options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, false);
         return groupBy(jobCollection, bsonQuery, fields, "name", options);
     }
 
@@ -628,8 +632,12 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         catalogDBIterator.close();
     }
 
-    private Bson parseQuery(Query query) throws CatalogDBException {
+    private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
+
+        if (isolated) {
+            andBsonList.add(new Document("$isolated", 1));
+        }
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
@@ -708,8 +716,14 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public QueryResult<JobAclEntry> createAcl(long id, JobAclEntry acl) throws CatalogDBException {
         long startTime = startQuery();
-//        CatalogMongoDBUtils.createAcl(id, acl, jobCollection, "JobAcl");
+//        CatalogMongoDBUtils.setAcl(id, acl, jobCollection, "JobAcl");
         return endQuery("create job Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
+    }
+
+    @Override
+    public void createAcl(Query query, List<JobAclEntry> aclEntryList) throws CatalogDBException {
+        Bson queryDocument = parseQuery(query, true);
+        aclDBAdaptor.setAcl(queryDocument, aclEntryList);
     }
 
     @Override
@@ -748,10 +762,34 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
+    public void addAclsToMember(Query query, List<String> members, List<String> permissions) throws CatalogDBException {
+        QueryResult<Job> jobQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        List<Long> jobIds = jobQueryResult.getResult().stream().map(job -> job.getId()).collect(Collectors.toList());
+
+        if (jobIds == null || jobIds.size() == 0) {
+            throw new CatalogDBException("No matches found for query when attempting to add new permissions");
+        }
+
+        aclDBAdaptor.addAclsToMembers(jobIds, members, permissions);
+    }
+
+    @Override
     public QueryResult<JobAclEntry> removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException {
 //        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, jobCollection);
         long startTime = startQuery();
         return endQuery("Remove Acls from member", startTime, Arrays.asList(aclDBAdaptor.removeAclsFromMember(id, member, permissions)));
+    }
+
+    @Override
+    public void removeAclsFromMember(Query query, List<String> members, @Nullable List<String> permissions) throws CatalogDBException {
+        QueryResult<Job> jobQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        List<Long> jobIds = jobQueryResult.getResult().stream().map(job -> job.getId()).collect(Collectors.toList());
+
+        if (jobIds == null || jobIds.size() == 0) {
+            throw new CatalogDBException("No matches found for query when attempting to remove permissions");
+        }
+
+        aclDBAdaptor.removeAclsFromMembers(jobIds, members, permissions);
     }
 
     public void removeAclsFromStudy(long studyId, String member) throws CatalogDBException {

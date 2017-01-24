@@ -22,7 +22,6 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
-import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
@@ -905,64 +904,30 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         return endQuery("create file Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
     }
 
-    // This createAcl method is to create multiple acls at once for the files matching the query
+    // This setAcl method is to create multiple acls at once for the files matching the query
     @Override
     public void createAcl(Query query, List<FileAclEntry> aclEntryList) throws CatalogDBException {
         Bson queryDocument = parseQuery(query, true);
-
-        // First we take out all possible acls that could be present for any of the members.
-        List<String> memberList = aclEntryList.stream().map(fileAclEntry -> fileAclEntry.getMember()).collect(Collectors.toList());
-
-        Document update = new Document("$pull", new Document(QueryParams.ACL.key(),
-                new Document(AclMongoDBAdaptor.QueryParams.MEMBER.key(), new Document("$in", memberList))));
-        logger.debug("Create Acl: Query {}, Pull {}",
-                queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-
-        QueryResult<UpdateResult> pullUpdate = fileCollection.update(queryDocument, update, new QueryOptions("multi", true));
-
-        logger.debug("{} out of {} file acls removed", pullUpdate.first().getModifiedCount(), pullUpdate.first().getMatchedCount());
-
-        // Now we push all the new acls
-        List<Document> aclDocumentList = new ArrayList<>(aclEntryList.size());
-        for (FileAclEntry fileAclEntry : aclEntryList) {
-            aclDocumentList.add(MongoDBUtils.getMongoDBDocument(fileAclEntry, "ACL"));
-        }
-
-        update = new Document("$push", new Document(QueryParams.ACL.key(), new Document("$each", aclDocumentList)));
-
-        logger.debug("Create Acl: Query {}, Push {}",
-                queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-
-        QueryResult<UpdateResult> pushUpdate = fileCollection.update(queryDocument, update, new QueryOptions("multi", true));
-
-        logger.debug("{} out of {} file acls created", pushUpdate.first().getModifiedCount(), pushUpdate.first().getMatchedCount());
-
-        if (pushUpdate.first().getModifiedCount() == 0) {
-            throw new CatalogDBException("Create Acl: An error occurred when trying to create file acls");
-        }
+        aclDBAdaptor.setAcl(queryDocument, aclEntryList);
     }
 
     @Override
-    public void addAclsToMember(Query query, String member, List<String> permissions) throws CatalogDBException {
-        Query myQuery = new Query(query);
-        myQuery.append(QueryParams.ACL_MEMBER.key(), member);
-        Bson queryDocument = parseQuery(query, true);
+    public void addAclsToMember(Query query, List<String> members, List<String> permissions) throws CatalogDBException {
+        QueryResult<File> fileQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        List<Long> fileIds = fileQueryResult.getResult().stream().map(file -> file.getId()).collect(Collectors.toList());
 
-        Document update = new Document("$addToSet", new Document("acl.$.permissions", new Document("$each", permissions)));
-        logger.debug("Add Acls: Query {}, Push {}",
-                queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        if (fileIds == null || fileIds.size() == 0) {
+            throw new CatalogDBException("No matches found for query when attempting to add new permissions");
+        }
 
-        QueryResult<UpdateResult> pushUpdate = fileCollection.update(queryDocument, update, new QueryOptions("multi", true));
-
-        logger.debug("{} out of {} file acls added to {}", pushUpdate.first().getModifiedCount(), pushUpdate.first().getMatchedCount(),
-                member);
+        aclDBAdaptor.addAclsToMembers(fileIds, members, permissions);
     }
 
     @Override
     public void removeAclsFromMember(Query query, List<String> members, @Nullable List<String> permissions) throws CatalogDBException {
+        QueryResult<File> fileQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        List<Long> fileIds = fileQueryResult.getResult().stream().map(file -> file.getId()).collect(Collectors.toList());
+
         if (permissions == null || permissions.size() == 0) {
             // Remove the members from the acl table
             Bson queryDocument = parseQuery(query, true);
@@ -973,20 +938,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
             logger.debug("Remove Acl: {} out of {} removed for members {}", updateResult.first().getModifiedCount(),
                     updateResult.first().getMatchedCount(), members);
         } else {
-            // Remove those permissions from member
-            Query myQuery = new Query(query);
-            myQuery.append(QueryParams.ACL_MEMBER.key(), members);
-            Bson queryDocument = parseQuery(query, true);
-
-            Bson update = Updates.pullAll("acl.$.permissions", permissions);
-            logger.debug("Remove Acl: Query {}, Pull {}",
-                    queryDocument.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()),
-                    update.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-
-            QueryResult<UpdateResult> pullUpdate = fileCollection.update(queryDocument, update, new QueryOptions("multi", true));
-
-            logger.debug("Remove Acl: {} out of {} file acls removed from {}", pullUpdate.first().getModifiedCount(),
-                    pullUpdate.first().getMatchedCount(), members);
+            aclDBAdaptor.removeAclsFromMembers(fileIds, members, permissions);
         }
 
     }

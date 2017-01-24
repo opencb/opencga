@@ -22,7 +22,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 
-import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -234,12 +233,6 @@ public interface FileDBAdaptor extends AclDBAdaptor<File, FileAclEntry> {
      * ACL methods
      * ***************************
      */
-
-    void createAcl(Query query, List<FileAclEntry> aclEntryList) throws CatalogDBException;
-
-    void addAclsToMember(Query query, String member, List<String> permissions) throws CatalogDBException;
-
-    void removeAclsFromMember(Query query, List<String> members, @Nullable List<String> permissions) throws CatalogDBException;
 
     /***
      * Retrieves the AclEntries of the files and users given.
