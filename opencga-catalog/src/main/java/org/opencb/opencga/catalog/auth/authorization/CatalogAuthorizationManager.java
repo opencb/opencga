@@ -1083,7 +1083,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public QueryResult<StudyAclEntry> getAllStudyAcls(String userId, long studyId) throws CatalogException {
         studyDBAdaptor.checkId(studyId);
-        checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
+//        checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
 
         Query query = new Query(StudyDBAdaptor.QueryParams.ID.key(), studyId);
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ACL.key());
@@ -1250,7 +1250,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public QueryResult<SampleAclEntry> getAllSampleAcls(String userId, long sampleId) throws CatalogException {
         sampleDBAdaptor.checkId(sampleId);
         // Check if the userId has proper permissions for all the samples.
-        checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.SHARE);
+//        checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.SHARE);
 
         // Obtain the Acls
         Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleId);
@@ -1505,7 +1505,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public QueryResult<FileAclEntry> getAllFileAcls(String userId, long fileId) throws CatalogException {
         fileDBAdaptor.checkId(fileId);
         // Check if the userId has proper permissions for all the samples.
-        checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.SHARE);
+//        checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.SHARE);
 
         // Obtain the Acls
         Query query = new Query(FileDBAdaptor.QueryParams.ID.key(), fileId);
@@ -1613,16 +1613,16 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         List<String> permissions;
         if (setPermissions != null) {
-            permissions = Arrays.asList(setPermissions.split(","));
+            permissions = Arrays.asList(StringUtils.split(setPermissions, ","));
             // Check if the permissions are correct
             checkPermissions(permissions, FileAclEntry.FilePermissions::valueOf);
         } else {
             if (addPermissions != null) {
-                permissions = Arrays.asList(addPermissions.split(","));
+                permissions = Arrays.asList(StringUtils.split(addPermissions, ","));
                 // Check if the permissions are correct
                 checkPermissions(permissions, FileAclEntry.FilePermissions::valueOf);
             } else if (removePermissions != null) {
-                permissions = Arrays.asList(removePermissions.split(","));
+                permissions = Arrays.asList(StringUtils.split(removePermissions, ","));
                 // Check if the permissions are correct
                 checkPermissions(permissions, FileAclEntry.FilePermissions::valueOf);
             } else {
@@ -1730,7 +1730,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public QueryResult<IndividualAclEntry> getAllIndividualAcls(String userId, long individualId) throws CatalogException {
         individualDBAdaptor.checkId(individualId);
         // Check if the userId has proper permissions for all the individuals.
-        checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.SHARE);
+//        checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.SHARE);
 
         // Obtain the Acls
         Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), individualId);
@@ -1897,7 +1897,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public QueryResult<CohortAclEntry> getAllCohortAcls(String userId, long cohortId) throws CatalogException {
         cohortDBAdaptor.checkId(cohortId);
         // Check if the userId has proper permissions for all the cohorts.
-        checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.SHARE);
+//        checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.SHARE);
 
         // Obtain the Acls
         Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), cohortId);
@@ -2065,7 +2065,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public QueryResult<DatasetAclEntry> getAllDatasetAcls(String userId, long datasetId) throws CatalogException {
         datasetDBAdaptor.checkId(datasetId);
         // Check if the userId has proper permissions for all the datasets.
-        checkDatasetPermission(datasetId, userId, DatasetAclEntry.DatasetPermissions.SHARE);
+//        checkDatasetPermission(datasetId, userId, DatasetAclEntry.DatasetPermissions.SHARE);
 
         // Obtain the Acls
         Query query = new Query(DatasetDBAdaptor.QueryParams.ID.key(), datasetId);
@@ -2232,7 +2232,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public QueryResult<JobAclEntry> getAllJobAcls(String userId, long jobId) throws CatalogException {
         jobDBAdaptor.checkId(jobId);
         // Check if the userId has proper permissions for all the jobs.
-        checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.SHARE);
+//        checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.SHARE);
 
         // Obtain the Acls
         Query query = new Query(JobDBAdaptor.QueryParams.ID.key(), jobId);
@@ -2402,7 +2402,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public QueryResult<DiseasePanelAclEntry> getAllPanelAcls(String userId, long panelId) throws CatalogException {
         panelDBAdaptor.checkId(panelId);
         // Check if the userId has proper permissions for all the panels.
-        checkDiseasePanelPermission(panelId, userId, DiseasePanelAclEntry.DiseasePanelPermissions.SHARE);
+//        checkDiseasePanelPermission(panelId, userId, DiseasePanelAclEntry.DiseasePanelPermissions.SHARE);
 
         // Obtain the Acls
         Query query = new Query(PanelDBAdaptor.QueryParams.ID.key(), panelId);

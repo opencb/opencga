@@ -151,8 +151,9 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
         fileManager.createAcls(Long.toString(data_d1), Long.toString(s1), externalUser, ALL_FILE_PERMISSIONS, ownerSessionId);
         fileManager.createAcls(Long.toString(data_d1), Long.toString(s1), studyAdminUser1, ALL_FILE_PERMISSIONS, ownerSessionId);
-        fileManager.createAcls(Long.toString(data_d1_d2_d3), Long.toString(s1), externalUser, DENY_FILE_PERMISSIONS, ownerSessionId);
-        fileManager.createAcls(Long.toString(data_d1_d2_d3_d4_txt), Long.toString(s1), externalUser, ALL_FILE_PERMISSIONS,
+        fileManager.updateAcls(Long.toString(data_d1_d2_d3), Long.toString(s1), externalUser, null, null, DENY_FILE_PERMISSIONS,
+                ownerSessionId);
+        fileManager.updateAcls(Long.toString(data_d1_d2_d3_d4_txt), Long.toString(s1), externalUser, null, null, ALL_FILE_PERMISSIONS,
                 ownerSessionId);
 
         smp1 = catalogManager.createSample(s1, "smp1", null, null, null, null, ownerSessionId).first().getId();
@@ -510,9 +511,10 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     }
 
     @Test
-    public void readFileForbiddenForGroup() throws CatalogException {
+    public void readFileForbiddenForUser() throws CatalogException {
         // Remove all permissions to the admin group in that folder
-        fileManager.createAcls(Long.toString(data_d1_d2), Long.toString(s1), groupAdmin, DENY_FILE_PERMISSIONS, ownerSessionId);
+        fileManager.updateAcls(Long.toString(data_d1_d2), Long.toString(s1), studyAdminUser1, null, null, DENY_FILE_PERMISSIONS,
+                ownerSessionId);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getFile(data_d1_d2, studyAdmin1SessionId);
     }
