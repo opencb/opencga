@@ -557,7 +557,7 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             AbstractManager.MyResourceId resource = fileManager.getId(fileStr, studyStr, sessionId);
             catalogManager.getAuthorizationManager().checkFilePermission(resource.getResourceId(), resource.getUser(),
-                    FileAclEntry.FilePermissions.UPDATE);
+                    FileAclEntry.FilePermissions.WRITE);
 
             /** Obtain file uri **/
             File file = catalogManager.getFile(resource.getResourceId(), sessionId).getResult().get(0);
