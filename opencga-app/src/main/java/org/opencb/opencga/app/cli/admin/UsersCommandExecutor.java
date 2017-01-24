@@ -20,11 +20,9 @@ package org.opencb.opencga.app.cli.admin;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.UserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Project;
-import org.opencb.opencga.catalog.models.Session;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.User;
 
 import javax.naming.NamingException;
@@ -101,9 +99,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             throw new CatalogException("At least, users or groups should be provided to start importing.");
         }
 
-        CatalogManager catalogManager = null;
-        try {
-            catalogManager = new CatalogManager(configuration);
+        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             ObjectMap params = new ObjectMap();
             params.putIfNotNull("users", executor.users);
             params.putIfNotNull("groups", executor.groups);
@@ -124,8 +120,6 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                     }
                 }
             }
-        } finally {
-            catalogManager.close();
         }
     }
 
@@ -157,10 +151,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             userQuota = configuration.getUserDefaultQuota();
         }
 
-        CatalogManager catalogManager = null;
-        try {
-            new CatalogManager(configuration);
-
+        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             catalogManager.getUserManager().validatePassword("admin", configuration.getAdmin().getPassword(), true);
 
             User user = catalogManager.getUserManager().create(usersCommandOptions.createUserCommandOptions.userId,
@@ -170,8 +161,6 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                     usersCommandOptions.createUserCommandOptions.type, null).first();
 
             System.out.println("The user has been successfully created: " + user.toString() + "\n");
-        } finally {
-            catalogManager.close();
         }
     }
 
@@ -196,9 +185,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             throw new CatalogException("No admin password found. Please, insert your password.");
         }
 
-        CatalogManager catalogManager = null;
-        try {
-            new CatalogManager(configuration);
+        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             catalogManager.getUserManager().validatePassword("admin", configuration.getAdmin().getPassword(), true);
 
             List<QueryResult<User>> deletedUsers = catalogManager.getUserManager()
@@ -211,8 +198,6 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                     System.out.println(deletedUser.getErrorMsg());
                 }
             }
-        } finally {
-            catalogManager.close();
         }
     }
 
@@ -237,9 +222,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             throw new CatalogException("No admin password found. Please, insert your password.");
         }
 
-        CatalogManager catalogManager = null;
-        try {
-            new CatalogManager(configuration);
+        try (CatalogManager catalogManager = new CatalogManager(configuration)) {
             catalogManager.getUserManager().validatePassword("admin", configuration.getAdmin().getPassword(), true);
 
             User user = catalogManager.modifyUser(usersCommandOptions.QuotaUserCommandOptions.userId,
@@ -247,8 +230,6 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
                     null).first();
 
             System.out.println("The disk quota has been properly updated: " + user.toString());
-        } finally {
-            catalogManager.close();
         }
     }
 
