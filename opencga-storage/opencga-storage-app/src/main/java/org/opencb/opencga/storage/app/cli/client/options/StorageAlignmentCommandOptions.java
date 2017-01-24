@@ -20,7 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.opencga.storage.app.cli.OptionsParser;
+import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -34,12 +34,12 @@ public class StorageAlignmentCommandOptions {
     public QueryAlignmentsCommandOptions queryAlignmentsCommandOptions;
 
     public JCommander jCommander;
-    public OptionsParser.CommonOptions commonCommandOptions;
-    public OptionsParser.IndexCommandOptions indexCommandOptions;
-    public OptionsParser.QueryCommandOptions queryCommandOptions;
+    public GeneralCliOptions.CommonOptions commonCommandOptions;
+    public GeneralCliOptions.IndexCommandOptions indexCommandOptions;
+    public GeneralCliOptions.QueryCommandOptions queryCommandOptions;
 
-    public StorageAlignmentCommandOptions(OptionsParser.CommonOptions commonOptions, OptionsParser.IndexCommandOptions indexCommandOptions,
-                                          OptionsParser.QueryCommandOptions queryCommandOptions, JCommander jCommander) {
+    public StorageAlignmentCommandOptions(GeneralCliOptions.CommonOptions commonOptions, GeneralCliOptions.IndexCommandOptions indexCommandOptions,
+                                          GeneralCliOptions.QueryCommandOptions queryCommandOptions, JCommander jCommander) {
         this.commonCommandOptions = commonOptions;
         this.indexCommandOptions  = indexCommandOptions;
         this.queryCommandOptions = queryCommandOptions;
@@ -54,10 +54,10 @@ public class StorageAlignmentCommandOptions {
     public class IndexAlignmentsCommandOptions {
 
         @ParametersDelegate
-        public OptionsParser.CommonOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
 
         @ParametersDelegate
-        public OptionsParser.IndexCommandOptions commonIndexOptions = indexCommandOptions;
+        public GeneralCliOptions.IndexCommandOptions commonIndexOptions = indexCommandOptions;
 
 
         @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
@@ -75,10 +75,10 @@ public class StorageAlignmentCommandOptions {
     public class QueryAlignmentsCommandOptions {
 
         @ParametersDelegate
-        public OptionsParser.CommonOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
 
         @ParametersDelegate
-        public OptionsParser.QueryCommandOptions commonQueryOptions = queryCommandOptions;
+        public GeneralCliOptions.QueryCommandOptions commonQueryOptions = queryCommandOptions;
 
         @Parameter(names = {"-r", "--region"}, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000",
                 required = false)

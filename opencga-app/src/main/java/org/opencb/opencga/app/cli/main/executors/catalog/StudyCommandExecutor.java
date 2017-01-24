@@ -269,8 +269,8 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.searchCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.searchCommandOptions.dataModelOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, studiesCommandOptions.searchCommandOptions.numericOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, studiesCommandOptions.searchCommandOptions.numericOptions.skip);
+        queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.searchCommandOptions.numericOptions.limit);
+        queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.searchCommandOptions.numericOptions.skip);
         queryOptions.put("count", studiesCommandOptions.searchCommandOptions.numericOptions.count);
 
         return openCGAClient.getStudyClient().search(query, queryOptions);
@@ -313,8 +313,8 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.NATTRIBUTES.key(), studiesCommandOptions.filesCommandOptions.nattributes);
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.filesCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.filesCommandOptions.dataModelOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, studiesCommandOptions.filesCommandOptions.numericOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, studiesCommandOptions.filesCommandOptions.numericOptions.skip);
+        queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.filesCommandOptions.numericOptions.limit);
+        queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.filesCommandOptions.numericOptions.skip);
         queryOptions.put("count", studiesCommandOptions.filesCommandOptions.numericOptions.count);
 
         return openCGAClient.getStudyClient().getFiles(studiesCommandOptions.filesCommandOptions.study, queryOptions);
@@ -339,8 +339,8 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.jobsCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.jobsCommandOptions.dataModelOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, studiesCommandOptions.jobsCommandOptions.numericOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, studiesCommandOptions.jobsCommandOptions.numericOptions.skip);
+        queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.jobsCommandOptions.numericOptions.limit);
+        queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.jobsCommandOptions.numericOptions.skip);
         queryOptions.put("count", studiesCommandOptions.jobsCommandOptions.numericOptions.count);
 
         return openCGAClient.getStudyClient().getJobs(studiesCommandOptions.jobsCommandOptions.study, queryOptions);
@@ -367,8 +367,8 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.samplesCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.samplesCommandOptions.dataModelOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, studiesCommandOptions.samplesCommandOptions.numericOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, studiesCommandOptions.samplesCommandOptions.numericOptions.skip);
+        queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.samplesCommandOptions.numericOptions.limit);
+        queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.samplesCommandOptions.numericOptions.skip);
         queryOptions.put("count", studiesCommandOptions.samplesCommandOptions.numericOptions.count);
 
         return openCGAClient.getStudyClient().getSamples(studiesCommandOptions.samplesCommandOptions.study, queryOptions);

@@ -30,7 +30,7 @@ import java.util.Map;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class OptionsParser {
+public class GeneralCliOptions {
 
     protected final JCommander jcommander;
 
@@ -39,7 +39,7 @@ public class OptionsParser {
 
 
 
-    public OptionsParser() {
+    public GeneralCliOptions() {
         generalOptions = new GeneralOptions();
         jcommander = new JCommander(generalOptions);
         commonOptions = new CommonOptions();

@@ -243,8 +243,8 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, filesCommandOptions.searchCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, filesCommandOptions.searchCommandOptions.dataModelOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, filesCommandOptions.searchCommandOptions.numericOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, filesCommandOptions.searchCommandOptions.numericOptions.skip);
+        queryOptions.put(QueryOptions.LIMIT, filesCommandOptions.searchCommandOptions.numericOptions.limit);
+        queryOptions.put(QueryOptions.SKIP, filesCommandOptions.searchCommandOptions.numericOptions.skip);
         queryOptions.put("count", filesCommandOptions.searchCommandOptions.numericOptions.count);
 
         return openCGAClient.getFileClient().search(query,queryOptions);
@@ -257,8 +257,8 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.listCommandOptions.study);
         params.putIfNotEmpty(QueryOptions.INCLUDE, filesCommandOptions.listCommandOptions.dataModelOptions.include);
         params.putIfNotEmpty(QueryOptions.EXCLUDE, filesCommandOptions.listCommandOptions.dataModelOptions.exclude);
-        params.putIfNotEmpty(QueryOptions.LIMIT, filesCommandOptions.listCommandOptions.numericOptions.limit);
-        params.putIfNotEmpty(QueryOptions.SKIP, filesCommandOptions.listCommandOptions.numericOptions.skip);
+        params.put(QueryOptions.LIMIT, filesCommandOptions.listCommandOptions.numericOptions.limit);
+        params.put(QueryOptions.SKIP, filesCommandOptions.listCommandOptions.numericOptions.skip);
         params.put("count", filesCommandOptions.listCommandOptions.numericOptions.count);
 
         String folder = ".";

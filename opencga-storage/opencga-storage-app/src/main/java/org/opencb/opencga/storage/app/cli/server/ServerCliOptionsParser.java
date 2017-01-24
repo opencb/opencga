@@ -19,16 +19,14 @@ package org.opencb.opencga.storage.app.cli.server;
 import com.beust.jcommander.*;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.storage.app.cli.OptionsParser;
+import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
  * Created by imedina on 02/03/15.
  */
-public class ServerCliOptionsParser extends OptionsParser {
+public class ServerCliOptionsParser extends GeneralCliOptions {
 
 
     //    private final IndexSequenceCommandOptions indexSequenceCommandOptions;

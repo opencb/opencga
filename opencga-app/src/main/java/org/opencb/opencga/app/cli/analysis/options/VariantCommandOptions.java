@@ -4,12 +4,16 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import com.beust.jcommander.converters.CommaParameterSplitter;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.DataModelOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions.NumericOptions;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
+
+import java.util.List;
 
 /**
  * Created by pfurio on 23/11/16.
@@ -17,9 +21,14 @@ import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOp
 @Parameters(commandNames = {"variant"}, commandDescription = "Variant commands")
 public class VariantCommandOptions {
 
-    public IndexCommandOptions indexCommandOptions;
+    public IndexVariantCommandOptions indexVariantCommandOptions;
     public QueryVariantCommandOptionsOld queryVariantCommandOptionsOld;
     public QueryVariantCommandOptions queryVariantCommandOptions;
+    public StatsVariantCommandOptions statsVariantCommandOptions;
+    public AnnotateVariantCommandOptions annotateVariantCommandOptions;
+    public ExportVariantStatsCommandOptions exportVariantStatsCommandOptions;
+    public ImportVariantCommandOptions importVariantCommandOptions;
+    public IbsVariantCommandOptions ibsVariantCommandOptions;
 
     public JCommander jCommander;
     public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
@@ -33,67 +42,95 @@ public class VariantCommandOptions {
         this.commonNumericOptions = numericOptions;
         this.jCommander = jCommander;
 
-        this.indexCommandOptions = new IndexCommandOptions();
+        this.indexVariantCommandOptions = new IndexVariantCommandOptions();
         this.queryVariantCommandOptionsOld = new QueryVariantCommandOptionsOld();
         this.queryVariantCommandOptions = new QueryVariantCommandOptions();
+        this.statsVariantCommandOptions = new StatsVariantCommandOptions();
+        this.annotateVariantCommandOptions = new AnnotateVariantCommandOptions();
+        this.exportVariantStatsCommandOptions = new ExportVariantStatsCommandOptions();
+        this.importVariantCommandOptions = new ImportVariantCommandOptions();
+        this.ibsVariantCommandOptions = new IbsVariantCommandOptions();
     }
 
-    @Parameters(commandNames = {"index"}, commandDescription = "Index VCF files")
-    public class IndexCommandOptions extends GeneralCliOptions.StudyOption {
+    @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
+    public class IndexVariantCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--file"}, description = "Comma separated list of file ids, names or paths in catalog", required = true,
-                arity = 1)
-        public String fileIds;
+//        @ParametersDelegate
+//        public AnalysisCliOptionsParser.JobCommand job = new AnalysisCliOptionsParser.JobCommand();
+
+//
+//        @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, variableArity = true)
+//        public List<String> input;
+
+//        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1, required = false)
+//        public String outdir;
+
+//        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
+//        public String fileId;
 
         @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
-        public boolean transform;
+        public boolean transform = false;
 
         @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
-        public boolean load;
+        public boolean load = false;
 
-        @Parameter(names = {"--outdir"}, description = "Directory where transformed index files will be stored", required = false, arity = 1)
-        public String outdirId;
+//        @Parameter(names = {"--overwrite"}, description = "Reset the database if exists before installing")
+//        public boolean overwrite;
 
-        /**
-         * @deprecated This field should be detected automatically.
-         */
-        @Deprecated
+//        @Parameter(names = {"--study-id"}, description = "Unque ID for the study", arity = 1)
+//        public long studyId;
+
+        @Parameter(names = {"--file"}, description = "CSV of file ids to be indexed", required = true, arity = 1)
+        public String fileId = null;
+
+        @Parameter(names = {"--transformed-files"}, description = "CSV of paths corresponding to the location of the transformed files.",
+                required = false, arity = 1)
+        public String transformedPaths = null;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
+        public String outdir = null;
+
+        @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
+                + "transformed files will not be registered in catalog.", required = false, arity = 1)
+        public String catalogPath = null;
+
         @Parameter(names = {"--exclude-genotypes"}, description = "Index excluding the genotype information")
-        public boolean excludeGenotype;
+        public boolean excludeGenotype = false;
 
         @Parameter(names = {"--include-extra-fields"}, description = "Index including other genotype fields [CSV]")
-        public String extraFields;
+        public String extraFields = "";
 
         @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
         public VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
 
-//        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF " +
-//                "file")
-//        public String aggregationMappingFile = null;
-//
-//        @Parameter(names = {"--gvcf"}, description = "The input file is in gvcf format")
-//        public boolean gvcf;
-//
-//        @Parameter(names = {"--bgzip"}, description = "[PENDING] The input file is in bgzip format")
-//        public boolean bgzip;
+        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF " +
+                "file")
+        public String aggregationMappingFile = null;
+
+        @Parameter(names = {"--gvcf"}, description = "The input file is in gvcf format")
+        public boolean gvcf;
+
+        @Parameter(names = {"--bgzip"}, description = "[PENDING] The input file is in bgzip format")
+        public boolean bgzip;
 
         @Parameter(names = {"--calculate-stats"}, description = "Calculate indexed variants statistics after the load step")
         public boolean calculateStats = false;
 
         @Parameter(names = {"--annotate"}, description = "Annotate indexed variants after the load step")
         public boolean annotate = false;
-//
-//        @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
-//        public org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource annotator = null;
 
-//        @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations already present in variants")
-//        public boolean overwriteAnnotations;
+        @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
+        public VariantAnnotatorFactory.AnnotationSource annotator = null;
+
+        @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
+        public boolean overwriteAnnotations;
 
         @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation", arity = 0)
         public boolean resume;
+
     }
 
     @Deprecated
@@ -274,7 +311,7 @@ public class VariantCommandOptions {
     public class QueryVariantCommandOptions {
 
         @ParametersDelegate
-        public StorageVariantCommandOptions.QueryVariantsOptions queryVariantsOptions = new StorageVariantCommandOptions.QueryVariantsOptions();
+        public StorageVariantCommandOptions.GenericVariantQueryOptions genericVariantQueryOptions = new StorageVariantCommandOptions.GenericVariantQueryOptions();
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -287,5 +324,188 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--mode"}, description = "Communication mode. grpc|rest|auto.")
         public String mode = "auto";
+
+        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", required = false, arity = 1)
+        public String output;
+    }
+
+    @Parameters(commandNames = {"stats"}, commandDescription = "Create and load stats into a database.")
+    public class StatsVariantCommandOptions { //extends AnalysisCliOptionsParser.CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+//        @ParametersDelegate
+//        public AnalysisCliOptionsParser.JobCommand job = new AnalysisCliOptionsParser.JobCommand();
+
+//        @Parameter(names = {"--create"}, description = "Run only the creation of the stats to a file")
+//        public boolean create = false;
+//
+//        @Parameter(names = {"--load"}, description = "Load the stats from an already existing FILE directly into the database. FILE is a "
+//                + "prefix with structure <INPUT_FILENAME>.<TIME>")
+//        public boolean load = false;
+
+        @Parameter(names = {"--overwrite-stats"}, description = "[PENDING] Overwrite stats in variants already present")
+        public boolean overwriteStats = false;
+
+        @Parameter(names = {"--region"}, description = "Region to calculate.")
+        public String region;
+
+        @Parameter(names = {"--update-stats"}, description = "Calculate stats just for missing positions. "
+                + "Assumes that existing stats are correct")
+        public boolean updateStats = false;
+
+        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true,
+                arity = 1)
+        public String studyId;
+
+        @Parameter(names = {"-f", "--file-id"}, description = "Calculate stats only for the selected file", required = false, arity = 1)
+        public String fileId;
+
+        @Parameter(names = {"--cohort-ids"}, description = "Cohort Ids for the cohorts to be calculated.")
+        public String cohortIds;
+
+        // FIXME: Hidden?
+        @Parameter(names = {"--output-filename"}, description = "Output file name. Default: database name", required = false, arity = 1)
+        public String fileName;
+
+//        @Parameter(names = {"--outdir-id"}, description = "Output directory", required = false, arity = 1)
+//        public String outdirId;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
+        public String outdir = null;
+
+        @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
+                + "transformed files will not be registered in catalog.", required = false, arity = 1)
+        public String catalogPath = null;
+
+//        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
+//        public String outdir = ".";
+
+        @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
+        public VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
+
+        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
+        public String aggregationMappingFile;
+
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed stats calculation", arity = 0)
+        public boolean resume;
+    }
+
+
+    @Parameters(commandNames = {"annotate"}, commandDescription = "Create and load variant annotations into the database")
+    public class AnnotateVariantCommandOptions { //extends AnalysisCliOptionsParser.CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+//        @ParametersDelegate
+//        public AnalysisCliOptionsParser.JobCommand job = new AnalysisCliOptionsParser.JobCommand();
+
+        @Parameter(names = {"-p", "--project-id"}, description = "Project to annotate.", arity = 1)
+        public String project;
+
+        @Parameter(names = {"-s", "--study-id"}, description = "Studies to annotate. Must be in the same database.", arity = 1)
+        public String studyId;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
+        public String outdir = null;
+
+        @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
+                + "transformed files will not be registered in catalog.", required = false, arity = 1)
+        public String catalogPath;
+
+        @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by --output-filename)")
+        public boolean create = false;
+
+        @Parameter(names = {"--load"}, description = "Run only the load of the annotations into the DB from FILE. "
+                + "Can be a file from catalog or a local file.")
+        public String load = null;
+
+        @Parameter(names = {"--custom-name"}, description = "Provide a name to the custom annotation")
+        public String customAnnotationKey = null;
+
+        @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
+        public VariantAnnotatorFactory.AnnotationSource annotator;
+
+        @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
+        public boolean overwriteAnnotations = false;
+
+        @Parameter(names = {"--output-filename"}, description = "Output file name. Default: dbName", required = false, arity = 1)
+        public String fileName;
+
+        @Parameter(names = {"--species"}, description = "Species. Default hsapiens", required = false, arity = 1)
+        public String species = "hsapiens";
+
+        @Parameter(names = {"--assembly"}, description = "Assembly. Default GRCh37", required = false, arity = 1)
+        public String assembly = "GRCh37";
+
+        @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
+        public List<String> filterRegion;
+
+        @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter.class)
+        public List<String> filterChromosome;
+
+        @Parameter(names = {"--filter-gene"}, description = "Comma separated gene filters", splitter = CommaParameterSplitter.class)
+        public String filterGene;
+
+        @Parameter(names = {"--filter-annot-consequence-type"}, description = "Comma separated annotation consequence type filters",
+                splitter = CommaParameterSplitter.class)
+        public List filterAnnotConsequenceType = null; // TODO will receive CSV, only available when create annotations
+
+    }
+
+
+    @Parameters(commandNames = {"export-frequencies"}, commandDescription = "Export calculated variant stats and frequencies")
+    public class ExportVariantStatsCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public NumericOptions numericOptions = commonNumericOptions;
+
+//        @ParametersDelegate
+//        public QueryCommandOptions queryOptions = new QueryCommandOptions();
+
+//        @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, tsv, tsv.gz, cellbase, cellbase.gz, json or json.gz", required = false, arity = 1)
+//        public String outputFormat = "tsv";
+
+        @Parameter(names = {"-r", "--region"}, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000",
+                required = false)
+        public String region;
+
+        @Parameter(names = {"--region-file"}, description = "GFF File with regions", required = false)
+        public String regionFile;
+
+        @Parameter(names = {"-g", "--gene"}, description = "CSV list of genes", required = false)
+        public String gene;
+
+        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be returned", required = false)
+        public String studies;
+
+        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", required = false, arity = 1)
+        public String output;
+    }
+
+    @Parameters(commandNames = {"import"}, commandDescription = "Import a variants dataset into an empty study")
+    public class ImportVariantCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-s", "--study"}, description = "Study where to load the variants", required = true)
+        public String study;
+
+        @Parameter(names = {"-i", "--input"}, description = "Variants input file in avro format", required = true)
+        public String input;
+
+    }
+
+    @Parameters(commandNames = {"ibs"}, commandDescription = "[PENDING] ")
+    public class IbsVariantCommandOptions { //extends CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
     }
 }

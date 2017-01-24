@@ -80,19 +80,19 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse index() throws CatalogException, IOException {
         logger.debug("Indexing variant(s)");
 
-        String fileIds = variantCommandOptions.indexCommandOptions.fileIds;
+        String fileIds = variantCommandOptions.indexVariantCommandOptions.fileId;
 
         ObjectMap o = new ObjectMap();
-        o.putIfNotNull(VariantStorageEngine.Options.STUDY_ID.key(), variantCommandOptions.indexCommandOptions.study);
-        o.putIfNotNull("outDir", variantCommandOptions.indexCommandOptions.outdirId);
-        o.putIfNotNull("transform", variantCommandOptions.indexCommandOptions.transform);
-        o.putIfNotNull("load", variantCommandOptions.indexCommandOptions.load);
-        o.putIfNotNull(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), variantCommandOptions.indexCommandOptions.excludeGenotype);
-        o.putIfNotNull("includeExtraFields", variantCommandOptions.indexCommandOptions.extraFields);
-        o.putIfNotNull("aggregated", variantCommandOptions.indexCommandOptions.aggregated);
-        o.putIfNotNull(VariantStorageEngine.Options.CALCULATE_STATS.key(), variantCommandOptions.indexCommandOptions.calculateStats);
-        o.putIfNotNull(VariantStorageEngine.Options.ANNOTATE.key(), variantCommandOptions.indexCommandOptions.annotate);
-        o.putIfNotNull(VariantStorageEngine.Options.RESUME.key(), variantCommandOptions.indexCommandOptions.resume);
+        o.putIfNotNull(VariantStorageEngine.Options.STUDY_ID.key(), variantCommandOptions.indexVariantCommandOptions.study);
+        o.putIfNotNull("outDir", variantCommandOptions.indexVariantCommandOptions.outdir);
+        o.putIfNotNull("transform", variantCommandOptions.indexVariantCommandOptions.transform);
+        o.putIfNotNull("load", variantCommandOptions.indexVariantCommandOptions.load);
+        o.putIfNotNull(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), variantCommandOptions.indexVariantCommandOptions.excludeGenotype);
+        o.putIfNotNull("includeExtraFields", variantCommandOptions.indexVariantCommandOptions.extraFields);
+        o.putIfNotNull("aggregated", variantCommandOptions.indexVariantCommandOptions.aggregated);
+        o.putIfNotNull(VariantStorageEngine.Options.CALCULATE_STATS.key(), variantCommandOptions.indexVariantCommandOptions.calculateStats);
+        o.putIfNotNull(VariantStorageEngine.Options.ANNOTATE.key(), variantCommandOptions.indexVariantCommandOptions.annotate);
+        o.putIfNotNull(VariantStorageEngine.Options.RESUME.key(), variantCommandOptions.indexVariantCommandOptions.resume);
 //        o.putIfNotNull("overwrite", variantCommandOptions.indexCommandOptions.overwriteAnnotations);
         o.putAll(variantCommandOptions.commonCommandOptions.params);
 
@@ -106,77 +106,77 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         VariantCommandOptions.QueryVariantCommandOptions queryCommandOptions = variantCommandOptions.queryVariantCommandOptions;
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ID.key(), queryCommandOptions.queryVariantsOptions.id);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.REGION.key(), queryCommandOptions.queryVariantsOptions.region);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ID.key(), queryCommandOptions.genericVariantQueryOptions.id);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.REGION.key(), queryCommandOptions.genericVariantQueryOptions.region);
 //        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(),
 //                queryCommandOptions.queryVariantsOptions.chromosome);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.GENE.key(), queryCommandOptions.queryVariantsOptions.gene);
-        params.putIfNotNull(VariantDBAdaptor.VariantQueryParams.TYPE.key(), queryCommandOptions.queryVariantsOptions.type);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.GENE.key(), queryCommandOptions.genericVariantQueryOptions.gene);
+        params.putIfNotNull(VariantDBAdaptor.VariantQueryParams.TYPE.key(), queryCommandOptions.genericVariantQueryOptions.type);
 //        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.REFERENCE.key(), queryCommandOptions.queryVariantsOptions.reference);
 //        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ALTERNATE.key(), queryCommandOptions.queryVariantsOptions.alternate);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), queryCommandOptions.queryVariantsOptions.returnStudy);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), queryCommandOptions.queryVariantsOptions.returnSample);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), queryCommandOptions.genericVariantQueryOptions.returnStudy);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), queryCommandOptions.genericVariantQueryOptions.returnSample);
 //        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), queryCommandOptions.queryVariantsOptions.returnFile);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), queryCommandOptions.queryVariantsOptions.study);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.FILES.key(), queryCommandOptions.queryVariantsOptions.file);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), queryCommandOptions.queryVariantsOptions.maf);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.STATS_MGF.key(), queryCommandOptions.queryVariantsOptions.mgf);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.MISSING_ALLELES.key(), queryCommandOptions.queryVariantsOptions.missingAlleleCount);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), queryCommandOptions.genericVariantQueryOptions.study);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.FILES.key(), queryCommandOptions.genericVariantQueryOptions.file);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.STATS_MAF.key(), queryCommandOptions.genericVariantQueryOptions.maf);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.STATS_MGF.key(), queryCommandOptions.genericVariantQueryOptions.mgf);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.MISSING_ALLELES.key(), queryCommandOptions.genericVariantQueryOptions.missingAlleleCount);
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.MISSING_GENOTYPES.key(),
-                queryCommandOptions.queryVariantsOptions.missingGenotypeCount);
+                queryCommandOptions.genericVariantQueryOptions.missingGenotypeCount);
 //        queryOptions.put(VariantDBAdaptor.VariantQueryParams.ANNOTATION_EXISTS.key(),
 //                queryCommandOptions.annotationExists);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), queryCommandOptions.queryVariantsOptions.sampleGenotype);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), queryCommandOptions.queryVariantsOptions.consequenceType);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_XREF.key(), queryCommandOptions.queryVariantsOptions.annot_xref);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_BIOTYPE.key(), queryCommandOptions.queryVariantsOptions.biotype);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_POLYPHEN.key(), queryCommandOptions.queryVariantsOptions.proteinSubstitution);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.GENOTYPE.key(), queryCommandOptions.genericVariantQueryOptions.sampleGenotype);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), queryCommandOptions.genericVariantQueryOptions.consequenceType);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_XREF.key(), queryCommandOptions.genericVariantQueryOptions.annot_xref);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_BIOTYPE.key(), queryCommandOptions.genericVariantQueryOptions.geneBiotype);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_POLYPHEN.key(), queryCommandOptions.genericVariantQueryOptions.proteinSubstitution);
 //        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_POLYPHEN.key(), queryCommandOptions.queryVariantsOptions.polyphen);
 //        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_SIFT.key(), queryCommandOptions.queryVariantsOptions.sift);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION.key(), queryCommandOptions.queryVariantsOptions.conservation);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION.key(), queryCommandOptions.genericVariantQueryOptions.conservation);
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),
-                queryCommandOptions.queryVariantsOptions.populationMaf);
+                queryCommandOptions.genericVariantQueryOptions.populationMaf);
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(),
-                queryCommandOptions.queryVariantsOptions.populationFreqs);
+                queryCommandOptions.genericVariantQueryOptions.populationFreqs);
 //        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_POPULATION_REFERENCE_FREQUENCY.key(),
 //                queryCommandOptions.reference_frequency);
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_TRANSCRIPTION_FLAGS.key(),
-                queryCommandOptions.queryVariantsOptions.flags);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_GENE_TRAITS_ID.key(), queryCommandOptions.queryVariantsOptions.geneTraitId);
+                queryCommandOptions.genericVariantQueryOptions.flags);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_GENE_TRAITS_ID.key(), queryCommandOptions.genericVariantQueryOptions.geneTraitId);
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_GENE_TRAITS_NAME.key(),
-                queryCommandOptions.queryVariantsOptions.geneTraitName);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_HPO.key(), queryCommandOptions.queryVariantsOptions.hpo);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_GO.key(), queryCommandOptions.queryVariantsOptions.go);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_EXPRESSION.key(), queryCommandOptions.queryVariantsOptions.expression);
+                queryCommandOptions.genericVariantQueryOptions.geneTraitName);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_HPO.key(), queryCommandOptions.genericVariantQueryOptions.hpo);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_GO.key(), queryCommandOptions.genericVariantQueryOptions.go);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_EXPRESSION.key(), queryCommandOptions.genericVariantQueryOptions.expression);
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_KEYWORDS.key(),
-                queryCommandOptions.queryVariantsOptions.proteinKeywords);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_DRUG.key(), queryCommandOptions.queryVariantsOptions.drugs);
+                queryCommandOptions.genericVariantQueryOptions.proteinKeywords);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_DRUG.key(), queryCommandOptions.genericVariantQueryOptions.drugs);
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key(),
-                queryCommandOptions.queryVariantsOptions.functionalScore);
-        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.UNKNOWN_GENOTYPE.key(), queryCommandOptions.queryVariantsOptions.unknownGenotype);
+                queryCommandOptions.genericVariantQueryOptions.functionalScore);
+        params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.UNKNOWN_GENOTYPE.key(), queryCommandOptions.genericVariantQueryOptions.unknownGenotype);
 //        params.put(QueryOptions.SORT, queryCommandOptions.sort);
 //        queryOptions.putIfNotEmpty("merge", queryCommandOptions.merge);
 
         QueryOptions options = new QueryOptions();
         options.putIfNotEmpty(QueryOptions.INCLUDE, queryCommandOptions.dataModelOptions.include);
         options.putIfNotEmpty(QueryOptions.EXCLUDE, queryCommandOptions.dataModelOptions.exclude);
-        options.putIfNotEmpty(QueryOptions.LIMIT, queryCommandOptions.numericOptions.limit);
-        options.putIfNotEmpty(QueryOptions.SKIP, queryCommandOptions.numericOptions.skip);
+        options.put(QueryOptions.LIMIT, queryCommandOptions.numericOptions.limit);
+        options.put(QueryOptions.SKIP, queryCommandOptions.numericOptions.skip);
         options.put("count", queryCommandOptions.numericOptions.count);
         options.putAll(variantCommandOptions.commonCommandOptions.params);
 
-        params.put("samplesMetadata", queryCommandOptions.queryVariantsOptions.samplesMetadata);
-        params.putIfNotEmpty("groupBy", queryCommandOptions.queryVariantsOptions.groupBy);
-        params.put("histogram", queryCommandOptions.queryVariantsOptions.histogram);
-        params.putIfNotEmpty("interval", queryCommandOptions.queryVariantsOptions.interval);
+        params.put("samplesMetadata", queryCommandOptions.genericVariantQueryOptions.samplesMetadata);
+        params.putIfNotEmpty("groupBy", queryCommandOptions.genericVariantQueryOptions.groupBy);
+        params.put("histogram", queryCommandOptions.genericVariantQueryOptions.histogram);
+        params.putIfNotEmpty("interval", queryCommandOptions.genericVariantQueryOptions.interval);
 
         boolean grpc = usingGrpcMode(queryCommandOptions.mode);
 
         if (!grpc) {
             if (queryCommandOptions.numericOptions.count) {
                 return openCGAClient.getVariantClient().count(params, options);
-            } else if (queryCommandOptions.queryVariantsOptions.samplesMetadata || StringUtils.isNoneEmpty(queryCommandOptions.queryVariantsOptions.groupBy)
-                    || queryCommandOptions.queryVariantsOptions.histogram) {
+            } else if (queryCommandOptions.genericVariantQueryOptions.samplesMetadata || StringUtils.isNoneEmpty(queryCommandOptions.genericVariantQueryOptions.groupBy)
+                    || queryCommandOptions.genericVariantQueryOptions.histogram) {
                 return openCGAClient.getVariantClient().genericQuery(params, options);
             } else {
                 return openCGAClient.getVariantClient().query(params, options);
@@ -214,7 +214,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
                         Collections.singletonList(
                                 new QueryResult<>(response.getId(), 0, 1, 1, "", "", Collections.singletonList(countResponse.getValue()))));
                 return queryResponse;
-            } else if (queryCommandOptions.queryVariantsOptions.samplesMetadata || StringUtils.isNoneEmpty(queryCommandOptions.queryVariantsOptions.groupBy) || queryCommandOptions.queryVariantsOptions.histogram) {
+            } else if (queryCommandOptions.genericVariantQueryOptions.samplesMetadata || StringUtils.isNoneEmpty(queryCommandOptions.genericVariantQueryOptions.groupBy) || queryCommandOptions.genericVariantQueryOptions.histogram) {
                 queryResponse = openCGAClient.getVariantClient().genericQuery(params, options);
             } else {
                 Iterator<VariantProto.Variant> variantIterator = variantServiceBlockingStub.get(request);

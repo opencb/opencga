@@ -45,7 +45,7 @@ public class VariantQueryCommandUtils {
 
     private static Logger logger = LoggerFactory.getLogger("org.opencb.opencga.storage.app.cli.client.VariantQueryCommandUtils");
 
-    public static Query parseQuery(StorageVariantCommandOptions.QueryVariantsCommandOptions queryVariantsOptions, List<String> studyNames)
+    public static Query parseQuery(StorageVariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions, List<String> studyNames)
             throws Exception {
         Query query = new Query();
 
@@ -101,7 +101,7 @@ public class VariantQueryCommandUtils {
          * Annotation parameters
          */
         addParam(query, ANNOT_CONSEQUENCE_TYPE, queryVariantsOptions.consequenceType);
-        addParam(query, ANNOT_BIOTYPE, queryVariantsOptions.biotype);
+        addParam(query, ANNOT_BIOTYPE, queryVariantsOptions.geneBiotype);
         addParam(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY, queryVariantsOptions.populationFreqs);
         addParam(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, queryVariantsOptions.populationMaf);
         addParam(query, ANNOT_CONSERVATION, queryVariantsOptions.conservation);
@@ -202,7 +202,7 @@ public class VariantQueryCommandUtils {
         return query;
     }
 
-    public static QueryOptions parseQueryOptions(StorageVariantCommandOptions.QueryVariantsCommandOptions queryVariantsOptions) {
+    public static QueryOptions parseQueryOptions(StorageVariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions) {
         QueryOptions queryOptions = new QueryOptions(new HashMap<>(queryVariantsOptions.commonOptions.params));
 
         if (StringUtils.isNotEmpty(queryVariantsOptions.include)) {
@@ -232,7 +232,7 @@ public class VariantQueryCommandUtils {
     }
 
     @Deprecated
-    public static OutputStream getOutputStream(StorageVariantCommandOptions.QueryVariantsCommandOptions queryVariantsOptions) throws IOException {
+    public static OutputStream getOutputStream(StorageVariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions) throws IOException {
         /*
          * Output parameters
          */

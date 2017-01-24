@@ -193,8 +193,8 @@ public class UserCommandExecutor extends OpencgaCommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, usersCommandOptions.projectsCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, usersCommandOptions.projectsCommandOptions.dataModelOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, usersCommandOptions.projectsCommandOptions.numericOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, usersCommandOptions.projectsCommandOptions.numericOptions.skip);
+        queryOptions.put(QueryOptions.LIMIT, usersCommandOptions.projectsCommandOptions.numericOptions.limit);
+        queryOptions.put(QueryOptions.SKIP, usersCommandOptions.projectsCommandOptions.numericOptions.skip);
 
         if (StringUtils.isNotEmpty(usersCommandOptions.projectsCommandOptions.user)) {
             queryOptions.putIfNotEmpty("userId", usersCommandOptions.projectsCommandOptions.user);

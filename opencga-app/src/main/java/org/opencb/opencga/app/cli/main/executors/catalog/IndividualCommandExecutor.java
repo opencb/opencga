@@ -236,8 +236,8 @@ public class IndividualCommandExecutor extends OpencgaCommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, individualsCommandOptions.searchCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, individualsCommandOptions.searchCommandOptions.dataModelOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, individualsCommandOptions.searchCommandOptions.numericOptions.skip);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, individualsCommandOptions.searchCommandOptions.numericOptions.limit);
+        queryOptions.put(QueryOptions.SKIP, individualsCommandOptions.searchCommandOptions.numericOptions.skip);
+        queryOptions.put(QueryOptions.LIMIT, individualsCommandOptions.searchCommandOptions.numericOptions.limit);
         queryOptions.put("count", individualsCommandOptions.searchCommandOptions.numericOptions.count);
 
         return openCGAClient.getIndividualClient().search(query, queryOptions);

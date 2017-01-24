@@ -49,11 +49,11 @@ public abstract class CommandExecutor {
 
     protected Logger logger;
 
-    public CommandExecutor(OptionsParser.CommonOptions options) {
+    public CommandExecutor(GeneralCliOptions.CommonOptions options) {
         init(options);
     }
 
-    protected void init(OptionsParser.CommonOptions options) {
+    protected void init(GeneralCliOptions.CommonOptions options) {
         init(options.logLevel, options.verbose, options.configFile, options.storageEngine);
     }
 

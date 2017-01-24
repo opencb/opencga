@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantVcfDataWriter;
 import org.slf4j.Logger;
@@ -87,17 +88,17 @@ public class VariantQueryCommandUtils {
 
     }
 
-    public static Query parseQuery(AnalysisCliOptionsParser.QueryVariantCommandOptions queryVariantsOptions, Map<Long, String> studyIds)
+    public static Query parseQuery(VariantCommandOptions.QueryVariantCommandOptions queryVariantsOptions, Map<Long, String> studyIds)
             throws Exception {
         Query query = new Query();
 
         /*
          * Parse Variant parameters
          */
-        if (queryVariantsOptions.region != null && !queryVariantsOptions.region.isEmpty()) {
-            query.put(REGION.key(), queryVariantsOptions.region);
-        } else if (queryVariantsOptions.regionFile != null && !queryVariantsOptions.regionFile.isEmpty()) {
-            Path gffPath = Paths.get(queryVariantsOptions.regionFile);
+        if (queryVariantsOptions.genericVariantQueryOptions.region != null && !queryVariantsOptions.genericVariantQueryOptions.region.isEmpty()) {
+            query.put(REGION.key(), queryVariantsOptions.genericVariantQueryOptions.region);
+        } else if (queryVariantsOptions.genericVariantQueryOptions.regionFile != null && !queryVariantsOptions.genericVariantQueryOptions.regionFile.isEmpty()) {
+            Path gffPath = Paths.get(queryVariantsOptions.genericVariantQueryOptions.regionFile);
             FileUtils.checkFile(gffPath);
             String regionsFromFile = Files.readAllLines(gffPath).stream().map(line -> {
                 String[] array = line.split("\t");
@@ -106,15 +107,15 @@ public class VariantQueryCommandUtils {
             query.put(REGION.key(), regionsFromFile);
         }
 
-        addParam(query, ID, queryVariantsOptions.id);
-        addParam(query, GENE, queryVariantsOptions.gene);
-        addParam(query, TYPE, queryVariantsOptions.type);
+        addParam(query, ID, queryVariantsOptions.genericVariantQueryOptions.id);
+        addParam(query, GENE, queryVariantsOptions.genericVariantQueryOptions.gene);
+        addParam(query, TYPE, queryVariantsOptions.genericVariantQueryOptions.type);
 
 
         List studies = new LinkedList<>();
-        if (StringUtils.isNotEmpty(queryVariantsOptions.study)) {
-            query.put(STUDIES.key(), queryVariantsOptions.study);
-            for (String study : queryVariantsOptions.study.split(",|;")) {
+        if (StringUtils.isNotEmpty(queryVariantsOptions.genericVariantQueryOptions.study)) {
+            query.put(STUDIES.key(), queryVariantsOptions.genericVariantQueryOptions.study);
+            for (String study : queryVariantsOptions.genericVariantQueryOptions.study.split(",|;")) {
                 if (!study.startsWith("!")) {
                     studies.add(study);
                 }
@@ -124,10 +125,10 @@ public class VariantQueryCommandUtils {
         }
 
         // If the studies to be returned is empty then we return the studies being queried
-        if (StringUtils.isNotEmpty(queryVariantsOptions.returnStudy)) {
+        if (StringUtils.isNotEmpty(queryVariantsOptions.genericVariantQueryOptions.returnStudy)) {
 //            query.put(RETURNED_STUDIES.key(), Arrays.asList(queryVariantCommandOptions.returnStudy.split(",")));
             List<String> list = new ArrayList<>();
-            Collections.addAll(list, queryVariantsOptions.returnStudy.split(","));
+            Collections.addAll(list, queryVariantsOptions.genericVariantQueryOptions.returnStudy.split(","));
             query.put(RETURNED_STUDIES.key(), list);
         } else {
             if (!studies.isEmpty()) {
@@ -135,50 +136,50 @@ public class VariantQueryCommandUtils {
             }
         }
 
-        addParam(query, FILES, queryVariantsOptions.file);
-        addParam(query, GENOTYPE, queryVariantsOptions.sampleGenotype);
-        if (queryVariantsOptions.returnSample != null) {
-            if (queryVariantsOptions.returnSample.isEmpty() || queryVariantsOptions.returnSample.equals(".")) {
+        addParam(query, FILES, queryVariantsOptions.genericVariantQueryOptions.file);
+        addParam(query, GENOTYPE, queryVariantsOptions.genericVariantQueryOptions.sampleGenotype);
+        if (queryVariantsOptions.genericVariantQueryOptions.returnSample != null) {
+            if (queryVariantsOptions.genericVariantQueryOptions.returnSample.isEmpty() || queryVariantsOptions.genericVariantQueryOptions.returnSample.equals(".")) {
                 query.put(RETURNED_SAMPLES.key(), Collections.emptyList());
             } else {
-                query.put(RETURNED_SAMPLES.key(), queryVariantsOptions.returnSample);
+                query.put(RETURNED_SAMPLES.key(), queryVariantsOptions.genericVariantQueryOptions.returnSample);
             }
         }
-        addParam(query, UNKNOWN_GENOTYPE, queryVariantsOptions.unknownGenotype);
+        addParam(query, UNKNOWN_GENOTYPE, queryVariantsOptions.genericVariantQueryOptions.unknownGenotype);
 
 
         /**
          * Annotation parameters
          */
-        addParam(query, ANNOT_CONSEQUENCE_TYPE, queryVariantsOptions.consequenceType);
-        addParam(query, ANNOT_BIOTYPE, queryVariantsOptions.biotype);
-        addParam(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY, queryVariantsOptions.populationFreqs);
-        addParam(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, queryVariantsOptions.populationMaf);
-        addParam(query, ANNOT_CONSERVATION, queryVariantsOptions.conservation);
-        addParam(query, ANNOT_TRANSCRIPTION_FLAGS, queryVariantsOptions.flags);
-        addParam(query, ANNOT_GENE_TRAITS_ID, queryVariantsOptions.geneTraitId);
-        addParam(query, ANNOT_GENE_TRAITS_NAME, queryVariantsOptions.geneTraitName);
-        addParam(query, ANNOT_HPO, queryVariantsOptions.hpo);
-        addParam(query, ANNOT_GO, queryVariantsOptions.go);
-        addParam(query, ANNOT_EXPRESSION, queryVariantsOptions.expression);
-        addParam(query, ANNOT_PROTEIN_KEYWORDS, queryVariantsOptions.proteinKeywords);
-        addParam(query, ANNOT_DRUG, queryVariantsOptions.drugs);
+        addParam(query, ANNOT_CONSEQUENCE_TYPE, queryVariantsOptions.genericVariantQueryOptions.consequenceType);
+        addParam(query, ANNOT_BIOTYPE, queryVariantsOptions.genericVariantQueryOptions.geneBiotype);
+        addParam(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY, queryVariantsOptions.genericVariantQueryOptions.populationFreqs);
+        addParam(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, queryVariantsOptions.genericVariantQueryOptions.populationMaf);
+        addParam(query, ANNOT_CONSERVATION, queryVariantsOptions.genericVariantQueryOptions.conservation);
+        addParam(query, ANNOT_TRANSCRIPTION_FLAGS, queryVariantsOptions.genericVariantQueryOptions.flags);
+        addParam(query, ANNOT_GENE_TRAITS_ID, queryVariantsOptions.genericVariantQueryOptions.geneTraitId);
+        addParam(query, ANNOT_GENE_TRAITS_NAME, queryVariantsOptions.genericVariantQueryOptions.geneTraitName);
+        addParam(query, ANNOT_HPO, queryVariantsOptions.genericVariantQueryOptions.hpo);
+        addParam(query, ANNOT_GO, queryVariantsOptions.genericVariantQueryOptions.go);
+        addParam(query, ANNOT_EXPRESSION, queryVariantsOptions.genericVariantQueryOptions.expression);
+        addParam(query, ANNOT_PROTEIN_KEYWORDS, queryVariantsOptions.genericVariantQueryOptions.proteinKeywords);
+        addParam(query, ANNOT_DRUG, queryVariantsOptions.genericVariantQueryOptions.drugs);
 
-        if (StringUtils.isNoneEmpty(queryVariantsOptions.proteinSubstitution)) {
-            query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), queryVariantsOptions.proteinSubstitution);
+        if (StringUtils.isNoneEmpty(queryVariantsOptions.genericVariantQueryOptions.proteinSubstitution)) {
+            query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), queryVariantsOptions.genericVariantQueryOptions.proteinSubstitution);
         }
 
 
         /*
          * Stats parameters
          */
-        if (queryVariantsOptions.stats != null && !queryVariantsOptions.stats.isEmpty()) {
+        if (queryVariantsOptions.genericVariantQueryOptions.stats != null && !queryVariantsOptions.genericVariantQueryOptions.stats.isEmpty()) {
             Set<String> acceptedStatKeys = new HashSet<>(Arrays.asList(STATS_MAF.key(),
                     STATS_MGF.key(),
                     MISSING_ALLELES.key(),
                     MISSING_GENOTYPES.key()));
 
-            for (String stat : queryVariantsOptions.stats.split(",")) {
+            for (String stat : queryVariantsOptions.genericVariantQueryOptions.stats.split(",")) {
                 int index = stat.indexOf("<");
                 index = index >= 0 ? index : stat.indexOf("!");
                 index = index >= 0 ? index : stat.indexOf("~");
@@ -200,14 +201,14 @@ public class VariantQueryCommandUtils {
             }
         }
 
-        addParam(query, STATS_MAF, queryVariantsOptions.maf);
-        addParam(query, STATS_MGF, queryVariantsOptions.mgf);
-        addParam(query, MISSING_ALLELES, queryVariantsOptions.missingAlleleCount);
-        addParam(query, MISSING_GENOTYPES, queryVariantsOptions.missingGenotypeCount);
+        addParam(query, STATS_MAF, queryVariantsOptions.genericVariantQueryOptions.maf);
+        addParam(query, STATS_MGF, queryVariantsOptions.genericVariantQueryOptions.mgf);
+        addParam(query, MISSING_ALLELES, queryVariantsOptions.genericVariantQueryOptions.missingAlleleCount);
+        addParam(query, MISSING_GENOTYPES, queryVariantsOptions.genericVariantQueryOptions.missingGenotypeCount);
 
 
-        boolean returnVariants = !queryVariantsOptions.count && StringUtils.isEmpty(queryVariantsOptions.groupBy)
-                && StringUtils.isEmpty(queryVariantsOptions.rank);
+        boolean returnVariants = !queryVariantsOptions.numericOptions.count && StringUtils.isEmpty(queryVariantsOptions.genericVariantQueryOptions.groupBy)
+                && StringUtils.isEmpty(queryVariantsOptions.genericVariantQueryOptions.rank);
 
 
         VariantOutputFormat of = VCF;
@@ -236,35 +237,38 @@ public class VariantQueryCommandUtils {
         return query;
     }
 
-    public static QueryOptions parseQueryOptions(AnalysisCliOptionsParser.QueryVariantCommandOptions queryVariantsOptions) {
+    public static QueryOptions parseQueryOptions(VariantCommandOptions.QueryVariantCommandOptions queryVariantsOptions) {
         QueryOptions queryOptions = new QueryOptions(new HashMap<>(queryVariantsOptions.commonOptions.params));
 
-        if (StringUtils.isNotEmpty(queryVariantsOptions.include)) {
-            queryOptions.add(QueryOptions.INCLUDE, queryVariantsOptions.include);
+        if (StringUtils.isNotEmpty(queryVariantsOptions.dataModelOptions.include)) {
+            queryOptions.add(QueryOptions.INCLUDE, queryVariantsOptions.dataModelOptions.include);
         }
 
-        if (StringUtils.isNotEmpty(queryVariantsOptions.exclude)) {
-            queryOptions.add(QueryOptions.EXCLUDE, queryVariantsOptions.exclude + ",_id");
+        if (StringUtils.isNotEmpty(queryVariantsOptions.dataModelOptions.exclude)) {
+            queryOptions.add(QueryOptions.EXCLUDE, queryVariantsOptions.dataModelOptions.exclude + ",_id");
         }
 //        else {
 //            queryOptions.put("exclude", "_id");
 //        }
 
-        if (queryVariantsOptions.skip > 0) {
-            queryOptions.add(QueryOptions.SKIP, queryVariantsOptions.skip);
+        if (queryVariantsOptions.numericOptions.skip > 0) {
+            queryOptions.add(QueryOptions.SKIP, queryVariantsOptions.numericOptions.skip);
         }
 
-        if (queryVariantsOptions.limit > 0) {
-            queryOptions.add(QueryOptions.LIMIT, queryVariantsOptions.limit);
+
+        if (queryVariantsOptions.numericOptions.limit > 0) {
+            queryOptions.add(QueryOptions.LIMIT, queryVariantsOptions.numericOptions.limit);
         }
 
-        if (queryVariantsOptions.count) {
+
+
+        if (queryVariantsOptions.numericOptions.count) {
             queryOptions.add("count", true);
         }
 
-        if (queryVariantsOptions.sort) {
-            queryOptions.add(QueryOptions.SORT, true);
-        }
+//        if (queryVariantsOptions.numericOptions.sort) {
+//            queryOptions.add(QueryOptions.SORT, true);
+//        }
 
         return queryOptions;
     }

@@ -142,8 +142,8 @@ public class ProjectCommandExecutor extends OpencgaCommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, projectsCommandOptions.studiesCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE,projectsCommandOptions.studiesCommandOptions.dataModelOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, projectsCommandOptions.studiesCommandOptions.numericOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, projectsCommandOptions.studiesCommandOptions.numericOptions.skip);
+        queryOptions.put(QueryOptions.LIMIT, projectsCommandOptions.studiesCommandOptions.numericOptions.limit);
+        queryOptions.put(QueryOptions.SKIP, projectsCommandOptions.studiesCommandOptions.numericOptions.skip);
         return openCGAClient.getProjectClient().getStudies(projectsCommandOptions.studiesCommandOptions.project, queryOptions);
     }
 

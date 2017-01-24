@@ -20,7 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameters;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.core.common.GitRepositoryState;
-import org.opencb.opencga.storage.app.cli.OptionsParser;
+import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.app.cli.client.options.StorageAlignmentCommandOptions;
 import org.opencb.opencga.storage.app.cli.client.options.StorageVariantCommandOptions;
 
@@ -29,7 +29,7 @@ import java.util.Map;
 /**
  * Created by imedina on 02/03/15.
  */
-public class CliOptionsParser extends OptionsParser {
+public class CliOptionsParser extends GeneralCliOptions {
 
     private final CliOptionsParser.IndexCommandOptions indexCommandOptions;
     private final CliOptionsParser.QueryCommandOptions queryCommandOptions;
@@ -59,7 +59,7 @@ public class CliOptionsParser extends OptionsParser {
         jcommander.addCommand("variant", variantCommandOptions);
         JCommander variantSubCommands = jcommander.getCommands().get("variant");
         variantSubCommands.addCommand("index", variantCommandOptions.indexVariantsCommandOptions);
-        variantSubCommands.addCommand("query", variantCommandOptions.queryVariantsCommandOptions);
+        variantSubCommands.addCommand("query", variantCommandOptions.variantQueryCommandOptions);
         variantSubCommands.addCommand("import", variantCommandOptions.importVariantsCommandOptions);
         variantSubCommands.addCommand("annotation", variantCommandOptions.annotateVariantsCommandOptions);
 //        variantSubCommands.addCommand("benchmark", variantCommandOptions.benchmarkCommandOptions);

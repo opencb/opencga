@@ -139,8 +139,8 @@ public class JobCommandExecutor extends OpencgaCommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, jobsCommandOptions.searchCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, jobsCommandOptions.searchCommandOptions.dataModelOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, jobsCommandOptions.searchCommandOptions.numericOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, jobsCommandOptions.searchCommandOptions.numericOptions.skip);
+        queryOptions.put(QueryOptions.LIMIT, jobsCommandOptions.searchCommandOptions.numericOptions.limit);
+        queryOptions.put(QueryOptions.SKIP, jobsCommandOptions.searchCommandOptions.numericOptions.skip);
         queryOptions.put("count", jobsCommandOptions.searchCommandOptions.numericOptions.count);
 
         return openCGAClient.getJobClient().search(query, queryOptions);
