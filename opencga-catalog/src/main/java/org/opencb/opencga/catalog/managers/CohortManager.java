@@ -282,6 +282,9 @@ public class CohortManager extends AbstractManager implements ICohortManager {
 
         for (Map.Entry<String, Object> param : parameters.entrySet()) {
             CohortDBAdaptor.QueryParams queryParam = CohortDBAdaptor.QueryParams.getParam(param.getKey());
+            if (queryParam == null) {
+                throw new CatalogException("Cannot update " + param.getKey());
+            }
             switch (queryParam) {
                 case NAME:
                 case CREATION_DATE:
