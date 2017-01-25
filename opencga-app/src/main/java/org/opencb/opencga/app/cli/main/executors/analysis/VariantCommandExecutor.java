@@ -83,7 +83,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         String fileIds = variantCommandOptions.indexCommandOptions.fileIds;
 
         ObjectMap o = new ObjectMap();
-        o.putIfNotNull(VariantStorageEngine.Options.STUDY_ID.key(), variantCommandOptions.indexCommandOptions.study);
+        o.putIfNotNull("study", variantCommandOptions.indexCommandOptions.study);
         o.putIfNotNull("outDir", variantCommandOptions.indexCommandOptions.outdirId);
         o.putIfNotNull("transform", variantCommandOptions.indexCommandOptions.transform);
         o.putIfNotNull("load", variantCommandOptions.indexCommandOptions.load);

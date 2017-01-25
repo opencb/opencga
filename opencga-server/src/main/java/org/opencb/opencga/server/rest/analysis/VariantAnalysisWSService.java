@@ -71,7 +71,7 @@ public class VariantAnalysisWSService extends AnalysisWSService {
                           @ApiParam(value = "Comma separated list of file ids (files or directories)", required = true)
                           @QueryParam(value = "file") String fileIdStr,
                           // Study id is not ingested by the analysis index command line. No longer needed.
-                          @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
+                          @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyStrOld,
                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                               @QueryParam("study") String studyStr,
                           @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr,
@@ -87,12 +87,12 @@ public class VariantAnalysisWSService extends AnalysisWSService {
             fileIdStr = fileIdStrOld;
         }
 
-        if (StringUtils.isNotEmpty(studyId)) {
-            studyStr = studyId;
+        if (StringUtils.isNotEmpty(studyStrOld)) {
+            studyStr = studyStrOld;
         }
 
         Map<String, String> params = new LinkedHashMap<>();
-//        addParamIfNotNull(params, "studyId", studyId);
+        addParamIfNotNull(params, "study", studyStr);
         addParamIfNotNull(params, "outdir", outDirStr);
         addParamIfTrue(params, "transform", transform);
         addParamIfTrue(params, "load", load);
@@ -103,6 +103,8 @@ public class VariantAnalysisWSService extends AnalysisWSService {
         addParamIfTrue(params, VariantAnnotationManager.OVERWRITE_ANNOTATIONS, overwriteAnnotations);
 
         Set<String> knownParams = new HashSet<>();
+        knownParams.add("study");
+        knownParams.add("studyId");
         knownParams.add("outDir");
         knownParams.add("transform");
         knownParams.add("load");
