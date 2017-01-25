@@ -50,10 +50,28 @@ public class IndexDaemon extends MonitorParentDaemon {
     public static final String ALIGNMENT_TYPE = "ALIGNMENT";
     public static final String VARIANT_TYPE = "VARIANT";
 
+    private static final Query RUNNING_JOBS_QUERY = new Query()
+            .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING)
+            .append(JobDBAdaptor.QueryParams.TYPE.key(), Job.Type.INDEX);
+    private static final Query QUEUED_JOBS_QUERY = new Query()
+            .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED)
+            .append(JobDBAdaptor.QueryParams.TYPE.key(), Job.Type.INDEX);
+    private static final Query PREPARED_JOBS_QUERY = new Query()
+            .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.PREPARED)
+            .append(JobDBAdaptor.QueryParams.TYPE.key(), Job.Type.INDEX);
+
+    // Sort jobs by creation date
+    private static final QueryOptions QUERY_OPTIONS = new QueryOptions()
+            .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key())
+            .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
+
+    // Sort jobs by creation date. Limit to 1 result
+    private static final QueryOptions QUERY_OPTIONS_LIMIT_1 = new QueryOptions(QUERY_OPTIONS)
+            .append(QueryOptions.LIMIT, 1);
+
     private CatalogIOManager catalogIOManager;
     private String binHome;
     private Path tempJobFolder;
-
 //    private VariantIndexOutputRecorder variantIndexOutputRecorder;
 
     public IndexDaemon(int interval, String sessionId, CatalogManager catalogManager, String appHome)
@@ -71,80 +89,68 @@ public class IndexDaemon extends MonitorParentDaemon {
 
         IJobManager jobManager = catalogManager.getJobManager();
 
-        Query runningJobsQuery = new Query()
-                .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING)
-                .append(JobDBAdaptor.QueryParams.TYPE.key(), Job.Type.INDEX);
-
-        Query queuedJobsQuery = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED);
-        queuedJobsQuery.put(JobDBAdaptor.QueryParams.TYPE.key(), Job.Type.INDEX);
-
-        Query preparedJobsQuery = new Query(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.PREPARED);
-        preparedJobsQuery.put(JobDBAdaptor.QueryParams.TYPE.key(), Job.Type.INDEX);
-
-        // Sort jobs by creation date
-        QueryOptions queryOptions = new QueryOptions()
-                .append(QueryOptions.SORT, JobDBAdaptor.QueryParams.CREATION_DATE.key())
-                .append(QueryOptions.ORDER, QueryOptions.ASCENDING);
-
-        // Sort jobs by creation date. Limit to 1 result
-        QueryOptions queryOptionsLimit1 = new QueryOptions(queryOptions).append(QueryOptions.LIMIT, 1);
-
         int maxConcurrentIndexJobs = 1; // TODO: Read from configuration?
 
         while (!exit) {
             try {
-                Thread.sleep(interval);
-            } catch (InterruptedException e) {
-                // Break loop
-                exit = true;
-                break;
-            }
-            logger.info("----- INDEX DAEMON -----", TimeUtils.getTimeMillis());
+                try {
+                    Thread.sleep(interval);
+                } catch (InterruptedException e) {
+                    // Break loop
+                    exit = true;
+                    break;
+                }
+                logger.info("----- INDEX DAEMON -----", TimeUtils.getTimeMillis());
 
             /*
             RUNNING JOBS
              */
-            try {
-                QueryResult<Job> runningJobs = jobManager.get(runningJobsQuery, queryOptions, sessionId);
-                logger.debug("Checking running jobs. {} running jobs found", runningJobs.getNumResults());
-                for (Job job : runningJobs.getResult()) {
-                    checkRunningJob(job);
+                try {
+                    QueryResult<Job> runningJobs = jobManager.get(RUNNING_JOBS_QUERY, QUERY_OPTIONS, sessionId);
+                    logger.debug("Checking running jobs. {} running jobs found", runningJobs.getNumResults());
+                    for (Job job : runningJobs.getResult()) {
+                        checkRunningJob(job);
+                    }
+                } catch (CatalogException e) {
+                    logger.warn("Cannot obtain running jobs", e);
                 }
-            } catch (CatalogException e) {
-                logger.warn("Cannot obtain running jobs", e);
-            }
-
 
             /*
             QUEUED JOBS
              */
-            try {
-                QueryResult<Job> queuedJobs = jobManager.get(queuedJobsQuery, queryOptions, sessionId);
-                logger.debug("Checking queued jobs. {} queued jobs found", queuedJobs.getNumResults());
-                for (Job job : queuedJobs.getResult()) {
-                    checkQueuedJob(job);
+                try {
+                    QueryResult<Job> queuedJobs = jobManager.get(QUEUED_JOBS_QUERY, QUERY_OPTIONS, sessionId);
+                    logger.debug("Checking queued jobs. {} queued jobs found", queuedJobs.getNumResults());
+                    for (Job job : queuedJobs.getResult()) {
+                        checkQueuedJob(job);
+                    }
+                } catch (CatalogException e) {
+                    logger.warn("Cannot obtain queued jobs", e);
                 }
-            } catch (CatalogException e) {
-                logger.warn("Cannot obtain queued jobs", e);
-            }
-
 
             /*
             PREPARED JOBS
              */
-            try {
-                QueryResult<Job> preparedJobs = jobManager.get(preparedJobsQuery, queryOptionsLimit1, sessionId);
-                if (preparedJobs != null && preparedJobs.getNumResults() > 0) {
-                    if (getRunningOrQueuedJobs() < maxConcurrentIndexJobs) {
-                        queuePreparedIndex(preparedJobs.first());
-                    } else {
-                        logger.debug("Too many jobs indexing now, waiting for indexing new jobs");
+                try {
+                    QueryResult<Job> preparedJobs = jobManager.get(PREPARED_JOBS_QUERY, QUERY_OPTIONS_LIMIT_1, sessionId);
+                    if (preparedJobs != null && preparedJobs.getNumResults() > 0) {
+                        if (getRunningOrQueuedJobs() < maxConcurrentIndexJobs) {
+                            queuePreparedIndex(preparedJobs.first());
+                        } else {
+                            logger.debug("Too many jobs indexing now, waiting for indexing new jobs");
+                        }
                     }
+                } catch (CatalogException e) {
+                    logger.warn("Cannot obtain prepared jobs", e);
                 }
-            } catch (CatalogException e) {
-                logger.warn("Cannot obtain prepared jobs", e);
+            } catch (RuntimeException e) {
+                logger.warn("Catch unexpected exception in IndexDaemon.", e);
+                // TODO: Handle exceptions. Continue or shutdown the daemon?
+                logger.info("Continue...");
+            } catch (Error e) {
+                logger.error("Catch error in IndexDaemon.", e);
+                throw e;
             }
-
         }
     }
 
