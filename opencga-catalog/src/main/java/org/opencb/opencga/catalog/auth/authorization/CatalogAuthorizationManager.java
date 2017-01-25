@@ -1305,7 +1305,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
 
-        return sampleDBAdaptor.getAcl(studyId, members);
+        return sampleDBAdaptor.getAcl(sampleId, members);
     }
 
     @Override
