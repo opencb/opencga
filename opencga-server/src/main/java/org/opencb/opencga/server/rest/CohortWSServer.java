@@ -276,8 +276,9 @@ public class CohortWSServer extends OpenCGAWSServer {
                                @QueryParam("samples") String samples) {
         try {
             long cohortId = cohortManager.getId(cohortStr, studyStr, sessionId).getResourceId();
+            query.remove(CohortDBAdaptor.QueryParams.STUDY.key());
             // TODO: Change queryOptions, queryOptions
-            return createOkResponse(catalogManager.modifyCohort(cohortId, queryOptions, queryOptions, sessionId));
+            return createOkResponse(catalogManager.modifyCohort(cohortId, query, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }    }
