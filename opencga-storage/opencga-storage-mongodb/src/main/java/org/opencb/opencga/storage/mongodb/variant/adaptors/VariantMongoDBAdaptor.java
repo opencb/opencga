@@ -61,6 +61,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
@@ -149,7 +150,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 ? new ObjectMap()
                 : this.storageEngineConfiguration.getVariant().getOptions();
         this.utils = new VariantDBAdaptorUtils(this);
-        cellBaseClient = new CellBaseClient(cellbaseConfiguration.toClientConfiguration());
+        String species = configuration.getString(VariantAnnotationManager.SPECIES);
+        String assembly = configuration.getString(VariantAnnotationManager.ASSEMBLY);
+        cellBaseClient = new CellBaseClient(species, assembly, cellbaseConfiguration.toClientConfiguration());
         this.cacheManager = new CacheManager(storageConfiguration);
         NUMBER_INSTANCES.incrementAndGet();
     }
