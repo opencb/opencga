@@ -859,14 +859,14 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
         Long count = dbAdaptorFactory.getCatalogJobDBAdaptor().count(query).first();
         if ((count > 0)) {
             throw new CatalogDBException("The file " + fileId + " cannot be deleted/removed because it is being used as input of "
-                    + count + " jobs. Please, consider using the parameter force if you are sure you want to delete it.");
+                    + count + " jobs.");
         }
 
         query = new Query(DatasetDBAdaptor.QueryParams.FILES.key(), fileId);
         count = dbAdaptorFactory.getCatalogDatasetDBAdaptor().count(query).first();
         if ((count > 0)) {
             throw new CatalogDBException("The file " + fileId + " cannot be deleted/removed because it is part of "
-                    + count + " dataset(s). Please, consider using the parameter force if you are sure you want to delete it.");
+                    + count + " dataset(s).");
         }
 
     }

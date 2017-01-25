@@ -1700,7 +1700,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (fileDBAdaptor.count(query).first() > 0) {
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor.QueryParams.PATH.key());
             String path = fileDBAdaptor.get(query, queryOptions).first().getPath();
-            throw new CatalogException(normalizedUri + " was already linked to catalog on a this other path " + path);
+            throw new CatalogException(normalizedUri + " was already linked to other path: " + path);
         }
 
         boolean parents = params.getBoolean("parents", false);

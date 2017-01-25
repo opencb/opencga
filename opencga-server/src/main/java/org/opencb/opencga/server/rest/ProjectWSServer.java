@@ -182,7 +182,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{project}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some project attributes [NO TESTED]", response = Project.class)
+    @ApiOperation(value = "Update some project attributes", response = Project.class)
     public Response updateByPost(@ApiParam(value = "Project id or alias", required = true) @PathParam("project") String projectStr,
                                  @ApiParam(value = "JSON containing the params to be updated. Supported keys can be found in the update "
                                          + "via GET", required = true) ObjectMap params)

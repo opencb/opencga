@@ -263,7 +263,8 @@ public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdapt
 
             // Try to update and add the new permissions (if the member already had those permissions set)
             Document queryDocument = new Document()
-                    .append(PRIVATE_ID, resourceIds)
+                    .append("$isolated", 1)
+                    .append(PRIVATE_ID, new Document("$in", resourceIds))
                     .append(QueryParams.ACL_MEMBER.key(), member);
 
             Document update = new Document("$addToSet", new Document("acl.$.permissions", new Document("$each", permissions)));
@@ -296,6 +297,7 @@ public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdapt
     @Override
     public T removeAclsFromMember(long resourceId, String member, List<String> permissions) throws CatalogDBException {
         Document query = new Document()
+                .append("$isolated", 1)
                 .append(PRIVATE_ID, resourceId)
                 .append(QueryParams.ACL_MEMBER.key(), member);
         Bson pull = Updates.pullAll("acl.$.permissions", permissions);
@@ -312,7 +314,8 @@ public class AclMongoDBAdaptor<T extends AbstractAclEntry> implements AclDBAdapt
     public void removeAclsFromMembers(List<Long> resourceIds, List<String> members, List<String> permissions) throws CatalogDBException {
         for (String member : members) {
             Document queryDocument = new Document()
-                    .append(PRIVATE_ID, resourceIds)
+                    .append("$isolated", 1)
+                    .append(PRIVATE_ID, new Document("$in", resourceIds))
                     .append(QueryParams.ACL_MEMBER.key(), member);
 
             Bson update = Updates.pullAll("acl.$.permissions", permissions);

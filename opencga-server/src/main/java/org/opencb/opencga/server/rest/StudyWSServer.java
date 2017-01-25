@@ -83,18 +83,14 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create a new study", response = Study.class,
-            notes = "Wont't accept files, jobs, experiments, samples.<br>" +
-                    "Will accept: acl, uri, cohorts, datasets.<br>" +
-//            "Work in progress.<br>" +
-//            "Only nested files parameter accepted, and only a few parameters.<br>" +
-//            "<b>{ files:[ { format, bioformat, path, description, type, jobId, attributes } ] }</b><br>" +
-                    "<ul>" +
-                    "<il><b>id</b>, <b>lastModified</b> and <b>size</b> parameters will be ignored.<br></il>" +
-                    "<il><b>type</b> accepted values: [<b>'CASE_CONTROL', 'CASE_SET', 'CONTROL_SET', 'FAMILY', 'PAIRED', 'TRIO'</b>].<br>"
+            notes = "Wont't accept files, jobs, experiments, samples.<br>"
+                    + "Will accept: acl, uri, cohorts, datasets.<br>"
+                    + "<ul>"
+                    + "<il><b>id</b>, <b>lastModified</b> and <b>size</b> parameters will be ignored.<br></il>"
+                    + "<il><b>type</b> accepted values: [<b>'CASE_CONTROL', 'CASE_SET', 'CONTROL_SET', 'FAMILY', 'PAIRED', 'TRIO'</b>].<br>"
                     + "</il><ul>")
     public Response createStudyPOST(@ApiParam(value = "Project id or alias", required = true) @QueryParam("projectId") String projectIdStr,
-                                    @ApiParam(value="studies", required = true) List<Study> studies) {
-        List<QueryResult<Study>> queryResults = new LinkedList<>();
+                                    @ApiParam(value="study", required = true) Study study) {
         long projectId;
         try {
             String userId = catalogManager.getUserManager().getId(sessionId);
@@ -102,19 +98,15 @@ public class StudyWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-        for (Study study : studies) {
-            System.out.println("study = " + study);
-            try {
-                QueryResult<Study> queryResult = catalogManager.createStudy(projectId, study.getName(),
-                        study.getAlias(), study.getType(), study.getCreationDate(),
-                        study.getDescription(), new Status(), study.getCipher(), null, null, null, study.getStats(),
-                        study.getAttributes(), queryOptions, sessionId);
-                queryResults.add(queryResult);
-            } catch (Exception e) {
-                return createErrorResponse(e);
-            }
+        logger.debug("study = {}", study);
+        try {
+            return createOkResponse(catalogManager.createStudy(projectId, study.getName(),
+                    study.getAlias(), study.getType(), study.getCreationDate(),
+                    study.getDescription(), new Status(), study.getCipher(), null, null, null, study.getStats(),
+                    study.getAttributes(), queryOptions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
         }
-        return createOkResponse(queryResults);
     }
 
     @GET
