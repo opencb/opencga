@@ -289,7 +289,6 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
         File rootFile = new File(".", File.Type.DIRECTORY, null, null, "", "study root folder",
                 new File.FileStatus(File.FileStatus.READY), 0);
-        rootFile.setUri(uri);
         files.add(rootFile);
 
         // We set all the permissions for the owner of the study.
@@ -309,8 +308,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 uri = catalogIOManager.createStudy(userId, Long.toString(projectId), Long.toString(study.getId()));
             } catch (CatalogIOException e) {
                 try {
-                    QueryOptions deleteOptions = new QueryOptions(DBAdaptor.SKIP_CHECK, true).append(DBAdaptor.FORCE, true);
-                    studyDBAdaptor.delete(study.getId(), deleteOptions);
+                    studyDBAdaptor.delete(study.getId());
                 } catch (Exception e1) {
                     logger.error("Can't delete study after failure creating study", e1);
                 }

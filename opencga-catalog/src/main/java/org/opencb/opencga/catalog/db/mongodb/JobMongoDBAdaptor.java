@@ -446,6 +446,21 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
+    public void delete(long id) throws CatalogDBException {
+        Query query = new Query(QueryParams.ID.key(), id);
+        delete(query);
+    }
+
+    @Override
+    public void delete(Query query) throws CatalogDBException {
+        QueryResult<DeleteResult> remove = jobCollection.remove(parseQuery(query, false), null);
+
+        if (remove.first().getDeletedCount() == 0) {
+            throw CatalogDBException.deleteError("Job");
+        }
+    }
+
+    @Override
     public QueryResult<Job> update(long id, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
         checkId(id);

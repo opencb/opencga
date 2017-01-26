@@ -452,6 +452,21 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
         return endQuery("Update individual", startTime, new QueryResult<Long>());
     }
 
+    @Override
+    public void delete(long id) throws CatalogDBException {
+        Query query = new Query(QueryParams.ID.key(), id);
+        delete(query);
+    }
+
+    @Override
+    public void delete(Query query) throws CatalogDBException {
+        QueryResult<DeleteResult> remove = individualCollection.remove(parseQuery(query, false), null);
+
+        if (remove.first().getDeletedCount() == 0) {
+            throw CatalogDBException.deleteError("Individual");
+        }
+    }
+
     private QueryResult<Individual> remove(int id, boolean force) throws CatalogDBException {
         long startTime = startQuery();
         checkId(id);

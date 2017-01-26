@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.DuplicateKeyException;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -228,6 +229,21 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         }
 
         return endQuery("Update sample", startTime, new QueryResult<>());
+    }
+
+    @Override
+    public void delete(long id) throws CatalogDBException {
+        Query query = new Query(QueryParams.ID.key(), id);
+        delete(query);
+    }
+
+    @Override
+    public void delete(Query query) throws CatalogDBException {
+        QueryResult<DeleteResult> remove = panelCollection.remove(parseQuery(query, false), null);
+
+        if (remove.first().getDeletedCount() == 0) {
+            throw CatalogDBException.deleteError("Disease panel");
+        }
     }
 
     @Override

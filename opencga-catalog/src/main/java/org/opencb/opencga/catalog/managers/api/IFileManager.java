@@ -205,9 +205,6 @@ public interface IFileManager extends ResourceManager<Long, File> {
     QueryResult<FileTree> getTree(String fileIdStr, @Nullable String studyId, Query query, QueryOptions queryOptions, int maxDepth,
                                   String sessionId) throws CatalogException;
 
-    @Deprecated
-    QueryResult<File> unlink(long fileId, String sessionId) throws CatalogException;
-
     QueryResult<File> unlink(String fileIdStr, @Nullable String studyStr, String sessionId) throws CatalogException, IOException;
 
     @Deprecated

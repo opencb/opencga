@@ -394,14 +394,30 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
         assertEquals(3, groupByBioformat.size());
 
-        assertEquals(5, ((Document) groupByBioformat.get(0).get("_id")).size()); // Alignment - File
-        assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(0).get("features"));
-
-        assertEquals(5, ((Document) groupByBioformat.get(1).get("_id")).size()); // None - File
-        assertEquals(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt"), groupByBioformat.get(1).get("features"));
-
-        assertEquals(5, ((Document) groupByBioformat.get(2).get("_id")).size()); // None - Folder
-        assertEquals(Arrays.asList("data/"), groupByBioformat.get(2).get("features"));
-
+        for (int i = 0; i < groupByBioformat.size(); i++) {
+            String bioformat = ((Document) groupByBioformat.get(i).get("_id")).getString("bioformat");
+            String type = ((Document) groupByBioformat.get(i).get("_id")).getString("type");
+            switch (bioformat) {
+                case "NONE":
+                    switch (type) {
+                        case "FILE":
+                            assertEquals(5, ((Document) groupByBioformat.get(i).get("_id")).size()); // None - File
+                            assertEquals(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt"), groupByBioformat.get(i).get("features"));
+                            break;
+                        default:
+                            assertEquals(5, ((Document) groupByBioformat.get(i).get("_id")).size()); // None - Folder
+                            assertEquals(Arrays.asList("data/"), groupByBioformat.get(i).get("features"));
+                            break;
+                    }
+                    break;
+                case "ALIGNMENT":
+                    assertEquals(5, ((Document) groupByBioformat.get(i).get("_id")).size());
+                    assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(i).get("features"));
+                    break;
+                default:
+                    fail("This case should not happen.");
+                    break;
+            }
+        }
     }
 }

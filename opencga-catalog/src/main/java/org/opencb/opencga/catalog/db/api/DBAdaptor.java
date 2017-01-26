@@ -91,8 +91,14 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException;
 
+    void delete(long id) throws CatalogDBException;
+
+    void delete(Query query) throws CatalogDBException;
+
+    @Deprecated
     QueryResult<T> delete(long id, QueryOptions queryOptions) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException;
 
     @Deprecated

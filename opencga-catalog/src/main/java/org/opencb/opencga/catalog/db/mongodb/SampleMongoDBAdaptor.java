@@ -21,6 +21,7 @@ import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
+import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -503,6 +504,21 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         }
 
         return endQuery("Update sample", startTime, new QueryResult<>());
+    }
+
+    @Override
+    public void delete(long id) throws CatalogDBException {
+        Query query = new Query(QueryParams.ID.key(), id);
+        delete(query);
+    }
+
+    @Override
+    public void delete(Query query) throws CatalogDBException {
+        QueryResult<DeleteResult> remove = sampleCollection.remove(parseQuery(query, false), null);
+
+        if (remove.first().getDeletedCount() == 0) {
+            throw CatalogDBException.deleteError("Sample");
+        }
     }
 
     @Override
