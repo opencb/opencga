@@ -22,6 +22,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.opencga.storage.app.cli.GeneralCliOptions;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.VariantAnnotatorFactory;
 
 import java.util.HashMap;
@@ -142,7 +143,7 @@ public class StorageVariantCommandOptions {
 
     public static class GenericVariantQueryOptions {
 
-        @Parameter(names = {"--id"}, description = "CSV list of variant ids")
+        @Parameter(names = {"--id"}, description = VariantDBAdaptor.ID_DESCR)
         public String id;
 
         @Parameter(names = {"-r", "--region"}, description = "CSV list of regions: {chr}[:{start}-{end}], eg.: 2,3:1000000-2000000")
