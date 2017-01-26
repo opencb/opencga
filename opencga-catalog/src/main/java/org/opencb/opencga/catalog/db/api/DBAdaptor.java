@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.api;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -96,15 +97,24 @@ public interface DBAdaptor<T> extends Iterable<T> {
     void delete(Query query) throws CatalogDBException;
 
     @Deprecated
-    QueryResult<T> delete(long id, QueryOptions queryOptions) throws CatalogDBException;
+    default QueryResult<T> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
+        throw new NotImplementedException();
+    }
 
     @Deprecated
-    QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException;
+    default QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        throw new NotImplementedException();
+    }
 
     @Deprecated
-    QueryResult<T> remove(long id, QueryOptions queryOptions) throws CatalogDBException;
+    default QueryResult<T> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+        throw new NotImplementedException();
+    }
 
-    QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException;
+    @Deprecated
+    default QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        throw new NotImplementedException();
+    }
 
     QueryResult<T> restore(long id, QueryOptions queryOptions) throws CatalogDBException;
 

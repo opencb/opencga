@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
@@ -31,7 +32,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -392,7 +392,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         } else {
             qOptions = new QueryOptions();
         }
-        //qOptions.append(MongoDBCollection.EXCLUDE, Arrays.asList(PRIVATE_ID, PRIVATE_STUDY_ID));
+
         qOptions = filterOptions(qOptions, FILTER_ROUTE_JOBS);
         return jobCollection.find(bson, qOptions);
     }
@@ -400,43 +400,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
-        Map<String, Object> jobParameters = new HashMap<>();
-
-        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.USER_ID.key(), QueryParams.TOOL_NAME.key(),
-                QueryParams.CREATION_DATE.key(), QueryParams.DESCRIPTION.key(), QueryParams.OUTPUT_ERROR.key(),
-                QueryParams.COMMAND_LINE.key(), QueryParams.OUT_DIR_ID.key(), QueryParams.ERROR.key(), QueryParams.ERROR_DESCRIPTION.key(),
-        };
-        filterStringParams(parameters, jobParameters, acceptedParams);
-
-//        Map<String, Class<? extends Enum>> acceptedEnums =
-//                Collections.singletonMap((QueryParams.JOB_STATUS.key()), Job.JobStatusEnum.class);
-//        filterEnumParams(parameters, jobParameters, acceptedEnums);
-        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
-            jobParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
-            jobParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
-        }
-
-        if (parameters.containsKey(QueryParams.STATUS.key()) && parameters.get(QueryParams.STATUS.key()) instanceof Job.JobStatus) {
-            jobParameters.put(QueryParams.STATUS.key(), getMongoDBDocument(parameters.get(QueryParams.STATUS.key()), "Job.JobStatus"));
-        }
-
-        String[] acceptedIntParams = {QueryParams.VISITS.key(), };
-        filterIntParams(parameters, jobParameters, acceptedIntParams);
-
-        String[] acceptedLongParams = {QueryParams.START_TIME.key(), QueryParams.END_TIME.key(), QueryParams.SIZE.key()};
-        filterLongParams(parameters, jobParameters, acceptedLongParams);
-
-        String[] acceptedIntegerListParams = {QueryParams.OUTPUT.key()};
-        filterIntegerListParams(parameters, jobParameters, acceptedIntegerListParams);
-        if (parameters.containsKey(QueryParams.OUTPUT.key())) {
-            for (Integer fileId : parameters.getAsIntegerList(QueryParams.OUTPUT.key())) {
-//                checkFileExists(fileId, "Output File");
-                dbAdaptorFactory.getCatalogFileDBAdaptor().checkId(fileId);
-            }
-        }
-
-        String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key()};
-        filterMapParams(parameters, jobParameters, acceptedMapParams);
+        Map<String, Object> jobParameters = getValidatedUpdateParams(parameters);
 
         if (!jobParameters.isEmpty()) {
             QueryResult<UpdateResult> update = jobCollection.update(parseQuery(query, false), new Document("$set", jobParameters), null);
@@ -463,13 +427,62 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public QueryResult<Job> update(long id, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
-        checkId(id);
-        Query query = new Query(QueryParams.ID.key(), id);
-        QueryResult<Long> update = update(query, parameters);
-        if (update.getResult().isEmpty() || update.first() != 1) {
-            throw new CatalogDBException("Could not update job " + id);
+        Bson query = parseQuery(new Query(QueryParams.ID.key(), id), true);
+        Map<String, Object> myParams = getValidatedUpdateParams(parameters);
+
+        if (myParams.isEmpty()) {
+            logger.debug("The map of parameters to update the job is empty. It originally contained {}", parameters.safeToString());
+            throw new CatalogDBException("Nothing to update");
         }
-        return endQuery("Update user", startTime, get(query, null));
+
+        logger.debug("Update job. Query: {}, Update: {}",
+                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()), myParams);
+
+        QueryResult<UpdateResult> update = jobCollection.update(query, new Document("$set", myParams), new QueryOptions("multi", true));
+        if (update.first().getMatchedCount() == 0) {
+            throw new CatalogDBException("Job " + id + " not found.");
+        }
+
+        QueryResult<Job> queryResult = jobCollection.find(query, jobConverter, QueryOptions.empty());
+        return endQuery("Update job", startTime, queryResult);
+    }
+
+    private Map<String, Object> getValidatedUpdateParams(ObjectMap parameters) throws CatalogDBException {
+        Map<String, Object> jobParameters = new HashMap<>();
+
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.USER_ID.key(), QueryParams.TOOL_NAME.key(),
+                QueryParams.CREATION_DATE.key(), QueryParams.DESCRIPTION.key(), QueryParams.OUTPUT_ERROR.key(),
+                QueryParams.COMMAND_LINE.key(), QueryParams.OUT_DIR_ID.key(), QueryParams.ERROR.key(), QueryParams.ERROR_DESCRIPTION.key(),
+        };
+        filterStringParams(parameters, jobParameters, acceptedParams);
+
+        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
+            jobParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
+            jobParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
+        }
+
+        if (parameters.containsKey(QueryParams.STATUS.key()) && parameters.get(QueryParams.STATUS.key()) instanceof Job.JobStatus) {
+            jobParameters.put(QueryParams.STATUS.key(), getMongoDBDocument(parameters.get(QueryParams.STATUS.key()), "Job.JobStatus"));
+        }
+
+        String[] acceptedIntParams = {QueryParams.VISITS.key(), };
+        filterIntParams(parameters, jobParameters, acceptedIntParams);
+
+        String[] acceptedLongParams = {QueryParams.START_TIME.key(), QueryParams.END_TIME.key(), QueryParams.SIZE.key()};
+        filterLongParams(parameters, jobParameters, acceptedLongParams);
+
+        String[] acceptedIntegerListParams = {QueryParams.OUTPUT.key()};
+        filterIntegerListParams(parameters, jobParameters, acceptedIntegerListParams);
+        if (parameters.containsKey(QueryParams.OUTPUT.key())) {
+            for (Integer fileId : parameters.getAsIntegerList(QueryParams.OUTPUT.key())) {
+                dbAdaptorFactory.getCatalogFileDBAdaptor().checkId(fileId);
+            }
+        }
+
+        String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key()};
+        filterMapParams(parameters, jobParameters, acceptedMapParams);
+
+        return jobParameters;
     }
 
 
@@ -485,88 +498,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             throw CatalogDBException.idNotFound("Job id '{}' does not exist (or there are too many)", id);
         }
         return jobQueryResult;
-    }
-
-    @Override
-    public QueryResult<Job> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-
-        checkId(id);
-
-        // Check the status of the job
-        Query query = new Query(QueryParams.ID.key(), id);
-        Job job = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_NAME.key())).first();
-        switch (job.getStatus().getName()) {
-            case Job.JobStatus.TRASHED:
-            case Job.JobStatus.DELETED:
-                throw new CatalogDBException("The job {" + id + "} was already " + job.getStatus().getName());
-            case Job.JobStatus.PREPARED:
-            case Job.JobStatus.RUNNING:
-            case Job.JobStatus.QUEUED:
-                throw new CatalogDBException("The job {" + id + "} is " + job.getStatus().getName()
-                        + ". Please, stop the job before deleting it.");
-            case Job.JobStatus.DONE:
-            case Job.JobStatus.ERROR:
-            case Job.JobStatus.READY:
-            default:
-                break;
-        }
-
-        // If we don't find the force and the keep output files parameter, we check first if the job has any active file.
-        if ((!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE))
-                && (!queryOptions.containsKey(KEEP_OUTPUT_FILES) || !queryOptions.getBoolean(KEEP_OUTPUT_FILES))) {
-            checkCanDelete(id);
-        }
-
-        query = new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), id);
-        if (queryOptions.containsKey(KEEP_OUTPUT_FILES) && queryOptions.getBoolean(KEEP_OUTPUT_FILES)) {
-            // unlink the files from the job
-            ObjectMap objectMap = new ObjectMap(FileDBAdaptor.QueryParams.JOB_ID.key(), -1);
-            dbAdaptorFactory.getCatalogFileDBAdaptor().update(query, objectMap);
-        } else {
-            // Remove the files created by the job
-            dbAdaptorFactory.getCatalogFileDBAdaptor().delete(query, queryOptions);
-        }
-
-        // Change the status of the job to deleted
-        setStatus(id, Status.TRASHED);
-
-        query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.TRASHED);
-
-        return endQuery("Delete job", startTime, get(query, null));
-    }
-
-    @Override
-    public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-        query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        QueryResult<Job> jobQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
-        for (Job job : jobQueryResult.getResult()) {
-            delete(job.getId(), queryOptions);
-        }
-        return endQuery("Delete job", startTime, Collections.singletonList(jobQueryResult.getNumTotalResults()));
-    }
-
-
-    /**
-     * Checks whether the files created by the jobId can be deleted.
-     *
-     * @param jobId job id.
-     * @throws CatalogDBException when any of the files created by the job cannot be deleted.
-     */
-    private void checkCanDelete(long jobId) throws CatalogDBException {
-        Query query = new Query(QueryParams.ID.key(), jobId);
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.OUTPUT);
-
-        Job job = get(query, queryOptions).first();
-        List<Long> output = job.getOutput();
-        if (output != null && output.size() > 0) {
-            query = new Query(QueryParams.INPUT.key(), job.getOutput());
-            if (count(query).first() > 0) {
-                throw new CatalogDBException("Cannot delete/remove the job {" + jobId + "}. The files generated by the job have been used "
-                        + "as input of other(s). You might want to make use of force/keepOutputFiles parameters.");
-            }
-        }
     }
 
     @Override

@@ -1882,6 +1882,8 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     public QueryResult<File> unlink(String fileIdStr, @Nullable String studyStr, String sessionId) throws CatalogException, IOException {
+        ParamUtils.checkParameter(fileIdStr, "File");
+
         AbstractManager.MyResourceId resource = catalogManager.getFileManager().getId(fileIdStr, studyStr, sessionId);
         String userId = resource.getUser();
         long fileId = resource.getResourceId();

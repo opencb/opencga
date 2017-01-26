@@ -65,36 +65,16 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 ()), studyId, null).first();
         long jobId = job.getId();
         assertEquals(Job.JobStatus.PREPARED, job.getStatus().getName());
+        catalogJobDBAdaptor.delete(jobId);
+
         thrown.expect(CatalogDBException.class);
-        thrown.expectMessage("Please, stop the job before");
-        catalogJobDBAdaptor.delete(jobId, new QueryOptions());
-    }
-
-    @Test
-    public void deleteJobTest2() throws CatalogException {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-
-        Job job = catalogJobDBAdaptor.insert(new Job("name", user3.getId(), "", "", "", 4, Collections.<Long>emptyList
-                ()), studyId, null).first();
-        long jobId = job.getId();
-        assertEquals(Job.JobStatus.PREPARED, job.getStatus().getName());
-        catalogJobDBAdaptor.setStatus(jobId, Job.JobStatus.READY);
-        QueryResult<Job> queryResult = catalogJobDBAdaptor.delete(jobId, new QueryOptions());
-        System.out.println(queryResult);
-        assertTrue(queryResult.getNumResults() == 1);
-        assertEquals(Job.JobStatus.TRASHED, queryResult.first().getStatus().getName());
-        try {
-            System.out.println(catalogJobDBAdaptor.delete(-1, new QueryOptions()));
-            fail("error: Expected \"Job not found\" exception");
-        } catch (CatalogDBException e) {
-            System.out.println("correct exception: " + e);
-        }
+        thrown.expectMessage("not exist");
+        catalogJobDBAdaptor.get(jobId, QueryOptions.empty());
     }
 
     @Test
     public void getAllJobTest() throws CatalogDBException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-//        long analysisId = catalogDBAdaptor.getAnalysisId(studyId, "analysis1Alias");
         QueryResult<Job> allJobs = catalogJobDBAdaptor.getAllInStudy(studyId, null);
         System.out.println(allJobs);
     }

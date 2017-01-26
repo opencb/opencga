@@ -16,7 +16,10 @@
 
 package org.opencb.opencga.catalog.db.api;
 
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.AbstractDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.File;
@@ -216,18 +219,6 @@ public interface FileDBAdaptor extends AclDBAdaptor<File, FileAclEntry> {
      * @throws CatalogDBException CatalogDBException.
      */
     QueryResult<Long> extractSampleFromFiles(Query query, List<Long> sampleIds) throws CatalogDBException;
-
-    /**
-     * Delete file.
-     *
-     * @param fileId fileId.
-     * @param update Map containing the parameters that will be updated after deletion. SKIP_CHECK might also be found in the map
-     *               to avoid checking whether the fileId is being used and delete it anyway.
-     * @param queryOptions Query Options.
-     * @return the deleted file.
-     * @throws CatalogDBException when the file could not be deleted.
-     */
-    QueryResult<File> delete(long fileId, ObjectMap update, QueryOptions queryOptions) throws CatalogDBException;
 
     /*
      * ACL methods

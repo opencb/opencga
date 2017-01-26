@@ -1185,30 +1185,6 @@ public class CatalogManager implements AutoCloseable {
     }
 
     @Deprecated
-    public QueryResult shareSample(String sampleIds, String userIds, AclEntry acl, String sessionId)
-            throws CatalogException {
-        throw new CatalogException("Calling to deprecated shareSample method.");
-//        return authorizationManager.setSampleACL(sampleIds, userIds, acl, sessionId);
-    }
-
-//    public QueryResult shareSample(String sampleIds, String members, List<String> permissions, boolean override, String sessionId)
-//            throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        List<Long> sampleList = sampleManager.getSampleIds(userId, sampleIds);
-//        return authorizationManager.setSamplePermissions(userId, sampleList, members, permissions, override);
-//    }
-//
-//    public QueryResult unshareSample(String sampleIds, String userIds, String permissions, String sessionId)
-//            throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        List<Long> sampleList = sampleManager.getSampleIds(userId, sampleIds);
-//        List<String> permissionList = permissions != null && !permissions.isEmpty()
-//                ? Arrays.asList(permissions.split(",")) : Collections.emptyList();
-//        authorizationManager.unsetSamplePermissions(userId, sampleList, userIds, permissionList);
-//        return new QueryResult("unshareSample");
-//    }
-
-    @Deprecated
     public QueryResult<AnnotationSet> annotateSample(long sampleId, String id, long variableSetId,
                                                      Map<String, Object> annotations,
                                                      Map<String, Object> attributes,
