@@ -88,7 +88,7 @@ public class VariantQueryCommandUtils {
 
     }
 
-    public static Query parseQuery(VariantCommandOptions.QueryVariantCommandOptions queryVariantsOptions, Map<Long, String> studyIds)
+    public static Query parseQuery(VariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions, Map<Long, String> studyIds)
             throws Exception {
         Query query = new Query();
 
@@ -237,7 +237,7 @@ public class VariantQueryCommandUtils {
         return query;
     }
 
-    public static QueryOptions parseQueryOptions(VariantCommandOptions.QueryVariantCommandOptions queryVariantsOptions) {
+    public static QueryOptions parseQueryOptions(VariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions) {
         QueryOptions queryOptions = new QueryOptions(new HashMap<>(queryVariantsOptions.commonOptions.params));
 
         if (StringUtils.isNotEmpty(queryVariantsOptions.dataModelOptions.include)) {

@@ -85,14 +85,14 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         ObjectMap o = new ObjectMap();
         o.putIfNotNull(VariantStorageEngine.Options.STUDY_ID.key(), variantCommandOptions.indexVariantCommandOptions.study);
         o.putIfNotNull("outDir", variantCommandOptions.indexVariantCommandOptions.outdir);
-        o.putIfNotNull("transform", variantCommandOptions.indexVariantCommandOptions.transform);
-        o.putIfNotNull("load", variantCommandOptions.indexVariantCommandOptions.load);
-        o.putIfNotNull(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), variantCommandOptions.indexVariantCommandOptions.excludeGenotype);
-        o.putIfNotNull("includeExtraFields", variantCommandOptions.indexVariantCommandOptions.extraFields);
-        o.putIfNotNull("aggregated", variantCommandOptions.indexVariantCommandOptions.aggregated);
-        o.putIfNotNull(VariantStorageEngine.Options.CALCULATE_STATS.key(), variantCommandOptions.indexVariantCommandOptions.calculateStats);
-        o.putIfNotNull(VariantStorageEngine.Options.ANNOTATE.key(), variantCommandOptions.indexVariantCommandOptions.annotate);
-        o.putIfNotNull(VariantStorageEngine.Options.RESUME.key(), variantCommandOptions.indexVariantCommandOptions.resume);
+        o.putIfNotNull("transform", variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.transform);
+        o.putIfNotNull("load", variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.load);
+        o.putIfNotNull(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.excludeGenotype);
+        o.putIfNotNull("includeExtraFields", variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.extraFields);
+        o.putIfNotNull("aggregated", variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.aggregated);
+        o.putIfNotNull(VariantStorageEngine.Options.CALCULATE_STATS.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.calculateStats);
+        o.putIfNotNull(VariantStorageEngine.Options.ANNOTATE.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.annotate);
+        o.putIfNotNull(VariantStorageEngine.Options.RESUME.key(), variantCommandOptions.indexVariantCommandOptions.genericVariantIndexOptions.resume);
 //        o.putIfNotNull("overwrite", variantCommandOptions.indexCommandOptions.overwriteAnnotations);
         o.putAll(variantCommandOptions.commonCommandOptions.params);
 
@@ -103,7 +103,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse query() throws CatalogException, IOException, InterruptedException {
         logger.debug("Listing variants of a study.");
 
-        VariantCommandOptions.QueryVariantCommandOptions queryCommandOptions = variantCommandOptions.queryVariantCommandOptions;
+        VariantCommandOptions.VariantQueryCommandOptions queryCommandOptions = variantCommandOptions.queryVariantCommandOptions;
 
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty(VariantDBAdaptor.VariantQueryParams.ID.key(), queryCommandOptions.genericVariantQueryOptions.id);

@@ -33,11 +33,11 @@ import java.util.Map;
  */
 public class StorageVariantCommandOptions {
 
-    public IndexVariantsCommandOptions indexVariantsCommandOptions;
+    public VariantIndexCommandOptions indexVariantsCommandOptions;
     public VariantQueryCommandOptions variantQueryCommandOptions;
     public ImportVariantsCommandOptions importVariantsCommandOptions;
-    public AnnotateVariantsCommandOptions annotateVariantsCommandOptions;
-    public StatsVariantsCommandOptions statsVariantsCommandOptions;
+    public VariantAnnotateCommandOptions annotateVariantsCommandOptions;
+    public VariantStatsCommandOptions statsVariantsCommandOptions;
 
     public JCommander jCommander;
     public GeneralCliOptions.CommonOptions commonCommandOptions;
@@ -51,50 +51,20 @@ public class StorageVariantCommandOptions {
         this.queryCommandOptions = queryCommandOptions;
         this.jCommander = jCommander;
 
-        this.indexVariantsCommandOptions = new IndexVariantsCommandOptions();
+        this.indexVariantsCommandOptions = new VariantIndexCommandOptions();
         this.variantQueryCommandOptions = new VariantQueryCommandOptions();
         this.importVariantsCommandOptions = new ImportVariantsCommandOptions();
-        this.annotateVariantsCommandOptions = new AnnotateVariantsCommandOptions();
-        this.statsVariantsCommandOptions = new StatsVariantsCommandOptions();
+        this.annotateVariantsCommandOptions = new VariantAnnotateCommandOptions();
+        this.statsVariantsCommandOptions = new VariantStatsCommandOptions();
     }
 
+    public static class GenericVariantIndexOptions {
 
-    @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
-    public class IndexVariantsCommandOptions {
+        @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
+        public boolean transform = false;
 
-        @ParametersDelegate
-        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
-
-
-        @Parameter(names = {"--study-name"}, description = "Full name of the study where the file is classified", arity = 1)
-        public String study;
-
-        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", arity = 1)
-        public String studyId = VariantStorageEngine.Options.STUDY_ID.defaultValue().toString();
-
-        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", arity = 1)
-        public String fileId = VariantStorageEngine.Options.FILE_ID.defaultValue().toString();
-
-        @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
-        public String pedigree;
-
-        @Parameter(names = {"--sample-ids"}, description = "CSV list of sampleIds. <sampleName>:<sampleId>[,<sampleName>:<sampleId>]*")
-        public List<String> sampleIds;
-
-
-        @Parameter(names = {"-t", "--study-type"}, description = "One of the following: FAMILY, TRIO, CONTROL, CASE, CASE_CONTROL, " +
-                "PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES", arity = 1)
-        public VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
-
-        @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage" +
-                ".core.StudyConfiguration", arity = 1)
-        public String studyConfigurationFile;
-
-        //////
-        // Commons
-
-        @ParametersDelegate
-        public GeneralCliOptions.IndexCommandOptions commonIndexOptions = indexCommandOptions;
+        @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
+        public boolean load = false;
 
         @Deprecated
         @Parameter(names = {"--include-stats"}, description = "Save statistics information available on the input file")
@@ -133,6 +103,41 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation", arity = 0)
         public boolean resume;
+    }
+
+    @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
+    public class VariantIndexCommandOptions extends GenericVariantIndexOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @ParametersDelegate
+        public GeneralCliOptions.IndexCommandOptions commonIndexOptions = indexCommandOptions;
+
+        @Parameter(names = {"--study-name"}, description = "Full name of the study where the file is classified", arity = 1)
+        public String study;
+
+        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", arity = 1)
+        public String studyId = VariantStorageEngine.Options.STUDY_ID.defaultValue().toString();
+
+        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", arity = 1)
+        public String fileId = VariantStorageEngine.Options.FILE_ID.defaultValue().toString();
+
+        @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
+        public String pedigree;
+
+        @Parameter(names = {"--sample-ids"}, description = "CSV list of sampleIds. <sampleName>:<sampleId>[,<sampleName>:<sampleId>]*")
+        public List<String> sampleIds;
+
+
+        @Parameter(names = {"-t", "--study-type"}, description = "One of the following: FAMILY, TRIO, CONTROL, CASE, CASE_CONTROL, " +
+                "PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES", arity = 1)
+        public VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
+
+        @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage" +
+                ".core.StudyConfiguration", arity = 1)
+        public String studyConfigurationFile;
+
     }
 
     public static class GenericVariantQueryOptions {
@@ -353,20 +358,7 @@ public class StorageVariantCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"annotate"}, commandDescription = "Create and load variant annotations into the database")
-    public class AnnotateVariantsCommandOptions {
-
-        @ParametersDelegate
-        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
-        public String dbName;
-
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1)
-        public String outdir;
-
-        /////////
-        // Generic
+    public static class GenericVariantAnnotateOptions {
 
         @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by --output-filename)")
         public boolean create = false;
@@ -404,7 +396,19 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--filter-annot-consequence-type"}, description = "Comma separated annotation consequence type filters",
                 splitter = CommaParameterSplitter.class)
         public List filterAnnotConsequenceType = null; // TODO will receive CSV, only available when create annotations
+    }
 
+    @Parameters(commandNames = {"annotate"}, commandDescription = "Create and load variant annotations into the database")
+    public class VariantAnnotateCommandOptions extends GenericVariantAnnotateOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
+        public String dbName;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1)
+        public String outdir;
     }
 
 
@@ -438,29 +442,7 @@ public class StorageVariantCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"stats"}, commandDescription = "Create and load stats into a database.")
-    public class StatsVariantsCommandOptions {
-
-        @Parameter(names = {"-d", "--database"}, description = "DataBase name", arity = 1)
-        public String dbName;
-
-        @DynamicParameter(names = {"--cohort-sample-ids"}, description = "Cohort definition with the schema -> <cohort-name>:<sample-id>" +
-                "(,<sample-id>)* ", descriptionKey = "CohortName", assignment = ":")
-        public Map<String, String> cohort = new HashMap<>();
-
-        @DynamicParameter(names = {"--cohort-ids"}, description = "Cohort Ids for the cohorts to be inserted. If it is not provided, " +
-                "cohortIds will be auto-generated.", assignment = ":")
-        public Map<String, String> cohortIds = new HashMap<>();
-
-        @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage" +
-                ".core.StudyConfiguration", arity = 1)
-        public String studyConfigurationFile;
-
-        //////
-
-
-        @ParametersDelegate
-        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+    public static class GenericVariantStatsOptions {
 
         @Parameter(names = {"--create"}, description = "Run only the creation of the stats to a file")
         public boolean create = false;
@@ -481,16 +463,13 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true,
                 arity = 1)
-        public int studyId;
+        public String studyId;
 
         @Parameter(names = {"-f", "--file-id"}, description = "Calculate stats only for the selected file", arity = 1)
-        public int fileId;
+        public String fileId;
 
         @Parameter(names = {"--output-filename"}, description = "Output file name. Default: database name", arity = 1)
         public String fileName;
-
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1)
-        public String outdir = ".";
 
         @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
         public VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
@@ -500,5 +479,30 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--resume"}, description = "Resume a previously failed stats calculation", arity = 0)
         public boolean resume;
+    }
+
+    @Parameters(commandNames = {"stats"}, commandDescription = "Create and load stats into a database.")
+    public class VariantStatsCommandOptions extends GenericVariantStatsOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", arity = 1)
+        public String dbName;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", arity = 1)
+        public String outdir = ".";
+
+        @DynamicParameter(names = {"--cohort-sample-ids"}, description = "Cohort definition with the schema -> <cohort-name>:<sample-id>" +
+                "(,<sample-id>)* ", descriptionKey = "CohortName", assignment = ":")
+        public Map<String, String> cohort = new HashMap<>();
+
+        @DynamicParameter(names = {"--cohort-ids"}, description = "Cohort Ids for the cohorts to be inserted. If it is not provided, " +
+                "cohortIds will be auto-generated.", assignment = ":")
+        public Map<String, String> cohortIds = new HashMap<>();
+
+        @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage" +
+                ".core.StudyConfiguration", arity = 1)
+        public String studyConfigurationFile;
     }
 }

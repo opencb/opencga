@@ -126,11 +126,11 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 
     private void exportFrequencies() throws Exception {
 
-        VariantCommandOptions.ExportVariantStatsCommandOptions exportCliOptions = variantCommandOptions.exportVariantStatsCommandOptions;
+        VariantCommandOptions.VariantExportStatsCommandOptions exportCliOptions = variantCommandOptions.exportVariantStatsCommandOptions;
 //        AnalysisCliOptionsParser.ExportVariantStatsCommandOptions exportCliOptions = variantCommandOptions.exportVariantStatsCommandOptions;
 //        AnalysisCliOptionsParser.QueryVariantCommandOptions queryCliOptions = variantCommandOptions.queryVariantCommandOptions;
 
-        VariantCommandOptions.QueryVariantCommandOptions queryCliOptions = variantCommandOptions.queryVariantCommandOptions;
+        VariantCommandOptions.VariantQueryCommandOptions queryCliOptions = variantCommandOptions.queryVariantCommandOptions;
 
         queryCliOptions.commonOptions.outputFormat = exportCliOptions.commonOptions.outputFormat.toLowerCase().replace("tsv", "stats");
         queryCliOptions.genericVariantQueryOptions.study = exportCliOptions.studies;
@@ -151,7 +151,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
     private void query() throws Exception {
 
 //        AnalysisCliOptionsParser.QueryVariantCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
-        VariantCommandOptions.QueryVariantCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
+        VariantCommandOptions.VariantQueryCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
 
 
         Map<Long, String> studyIds = getStudyIds(sessionId);
@@ -184,7 +184,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
     }
 
     private void importData() throws URISyntaxException, CatalogException, StorageEngineException, IOException {
-        VariantCommandOptions.ImportVariantCommandOptions importVariantOptions = variantCommandOptions.importVariantCommandOptions;
+        VariantCommandOptions.VariantImportCommandOptions importVariantOptions = variantCommandOptions.importVariantCommandOptions;
 
 
         org.opencb.opencga.storage.core.manager.variant.VariantStorageManager variantManager =
@@ -200,28 +200,29 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 
     private void index() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException, StorageEngineException,
             InstantiationException, IllegalAccessException, URISyntaxException {
-        VariantCommandOptions.IndexVariantCommandOptions cliOptions = variantCommandOptions.indexVariantCommandOptions;
+        VariantCommandOptions.VariantIndexCommandOptions cliOptions = variantCommandOptions.indexVariantCommandOptions;
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(LOAD, variantCommandOptions.indexVariantCommandOptions.load);
-        queryOptions.put(TRANSFORM, variantCommandOptions.indexVariantCommandOptions.transform);
+        queryOptions.put(LOAD, cliOptions.genericVariantIndexOptions.load);
+        queryOptions.put(TRANSFORM, cliOptions.genericVariantIndexOptions.transform);
 
-        queryOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), cliOptions.calculateStats);
-        queryOptions.put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), cliOptions.extraFields);
-        queryOptions.put(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), cliOptions.excludeGenotype);
-        queryOptions.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), cliOptions.aggregated);
-        queryOptions.put(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), cliOptions.aggregationMappingFile);
-        queryOptions.put(VariantStorageEngine.Options.GVCF.key(), cliOptions.gvcf);
+        queryOptions.put(VariantStorageEngine.Options.CALCULATE_STATS.key(), cliOptions.genericVariantIndexOptions.calculateStats);
+        queryOptions.put(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), cliOptions.genericVariantIndexOptions.extraFields);
+        queryOptions.put(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(), cliOptions.genericVariantIndexOptions.excludeGenotype);
+        queryOptions.put(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), cliOptions.genericVariantIndexOptions.aggregated);
+        queryOptions.put(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), cliOptions.genericVariantIndexOptions.aggregationMappingFile);
+        queryOptions.put(VariantStorageEngine.Options.GVCF.key(), cliOptions.genericVariantIndexOptions.gvcf);
 
         queryOptions.putIfNotNull(StorageOperation.CATALOG_PATH, cliOptions.catalogPath);
         queryOptions.putIfNotNull(VariantFileIndexerStorageOperation.TRANSFORMED_FILES, cliOptions.transformedPaths);
 
-        queryOptions.put(VariantStorageEngine.Options.ANNOTATE.key(), cliOptions.annotate);
-        if (cliOptions.annotator != null) {
-            queryOptions.put(VariantAnnotationManager.ANNOTATION_SOURCE, cliOptions.annotator);
+        queryOptions.put(VariantStorageEngine.Options.ANNOTATE.key(), cliOptions.genericVariantIndexOptions.annotate);
+        if (cliOptions.genericVariantIndexOptions.annotator != null) {
+            queryOptions.put(VariantAnnotationManager.ANNOTATION_SOURCE,
+                    cliOptions.genericVariantIndexOptions.annotator);
         }
-        queryOptions.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, cliOptions.overwriteAnnotations);
-        queryOptions.put(VariantStorageEngine.Options.RESUME.key(), cliOptions.resume);
+        queryOptions.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, cliOptions.genericVariantIndexOptions.overwriteAnnotations);
+        queryOptions.put(VariantStorageEngine.Options.RESUME.key(), cliOptions.genericVariantIndexOptions.resume);
         queryOptions.putAll(cliOptions.commonOptions.params);
 
         org.opencb.opencga.storage.core.manager.variant.VariantStorageManager variantManager =
@@ -233,22 +234,23 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 
     private void stats() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException,
             StorageEngineException, InstantiationException, IllegalAccessException, URISyntaxException {
-        VariantCommandOptions.StatsVariantCommandOptions cliOptions = variantCommandOptions.statsVariantCommandOptions;
+        VariantCommandOptions.VariantStatsCommandOptions cliOptions = variantCommandOptions.statsVariantCommandOptions;
 
         org.opencb.opencga.storage.core.manager.variant.VariantStorageManager variantManager =
-                new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageEngineFactory);
+                new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager,
+                        storageEngineFactory);
 
         QueryOptions options = new QueryOptions()
-                .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, cliOptions.fileName)
+                .append(DefaultVariantStatisticsManager.OUTPUT_FILE_NAME, cliOptions.genericVariantStatsOptions.fileName)
 //                .append(AnalysisFileIndexer.CREATE, cliOptions.create)
 //                .append(AnalysisFileIndexer.LOAD, cliOptions.load)
-                .append(VariantStorageEngine.Options.OVERWRITE_STATS.key(), cliOptions.overwriteStats)
-                .append(VariantStorageEngine.Options.UPDATE_STATS.key(), cliOptions.updateStats)
-                .append(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), cliOptions.aggregated)
-                .append(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), cliOptions.aggregationMappingFile)
-                .append(VariantStorageEngine.Options.RESUME.key(), cliOptions.resume)
+                .append(VariantStorageEngine.Options.OVERWRITE_STATS.key(), cliOptions.genericVariantStatsOptions.overwriteStats)
+                .append(VariantStorageEngine.Options.UPDATE_STATS.key(), cliOptions.genericVariantStatsOptions.updateStats)
+                .append(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), cliOptions.genericVariantStatsOptions.aggregated)
+                .append(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), cliOptions.genericVariantStatsOptions.aggregationMappingFile)
+                .append(VariantStorageEngine.Options.RESUME.key(), cliOptions.genericVariantStatsOptions.resume)
                 .append(StorageOperation.CATALOG_PATH, cliOptions.catalogPath);
-        options.putIfNotEmpty(VariantStorageEngine.Options.FILE_ID.key(), cliOptions.fileId);
+        options.putIfNotEmpty(VariantStorageEngine.Options.FILE_ID.key(), cliOptions.genericVariantStatsOptions.fileId);
 
         options.putAll(cliOptions.commonOptions.params);
 
@@ -259,36 +261,35 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             cohorts = Collections.emptyList();
         }
 
-        variantManager.stats(cliOptions.studyId, cohorts, cliOptions.outdir, options, sessionId);
+        variantManager.stats(cliOptions.genericVariantStatsOptions.studyId, cohorts, cliOptions.outdir, options, sessionId);
     }
 
     private void annotate() throws StorageEngineException, IOException, URISyntaxException, VariantAnnotatorException, CatalogException,
             AnalysisExecutionException, IllegalAccessException, InstantiationException, ClassNotFoundException {
 
-        VariantCommandOptions.AnnotateVariantCommandOptions cliOptions = variantCommandOptions.annotateVariantCommandOptions;
+        VariantCommandOptions.VariantAnnotateCommandOptions cliOptions = variantCommandOptions.annotateVariantCommandOptions;
         org.opencb.opencga.storage.core.manager.variant.VariantStorageManager variantManager =
                 new org.opencb.opencga.storage.core.manager.variant.VariantStorageManager(catalogManager, storageEngineFactory);
 
         Query query = new Query()
-                .append(VariantDBAdaptor.VariantQueryParams.REGION.key(), cliOptions.filterRegion)
-                .append(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), cliOptions.filterChromosome)
-                .append(VariantDBAdaptor.VariantQueryParams.GENE.key(), cliOptions.filterGene)
-                .append(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), cliOptions.filterAnnotConsequenceType);
+                .append(VariantDBAdaptor.VariantQueryParams.REGION.key(), cliOptions.genericVariantAnnotateOptions.filterRegion)
+                .append(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), cliOptions.genericVariantAnnotateOptions.filterChromosome)
+                .append(VariantDBAdaptor.VariantQueryParams.GENE.key(), cliOptions.genericVariantAnnotateOptions.filterGene)
+                .append(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), cliOptions.genericVariantAnnotateOptions.filterAnnotConsequenceType);
 
         QueryOptions options = new QueryOptions();
-        options.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, cliOptions.overwriteAnnotations);
-        options.putIfNotEmpty(VariantAnnotationManager.SPECIES, cliOptions.species);
-        options.putIfNotEmpty(VariantAnnotationManager.ASSEMBLY, cliOptions.assembly);
-        options.put(VariantAnnotationManager.CREATE, cliOptions.create);
-        options.putIfNotEmpty(VariantAnnotationManager.LOAD_FILE, cliOptions.load);
-        options.putIfNotEmpty(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, cliOptions.customAnnotationKey);
-        options.putIfNotNull(VariantAnnotationManager.ANNOTATION_SOURCE, cliOptions.annotator);
-        options.putIfNotEmpty(DefaultVariantAnnotationManager.FILE_NAME, cliOptions.fileName);
+        options.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, cliOptions.genericVariantAnnotateOptions.overwriteAnnotations);
+        options.putIfNotEmpty(VariantAnnotationManager.SPECIES, cliOptions.genericVariantAnnotateOptions.species);
+        options.putIfNotEmpty(VariantAnnotationManager.ASSEMBLY, cliOptions.genericVariantAnnotateOptions.assembly);
+        options.put(VariantAnnotationManager.CREATE, cliOptions.genericVariantAnnotateOptions.create);
+        options.putIfNotEmpty(VariantAnnotationManager.LOAD_FILE, cliOptions.genericVariantAnnotateOptions.load);
+        options.putIfNotEmpty(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, cliOptions.genericVariantAnnotateOptions.customAnnotationKey);
+        options.putIfNotNull(VariantAnnotationManager.ANNOTATION_SOURCE, cliOptions.genericVariantAnnotateOptions.annotator);
+        options.putIfNotEmpty(DefaultVariantAnnotationManager.FILE_NAME, cliOptions.genericVariantAnnotateOptions.fileName);
         options.put(StorageOperation.CATALOG_PATH, cliOptions.catalogPath);
         options.putAll(cliOptions.commonOptions.params);
 
         variantManager.annotate(cliOptions.project, cliOptions.studyId, query, cliOptions.outdir, options, sessionId);
-
     }
 
 }

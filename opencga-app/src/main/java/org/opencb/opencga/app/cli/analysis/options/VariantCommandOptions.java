@@ -21,14 +21,14 @@ import java.util.List;
 @Parameters(commandNames = {"variant"}, commandDescription = "Variant commands")
 public class VariantCommandOptions {
 
-    public IndexVariantCommandOptions indexVariantCommandOptions;
-    public QueryVariantCommandOptionsOld queryVariantCommandOptionsOld;
-    public QueryVariantCommandOptions queryVariantCommandOptions;
-    public StatsVariantCommandOptions statsVariantCommandOptions;
-    public AnnotateVariantCommandOptions annotateVariantCommandOptions;
-    public ExportVariantStatsCommandOptions exportVariantStatsCommandOptions;
-    public ImportVariantCommandOptions importVariantCommandOptions;
-    public IbsVariantCommandOptions ibsVariantCommandOptions;
+    public VariantIndexCommandOptions indexVariantCommandOptions;
+//    public QueryVariantCommandOptionsOld queryVariantCommandOptionsOld;
+    public VariantQueryCommandOptions queryVariantCommandOptions;
+    public VariantStatsCommandOptions statsVariantCommandOptions;
+    public VariantAnnotateCommandOptions annotateVariantCommandOptions;
+    public VariantExportStatsCommandOptions exportVariantStatsCommandOptions;
+    public VariantImportCommandOptions importVariantCommandOptions;
+    public VariantIbsCommandOptions ibsVariantCommandOptions;
 
     public JCommander jCommander;
     public GeneralCliOptions.CommonCommandOptions commonCommandOptions;
@@ -42,18 +42,43 @@ public class VariantCommandOptions {
         this.commonNumericOptions = numericOptions;
         this.jCommander = jCommander;
 
-        this.indexVariantCommandOptions = new IndexVariantCommandOptions();
-        this.queryVariantCommandOptionsOld = new QueryVariantCommandOptionsOld();
-        this.queryVariantCommandOptions = new QueryVariantCommandOptions();
-        this.statsVariantCommandOptions = new StatsVariantCommandOptions();
-        this.annotateVariantCommandOptions = new AnnotateVariantCommandOptions();
-        this.exportVariantStatsCommandOptions = new ExportVariantStatsCommandOptions();
-        this.importVariantCommandOptions = new ImportVariantCommandOptions();
-        this.ibsVariantCommandOptions = new IbsVariantCommandOptions();
+        this.indexVariantCommandOptions = new VariantIndexCommandOptions();
+//        this.queryVariantCommandOptionsOld = new QueryVariantCommandOptionsOld();
+        this.queryVariantCommandOptions = new VariantQueryCommandOptions();
+        this.statsVariantCommandOptions = new VariantStatsCommandOptions();
+        this.annotateVariantCommandOptions = new VariantAnnotateCommandOptions();
+        this.exportVariantStatsCommandOptions = new VariantExportStatsCommandOptions();
+        this.importVariantCommandOptions = new VariantImportCommandOptions();
+        this.ibsVariantCommandOptions = new VariantIbsCommandOptions();
     }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
-    public class IndexVariantCommandOptions extends GeneralCliOptions.StudyOption {
+    public class VariantIndexCommandOptions extends GeneralCliOptions.StudyOption {
+
+        @ParametersDelegate
+        public StorageVariantCommandOptions.GenericVariantIndexOptions genericVariantIndexOptions = new StorageVariantCommandOptions.GenericVariantIndexOptions();
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--file"}, description = "CSV of file ids to be indexed", required = true, arity = 1)
+        public String fileId = null;
+
+        @Parameter(names = {"--transformed-files"}, description = "CSV of paths corresponding to the location of the transformed files.",
+                arity = 1)
+        public String transformedPaths = null;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
+        public String outdir = null;
+
+        @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
+                + "transformed files will not be registered in catalog.", arity = 1)
+        public String catalogPath = null;
+    }
+
+
+    @Deprecated
+    public class IndexVariantCommandOptionsOld extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -132,11 +157,9 @@ public class VariantCommandOptions {
 
         @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation", arity = 0)
         public boolean resume;
-
     }
 
     @Deprecated
-    @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed variants")
     public class QueryVariantCommandOptionsOld {
 
         @ParametersDelegate
@@ -309,8 +332,8 @@ public class VariantCommandOptions {
 
     }
 
-
-    public class QueryVariantCommandOptions {
+    @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed variants")
+    public class VariantQueryCommandOptions {
 
         @ParametersDelegate
         public StorageVariantCommandOptions.GenericVariantQueryOptions genericVariantQueryOptions = new StorageVariantCommandOptions.GenericVariantQueryOptions();
@@ -332,7 +355,26 @@ public class VariantCommandOptions {
     }
 
     @Parameters(commandNames = {"stats"}, commandDescription = "Create and load stats into a database.")
-    public class StatsVariantCommandOptions { //extends AnalysisCliOptionsParser.CatalogDatabaseCommandOptions {
+    public class VariantStatsCommandOptions {
+
+        @ParametersDelegate
+        public StorageVariantCommandOptions.GenericVariantStatsOptions genericVariantStatsOptions = new StorageVariantCommandOptions.GenericVariantStatsOptions();
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--cohort-ids"}, description = "Cohort Ids for the cohorts to be calculated.")
+        public String cohortIds;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
+        public String outdir = null;
+
+        @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
+                + "transformed files will not be registered in catalog.", arity = 1)
+        public String catalogPath = null;
+    }
+
+    public class StatsVariantStatsCommandOptionsOld { //extends AnalysisCliOptionsParser.CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -391,9 +433,31 @@ public class VariantCommandOptions {
         public boolean resume;
     }
 
-
     @Parameters(commandNames = {"annotate"}, commandDescription = "Create and load variant annotations into the database")
-    public class AnnotateVariantCommandOptions { //extends AnalysisCliOptionsParser.CatalogDatabaseCommandOptions {
+    public class VariantAnnotateCommandOptions {
+
+        @ParametersDelegate
+        public StorageVariantCommandOptions.GenericVariantAnnotateOptions genericVariantAnnotateOptions = new StorageVariantCommandOptions.GenericVariantAnnotateOptions();
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-p", "--project-id"}, description = "Project to annotate.", arity = 1)
+        public String project;
+
+        @Parameter(names = {"-s", "--study-id"}, description = "Studies to annotate. Must be in the same database.", arity = 1)
+        public String studyId;
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
+        public String outdir = null;
+
+        @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
+                + "transformed files will not be registered in catalog.", arity = 1)
+        public String catalogPath;
+    }
+
+    @Deprecated
+    public class AnnotateVariantCommandOptionsOld { //extends AnalysisCliOptionsParser.CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -457,9 +521,8 @@ public class VariantCommandOptions {
 
     }
 
-
     @Parameters(commandNames = {"export-frequencies"}, commandDescription = "Export calculated variant stats and frequencies")
-    public class ExportVariantStatsCommandOptions {
+    public class VariantExportStatsCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -491,7 +554,7 @@ public class VariantCommandOptions {
     }
 
     @Parameters(commandNames = {"import"}, commandDescription = "Import a variants dataset into an empty study")
-    public class ImportVariantCommandOptions {
+    public class VariantImportCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
@@ -505,7 +568,7 @@ public class VariantCommandOptions {
     }
 
     @Parameters(commandNames = {"ibs"}, commandDescription = "[PENDING] ")
-    public class IbsVariantCommandOptions { //extends CatalogDatabaseCommandOptions {
+    public class VariantIbsCommandOptions { //extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;

@@ -37,7 +37,7 @@ public class VariantQueryCommandUtilsTest {
     public void parseQueryTest() throws Exception {
 
         AnalysisCliOptionsParser cliOptionsParser = new AnalysisCliOptionsParser();
-        VariantCommandOptions.QueryVariantCommandOptions queryVariantsOptions = cliOptionsParser.getVariantCommandOptions().queryVariantCommandOptions;
+        VariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions = cliOptionsParser.getVariantCommandOptions().queryVariantCommandOptions;
 
         queryVariantsOptions.genericVariantQueryOptions.hpo = "HP:0002812";
         queryVariantsOptions.genericVariantQueryOptions.returnStudy = "1";

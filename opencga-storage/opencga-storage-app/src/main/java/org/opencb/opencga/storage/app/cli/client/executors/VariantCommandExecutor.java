@@ -143,7 +143,7 @@ public class VariantCommandExecutor extends CommandExecutor {
     }
 
     private void index() throws URISyntaxException, IOException, StorageEngineException, FileFormatException {
-        StorageVariantCommandOptions.IndexVariantsCommandOptions indexVariantsCommandOptions = variantCommandOptions.indexVariantsCommandOptions;
+        StorageVariantCommandOptions.VariantIndexCommandOptions indexVariantsCommandOptions = variantCommandOptions.indexVariantsCommandOptions;
         List<URI> inputUris = new LinkedList<>();
         for (String uri : indexVariantsCommandOptions.commonIndexOptions.input) {
             URI variantsUri = UriUtils.createUri(uri);
@@ -367,7 +367,7 @@ public class VariantCommandExecutor extends CommandExecutor {
     }
 
     private void annotation() throws StorageEngineException, IOException, URISyntaxException, VariantAnnotatorException {
-        StorageVariantCommandOptions.AnnotateVariantsCommandOptions annotateVariantsCommandOptions
+        StorageVariantCommandOptions.VariantAnnotateCommandOptions annotateVariantsCommandOptions
                 = variantCommandOptions.annotateVariantsCommandOptions;
 
         VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor(annotateVariantsCommandOptions.dbName);
@@ -452,7 +452,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 
     private void stats() throws IOException, URISyntaxException, StorageEngineException, IllegalAccessException, InstantiationException,
             ClassNotFoundException {
-        StorageVariantCommandOptions.StatsVariantsCommandOptions statsVariantsCommandOptions = variantCommandOptions.statsVariantsCommandOptions;
+        StorageVariantCommandOptions.VariantStatsCommandOptions statsVariantsCommandOptions = variantCommandOptions.statsVariantsCommandOptions;
 
         ObjectMap options = storageConfiguration.getVariant().getOptions();
         if (statsVariantsCommandOptions.dbName != null && !statsVariantsCommandOptions.dbName.isEmpty()) {
@@ -460,9 +460,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
         options.put(VariantStorageEngine.Options.OVERWRITE_STATS.key(), statsVariantsCommandOptions.overwriteStats);
         options.put(VariantStorageEngine.Options.UPDATE_STATS.key(), statsVariantsCommandOptions.updateStats);
-        if (statsVariantsCommandOptions.fileId != 0) {
-            options.put(VariantStorageEngine.Options.FILE_ID.key(), statsVariantsCommandOptions.fileId);
-        }
+        options.putIfNotEmpty(VariantStorageEngine.Options.FILE_ID.key(), statsVariantsCommandOptions.fileId);
         options.put(VariantStorageEngine.Options.STUDY_ID.key(), statsVariantsCommandOptions.studyId);
         if (statsVariantsCommandOptions.studyConfigurationFile != null && !statsVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
             options.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, statsVariantsCommandOptions.studyConfigurationFile);
@@ -507,7 +505,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         StudyConfiguration studyConfiguration = dbAdaptor.getStudyConfigurationManager()
                 .getStudyConfiguration(statsVariantsCommandOptions.studyId, new QueryOptions(options)).first();
         if (studyConfiguration == null) {
-            studyConfiguration = new StudyConfiguration(statsVariantsCommandOptions.studyId, statsVariantsCommandOptions.dbName);
+            studyConfiguration = new StudyConfiguration(Integer.parseInt(statsVariantsCommandOptions.studyId), statsVariantsCommandOptions.dbName);
         }
         /**
          * Create and load stats
@@ -515,7 +513,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         URI outputUri = UriUtils.createUri(statsVariantsCommandOptions.fileName == null ? "" : statsVariantsCommandOptions.fileName);
         URI directoryUri = outputUri.resolve(".");
         String filename = outputUri.equals(directoryUri) ? VariantStorageEngine.buildFilename(studyConfiguration.getStudyName(),
-                statsVariantsCommandOptions.fileId)
+                Integer.parseInt(statsVariantsCommandOptions.fileId))
                 : Paths.get(outputUri.getPath()).getFileName().toString();
 //        assertDirectoryExists(directoryUri);
         DefaultVariantStatisticsManager variantStatisticsManager = new DefaultVariantStatisticsManager(dbAdaptor);
