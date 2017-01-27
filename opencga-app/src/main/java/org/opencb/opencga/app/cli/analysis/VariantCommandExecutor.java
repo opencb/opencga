@@ -289,7 +289,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         options.put(StorageOperation.CATALOG_PATH, cliOptions.catalogPath);
         options.putAll(cliOptions.commonOptions.params);
 
-        variantManager.annotate(cliOptions.project, cliOptions.studyId, query, cliOptions.outdir, options, sessionId);
+        variantManager.annotate(cliOptions.project, cliOptions.study, query, cliOptions.outdir, options, sessionId);
     }
 
 }

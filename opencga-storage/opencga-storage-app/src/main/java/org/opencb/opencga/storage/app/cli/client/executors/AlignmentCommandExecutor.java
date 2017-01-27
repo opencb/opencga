@@ -144,15 +144,15 @@ public class AlignmentCommandExecutor extends CommandExecutor {
         boolean extract, transform, load;
         URI nextFileUri = inputUri;
 
-        if (!indexAlignmentsCommandOptions.commonIndexOptions.load && !indexAlignmentsCommandOptions.commonIndexOptions.transform) {  // if not present --transform nor --load,
+        if (!indexAlignmentsCommandOptions.load && !indexAlignmentsCommandOptions.transform) {  // if not present --transform nor --load,
             // do both
             extract = true;
             transform = true;
             load = true;
         } else {
-            extract = indexAlignmentsCommandOptions.commonIndexOptions.transform;
-            transform = indexAlignmentsCommandOptions.commonIndexOptions.transform;
-            load = indexAlignmentsCommandOptions.commonIndexOptions.load;
+            extract = indexAlignmentsCommandOptions.transform;
+            transform = indexAlignmentsCommandOptions.transform;
+            load = indexAlignmentsCommandOptions.load;
         }
 
         StoragePipeline storagePipeline = alignmentStorageManager.newStoragePipeline(true);
