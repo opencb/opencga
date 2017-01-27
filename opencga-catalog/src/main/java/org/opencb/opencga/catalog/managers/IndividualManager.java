@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -538,19 +539,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     }
 
     @Override
-    @Deprecated
-    public QueryResult<AnnotationSet> deleteAnnotation(long individualId, String annotationId, String sessionId) throws CatalogException {
-        String userId = userManager.getId(sessionId);
-
-        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.DELETE_ANNOTATIONS);
-
-        QueryResult<AnnotationSet> queryResult = individualDBAdaptor.deleteAnnotation(individualId, annotationId);
-        auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId,
-                new ObjectMap("annotationSets", queryResult.first()), "deleteAnnotation", null);
-        return queryResult;
-    }
-
-    @Override
     public QueryResult<Individual> update(Long individualId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.defaultObject(parameters, QueryOptions::new);
@@ -605,8 +593,37 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
             QueryResult<Individual> queryResult = null;
             try {
                 authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.DELETE);
-                queryResult = individualDBAdaptor.delete(individualId, options);
-                auditManager.recordDeletion(AuditRecord.Resource.individual, individualId, userId, queryResult.first(), null, null);
+
+                // We can delete an individual if their samples can be deleted
+                // We obtain the samples associated to the individual and check if those can be deleted
+                Query query = new Query()
+                        .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId())
+                        .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
+                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
+                QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, queryOptions);
+
+                if (sampleQueryResult.getNumResults() > 0) {
+                    List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
+                    MyResourceIds sampleResource = new MyResourceIds(resourceId.getUser(), resourceId.getStudyId(), sampleIds);
+                    // FIXME:
+                    // We are first checking and deleting later because that delete method does not check if all the samples can be deleted
+                    // directly. Instead, it makes a loop and checks one by one. Changes should be done there.
+                    catalogManager.getSampleManager().checkCanDeleteSamples(sampleResource);
+                    catalogManager.getSampleManager().delete(StringUtils.join(sampleIds, ","),
+                            Long.toString(resourceId.getStudyId()), QueryOptions.empty(), sessionId);
+                }
+
+                // Get the individual info before the update
+                QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(individualId, QueryOptions.empty());
+
+                String newIndividualName = individualQueryResult.first().getName() + ".DELETED_" + TimeUtils.getTime();
+                ObjectMap updateParams = new ObjectMap()
+                        .append(IndividualDBAdaptor.QueryParams.NAME.key(), newIndividualName)
+                        .append(IndividualDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
+                queryResult = individualDBAdaptor.update(individualId, updateParams);
+
+                auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.delete, AuditRecord.Magnitude.high,
+                        individualId, resourceId.getUser(), individualQueryResult.first(), queryResult.first(), "", null);
             } catch (CatalogAuthorizationException e) {
                 auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.delete, AuditRecord.Magnitude.high,
                         individualId, userId, null, null, e.getMessage(), null);

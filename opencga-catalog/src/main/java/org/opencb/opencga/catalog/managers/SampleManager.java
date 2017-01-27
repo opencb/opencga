@@ -298,7 +298,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         String userId;
         long studyId;
-        List<Long> sampleIds;
+        List<Long> sampleIds = new ArrayList<>();
 
         if (StringUtils.isNumeric(sampleStr)) {
             sampleIds = Arrays.asList(Long.parseLong(sampleStr));
@@ -310,15 +310,26 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
             List<String> sampleSplit = Arrays.asList(sampleStr.split(","));
+            for (String sampleStrAux : sampleSplit) {
+                if (StringUtils.isNumeric(sampleStrAux)) {
+                    long sampleId = Long.parseLong(sampleStrAux);
+                    sampleDBAdaptor.exists(sampleId);
+                    sampleIds.add(sampleId);
+                }
+            }
+
             Query query = new Query()
                     .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                     .append(SampleDBAdaptor.QueryParams.NAME.key(), sampleSplit);
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
             QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, queryOptions);
-            if (sampleQueryResult.getNumResults() == sampleSplit.size()) {
-                sampleIds = sampleQueryResult.getResult().stream().map(sample -> sample.getId()).collect(Collectors.toList());
-            } else {
-                throw new CatalogException("Found only " + sampleQueryResult.getNumResults() + " out of the " + sampleSplit.size()
+
+            if (sampleQueryResult.getNumResults() > 0) {
+                sampleIds.addAll(sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList()));
+            }
+
+            if (sampleIds.size() < sampleSplit.size()) {
+                throw new CatalogException("Found only " + sampleIds.size() + " out of the " + sampleSplit.size()
                         + " samples looked for in study " + studyStr);
             }
         }
@@ -394,6 +405,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         return queryResult;
     }
 
+    // TODO
+    // This implementation should be changed and made better. Check the comment in IndividualManager -> delete(). Those changes
+    // will probably make the delete from individualManager to be changed.
     @Override
     public List<QueryResult<Sample>> delete(String sampleIdStr, @Nullable String studyStr, QueryOptions options, String sessionId)
             throws CatalogException, IOException {
@@ -405,20 +419,11 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         for (Long sampleId : resourceId.getResourceIds()) {
             QueryResult<Sample> queryResult = null;
             try {
-                authorizationManager.checkSamplePermission(sampleId, resourceId.getUser(), SampleAclEntry.SamplePermissions.DELETE);
+                MyResourceIds myResourceId = new MyResourceIds(resourceId.getUser(), resourceId.getStudyId(), Arrays.asList(sampleId));
+                checkCanDeleteSamples(myResourceId);
 
                 // Get the sample info before the update
                 QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(sampleId, QueryOptions.empty());
-
-                // Check that the samples are not being used in cohorts
-                Query query = new Query()
-                        .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId())
-                        .append(CohortDBAdaptor.QueryParams.SAMPLES.key(), sampleId);
-                long count = cohortDBAdaptor.count(query).first();
-                if (count > 0) {
-                    throw new CatalogException("The sample " + sampleQueryResult.first().getName() + " is part of " + count + " cohorts. "
-                            + "Please, first update or delete the cohorts");
-                }
 
                 String newSampleName = sampleQueryResult.first().getName() + ".DELETED_" + TimeUtils.getTime();
                 ObjectMap updateParams = new ObjectMap()
@@ -430,7 +435,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                         resourceId.getUser(), sampleQueryResult.first(), queryResult.first(), "", null);
 
                 // Remove the references to the sample id from the array of files
-                query = new Query()
+                Query query = new Query()
                         .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId());
                 fileDBAdaptor.extractSampleFromFiles(query, Arrays.asList(sampleId));
 
@@ -449,6 +454,27 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         }
 
         return queryResultList;
+    }
+
+    @Override
+    public void checkCanDeleteSamples(MyResourceIds resources) throws CatalogException {
+        for (Long sampleId : resources.getResourceIds()) {
+            authorizationManager.checkSamplePermission(sampleId, resources.getUser(), SampleAclEntry.SamplePermissions.DELETE);
+        }
+
+        // Check that the samples are not being used in cohorts
+        Query query = new Query()
+                .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId())
+                .append(CohortDBAdaptor.QueryParams.SAMPLES.key(), resources.getResourceIds());
+        long count = cohortDBAdaptor.count(query).first();
+        if (count > 0) {
+            if (resources.getResourceIds().size() == 1) {
+                throw new CatalogException("The sample " + resources.getResourceIds().get(0) + " is part of " + count + " cohorts. Please, "
+                        + "first update or delete the cohorts");
+            } else {
+                throw new CatalogException("Some samples are part of " + count + " cohorts. Please, first update or delete the cohorts");
+            }
+        }
     }
 
     @Override
