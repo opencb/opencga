@@ -643,7 +643,7 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
     @Override
     public void removeAclsFromMember(Query query, List<String> members, @Nullable List<String> permissions) throws CatalogDBException {
         QueryResult<Study> studyQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
-        List<Long> studyIds = studyQueryResult.getResult().stream().map(study -> study.getId()).collect(Collectors.toList());
+        List<Long> studyIds = studyQueryResult.getResult().stream().map(Study::getId).collect(Collectors.toList());
 
         if (studyIds == null || studyIds.size() == 0) {
             throw new CatalogDBException("No matches found for query when attempting to remove permissions");

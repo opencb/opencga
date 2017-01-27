@@ -943,8 +943,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     @Override
     public void removeAclsFromMember(Query query, List<String> members, @Nullable List<String> permissions) throws CatalogDBException {
         QueryResult<Individual> individualQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
-        List<Long> individualIds = individualQueryResult.getResult().stream().map(individual -> individual.getId())
-                .collect(Collectors.toList());
+        List<Long> individualIds = individualQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList());
 
         if (individualIds == null || individualIds.size() == 0) {
             throw new CatalogDBException("No matches found for query when attempting to remove permissions");

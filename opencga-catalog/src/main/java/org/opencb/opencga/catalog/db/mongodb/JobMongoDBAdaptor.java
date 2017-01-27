@@ -729,7 +729,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public void removeAclsFromMember(Query query, List<String> members, @Nullable List<String> permissions) throws CatalogDBException {
         QueryResult<Job> jobQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
-        List<Long> jobIds = jobQueryResult.getResult().stream().map(job -> job.getId()).collect(Collectors.toList());
+        List<Long> jobIds = jobQueryResult.getResult().stream().map(Job::getId).collect(Collectors.toList());
 
         if (jobIds == null || jobIds.size() == 0) {
             throw new CatalogDBException("No matches found for query when attempting to remove permissions");

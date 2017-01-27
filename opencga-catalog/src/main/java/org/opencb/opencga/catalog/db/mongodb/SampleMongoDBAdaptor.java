@@ -881,7 +881,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     @Override
     public void removeAclsFromMember(Query query, List<String> members, @Nullable List<String> permissions) throws CatalogDBException {
         QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
-        List<Long> sampleIds = sampleQueryResult.getResult().stream().map(sample -> sample.getId()).collect(Collectors.toList());
+        List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
 
         if (sampleIds == null || sampleIds.size() == 0) {
             throw new CatalogDBException("No matches found for query when attempting to remove permissions");

@@ -781,7 +781,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
     @Override
     public void removeAclsFromMember(Query query, List<String> members, @Nullable List<String> permissions) throws CatalogDBException {
         QueryResult<Cohort> cohortQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
-        List<Long> cohortIds = cohortQueryResult.getResult().stream().map(cohort -> cohort.getId()).collect(Collectors.toList());
+        List<Long> cohortIds = cohortQueryResult.getResult().stream().map(Cohort::getId).collect(Collectors.toList());
 
         if (cohortIds == null || cohortIds.size() == 0) {
             throw new CatalogDBException("No matches found for query when attempting to remove permissions");
