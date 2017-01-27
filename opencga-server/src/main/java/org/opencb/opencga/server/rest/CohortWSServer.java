@@ -276,8 +276,9 @@ public class CohortWSServer extends OpenCGAWSServer {
                                @QueryParam("samples") String samples) {
         try {
             long cohortId = cohortManager.getId(cohortStr, studyStr, sessionId).getResourceId();
+            query.remove(CohortDBAdaptor.QueryParams.STUDY.key());
             // TODO: Change queryOptions, queryOptions
-            return createOkResponse(catalogManager.modifyCohort(cohortId, queryOptions, queryOptions, sessionId));
+            return createOkResponse(catalogManager.modifyCohort(cohortId, query, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }    }
@@ -293,44 +294,6 @@ public class CohortWSServer extends OpenCGAWSServer {
         try {
             long cohortId = cohortManager.getId(cohortStr, studyStr, sessionId).getResourceId();
             return createOkResponse(catalogManager.modifyCohort(cohortId, new ObjectMap(params), queryOptions, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{cohorts}/stats")
-    @ApiOperation(value = "Cohort stats", position = 2)
-    public Response stats(@ApiParam(value = "Comma separated list of cohort names or ids", required = true)
-                              @PathParam("cohorts") String cohortIdsCsv,
-                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                @QueryParam("study") String studyStr,
-                          @ApiParam(value = "Calculate cohort stats [PENDING]", required = false)
-                          @QueryParam("calculate") boolean calculate,
-                          @ApiParam(value = "Delete stats [PENDING]", required = false) @QueryParam("delete") boolean delete,
-                          @ApiParam(value = "Log level", required = false) @QueryParam("log") String logLevel,
-                          @ApiParam(value = "Output directory", required = false) @QueryParam("outdirId") String outdirIdStr
-                          ) {
-        try {
-            List<Long> cohortIds = cohortManager.getIds(cohortIdsCsv, studyStr, sessionId).getResourceIds();
-            if (calculate) {
-//                VariantStorage variantStorage = new VariantStorage(catalogManager);
-//                Long outdirId = outdirIdStr == null ? null : catalogManager.getFileId(outdirIdStr, sessionId);
-//                queryOptions.put(ExecutorManager.EXECUTE, false);
-//                queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
-//                QueryResult<Job> jobQueryResult =
-//                        variantStorage.calculateStats(outdirId, cohortIds, sessionId, new QueryOptions(queryOptions));
-//                return createOkResponse(jobQueryResult);
-                throw new UnsupportedOperationException("[PENDING]. Use opencga-analysis.sh instead.");
-            } else if (delete) {
-                List<QueryResult<Cohort>> results = cohortManager.delete(cohortIdsCsv, studyStr, queryOptions, sessionId);
-                return createOkResponse(results);
-            } else {
-                long studyId = catalogManager.getStudyIdByCohortId(cohortIds.get(0));
-                return createOkResponse(catalogManager.getAllCohorts(studyId,
-                        new Query(CohortDBAdaptor.QueryParams.ID.key(), cohortIdsCsv), new QueryOptions(), sessionId).first());
-            }
-
         } catch (Exception e) {
             return createErrorResponse(e);
         }

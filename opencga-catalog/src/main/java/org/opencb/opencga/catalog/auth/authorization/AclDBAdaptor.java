@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.auth.authorization;
 
+import org.bson.conversions.Bson;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.acls.permissions.AbstractAclEntry;
 
@@ -34,7 +35,13 @@ public interface AclDBAdaptor<T extends AbstractAclEntry> {
      * @return the same Acl once it is properly registered.
      * @throws CatalogDBException if any problem occurs during the insertion.
      */
+    @Deprecated
     T createAcl(long resourceId, T acl) throws CatalogDBException;
+
+    // FIXME: Bson should be changed for something like (long id). We are doing this at this point because we only have one
+    // mongo implementation and we will need to create a new collection containing the permissions in order to clearly separate catalog
+    // stuff from the authorization stuff.
+    void setAcl(Bson bsonQuery, List<T> acl) throws CatalogDBException;
 
     /**
      * Retrieve the list of Acls for the list of members in the resource given.
@@ -72,6 +79,7 @@ public interface AclDBAdaptor<T extends AbstractAclEntry> {
      * @return the Acl with the changes applied.
      * @throws CatalogDBException if any problem occurs during the change of permissions.
      */
+    @Deprecated
     T setAclsToMember(long resourceId, String member, List<String> permissions) throws CatalogDBException;
 
     /**
@@ -83,7 +91,10 @@ public interface AclDBAdaptor<T extends AbstractAclEntry> {
      * @return the Acl with the changes applied.
      * @throws CatalogDBException if any problem occurs during the change of permissions.
      */
+    @Deprecated
     T addAclsToMember(long resourceId, String member, List<String> permissions) throws CatalogDBException;
+
+    void addAclsToMembers(List<Long> resourceIds, List<String> members, List<String> permissions) throws CatalogDBException;
 
     /**
      * Remove some member permissions.
@@ -94,5 +105,8 @@ public interface AclDBAdaptor<T extends AbstractAclEntry> {
      * @return the Acl with the changes applied.
      * @throws CatalogDBException if any problem occurs during the change of permissions.
      */
+    @Deprecated
     T removeAclsFromMember(long resourceId, String member, List<String> permissions) throws CatalogDBException;
+
+    void removeAclsFromMembers(List<Long> resourceIds, List<String> members, List<String> permissions) throws CatalogDBException;
 }

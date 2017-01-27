@@ -48,7 +48,6 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.FORCE;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.parseUser;
 
 /**
@@ -509,6 +508,23 @@ public class ProjectMongoDBAdaptor extends MongoDBAdaptor implements ProjectDBAd
         return endQuery("Update project", startTime, get(id, null));
     }
 
+    public void delete(long id) throws CatalogDBException {
+        Query query = new Query(QueryParams.ID.key(), id);
+
+        Document pull = new Document("$pull", new Document("projects", new Document("id", id)));
+        QueryResult<UpdateResult> update = userCollection.update(parseQuery(query), pull, null);
+
+        if (update.first().getModifiedCount() != 1) {
+            throw CatalogDBException.deleteError("Project " + id);
+        }
+    }
+
+    @Override
+    public void delete(Query query) throws CatalogDBException {
+        throw new NotImplementedException();
+    }
+
+    @Deprecated
     @Override
     public QueryResult<Project> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();

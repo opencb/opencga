@@ -16,17 +16,18 @@
 
 package org.opencb.opencga.catalog.auth.authorization;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.api.AclDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.FileManager;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.*;
 
@@ -143,98 +144,100 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkFilePermission(long fileId, String userId, FileAclEntry.FilePermissions permission) throws CatalogException {
-        checkFilePermission(fileId, userId, permission, null);
-    }
-
-    private void checkFilePermission(long fileId, String userId, FileAclEntry.FilePermissions permission,
-                                     StudyAuthenticationContext studyAuthenticationContext) throws CatalogException {
         long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
         if (isStudyOwner(studyId, userId)) {
             return;
         }
 
         FileAclEntry fileAcl = null;
-
         if (userId.equals(ADMIN)) {
             QueryResult<StudyAclEntry> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList(ADMIN));
             if (studyAclQueryResult.getNumResults() == 1) {
                 fileAcl = transformStudyAclToFileAcl(studyAclQueryResult.first());
             }
         } else {
-            if (studyAuthenticationContext == null) {
-                studyAuthenticationContext = new StudyAuthenticationContext(studyId);
-            }
-            fileAcl = resolveFilePermissions(fileId, userId, studyId, studyAuthenticationContext);
+            fileAcl = resolveFilePermissions(studyId, fileId, userId);
         }
-
 
         if (!fileAcl.getPermissions().contains(permission)) {
             throw CatalogAuthorizationException.deny(userId, permission.toString(), "File", fileId, null);
         }
     }
 
-    /**
-     * Obtains the file permissions of the userId.
-     *
-     * @param fileId file id.
-     * @param userId user id.
-     * @param studyId study id.
-     * @param studyAuthenticationContext Mini cache containing the map of path -> user -> permissions.
-     * @return fileAcl.
-     */
-    private FileAclEntry resolveFilePermissions(long fileId, String userId, long studyId,
-                                                StudyAuthenticationContext studyAuthenticationContext) throws CatalogException {
-        return resolveFilePermissions(fileDBAdaptor.get(fileId, FILE_INCLUDE_QUERY_OPTIONS).first(), userId, studyId,
-                studyAuthenticationContext);
+    private FileAclEntry resolveFilePermissions(long studyId, File file, String userId) throws CatalogException {
+        if (file.getAcl() == null) {
+            return resolveFilePermissions(studyId, file.getId(), userId);
+        } else {
+            String groupId = null;
+            if (!userId.equalsIgnoreCase(ANONYMOUS)) {
+                QueryResult<Group> group = getGroupBelonging(studyId, userId);
+                groupId = group.getNumResults() == 1 ? group.first().getName() : null;
+            }
+
+            Map<String, FileAclEntry> userAclMap = new HashMap<>();
+            for (FileAclEntry fileAcl : file.getAcl()) {
+                userAclMap.put(fileAcl.getMember(), fileAcl);
+            }
+            return resolveFilePermissions(studyId, userId, groupId, userAclMap);
+        }
     }
 
-    /**
-     * Obtains the file permissions of the userId.
-     *
-     * @param file
-     * @param userId
-     * @param studyId
-     * @param studyAuthenticationContext
-     * @return
-     * @throws CatalogException
-     */
-    private FileAclEntry resolveFilePermissions(File file, String userId, long studyId,
-                                                StudyAuthenticationContext studyAuthenticationContext) throws CatalogException {
+    private FileAclEntry resolveFilePermissions(long studyId, long fileId, String userId) throws CatalogException {
         String groupId = null;
         if (!userId.equalsIgnoreCase(ANONYMOUS)) {
             QueryResult<Group> group = getGroupBelonging(studyId, userId);
             groupId = group.getNumResults() == 1 ? group.first().getName() : null;
         }
 
-        // We obtain all the paths from our current position to the root folder
-        List<String> paths = FileManager.getParentPaths(file.getPath());
-        // We obtain a map with the permissions
-        Map<String, Map<String, FileAclEntry>> pathAclMap = getFileAcls(studyAuthenticationContext, userId, studyId, groupId, paths);
+        List<String> userIds = (groupId == null)
+                ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
+                : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
+        List<FileAclEntry> fileAclEntryList = fileDBAdaptor.getAcl(fileId, userIds).getResult();
 
-        FileAclEntry fileAcl = null;
-        for (int i = paths.size() - 1; i >= 0; i--) {
-            String path = paths.get(i);
-            if (pathAclMap.containsKey(path)) {
-                Map<String, FileAclEntry> aclMap = pathAclMap.get(path);
-                if (aclMap.get(userId) != null) {
-                    fileAcl = aclMap.get(userId);
-                } else if (aclMap.get(groupId) != null) {
-                    fileAcl = aclMap.get(groupId);
-                } else if (aclMap.get(OTHER_USERS_ID) != null) {
-                    fileAcl = aclMap.get(OTHER_USERS_ID);
-                }
-                if (fileAcl != null) {
-                    break;
-                }
+        Map<String, FileAclEntry> userAclMap = new HashMap<>();
+        for (FileAclEntry fileAclEntry : fileAclEntryList) {
+            userAclMap.put(fileAclEntry.getMember(), fileAclEntry);
+        }
+
+        return resolveFilePermissions(studyId, userId, groupId, userAclMap);
+    }
+
+    private FileAclEntry resolveFilePermissions(long studyId, String userId, String groupId, Map<String, FileAclEntry> userAclMap)
+            throws CatalogException {
+        if (userId.equals(ANONYMOUS)) {
+            if (userAclMap.containsKey(userId)) {
+                return userAclMap.get(userId);
+            } else {
+                return transformStudyAclToFileAcl(getStudyAclBelonging(studyId, userId, groupId));
             }
         }
 
-        if (fileAcl == null) {
-            StudyAclEntry studyAcl = getStudyAclBelonging(studyId, userId, groupId);
-            fileAcl = transformStudyAclToFileAcl(studyAcl);
+        // Registered user
+        EnumSet<FileAclEntry.FilePermissions> permissions = EnumSet.noneOf(FileAclEntry.FilePermissions.class);
+        boolean flagPermissionFound = false;
+
+        if (userAclMap.containsKey(userId)) {
+            permissions.addAll(userAclMap.get(userId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (StringUtils.isNotEmpty(groupId) && userAclMap.containsKey(groupId)) {
+            permissions.addAll(userAclMap.get(groupId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(ANONYMOUS)) {
+            permissions.addAll(userAclMap.get(ANONYMOUS).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(OTHER_USERS_ID)) {
+            permissions.addAll(userAclMap.get(OTHER_USERS_ID).getPermissions());
+            flagPermissionFound = true;
         }
 
-        return fileAcl;
+        if (flagPermissionFound) {
+            return new FileAclEntry(userId, permissions);
+        } else {
+            return transformStudyAclToFileAcl(getStudyAclBelonging(studyId, userId, groupId));
+        }
     }
 
     @Override
@@ -296,8 +299,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         List<String> userIds = (groupId == null)
-                ? Arrays.asList(userId, OTHER_USERS_ID)
-                : Arrays.asList(userId, groupId, OTHER_USERS_ID);
+                ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
+                : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
         List<SampleAclEntry> sampleAclList = sampleDBAdaptor.getAcl(sampleId, userIds).getResult();
 
         Map<String, SampleAclEntry> userAclMap = new HashMap<>();
@@ -310,12 +313,37 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private SampleAclEntry resolveSamplePermissions(long studyId, String userId, String groupId, Map<String, SampleAclEntry> userAclMap)
             throws CatalogException {
+        if (userId.equals(ANONYMOUS)) {
+            if (userAclMap.containsKey(userId)) {
+                return userAclMap.get(userId);
+            } else {
+                return transformStudyAclToSampleAcl(getStudyAclBelonging(studyId, userId, groupId));
+            }
+        }
+
+        // Registered user
+        EnumSet<SampleAclEntry.SamplePermissions> permissions = EnumSet.noneOf(SampleAclEntry.SamplePermissions.class);
+        boolean flagPermissionFound = false;
+
         if (userAclMap.containsKey(userId)) {
-            return userAclMap.get(userId);
-        } else if (groupId != null && userAclMap.containsKey(groupId)) {
-            return userAclMap.get(groupId);
-        } else if (userAclMap.containsKey(OTHER_USERS_ID)) {
-            return userAclMap.get(OTHER_USERS_ID);
+            permissions.addAll(userAclMap.get(userId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (StringUtils.isNotEmpty(groupId) && userAclMap.containsKey(groupId)) {
+            permissions.addAll(userAclMap.get(groupId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(ANONYMOUS)) {
+            permissions.addAll(userAclMap.get(ANONYMOUS).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(OTHER_USERS_ID)) {
+            permissions.addAll(userAclMap.get(OTHER_USERS_ID).getPermissions());
+            flagPermissionFound = true;
+        }
+
+        if (flagPermissionFound) {
+            return new SampleAclEntry(userId, permissions);
         } else {
             return transformStudyAclToSampleAcl(getStudyAclBelonging(studyId, userId, groupId));
         }
@@ -370,8 +398,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         List<String> userIds = (groupId == null)
-                ? Arrays.asList(userId, OTHER_USERS_ID)
-                : Arrays.asList(userId, groupId, OTHER_USERS_ID);
+                ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
+                : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
         List<IndividualAclEntry> individualAcls = individualDBAdaptor.getAcl(individualId, userIds).getResult();
 
         Map<String, IndividualAclEntry> userAclMap = new HashMap<>();
@@ -384,12 +412,37 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private IndividualAclEntry resolveIndividualPermissions(long studyId, String userId, String groupId, Map<String,
             IndividualAclEntry> userAclMap) throws CatalogException {
+        if (userId.equals(ANONYMOUS)) {
+            if (userAclMap.containsKey(userId)) {
+                return userAclMap.get(userId);
+            } else {
+                return transformStudyAclToIndividualAcl(getStudyAclBelonging(studyId, userId, groupId));
+            }
+        }
+
+        // Registered user
+        EnumSet<IndividualAclEntry.IndividualPermissions> permissions = EnumSet.noneOf(IndividualAclEntry.IndividualPermissions.class);
+        boolean flagPermissionFound = false;
+
         if (userAclMap.containsKey(userId)) {
-            return userAclMap.get(userId);
-        } else if (groupId != null && userAclMap.containsKey(groupId)) {
-            return userAclMap.get(groupId);
-        } else if (userAclMap.containsKey(OTHER_USERS_ID)) {
-            return userAclMap.get(OTHER_USERS_ID);
+            permissions.addAll(userAclMap.get(userId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (StringUtils.isNotEmpty(groupId) && userAclMap.containsKey(groupId)) {
+            permissions.addAll(userAclMap.get(groupId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(ANONYMOUS)) {
+            permissions.addAll(userAclMap.get(ANONYMOUS).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(OTHER_USERS_ID)) {
+            permissions.addAll(userAclMap.get(OTHER_USERS_ID).getPermissions());
+            flagPermissionFound = true;
+        }
+
+        if (flagPermissionFound) {
+            return new IndividualAclEntry(userId, permissions);
         } else {
             return transformStudyAclToIndividualAcl(getStudyAclBelonging(studyId, userId, groupId));
         }
@@ -444,8 +497,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         List<String> userIds = (groupId == null)
-                ? Arrays.asList(userId, OTHER_USERS_ID)
-                : Arrays.asList(userId, groupId, OTHER_USERS_ID);
+                ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
+                : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
         List<JobAclEntry> jobAcls = jobDBAdaptor.getAcl(jobId, userIds).getResult();
 
         Map<String, JobAclEntry> userAclMap = new HashMap<>();
@@ -458,12 +511,37 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private JobAclEntry resolveJobPermissions(long studyId, String userId, String groupId, Map<String, JobAclEntry> userAclMap)
             throws CatalogException {
+        if (userId.equals(ANONYMOUS)) {
+            if (userAclMap.containsKey(userId)) {
+                return userAclMap.get(userId);
+            } else {
+                return transformStudyAclToJobAcl(getStudyAclBelonging(studyId, userId, groupId));
+            }
+        }
+
+        // Registered user
+        EnumSet<JobAclEntry.JobPermissions> permissions = EnumSet.noneOf(JobAclEntry.JobPermissions.class);
+        boolean flagPermissionFound = false;
+
         if (userAclMap.containsKey(userId)) {
-            return userAclMap.get(userId);
-        } else if (groupId != null && userAclMap.containsKey(groupId)) {
-            return userAclMap.get(groupId);
-        } else if (userAclMap.containsKey(OTHER_USERS_ID)) {
-            return userAclMap.get(OTHER_USERS_ID);
+            permissions.addAll(userAclMap.get(userId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (StringUtils.isNotEmpty(groupId) && userAclMap.containsKey(groupId)) {
+            permissions.addAll(userAclMap.get(groupId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(ANONYMOUS)) {
+            permissions.addAll(userAclMap.get(ANONYMOUS).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(OTHER_USERS_ID)) {
+            permissions.addAll(userAclMap.get(OTHER_USERS_ID).getPermissions());
+            flagPermissionFound = true;
+        }
+
+        if (flagPermissionFound) {
+            return new JobAclEntry(userId, permissions);
         } else {
             return transformStudyAclToJobAcl(getStudyAclBelonging(studyId, userId, groupId));
         }
@@ -517,8 +595,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         List<String> userIds = (groupId == null)
-                ? Arrays.asList(userId, OTHER_USERS_ID)
-                : Arrays.asList(userId, groupId, OTHER_USERS_ID);
+                ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
+                : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
         List<CohortAclEntry> cohortAcls = cohortDBAdaptor.getAcl(cohortId, userIds).getResult();
 
         Map<String, CohortAclEntry> userAclMap = new HashMap<>();
@@ -531,12 +609,37 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private CohortAclEntry resolveCohortPermissions(long studyId, String userId, String groupId, Map<String, CohortAclEntry> userAclMap)
             throws CatalogException {
+        if (userId.equals(ANONYMOUS)) {
+            if (userAclMap.containsKey(userId)) {
+                return userAclMap.get(userId);
+            } else {
+                return transformStudyAclToCohortAcl(getStudyAclBelonging(studyId, userId, groupId));
+            }
+        }
+
+        // Registered user
+        EnumSet<CohortAclEntry.CohortPermissions> permissions = EnumSet.noneOf(CohortAclEntry.CohortPermissions.class);
+        boolean flagPermissionFound = false;
+
         if (userAclMap.containsKey(userId)) {
-            return userAclMap.get(userId);
-        } else if (groupId != null && userAclMap.containsKey(groupId)) {
-            return userAclMap.get(groupId);
-        } else if (userAclMap.containsKey(OTHER_USERS_ID)) {
-            return userAclMap.get(OTHER_USERS_ID);
+            permissions.addAll(userAclMap.get(userId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (StringUtils.isNotEmpty(groupId) && userAclMap.containsKey(groupId)) {
+            permissions.addAll(userAclMap.get(groupId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(ANONYMOUS)) {
+            permissions.addAll(userAclMap.get(ANONYMOUS).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(OTHER_USERS_ID)) {
+            permissions.addAll(userAclMap.get(OTHER_USERS_ID).getPermissions());
+            flagPermissionFound = true;
+        }
+
+        if (flagPermissionFound) {
+            return new CohortAclEntry(userId, permissions);
         } else {
             return transformStudyAclToCohortAcl(getStudyAclBelonging(studyId, userId, groupId));
         }
@@ -591,8 +694,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         List<String> userIds = (groupId == null)
-                ? Arrays.asList(userId, OTHER_USERS_ID)
-                : Arrays.asList(userId, groupId, OTHER_USERS_ID);
+                ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
+                : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
         List<DatasetAclEntry> datasetAcls = datasetDBAdaptor.getAcl(datasetId, userIds).getResult();
 
         Map<String, DatasetAclEntry> userAclMap = new HashMap<>();
@@ -605,12 +708,37 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private DatasetAclEntry resolveDatasetPermissions(long studyId, String userId, String groupId, Map<String, DatasetAclEntry> userAclMap)
             throws CatalogException {
+        if (userId.equals(ANONYMOUS)) {
+            if (userAclMap.containsKey(userId)) {
+                return userAclMap.get(userId);
+            } else {
+                return transformStudyAclToDatasetAcl(getStudyAclBelonging(studyId, userId, groupId));
+            }
+        }
+
+        // Registered user
+        EnumSet<DatasetAclEntry.DatasetPermissions> permissions = EnumSet.noneOf(DatasetAclEntry.DatasetPermissions.class);
+        boolean flagPermissionFound = false;
+
         if (userAclMap.containsKey(userId)) {
-            return userAclMap.get(userId);
-        } else if (groupId != null && userAclMap.containsKey(groupId)) {
-            return userAclMap.get(groupId);
-        } else if (userAclMap.containsKey(OTHER_USERS_ID)) {
-            return userAclMap.get(OTHER_USERS_ID);
+            permissions.addAll(userAclMap.get(userId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (StringUtils.isNotEmpty(groupId) && userAclMap.containsKey(groupId)) {
+            permissions.addAll(userAclMap.get(groupId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(ANONYMOUS)) {
+            permissions.addAll(userAclMap.get(ANONYMOUS).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(OTHER_USERS_ID)) {
+            permissions.addAll(userAclMap.get(OTHER_USERS_ID).getPermissions());
+            flagPermissionFound = true;
+        }
+
+        if (flagPermissionFound) {
+            return new DatasetAclEntry(userId, permissions);
         } else {
             return transformStudyAclToDatasetAcl(getStudyAclBelonging(studyId, userId, groupId));
         }
@@ -665,8 +793,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         List<String> userIds = (groupId == null)
-                ? Arrays.asList(userId, OTHER_USERS_ID)
-                : Arrays.asList(userId, groupId, OTHER_USERS_ID);
+                ? Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS)
+                : Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS);
         List<DiseasePanelAclEntry> panelAcls = panelDBAdaptor.getAcl(panelId, userIds).getResult();
 
         Map<String, DiseasePanelAclEntry> userAclMap = new HashMap<>();
@@ -679,12 +807,38 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private DiseasePanelAclEntry resolveDiseasePanelPermissions(long studyId, String userId, String groupId,
                                                                 Map<String, DiseasePanelAclEntry> userAclMap) throws CatalogException {
+        if (userId.equals(ANONYMOUS)) {
+            if (userAclMap.containsKey(userId)) {
+                return userAclMap.get(userId);
+            } else {
+                return transformStudyAclToDiseasePanelAcl(getStudyAclBelonging(studyId, userId, groupId));
+            }
+        }
+
+        // Registered user
+        EnumSet<DiseasePanelAclEntry.DiseasePanelPermissions> permissions =
+                EnumSet.noneOf(DiseasePanelAclEntry.DiseasePanelPermissions.class);
+        boolean flagPermissionFound = false;
+
         if (userAclMap.containsKey(userId)) {
-            return userAclMap.get(userId);
-        } else if (groupId != null && userAclMap.containsKey(groupId)) {
-            return userAclMap.get(groupId);
-        } else if (userAclMap.containsKey(OTHER_USERS_ID)) {
-            return userAclMap.get(OTHER_USERS_ID);
+            permissions.addAll(userAclMap.get(userId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (StringUtils.isNotEmpty(groupId) && userAclMap.containsKey(groupId)) {
+            permissions.addAll(userAclMap.get(groupId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(ANONYMOUS)) {
+            permissions.addAll(userAclMap.get(ANONYMOUS).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(OTHER_USERS_ID)) {
+            permissions.addAll(userAclMap.get(OTHER_USERS_ID).getPermissions());
+            flagPermissionFound = true;
+        }
+
+        if (flagPermissionFound) {
+            return new DiseasePanelAclEntry(userId, permissions);
         } else {
             return transformStudyAclToDiseasePanelAcl(getStudyAclBelonging(studyId, userId, groupId));
         }
@@ -728,8 +882,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 studyIt.remove();
                 continue;
             }
-            StudyAuthenticationContext studyAuthenticationContext = new StudyAuthenticationContext(study.getId());
-            filterFiles(userId, study.getId(), study.getFiles(), studyAuthenticationContext);
+            filterFiles(userId, study.getId(), study.getFiles());
             filterSamples(userId, study.getId(), study.getSamples());
             filterJobs(userId, study.getId(), study.getJobs());
             filterCohorts(userId, study.getId(), study.getCohorts());
@@ -740,11 +893,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void filterFiles(String userId, long studyId, List<File> files) throws CatalogException {
-        filterFiles(userId, studyId, files, new StudyAuthenticationContext(studyId));
-    }
-
-    private void filterFiles(String userId, long studyId, List<File> files, StudyAuthenticationContext studyAuthenticationContext)
-            throws CatalogException {
         if (files == null || files.isEmpty()) {
             return;
         }
@@ -755,12 +903,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
 
-//        getFileAcls(studyAuthenticationContext, userId, files);
-
         Iterator<File> fileIt = files.iterator();
         while (fileIt.hasNext()) {
             File file = fileIt.next();
-            FileAclEntry fileAcl = resolveFilePermissions(file, userId, studyId, studyAuthenticationContext);
+            FileAclEntry fileAcl = resolveFilePermissions(studyId, file, userId);
             if (!fileAcl.getPermissions().contains(FileAclEntry.FilePermissions.VIEW)) {
                 fileIt.remove();
             }
@@ -937,7 +1083,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public QueryResult<StudyAclEntry> getAllStudyAcls(String userId, long studyId) throws CatalogException {
         studyDBAdaptor.checkId(studyId);
-        checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
+//        checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
 
         Query query = new Query(StudyDBAdaptor.QueryParams.ID.key(), studyId);
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, StudyDBAdaptor.QueryParams.ACL.key());
@@ -1020,6 +1166,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public QueryResult<StudyAclEntry> updateStudyAcl(String userId, long studyId, String member, @Nullable String addPermissions,
                                                      @Nullable String removePermissions, @Nullable String setPermissions)
             throws CatalogException {
+        checkUpdateParams(addPermissions, removePermissions, setPermissions);
+
         studyDBAdaptor.checkId(studyId);
         checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
         checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.SHARE_STUDY);
@@ -1104,7 +1252,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public QueryResult<SampleAclEntry> getAllSampleAcls(String userId, long sampleId) throws CatalogException {
         sampleDBAdaptor.checkId(sampleId);
         // Check if the userId has proper permissions for all the samples.
-        checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.SHARE);
+//        checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.SHARE);
 
         // Obtain the Acls
         Query query = new Query(SampleDBAdaptor.QueryParams.ID.key(), sampleId);
@@ -1157,7 +1305,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
 
-        return sampleDBAdaptor.getAcl(studyId, members);
+        return sampleDBAdaptor.getAcl(sampleId, members);
     }
 
     @Override
@@ -1185,6 +1333,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public QueryResult<SampleAclEntry> updateSampleAcl(String userId, long sampleId, String member, @Nullable String addPermissions,
                                                        @Nullable String removePermissions, @Nullable String setPermissions)
             throws CatalogException {
+        checkUpdateParams(addPermissions, removePermissions, setPermissions);
+
         sampleDBAdaptor.checkId(sampleId);
         checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.SHARE);
 
@@ -1230,15 +1380,17 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<FileAclEntry> createFileAcls(String userId, long fileId, List<String> members, List<String> permissions)
-            throws CatalogException {
-        fileDBAdaptor.checkId(fileId);
+    public List<QueryResult<FileAclEntry>> createFileAcls(AbstractManager.MyResourceIds resourceIds, List<String> members,
+                                                          List<String> permissions) throws CatalogException {
+        checkPermissions(permissions, FileAclEntry.FilePermissions::valueOf);
 
-        // Check if the userId has proper permissions for all the files.
-        checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.SHARE);
+        String userId = resourceIds.getUser();
+        long studyId = resourceIds.getStudyId();
 
-        // Check if all the members have a permission already set at the study level.
-        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
+        // Check all the members are valid members
+        checkMembers(dbAdaptorFactory, studyId, members);
+
+        // Check that all the members have permissions defined at the study level
         for (String member : members) {
             if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
                 throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
@@ -1246,33 +1398,117 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
 
-        // Check all the members exist in all the possible different studies
-        checkMembers(dbAdaptorFactory, studyId, members);
+        List<QueryResult<FileAclEntry>> retQueryResultList = new ArrayList<>(resourceIds.getResourceIds().size());
 
-        // Check if any of the members already have permissions set in the file
-        if (anyMemberHasPermissions(studyId, fileId, members, fileDBAdaptor)) {
-            throw new CatalogException("Cannot create ACL. At least one of the members already have some permissions set for this "
-                    + "particular file. Please, use update instead.");
-        }
-
-        // Set the permissions
-        int timeSpent = 0;
-        List<FileAclEntry> fileAclList = new ArrayList<>(members.size());
+        // We create the list of permissions
+        List<FileAclEntry> fileAclEntryList = new ArrayList<>(permissions.size());
         for (String member : members) {
-            FileAclEntry fileAcl = new FileAclEntry(member, permissions);
-            QueryResult<FileAclEntry> fileAclQueryResult = fileDBAdaptor.createAcl(fileId, fileAcl);
-            timeSpent += fileAclQueryResult.getDbTime();
-            fileAclList.add(fileAclQueryResult.first());
+            fileAclEntryList.add(new FileAclEntry(member, permissions));
         }
 
-        return new QueryResult<>("create file acl", timeSpent, fileAclList.size(), fileAclList.size(), "", "", fileAclList);
+        for (Long fileId : resourceIds.getResourceIds()) {
+            try {
+                // Check if the userId has proper permissions for all the files.
+                checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.SHARE);
+
+                // Check if any of the members already have permissions set in the file
+                if (anyMemberHasPermissions(studyId, fileId, members, fileDBAdaptor)) {
+                    throw new CatalogException("Cannot create ACL. At least one of the members already have some permissions set for this "
+                            + "particular file. Please, use update instead.");
+                }
+
+                QueryResult<File> fileQueryResult = fileDBAdaptor.get(fileId, new QueryOptions(QueryOptions.INCLUDE,
+                        Arrays.asList(FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.TYPE.key())));
+                if (fileQueryResult.getNumResults() != 1) {
+                    throw new CatalogException("An unexpected error occured. File " + fileId + " not found when trying to create new ACLs");
+                }
+
+                // We create those ACLs for the whole path contained (propagate the acls in case of a directory)
+                Query query = new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                if (fileQueryResult.first().getType().equals(File.Type.FILE)) {
+                    query.append(FileDBAdaptor.QueryParams.ID.key(), fileId);
+                } else {
+                    query.append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + fileQueryResult.first().getPath());
+                }
+
+                fileDBAdaptor.createAcl(query, fileAclEntryList);
+
+                QueryResult<FileAclEntry> aclEntryQueryResult = fileDBAdaptor.getAcl(fileId, members);
+                aclEntryQueryResult.setId("Create file ACLs");
+                retQueryResultList.add(aclEntryQueryResult);
+
+            } catch (CatalogException e) {
+                QueryResult<FileAclEntry> queryResult = new QueryResult<>();
+                queryResult.setErrorMsg(e.getMessage());
+                queryResult.setId("Create file ACLs");
+
+                retQueryResultList.add(queryResult);
+            }
+        }
+
+        return retQueryResultList;
     }
+
+//    @Override
+//    public List<QueryResult<FileAclEntry>> createFileAcls(AbstractManager.MyResourceIds resourceIds, List<String> members,
+//                                                          List<String> permissions) throws CatalogException {
+//        String userId = resourceIds.getUser();
+//        long studyId = resourceIds.getStudyId();
+//
+//        // Check all the members are valid members
+//        checkMembers(dbAdaptorFactory, studyId, members);
+//
+//        // Check that all the members have permissions defined at the study level
+//        for (String member : members) {
+//            if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
+//                throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
+//                        + "defined for that member.");
+//            }
+//        }
+//
+//        List<QueryResult<FileAclEntry>> retQueryResultList = new ArrayList<>(members.size());
+//
+//        for (Long fileId : resourceIds.getResourceIds()) {
+//            try {
+//                // Check if the userId has proper permissions for all the files.
+//                checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.SHARE);
+//
+//                // Check if any of the members already have permissions set in the file
+//                if (anyMemberHasPermissions(studyId, fileId, members, fileDBAdaptor)) {
+//                    throw new CatalogException("Cannot create ACL. At least one of the members already have some permissions set for this"
+//                            + " particular file. Please, use update instead.");
+//                }
+//
+//                // Set the permissions
+//                int timeSpent = 0;
+//                List<FileAclEntry> fileAclList = new ArrayList<>(members.size());
+//                for (String member : members) {
+//                    FileAclEntry fileAcl = new FileAclEntry(member, permissions);
+//                    QueryResult<FileAclEntry> fileAclQueryResult = fileDBAdaptor.setAcl(fileId, fileAcl);
+//                    timeSpent += fileAclQueryResult.getDbTime();
+//                    fileAclList.add(fileAclQueryResult.first());
+//                }
+//
+//                retQueryResultList.add(
+//                        new QueryResult<>("Create file ACL", timeSpent, fileAclList.size(), fileAclList.size(), "", "", fileAclList));
+//
+//            } catch (CatalogException e) {
+//                QueryResult<FileAclEntry> queryResult = new QueryResult<>();
+//                queryResult.setErrorMsg(e.getMessage());
+//                queryResult.setId("Create file ACL");
+//
+//                retQueryResultList.add(queryResult);
+//            }
+//        }
+//
+//        return retQueryResultList;
+//    }
 
     @Override
     public QueryResult<FileAclEntry> getAllFileAcls(String userId, long fileId) throws CatalogException {
         fileDBAdaptor.checkId(fileId);
         // Check if the userId has proper permissions for all the samples.
-        checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.SHARE);
+//        checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.SHARE);
 
         // Obtain the Acls
         Query query = new Query(FileDBAdaptor.QueryParams.ID.key(), fileId);
@@ -1329,83 +1565,146 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<FileAclEntry> removeFileAcl(String userId, long fileId, String member) throws CatalogException {
-        fileDBAdaptor.checkId(fileId);
-        checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.SHARE);
+    public List<QueryResult<FileAclEntry>> removeFileAcls(AbstractManager.MyResourceIds resources, List<String> members)
+            throws CatalogException {
+        // Check the member is valid
+        checkMembers(dbAdaptorFactory, resources.getStudyId(), members);
 
-        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
-        checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
+        List<QueryResult<FileAclEntry>> retQueryResultList = new ArrayList<>(resources.getResourceIds().size());
+        for (Long fileId : resources.getResourceIds()) {
+            try {
+                // Check if the userId has proper permissions for all the files.
+                checkFilePermission(fileId, resources.getUser(), FileAclEntry.FilePermissions.SHARE);
 
-        // Obtain the ACLs the member had
-        QueryResult<FileAclEntry> fileAcl = fileDBAdaptor.getAcl(fileId, Arrays.asList(member));
-        if (fileAcl == null || fileAcl.getNumResults() == 0) {
-            throw new CatalogException("Could not remove the ACLs for " + member + ". It seems " + member + " did not have any ACLs "
-                    + "defined");
+                QueryResult<FileAclEntry> aclEntryQueryResult = fileDBAdaptor.getAcl(fileId, members);
+
+                QueryResult<File> fileQueryResult = fileDBAdaptor.get(fileId, new QueryOptions(QueryOptions.INCLUDE,
+                        Arrays.asList(FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.TYPE.key())));
+                if (fileQueryResult.getNumResults() != 1) {
+                    throw new CatalogException("An unexpected error occured. File " + fileId + " not found when trying to delete the ACLs");
+                }
+
+                // We delete those ACLs for the whole path contained (propagate the acls in case of a directory)
+                Query query = new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId());
+                if (fileQueryResult.first().getType().equals(File.Type.FILE)) {
+                    query.append(FileDBAdaptor.QueryParams.ID.key(), fileId);
+                } else {
+                    query.append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + fileQueryResult.first().getPath());
+                }
+
+                fileDBAdaptor.removeAclsFromMember(query, members, null);
+
+                aclEntryQueryResult.setId("Remove file ACLs");
+                retQueryResultList.add(aclEntryQueryResult);
+            } catch (CatalogException e) {
+                QueryResult<FileAclEntry> queryResult = new QueryResult<>();
+                queryResult.setErrorMsg(e.getMessage());
+                queryResult.setId("Remove file ACLs");
+
+                retQueryResultList.add(queryResult);
+            }
         }
 
-        fileDBAdaptor.removeAcl(fileId, member);
-
-        fileAcl.setId("Remove file ACLs");
-        return fileAcl;
+        return retQueryResultList;
     }
 
     @Override
-    public QueryResult<FileAclEntry> updateFileAcl(String userId, long fileId, String member, @Nullable String addPermissions,
-                                                   @Nullable String removePermissions, @Nullable String setPermissions)
-            throws CatalogException {
-        fileDBAdaptor.checkId(fileId);
-        checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.SHARE);
+    public List<QueryResult<FileAclEntry>> updateFileAcl(AbstractManager.MyResourceIds resources, String member,
+                                                         @Nullable String addPermissions, @Nullable String removePermissions,
+                                                         @Nullable String setPermissions) throws CatalogException {
+        checkUpdateParams(addPermissions, removePermissions, setPermissions);
 
-        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
-        checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
-
-        // Check that the member has permissions
-        Query query = new Query()
-                .append(FileDBAdaptor.QueryParams.ID.key(), fileId)
-                .append(FileDBAdaptor.QueryParams.ACL_MEMBER.key(), member);
-        QueryResult<Long> count = fileDBAdaptor.count(query);
-        if (count == null || count.first() == 0) {
-            throw new CatalogException("Could not update ACLs for " + member + ". It seems the member does not have any permissions set "
-                    + "yet.");
-        }
+        // Check the member is valid
+        checkMembers(dbAdaptorFactory, resources.getStudyId(), Arrays.asList(member));
 
         List<String> permissions;
         if (setPermissions != null) {
-            permissions = Arrays.asList(setPermissions.split(","));
+            permissions = Arrays.asList(StringUtils.split(setPermissions, ","));
             // Check if the permissions are correct
             checkPermissions(permissions, FileAclEntry.FilePermissions::valueOf);
-
-            fileDBAdaptor.setAclsToMember(fileId, member, permissions);
         } else {
             if (addPermissions != null) {
-                permissions = Arrays.asList(addPermissions.split(","));
+                permissions = Arrays.asList(StringUtils.split(addPermissions, ","));
                 // Check if the permissions are correct
                 checkPermissions(permissions, FileAclEntry.FilePermissions::valueOf);
-
-                fileDBAdaptor.addAclsToMember(fileId, member, permissions);
-            }
-
-            if (removePermissions != null) {
-                permissions = Arrays.asList(removePermissions.split(","));
+            } else if (removePermissions != null) {
+                permissions = Arrays.asList(StringUtils.split(removePermissions, ","));
                 // Check if the permissions are correct
                 checkPermissions(permissions, FileAclEntry.FilePermissions::valueOf);
-
-                fileDBAdaptor.removeAclsFromMember(fileId, member, permissions);
+            } else {
+                throw new CatalogException("No permissions given to be added, removed or set");
             }
         }
 
-        return fileDBAdaptor.getAcl(fileId, Arrays.asList(member));
+        List<QueryResult<FileAclEntry>> retQueryResultList = new ArrayList<>(resources.getResourceIds().size());
+        for (Long fileId : resources.getResourceIds()) {
+            try {
+                checkFilePermission(fileId, resources.getUser(), FileAclEntry.FilePermissions.SHARE);
+
+                // Check that the member has permissions in the file
+                Query query = new Query()
+                        .append(FileDBAdaptor.QueryParams.ID.key(), fileId)
+                        .append(FileDBAdaptor.QueryParams.ACL_MEMBER.key(), member);
+                QueryResult<Long> count = fileDBAdaptor.count(query);
+                if (count == null || count.first() == 0) {
+                    throw new CatalogException("Could not update ACLs for " + member + ". It seems the member does not have any "
+                            + "permissions set yet.");
+                }
+
+                // We create the query to update just the file acl in case of a file or all the files and folders within the folder in other
+                // case
+                QueryResult<File> fileQueryResult = fileDBAdaptor.get(fileId, new QueryOptions(QueryOptions.INCLUDE,
+                        Arrays.asList(FileDBAdaptor.QueryParams.PATH.key(), FileDBAdaptor.QueryParams.TYPE.key())));
+                if (fileQueryResult.getNumResults() != 1) {
+                    throw new CatalogException("An unexpected error occured. File " + fileId + " not found when trying to create new ACLs");
+                }
+
+                // We create those ACLs for the whole path contained (propagate the acls in case of a directory)
+                query = new Query(FileDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId());
+                if (fileQueryResult.first().getType().equals(File.Type.FILE)) {
+                    query.append(FileDBAdaptor.QueryParams.ID.key(), fileId);
+                } else {
+                    query.append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + fileQueryResult.first().getPath());
+                }
+
+                // Update
+                if (setPermissions != null) {
+                    FileAclEntry fileAclEntry = new FileAclEntry(member, permissions);
+                    fileDBAdaptor.createAcl(query, Arrays.asList(fileAclEntry));
+                } else if (addPermissions != null) {
+                    fileDBAdaptor.addAclsToMember(query, Arrays.asList(member), permissions);
+                } else {
+                    fileDBAdaptor.removeAclsFromMember(query, Arrays.asList(member), permissions);
+                }
+
+                QueryResult<FileAclEntry> aclEntryQueryResult = fileDBAdaptor.getAcl(fileId, member);
+                aclEntryQueryResult.setId("Update file ACLs");
+                retQueryResultList.add(aclEntryQueryResult);
+
+            } catch (CatalogException e) {
+                QueryResult<FileAclEntry> queryResult = new QueryResult<>();
+                queryResult.setErrorMsg(e.getMessage());
+                queryResult.setId("Update file ACLs");
+
+                retQueryResultList.add(queryResult);
+            }
+        }
+
+        return retQueryResultList;
     }
 
     @Override
-    public QueryResult<IndividualAclEntry> createIndividualAcls(String userId, long individualId, List<String> members,
-                                                                List<String> permissions) throws CatalogException {
-        individualDBAdaptor.checkId(individualId);
-        // Check if the userId has proper permissions for all the samples.
-        checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.SHARE);
+    public List<QueryResult<IndividualAclEntry>> createIndividualAcls(AbstractManager.MyResourceIds resourceIds, List<String> members,
+                                                                      List<String> permissions) throws CatalogException {
+        checkPermissions(permissions, IndividualAclEntry.IndividualPermissions::valueOf);
 
-        // Check if all the members have a permission already set at the study level.
-        long studyId = individualDBAdaptor.getStudyId(individualId);
+        String userId = resourceIds.getUser();
+        long studyId = resourceIds.getStudyId();
+
+        // Check all the members are valid members
+        checkMembers(dbAdaptorFactory, studyId, members);
+
+        // Check that all the members have permissions defined at the study level
         for (String member : members) {
             if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
                 throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
@@ -1413,34 +1712,69 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
 
-        // Check all the members exist in all the possible different studies
-        checkMembers(dbAdaptorFactory, studyId, members);
+        List<QueryResult<IndividualAclEntry>> retQueryResultList = new ArrayList<>(resourceIds.getResourceIds().size());
 
-        // Check if any of the members already have permissions set in the individual
-        if (anyMemberHasPermissions(studyId, individualId, members, individualDBAdaptor)) {
-            throw new CatalogException("Cannot create ACL. At least one of the members already have some permissions set for this "
-                    + "particular individual. Please, use update instead.");
-        }
-
-        // Set the permissions
-        int timeSpent = 0;
-        List<IndividualAclEntry> individualAclList = new ArrayList<>(members.size());
+        // We create the list of permissions
+        List<IndividualAclEntry> individualAclEntryList = new ArrayList<>(permissions.size());
         for (String member : members) {
-            IndividualAclEntry individualAcl = new IndividualAclEntry(member, permissions);
-            QueryResult<IndividualAclEntry> individualAclQueryResult = individualDBAdaptor.createAcl(individualId, individualAcl);
-            timeSpent += individualAclQueryResult.getDbTime();
-            individualAclList.add(individualAclQueryResult.first());
+            individualAclEntryList.add(new IndividualAclEntry(member, permissions));
         }
 
-        return new QueryResult<>("create individual acl", timeSpent, individualAclList.size(), individualAclList.size(), "", "",
-                individualAclList);
+        for (Long individualId : resourceIds.getResourceIds()) {
+            try {
+                // Check if the userId has proper permissions for all the files.
+                checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.SHARE);
+
+                // Check if any of the members already have permissions set in the file
+                if (anyMemberHasPermissions(studyId, individualId, members, individualDBAdaptor)) {
+                    throw new CatalogException("Cannot create ACL. At least one of the members already have some permissions set for this "
+                            + "particular cohort. Please, use update instead.");
+                }
+
+                Query query = new Query()
+                        .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(CohortDBAdaptor.QueryParams.ID.key(), individualId);
+                individualDBAdaptor.createAcl(query, individualAclEntryList);
+
+                // Look for all the samples belonging to the individual
+                query = new Query()
+                        .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
+                QueryResult<Sample> sampleQueryResult =
+                        sampleDBAdaptor.get(query, new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key()));
+
+                // If the individual contains samples, we propagate the permissions to all the samples
+                if (sampleQueryResult != null && sampleQueryResult.getResult() != null && sampleQueryResult.getNumResults() > 0) {
+                    List<Long> sampleIds =
+                            sampleQueryResult.getResult().stream().map(sample -> sample.getId()).collect(Collectors.toList());
+                    query = new Query()
+                            .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                            .append(SampleDBAdaptor.QueryParams.ID.key(), sampleIds);
+
+                    sampleDBAdaptor.addAclsToMember(query, members, permissions);
+                }
+
+                QueryResult<IndividualAclEntry> aclEntryQueryResult = individualDBAdaptor.getAcl(individualId, members);
+                aclEntryQueryResult.setId("Create individual ACLs");
+                retQueryResultList.add(aclEntryQueryResult);
+
+            } catch (CatalogException e) {
+                QueryResult<IndividualAclEntry> queryResult = new QueryResult<>();
+                queryResult.setErrorMsg(e.getMessage());
+                queryResult.setId("Create individual ACLs");
+
+                retQueryResultList.add(queryResult);
+            }
+        }
+
+        return retQueryResultList;
     }
 
     @Override
     public QueryResult<IndividualAclEntry> getAllIndividualAcls(String userId, long individualId) throws CatalogException {
         individualDBAdaptor.checkId(individualId);
         // Check if the userId has proper permissions for all the individuals.
-        checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.SHARE);
+//        checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.SHARE);
 
         // Obtain the Acls
         Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), individualId);
@@ -1521,6 +1855,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public QueryResult<IndividualAclEntry> updateIndividualAcl(String userId, long individualId, String member,
                                                                @Nullable String addPermissions, @Nullable String removePermissions,
                                                                @Nullable String setPermissions) throws CatalogException {
+        checkUpdateParams(addPermissions, removePermissions, setPermissions);
+
         individualDBAdaptor.checkId(individualId);
         checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.SHARE);
 
@@ -1566,14 +1902,17 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<CohortAclEntry> createCohortAcls(String userId, long cohortId, List<String> members, List<String> permissions)
-            throws CatalogException {
-        cohortDBAdaptor.checkId(cohortId);
-        // Check if the userId has proper permissions for all the cohorts.
-        checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.SHARE);
+    public List<QueryResult<CohortAclEntry>> createCohortAcls(AbstractManager.MyResourceIds resourceIds, List<String> members,
+                                                              List<String> permissions) throws CatalogException {
+        checkPermissions(permissions, CohortAclEntry.CohortPermissions::valueOf);
 
-        // Check if all the members have a permission already set at the study level.
-        long studyId = cohortDBAdaptor.getStudyId(cohortId);
+        String userId = resourceIds.getUser();
+        long studyId = resourceIds.getStudyId();
+
+        // Check all the members are valid members
+        checkMembers(dbAdaptorFactory, studyId, members);
+
+        // Check that all the members have permissions defined at the study level
         for (String member : members) {
             if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
                 throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
@@ -1581,33 +1920,64 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
 
-        // Check all the members exist in all the possible different studies
-        checkMembers(dbAdaptorFactory, studyId, members);
+        List<QueryResult<CohortAclEntry>> retQueryResultList = new ArrayList<>(resourceIds.getResourceIds().size());
 
-        // Check if any of the members already have permissions set in the file
-        if (anyMemberHasPermissions(studyId, cohortId, members, cohortDBAdaptor)) {
-            throw new CatalogException("Cannot create ACL. At least one of the members already have some permissions set for this "
-                    + "particular cohort. Please, use update instead.");
-        }
-
-        // Set the permissions
-        int timeSpent = 0;
-        List<CohortAclEntry> cohortAclList = new ArrayList<>(members.size());
+        // We create the list of permissions
+        List<CohortAclEntry> cohortAclEntryList = new ArrayList<>(permissions.size());
         for (String member : members) {
-            CohortAclEntry cohortAcl = new CohortAclEntry(member, permissions);
-            QueryResult<CohortAclEntry> cohortAclQueryResult = cohortDBAdaptor.createAcl(cohortId, cohortAcl);
-            timeSpent += cohortAclQueryResult.getDbTime();
-            cohortAclList.add(cohortAclQueryResult.first());
+            cohortAclEntryList.add(new CohortAclEntry(member, permissions));
         }
 
-        return new QueryResult<>("create cohort acl", timeSpent, cohortAclList.size(), cohortAclList.size(), "", "", cohortAclList);
+        for (Long cohortId : resourceIds.getResourceIds()) {
+            try {
+                // Check if the userId has proper permissions for all the files.
+                checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.SHARE);
+
+                // Check if any of the members already have permissions set in the file
+                if (anyMemberHasPermissions(studyId, cohortId, members, cohortDBAdaptor)) {
+                    throw new CatalogException("Cannot create ACL. At least one of the members already have some permissions set for this "
+                            + "particular cohort. Please, use update instead.");
+                }
+
+                Query query = new Query()
+                        .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(CohortDBAdaptor.QueryParams.ID.key(), cohortId);
+                cohortDBAdaptor.createAcl(query, cohortAclEntryList);
+
+                QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(cohortId,
+                        new QueryOptions(QueryOptions.INCLUDE, CohortDBAdaptor.QueryParams.SAMPLES.key()));
+
+                // If the cohort contains samples, we propagate the permissions to all the samples
+                if (cohortQueryResult != null && cohortQueryResult.getResult() != null && cohortQueryResult.getNumResults() == 1
+                        && cohortQueryResult.first().getSamples() != null && cohortQueryResult.first().getSamples().size() > 0) {
+                    query = new Query()
+                            .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                            .append(SampleDBAdaptor.QueryParams.ID.key(), cohortQueryResult.first().getSamples());
+
+                    sampleDBAdaptor.addAclsToMember(query, members, permissions);
+                }
+
+                QueryResult<CohortAclEntry> aclEntryQueryResult = cohortDBAdaptor.getAcl(cohortId, members);
+                aclEntryQueryResult.setId("Create cohort ACLs");
+                retQueryResultList.add(aclEntryQueryResult);
+
+            } catch (CatalogException e) {
+                QueryResult<CohortAclEntry> queryResult = new QueryResult<>();
+                queryResult.setErrorMsg(e.getMessage());
+                queryResult.setId("Create cohort ACLs");
+
+                retQueryResultList.add(queryResult);
+            }
+        }
+
+        return retQueryResultList;
     }
 
     @Override
     public QueryResult<CohortAclEntry> getAllCohortAcls(String userId, long cohortId) throws CatalogException {
         cohortDBAdaptor.checkId(cohortId);
         // Check if the userId has proper permissions for all the cohorts.
-        checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.SHARE);
+//        checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.SHARE);
 
         // Obtain the Acls
         Query query = new Query(CohortDBAdaptor.QueryParams.ID.key(), cohortId);
@@ -1688,6 +2058,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public QueryResult<CohortAclEntry> updateCohortAcl(String userId, long cohortId, String member, @Nullable String addPermissions,
                                                        @Nullable String removePermissions, @Nullable String setPermissions)
             throws CatalogException {
+        checkUpdateParams(addPermissions, removePermissions, setPermissions);
+
         cohortDBAdaptor.checkId(cohortId);
         checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.SHARE);
 
@@ -1730,6 +2102,20 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         return cohortDBAdaptor.getAcl(cohortId, Arrays.asList(member));
+    }
+
+    private void checkUpdateParams(@Nullable String addPermissions, @Nullable String removePermissions, @Nullable String setPermissions)
+            throws CatalogException {
+        int cont = 0;
+        cont += addPermissions != null ? 1 : 0;
+        cont += removePermissions != null ? 1 : 0;
+        cont += setPermissions != null ? 1 : 0;
+
+        if (cont == 0) {
+            throw new CatalogException("No permissions to be added, removed or set");
+        } else if (cont > 1) {
+            throw new CatalogException("More than one action to be performed found. Please, select just one.");
+        }
     }
 
     @Override
@@ -1775,7 +2161,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public QueryResult<DatasetAclEntry> getAllDatasetAcls(String userId, long datasetId) throws CatalogException {
         datasetDBAdaptor.checkId(datasetId);
         // Check if the userId has proper permissions for all the datasets.
-        checkDatasetPermission(datasetId, userId, DatasetAclEntry.DatasetPermissions.SHARE);
+//        checkDatasetPermission(datasetId, userId, DatasetAclEntry.DatasetPermissions.SHARE);
 
         // Obtain the Acls
         Query query = new Query(DatasetDBAdaptor.QueryParams.ID.key(), datasetId);
@@ -1856,6 +2242,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public QueryResult<DatasetAclEntry> updateDatasetAcl(String userId, long datasetId, String member, @Nullable String addPermissions,
                                                          @Nullable String removePermissions, @Nullable String setPermissions)
             throws CatalogException {
+        checkUpdateParams(addPermissions, removePermissions, setPermissions);
+
         datasetDBAdaptor.checkId(datasetId);
         checkDatasetPermission(datasetId, userId, DatasetAclEntry.DatasetPermissions.SHARE);
 
@@ -1942,7 +2330,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public QueryResult<JobAclEntry> getAllJobAcls(String userId, long jobId) throws CatalogException {
         jobDBAdaptor.checkId(jobId);
         // Check if the userId has proper permissions for all the jobs.
-        checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.SHARE);
+//        checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.SHARE);
 
         // Obtain the Acls
         Query query = new Query(JobDBAdaptor.QueryParams.ID.key(), jobId);
@@ -2023,6 +2411,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public QueryResult<JobAclEntry> updateJobAcl(String userId, long jobId, String member, @Nullable String addPermissions,
                                                  @Nullable String removePermissions, @Nullable String setPermissions)
             throws CatalogException {
+        checkUpdateParams(addPermissions, removePermissions, setPermissions);
+
         jobDBAdaptor.checkId(jobId);
         checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.SHARE);
 
@@ -2112,7 +2502,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public QueryResult<DiseasePanelAclEntry> getAllPanelAcls(String userId, long panelId) throws CatalogException {
         panelDBAdaptor.checkId(panelId);
         // Check if the userId has proper permissions for all the panels.
-        checkDiseasePanelPermission(panelId, userId, DiseasePanelAclEntry.DiseasePanelPermissions.SHARE);
+//        checkDiseasePanelPermission(panelId, userId, DiseasePanelAclEntry.DiseasePanelPermissions.SHARE);
 
         // Obtain the Acls
         Query query = new Query(PanelDBAdaptor.QueryParams.ID.key(), panelId);
@@ -2193,6 +2583,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public QueryResult<DiseasePanelAclEntry> updatePanelAcl(String userId, long panelId, String member, @Nullable String addPermissions,
                                                             @Nullable String removePermissions, @Nullable String setPermissions)
             throws CatalogException {
+        checkUpdateParams(addPermissions, removePermissions, setPermissions);
+
         panelDBAdaptor.checkId(panelId);
         checkDiseasePanelPermission(panelId, userId, DiseasePanelAclEntry.DiseasePanelPermissions.SHARE);
 
@@ -2237,16 +2629,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         return panelDBAdaptor.getAcl(panelId, Arrays.asList(member));
     }
 
-    /**
-     * Checks whether any of the members already have any permission set for the particular document.
-     *
-     * @param studyId study id where the main id belongs to.
-     * @param id id of the document that is going to be checked (file id, sample id, cohort id...)
-     * @param members List of members (users or groups) that will be checked.
-     * @param dbAdaptor Mongo db adaptor to make the mongo query.
-     * @return a boolean indicating whether any of the members already have permissions.
-     */
-    private boolean anyMemberHasPermissions(long studyId, long id, List<String> members, AclDBAdaptor dbAdaptor)
+    @Override
+    public boolean anyMemberHasPermissions(long studyId, long id, List<String> members, AclDBAdaptor dbAdaptor)
             throws CatalogException {
 
         List<String> allMembers = new ArrayList<>(members.size());
@@ -2273,8 +2657,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public boolean memberHasPermissionsInStudy(long studyId, String member) throws CatalogException {
-        List<String> memberList = new ArrayList<>();
-        memberList.add(member);
+        String userId = member;
+        String groupId = null;
         if (!member.startsWith("@")) { // User
             if (member.equals(ADMIN) || isStudyOwner(studyId, member)) {
                 return true;
@@ -2282,96 +2666,17 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             if (!member.equals("anonymous") && !member.equals("*")) {
                 QueryResult<Group> groupBelonging = getGroupBelonging(studyId, member);
                 if (groupBelonging.getNumResults() > 0) {
-                    memberList.add(groupBelonging.first().getName()); // Add the groupId to the memberList
+                    groupId = groupBelonging.first().getName();
                 }
             }
         }
-        StudyAclEntry studyAcl = getStudyAclBelonging(studyId, memberList);
+        StudyAclEntry studyAcl = getStudyAclBelonging(studyId, userId, groupId);
         return studyAcl != null;
     }
 
     private boolean isStudyOwner(long studyId, String userId) throws CatalogDBException {
         return studyDBAdaptor.getOwnerId(studyId).equals(userId);
     }
-
-    /**
-     * This is like a mini cache where we will store the permissions for each path and user. This is useful for single queries trying to
-     * fetch multiple files for example. This way, we only retrieve the permissions once while maintaining the authorization step for each
-     * one.
-     */
-    static class StudyAuthenticationContext {
-        private final long studyId;
-        private final Map<String, Map<String, FileAclEntry>> pathUserAclMap;
-
-        StudyAuthenticationContext(long studyId) {
-            this.studyId = studyId;
-            pathUserAclMap = new HashMap<>();
-        }
-    }
-
-    /**
-     * Return the Acls for the user, group (if any) and {@link #OTHER_USERS_ID}.
-     *
-     * @param studyAuthenticationContext Context with already fetched elements. Will avoid fetch extra data
-     * @param userId                     User id
-     * @param studyId                    Study identifier
-     * @param groupId                    User belonging group. May be null.
-     * @param paths                      List of paths to check
-     * @return Map (Path -> Map (UserId -> FileAcl) )
-     * @throws CatalogDBException
-     */
-    private Map<String, Map<String, FileAclEntry>> getFileAcls(StudyAuthenticationContext studyAuthenticationContext, String userId,
-                                                               long studyId, String groupId, List<String> paths) throws CatalogDBException {
-
-        // Make a copy of the pathsClone
-        List<String> pathsClone = new ArrayList<>(paths.size());
-        for (String path : paths) {
-            pathsClone.add(path);
-        }
-
-        // We first remove the pathsClone for which we already have the ACL
-        for (Iterator<String> iterator = pathsClone.iterator(); iterator.hasNext();) {
-            String path = iterator.next();
-            if (studyAuthenticationContext.pathUserAclMap.containsKey(path)) {
-                Map<String, FileAclEntry> userAclMap = studyAuthenticationContext.pathUserAclMap.get(path);
-                if (userAclMap.containsKey(userId) && (groupId == null || userAclMap.containsKey(groupId))
-                        && userAclMap.containsKey(OTHER_USERS_ID)) {
-                    iterator.remove();
-                }
-            }
-        }
-
-        // We obtain the Acls for the paths for which we still don't have them.
-        if (!pathsClone.isEmpty()) {
-            // We make a query to obtain the ACLs of all the pathsClone for userId, groupId and *
-            List<String> userIds = (groupId == null)
-                    ? Arrays.asList(userId, OTHER_USERS_ID)
-                    : Arrays.asList(userId, groupId, OTHER_USERS_ID);
-            Map<String, Map<String, FileAclEntry>> map = fileDBAdaptor.getAcls(studyId, pathsClone, userIds).first();
-            for (String path : pathsClone) {
-                Map<String, FileAclEntry> stringAclEntryMap;
-                if (map.containsKey(path)) {
-                    stringAclEntryMap = map.get(path);
-                } else {
-                    stringAclEntryMap = new HashMap<>();
-                }
-                stringAclEntryMap.putIfAbsent(userId, null);
-                if (groupId != null) {
-                    stringAclEntryMap.putIfAbsent(groupId, null);
-                }
-                stringAclEntryMap.putIfAbsent(OTHER_USERS_ID, null);
-
-                if (studyAuthenticationContext.pathUserAclMap.containsKey(path)) {
-                    studyAuthenticationContext.pathUserAclMap.get(path).putAll(stringAclEntryMap);
-                } else {
-                    studyAuthenticationContext.pathUserAclMap.put(path, stringAclEntryMap);
-                }
-            }
-        }
-
-        return studyAuthenticationContext.pathUserAclMap;
-    }
-
 
     /*
     ====================================
@@ -2403,22 +2708,44 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      * @throws CatalogException when there is any database error.
      */
     StudyAclEntry getStudyAclBelonging(long studyId, String userId, @Nullable String groupId) throws CatalogException {
-        List<String> members = groupId != null ? Arrays.asList(userId, groupId) : Arrays.asList(userId);
-        return getStudyAclBelonging(studyId, members);
-    }
+        List<String> members = (groupId != null)
+                ? Arrays.asList(userId, groupId, OTHER_USERS_ID, ANONYMOUS)
+                : Arrays.asList(userId, OTHER_USERS_ID, ANONYMOUS);
 
-    /**
-     * Retrieves the studyAcl for the members.
-     *
-     * @param studyId study id.
-     * @param members Might be one user, one group or one user and the group where the user belongs to.
-     * @return the studyAcl of the user/group.
-     * @throws CatalogException when there is a database error.
-     */
-    StudyAclEntry getStudyAclBelonging(long studyId, List<String> members) throws CatalogException {
         QueryResult<StudyAclEntry> studyQueryResult = studyDBAdaptor.getAcl(studyId, members);
-        if (studyQueryResult.getNumResults() > 0) {
-            return studyQueryResult.first();
+        Map<String, StudyAclEntry> userAclMap = studyQueryResult.getResult().stream().collect(Collectors.toMap(StudyAclEntry::getMember,
+                Function.identity()));
+
+        if (userId.equals(ANONYMOUS)) {
+            if (userAclMap.containsKey(userId)) {
+                return userAclMap.get(userId);
+            }
+            return null;
+        }
+
+        // Registered user
+        EnumSet<StudyAclEntry.StudyPermissions> permissions = EnumSet.noneOf(StudyAclEntry.StudyPermissions.class);
+        boolean flagPermissionFound = false;
+
+        if (userAclMap.containsKey(userId)) {
+            permissions.addAll(userAclMap.get(userId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (StringUtils.isNotEmpty(groupId) && userAclMap.containsKey(groupId)) {
+            permissions.addAll(userAclMap.get(groupId).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(ANONYMOUS)) {
+            permissions.addAll(userAclMap.get(ANONYMOUS).getPermissions());
+            flagPermissionFound = true;
+        }
+        if (userAclMap.containsKey(OTHER_USERS_ID)) {
+            permissions.addAll(userAclMap.get(OTHER_USERS_ID).getPermissions());
+            flagPermissionFound = true;
+        }
+
+        if (flagPermissionFound) {
+            return new StudyAclEntry(userId, permissions);
         }
         return null;
     }

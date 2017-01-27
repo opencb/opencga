@@ -205,59 +205,6 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
     }
 
     @Test
-    public void deleteFileTest() throws CatalogDBException, IOException {
-        long fileId = catalogFileDBAdaptor.getId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
-        QueryResult<File> delete = catalogFileDBAdaptor.delete(fileId, new QueryOptions());
-        assertTrue(delete.getNumResults() == 1);
-        assertEquals(File.FileStatus.TRASHED, delete.first().getStatus().getName());
-        try {
-            System.out.println(catalogFileDBAdaptor.delete(catalogFileDBAdaptor.getId(catalogStudyDBAdaptor.getId
-                    (catalogProjectDBAdaptor.getId("jcoll", "1000G"), "ph1"), "data/noExists"), new QueryOptions()));
-            fail("error: Expected \"FileId not found\" exception");
-        } catch (CatalogDBException e) {
-            System.out.println("correct exception: " + e);
-        }
-    }
-
-    @Test
-    public void deleteFileTest2() throws CatalogDBException, IOException {
-        long fileId = catalogFileDBAdaptor.getId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
-
-        // New status after delete
-        ObjectMap objectMap = new ObjectMap(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED);
-
-        QueryResult<File> delete = catalogFileDBAdaptor.delete(fileId, objectMap, new QueryOptions());
-        assertTrue(delete.getNumResults() == 1);
-        assertEquals(File.FileStatus.REMOVED, delete.first().getStatus().getName());
-        try {
-            System.out.println(catalogFileDBAdaptor.delete(catalogFileDBAdaptor.getId(catalogStudyDBAdaptor.getId
-                    (catalogProjectDBAdaptor.getId("jcoll", "1000G"), "ph1"), "data/noExists"), new QueryOptions()));
-            fail("error: Expected \"FileId not found\" exception");
-        } catch (CatalogDBException e) {
-            System.out.println("correct exception: " + e);
-        }
-    }
-//
-//    @Test
-//    public void removeFileTest() throws CatalogDBException, IOException {
-//        long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
-//        catalogFileDBAdaptor.delete(fileId, new QueryOptions());
-//        // Remove after deleted
-//        QueryResult<File> remove = catalogFileDBAdaptor.remove(fileId, new QueryOptions());
-//        assertTrue(remove.getNumResults() == 1);
-//        assertEquals(File.FileStatus.REMOVED, remove.first().getStatus().getName());
-//    }
-//
-//    @Test
-//    public void removeFileTest2() throws CatalogDBException, IOException {
-//        long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
-//        // Remove after READY
-//        QueryResult<File> remove = catalogFileDBAdaptor.remove(fileId, new QueryOptions());
-//        assertTrue(remove.getNumResults() == 1);
-//        assertEquals(File.FileStatus.REMOVED, remove.first().getStatus().getName());
-//    }
-
-    @Test
     public void fileAclsTest() throws CatalogDBException {
         long fileId = catalogFileDBAdaptor.getId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
         System.out.println(fileId);
@@ -394,14 +341,30 @@ public class FileMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
         assertEquals(3, groupByBioformat.size());
 
-        assertEquals(5, ((Document) groupByBioformat.get(0).get("_id")).size()); // Alignment - File
-        assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(0).get("features"));
-
-        assertEquals(5, ((Document) groupByBioformat.get(1).get("_id")).size()); // None - File
-        assertEquals(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt"), groupByBioformat.get(1).get("features"));
-
-        assertEquals(5, ((Document) groupByBioformat.get(2).get("_id")).size()); // None - Folder
-        assertEquals(Arrays.asList("data/"), groupByBioformat.get(2).get("features"));
-
+        for (int i = 0; i < groupByBioformat.size(); i++) {
+            String bioformat = ((Document) groupByBioformat.get(i).get("_id")).getString("bioformat");
+            String type = ((Document) groupByBioformat.get(i).get("_id")).getString("type");
+            switch (bioformat) {
+                case "NONE":
+                    switch (type) {
+                        case "FILE":
+                            assertEquals(5, ((Document) groupByBioformat.get(i).get("_id")).size()); // None - File
+                            assertEquals(Arrays.asList("m_file1.txt", "file2.txt", "file1.txt"), groupByBioformat.get(i).get("features"));
+                            break;
+                        default:
+                            assertEquals(5, ((Document) groupByBioformat.get(i).get("_id")).size()); // None - Folder
+                            assertEquals(Arrays.asList("data/"), groupByBioformat.get(i).get("features"));
+                            break;
+                    }
+                    break;
+                case "ALIGNMENT":
+                    assertEquals(5, ((Document) groupByBioformat.get(i).get("_id")).size());
+                    assertEquals(Arrays.asList("m_alignment.bam", "alignment.bam"), groupByBioformat.get(i).get("features"));
+                    break;
+                default:
+                    fail("This case should not happen.");
+                    break;
+            }
+        }
     }
 }

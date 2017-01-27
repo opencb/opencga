@@ -859,45 +859,10 @@ public class CatalogManager implements AutoCloseable {
         return aclList;
     }
 
-    public List<QueryResult<FileAclEntry>> createFileAcls(String fileIdsStr, @Nullable String studyStr, String members, String permissions,
-                                                          String sessionId) throws CatalogException {
-        AbstractManager.MyResourceIds resource = fileManager.getIds(fileIdsStr, studyStr, sessionId);
-        List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(resource.getResourceIds().size());
-        for (int i = 0; i < resource.getResourceIds().size(); i++) {
-            Long fileId = resource.getResourceIds().get(i);
-            QueryResult<FileAclEntry> fileAcls = authorizationManager.createFileAcls(resource.getUser(), fileId, members, permissions);
-            fileAcls.setId(Long.toString(resource.getResourceIds().get(i)));
-            fileAclList.add(fileAcls);
-        }
-        return fileAclList;
-    }
-
-    public List<QueryResult<FileAclEntry>> removeFileAcl(String fileIdsStr, @Nullable String studyStr, String member, String sessionId)
-            throws CatalogException {
-        AbstractManager.MyResourceIds resource = fileManager.getIds(fileIdsStr, studyStr, sessionId);
-        List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(resource.getResourceIds().size());
-        for (int i = 0; i < resource.getResourceIds().size(); i++) {
-            Long fileId = resource.getResourceIds().get(i);
-            QueryResult<FileAclEntry> fileAcls = authorizationManager.removeFileAcl(resource.getUser(), fileId, member);
-            fileAcls.setId(Long.toString(resource.getResourceIds().get(i)));
-            fileAclList.add(fileAcls);
-        }
-        return fileAclList;
-    }
-
     public QueryResult<FileAclEntry> getFileAcl(String fileIdStr, @Nullable String studyStr, String member, String sessionId)
             throws CatalogException {
         AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
         return authorizationManager.getFileAcl(resource.getUser(), resource.getResourceId(), member);
-    }
-
-    public QueryResult<FileAclEntry> updateFileAcl(String fileIdStr, @Nullable String studyStr, String member,
-                                                   @Nullable String addPermissions, @Nullable String removePermissions,
-                                                   @Nullable String setPermissions, String sessionId) throws CatalogException {
-        AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
-        return authorizationManager.updateFileAcl(resource.getUser(), resource.getResourceId(), member, addPermissions, removePermissions,
-                setPermissions);
-
     }
 
     /*Require role admin*/
@@ -1149,16 +1114,9 @@ public class CatalogManager implements AutoCloseable {
     public List<QueryResult<IndividualAclEntry>> createIndividualAcls(String individualIdsStr, @Nullable String studyStr, String members,
                                                                       String permissions, String sessionId) throws CatalogException {
         AbstractManager.MyResourceIds resource = individualManager.getIds(individualIdsStr, studyStr, sessionId);
-        List<Long> individualIds = resource.getResourceIds();
-        List<QueryResult<IndividualAclEntry>> individualAclList = new ArrayList<>(individualIds.size());
-        for (int i = 0; i < individualIds.size(); i++) {
-            Long individualId = individualIds.get(i);
-            QueryResult<IndividualAclEntry> individualAcls = authorizationManager.createIndividualAcls(resource.getUser(), individualId,
-                    members, permissions);
-            individualAcls.setId(Long.toString(individualId));
-            individualAclList.add(individualAcls);
-        }
-        return individualAclList;
+
+        return authorizationManager.createIndividualAcls(resource, Arrays.asList(StringUtils.split(members, ",")),
+                Arrays.asList(StringUtils.split(permissions, ",")));
     }
 
     public List<QueryResult<IndividualAclEntry>> removeIndividualAcl(String individualIdsStr, @Nullable String studyStr, String member,
@@ -1225,30 +1183,6 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<Sample> modifySample(long sampleId, QueryOptions queryOptions, String sessionId) throws CatalogException {
         return sampleManager.update(sampleId, queryOptions, queryOptions, sessionId);
     }
-
-    @Deprecated
-    public QueryResult shareSample(String sampleIds, String userIds, AclEntry acl, String sessionId)
-            throws CatalogException {
-        throw new CatalogException("Calling to deprecated shareSample method.");
-//        return authorizationManager.setSampleACL(sampleIds, userIds, acl, sessionId);
-    }
-
-//    public QueryResult shareSample(String sampleIds, String members, List<String> permissions, boolean override, String sessionId)
-//            throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        List<Long> sampleList = sampleManager.getSampleIds(userId, sampleIds);
-//        return authorizationManager.setSamplePermissions(userId, sampleList, members, permissions, override);
-//    }
-//
-//    public QueryResult unshareSample(String sampleIds, String userIds, String permissions, String sessionId)
-//            throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        List<Long> sampleList = sampleManager.getSampleIds(userId, sampleIds);
-//        List<String> permissionList = permissions != null && !permissions.isEmpty()
-//                ? Arrays.asList(permissions.split(",")) : Collections.emptyList();
-//        authorizationManager.unsetSamplePermissions(userId, sampleList, userIds, permissionList);
-//        return new QueryResult("unshareSample");
-//    }
 
     @Deprecated
     public QueryResult<AnnotationSet> annotateSample(long sampleId, String id, long variableSetId,
@@ -1390,16 +1324,9 @@ public class CatalogManager implements AutoCloseable {
     public List<QueryResult<CohortAclEntry>> createCohortAcls(String cohortIdsStr, @Nullable String studyStr, String members,
                                                               String permissions, String sessionId) throws CatalogException {
         AbstractManager.MyResourceIds resource = cohortManager.getIds(cohortIdsStr, studyStr, sessionId);
-        List<Long> cohortIds = resource.getResourceIds();
-        List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(cohortIds.size());
-        for (int i = 0; i < cohortIds.size(); i++) {
-            Long cohortId = cohortIds.get(i);
-            QueryResult<CohortAclEntry> cohortAcls = authorizationManager.createCohortAcls(resource.getUser(), cohortId, members,
-                    permissions);
-            cohortAcls.setId(Long.toString(cohortId));
-            cohortAclList.add(cohortAcls);
-        }
-        return cohortAclList;
+
+        return authorizationManager.createCohortAcls(resource, Arrays.asList(StringUtils.split(members, ",")),
+                Arrays.asList(StringUtils.split(permissions, ",")));
     }
 
     public List<QueryResult<CohortAclEntry>> removeCohortAcl(String cohortIdsStr, @Nullable String studyStr, String member,

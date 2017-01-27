@@ -63,8 +63,8 @@ public class ConfigurationTest {
 
         StudyAclEntry studyAcl = new StudyAclEntry("admin", EnumSet.of(
                 StudyAclEntry.StudyPermissions.VIEW_FILE_HEADERS, StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENTS,
-                StudyAclEntry.StudyPermissions.VIEW_FILES, StudyAclEntry.StudyPermissions.UPDATE_FILES,
-                StudyAclEntry.StudyPermissions.VIEW_JOBS, StudyAclEntry.StudyPermissions.UPDATE_JOBS));
+                StudyAclEntry.StudyPermissions.VIEW_FILES, StudyAclEntry.StudyPermissions.WRITE_FILES,
+                StudyAclEntry.StudyPermissions.VIEW_JOBS, StudyAclEntry.StudyPermissions.WRITE_JOBS));
         configuration.setAcl(Arrays.asList(studyAcl));
 
         ServerConfiguration serverConfiguration = new ServerConfiguration();
