@@ -123,20 +123,23 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", arity = 1)
         public String studyId = VariantStorageEngine.Options.STUDY_ID.defaultValue().toString();
 
+
         @Deprecated
-        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", arity = 1)
+        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", arity = 1, hidden = true)
         public String fileId = VariantStorageEngine.Options.FILE_ID.defaultValue().toString();
 
-        @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
-        public String pedigree;
-
         @Deprecated
-        @Parameter(names = {"--sample-ids"}, description = "CSV list of sampleIds. <sampleName>:<sampleId>[,<sampleName>:<sampleId>]*")
+        @Parameter(names = {"--sample-ids"}, description = "CSV list of sampleIds. <sampleName>:<sampleId>[,<sampleName>:<sampleId>]*", hidden = true)
         public List<String> sampleIds;
 
 
+//        @Deprecated
+//        @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
+//        public String pedigree;
+
+
         @Parameter(names = {"-t", "--study-type"}, description = "One of the following: FAMILY, TRIO, CONTROL, CASE, CASE_CONTROL, " +
-                "PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES", arity = 1)
+                "PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES", arity = 1, hidden = true)
         public VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
 
         @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage" +
