@@ -757,6 +757,9 @@ public class FileManager extends AbstractManager implements IFileManager {
 //        auditManager.recordCreation(AuditRecord.Resource.file, queryResult.first().getId(), userId, queryResult.first(), null, null);
         auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.Action.create, AuditRecord.Magnitude.low,
                 queryResult.first().getId(), userId, null, queryResult.first(), null, null);
+
+        matchUpVariantFiles(queryResult.getResult(), sessionId);
+
         return queryResult;
     }
 
@@ -2344,9 +2347,11 @@ public class FileManager extends AbstractManager implements IFileManager {
 
             for (Long fileId : fileFolderIdList) {
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                        FileDBAdaptor.QueryParams.NAME.key(),
                         FileDBAdaptor.QueryParams.PATH.key(),
                         FileDBAdaptor.QueryParams.URI.key(),
                         FileDBAdaptor.QueryParams.TYPE.key(),
+                        FileDBAdaptor.QueryParams.BIOFORMAT.key(),
                         FileDBAdaptor.QueryParams.FORMAT.key(),
                         FileDBAdaptor.QueryParams.INDEX.key())
                 );
