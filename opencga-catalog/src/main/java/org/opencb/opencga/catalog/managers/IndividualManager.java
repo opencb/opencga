@@ -292,7 +292,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         // Update queryResult info
         individualAclQueryResult.setId(individualStr);
         individualAclQueryResult.setNumResults(individualAclList.size());
-        individualAclQueryResult.setNumTotalResults(individualAclList.size());
         individualAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
         individualAclQueryResult.setResult(individualAclList);
 

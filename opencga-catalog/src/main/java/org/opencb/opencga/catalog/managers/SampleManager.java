@@ -624,7 +624,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         // Update queryResult info
         sampleAclQueryResult.setId(sampleStr);
         sampleAclQueryResult.setNumResults(sampleAclList.size());
-        sampleAclQueryResult.setNumTotalResults(sampleAclList.size());
         sampleAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
         sampleAclQueryResult.setResult(sampleAclList);
 

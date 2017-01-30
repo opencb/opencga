@@ -1063,7 +1063,6 @@ public class FileManager extends AbstractManager implements IFileManager {
             }
         }
         fileQueryResult.setNumResults(fileQueryResult.getResult().size());
-        fileQueryResult.setNumTotalResults(fileQueryResult.getResult().size());
 
         return fileQueryResult;
     }

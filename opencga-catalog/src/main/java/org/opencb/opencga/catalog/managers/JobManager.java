@@ -285,7 +285,6 @@ public class JobManager extends AbstractManager implements IJobManager {
         // Update queryResult info
         jobAclQueryResult.setId(jobStr);
         jobAclQueryResult.setNumResults(jobAclList.size());
-        jobAclQueryResult.setNumTotalResults(jobAclList.size());
         jobAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
         jobAclQueryResult.setResult(jobAclList);
 
