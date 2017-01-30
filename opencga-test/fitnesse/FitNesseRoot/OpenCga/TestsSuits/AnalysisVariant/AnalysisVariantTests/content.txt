@@ -46,7 +46,7 @@
 
 !3 Negative: Create Variant Index (In-Valid FileID)
 !|Table: Rest Fixture | ${baseURL} |
-| GET | /v1/analysis/variant/index?sid=$sessionId&file=invalid |500|  Content-Type: application/json |jsonbody.error == 'File invalid not found in study 2'|
+| GET | /v1/analysis/variant/index?sid=$sessionId&file=invalid&study=${study}|500|  Content-Type: application/json |jsonbody.error == 'File invalid not found in study 2'|
 
 !3 Query Variant
 !|Table: Rest Fixture | ${baseURL} |
