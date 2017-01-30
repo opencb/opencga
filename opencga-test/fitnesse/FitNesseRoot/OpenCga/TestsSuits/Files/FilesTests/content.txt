@@ -3,13 +3,6 @@
 !define user {test}
 !define path {path}
 
-!3 Login User 
-!|Table: Rest Fixture | ${baseURL} |
-| setBody | {"password" : "user_P@ssword"}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/users/test/login |  |  Content-Type: application/json ||
-|let|sessionId|js|response.jsonbody.response[0].result[0].sessionId||
-
 !3 Create Folder
 !|Table: Rest Fixture | ${baseURL} |
 | GET | /v1/files/create-folder?sid=$sessionId&folders=folder&path=${path}&parents=false&study=2 |  |  Content-Type: application/json | jsonbody.error === '' && jsonbody.response[0].result[0].path =='${path}/' |

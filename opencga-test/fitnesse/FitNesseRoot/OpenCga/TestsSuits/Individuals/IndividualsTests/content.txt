@@ -4,17 +4,11 @@
 !define file {4}
 !define study {2}
 
+!3 Generate Random Variables 
 !|Table: Rest Fixture | ${baseURL} |
 |let|iName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 |let|createPostName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
 
-
-!3 Login User 
-!|Table: Rest Fixture | ${baseURL} |
-| setBody | {"password" : "user_P@ssword"}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/users/test/login |  |  Content-Type: application/json ||
-|let|sessionId|js|response.jsonbody.response[0].result[0].sessionId||
 
 !3 Create Individual (GET)
 !|Table: Rest Fixture | ${baseURL} |

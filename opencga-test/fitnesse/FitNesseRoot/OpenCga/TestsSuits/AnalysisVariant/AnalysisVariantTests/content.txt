@@ -8,14 +8,6 @@
 !define totalVariantsWithsift {7405}
 
 
-!3 Login User 
-!|Table: Rest Fixture | ${baseURL} |
-| setBody | {"password" : "user_P@ssword"}|
-| setHeader|Content-Type:application/json|
-| POST | /v1/users/test/login |  |  Content-Type: application/json ||
-|let|sessionId|js|response.jsonbody.response[0].result[0].sessionId||
-
-
 !3 Create Variant Index 
 !|Table: Rest Fixture | ${baseURL} |
 | GET | /v1/analysis/variant/index?sid=$sessionId&file=${file} |200|  Content-Type: application/json |jsonbody.error == '' && jsonbody.response[0].result[0].id > 0 && jsonbody.response[0].result[0].type == 'INDEX' |
