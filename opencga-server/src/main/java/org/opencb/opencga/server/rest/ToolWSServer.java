@@ -88,8 +88,10 @@ public class ToolWSServer extends OpenCGAWSServer {
     })
     public Response search(@ApiParam(value = "id", required = false) @QueryParam(value = "id") @DefaultValue("") String toolId,
                            @ApiParam(value = "userId", required = false) @QueryParam(value = "userId") @DefaultValue("") String userId,
-                           @ApiParam(value = "alias", required = false) @QueryParam(value = "alias") @DefaultValue("") String alias) {
+                           @ApiParam(value = "alias", required = false) @QueryParam(value = "alias") @DefaultValue("") String alias,
+                           @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
+            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
             QueryResult<Tool> toolResult = catalogManager.getJobManager().getTools(query, queryOptions, sessionId);
             for (Tool tool : toolResult.getResult()) {
                 ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), "");

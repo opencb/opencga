@@ -201,9 +201,12 @@ public class CohortWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "Name of the cohort") @QueryParam("name") String name,
                                   @ApiParam(value = "Cohort type") @QueryParam("type") Study.Type type,
                                   @ApiParam(value = "Status") @QueryParam("status") String status,
-                                  @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr) {
+                                  @ApiParam(value = "Sample list") @QueryParam("samples") String samplesStr,
+                                  @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
 //                                  @ApiParam(value = "Family") @QueryParam("family") String family) {
         try {
+            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
+
             if (StringUtils.isNotEmpty(samplesStr)) {
                 // First look for the sample ids.
                 AbstractManager.MyResourceIds samples =

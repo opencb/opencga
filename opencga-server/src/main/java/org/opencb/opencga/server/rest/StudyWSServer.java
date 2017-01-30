@@ -130,8 +130,11 @@ public class StudyWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "Status") @QueryParam("status") String status,
                                   @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes,
                                   @Deprecated @ApiParam(value = "Numerical attributes") @QueryParam("nattributes") String nattributes,
-                                  @Deprecated @ApiParam(value = "Boolean attributes") @QueryParam("battributes") boolean battributes) {
+                                  @Deprecated @ApiParam(value = "Boolean attributes") @QueryParam("battributes") boolean battributes,
+                                  @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
+            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
+
             if (projectId != null) {
                 query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), catalogManager.getProjectId(projectId, sessionId));
             }
@@ -156,8 +159,11 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
-    public Response getAllStudiesByPost(@ApiParam(value="studies", required = true) Query query) {
+    public Response getAllStudiesByPost(@ApiParam(value="studies", required = true) Query query,
+                                        @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
+            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
+
             QueryResult<Study> queryResult = catalogManager.getAllStudies(query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {

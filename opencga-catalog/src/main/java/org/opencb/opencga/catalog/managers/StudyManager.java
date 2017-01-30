@@ -367,7 +367,6 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         authorizationManager.filterStudies(userId, studies);
         allStudies.setResult(studies);
         allStudies.setNumResults(studies.size());
-        allStudies.setNumTotalResults(studies.size());
 
         return allStudies;
     }
@@ -669,7 +668,6 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         // Update queryResult info
         studyAclQueryResult.setId(studyStr);
         studyAclQueryResult.setNumResults(studyAclList.size());
-        studyAclQueryResult.setNumTotalResults(studyAclList.size());
         studyAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
         studyAclQueryResult.setResult(studyAclList);
 

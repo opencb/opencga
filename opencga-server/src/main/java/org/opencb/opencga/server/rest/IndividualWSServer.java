@@ -231,8 +231,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                       @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
                                       @ApiParam(value = "annotationsetName", required = false) @QueryParam("annotationsetName")
                                                   String annotationsetName,
-                                      @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
+                                      @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
+                                      @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
+            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
+
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }

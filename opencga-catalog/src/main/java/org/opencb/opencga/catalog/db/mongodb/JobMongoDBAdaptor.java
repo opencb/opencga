@@ -31,6 +31,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
@@ -80,9 +81,47 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Document jobObject = jobConverter.convertToStorageType(job);
         jobObject.put(PRIVATE_ID, jobId);
         jobObject.put(PRIVATE_STUDY_ID, studyId);
-        QueryResult insertResult = jobCollection.insert(jobObject, null); //TODO: Check results.get(0).getN() != 0
+        jobCollection.insert(jobObject, null); //TODO: Check results.get(0).getN() != 0
 
         return endQuery("Create Job", startTime, get(jobId, filterOptions(options, FILTER_ROUTE_JOBS)));
+    }
+
+    @Override
+    public QueryResult<Long> extractFilesFromJobs(Query query, List<Long> fileIds) throws CatalogDBException {
+        if (fileIds == null || fileIds.size() == 0) {
+            throw new CatalogDBException("The array of fileIds is empty");
+        }
+
+        QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+
+        Query queryAux = new Query(query);
+        queryAux.append(QueryParams.OUT_DIR_ID.key(), fileIds);
+        ObjectMap params = new ObjectMap(QueryParams.OUT_DIR_ID.key(), -1);
+        Document update = new Document("$set", params);
+        QueryResult<UpdateResult> update1 = jobCollection.update(parseQuery(queryAux, true), update, multi);
+        logger.debug("{} out of {} documents changed to have outDirId = -1", update1.first().getMatchedCount(),
+                update1.first().getModifiedCount());
+
+        queryAux = new Query(query);
+        queryAux.append(QueryParams.INPUT.key(), fileIds);
+        update = new Document("$pullAll", new Document(QueryParams.INPUT.key(), fileIds));
+        QueryResult<UpdateResult> update2 = jobCollection.update(parseQuery(queryAux, true), update, multi);
+        logger.debug("{} out of {} documents changed to pull input file ids", update2.first().getMatchedCount(),
+                update2.first().getModifiedCount());
+
+        queryAux = new Query(query);
+        queryAux.append(QueryParams.OUTPUT.key(), fileIds);
+        update = new Document("$pullAll", new Document(QueryParams.OUTPUT.key(), fileIds));
+        QueryResult<UpdateResult> update3 = jobCollection.update(parseQuery(queryAux, true), update, multi);
+        logger.debug("{} out of {} documents changed to pull input file ids", update3.first().getMatchedCount(),
+                update3.first().getModifiedCount());
+
+        QueryResult retResult = new QueryResult("Extract fileIds from jobs");
+        retResult.setNumResults(1);
+        retResult.setNumTotalResults(1);
+        retResult.setResult(Arrays.asList(update1.first().getModifiedCount() + update2.first().getModifiedCount()
+                + update3.first().getModifiedCount()));
+        return retResult;
     }
 
     /**
@@ -167,6 +206,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
+    @Deprecated
     public QueryResult<Long> extractFiles(List<Long> fileIds) throws CatalogDBException {
         long startTime = startQuery();
         long numResults;
@@ -615,6 +655,11 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
+                    case INPUT:
+                    case OUTPUT:
+                        addQueryFilter(queryParam.key(), queryParam.key(), query, queryParam.type(),
+                            MongoDBQueryUtils.ComparisonOperator.IN, MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
+                        break;
                     case NAME:
                     case USER_ID:
                     case TOOL_NAME:
@@ -634,8 +679,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case SIZE:
                     case OUT_DIR_ID:
                     case TMP_OUT_DIR_URI:
-                    case INPUT:
-                    case OUTPUT:
                     case TAGS:
                     case ACL:
                     case ACL_MEMBER:
