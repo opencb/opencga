@@ -1,5 +1,2 @@
 !1 OpenCGA REST Tests Suit
 !contents -R2 -g -p -f -h
-
-!define TEST_SYSTEM {slim}
-!path dependencies/*.jar

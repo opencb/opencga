@@ -1,19 +1,16 @@
-!3 Login User Test
-!|Table: Rest Fixture | ${baseURL} |
-| setBody | {"password" : "user_P@ssword"}|
-|setHeader| Content-Type: application/json|
-| POST | /v1/users/test/login |  |  Content-Type: application/json ||
-|let|sessionId|js|response.jsonbody.response[0].result[0].sessionId||
-
+!define TEST_SYSTEM {slim}
+!define user {test}
+!define baseURL {http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-rc4/webservices/rest/}
+!define O.S.Name {OS}
+!define O.Assembly {OA}
 
 !3 Create New Project
 
 !|Table: Rest Fixture | ${baseURL} |
-| GET | /v1/projects/create?sid=$sessionId&name=$projectName&alias=$projectName |200|  Content-Type: application/json |jsonbody.response[0].result[0].name === '$projectName'|
-
+| GET | /v1/projects/create?sid=$sessionId&name=$projectName&alias=$projectAlias&organism.scientificName=${O.S.Name}&organism.assembly=${O.Assembly} |200|  Content-Type: application/json |jsonbody.response[0].result[0].name === '$projectName'|
 
 !3 Negative: Create Project With Existing Name
 
 !|Table: Rest Fixture | ${baseURL} |
-| GET | /v1/projects/create?sid=$sessionId&name=$projectName&alias=$projectName |500|  Content-Type: application/json |jsonbody.error === 'Project {alias:\"$projectName\"} already exists in this user'|
+| GET | /v1/projects/create?sid=$sessionId&name=$projectName&alias=$projectAlias&organism.scientificName=${O.S.Name}&organism.assembly=${O.Assembly} |500|  Content-Type: application/json |jsonbody.error === 'Project {alias:\"$projectAlias\"} already exists in this user'|
 
