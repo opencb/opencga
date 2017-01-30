@@ -607,7 +607,7 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
     @Override
     public void removeAclsFromMember(Query query, List<String> members, @Nullable List<String> permissions) throws CatalogDBException {
         QueryResult<Dataset> datasetQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
-        List<Long> datasetIds = datasetQueryResult.getResult().stream().map(dataset -> dataset.getId()).collect(Collectors.toList());
+        List<Long> datasetIds = datasetQueryResult.getResult().stream().map(Dataset::getId).collect(Collectors.toList());
 
         if (datasetIds == null || datasetIds.size() == 0) {
             throw new CatalogDBException("No matches found for query when attempting to remove permissions");

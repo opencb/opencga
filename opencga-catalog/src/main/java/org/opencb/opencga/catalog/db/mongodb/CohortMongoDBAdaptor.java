@@ -31,6 +31,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.DBIterator;
 import org.opencb.opencga.catalog.db.mongodb.converters.CohortConverter;
@@ -654,6 +655,10 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
                     case ANNOTATION_SET_NAME:
                         addOrQuery("name", queryParam.key(), query, queryParam.type(), annotationList);
                         break;
+                    case SAMPLES:
+                        addQueryFilter(queryParam.key(), queryParam.key(), query, queryParam.type(),
+                                MongoDBQueryUtils.ComparisonOperator.IN, MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
+                        break;
                     case NAME:
                     case TYPE:
                     case CREATION_DATE:
@@ -664,7 +669,6 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
                     case ACL:
                     case ACL_MEMBER:
                     case ACL_PERMISSIONS:
-                    case SAMPLES:
                     case ANNOTATION_SETS:
                     case VARIABLE_NAME:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
@@ -781,7 +785,7 @@ public class CohortMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Co
     @Override
     public void removeAclsFromMember(Query query, List<String> members, @Nullable List<String> permissions) throws CatalogDBException {
         QueryResult<Cohort> cohortQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
-        List<Long> cohortIds = cohortQueryResult.getResult().stream().map(cohort -> cohort.getId()).collect(Collectors.toList());
+        List<Long> cohortIds = cohortQueryResult.getResult().stream().map(Cohort::getId).collect(Collectors.toList());
 
         if (cohortIds == null || cohortIds.size() == 0) {
             throw new CatalogDBException("No matches found for query when attempting to remove permissions");

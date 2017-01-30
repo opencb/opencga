@@ -224,7 +224,9 @@ public class FileMetadataReader {
                 modifyParams.remove(FileDBAdaptor.QueryParams.URI.key());
             }
 
-            catalogManager.getFileManager().update(file.getId(), modifyParams, new QueryOptions(), sessionId);
+            if (!modifyParams.isEmpty()) {
+                catalogManager.getFileManager().update(file.getId(), modifyParams, new QueryOptions(), sessionId);
+            }
 //            logger.trace("modifyFile = " + (System.currentTimeMillis() - start) / 1000.0);
 
             return catalogManager.getFile(file.getId(), options, sessionId).first();

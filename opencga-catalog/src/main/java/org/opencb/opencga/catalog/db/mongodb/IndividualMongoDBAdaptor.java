@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.mongodb.MongoClient;
 import com.mongodb.WriteResult;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
@@ -383,18 +384,42 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     @Override
     public QueryResult<Individual> update(long id, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
-        checkId(id);
-        Query query = new Query(QueryParams.ID.key(), id);
-        QueryResult<Long> update = update(query, parameters);
-        if (update.getResult().isEmpty() || update.first() != 1) {
-            throw new CatalogDBException("Could not update individual " + id);
+        Bson query = parseQuery(new Query(QueryParams.ID.key(), id), true);
+        Map<String, Object> myParams = getValidatedUpdateParams(parameters);
+
+        if (myParams.isEmpty()) {
+            logger.debug("The map of parameters to update individual is empty. Originally it contained {}", parameters.safeToString());
+            throw new CatalogDBException("Nothing to update");
         }
-        return endQuery("Update individual", startTime, get(query, null));
+
+        logger.debug("Update individual. Query: {}, Update: {}",
+                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()), myParams);
+
+        QueryResult<UpdateResult> update = individualCollection.update(query, new Document("$set", myParams),
+                new QueryOptions("multi", true));
+        if (update.first().getMatchedCount() == 0) {
+            throw new CatalogDBException("Individual " + id + " not found.");
+        }
+
+        QueryResult<Individual> queryResult = individualCollection.find(query, individualConverter, QueryOptions.empty());
+        return endQuery("Update individual", startTime, queryResult);
     }
 
     @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
+        Map<String, Object> individualParameters = getValidatedUpdateParams(parameters);
+
+        if (!individualParameters.isEmpty()) {
+            QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query, false), new Document("$set",
+                            individualParameters), null);
+            return endQuery("Update individual", startTime, Arrays.asList(update.getNumTotalResults()));
+        }
+
+        return endQuery("Update individual", startTime, new QueryResult<Long>());
+    }
+
+    private Map<String, Object> getValidatedUpdateParams(ObjectMap parameters) throws CatalogDBException {
         Map<String, Object> individualParameters = new HashMap<>();
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.FAMILY.key(), QueryParams.ETHNICITY.key(), QueryParams.SEX.key(),
@@ -417,20 +442,20 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
             individualParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
-        // Obtain all the possible individual Ids that satisfies the query
-        QueryResult<Individual> myResults= get(query, new QueryOptions("include", "id"));
-
-        for (Individual individual : myResults.getResult()) {
-            //Check existing name
-            if (individualParameters.containsKey("name")) {
-                String name = individualParameters.get("name").toString();
-                Query subquery = new Query(QueryParams.NAME.key(), name)
-                        .append(QueryParams.STUDY_ID.key(), getStudyId(individual.getId()));
-                if (!get(subquery, new QueryOptions()).getResult().isEmpty()) {
-                    throw CatalogDBException.alreadyExists("Individual", "name", name);
-                }
-            }
-        }
+//        // Obtain all the possible individual Ids that satisfies the query
+//        QueryResult<Individual> myResults= get(query, new QueryOptions("include", "id"));
+//
+//        for (Individual individual : myResults.getResult()) {
+//            //Check existing name
+//            if (individualParameters.containsKey("name")) {
+//                String name = individualParameters.get("name").toString();
+//                Query subquery = new Query(QueryParams.NAME.key(), name)
+//                        .append(QueryParams.STUDY_ID.key(), getStudyId(individual.getId()));
+//                if (!get(subquery, new QueryOptions()).getResult().isEmpty()) {
+//                    throw CatalogDBException.alreadyExists("Individual", "name", name);
+//                }
+//            }
+//        }
 
         //Check individualIds exists
         String[] individualIdParams = {"fatherId", "motherId"};
@@ -443,13 +468,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
             }
         }
 
-        if (!individualParameters.isEmpty()) {
-            QueryResult<UpdateResult> update = individualCollection.update(parseQuery(query, false), new Document("$set",
-                            individualParameters), null);
-            return endQuery("Update individual", startTime, Arrays.asList(update.getNumTotalResults()));
-        }
-
-        return endQuery("Update individual", startTime, new QueryResult<Long>());
+        return individualParameters;
     }
 
     @Override
@@ -943,8 +962,7 @@ public class IndividualMongoDBAdaptor extends AnnotationMongoDBAdaptor implement
     @Override
     public void removeAclsFromMember(Query query, List<String> members, @Nullable List<String> permissions) throws CatalogDBException {
         QueryResult<Individual> individualQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
-        List<Long> individualIds = individualQueryResult.getResult().stream().map(individual -> individual.getId())
-                .collect(Collectors.toList());
+        List<Long> individualIds = individualQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList());
 
         if (individualIds == null || individualIds.size() == 0) {
             throw new CatalogDBException("No matches found for query when attempting to remove permissions");

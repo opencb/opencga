@@ -770,7 +770,7 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
 
     public QueryResult<Long> extractSampleFromFiles(Query query, List<Long> sampleIds) throws CatalogDBException {
         long startTime = startQuery();
-        Bson bsonQuery = parseQuery(query, false);
+        Bson bsonQuery = parseQuery(query, true);
         Bson update = new Document("$pull", new Document(QueryParams.SAMPLE_IDS.key(), new Document("$in", sampleIds)));
         QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
         QueryResult<UpdateResult> updateQueryResult = fileCollection.update(bsonQuery, update, multi);
@@ -805,21 +805,13 @@ public class FileMongoDBAdaptor extends MongoDBAdaptor implements FileDBAdaptor 
     @Override
     public void removeAclsFromMember(Query query, List<String> members, @Nullable List<String> permissions) throws CatalogDBException {
         QueryResult<File> fileQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
-        List<Long> fileIds = fileQueryResult.getResult().stream().map(file -> file.getId()).collect(Collectors.toList());
+        List<Long> fileIds = fileQueryResult.getResult().stream().map(File::getId).collect(Collectors.toList());
 
-        if (permissions == null || permissions.size() == 0) {
-            // Remove the members from the acl table
-            Bson queryDocument = parseQuery(query, true);
-            Document update = new Document("$pull", new Document(QueryParams.ACL.key(),
-                    new Document(AclMongoDBAdaptor.QueryParams.MEMBER.key(), new Document("$in", members))));
-            QueryResult<UpdateResult> updateResult = fileCollection.update(queryDocument, update, new QueryOptions("multi", true));
-
-            logger.debug("Remove Acl: {} out of {} removed for members {}", updateResult.first().getModifiedCount(),
-                    updateResult.first().getMatchedCount(), members);
-        } else {
-            aclDBAdaptor.removeAclsFromMembers(fileIds, members, permissions);
+        if (fileIds == null || fileIds.size() == 0) {
+            throw new CatalogDBException("No matches found for query when attempting to remove permissions");
         }
 
+        aclDBAdaptor.removeAclsFromMembers(fileIds, members, permissions);
     }
 
     @Override

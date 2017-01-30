@@ -89,7 +89,12 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         QueryResult<Long> count = sampleCollection.count(
                 new BasicDBObject("name", sample.getName()).append(PRIVATE_STUDY_ID, studyId));
                 */
-        Bson bson = Filters.and(Filters.eq("name", sample.getName()), Filters.eq(PRIVATE_STUDY_ID, studyId));
+        List<Bson> filterList = new ArrayList<>();
+        filterList.add(Filters.eq(QueryParams.NAME.key(), sample.getName()));
+        filterList.add(Filters.eq(PRIVATE_STUDY_ID, studyId));
+        filterList.add(Filters.eq(QueryParams.STATUS_NAME.key(), Status.READY));
+
+        Bson bson = Filters.and(filterList);
         QueryResult<Long> count = sampleCollection.count(bson);
 //                new BsonDocument("name", new BsonString(sample.getName())).append(PRIVATE_STUDY_ID, new BsonInt32(studyId)));
         if (count.getResult().get(0) > 0) {
@@ -540,64 +545,6 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     }
 
     @Override
-    public QueryResult<Sample> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-
-        checkId(id);
-        // Check the sample is active
-        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.READY);
-        QueryOptions tmpOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.NAME.key());
-        QueryResult<Sample> sampleQueryResult = get(query, tmpOptions);
-        if (sampleQueryResult.getNumResults() == 0) {
-            query.put(QueryParams.STATUS_NAME.key(), Status.DELETED);
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_NAME.key());
-            Sample sample = get(query, options).first();
-            throw new CatalogDBException("The sample " + id + " was already " + sample.getStatus().getName());
-        }
-
-        // If we don't find the force parameter, we check first if the sample could be deleted.
-        if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
-            checkCanDelete(id);
-        }
-
-        if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
-            deleteReferencesToSample(id);
-        }
-
-        // Update the sample
-        String suffixName = ".DELETED_" + TimeUtils.getTime();
-        ObjectMap objectMap = new ObjectMap()
-                .append(QueryParams.NAME.key(), sampleQueryResult.first().getName() + suffixName)
-                .append(QueryParams.STATUS_NAME.key(), Status.DELETED);
-        update(id, objectMap);
-
-        query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_NAME.key(), Status.DELETED);
-        return endQuery("Delete sample", startTime, get(query, queryOptions));
-    }
-
-    @Override
-    public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-        query.append(QueryParams.STATUS_NAME.key(), Status.READY);
-        QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
-        for (Sample sample : sampleQueryResult.getResult()) {
-            delete(sample.getId(), queryOptions);
-        }
-        return endQuery("Delete sample", startTime, Collections.singletonList(sampleQueryResult.getNumTotalResults()));
-    }
-
-    @Override
-    public QueryResult<Sample> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
-        throw new UnsupportedOperationException("Remove not yet implemented.");
-    }
-
-    @Override
-    public QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        throw new UnsupportedOperationException("Remove not yet implemented.");
-    }
-
-    @Override
     public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         query.put(QueryParams.STATUS_NAME.key(), Status.TRASHED);
@@ -881,7 +828,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
     @Override
     public void removeAclsFromMember(Query query, List<String> members, @Nullable List<String> permissions) throws CatalogDBException {
         QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
-        List<Long> sampleIds = sampleQueryResult.getResult().stream().map(sample -> sample.getId()).collect(Collectors.toList());
+        List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
 
         if (sampleIds == null || sampleIds.size() == 0) {
             throw new CatalogDBException("No matches found for query when attempting to remove permissions");

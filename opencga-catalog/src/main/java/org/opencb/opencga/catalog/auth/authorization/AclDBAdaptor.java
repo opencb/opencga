@@ -20,6 +20,7 @@ import org.bson.conversions.Bson;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.acls.permissions.AbstractAclEntry;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 /**
@@ -108,5 +109,5 @@ public interface AclDBAdaptor<T extends AbstractAclEntry> {
     @Deprecated
     T removeAclsFromMember(long resourceId, String member, List<String> permissions) throws CatalogDBException;
 
-    void removeAclsFromMembers(List<Long> resourceIds, List<String> members, List<String> permissions) throws CatalogDBException;
+    void removeAclsFromMembers(List<Long> resourceIds, List<String> members, @Nullable List<String> permissions) throws CatalogDBException;
 }

@@ -161,9 +161,6 @@ public interface IIndividualManager extends ResourceManager<Long, Individual>, I
     QueryResult<AnnotationSet> updateAnnotation(long individualId, String annotationSetName, Map<String, Object> newAnnotations,
                                                 String sessionId) throws CatalogException;
 
-    @Deprecated
-    QueryResult<AnnotationSet> deleteAnnotation(long individualId, String annotationId, String sessionId) throws CatalogException;
-
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.
      *
