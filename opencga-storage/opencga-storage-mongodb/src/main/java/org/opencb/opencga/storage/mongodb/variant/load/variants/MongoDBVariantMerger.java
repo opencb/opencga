@@ -214,10 +214,16 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
     /** Study to be merged. */
     private final Integer studyId;
+    private final String studyIdStr;
     /** Files to be merged. */
     private final List<Integer> fileIds;
     /** Indexed files in the region that we are merging. */
     private final Set<Integer> indexedFiles;
+    /**
+     * Check overlapping variants.
+     * Only needed when loading more than one file at the same time, or there were other loaded files in the same region
+     **/
+    private boolean checkOverlappings;
     private final DocumentToVariantConverter variantConverter;
     private final DocumentToStudyVariantEntryConverter studyConverter;
     private final StudyConfiguration studyConfiguration;
@@ -245,7 +251,9 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         format = buildFormat(studyConfiguration);
         indexedSamples = Collections.unmodifiableList(buildIndexedSamplesList(fileIds));
         studyId = studyConfiguration.getStudyId();
+        studyIdStr = String.valueOf(studyId);
 
+        checkOverlappings = fileIds.size() > 1 || !indexedFiles.isEmpty();
         DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(this.studyConfiguration);
         studyConverter = new DocumentToStudyVariantEntryConverter(false, samplesConverter);
         variantConverter = new DocumentToVariantConverter(studyConverter, null);
@@ -287,41 +295,57 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         String chromosome = null;
         List<Document> overlappedVariants = null;
 
-        for (Document document : variants) {
+        Iterator<Document> iterator = variants.iterator();
+        // Get first valid variant
+        while (iterator.hasNext()) {
+            Document document = iterator.next();
+            if (document.get(studyIdStr) != null) {
+                previousDocument = document;
+                previousVariant = STRING_ID_CONVERTER.convertToDataModelType(previousDocument);
+
+                chromosome = previousVariant.getChromosome();
+                start = previousVariant.getStart();
+                end = getEnd(previousVariant);
+                break;
+            }
+        }
+
+        while (iterator.hasNext()) {
+            Document document = iterator.next();
             Variant variant = STRING_ID_CONVERTER.convertToDataModelType(document);
-            Document study = document.get(Integer.toString(studyId), Document.class);
+            Document study = document.get(studyIdStr, Document.class);
             if (study != null) {
-                if (previousVariant != null && variant.overlapWith(chromosome, start, end, true)) {
+                if (checkOverlappings && variant.overlapWith(chromosome, start, end, true)) {
                     // If the variant overlaps with the last one, add to the overlappedVariants list.
-                    // Do not process any variant!
+                    // Do not process any variant yet!
                     if (overlappedVariants == null) {
-                        overlappedVariants = new LinkedList<>();
+                        overlappedVariants = new ArrayList<>();
                         overlappedVariants.add(previousDocument);
                     }
                     overlappedVariants.add(document);
+
+                    // Take min start and max end
                     start = Math.min(start, variant.getStart());
                     end = Math.max(end, getEnd(variant));
-                    previousDocument = document;
-                    previousVariant = variant;
-
-                    continue;
                 } else {
-                    // If the current variant does not overlap with the last one, we can load the previous variant (or region)
+                    // If the current variant does not overlap with the previous variant, we can load the previous variant (or region)
                     if (overlappedVariants != null) {
                         processOverlappedVariants(overlappedVariants, mongoDBOps);
-                    } else if (previousDocument != null) {
+                        overlappedVariants = null;
+                    } else {
                         processVariantTryCatch(previousDocument, previousVariant, mongoDBOps);
                     }
-                    overlappedVariants = null;
+
+                    // Reset region
+                    chromosome = variant.getChromosome();
+                    start = variant.getStart();
+                    end = getEnd(variant);
+
                 }
 
                 previousDocument = document;
                 previousVariant = variant;
-                chromosome = variant.getChromosome();
-                start = variant.getStart();
-                end = getEnd(variant);
             }
-
         }
 
         // Process remaining variants
@@ -368,7 +392,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
      * @param mongoDBOps        Set of MongoDB operations to update
      */
     protected void processVariant(Document document, Variant emptyVar, MongoDBOperations mongoDBOps) {
-        Document study = document.get(Integer.toString(studyId), Document.class);
+        Document study = document.get(studyIdStr, Document.class);
 
         // New variant in the study.
         boolean newStudy = isNewStudy(study);
@@ -464,16 +488,16 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         Variant mainVariant = STRING_ID_CONVERTER.convertToDataModelType(mainDocument);
 
         // Merge documents
-        Map<Document, Variant> mergedVariants = mergeOverlappedVariants(mainVariant, overlappedVariants);
+        Variant variant = mergeOverlappedVariants(mainVariant, overlappedVariants);
 
-        int variantsWithValidData = getVariantsWithValidData(mergedVariants.keySet());
+        int variantsWithValidData = getVariantsWithValidData(overlappedVariants);
 
         // Get the main variant from merged variants.
-        Variant variant = mergedVariants.get(mainDocument);
+//        Variant variant = mergedVariants.get(mainDocument);
 
         if (variant == null) {
             throw new IllegalStateException("Main variant not found after merge! " + mainVariant + ". "
-                    + "Merged variants: " + mergedVariants.values());
+                    + "Merged variants: " + overlappedVariants);
 //            mongoDBOps.overlappedVariants++;
         } else {
             Document study = mainDocument.get(studyId.toString(), Document.class);
@@ -599,7 +623,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     private int getVariantsWithValidData(Collection<Document> documents) {
         int variantsWithValidData = 0;
         for (Document document : documents) {
-            Document study = document.get(Integer.toString(studyId), Document.class);
+            Document study = document.get(studyIdStr, Document.class);
             boolean existingFiles = false;
             for (Integer fileId : fileIds) {
                 List<Binary> files = getListFromDocument(study, fileId.toString());
@@ -626,7 +650,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
      * @param overlappedVariants    Overlapping documents from Stage collection.
      * @return  For each document, its corresponding merged variant
      */
-    protected Map<Document, Variant> mergeOverlappedVariants(Variant mainVariant, List<Document> overlappedVariants) {
+    protected Variant mergeOverlappedVariants(Variant mainVariant, List<Document> overlappedVariants) {
 //        System.out.println("--------------------------------");
 //        System.out.println("Overlapped region = " + overlappedVariants
 //                .stream()
@@ -643,8 +667,8 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             variantsPerFile.put(fileId, new LinkedList<>());
         }
 
-        // Linked hash map to preserve the order
-        Map<Document, Variant> mergedVariants = new LinkedHashMap<>();
+        Variant mainVariantNew = null;
+        List<Variant> variants = new ArrayList<>(overlappedVariants.size());
         List<Boolean> newStudies = new ArrayList<>(overlappedVariants.size());
 
         // For each variant, create an empty variant that will be filled by the VariantMerger
@@ -655,7 +679,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 continue;
             }
 
-            Document study = document.get(Integer.toString(studyId), Document.class);
+            Document study = document.get(studyIdStr, Document.class);
 
             // New variant in the study.
             boolean newStudy = isNewStudy(study);
@@ -665,13 +689,15 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             // Its a completely new OverlappingRegion if all the variants are new in this study
             completelyNewOverlappingRegion &= newStudy;
 
+            variants.add(var);
+
+            if (sameVariant(var, mainVariant)) {
+                mainVariantNew = var;
+                StudyEntry se = new StudyEntry(studyId.toString(), new LinkedList<>(), format);
+                se.setSamplesPosition(new HashMap<>());
+                var.addStudyEntry(se);
+            }
             HashSet<String> ids = new HashSet<>();
-            StudyEntry se = new StudyEntry(studyId.toString(), new LinkedList<>(), format);
-            se.setSamplesPosition(new HashMap<>());
-            var.addStudyEntry(se);
-
-            mergedVariants.put(document, var);
-
             for (Integer fileId : fileIds) {
                 List<Binary> files = getListFromDocument(study, fileId.toString());
                 if (files != null && files.size() == 1) {
@@ -685,29 +711,35 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             var.setIds(new ArrayList<>(ids));
         }
 
+        if (mainVariantNew == null) {
+            // This should never happen
+            throw new IllegalStateException("Main variant was not one of the variants to merge");
+        }
+
         List<Variant> variantsToMerge = new LinkedList<>();
         for (Integer fileId : fileIds) {
-            List<Variant> variantList = variantsPerFile.get(fileId);
-            switch (variantList.size()) {
+            List<Variant> variantsInFile = variantsPerFile.get(fileId);
+            switch (variantsInFile.size()) {
                 case 0:
                     break;
                 case 1:
-                    variantsToMerge.add(variantList.get(0));
+                    variantsToMerge.add(variantsInFile.get(0));
                     break;
                 default:
                     // If there are overlapping variants, select the mainVariant if possible.
                     Variant var = null;
-                    for (Variant variant : variantList) {
+                    for (Variant variant : variantsInFile) {
                         if (sameVariant(variant, mainVariant)) {
                             var = variant;
                         }
                     }
                     // If not found, get the first
                     if (var == null) {
-                        var = variantList.get(0);
-//                        logger.info("Variant " + mainVariant + " not found in " + variantList);
+                        var = variantsInFile.get(0);
+//                        logger.info("Variant " + mainVariant + " not found in " + variantsInFile);
                     }
                     variantsToMerge.add(var);
+
 
                     // Get the original call from the first variant
                     String call = var.getStudies().get(0).getFiles().get(0).getCall();
@@ -720,12 +752,12 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     }
 
                     boolean prompted = false;
-                    for (int i = 1; i < variantList.size(); i++) {
-                        Variant auxVar = variantList.get(i);
+                    for (int i = 1; i < variantsInFile.size(); i++) {
+                        Variant auxVar = variantsInFile.get(i);
                         // Check if variants where part of the same multiallelic variant
-                        String auxCall = var.getStudies().get(0).getFiles().get(0).getCall();
+                        String auxCall = auxVar.getStudies().get(0).getFiles().get(0).getCall();
                         if (!prompted && (auxCall == null || call == null || !auxCall.startsWith(call))) {
-                            logger.warn("Overlapping variants in file {} : {}", fileId, variantList);
+                            logger.warn("Overlapping variants in file {} : {}", fileId, variantsInFile);
                             prompted = true;
                         }
 //                        // Those variants that do not overlap with the selected variant won't be inserted
@@ -766,7 +798,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
          */
         if (!completelyNewOverlappingRegion && newOverlappingRegion && !indexedFiles.isEmpty()) {
             int i = 0;
-            for (Variant variant : mergedVariants.values()) {
+            for (Variant variant : variants) {
                 // If the variant is not new in this study, query to the database for the loaded info.
                 if (!newStudies.get(i)) {
                     QueryResult<Variant> queryResult = fetchVariant(variant);
@@ -788,9 +820,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         }
 
         // Finally, merge variants
-        for (Variant mergedVariant : mergedVariants.values()) {
-            variantMerger.merge(mergedVariant, variantsToMerge);
-        }
+        variantMerger.merge(mainVariantNew, variantsToMerge);
 
 //        System.out.println("----------------");
 //        for (Variant variant : mergedVariants.values()) {
@@ -799,7 +829,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 //        System.out.println("----------------");
 //        System.out.println("--------------------------------");
 
-        return mergedVariants;
+        return mainVariantNew;
     }
 
     /**
