@@ -50,6 +50,7 @@ import java.util.stream.Collectors;
 import static com.mongodb.client.model.Filters.and;
 import static com.mongodb.client.model.Filters.eq;
 import static com.mongodb.client.model.Updates.*;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.DEFAULT_GENOTYPE;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter.UNKNOWN_GENOTYPE;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.IDS_FIELD;
@@ -228,6 +229,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     private final DocumentToStudyVariantEntryConverter studyConverter;
     private final StudyConfiguration studyConfiguration;
     private final boolean excludeGenotypes;
+    private final boolean addUnknownGenotypes;
 
     // Variables that must be aware of concurrent modification
     private final Map<Integer, LinkedHashMap<String, Integer>> samplesPositionMap;
@@ -252,6 +254,17 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         indexedSamples = Collections.unmodifiableList(buildIndexedSamplesList(fileIds));
         studyId = studyConfiguration.getStudyId();
         studyIdStr = String.valueOf(studyId);
+        String defaultGenotype = studyConfiguration.getAttributes().getString(DEFAULT_GENOTYPE.key(), "");
+        if (defaultGenotype.equals(DocumentToSamplesConverter.UNKNOWN_GENOTYPE)) {
+            logger.info("Do not need fill unknown genotype array. DefaultGenotype is UNKNOWN_GENOTYPE({}).",
+                    DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
+            addUnknownGenotypes = false;
+        } else if (excludeGenotypes) {
+            logger.info("Do not need fill unknown genotype array. Excluding genotypes.");
+            addUnknownGenotypes = false;
+        } else {
+            addUnknownGenotypes = true;
+        }
 
         checkOverlappings = fileIds.size() > 1 || !indexedFiles.isEmpty();
         DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(this.studyConfiguration);
@@ -414,7 +427,9 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 List<Binary> duplicatedVariants = getListFromDocument(study, fileId.toString());
                 if (duplicatedVariants.size() > 1) {
                     mongoDBOps.setNonInserted(mongoDBOps.getNonInserted() + duplicatedVariants.size());
-                    addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getSamplesInFile(fileId));
+                    if (addUnknownGenotypes) {
+                        addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getSamplesInFile(fileId));
+                    }
                     logger.warn("Found {} duplicated variants for file {} in variant {}", duplicatedVariants.size(), fileId, emptyVar);
                     continue;
                 }
@@ -443,14 +458,14 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     }
                 }
 
-            } else {
+            } else if (addUnknownGenotypes) {
 //                logger.debug("File {} not in variant {}", fileId, emptyVar);
                 addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getSamplesInFile(fileId));
             }
 
         }
 
-        if (newStudy) {
+        if (newStudy && addUnknownGenotypes) {
             //If it is a new variant for the study, add the already loaded samples as UNKNOWN
             addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getIndexedSamples());
         }
@@ -487,129 +502,121 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
         Variant mainVariant = STRING_ID_CONVERTER.convertToDataModelType(mainDocument);
 
+        int variantsWithValidData = getVariantsWithValidData(overlappedVariants);
+
+        Document study = mainDocument.get(studyId.toString(), Document.class);
+
+        // New variant in the study.
+        boolean newStudy = isNewStudy(study);
+        // New variant in the collection if new variant and document size is 2 {_id, study}
+        boolean newVariant = isNewVariant(mainDocument, newStudy);
+
+        // A variant counts as duplicated if is duplicated or missing for all the files.
+        int duplicatedVariants = 0;
+        List<String> duplicatedVariantsList = new ArrayList<>();
+        int duplicatedFiles = 0;
+        int missingFiles = 0;
+        for (Integer fileId : fileIds) {
+            List<Binary> files = getListFromDocument(study, fileId.toString());
+            if (files == null || files.isEmpty()) {
+                missingFiles++;
+            } else if (files.size() > 1) {
+                duplicatedVariants += files.size();
+                duplicatedFiles++;
+//                        // If there are more than one variant for this file, increment the number of nonInserted variants.
+//                        // Duplicated variant
+                logger.warn("Found {} duplicated variants for file {} in variant {}.",
+                        files.size(), fileId, mainVariant);
+                for (Binary binary : files) {
+                    Variant duplicatedVariant = VARIANT_CONVERTER_DEFAULT.convertToDataModelType(binary);
+                    String call = duplicatedVariant.getStudies().get(0).getFiles().get(0).getCall();
+                    if (call == null) {
+                        call = duplicatedVariant.toString();
+                    }
+                    duplicatedVariantsList.add(call);
+                }
+            }
+        }
+
+        // An overlapping variant will be considered missing if is missing or duplicated for all the files.
+        final boolean missingOverlappingVariant;
+
+        if (duplicatedFiles + missingFiles == fileIds.size()) {
+            // C3.1), C4.1), C5), B3), D1), D2)
+            missingOverlappingVariant = true;
+            if (duplicatedFiles > 0) {
+                // D1), D2)
+                logger.error("Duplicated! " + mainVariant + " " + duplicatedVariantsList);
+                mongoDBOps.setNonInserted(mongoDBOps.getNonInserted() + duplicatedVariants);
+            }
+            // No information for this variant
+            if (newStudy) {
+                // B3), D1), D2)
+                return;
+            }
+            // else {
+            //      Do not skip. Fill gaps.
+            //      No new overlapped variants.
+            // }
+
+            if (variantsWithValidData != 0) {
+                // Scenarios C3.1), C4.1)
+                logger.warn("Missing overlapped variant! " + mainVariant);
+                mongoDBOps.setOverlappedVariants(mongoDBOps.getOverlappedVariants() + 1);
+            }
+            // else {
+            //      If the files to be loaded where not present in the current variant, there is not overlapped variant.
+            //      See scenario C5)
+            // }
+        } else {
+            missingOverlappingVariant = false;
+        }
+
+
         // Merge documents
         Variant variant = mergeOverlappedVariants(mainVariant, overlappedVariants);
 
-        int variantsWithValidData = getVariantsWithValidData(overlappedVariants);
+        Document gts = new Document();
+        List<Document> fileDocuments = new LinkedList<>();
+        List<Document> alternateDocuments = null;
+        StudyEntry studyEntry = variant.getStudies().get(0);
 
-        // Get the main variant from merged variants.
-//        Variant variant = mergedVariants.get(mainDocument);
-
-        if (variant == null) {
-            throw new IllegalStateException("Main variant not found after merge! " + mainVariant + ". "
-                    + "Merged variants: " + overlappedVariants);
-//            mongoDBOps.overlappedVariants++;
-        } else {
-            Document study = mainDocument.get(studyId.toString(), Document.class);
-
-            // New variant in the study.
-            boolean newStudy = isNewStudy(study);
-            // New variant in the collection if new variant and document size is 2 {_id, study}
-            boolean newVariant = isNewVariant(mainDocument, newStudy);
-
-            // A variant counts as duplicated if is duplicated or missing for all the files.
-            int duplicatedVariants = 0;
-            List<String> duplicatedVariantsList = new ArrayList<>();
-            int duplicatedFiles = 0;
-            int missingFiles = 0;
-            for (Integer fileId : fileIds) {
-                List<Binary> files = getListFromDocument(study, fileId.toString());
-                if (files == null || files.isEmpty()) {
-                    missingFiles++;
-                } else if (files.size() > 1) {
-                    duplicatedVariants += files.size();
-                    duplicatedFiles++;
-//                        // If there are more than one variant for this file, increment the number of nonInserted variants.
-//                        // Duplicated variant
-                    logger.warn("Found {} duplicated variants for file {} in variant {}.",
-                            files.size(), fileId, mainVariant);
-                    for (Binary binary : files) {
-                        Variant duplicatedVariant = VARIANT_CONVERTER_DEFAULT.convertToDataModelType(binary);
-                        String call = duplicatedVariant.getStudies().get(0).getFiles().get(0).getCall();
-                        if (call == null) {
-                            call = duplicatedVariant.toString();
-                        }
-                        duplicatedVariantsList.add(call);
-                    }
+        // For all the files that are being indexed
+        for (Integer fileId : fileIds) {
+            FileEntry file = studyEntry.getFile(fileId.toString());
+            if (file != null) {
+                Document studyDocument = studyConverter.convertToStorageType(variant, studyEntry, file, getSampleNamesInFile(fileId));
+                if (studyDocument.containsKey(GENOTYPES_FIELD)) {
+                    studyDocument.get(GENOTYPES_FIELD, Document.class)
+                            .forEach((gt, sampleIds) -> addSampleIdsGenotypes(gts, gt, (Collection<Integer>) sampleIds));
                 }
+                fileDocuments.addAll(getListFromDocument(studyDocument, FILES_FIELD));
+                alternateDocuments = getListFromDocument(studyDocument, ALTERNATES_FIELD);
+            } else if (addUnknownGenotypes) {
+                addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getSamplesInFile(fileId));
             }
+        }
 
-            // An overlapping variant will be considered missing if is missing or duplicated for all the files.
-            final boolean missingOverlappingVariant;
-
-            if (duplicatedFiles + missingFiles == fileIds.size()) {
-                // C3.1), C4.1), C5), B3), D1), D2)
-                missingOverlappingVariant = true;
-                if (duplicatedFiles > 0) {
-                    // D1), D2)
-                    logger.error("Duplicated! " + mainVariant + " " + duplicatedVariantsList);
-                    mongoDBOps.setNonInserted(mongoDBOps.getNonInserted() + duplicatedVariants);
-                }
-                // No information for this variant
-                if (newStudy) {
-                    // B3), D1), D2)
-                    return;
-                }
-                // else {
-                //      Do not skip. Fill gaps.
-                //      No new overlapped variants.
-                // }
-
-                if (variantsWithValidData != 0) {
-                    // Scenarios C3.1), C4.1)
-                    logger.warn("Missing overlapped variant! " + mainVariant);
-                    mongoDBOps.setOverlappedVariants(mongoDBOps.getOverlappedVariants() + 1);
-                }
-                // else {
-                //      If the files to be loaded where not present in the current variant, there is not overlapped variant.
-                //      See scenario C5)
-                // }
-            } else {
-                missingOverlappingVariant = false;
-            }
-
-            Document gts = new Document();
-            List<Document> fileDocuments = new LinkedList<>();
-            List<Document> alternateDocuments = null;
-            StudyEntry studyEntry = variant.getStudies().get(0);
-
-            // For all the files that are being indexed
-            for (Integer fileId : fileIds) {
+        // For the rest of the files not indexed, only is this variant is new in this study,
+        // add all the already indexed files information, if present in this variant.
+        if (newStudy) {
+            for (Integer fileId : indexedFiles) {
                 FileEntry file = studyEntry.getFile(fileId.toString());
                 if (file != null) {
-                    Document studyDocument = studyConverter.convertToStorageType(variant, studyEntry, file, getSampleNamesInFile(fileId));
+                    Document studyDocument = studyConverter.convertToStorageType(variant, studyEntry, file,
+                            getSampleNamesInFile(fileId));
                     if (studyDocument.containsKey(GENOTYPES_FIELD)) {
                         studyDocument.get(GENOTYPES_FIELD, Document.class)
                                 .forEach((gt, sampleIds) -> addSampleIdsGenotypes(gts, gt, (Collection<Integer>) sampleIds));
                     }
                     fileDocuments.addAll(getListFromDocument(studyDocument, FILES_FIELD));
-                    alternateDocuments = getListFromDocument(studyDocument, ALTERNATES_FIELD);
-                } else {
+                } else if (addUnknownGenotypes) {
                     addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getSamplesInFile(fileId));
                 }
             }
-
-            // For the rest of the files not indexed, only is this variant is new in this study,
-            // add all the already indexed files information, if present in this variant.
-            if (newStudy) {
-                for (Integer fileId : indexedFiles) {
-                    FileEntry file = studyEntry.getFile(fileId.toString());
-                    if (file != null) {
-                        Document studyDocument = studyConverter.convertToStorageType(variant, studyEntry, file,
-                                getSampleNamesInFile(fileId));
-                        if (studyDocument.containsKey(GENOTYPES_FIELD)) {
-                            studyDocument.get(GENOTYPES_FIELD, Document.class)
-                                    .forEach((gt, sampleIds) -> addSampleIdsGenotypes(gts, gt, (Collection<Integer>) sampleIds));
-                        }
-                        fileDocuments.addAll(getListFromDocument(studyDocument, FILES_FIELD));
-                    } else {
-                        addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getSamplesInFile(fileId));
-                    }
-                }
-            }
-            updateMongoDBOperations(mainVariant, variant.getIds(), fileDocuments, alternateDocuments, gts, newStudy, newVariant,
-                    mongoDBOps);
         }
+        updateMongoDBOperations(mainVariant, variant.getIds(), fileDocuments, alternateDocuments, gts, newStudy, newVariant,
+                mongoDBOps);
 
     }
 
@@ -849,6 +856,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             try {
                 queryResult = dbAdaptor.get(new Query()
                                 .append(VariantDBAdaptor.VariantQueryParams.ID.key(), variant.toString())
+                                .append(VariantDBAdaptor.VariantQueryParams.UNKNOWN_GENOTYPE.key(), ".")
                                 .append(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), studyId),
                         new QueryOptions(QueryOptions.TIMEOUT, 30_000));
             } catch (MongoExecutionTimeoutException e) {
