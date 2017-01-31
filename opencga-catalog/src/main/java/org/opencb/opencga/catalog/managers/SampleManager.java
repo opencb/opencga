@@ -656,6 +656,12 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                 case SOURCE:
                 case NAME:
                 case INDIVIDUAL_ID:
+                    long individualId = parameters.getLong(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
+                    individualId = individualId <= 0 ? -1 : individualId;
+                    parameters.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
+                    if (individualId > 0) {
+                        individualDBAdaptor.checkId(individualId);
+                    }
                 case DESCRIPTION:
                 case ATTRIBUTES:
                     break;
