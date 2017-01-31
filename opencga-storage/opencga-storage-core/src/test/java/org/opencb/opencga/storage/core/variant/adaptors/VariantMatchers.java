@@ -146,6 +146,15 @@ public class VariantMatchers {
         };
     }
 
+    public static Matcher<VariantAnnotation> at(final String variant) {
+        Variant v = new Variant(variant);
+        return allOf(with("chromosome", VariantAnnotation::getChromosome, is(v.getChromosome())),
+                with("position", VariantAnnotation::getStart, is(v.getStart())),
+                with("reference", VariantAnnotation::getReference, is(v.getReference())),
+                with("alternate", VariantAnnotation::getAlternate, is(v.getAlternate()))
+        );
+    }
+
     public static Matcher<VariantAnnotation> hasGenes(Matcher<? super Collection<String>> subMatcher) {
         return new FeatureMatcher<VariantAnnotation, Collection<String>>(subMatcher, "with genes", "annotation") {
             @Override

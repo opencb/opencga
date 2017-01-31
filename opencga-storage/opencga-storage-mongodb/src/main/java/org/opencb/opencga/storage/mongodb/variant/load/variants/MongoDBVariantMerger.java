@@ -256,11 +256,11 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         studyIdStr = String.valueOf(studyId);
         String defaultGenotype = studyConfiguration.getAttributes().getString(DEFAULT_GENOTYPE.key(), "");
         if (defaultGenotype.equals(DocumentToSamplesConverter.UNKNOWN_GENOTYPE)) {
-            logger.info("Do not need fill unknown genotype array. DefaultGenotype is UNKNOWN_GENOTYPE({}).",
+            logger.debug("Do not need fill unknown genotype array. DefaultGenotype is UNKNOWN_GENOTYPE({}).",
                     DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
             addUnknownGenotypes = false;
         } else if (excludeGenotypes) {
-            logger.info("Do not need fill unknown genotype array. Excluding genotypes.");
+            logger.debug("Do not need fill unknown genotype array. Excluding genotypes.");
             addUnknownGenotypes = false;
         } else {
             addUnknownGenotypes = true;

@@ -23,6 +23,7 @@ import htsjdk.variant.variantcontext.VariantContext;
 import org.apache.commons.lang3.StringUtils;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matcher;
+import org.hamcrest.core.IsAnything;
 import org.junit.*;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -498,13 +499,22 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         queryGeneCT("ERMAP,SH2D5", "SO:0001632");
 
         queryGeneCT("ERMAP,SH2D5", "SO:0001632", new Query()
-                .append(ANNOT_XREF.key(), "ERMAP,rs1171830,SH2D5,RCV000036856,4:42895308:G:A,COSM3760638")
-                .append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001632"));
+                        .append(ANNOT_XREF.key(), "ERMAP,SH2D5,4:42895308:G:A")
+                        .append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001632"),
+                at("4:42895308:G:A"));
 
         queryGeneCT("ERMAP,SH2D5", "SO:0001632", new Query()
                 .append(GENE.key(), "ERMAP")
                 .append(ANNOT_XREF.key(), "SH2D5,rs12345")
-                .append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001632"));
+                .append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001632"),
+                with("id", VariantAnnotation::getId, is("rs1171830")));
+
+        queryGeneCT("ERMAP,SH2D5", "SO:0001632", new Query()
+                        .append(ANNOT_XREF.key(), "ERMAP,rs1171830,SH2D5,RCV000036856,4:42895308:G:A,COSM3760638")
+                        .append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001632"),
+                anyOf(
+                        with("id", VariantAnnotation::getId, is("rs1171830")),
+                        at("4:42895308:G:A")));
 
         assertThat(dbAdaptor.get(new Query(ANNOT_XREF.key(), "rs1171830").append(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001566"), null),
                 everyResult(allVariants, allOf(
@@ -513,24 +523,35 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     private void queryGeneCT(String gene, String so) {
-        queryGeneCT(gene, so, new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), so).append(GENE.key(), gene));
+        queryGeneCT(gene, so, new Query().append(ANNOT_CONSEQUENCE_TYPE.key(), so).append(GENE.key(), gene), not(new IsAnything<>()));
     }
 
-    private void queryGeneCT(String gene, String so, Query query) {
+    private void queryGeneCT(String gene, String so, Query query, Matcher<VariantAnnotation> regionMatcher) {
+        logger.info(query.toJson());
         queryResult = dbAdaptor.get(query, null);
-        logger.info(query.toJson() + " -> numResults " + queryResult.getNumResults());
+        logger.info(" -> numResults " + queryResult.getNumResults());
 
         Matcher<String> geneMatcher;
+        List<String> genes = Arrays.asList(gene.split(","));
         if (gene.contains(",")) {
-            geneMatcher = anyOf(Arrays.stream(gene.split(",")).map(CoreMatchers::is).collect(Collectors.toList()));
+            geneMatcher = anyOf(genes.stream().map(CoreMatchers::is).collect(Collectors.toList()));
         } else {
             geneMatcher = is(gene);
         }
         assertThat(queryResult, everyResult(allVariants, hasAnnotation(
-                withAny("consequence type", VariantAnnotation::getConsequenceTypes, allOf(
-                        with("gene", ConsequenceType::getGeneName, geneMatcher),
-                        withAny("SO", ConsequenceType::getSequenceOntologyTerms,
-                                with("accession", SequenceOntologyTerm::getAccession, is(so))))))));
+                anyOf(
+                        allOf(
+                                hasAnyGeneOf(genes),
+                                withAny("consequence type", VariantAnnotation::getConsequenceTypes, allOf(
+                                        with("gene", ConsequenceType::getGeneName, geneMatcher),
+                                        withAny("SO", ConsequenceType::getSequenceOntologyTerms,
+                                                with("accession", SequenceOntologyTerm::getAccession, is(so))))))
+                        ,
+                        allOf(
+                                regionMatcher,
+//                                not(hasAnyGeneOf(genes)),
+                                hasSO(hasItem(so))
+                )))));
     }
 
     @Test
