@@ -45,12 +45,12 @@ public class AuditMongoDBAdaptorTest {
                 .openStream());
 
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
-                configuration.getCatalog().getHosts().get(0).split(":")[0], 27017);
+                configuration.getCatalog().getDatabase().getHosts().get(0).split(":")[0], 27017);
 
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", configuration.getCatalog().getUser())
-                .add("password", configuration.getCatalog().getPassword())
-                .add("authenticationDatabase", configuration.getCatalog().getOptions().get("authenticationDatabase"))
+                .add("username", configuration.getCatalog().getDatabase().getUser())
+                .add("password", configuration.getCatalog().getDatabase().getPassword())
+                .add("authenticationDatabase", configuration.getCatalog().getDatabase().getOptions().get("authenticationDatabase"))
                 .build();
 
 //        String database = catalogConfiguration.getDatabase().getDatabase();

@@ -140,9 +140,8 @@ public class VariableSetWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            long studyId = catalogManager.getStudyId(studyStr, sessionId);
-            queryOptions.put(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-            QueryResult<VariableSet> queryResult = catalogManager.getAllVariableSet(studyId, queryOptions, sessionId);
+            QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().searchVariableSets(studyStr, query, queryOptions,
+                    sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

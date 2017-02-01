@@ -210,7 +210,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         long studyId;
         long fileId;
 
-        if (StringUtils.isNumeric(fileStr)) {
+        if (StringUtils.isNumeric(fileStr) && Long.parseLong(fileStr) > configuration.getCatalog().getOffset()) {
             fileId = Long.parseLong(fileStr);
             fileDBAdaptor.exists(fileId);
             studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
@@ -238,7 +238,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         long studyId;
         List<Long> fileIds;
 
-        if (StringUtils.isNumeric(fileStr)) {
+        if (StringUtils.isNumeric(fileStr) && Long.parseLong(fileStr) > configuration.getCatalog().getOffset()) {
             fileIds = Arrays.asList(Long.parseLong(fileStr));
             fileDBAdaptor.exists(fileIds.get(0));
             studyId = fileDBAdaptor.getStudyIdByFileId(fileIds.get(0));
@@ -258,7 +258,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     private Long smartResolutor(String fileName, long studyId) throws CatalogException {
-        if (StringUtils.isNumeric(fileName)) {
+        if (StringUtils.isNumeric(fileName) && Long.parseLong(fileName) > configuration.getCatalog().getOffset()) {
             long fileId = Long.parseLong(fileName);
             fileDBAdaptor.exists(fileId);
             return fileId;

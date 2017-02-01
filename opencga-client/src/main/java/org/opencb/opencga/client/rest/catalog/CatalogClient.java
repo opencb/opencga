@@ -27,9 +27,9 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
     }
 
     public enum AclParams {
-        ADD_PERMISSIONS("addPermissions"),
-        REMOVE_PERMISSIONS("removePermissions"),
-        SET_PERMISSIONS("setPermissions");
+        ADD("add"),
+        REMOVE("remove"),
+        SET("set");
 
         private String key;
 

@@ -82,7 +82,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                                           QueryOptions options, String sessionId) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         sex = ParamUtils.defaultObject(sex, Individual.Sex.UNKNOWN);
-        ParamUtils.checkAlias(name, "name");
+        logger.info(Long.toString(configuration.getCatalog().getOffset()));
+        ParamUtils.checkAlias(name, "name", configuration.getCatalog().getOffset());
         family = ParamUtils.defaultObject(family, "");
         ethnicity = ParamUtils.defaultObject(ethnicity, "");
         speciesCommonName = ParamUtils.defaultObject(speciesCommonName, "");
@@ -355,7 +356,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         long studyId;
         long individualId;
 
-        if (StringUtils.isNumeric(individualStr)) {
+        if (StringUtils.isNumeric(individualStr) && Long.parseLong(individualStr) > configuration.getCatalog().getOffset()) {
             individualId = Long.parseLong(individualStr);
             individualDBAdaptor.exists(individualId);
             studyId = individualDBAdaptor.getStudyId(individualId);
@@ -397,7 +398,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         long studyId;
         List<Long> individualIds;
 
-        if (StringUtils.isNumeric(individualStr)) {
+        if (StringUtils.isNumeric(individualStr) && Long.parseLong(individualStr) > configuration.getCatalog().getOffset()) {
             individualIds = Arrays.asList(Long.parseLong(individualStr));
             individualDBAdaptor.exists(individualIds.get(0));
             studyId = individualDBAdaptor.getStudyId(individualIds.get(0));
@@ -413,10 +414,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
             QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
             if (individualQueryResult.getNumResults() == individualSplit.size()) {
-                individualIds = individualQueryResult.getResult()
-                        .stream()
-                        .map(individual -> individual.getId())
-                        .collect(Collectors.toList());
+                individualIds = individualQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList());
             } else {
                 throw new CatalogException("Found only " + individualQueryResult.getNumResults() + " out of the " + individualSplit.size()
                         + " individuals looked for in study " + studyStr);
@@ -707,7 +705,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
     private long commonGetAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
-        ParamUtils.checkAlias(annotationSetName, "annotationSetName");
+        ParamUtils.checkAlias(annotationSetName, "annotationSetName", configuration.getCatalog().getOffset());
         MyResourceId resource = getId(id, studyStr, sessionId);
         authorizationManager.checkIndividualPermission(resource.getResourceId(), resource.getUser(),
                 IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);

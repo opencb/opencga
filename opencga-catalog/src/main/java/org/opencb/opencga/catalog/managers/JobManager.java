@@ -101,7 +101,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         long studyId;
         long jobId;
 
-        if (StringUtils.isNumeric(jobStr)) {
+        if (StringUtils.isNumeric(jobStr) && Long.parseLong(jobStr) > configuration.getCatalog().getOffset()) {
             jobId = Long.parseLong(jobStr);
             jobDBAdaptor.exists(jobId);
             studyId = jobDBAdaptor.getStudyId(jobId);
@@ -129,7 +129,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         long studyId;
         List<Long> jobIds;
 
-        if (StringUtils.isNumeric(jobStr)) {
+        if (StringUtils.isNumeric(jobStr) && Long.parseLong(jobStr) > configuration.getCatalog().getOffset()) {
             jobIds = Arrays.asList(Long.parseLong(jobStr));
             jobDBAdaptor.exists(jobIds.get(0));
             studyId = jobDBAdaptor.getStudyId(jobIds.get(0));
@@ -151,8 +151,10 @@ public class JobManager extends AbstractManager implements IJobManager {
     private Long smartResolutor(String jobName, long studyId) throws CatalogException {
         if (StringUtils.isNumeric(jobName)) {
             long jobId = Long.parseLong(jobName);
-            jobDBAdaptor.exists(jobId);
-            return jobId;
+            if (jobId > configuration.getCatalog().getOffset()) {
+                jobDBAdaptor.exists(jobId);
+                return jobId;
+            }
         }
 
         Query query = new Query()

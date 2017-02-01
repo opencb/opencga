@@ -102,7 +102,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
     public static void clearCatalog(Configuration configuration) throws IOException, CatalogException {
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : configuration.getCatalog().getHosts()) {
+        for (String hostPort : configuration.getCatalog().getDatabase().getHosts()) {
             if (hostPort.contains(":")) {
                 String[] split = hostPort.split(":");
                 Integer port = Integer.valueOf(split[1]);
