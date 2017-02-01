@@ -107,9 +107,10 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create a cohort", position = 1, notes = "A cohort can be created by providing a list of SampleIds, " +
-            "or providing a categorical variable (both variableSetId and variable). " +
-            "If none of this is given, an empty cohort will be created.", response = Cohort.class)
+    @ApiOperation(value = "Create a cohort [WARNING]", position = 1, notes = "Using the GET method is discouraged. Please use the POST one. <br>"
+            + "A cohort can be created by providing a list of SampleIds, "
+            + "or providing a categorical variable (both variableSetId and variable). "
+            + "If none of this is given, an empty cohort will be created.", response = Cohort.class)
     public Response createCohort(@ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId")
                                              String studyIdStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -268,7 +269,8 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohort}/update")
-    @ApiOperation(value = "Update some user attributes using GET method", position = 4, response = Cohort.class)
+    @ApiOperation(value = "Update some user attributes using GET method [WARNING]", position = 4, response = Cohort.class,
+        notes = "Using the GET method is discouraged. Please use the POST one.")
     public Response update(@ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortStr,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                 @QueryParam("study") String studyStr,
@@ -498,7 +500,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohorts}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of members", position = 19)
+    @ApiOperation(value = "Define a set of permissions for a list of members", hidden = true, position = 19)
     public Response createRole(@ApiParam(value = "Comma separated list of cohort ids", required = true) @PathParam("cohorts")
                                            String cohortIdsStr,
                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -546,7 +548,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohort}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    @ApiOperation(value = "Update the set of permissions granted for the member", hidden = true, position = 21)
     public Response updateAcl(@ApiParam(value = "cohortId", required = true) @PathParam("cohort") String cohortIdStr,
                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                     @QueryParam("study") String studyStr,

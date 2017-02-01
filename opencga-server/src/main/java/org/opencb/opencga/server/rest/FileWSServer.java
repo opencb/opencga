@@ -1117,7 +1117,8 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{file}/update")
-    @ApiOperation(value = "Update fields of a file", position = 16, response = File.class)
+    @ApiOperation(value = "Update fields of a file [WARNING]", position = 16, response = File.class,
+    notes = "Using the GET method is discouraged. Please use the POST one.")
     public Response update(@ApiParam(value = "File id") @PathParam(value = "file") String fileIdStr,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                 @QueryParam("study") String studyStr,
@@ -1419,7 +1420,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{files}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of users or groups", position = 19,
+    @ApiOperation(value = "Define a set of permissions for a list of users or groups", hidden = true, position = 19,
             response = QueryResponse.class)
     public Response createAcl(@ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("files")
                                            String fileIdStr,
@@ -1470,7 +1471,8 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{file}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the permissions granted for the user or group", position = 21, response = QueryResponse.class)
+    @ApiOperation(value = "Update the permissions granted for the user or group", hidden = true, position = 21,
+            response = QueryResponse.class)
     public Response updateAcl(@ApiParam(value = "File id", required = true) @PathParam("file") String fileIdStr,
                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                     @QueryParam("study") String studyStr,

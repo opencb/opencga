@@ -63,7 +63,8 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create a new study", response = Study.class)
+    @ApiOperation(value = "Create a new study [WARNING]", response = Study.class,
+            notes = "Using the GET method is discouraged. Please use the POST one.")
     public Response createStudy(@ApiParam(value = "Project id or alias", required = true) @QueryParam("projectId") String projectIdStr,
                                 @ApiParam(value = "Study name", required = true) @QueryParam("name") String name,
                                 @ApiParam(value = "Study alias", required = true) @QueryParam("alias") String alias,
@@ -173,7 +174,8 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/update")
-    @ApiOperation(value = "Update some study attributes", response = Study.class)
+    @ApiOperation(value = "Update some study attributes [WARNING]", response = Study.class,
+    notes = "Using the GET method is discouraged. Please use the POST one.")
     public Response update(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
                                    required = true) @PathParam("study") String studyStr,
                            @ApiParam(value = "Study name") @QueryParam("name") String name,
@@ -849,7 +851,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of users or groups")
+    @ApiOperation(value = "Define a set of permissions for a list of users or groups", hidden = true)
     public Response createRole(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
             required = true) @PathParam("study") String studyStr,
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
@@ -899,7 +901,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the user or group", position = 21)
+    @ApiOperation(value = "Update the set of permissions granted for the user or group", hidden = true, position = 21)
     public Response updateAcl(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
                                       required = true) @PathParam("study") String studyStr,
                               @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
