@@ -1255,11 +1255,6 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.readVariableSet(variableSet, options, sessionId);
     }
 
-    public QueryResult<VariableSet> getAllVariableSet(long studyId, QueryOptions options, String sessionId)
-            throws CatalogException {
-        return studyManager.readAllVariableSets(studyId, options, sessionId);
-    }
-
     public QueryResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions, String sessionId)
             throws CatalogException {
         return studyManager.deleteVariableSet(variableSetId, queryOptions, sessionId);

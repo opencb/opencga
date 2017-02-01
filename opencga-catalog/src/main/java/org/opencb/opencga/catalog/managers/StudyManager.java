@@ -1025,11 +1025,15 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     }
 
     @Override
-    public QueryResult<VariableSet> readAllVariableSets(long studyId, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<VariableSet> searchVariableSets(String studyStr, Query query, QueryOptions options, String sessionId)
+            throws CatalogException {
         String userId = catalogManager.getUserManager().getId(sessionId);
+        long studyId = getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        return studyDBAdaptor.getAllVariableSets(studyId, options);
+        query = ParamUtils.defaultObject(query, Query::new);
+        query.put(StudyDBAdaptor.VariableSetParams.STUDY_ID.key(), studyId);
+        return studyDBAdaptor.getVariableSets(query, options);
     }
 
     @Override
