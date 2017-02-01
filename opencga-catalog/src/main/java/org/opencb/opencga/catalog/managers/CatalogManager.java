@@ -160,7 +160,7 @@ public class CatalogManager implements AutoCloseable {
 
     private void clearCatalog() {
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : configuration.getCatalog().getHosts()) {
+        for (String hostPort : configuration.getCatalog().getDatabase().getHosts()) {
             if (hostPort.contains(":")) {
                 String[] split = hostPort.split(":");
                 Integer port = Integer.valueOf(split[1]);
@@ -225,13 +225,13 @@ public class CatalogManager implements AutoCloseable {
     private void configureDBAdaptor(Configuration configuration) throws CatalogDBException {
 
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", configuration.getCatalog().getUser())
-                .add("password", configuration.getCatalog().getPassword())
-                .add("authenticationDatabase", configuration.getCatalog().getOptions().get("authenticationDatabase"))
+                .add("username", configuration.getCatalog().getDatabase().getUser())
+                .add("password", configuration.getCatalog().getDatabase().getPassword())
+                .add("authenticationDatabase", configuration.getCatalog().getDatabase().getOptions().get("authenticationDatabase"))
                 .build();
 
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : configuration.getCatalog().getHosts()) {
+        for (String hostPort : configuration.getCatalog().getDatabase().getHosts()) {
             if (hostPort.contains(":")) {
                 String[] split = hostPort.split(":");
                 Integer port = Integer.valueOf(split[1]);
@@ -457,8 +457,7 @@ public class CatalogManager implements AutoCloseable {
      * ***************************
      */
     public QueryResult<Study> createStudy(long projectId, String name, String alias, Study.Type type, String description,
-                                          String sessionId)
-            throws CatalogException {
+                                          String sessionId) throws CatalogException {
         return createStudy(projectId, name, alias, type, null, description, null, null, null, null, null, null, null, null,
                 sessionId);
     }
@@ -490,10 +489,6 @@ public class CatalogManager implements AutoCloseable {
             throws CatalogException {
         QueryResult<Study> result = studyManager.create(projectId, name, alias, type, creationDate, description, status, cipher, uriScheme,
                 uri, datastores, stats, attributes, options, sessionId);
-        //if (uri != null) {
-//        createFolder(result.getResult().get(0).getId(), Paths.get("data"), true, null, sessionId);
-//        createFolder(result.getResult().get(0).getId(), Paths.get("analysis"), true, null, sessionId);
-        //}
         return result;
     }
 

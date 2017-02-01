@@ -52,7 +52,7 @@ public class AnnotationManager {
                                                            AnnotationSetDBAdaptor dbAdaptor)
             throws CatalogException {
 
-        ParamUtils.checkAlias(annotationSetName, "annotationSetName");
+        ParamUtils.checkAlias(annotationSetName, "annotationSetName", -1);
 
         // Create empty annotation set
         AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSet.getId(), new HashSet<>(), TimeUtils.getTime(),

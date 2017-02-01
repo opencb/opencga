@@ -86,8 +86,10 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     public List<Long> getIds(String userId, String studyStr) throws CatalogException {
         if (StringUtils.isNumeric(studyStr)) {
             long studyId = Long.parseLong(studyStr);
-            studyDBAdaptor.checkId(studyId);
-            return Arrays.asList(studyId);
+            if (studyId > configuration.getCatalog().getOffset()) {
+                studyDBAdaptor.checkId(studyId);
+                return Arrays.asList(studyId);
+            }
         }
 
         Query query = new Query();
@@ -246,7 +248,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkParameter(alias, "alias");
         ParamUtils.checkObj(type, "type");
-        ParamUtils.checkAlias(alias, "alias");
+        ParamUtils.checkAlias(alias, "alias", configuration.getCatalog().getOffset());
 
         String userId = catalogManager.getUserManager().getId(sessionId);
         description = ParamUtils.defaultString(description, "");
@@ -400,7 +402,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     }
 
     private QueryResult rename(long studyId, String newStudyAlias, String sessionId) throws CatalogException {
-        ParamUtils.checkAlias(newStudyAlias, "newStudyAlias");
+        ParamUtils.checkAlias(newStudyAlias, "newStudyAlias", configuration.getCatalog().getOffset());
         String userId = catalogManager.getUserManager().getId(sessionId);
 //        String studyOwnerId = studyDBAdaptor.getStudyOwnerId(studyId);
 

@@ -258,7 +258,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         long studyId;
         long sampleId;
 
-        if (StringUtils.isNumeric(sampleStr)) {
+        if (StringUtils.isNumeric(sampleStr) && Long.parseLong(sampleStr) > configuration.getCatalog().getOffset()) {
             sampleId = Long.parseLong(sampleStr);
             sampleDBAdaptor.exists(sampleId);
             studyId = sampleDBAdaptor.getStudyId(sampleId);
@@ -300,7 +300,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         long studyId;
         List<Long> sampleIds = new ArrayList<>();
 
-        if (StringUtils.isNumeric(sampleStr)) {
+        if (StringUtils.isNumeric(sampleStr) && Long.parseLong(sampleStr) > configuration.getCatalog().getOffset()) {
             sampleIds = Arrays.asList(Long.parseLong(sampleStr));
             sampleDBAdaptor.exists(sampleIds.get(0));
             studyId = sampleDBAdaptor.getStudyId(sampleIds.get(0));
@@ -739,7 +739,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     private long commonGetAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(id, "id");
-        ParamUtils.checkAlias(annotationSetName, "annotationSetName");
+        ParamUtils.checkAlias(annotationSetName, "annotationSetName", configuration.getCatalog().getOffset());
         MyResourceId resourceId = catalogManager.getSampleManager().getId(id, studyStr, sessionId);
         authorizationManager.checkSamplePermission(resourceId.getResourceId(), resourceId.getUser(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
