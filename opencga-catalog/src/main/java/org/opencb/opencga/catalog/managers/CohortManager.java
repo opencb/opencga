@@ -287,6 +287,7 @@ public class CohortManager extends AbstractManager implements ICohortManager {
                 case CREATION_DATE:
                 case DESCRIPTION:
                 case SAMPLES:
+                case ATTRIBUTES:
                     break;
                 default:
                     throw new CatalogException("Cannot update " + queryParam);
