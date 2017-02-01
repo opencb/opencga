@@ -16,6 +16,11 @@
 
 package org.opencb.opencga.storage.mongodb.variant.adaptors;
 
+import org.apache.log4j.ConsoleAppender;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -35,6 +40,17 @@ import static org.junit.Assert.*;
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
 public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements MongoDBVariantStorageTest {
+
+
+    @Before
+    public void setUpLoggers() throws Exception {
+        ConsoleAppender stderr = (ConsoleAppender) LogManager.getRootLogger().getAppender("stderr");
+        stderr.setThreshold(Level.toLevel("debug"));
+        org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
+        org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
+        org.apache.log4j.Logger.getLogger("org.mongodb.driver.protocol.update").setLevel(Level.WARN);
+        org.apache.log4j.Logger.getLogger("org.mongodb.driver.protocol.command").setLevel(Level.WARN);
+    }
 
     @Test
     public void deleteStudyTest() throws Exception {
