@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant.adaptors;
 
+import org.junit.Before;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorLargeTest;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
@@ -23,6 +24,11 @@ import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class VariantMongoDBAdaptorLargeTest extends VariantDBAdaptorLargeTest implements MongoDBVariantStorageTest {
+
+    @Before
+    public void setUpLoggers() throws Exception {
+        logLevelDebug();
+    }
 
     @Override
     protected int skippedVariants() {
