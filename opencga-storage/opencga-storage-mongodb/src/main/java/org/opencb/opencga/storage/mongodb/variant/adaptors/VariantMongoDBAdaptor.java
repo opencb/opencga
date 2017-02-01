@@ -1842,23 +1842,22 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private DocumentToVariantConverter getDocumentToVariantConverter(Query query, QueryOptions options) {
-        List<Integer> studyIds = utils.getStudyIds(query.getAsList(VariantQueryParams.STUDIES.key(), ",|;"), options);
-
+        List<Integer> returnedStudies = query.containsKey(VariantQueryParams.RETURNED_STUDIES.key())
+                ? utils.getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options)
+                : null;
         DocumentToSamplesConverter samplesConverter;
-        if (studyIds.isEmpty()) {
-            samplesConverter = new DocumentToSamplesConverter(studyConfigurationManager);
-        } else {
-            List<StudyConfiguration> studyConfigurations = new LinkedList<>();
-            for (Integer studyId : studyIds) {
+        samplesConverter = new DocumentToSamplesConverter(studyConfigurationManager);
+        // Fetch some StudyConfigurations that will be needed
+        if (returnedStudies != null) {
+            for (Integer studyId : returnedStudies) {
                 QueryResult<StudyConfiguration> queryResult = studyConfigurationManager.getStudyConfiguration(studyId, options);
                 if (queryResult.getResult().isEmpty()) {
                     throw VariantQueryException.studyNotFound(studyId);
 //                    throw new IllegalArgumentException("Couldn't find studyConfiguration for StudyId '" + studyId + "'");
                 } else {
-                    studyConfigurations.add(queryResult.first());
+                    samplesConverter.addStudyConfiguration(queryResult.first());
                 }
             }
-            samplesConverter = new DocumentToSamplesConverter(studyConfigurations);
         }
         if (query.containsKey(VariantQueryParams.UNKNOWN_GENOTYPE.key())) {
             samplesConverter.setReturnedUnknownGenotype(query.getString(VariantQueryParams.UNKNOWN_GENOTYPE.key()));
@@ -1879,9 +1878,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         studyEntryConverter = new DocumentToStudyVariantEntryConverter(false, returnedFiles, samplesConverter);
         studyEntryConverter.setStudyConfigurationManager(studyConfigurationManager);
-        List<Integer> returnedStudies = query.containsKey(VariantQueryParams.RETURNED_STUDIES.key())
-                ? utils.getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options)
-                : null;
         return new DocumentToVariantConverter(studyEntryConverter,
                 new DocumentToVariantStatsConverter(studyConfigurationManager), returnedStudies);
     }
