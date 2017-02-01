@@ -20,7 +20,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.client.rest.catalog.CatalogClient;
 import org.opencb.opencga.client.rest.catalog.StudyClient;
 
@@ -64,9 +63,9 @@ public class AclCommandExecutor<T,U> {
                                             CatalogClient<T,U> client) throws CatalogException,IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty("study", aclCommandOptions.study);
-        params.putIfNotNull(StudyClient.AclParams.ADD_PERMISSIONS.key(), aclCommandOptions.addPermissions);
-        params.putIfNotNull(StudyClient.AclParams.REMOVE_PERMISSIONS.key(), aclCommandOptions.removePermissions);
-        params.putIfNotNull(StudyClient.AclParams.SET_PERMISSIONS.key(), aclCommandOptions.setPermissions);
+        params.putIfNotNull(StudyClient.AclParams.ADD.key(), aclCommandOptions.addPermissions);
+        params.putIfNotNull(StudyClient.AclParams.REMOVE.key(), aclCommandOptions.removePermissions);
+        params.putIfNotNull(StudyClient.AclParams.SET.key(), aclCommandOptions.setPermissions);
         return client.updateAcl(aclCommandOptions.id, aclCommandOptions.memberId, params);
     }
 

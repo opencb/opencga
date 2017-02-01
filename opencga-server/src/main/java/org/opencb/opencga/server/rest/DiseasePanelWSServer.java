@@ -122,9 +122,12 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Update the set of permissions granted for the member", hidden = true, position = 21)
     public Response updateAcl(@ApiParam(value = "panelId", required = true) @PathParam("panelId") String panelIdStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
-                              @ApiParam(value = "Comma separated list of permissions to add", required = false) @PathParam("addPermissions") String addPermissions,
-                              @ApiParam(value = "Comma separated list of permissions to remove", required = false) @PathParam("removePermissions") String removePermissions,
-                              @ApiParam(value = "Comma separated list of permissions to set", required = false) @PathParam("setPermissions") String setPermissions) {
+                              @ApiParam(value = "Comma separated list of permissions to add", required = false) @QueryParam("add")
+                                          String addPermissions,
+                              @ApiParam(value = "Comma separated list of permissions to remove", required = false) @QueryParam("remove")
+                                          String removePermissions,
+                              @ApiParam(value = "Comma separated list of permissions to set", required = false) @QueryParam("set")
+                                          String setPermissions) {
         try {
             return createOkResponse(catalogManager.updatePanelAcl(panelIdStr, memberId, addPermissions, removePermissions, setPermissions, sessionId));
         } catch (Exception e) {

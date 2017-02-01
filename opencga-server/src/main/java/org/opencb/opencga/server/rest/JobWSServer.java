@@ -303,11 +303,11 @@ public class JobWSServer extends OpenCGAWSServer {
     public Response updateAcl(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String jobIdStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
                               @ApiParam(value = "Comma separated list of permissions to add", required = false)
-                                  @PathParam("addPermissions") String addPermissions,
+                                  @QueryParam("add") String addPermissions,
                               @ApiParam(value = "Comma separated list of permissions to remove", required = false)
-                                  @PathParam("removePermissions") String removePermissions,
+                                  @QueryParam("remove") String removePermissions,
                               @ApiParam(value = "Comma separated list of permissions to set", required = false)
-                                  @PathParam("setPermissions") String setPermissions) {
+                                  @QueryParam("set") String setPermissions) {
         try {
             return createOkResponse(catalogManager.updateJobAcl(jobIdStr, memberId, addPermissions, removePermissions, setPermissions,
                     sessionId));
@@ -322,11 +322,10 @@ public class JobWSServer extends OpenCGAWSServer {
     public Response updateAclPOST(
             @ApiParam(value = "jobId", required = true) @PathParam("jobId") String jobIdStr,
             @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
-            @ApiParam(value="JSON containing one of the keys 'addPermissions', 'setPermissions' or 'removePermissions'", required = true)
+            @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true)
                     StudyWSServer.MemberAclUpdate params) {
         try {
-            return createOkResponse(catalogManager.updateJobAcl(jobIdStr, memberId, params.addPermissions, params.removePermissions,
-                    params.setPermissions, sessionId));
+            return createOkResponse(catalogManager.updateJobAcl(jobIdStr, memberId, params.add, params.remove, params.set, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

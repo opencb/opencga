@@ -686,11 +686,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                     @QueryParam("study") String studyStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
                               @ApiParam(value = "Comma separated list of permissions to add", required = false)
-                                  @QueryParam("addPermissions") String addPermissions,
+                                  @QueryParam("add") String addPermissions,
                               @ApiParam(value = "Comma separated list of permissions to remove", required = false)
-                                  @QueryParam("removePermissions") String removePermissions,
+                                  @QueryParam("remove") String removePermissions,
                               @ApiParam(value = "Comma separated list of permissions to set", required = false)
-                                  @QueryParam("setPermissions") String setPermissions) {
+                                  @QueryParam("set") String setPermissions) {
         try {
             return createOkResponse(catalogManager.updateIndividualAcl(individualIdStr, studyStr, memberId, addPermissions,
                     removePermissions, setPermissions, sessionId));
@@ -707,11 +707,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
                     String studyStr,
             @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
-            @ApiParam(value="JSON containing one of the keys 'addPermissions', 'setPermissions' or 'removePermissions'", required = true)
+            @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true)
                     StudyWSServer.MemberAclUpdate params) {
         try {
-            return createOkResponse(catalogManager.updateIndividualAcl(individualIdStr, studyStr, memberId, params.addPermissions,
-                    params.removePermissions, params.setPermissions, sessionId));
+            return createOkResponse(catalogManager.updateIndividualAcl(individualIdStr, studyStr, memberId, params.add,
+                    params.remove, params.set, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
