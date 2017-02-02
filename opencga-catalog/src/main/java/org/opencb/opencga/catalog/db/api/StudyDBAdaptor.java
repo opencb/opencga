@@ -193,7 +193,7 @@ public interface StudyDBAdaptor extends AclDBAdaptor<Study, StudyAclEntry> {
 
     QueryResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<VariableSet> getAllVariableSets(long studyId, QueryOptions queryOptions) throws CatalogDBException;
+    QueryResult<VariableSet> getVariableSets(Query query, QueryOptions queryOptions) throws CatalogDBException;
 
     QueryResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions) throws CatalogDBException;
 

@@ -585,11 +585,11 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 getSingleValidStudy(studiesCommandOptions.aclsMemberUpdateCommandOptions.study);
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull(StudyClient.AclParams.ADD_PERMISSIONS.key(),
+        params.putIfNotNull(StudyClient.AclParams.ADD.key(),
                 studiesCommandOptions.aclsMemberUpdateCommandOptions.addPermissions);
-        params.putIfNotNull(StudyClient.AclParams.REMOVE_PERMISSIONS.key(),
+        params.putIfNotNull(StudyClient.AclParams.REMOVE.key(),
                 studiesCommandOptions.aclsMemberUpdateCommandOptions.removePermissions);
-        params.putIfNotNull(StudyClient.AclParams.SET_PERMISSIONS.key(),
+        params.putIfNotNull(StudyClient.AclParams.SET.key(),
                 studiesCommandOptions.aclsMemberUpdateCommandOptions.setPermissions);
 
         return openCGAClient.getStudyClient().updateAcl(studiesCommandOptions.aclsMemberUpdateCommandOptions.study,

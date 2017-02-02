@@ -210,7 +210,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         long studyId;
         long fileId;
 
-        if (StringUtils.isNumeric(fileStr)) {
+        if (StringUtils.isNumeric(fileStr) && Long.parseLong(fileStr) > configuration.getCatalog().getOffset()) {
             fileId = Long.parseLong(fileStr);
             fileDBAdaptor.exists(fileId);
             studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
@@ -238,7 +238,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         long studyId;
         List<Long> fileIds;
 
-        if (StringUtils.isNumeric(fileStr)) {
+        if (StringUtils.isNumeric(fileStr) && Long.parseLong(fileStr) > configuration.getCatalog().getOffset()) {
             fileIds = Arrays.asList(Long.parseLong(fileStr));
             fileDBAdaptor.exists(fileIds.get(0));
             studyId = fileDBAdaptor.getStudyIdByFileId(fileIds.get(0));
@@ -258,7 +258,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     private Long smartResolutor(String fileName, long studyId) throws CatalogException {
-        if (StringUtils.isNumeric(fileName)) {
+        if (StringUtils.isNumeric(fileName) && Long.parseLong(fileName) > configuration.getCatalog().getOffset()) {
             long fileId = Long.parseLong(fileName);
             fileDBAdaptor.exists(fileId);
             return fileId;
@@ -757,6 +757,9 @@ public class FileManager extends AbstractManager implements IFileManager {
 //        auditManager.recordCreation(AuditRecord.Resource.file, queryResult.first().getId(), userId, queryResult.first(), null, null);
         auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.Action.create, AuditRecord.Magnitude.low,
                 queryResult.first().getId(), userId, null, queryResult.first(), null, null);
+
+        matchUpVariantFiles(queryResult.getResult(), sessionId);
+
         return queryResult;
     }
 
@@ -1063,7 +1066,6 @@ public class FileManager extends AbstractManager implements IFileManager {
             }
         }
         fileQueryResult.setNumResults(fileQueryResult.getResult().size());
-        fileQueryResult.setNumTotalResults(fileQueryResult.getResult().size());
 
         return fileQueryResult;
     }
@@ -1218,6 +1220,8 @@ public class FileManager extends AbstractManager implements IFileManager {
                     if (file.getType().equals(File.Type.FILE)) {
                         checkCanDelete(Arrays.asList(fileId));
                         fileDBAdaptor.update(fileId, updateParams);
+                        Query query = new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+                        jobDBAdaptor.extractFilesFromJobs(query, Arrays.asList(fileId));
                     } else {
                         if (studyId == -1) {
                             studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
@@ -1228,9 +1232,16 @@ public class FileManager extends AbstractManager implements IFileManager {
                                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                                 .append(FileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
                                 .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
-
                         checkCanDelete(query);
                         fileDBAdaptor.update(query, updateParams);
+
+                        // Remove any reference to the file ids recently sent to the trash bin
+                        query.put(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
+                        QueryResult<File> queryResult = fileDBAdaptor.get(query, new QueryOptions(QueryOptions.INCLUDE, FileDBAdaptor
+                                .QueryParams.ID.key()));
+                        List<Long> fileIdsTmp = queryResult.getResult().stream().map(File::getId).collect(Collectors.toList());
+                        jobDBAdaptor.extractFilesFromJobs(new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId), fileIdsTmp);
+
                     }
 
                     Query query = new Query()
@@ -1327,6 +1338,12 @@ public class FileManager extends AbstractManager implements IFileManager {
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED)
                     .append(FileDBAdaptor.QueryParams.PATH.key(), fileOrDirectory.getPath() + suffixName);
             removedFileResult = fileDBAdaptor.update(fileOrDirectory.getId(), update);
+
+            if (fileOrDirectory.getStatus().getName().equals(File.FileStatus.READY)) {
+                // Remove any reference to the file ids recently sent to the trash bin
+                jobDBAdaptor.extractFilesFromJobs(new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId),
+                        Arrays.asList(fileOrDirectory.getId()));
+            }
         } else {
             Query query = new Query()
                     .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
@@ -1380,6 +1397,12 @@ public class FileManager extends AbstractManager implements IFileManager {
                                 .append(FileDBAdaptor.QueryParams.PATH.key(), newPath);
                         fileDBAdaptor.update(file.getId(), update);
                     }
+
+                    if (fileOrDirectory.getStatus().getName().equals(File.FileStatus.READY)) {
+                        // Remove any reference to the file ids recently sent to the trash bin
+                        List<Long> fileIdsTmp = queryResult.getResult().stream().map(File::getId).collect(Collectors.toList());
+                        jobDBAdaptor.extractFilesFromJobs(new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId), fileIdsTmp);
+                    }
                 } else {
                     // The uri in the disk has been changed but not in the database !!
                     throw new CatalogException("ERROR: Could not retrieve all the files and folders hanging from " + fileUri.toString());
@@ -1427,6 +1450,12 @@ public class FileManager extends AbstractManager implements IFileManager {
 
                             fileDBAdaptor.update(file.getId(), update);
                             logger.debug("DELETE: {} successfully removed from the filesystem and catalog", path.toString());
+
+                            if (fileOrDirectory.getStatus().getName().equals(File.FileStatus.READY)) {
+                                // Remove any reference to the file ids recently sent to the trash bin
+                                jobDBAdaptor.extractFilesFromJobs(new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId),
+                                        Arrays.asList(file.getId()));
+                            }
                         } catch (CatalogDBException | CatalogIOException e) {
                             logger.error(e.getMessage());
                             e.printStackTrace();
@@ -1478,6 +1507,12 @@ public class FileManager extends AbstractManager implements IFileManager {
 
                                     fileDBAdaptor.update(file.getId(), update);
                                     logger.debug("REMOVE: {} successfully removed from the filesystem and catalog", dir.toString());
+
+                                    if (fileOrDirectory.getStatus().getName().equals(File.FileStatus.READY)) {
+                                        // Remove any reference to the file ids recently sent to the trash bin
+                                        jobDBAdaptor.extractFilesFromJobs(new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId),
+                                                Arrays.asList(file.getId()));
+                                    }
                                 } catch (CatalogDBException e) {
                                     logger.error(e.getMessage());
                                     e.printStackTrace();
@@ -1915,7 +1950,12 @@ public class FileManager extends AbstractManager implements IFileManager {
                     .append(FileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED)
                     .append(FileDBAdaptor.QueryParams.PATH.key(), suffixedPath);
 
-            return fileDBAdaptor.update(file.getId(), update);
+            QueryResult<File> retFile = fileDBAdaptor.update(file.getId(), update);
+
+            // Remove any reference to the file ids recently sent to the trash bin
+            jobDBAdaptor.extractFilesFromJobs(new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId), Arrays.asList(file.getId()));
+
+            return retFile;
         } else {
             logger.debug("Unlinking folder {}", file.getUri().toString());
 
@@ -1951,6 +1991,11 @@ public class FileManager extends AbstractManager implements IFileManager {
                         fileDBAdaptor.update(file.getId(), update);
 
                         logger.debug("{} unlinked", file.toString());
+
+                        // Remove any reference to the file ids recently sent to the trash bin
+                        jobDBAdaptor.extractFilesFromJobs(new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId),
+                                Arrays.asList(file.getId()));
+
                     } catch (CatalogDBException e) {
                         e.printStackTrace();
                     }
@@ -2012,6 +2057,10 @@ public class FileManager extends AbstractManager implements IFileManager {
                             fileDBAdaptor.update(file.getId(), update);
 
                             logger.debug("{} unlinked", dir.toString());
+
+                            // Remove any reference to the file ids recently sent to the trash bin
+                            jobDBAdaptor.extractFilesFromJobs(new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId),
+                                    Arrays.asList(file.getId()));
                         } catch (CatalogDBException e) {
                             e.printStackTrace();
                         }
@@ -2344,9 +2393,11 @@ public class FileManager extends AbstractManager implements IFileManager {
 
             for (Long fileId : fileFolderIdList) {
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
+                        FileDBAdaptor.QueryParams.NAME.key(),
                         FileDBAdaptor.QueryParams.PATH.key(),
                         FileDBAdaptor.QueryParams.URI.key(),
                         FileDBAdaptor.QueryParams.TYPE.key(),
+                        FileDBAdaptor.QueryParams.BIOFORMAT.key(),
                         FileDBAdaptor.QueryParams.FORMAT.key(),
                         FileDBAdaptor.QueryParams.INDEX.key())
                 );

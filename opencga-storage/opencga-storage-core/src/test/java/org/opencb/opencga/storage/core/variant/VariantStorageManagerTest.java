@@ -18,6 +18,7 @@ package org.opencb.opencga.storage.core.variant;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.avro.generic.GenericRecord;
 import org.junit.Ignore;
@@ -176,24 +177,31 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
 
     @Test
     public void multiIndexPlatinum() throws Exception {
+        multiIndexPlatinum(new ObjectMap());
+    }
+
+    public void multiIndexPlatinum(ObjectMap options) throws Exception {
         clearDB(DB_NAME);
         // each sample
         StudyConfiguration studyConfigurationMultiFile = new StudyConfiguration(1, "multi");
         StudyConfiguration studyConfigurationBatchFile = new StudyConfiguration(2, "batch");
 
-        ObjectMap options = new ObjectMap()
-                .append(VariantStorageEngine.Options.STUDY_TYPE.key(), VariantStudy.StudyType.CONTROL)
-                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false)
-                .append(VariantStorageEngine.Options.ANNOTATE.key(), false);
+        options.putIfAbsent(VariantStorageEngine.Options.STUDY_TYPE.key(), VariantStudy.StudyType.COLLECTION);
+        options.putIfAbsent(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
+        options.putIfAbsent(VariantStorageEngine.Options.ANNOTATE.key(), false);
+        options.put(VariantStorageEngine.Options.DB_NAME.key(), DB_NAME);
 
         VariantStorageEngine variantStorageManager = getVariantStorageEngine();
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
         StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
         int i = 0;
         for (int fileId = 77; fileId <= 93; fileId++) {
-            options.append(VariantStorageEngine.Options.SAMPLE_IDS.key(), "NA128" + fileId + ":" + i);
+            ObjectMap fileOptions = new ObjectMap();
+            fileOptions.append(VariantStorageEngine.Options.SAMPLE_IDS.key(), "NA128" + fileId + ':' + i)
+                    .append(VariantStorageEngine.Options.FILE_ID.key(), i)
+                    .putAll(options);
             runDefaultETL(getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA128" + fileId + "_S1.genome.vcf.gz"),
-                    variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageEngine.Options.FILE_ID.key(), i));
+                    variantStorageManager, studyConfigurationMultiFile, fileOptions);
             studyConfigurationMultiFile = studyConfigurationManager.getStudyConfiguration(studyConfigurationMultiFile.getStudyId(), null).first();
             assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(i));
             i++;
@@ -209,9 +217,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
         variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions()
                 .append(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfigurationBatchFile.getStudyName())
                 .append(VariantStorageEngine.Options.STUDY_ID.key(), studyConfigurationBatchFile.getStudyId())
-                .append(VariantStorageEngine.Options.DB_NAME.key(), DB_NAME)
-                .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
-                .append("merge", false);
+                .putAll(options);
 
         List<StoragePipelineResult> results = variantStorageManager.index(uris, outputUri, true, true, true);
 

@@ -51,13 +51,17 @@ acl:                 # Do not touch the acl configuration. If this is not proper
   - "WRITE_JOBS"
 
 catalog:
-  hosts:
-  - ${OPENCGA.CATALOG.DB.HOSTS}
-  user: ${OPENCGA.CATALOG.DB.USER}
-  password: ${OPENCGA.CATALOG.DB.PASSWORD}
-  options:
-    authenticationDatabase: ${OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE}
-    connectionsPerHost: ${OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST}
+  # offset: Starting point for the catalog internal ids. Use a big offset number (1000000 for instance) if you plan to use numerical ids
+  #         for names or aliases of any entity.
+  offset: 0
+  database:
+    hosts:
+    - ${OPENCGA.CATALOG.DB.HOSTS}
+    user: ${OPENCGA.CATALOG.DB.USER}
+    password: ${OPENCGA.CATALOG.DB.PASSWORD}
+    options:
+      authenticationDatabase: ${OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE}
+      connectionsPerHost: ${OPENCGA.CATALOG.DB.CONNECTIONS_PER_HOST}
 
 # LDAP configuration example
 #authenticationOrigins:

@@ -51,12 +51,16 @@ acl:
   - "WRITE_JOBS"
 
 catalog:
-  hosts:
-  - "localhost:27017"
-  user: ""
-  password: ""
-  options:
-    authenticationDatabase: ""
+  # offset: Starting point for the catalog internal ids. Use a big offset number (1000000 for instance) if you plan to use numerical ids
+  #         for names or aliases of any entity.
+  offset: 0
+  database:
+    hosts:
+    - "localhost:27017"
+    user: ""
+    password: ""
+    options:
+      authenticationDatabase: ""
 
 server:
   rest:

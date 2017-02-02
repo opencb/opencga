@@ -72,8 +72,10 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     public long getId(String userId, String projectStr) throws CatalogException {
         if (StringUtils.isNumeric(projectStr)) {
             long projectId = Long.parseLong(projectStr);
-            projectDBAdaptor.checkId(projectId);
-            return projectId;
+            if (projectId > configuration.getCatalog().getOffset()) {
+                projectDBAdaptor.checkId(projectId);
+                return projectId;
+            }
         }
 
         String userOwner;
@@ -179,7 +181,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkParameter(scientificName, "organism.scientificName");
         ParamUtils.checkParameter(assembly, "organism.assembly");
-        ParamUtils.checkAlias(alias, "alias");
+        ParamUtils.checkAlias(alias, "alias", configuration.getCatalog().getOffset());
         ParamUtils.checkParameter(sessionId, "sessionId");
 
         //Only the user can create a project
@@ -348,7 +350,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
 
     public QueryResult rename(long projectId, String newProjectAlias, String sessionId)
             throws CatalogException {
-        ParamUtils.checkAlias(newProjectAlias, "newProjectAlias");
+        ParamUtils.checkAlias(newProjectAlias, "newProjectAlias", configuration.getCatalog().getOffset());
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         String ownerId = projectDBAdaptor.getOwnerId(projectId);

@@ -49,6 +49,7 @@ public interface JobDBAdaptor extends AclDBAdaptor<Job, JobAclEntry> {
 
     QueryResult<Job> insert(Job job, long studyId, QueryOptions options) throws CatalogDBException;
 
+    QueryResult<Long> extractFilesFromJobs(Query query, List<Long> fileIds) throws CatalogDBException;
 
     default QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         //return updateStatus(query, new Job.JobStatus(Job.JobStatus.PREPARED));
@@ -97,6 +98,7 @@ public interface JobDBAdaptor extends AclDBAdaptor<Job, JobAclEntry> {
      * @return A queryResult object containing the number of datasets matching the query.
      * @throws CatalogDBException CatalogDBException.
      */
+    @Deprecated
     QueryResult<Long> extractFiles(List<Long> fileIds) throws CatalogDBException;
 
     /*

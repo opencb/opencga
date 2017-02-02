@@ -1,4 +1,0 @@
-!define TEST_SYSTEM {slim}
-!define user {test}
-!define baseURL {http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-rc3/webservices/rest/}
-

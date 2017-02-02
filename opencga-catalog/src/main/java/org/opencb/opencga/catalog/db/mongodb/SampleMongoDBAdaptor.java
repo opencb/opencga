@@ -182,12 +182,12 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, sampleParams, acceptedMapParams);
 
-        if (sampleParams.containsKey(QueryParams.INDIVIDUAL_ID.key())) {
-            long individualId = parameters.getInt(QueryParams.INDIVIDUAL_ID.key());
-            if (individualId > 0 && !dbAdaptorFactory.getCatalogIndividualDBAdaptor().exists(individualId)) {
-                throw CatalogDBException.idNotFound("Individual", individualId);
-            }
-        }
+//        if (sampleParams.containsKey(QueryParams.INDIVIDUAL_ID.key())) {
+//            long individualId = parameters.getInt(QueryParams.INDIVIDUAL_ID.key());
+//            if (individualId > 0 && !dbAdaptorFactory.getCatalogIndividualDBAdaptor().exists(individualId)) {
+//                throw CatalogDBException.idNotFound("Individual", individualId);
+//            }
+//        }
 
         if (!sampleParams.isEmpty()) {
             /*QueryResult<WriteResult> update = sampleCollection.update(new BasicDBObject(PRIVATE_ID, sampleId),
