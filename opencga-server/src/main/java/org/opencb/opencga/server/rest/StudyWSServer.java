@@ -64,7 +64,8 @@ public class StudyWSServer extends OpenCGAWSServer {
     @GET
     @Path("/create")
     @ApiOperation(value = "Create a new study [WARNING]", response = Study.class,
-            notes = "Using the GET method is discouraged. Please use the POST one.")
+            notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web "
+                    + "service is not tested and this can be deprecated in a future version.")
     public Response createStudy(@ApiParam(value = "Project id or alias", required = true) @QueryParam("projectId") String projectIdStr,
                                 @ApiParam(value = "Study name", required = true) @QueryParam("name") String name,
                                 @ApiParam(value = "Study alias", required = true) @QueryParam("alias") String alias,
@@ -175,7 +176,8 @@ public class StudyWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{study}/update")
     @ApiOperation(value = "Update some study attributes [WARNING]", response = Study.class,
-    notes = "Using the GET method is discouraged. Please use the POST one.")
+    notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+            + "is not tested and this can be deprecated in a future version.")
     public Response update(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
                                    required = true) @PathParam("study") String studyStr,
                            @ApiParam(value = "Study name") @QueryParam("name") String name,

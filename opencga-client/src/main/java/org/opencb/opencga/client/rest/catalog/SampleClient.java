@@ -48,11 +48,6 @@ public class SampleClient extends AnnotationClient<Sample, SampleAclEntry> {
         return execute(SAMPLES_URL, "create", params, POST, Sample.class);
     }
 
-    public QueryResponse<Sample> annotate(String sampleId, String annotateSetName, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "annotateSetName", annotateSetName);
-        return execute(SAMPLES_URL, sampleId, "annotate", params, GET, Sample.class);
-    }
-
     public QueryResponse<Sample> loadFromPed(String studyId, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "study", studyId);
         return execute(SAMPLES_URL, "load", params, GET, Sample.class);

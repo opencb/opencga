@@ -89,7 +89,8 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/create")
     @ApiOperation(value = "Create sample [WARNING]", position = 2, response = Sample.class,
-    notes = "Using the GET method is discouraged. Please use the POST one.")
+    notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+            + "is not tested and this can be deprecated in a future version.")
     public Response createSample(@ApiParam(value = "DEPRECATED: studyId", hidden = true) @QueryParam("studyId") String studyIdStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                  @QueryParam("study") String studyStr,
@@ -211,7 +212,8 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{sample}/update")
     @ApiOperation(value = "Update some sample attributes using GET method [WARNING]", position = 6, response = Sample.class,
-    notes = "Using the GET method is discouraged. Please use the POST one.")
+    notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+            + "is not tested and this can be deprecated in a future version.")
     public Response update(@ApiParam(value = "Sample id or name", required = true) @PathParam("sample") String sampleStr,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                            @QueryParam("study") String studyStr,

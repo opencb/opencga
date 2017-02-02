@@ -54,7 +54,8 @@ public class UserWSServer extends OpenCGAWSServer {
     @GET
     @Path("/create")
     @ApiOperation(value = "Create a new user [WARNING]", response = User.class,
-    notes = "Using the GET method is discouraged. Please use the POST one.")
+    notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+            + "is not tested and this can be deprecated in a future version.")
     public Response createUser(@ApiParam(value = "User id", required = true) @QueryParam("userId") String userId,
                                @ApiParam(value = "User name", required = true) @QueryParam("name") String name,
                                @ApiParam(value = "User's email", required = true) @QueryParam("email") String email,
@@ -250,7 +251,8 @@ public class UserWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{user}/update")
     @ApiOperation(value = "Update some user attributes [WARNING]", response = User.class,
-    notes = "Using the GET method is discouraged. Please use the POST one.")
+    notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+            + "is not tested and this can be deprecated in a future version.")
     public Response update(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                            @ApiParam(value = "User name") @QueryParam("name") String name,
                            @ApiParam(value = "User's email") @QueryParam("email") String email,
