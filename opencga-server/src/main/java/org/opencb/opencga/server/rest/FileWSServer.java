@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.server.rest;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
@@ -80,59 +81,66 @@ public class FileWSServer extends OpenCGAWSServer {
         fileManager = catalogManager.getFileManager();
     }
 
+    private static class FileCreateParams {
+        @JsonProperty(required = true)
+        public String path;
+        public String content;
+        public String description;
+        @JsonProperty(defaultValue = "false")
+        public boolean parents;
+        @JsonProperty(defaultValue = "false")
+        public boolean directory;
+    }
+
     @POST
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create file given the content with POST method [PENDING]", response = File[].class)
+    @ApiOperation(value = "Create file or folder", response = File[].class,
+            notes = "Creates a file with some content in it or a folder <br>"
+                    + "<ul>"
+                    + "<il><b>path</b>: Mandatory parameter. Whole path containing the file or folder name to be created</il><br>"
+                    + "<il><b>content</b>: Content of the file. Only applicable if <b>directory</b> parameter set to false</il><br>"
+                    + "<il><b>description</b>: Description of the file or folder to store as metadata.</il><br>"
+                    + "<il><b>parents</b>: Create the parent directories if they do not exist.</il><br>"
+                    + "<il><b>directory</b>: Boolean indicating whether to create a file or a directory</il><br>"
+                    + "<ul>"
+    )
     public Response createFilePOST(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                        @QueryParam("study") String studyStr,
-                                   @ApiParam(value = "Array of files", required = true) List<File> files) {
-        return createErrorResponse(new CatalogException("PENDING webservice"));
-//        if (StringUtils.isNotEmpty(studyIdStr)) {
-//            studyStr = studyIdStr;
-//        }
-//        List<QueryResult<File>> queryResults = new LinkedList<>();
-//
-//        long studyId;
-//        try {
-//            String userId = catalogManager.getUserManager().getId(sessionId);
-//            studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-//        } catch (CatalogException e) {
-//            e.printStackTrace();
-//            return createErrorResponse(e);
-//        }
-//
-//        for (File file : files) {
-//            try {
-//                QueryResult<File> fileQueryResult = catalogManager.createFile(studyId, file.getType(), file.getFormat(),
-//                        file.getBioformat(), file.getPath(), file.getCreationDate(),
-//                        file.getDescription(), new File.FileStatus(file.getStatus().getName()), file.getSize(),
-//                        file.getExperiment().getId(), file.getSampleIds(), file.getJob().getId(), file.getStats(), file.getAttributes(),
-//                        true, queryOptions, sessionId);
-////                file = fileQueryResult.getResult().get(0);
-//                System.out.println("fileQueryResult = " + fileQueryResult);
-//                queryResults.add(fileQueryResult);
-//            } catch (Exception e) {
-//                queryResults.add(new QueryResult<>("createFile", 0, 0, 0, "", e.getMessage(), Collections.<File>emptyList()));
-////            return createErrorResponse(e.getMessage());
-//            }
-//        }
-//        return createOkResponse(queryResults);
+                                   @QueryParam("study") String studyStr,
+                                   @ApiParam(name = "params", value = "File parameters", required = true) FileCreateParams params) {
+        try {
+            QueryResult<File> file;
+            if (params.directory) {
+                // Create directory
+                file = fileManager.createFolder(studyStr, params.path, new File.FileStatus(File.FileStatus.READY), params.parents,
+                        params.description, queryOptions, sessionId);
+            } else {
+                // Create a file
+                file = fileManager.create(studyStr, File.Type.FILE, File.Format.PLAIN, File.Bioformat.UNKNOWN, params.path, null,
+                        params.description, new File.FileStatus(File.FileStatus.READY), 0, -1, null, -1, null, null, params.parents,
+                        params.content, queryOptions, sessionId);
+            }
+            return createOkResponse(file);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
     }
 
     @GET
     @Path("/create-folder")
-    @ApiOperation(value = "Create a folder in the catalog environment", position = 2, response = File.class)
+    @ApiOperation(value = "Create a folder in the catalog environment [WARNING]", position = 2, response = File.class,
+            notes = "WARNING: the usage of this web service is discouraged, please use the POST /create version instead. Be aware that "
+                    + "this is web service is not tested and this can be deprecated in a future version.")
     public Response createFolder(@ApiParam(value = "(DEPRECATED) Use study instead", hidden = true)
-                                     @QueryParam("studyId") String studyIdStr,
+                                 @QueryParam("studyId") String studyIdStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                    @QueryParam("study") String studyStr,
+                                 @QueryParam("study") String studyStr,
                                  @ApiParam(value = "CSV list of paths where the folders will be created", required = true)
-                                    @QueryParam("folders") String folders,
+                                 @QueryParam("folders") String folders,
                                  @ApiParam(value = "Paths where the folder will be created", required = true)
-                                     @QueryParam("path") String path,
+                                 @QueryParam("path") String path,
                                  @ApiParam(value = "Create the parent directories if they do not exist")
-                                     @QueryParam("parents") @DefaultValue("false") boolean parents) {
+                                 @QueryParam("parents") @DefaultValue("false") boolean parents) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
@@ -175,7 +183,7 @@ public class FileWSServer extends OpenCGAWSServer {
     })
     public Response info(@ApiParam(value="Comma separated list of file ids") @PathParam(value = "files") String fileStr,
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                            @QueryParam("study") String studyStr) {
+                         @QueryParam("study") String studyStr) {
         try {
             List<QueryResult<File>> queryResults = new LinkedList<>();
             AbstractManager.MyResourceIds resourceIds = fileManager.getIds(fileStr, studyStr, sessionId);
@@ -196,7 +204,7 @@ public class FileWSServer extends OpenCGAWSServer {
             hidden = true)
     public Response getUri(@ApiParam(value = "fileId") @PathParam(value = "fileId") String fileStr,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                    @QueryParam("study") String studyStr) {
+                           @QueryParam("study") String studyStr) {
         try {
             List<QueryResult> results = new LinkedList<>();
             AbstractManager.MyResourceIds resourceIds = fileManager.getIds(fileStr, studyStr, sessionId);
@@ -236,32 +244,32 @@ public class FileWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @ApiOperation(httpMethod = "POST", position = 4, value = "Resource to upload a file by chunks", response = File.class)
     public Response upload(@FormDataParam("chunk_content") byte[] chunkBytes,
-                                @FormDataParam("chunk_content") FormDataContentDisposition contentDisposition,
-                                @FormDataParam("file") InputStream fileInputStream,
-                                @FormDataParam("file") FormDataContentDisposition fileMetaData,
+                           @FormDataParam("chunk_content") FormDataContentDisposition contentDisposition,
+                           @FormDataParam("file") InputStream fileInputStream,
+                           @FormDataParam("file") FormDataContentDisposition fileMetaData,
 
-                                @DefaultValue("") @FormDataParam("chunk_id") String chunk_id,
-                                @DefaultValue("false") @FormDataParam("last_chunk") String last_chunk,
-                                @DefaultValue("") @FormDataParam("chunk_total") String chunk_total,
-                                @DefaultValue("") @FormDataParam("chunk_size") String chunk_size,
-                                @DefaultValue("") @FormDataParam("chunk_hash") String chunkHash,
-                                @DefaultValue("false") @FormDataParam("resume_upload") String resume_upload,
+                           @DefaultValue("") @FormDataParam("chunk_id") String chunk_id,
+                           @DefaultValue("false") @FormDataParam("last_chunk") String last_chunk,
+                           @DefaultValue("") @FormDataParam("chunk_total") String chunk_total,
+                           @DefaultValue("") @FormDataParam("chunk_size") String chunk_size,
+                           @DefaultValue("") @FormDataParam("chunk_hash") String chunkHash,
+                           @DefaultValue("false") @FormDataParam("resume_upload") String resume_upload,
 
-                                @ApiParam(value = "filename", required = false) @FormDataParam("filename") String filename,
-                                @ApiParam(value = "fileFormat", required = true) @DefaultValue("") @FormDataParam("fileFormat")
-                                       String fileFormat,
-                                @ApiParam(value = "bioformat", required = true) @DefaultValue("") @FormDataParam("bioformat")
-                                       String bioformat,
-                                @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @FormDataParam("studyId")
-                                       String studyIdStr,
-                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                    @FormDataParam("study") String studyStr,
-                                @ApiParam(value = "Path within catalog where the file will be located (default: root folder)",
-                                        required = true) @DefaultValue(".") @FormDataParam("relativeFilePath") String relativeFilePath,
-                                @ApiParam(value = "description", required = false) @DefaultValue("") @FormDataParam("description")
-                                       String description,
-                                @ApiParam(value = "Create the parent directories if they do not exist", required = false)
-                                    @DefaultValue("true") @FormDataParam("parents") boolean parents) {
+                           @ApiParam(value = "filename", required = false) @FormDataParam("filename") String filename,
+                           @ApiParam(value = "fileFormat", required = true) @DefaultValue("") @FormDataParam("fileFormat")
+                                   String fileFormat,
+                           @ApiParam(value = "bioformat", required = true) @DefaultValue("") @FormDataParam("bioformat")
+                                   String bioformat,
+                           @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @FormDataParam("studyId")
+                                   String studyIdStr,
+                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                           @FormDataParam("study") String studyStr,
+                           @ApiParam(value = "Path within catalog where the file will be located (default: root folder)",
+                                   required = true) @DefaultValue(".") @FormDataParam("relativeFilePath") String relativeFilePath,
+                           @ApiParam(value = "description", required = false) @DefaultValue("") @FormDataParam("description")
+                                   String description,
+                           @ApiParam(value = "Create the parent directories if they do not exist", required = false)
+                           @DefaultValue("true") @FormDataParam("parents") boolean parents) {
 
         if (StringUtils.isNotEmpty(studyIdStr)) {
             studyStr = studyIdStr;
@@ -481,7 +489,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Download file", position = 5, response = QueryResponse.class)
     public Response download(@ApiParam(value = "File id") @PathParam("file") String fileIdStr,
                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                 @QueryParam("study") String studyStr) {
+                             @QueryParam("study") String studyStr) {
         try {
             DataInputStream stream;
             AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
@@ -503,7 +511,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Show the content of a file (up to a limit)", position = 6, response = String.class)
     public Response content(@ApiParam(value = "File id") @PathParam("file") String fileIdStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                @QueryParam("study") String studyStr,
+                            @QueryParam("study") String studyStr,
                             @ApiParam(value = "start", required = false) @QueryParam("start") @DefaultValue("-1") int start,
                             @ApiParam(value = "limit", required = false) @QueryParam("limit") @DefaultValue("-1") int limit) {
         try {
@@ -548,7 +556,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Set file header [DEPRECATED]", position = 10, notes = "Deprecated method. Moved to update.", hidden = true)
     public Response setHeader(@PathParam(value = "file") @FormDataParam("fileId") String fileStr,
                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                    @QueryParam("study") String studyStr,
+                              @QueryParam("study") String studyStr,
                               @ApiParam(value = "header", required = true) @DefaultValue("") @QueryParam("header") String header) {
         String content = "";
         DataInputStream stream;
@@ -649,7 +657,7 @@ public class FileWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Job id that created the file(s) or folder(s)", required = false) @QueryParam("job.id") String jobId,
                            @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
                            @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)", required = false) @DefaultValue("")
-                               @QueryParam("nattributes") String nattributes,
+                           @QueryParam("nattributes") String nattributes,
                            @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
             queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
@@ -709,24 +717,24 @@ public class FileWSServer extends OpenCGAWSServer {
             hidden = true, response = QueryResponse.class)
     public Response index(@ApiParam("Comma separated list of file ids (files or directories)") @PathParam(value = "file") String fileIdStr,
                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                            @QueryParam("study") String studyStr,
+                          @QueryParam("study") String studyStr,
                           // Study id is not ingested by the analysis index command line. No longer needed.
 //                          @ApiParam("Study id") @QueryParam("studyId") String studyId,
                           @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr,
                           @ApiParam("Boolean indicating that only the transform step will be run") @DefaultValue("false")
-                              @QueryParam("transform") boolean transform,
+                          @QueryParam("transform") boolean transform,
                           @ApiParam("Boolean indicating that only the load step will be run") @DefaultValue("false")
-                              @QueryParam("load") boolean load,
+                          @QueryParam("load") boolean load,
                           @ApiParam("Comma separated list of fields to be include in the index")
-                              @QueryParam("includeExtraFields") String includeExtraFields,
+                          @QueryParam("includeExtraFields") String includeExtraFields,
                           @ApiParam("Type of aggregated VCF file: none, basic, EVS or ExAC") @DefaultValue("none")
-                              @QueryParam("aggregated") String aggregated,
+                          @QueryParam("aggregated") String aggregated,
                           @ApiParam("Calculate indexed variants statistics after the load step") @DefaultValue("false")
-                              @QueryParam("calculateStats") boolean calculateStats,
+                          @QueryParam("calculateStats") boolean calculateStats,
                           @ApiParam("Annotate indexed variants after the load step") @DefaultValue("false")
-                              @QueryParam("annotate") boolean annotate,
+                          @QueryParam("annotate") boolean annotate,
                           @ApiParam("Overwrite annotations already present in variants") @DefaultValue("false")
-                              @QueryParam("overwrite") boolean overwriteAnnotations) {
+                          @QueryParam("overwrite") boolean overwriteAnnotations) {
 
         Map<String, String> params = new LinkedHashMap<>();
 //        addParamIfNotNull(params, "studyId", studyId);
@@ -800,9 +808,9 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "limit", value = "[TO BE IMPLEMENTED] Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
     })
     public Response treeView(@ApiParam(value = "Folder id or path. Paths must be separated by : instead of /") @DefaultValue(":")
-                                 @PathParam ("folder") String folderId,
+                             @PathParam ("folder") String folderId,
                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                @QueryParam("study") String studyStr,
+                             @QueryParam("study") String studyStr,
                              @ApiParam(value = "Maximum depth to get files from") @DefaultValue("5") @QueryParam("maxDepth") int maxDepth) {
         try {
             query.remove("maxDepth");
@@ -1005,7 +1013,7 @@ public class FileWSServer extends OpenCGAWSServer {
     })
     public Response getVariants(@ApiParam(value = "", required = true) @PathParam("file") String fileIdCsv,
                                 @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                    @QueryParam("study") String studyStr,
+                                @QueryParam("study") String studyStr,
                                 @ApiParam(value = "List of variant ids") @QueryParam("ids") String ids,
                                 @ApiParam(value = "List of regions: {chr}:{start}-{end}") @QueryParam("region") String region,
                                 @ApiParam(value = "List of chromosomes") @QueryParam("chromosome") String chromosome,
@@ -1118,10 +1126,10 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{file}/update")
     @ApiOperation(value = "Update fields of a file [WARNING]", position = 16, response = File.class,
-    notes = "Using the GET method is discouraged. Please use the POST one.")
+            notes = "Using the GET method is discouraged. Please use the POST one.")
     public Response update(@ApiParam(value = "File id") @PathParam(value = "file") String fileIdStr,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                @QueryParam("study") String studyStr,
+                           @QueryParam("study") String studyStr,
                            @ApiParam(value = "File name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)", required = false) @QueryParam("format") String format,
                            @ApiParam(value = "Bioformat of the file (VARIANT, ALIGNMENT, SEQUENCE, PEDIGREE...NONE)", required = false) @QueryParam("bioformat") String bioformat,
@@ -1164,7 +1172,7 @@ public class FileWSServer extends OpenCGAWSServer {
         public String name;
         public File.Format format;
         public File.Bioformat bioformat;
-//        public String path;
+        //        public String path;
 //        public String ownerId;
 //        public String creationDate;
 //        public String modificationDate;
@@ -1182,7 +1190,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Modify file", position = 16, response = File.class)
     public Response updatePOST(@ApiParam(value = "File id") @PathParam(value = "file") String fileIdStr,
                                @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                    @QueryParam("study") String studyStr,
+                               @QueryParam("study") String studyStr,
                                @ApiParam(name = "params", value = "Parameters to modify", required = true) ObjectMap params) {
         try {
             AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
@@ -1256,8 +1264,8 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/unlink")
     @ApiOperation(value = "Unlink an external file from catalog.", position = 20, response = QueryResponse.class)
     public Response unlink(@ApiParam(value = "File id", required = true) @QueryParam("fileId") String fileIdStr,
-                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                            @QueryParam("study") String studyStr) throws CatalogException {
+                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                           @QueryParam("study") String studyStr) throws CatalogException {
         try {
             QueryResult<File> queryResult = catalogManager.getFileManager().unlink(fileIdStr, studyStr, sessionId);
             return createOkResponse(new QueryResult<>("unlink", 0, 1, 1, null, null, queryResult.getResult()));
@@ -1273,10 +1281,10 @@ public class FileWSServer extends OpenCGAWSServer {
             position = 21)
     public Response relink(@ApiParam(value = "File Id") @PathParam("fileId") @DefaultValue("") String fileIdStr,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                @QueryParam("study") String studyStr,
+                           @QueryParam("study") String studyStr,
                            @ApiParam(value = "New URI" ,required = true) @QueryParam("uri") String uriStr,
                            @ApiParam(value = "Do calculate checksum for new files", required = false) @DefaultValue("false")
-                               @QueryParam("calculateChecksum") boolean calculateChecksum ) {
+                           @QueryParam("calculateChecksum") boolean calculateChecksum ) {
         try {
             URI uri = UriUtils.createUri(uriStr);
             CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(uri);
@@ -1305,7 +1313,7 @@ public class FileWSServer extends OpenCGAWSServer {
             response = QueryResponse.class)
     public Response refresh(@ApiParam(value = "File id") @PathParam(value = "file") String fileIdStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                @QueryParam("study") String studyStr) {
+                            @QueryParam("study") String studyStr) {
         try {
             AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
 
@@ -1343,7 +1351,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Delete file", position = 23, response = QueryResponse.class)
     public Response deleteGET(@ApiParam(value = "File id") @PathParam(value = "file") String fileIdStr,
                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                    @QueryParam("study") String studyStr,
+                              @QueryParam("study") String studyStr,
                               @ApiParam(value = "Delete files and folders from disk (only applicable for linked files/folders)",
                                       required = false) @DefaultValue("false") @QueryParam("deleteExternal") boolean deleteExternal,
                               @ApiParam(value="Skip trash and delete the files/folders from disk directly (CANNOT BE RECOVERED)",
@@ -1364,38 +1372,38 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/groupBy")
     @ApiOperation(value = "Group files by several fields", position = 24, response = QueryResponse.class)
     public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
-                                @QueryParam("fields") String fields,
+                            @QueryParam("fields") String fields,
                             @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @DefaultValue("") @QueryParam("studyId")
                                     String studyIdStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                @QueryParam("study") String studyStr,
+                            @QueryParam("study") String studyStr,
                             @ApiParam(value = "Comma separated list of ids.", required = false) @DefaultValue("") @QueryParam("id")
-                                        String ids,
+                                    String ids,
                             @ApiParam(value = "Comma separated list of names.", required = false) @DefaultValue("") @QueryParam("name")
-                                        String names,
+                                    String names,
                             @ApiParam(value = "path", required = false) @DefaultValue("") @QueryParam("path") String path,
                             @ApiParam(value = "Comma separated Type values.", required = false) @DefaultValue("") @QueryParam("type")
-                                        String type,
+                                    String type,
                             @ApiParam(value = "Comma separated Bioformat values.", required = false) @DefaultValue("")
-                                @QueryParam("bioformat") String bioformat,
+                            @QueryParam("bioformat") String bioformat,
                             @ApiParam(value = "Comma separated Format values.", required = false) @DefaultValue("") @QueryParam("format")
-                                        String formats,
+                                    String formats,
                             @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status,
                             @ApiParam(value = "directory", required = false) @DefaultValue("") @QueryParam("directory") String directory,
                             @ApiParam(value = "creationDate", required = false) @DefaultValue("") @QueryParam("creationDate")
-                                        String creationDate,
+                                    String creationDate,
                             @ApiParam(value = "modificationDate", required = false) @DefaultValue("") @QueryParam("modificationDate")
-                                        String modificationDate,
+                                    String modificationDate,
                             @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description")
-                                        String description,
+                                    String description,
                             @ApiParam(value = "size", required = false) @DefaultValue("") @QueryParam("size") Long size,
                             @ApiParam(value = "Comma separated sampleIds", required = false) @DefaultValue("") @QueryParam("sampleIds")
-                                        String sampleIds,
+                                    String sampleIds,
                             @ApiParam(value = "(DEPRECATED) Job id", hidden = true) @QueryParam("jobId") String jobIdOld,
                             @ApiParam(value = "Job id", required = false) @QueryParam("job.id") String jobId,
                             @ApiParam(value = "attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
                             @ApiParam(value = "numerical attributes", required = false) @DefaultValue("") @QueryParam("nattributes")
-                                        String nattributes) {
+                                    String nattributes) {
         try {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
@@ -1412,7 +1420,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Return the acl defined for the file or folder", position = 18, response = QueryResponse.class)
     public Response getAcls(@ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("files") String fileIdStr,
                             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                @QueryParam("study") String studyStr) {
+                            @QueryParam("study") String studyStr) {
         try {
             return createOkResponse(catalogManager.getAllFileAcls(fileIdStr, studyStr, sessionId));
         } catch (Exception e) {
@@ -1426,13 +1434,13 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Define a set of permissions for a list of users or groups", hidden = true, position = 19,
             response = QueryResponse.class)
     public Response createAcl(@ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("files")
-                                           String fileIdStr,
-                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                    @QueryParam("study") String studyStr,
-                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list",
-                                       required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
-                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
-                                       required = true) @DefaultValue("") @QueryParam("members") String members) {
+                                      String fileIdStr,
+                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                              @QueryParam("study") String studyStr,
+                              @ApiParam(value = "Comma separated list of permissions that will be granted to the member list",
+                                      required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
+                              @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
+                                      required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
             return createOkResponse(catalogManager.getFileManager().createAcls(fileIdStr, studyStr, members, permissions,
                     sessionId));
@@ -1463,7 +1471,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Return the permissions granted for the user or group", position = 20, response = QueryResponse.class)
     public Response getAcl(@ApiParam(value = "File id", required = true) @PathParam("file") String fileIdStr,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                @QueryParam("study") String studyStr,
+                           @QueryParam("study") String studyStr,
                            @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
         try {
             return createOkResponse(catalogManager.getFileAcl(fileIdStr, studyStr, memberId, sessionId));
@@ -1478,7 +1486,7 @@ public class FileWSServer extends OpenCGAWSServer {
             response = QueryResponse.class)
     public Response updateAcl(@ApiParam(value = "File id", required = true) @PathParam("file") String fileIdStr,
                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                    @QueryParam("study") String studyStr,
+                              @QueryParam("study") String studyStr,
                               @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
                               @ApiParam(value = "Comma separated list of permissions to add", required = false)
                               @QueryParam("add") String addPermissions,
@@ -1517,9 +1525,9 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Remove all the permissions granted for the user or group", position = 22,
             response = QueryResponse.class)
     public Response deleteAcl(@ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("files")
-                                          String fileIdsStr,
+                                      String fileIdsStr,
                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                    @QueryParam("study") String studyStr,
+                              @QueryParam("study") String studyStr,
                               @ApiParam(value = "Comma separated list of members", required = true) @PathParam("members") String members) {
         try {
             return createOkResponse(catalogManager.getFileManager().removeFileAcls(fileIdsStr, studyStr, members, sessionId));
@@ -1533,9 +1541,9 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Scans a folder", position = 6)
     public Response scan(@ApiParam(value = "Folder id") @PathParam("folder") String folderIdStr,
                          @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                @QueryParam("study") String studyStr,
+                         @QueryParam("study") String studyStr,
                          @ApiParam(value = "calculateChecksum") @QueryParam("calculateChecksum") @DefaultValue("false")
-                                     boolean calculateChecksum) {
+                                 boolean calculateChecksum) {
         try {
             AbstractManager.MyResourceId resource = fileManager.getId(folderIdStr, studyStr, sessionId);
 
