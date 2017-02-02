@@ -152,25 +152,19 @@ public class ProjectWSServer extends OpenCGAWSServer {
     notes = "Using the GET method is discouraged. Please use the POST one.")
     public Response update(@ApiParam(value = "Project id or alias", required = true) @PathParam("project") String projectStr,
                            @ApiParam(value = "Project name") @QueryParam("name") String name,
-                           @ApiParam(value = "Project alias") @QueryParam("alias") String alias,
                            @ApiParam(value = "Project description") @QueryParam("description") String description,
                            @ApiParam(value = "Project organization") @QueryParam("organization") String organization,
                            @ApiParam(value = "Project attributes") @QueryParam("attributes") String attributes,
-                           @ApiParam(value = "Organism scientific name") @QueryParam("organism.scientificName") String scientificName,
                            @ApiParam(value = "Organism common name") @QueryParam("organism.commonName") String commonName,
-                           @ApiParam(value = "Organism taxonomy code") @QueryParam("organism.taxonomyCode") String taxonomyCode,
-                           @ApiParam(value = "Organism assembly") @QueryParam("organism.assembly") String assembly) throws IOException {
+                           @ApiParam(value = "Organism taxonomy code") @QueryParam("organism.taxonomyCode") String taxonomyCode) throws IOException {
         try {
             ObjectMap params = new ObjectMap();
             params.putIfNotNull("name", name);
-            params.putIfNotNull("alias", alias);
             params.putIfNotNull("description", description);
             params.putIfNotNull("organization", organization);
             params.putIfNotNull("attributes", attributes);
-            params.putIfNotNull("organism.scientificName", scientificName);
             params.putIfNotNull("organism.commonName", commonName);
             params.putIfNotNull("organism.taxonomyCode", taxonomyCode);
-            params.putIfNotNull("organism.assembly", assembly);
 
             String userId = catalogManager.getUserManager().getId(sessionId);
             long projectId = catalogManager.getProjectManager().getId(userId, projectStr);

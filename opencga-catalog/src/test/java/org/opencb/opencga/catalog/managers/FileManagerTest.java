@@ -477,15 +477,15 @@ public class FileManagerTest extends GenericTest {
 //        assertTrue(paths.contains("analysis/"));    //analysis
 
         Path folderPath = Paths.get("data", "new", "folder");
-        File folder = catalogManager.getFileManager().createFolder(studyId, folderPath.toString(), null, true, null, null, sessionIdUser2)
-                .first();
+        File folder = catalogManager.getFileManager().createFolder(Long.toString(studyId), folderPath.toString(), null, true, null, null,
+                sessionIdUser2).first();
 
         assertNotNull(folder);
         assertTrue(folder.getPath().contains(folderPath.toString()));
 
         // When creating the same folder, we should not complain and return it directly
-        File sameFolder = catalogManager.getFileManager().createFolder(studyId, folderPath.toString(), null, true, null, null,
-                sessionIdUser2).first();
+        File sameFolder = catalogManager.getFileManager().createFolder(Long.toString(studyId), folderPath.toString(), null, true,
+                null, null, sessionIdUser2).first();
         assertNotNull(sameFolder);
         assertEquals(folder.getPath(), sameFolder.getPath());
         assertEquals(folder.getId(), sameFolder.getId());
@@ -493,7 +493,8 @@ public class FileManagerTest extends GenericTest {
         // However, a user without create permissions will receive an exception
         thrown.expect(CatalogAuthorizationException.class);
         thrown.expectMessage("Permission denied");
-        catalogManager.getFileManager().createFolder(studyId, folderPath.toString(), null, true, null, null, sessionIdUser3);
+        catalogManager.getFileManager().createFolder(Long.toString(studyId), folderPath.toString(), null, true, null, null,
+                sessionIdUser3);
     }
 
     @Test
@@ -674,7 +675,8 @@ public class FileManagerTest extends GenericTest {
         catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "data/nested/folder/file2.txt",
                 StringUtils.randomString(200).getBytes(), "description", true, sessionIdUser);
 
-        catalogManager.getFileManager().rename(catalogManager.getFileId("data/nested/", "user@1000G:phase1", sessionIdUser), "nested2", sessionIdUser);
+        catalogManager.getFileManager().rename(catalogManager.getFileId("data/nested/", "user@1000G:phase1", sessionIdUser), "nested2",
+                sessionIdUser);
         Set<String> paths = catalogManager.getAllFiles(studyId, new Query(), new QueryOptions(), sessionIdUser).getResult()
                 .stream().map(File::getPath).collect(Collectors.toSet());
 
@@ -728,8 +730,8 @@ public class FileManagerTest extends GenericTest {
     @Test
     public void renameFileAlreadyExists() throws CatalogException {
         long studyId = catalogManager.getStudyId("user@1000G:phase1", sessionIdUser);
-        catalogManager.getFileManager().createFolder(studyId, "analysis/", new File.FileStatus(), false, "", new QueryOptions(),
-                sessionIdUser);
+        catalogManager.getFileManager().createFolder(Long.toString(studyId), "analysis/", new File.FileStatus(), false, "",
+                new QueryOptions(), sessionIdUser);
         thrown.expect(CatalogIOException.class);
         catalogManager.getFileManager().rename(catalogManager.getFileId("data/", "user@1000G:phase1", sessionIdUser), "analysis",
                 sessionIdUser);
@@ -1449,9 +1451,10 @@ public class FileManagerTest extends GenericTest {
     @Test
     public void testUpdateIndexStatus() throws CatalogException {
         long studyId = catalogManager.getStudyManager().getId("user", "user@1000G:phase1");
-        QueryResult<File> fileResult = fileManager.create(studyId, File.Type.FILE, File.Format.VCF, File.Bioformat.VARIANT, "data/test.vcf",
-                "", "description", new File.FileStatus(File.FileStatus.STAGE), 0, -1, Collections.emptyList(), -1,
-                Collections.emptyMap(), Collections.emptyMap(), true, new QueryOptions(), sessionIdUser);
+        QueryResult<File> fileResult = fileManager.create(Long.toString(studyId), File.Type.FILE, File.Format.VCF,
+                File.Bioformat.VARIANT, "data/test.vcf", "", "description", new File.FileStatus(File.FileStatus.STAGE), 0, -1,
+                Collections.emptyList(), -1, Collections.emptyMap(), Collections.emptyMap(), true, null, new QueryOptions(),
+                sessionIdUser);
 
         fileManager.updateFileIndexStatus(fileResult.first(), FileIndex.IndexStatus.TRANSFORMED, null, sessionIdUser);
         QueryResult<File> read = fileManager.get(fileResult.first().getId(), new QueryOptions(), sessionIdUser);
