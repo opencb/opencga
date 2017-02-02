@@ -39,7 +39,6 @@ public class CliOptionsParser extends GeneralCliOptions {
 //    private FeatureCommandOptions featureCommandOptions;
 
     public CliOptionsParser() {
-
         indexCommandOptions = new IndexCommandOptions();
         queryCommandOptions = new QueryCommandOptions();
 
@@ -61,61 +60,6 @@ public class CliOptionsParser extends GeneralCliOptions {
 //        variantSubCommands.addCommand("benchmark", variantCommandOptions.benchmarkCommandOptions);
         variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantsCommandOptions);
     }
-
-    /*
-     * Alignment (BAM, CRAM) CLI options
-     */
-//    @Parameters(commandNames = {"alignment"}, commandDescription = "Implements different tools for working with BAM files")
-//    public class AlignmentCommandOptions extends CommandOptions {
-//
-//        IndexAlignmentsCommandOptions indexAlignmentsCommandOptions;
-//        QueryAlignmentsCommandOptions queryAlignmentsCommandOptions;
-//
-//        CommonOptions commonOptions = CliOptionsParser.this.commonOptions;
-//
-//        public AlignmentCommandOptions() {
-//            this.indexAlignmentsCommandOptions = new IndexAlignmentsCommandOptions();
-//            this.queryAlignmentsCommandOptions = new QueryAlignmentsCommandOptions();
-//        }
-//    }
-
-    /*
-     * Variant (VCF, BCF) CLI options
-     */
-//    @Parameters(commandNames = {"variant"}, commandDescription = "Implements different tools for working with gVCF/VCF files")
-//    public class VariantCommandOptions extends CommandOptions {
-//
-//        IndexVariantsCommandOptions indexVariantsCommandOptions;
-//        QueryVariantsCommandOptions queryVariantsCommandOptions;
-////        QueryGrpCVariantsCommandOptions queryGrpCVariantsCommandOptions;
-//        ImportVariantsCommandOptions importVariantsCommandOptions;
-//        AnnotateVariantsCommandOptions annotateVariantsCommandOptions;
-//        StatsVariantsCommandOptions statsVariantsCommandOptions;
-//        BenchmarkCommandOptions benchmarkCommandOptions;
-//
-//        CommonOptions commonOptions = CliOptionsParser.this.commonOptions;
-//
-//        public VariantCommandOptions() {
-//            this.indexVariantsCommandOptions = new IndexVariantsCommandOptions();
-//            this.queryVariantsCommandOptions = new QueryVariantsCommandOptions();
-////            this.queryGrpCVariantsCommandOptions = new QueryGrpCVariantsCommandOptions();
-//            this.importVariantsCommandOptions = new ImportVariantsCommandOptions();
-//            this.annotateVariantsCommandOptions = new AnnotateVariantsCommandOptions();
-//            this.statsVariantsCommandOptions = new StatsVariantsCommandOptions();
-//            this.benchmarkCommandOptions = new BenchmarkCommandOptions();
-//        }
-//    }
-
-//    @Parameters(commandNames = {"query-grpc"}, commandDescription = "Search over indexed variants")
-//    public class QueryGrpCVariantsCommandOptions extends QueryVariantsCommandOptions {
-//
-//        @Parameter(names = {"--host"}, description = "gRPC host to connect")
-//        public String host = "localhost";
-//
-//        @Parameter(names = {"--port"}, description = "gRPC port to connect")
-//        public int port;
-//
-//    }
 
 
     public void printUsage() {

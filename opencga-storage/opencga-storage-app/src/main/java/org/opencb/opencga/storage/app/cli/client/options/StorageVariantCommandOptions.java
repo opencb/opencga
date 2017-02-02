@@ -227,27 +227,27 @@ public class StorageVariantCommandOptions {
 //        @Parameter(names = {"--expression", "--tissue"}, description = "List of tissues of interest. e.g. \"tongue\"", arity = 1)
 //        public String expression;
 
-        @Parameter(names = {"--protein-keywords"}, description = "List of protein variant annotation keywords", arity = 1)
+        @Parameter(names = {"--protein-keywords"}, description = "List of Uniprot protein keywords", arity = 1)
         public String proteinKeywords;
 
         @Parameter(names = {"--drug"}, description = "List of drug names", arity = 1)
         public String drugs;
 
-        @Parameter(names = {"--ps", "--protein-substitution"}, description = "", arity = 1)
+        @Parameter(names = {"--ps", "--protein-substitution"}, description = "Filter by Sift or/and Polyphen scores, e.g. \"sift<0.2;polyphen<0.4\"", arity = 1)
         public String proteinSubstitution;
 
         @Deprecated
-        @Parameter(names = {"--gwas"}, description = "[DEPRECATED]", arity = 1)
+        @Parameter(names = {"--gwas"}, description = "[DEPRECATED]", arity = 1, hidden = true)
         public String gwas;
 
         @Parameter(names = {"--cosmic"}, description = "", arity = 1, hidden = true)
         public String cosmic;
 
-        @Parameter(names = {"--clinvar"}, description = "", arity = 1)
+        @Parameter(names = {"--clinvar"}, description = "Alias to id", arity = 1)
         public String clinvar;
 
         @Deprecated
-        @Parameter(names = {"--stats"}, description = "[DEPRECATED]")
+        @Parameter(names = {"--stats"}, description = "[DEPRECATED]", hidden = true)
         public String stats;
 
         @Parameter(names = {"--maf", "--stats-maf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Allele Frequency, example: 1000g:all>0.4")
