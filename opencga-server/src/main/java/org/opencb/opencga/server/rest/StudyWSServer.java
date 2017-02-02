@@ -732,7 +732,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/groups/create")
-    @ApiOperation(value = "Create a group", position = 14)
+    @ApiOperation(value = "Create a group", position = 14, hidden = true)
     public Response createGroup(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
                                         required = true) @PathParam("study") String studyStr,
                                 @ApiParam(value = "Id of the new group to be created", required = true)
@@ -781,7 +781,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/groups/{groupId}/update")
-    @ApiOperation(value = "Updates the members of the group")
+    @ApiOperation(value = "Updates the members of the group", hidden = true)
     public Response addMembersToGroup(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
                                               + "alias", required = true) @PathParam("study") String studyStr,
                                       @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId,
