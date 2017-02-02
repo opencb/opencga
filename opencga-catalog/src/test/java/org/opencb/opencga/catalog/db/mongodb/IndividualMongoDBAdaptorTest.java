@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import org.bson.Document;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -171,6 +172,8 @@ public class IndividualMongoDBAdaptorTest extends MongoDBAdaptorTest {
         assertEquals(-1, individual.getFatherId());
     }
 
+    // FIXME: This should be tested in the managers
+    @Ignore
     @Test
     public void testModifyIndividualExistingName() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
