@@ -197,7 +197,7 @@ public class SampleMongoDBAdaptor extends AnnotationMongoDBAdaptor implements Sa
             Bson operation = new Document("$set", sampleParams);
             QueryResult<UpdateResult> update = sampleCollection.update(query, operation, null);
 
-            if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount() == 0) {
+            if (update.getResult().isEmpty() || update.getResult().get(0).getMatchedCount() == 0) {
                 throw CatalogDBException.idNotFound("Sample", sampleId);
             }
         }

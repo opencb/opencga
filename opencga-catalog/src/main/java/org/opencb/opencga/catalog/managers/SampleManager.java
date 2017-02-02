@@ -647,7 +647,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getId(sessionId);
-
         authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.UPDATE);
 
         for (Map.Entry<String, Object> param : parameters.entrySet()) {
@@ -656,17 +655,22 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                 case SOURCE:
                 case NAME:
                 case INDIVIDUAL_ID:
-                    long individualId = parameters.getLong(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
-                    individualId = individualId <= 0 ? -1 : individualId;
-                    parameters.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
-                    if (individualId > 0) {
-                        individualDBAdaptor.checkId(individualId);
-                    }
                 case DESCRIPTION:
                 case ATTRIBUTES:
                     break;
                 default:
                     throw new CatalogException("Cannot update " + queryParam);
+            }
+        }
+
+        if (StringUtils.isNotEmpty(parameters.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()))) {
+            String individualStr = parameters.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
+            if (StringUtils.isNumeric(individualStr) && Long.parseLong(individualStr) <= 0) {
+                parameters.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1);
+            } else {
+                long studyId = sampleDBAdaptor.getStudyId(sampleId);
+                MyResourceId resource = catalogManager.getIndividualManager().getId(individualStr, Long.toString(studyId), sessionId);
+                parameters.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), resource.getResourceId());
             }
         }
 

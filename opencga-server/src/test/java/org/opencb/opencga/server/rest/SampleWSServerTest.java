@@ -106,7 +106,7 @@ public class SampleWSServerTest {
     @Test
     public void updatePost() throws IOException {
         SampleWSServer.UpdateSample entity = new SampleWSServer.UpdateSample();
-        entity.individualId = in1;
+        entity.individualId = Long.toString(in1);
         entity.attributes = Collections.singletonMap("key", "value");
         String json = webTarget.path("samples").path(Long.toString(s1)).path("update").queryParam("sid", sessionId)
                 .request().post(Entity.json(entity), String.class);
