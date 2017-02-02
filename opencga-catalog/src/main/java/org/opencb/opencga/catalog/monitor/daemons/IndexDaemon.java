@@ -320,7 +320,7 @@ public class IndexDaemon extends MonitorParentDaemon {
                     "aggregated", "aggregation-mapping-file", "annotate", "annotator", "bgzip", "calculate-stats",
                     "exclude-genotypes", "file", "gvcf", "h", "help", "include-extra-fields", "load", "log-file",
                     "L", "log-level", "o", "outdir", "overwrite-annotations", "path", "queue", "s", "study", "S", "sid", "session-id",
-                    "transform", "transformed-files"));
+                    "transform", "transformed-files", "resume"));
             for (Map.Entry<String, String> param : job.getParams().entrySet()) {
                 commandLine.append(' ');
                 if (knownParams.contains(param.getKey())) {
