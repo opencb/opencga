@@ -45,7 +45,7 @@ import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBWriter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
-import org.opencb.opencga.storage.mongodb.variant.load.*;
+import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantWriteResult;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageConverterTask;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
 import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageReader;
@@ -62,8 +62,8 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 
-import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 
 /**
  * Created on 30/03/16.
@@ -241,6 +241,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
             ParallelTaskRunner<Variant, ?> ptr;
             ParallelTaskRunner.Config build = ParallelTaskRunner.Config.builder()
+                    .setReadQueuePutTimeout(20 * 60)
                     .setNumTasks(loadThreads)
                     .setBatchSize(batchSize)
                     .setAbortOnFail(true).build();
@@ -666,6 +667,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         ParallelTaskRunner<Document, MongoDBOperations> ptrMerge;
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
+                .setReadQueuePutTimeout(20 * 60)
                 .setNumTasks(loadThreads)
                 .setBatchSize(batchSize)
                 .setAbortOnFail(true).build();
