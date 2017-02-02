@@ -27,6 +27,7 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
 
@@ -202,6 +203,11 @@ public class DocumentToVariantConverterTest {
         String alt = "ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGT";
         Variant v3 = new Variant("1", 1000, 1002, "TAG", alt);
         assertEquals(" 1:      1000:TAG:" + new String(CryptoUtils.encryptSha1(alt)), converter.buildStorageId(v3));
+    }
+
+    @Test
+    public void testFieldsMap() {
+        assertEquals(VariantField.values().length, DocumentToVariantConverter.FIELDS_MAP.size());
     }
 
 }

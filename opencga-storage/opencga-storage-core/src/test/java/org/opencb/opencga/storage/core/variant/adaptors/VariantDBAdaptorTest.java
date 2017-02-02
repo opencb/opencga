@@ -1555,6 +1555,28 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
+    public void testExcludeAnnotationParts() {
+        List<Variant> allVariants = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.SORT, true)).getResult();
+        queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.SORT, true).append(QueryOptions.EXCLUDE, VariantField.ANNOTATION_XREFS));
+        assertEquals(allVariants.size(), queryResult.getResult().size());
+
+        List<Variant> result = queryResult.getResult();
+        for (int i = 0; i < result.size(); i++) {
+            Variant expectedVariant = allVariants.get(i);
+            Variant variant = result.get(i);
+            assertEquals(expectedVariant.toString(), variant.toString());
+
+            assertNotNull(expectedVariant.getAnnotation());
+            assertNotNull(variant.getAnnotation());
+            VariantAnnotation expectedAnnotation = expectedVariant.getAnnotation();
+            VariantAnnotation annotation = variant.getAnnotation();
+
+            expectedAnnotation.setXrefs(Collections.emptyList());
+            assertEquals(expectedAnnotation, annotation);
+        }
+    }
+
+    @Test
     public void testInclude() {
         queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.INCLUDE, "studies"));
         assertEquals(allVariants.getResult().size(), queryResult.getResult().size());

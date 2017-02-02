@@ -113,5 +113,8 @@ public class VariantQueryException extends IllegalArgumentException {
         return new VariantQueryException("Sample " + sample + " not found in study " + study);
     }
 
+    public static VariantQueryException unknownVariantField(String projectionOp, String field) {
+        return new VariantQueryException("Found unknown variant field '" + field + "' in " + projectionOp.toLowerCase());
+    }
 }
 
