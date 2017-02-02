@@ -14,16 +14,14 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.analysis;
+package org.opencb.opencga.app.cli.analysis.executors;
 
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
-import org.opencb.opencga.catalog.managers.CatalogManager;
-import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 
@@ -31,20 +29,18 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Created on 10/05/16
+ * Created on 03/05/16
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public abstract class AnalysisStorageCommandExecutor extends AnalysisCommandExecutor {
+public abstract class AnalysisCommandExecutor extends CommandExecutor {
 
     protected CatalogManager catalogManager;
     protected StorageEngineFactory storageEngineFactory;
 
-
-    public AnalysisStorageCommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
+    public AnalysisCommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
         super(options);
     }
-
 
     protected void configure() throws IllegalAccessException, ClassNotFoundException, InstantiationException, CatalogException {
 
@@ -56,20 +52,11 @@ public abstract class AnalysisStorageCommandExecutor extends AnalysisCommandExec
 
     }
 
-
-    protected Job getJob(long studyId, String jobId, String sessionId) throws CatalogException {
-        Query query = new Query(JobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key() + "." + Job.JOB_SCHEDULER_NAME, jobId);
-        QueryResult<Job> result = catalogManager.getAllJobs(studyId, query, null, sessionId);
-        if (result.getResult().isEmpty()) {
-            throw new IllegalArgumentException("Unknown job. Can't find job " + jobId + " in study " + studyId);
-        }
-        return result.first();
-    }
-
     protected Map<Long, String> getStudyIds(String sessionId) throws CatalogException {
         return catalogManager.getAllStudies(new Query(), new QueryOptions("include", "projects.studies.id,projects.studies.alias"), sessionId)
                 .getResult()
                 .stream()
                 .collect(Collectors.toMap(Study::getId, Study::getAlias));
     }
+
 }

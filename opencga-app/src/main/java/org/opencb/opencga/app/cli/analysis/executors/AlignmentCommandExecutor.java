@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.analysis;
+package org.opencb.opencga.app.cli.analysis.executors;
 
 import org.ga4gh.models.ReadAlignment;
 import org.opencb.biodata.models.alignment.RegionCoverage;
@@ -34,7 +34,7 @@ import java.util.Map;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
+public class AlignmentCommandExecutor extends AnalysisCommandExecutor {
 
     private final AlignmentCommandOptions alignmentCommandOptions;
 //    private AlignmentStorageEngine alignmentStorageManager;

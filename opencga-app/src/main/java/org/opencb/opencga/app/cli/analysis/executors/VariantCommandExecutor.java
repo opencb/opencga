@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.analysis;
+package org.opencb.opencga.app.cli.analysis.executors;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -52,7 +52,7 @@ import static org.opencb.opencga.storage.core.manager.variant.operations.Variant
 /**
  * Created by imedina on 02/03/15.
  */
-public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
+public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
 //    private AnalysisCliOptionsParser.VariantCommandOptions variantCommandOptions;
     private VariantCommandOptions variantCommandOptions;
@@ -133,7 +133,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         VariantCommandOptions.VariantQueryCommandOptions queryCliOptions = variantCommandOptions.queryVariantCommandOptions;
 
         queryCliOptions.commonOptions.outputFormat = exportCliOptions.commonOptions.outputFormat.toLowerCase().replace("tsv", "stats");
-        queryCliOptions.genericVariantQueryOptions.study = exportCliOptions.studies;
+        queryCliOptions.study = exportCliOptions.studies;
         queryCliOptions.genericVariantQueryOptions.returnStudy = exportCliOptions.studies;
         queryCliOptions.numericOptions.limit = exportCliOptions.numericOptions.limit;
 //        queryCliOptions.sort = true;
@@ -261,7 +261,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             cohorts = Collections.emptyList();
         }
 
-        variantManager.stats(cliOptions.genericVariantStatsOptions.studyId, cohorts, cliOptions.outdir, options, sessionId);
+        variantManager.stats(cliOptions.study, cohorts, cliOptions.outdir, options, sessionId);
     }
 
     private void annotate() throws StorageEngineException, IOException, URISyntaxException, VariantAnnotatorException, CatalogException,

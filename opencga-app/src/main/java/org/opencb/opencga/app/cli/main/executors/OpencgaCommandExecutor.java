@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.main;
+package org.opencb.opencga.app.cli.main.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryResponse;

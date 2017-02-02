@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.analysis;
+package org.opencb.opencga.app.cli.analysis.executors;
 
 import com.beust.jcommander.ParameterException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.opencga.app.cli.analysis.AnalysisCliOptionsParser;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantVcfDataWriter;
@@ -35,7 +36,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPOutputStream;
 
-import static org.opencb.opencga.app.cli.analysis.VariantQueryCommandUtils.VariantOutputFormat.*;
+import static org.opencb.opencga.app.cli.analysis.executors.VariantQueryCommandUtils.VariantOutputFormat.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
 
 /**
@@ -113,9 +114,9 @@ public class VariantQueryCommandUtils {
 
 
         List studies = new LinkedList<>();
-        if (StringUtils.isNotEmpty(queryVariantsOptions.genericVariantQueryOptions.study)) {
-            query.put(STUDIES.key(), queryVariantsOptions.genericVariantQueryOptions.study);
-            for (String study : queryVariantsOptions.genericVariantQueryOptions.study.split(",|;")) {
+        if (StringUtils.isNotEmpty(queryVariantsOptions.study)) {
+            query.put(STUDIES.key(), queryVariantsOptions.study);
+            for (String study : queryVariantsOptions.study.split(",|;")) {
                 if (!study.startsWith("!")) {
                     studies.add(study);
                 }

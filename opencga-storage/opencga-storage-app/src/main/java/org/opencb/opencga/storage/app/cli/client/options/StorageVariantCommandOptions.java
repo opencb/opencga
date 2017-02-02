@@ -171,8 +171,8 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--rank"}, description = "Rank variants by gene, ensemblGene or consequence_type")
         public String rank;
 
-        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter")
-        public String study;
+//        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter")
+//        public String study;
 
         @Parameter(names = {"--gt", "--genotype"}, description = "A comma separated list of samples from the SAME study, example: " +
                 "NA0001:0/0,0/1;NA0002:0/1", arity = 1)
@@ -321,6 +321,9 @@ public class StorageVariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.QueryCommandOptions commonQueryOptions = queryCommandOptions;
 
+        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter")
+        public String study;
+
 //        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
 //        public String output;
 //
@@ -466,9 +469,9 @@ public class StorageVariantCommandOptions {
                 " correct")
         public boolean updateStats = false;
 
-        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true,
-                arity = 1)
-        public String studyId;
+//        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true,
+//                arity = 1)
+//        public String studyId;
 
         @Parameter(names = {"-f", "--file-id"}, description = "Calculate stats only for the selected file", arity = 1)
         public String fileId;
@@ -491,6 +494,10 @@ public class StorageVariantCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true,
+                arity = 1)
+        public String studyId;
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", arity = 1)
         public String dbName;

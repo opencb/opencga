@@ -333,7 +333,7 @@ public class VariantCommandOptions {
     }
 
     @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed variants")
-    public class VariantQueryCommandOptions {
+    public class VariantQueryCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public StorageVariantCommandOptions.GenericVariantQueryOptions genericVariantQueryOptions = new StorageVariantCommandOptions.GenericVariantQueryOptions();
@@ -355,7 +355,7 @@ public class VariantCommandOptions {
     }
 
     @Parameters(commandNames = {"stats"}, commandDescription = "Create and load stats into a database.")
-    public class VariantStatsCommandOptions {
+    public class VariantStatsCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public StorageVariantCommandOptions.GenericVariantStatsOptions genericVariantStatsOptions = new StorageVariantCommandOptions.GenericVariantStatsOptions();

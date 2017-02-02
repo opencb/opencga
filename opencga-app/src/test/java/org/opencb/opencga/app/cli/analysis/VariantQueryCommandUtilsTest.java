@@ -18,6 +18,7 @@ package org.opencb.opencga.app.cli.analysis;
 
 import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.opencga.app.cli.analysis.executors.VariantQueryCommandUtils;
 import org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
