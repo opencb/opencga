@@ -151,11 +151,11 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
         return execute(STUDY_URL, studyId, "resyncFiles", options, GET, Object.class);
     }
 
-    public QueryResponse<ObjectMap> createGroup(String studyId, String groupId, String users, QueryOptions options)
-            throws CatalogException, IOException {
-        ObjectMap params = new ObjectMap(options);
-        params = addParamsToObjectMap(params, "groupId", groupId, "users", users);
-        return execute(STUDY_URL, studyId, "groups", null, "create", params, GET, ObjectMap.class);
+    public QueryResponse<ObjectMap> createGroup(String studyId, String groupId, String users) throws CatalogException, IOException {
+        ObjectMap bodyParams = new ObjectMap()
+                .append("groupId", groupId)
+                .append("users", users);
+        return execute(STUDY_URL, studyId, "groups", null, "create", new ObjectMap("body", bodyParams), POST, ObjectMap.class);
     }
 
     public QueryResponse<ObjectMap> deleteGroup(String studyId, String groupId, QueryOptions options)
@@ -164,7 +164,8 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
     }
 
     public QueryResponse<ObjectMap> updateGroup(String studyId, String groupId, ObjectMap objectMap) throws CatalogException, IOException {
-        return execute(STUDY_URL, studyId, "groups", groupId, "update", objectMap, GET, ObjectMap.class);
+        ObjectMap bodyParams = new ObjectMap("body", objectMap);
+        return execute(STUDY_URL, studyId, "groups", groupId, "update", bodyParams, POST, ObjectMap.class);
     }
 
     public QueryResponse<ObjectMap> groups(String studyId, ObjectMap objectMap) throws CatalogException, IOException {

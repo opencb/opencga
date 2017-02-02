@@ -802,16 +802,16 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         }
 
         List<String> userList;
-        if (setUsers != null) {
+        if (StringUtils.isNotEmpty(setUsers)) {
             userList = Arrays.asList(setUsers.split(","));
             studyDBAdaptor.setUsersToGroup(studyId, groupId, userList);
         } else {
-            if (addUsers != null) {
+            if (StringUtils.isNotEmpty(addUsers)) {
                 userList = Arrays.asList(addUsers.split(","));
                 studyDBAdaptor.addUsersToGroup(studyId, groupId, userList);
             }
 
-            if (removeUsers != null) {
+            if (StringUtils.isNotEmpty(removeUsers)) {
                 userList = Arrays.asList(removeUsers.split(","));
                 studyDBAdaptor.removeUsersFromGroup(studyId, groupId, userList);
             }
