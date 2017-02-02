@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga-test</artifactId>
-    <version>1.0.0-rc4</version>
+    <version>1.0.0-final</version>
     <packaging>pom</packaging>
 
     <dependencies>

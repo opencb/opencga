@@ -25,12 +25,12 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage</artifactId>
-        <version>1.0.0-rc4</version>
+        <version>1.0.0-final</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>opencga-storage-hadoop</artifactId>
-    <version>1.0.0-rc4</version>
+    <version>1.0.0-final</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -43,7 +43,7 @@
             <id>opencga-storage-hadoop-deps</id>
             <activation>
                 <file>
-                    <missing>${user.home}/.m2/repository/org/opencb/opencga/opencga-storage-hadoop-deps/1.0.0-rc4-SNAPSHOT/opencga-storage-hadoop-deps-1.0.0-rc4-SNAPSHOT.jar</missing>
+                    <missing>${user.home}/.m2/repository/org/opencb/opencga/opencga-storage-hadoop-deps/1.0.0-final-SNAPSHOT/opencga-storage-hadoop-deps-1.0.0-final-SNAPSHOT.jar</missing>
                 </file>
             </activation>
             <modules>
