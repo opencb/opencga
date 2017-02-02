@@ -1126,7 +1126,8 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{file}/update")
     @ApiOperation(value = "Update fields of a file [WARNING]", position = 16, response = File.class,
-            notes = "Using the GET method is discouraged. Please use the POST one.")
+            notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web "
+                    + "service is not tested and this can be deprecated in a future version.")
     public Response update(@ApiParam(value = "File id") @PathParam(value = "file") String fileIdStr,
                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                            @QueryParam("study") String studyStr,
