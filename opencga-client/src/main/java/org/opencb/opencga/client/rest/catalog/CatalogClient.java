@@ -56,8 +56,7 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
         return execute(category, "search", myQuery, GET, clazz);
     }
 
-    public QueryResponse<T> update(String id, @Nullable String study, ObjectMap params)
-            throws CatalogException, IOException {
+    public QueryResponse<T> update(String id, @Nullable String study, ObjectMap params) throws CatalogException, IOException {
         //TODO Check that everything is correct
         if (params.containsKey("method") && params.get("method").equals("GET")) {
             params.remove("method");
@@ -86,8 +85,18 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
     }
 
     public QueryResponse<A> createAcl(String id, String members, ObjectMap params) throws CatalogException, IOException {
+        ObjectMap myParams;
         params = addParamsToObjectMap(params, "members", members);
-        return execute(category, id, "acl", null, "create", params, GET, aclClass);
+        if (params.containsKey("study")) {
+            String study = params.getString("study");
+            params.remove("study");
+            myParams = new ObjectMap()
+                    .append("study", study)
+                    .append("body", params);
+        } else {
+            myParams = new ObjectMap("body", params);
+        }
+        return execute(category, id, "acl", null, "create", myParams, POST, aclClass);
     }
 
     public QueryResponse<A> deleteAcl(String id, String memberId, ObjectMap params) throws CatalogException, IOException {
@@ -95,7 +104,18 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
     }
 
     public QueryResponse<A> updateAcl(String id, String memberId, ObjectMap params) throws CatalogException, IOException {
-        return execute(category, id, "acl", memberId, "update", params, GET, aclClass);
+        ObjectMap myParams;
+        if (params.containsKey("study")) {
+            String study = params.getString("study");
+            params.remove("study");
+            myParams = new ObjectMap()
+                    .append("study", study)
+                    .append("body", params);
+        } else {
+            myParams = new ObjectMap("body", params);
+        }
+
+        return execute(category, id, "acl", memberId, "update", myParams, POST, aclClass);
     }
 
 }

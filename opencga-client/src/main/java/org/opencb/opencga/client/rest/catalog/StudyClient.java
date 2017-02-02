@@ -76,11 +76,7 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
             }
         }
         params = addParamsToObjectMap(params, "name", studyName, "alias", studyAlias);
-        ObjectMapper mapper = new ObjectMapper();
-        String json = "[" + mapper.writeValueAsString(params) + "]";
-        //String json = mapper.writeValueAsString(params);
-//        System.out.println("Json: " + json);
-        ObjectMap p = new ObjectMap("body", json);
+        ObjectMap p = new ObjectMap("body", params);
         p = addParamsToObjectMap(p, "projectId", projectId);
         return execute(STUDY_URL, "create", p, POST, Study.class);
     }
@@ -186,6 +182,7 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
                 params.remove("method");
                 return execute(STUDY_URL, studyId, "update", params, GET, Study.class);
             }
+            params.remove("method");
         }
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(params);
