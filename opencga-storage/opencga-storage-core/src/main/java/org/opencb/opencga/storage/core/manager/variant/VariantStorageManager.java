@@ -45,6 +45,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 
 import java.io.IOException;
@@ -52,8 +53,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.function.Function;
-
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
 
 public class VariantStorageManager extends StorageManager {
 
@@ -264,13 +263,13 @@ public class VariantStorageManager extends StorageManager {
     }
 
     public QueryResult<Long> count(Query query, String sessionId) throws CatalogException, StorageEngineException, IOException {
-        return secure(query, new QueryOptions(QueryOptions.EXCLUDE, VariantFields.STUDIES), sessionId,
+        return secure(query, new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES), sessionId,
                 dbAdaptor -> dbAdaptor.count(query));
     }
 
     public QueryResult distinct(Query query, String field, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
-        return (QueryResult) secure(query, new QueryOptions(QueryOptions.EXCLUDE, VariantFields.STUDIES), sessionId,
+        return (QueryResult) secure(query, new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES), sessionId,
                 dbAdaptor -> dbAdaptor.distinct(query, field));
     }
 
@@ -371,8 +370,8 @@ public class VariantStorageManager extends StorageManager {
     Map<Long, List<Sample>> checkSamplesPermissions(Query query, QueryOptions queryOptions, VariantDBAdaptor dbAdaptor, String sessionId)
             throws CatalogException {
         final Map<Long, List<Sample>> samplesMap = new HashMap<>();
-        Set<String> returnedFields = VariantDBAdaptorUtils.getReturnedFields(queryOptions);
-        if (!returnedFields.contains(VariantFields.STUDIES.fieldName())) {
+        Set<VariantField> returnedFields = VariantField.getReturnedFields(queryOptions);
+        if (!returnedFields.contains(VariantField.STUDIES)) {
             return Collections.emptyMap();
         }
         if (VariantDBAdaptorUtils.isValidParam(query, VariantQueryParams.RETURNED_SAMPLES)) {
@@ -396,7 +395,7 @@ public class VariantStorageManager extends StorageManager {
             List<Integer> returnedStudies = dbAdaptor.getReturnedStudies(query, queryOptions);
             List<Study> studies = catalogManager.getAllStudies(new Query(StudyDBAdaptor.QueryParams.ID.key(), returnedStudies),
                     new QueryOptions("include", "projects.studies.id"), sessionId).getResult();
-            if (!returnedFields.contains(VariantFields.SAMPLES.fieldName())) {
+            if (!returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
                 for (Integer returnedStudy : returnedStudies) {
                     samplesMap.put(returnedStudy.longValue(), Collections.emptyList());
                 }
