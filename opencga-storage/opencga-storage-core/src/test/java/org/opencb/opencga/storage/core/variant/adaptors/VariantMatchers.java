@@ -146,6 +146,15 @@ public class VariantMatchers {
         };
     }
 
+    public static Matcher<VariantAnnotation> at(final String variant) {
+        Variant v = new Variant(variant);
+        return allOf(with("chromosome", VariantAnnotation::getChromosome, is(v.getChromosome())),
+                with("position", VariantAnnotation::getStart, is(v.getStart())),
+                with("reference", VariantAnnotation::getReference, is(v.getReference())),
+                with("alternate", VariantAnnotation::getAlternate, is(v.getAlternate()))
+        );
+    }
+
     public static Matcher<VariantAnnotation> hasGenes(Matcher<? super Collection<String>> subMatcher) {
         return new FeatureMatcher<VariantAnnotation, Collection<String>>(subMatcher, "with genes", "annotation") {
             @Override
@@ -279,11 +288,26 @@ public class VariantMatchers {
         };
     }
 
+    public static Matcher<Variant> withStudy(final String study) {
+        return withStudy(study, notNullValue());
+    }
+
     public static Matcher<Variant> withStudy(final String study, Matcher<? super StudyEntry> subMatcher) {
         return new FeatureMatcher<Variant, StudyEntry>(subMatcher, "with study " + study, "Study") {
             @Override
             protected StudyEntry featureValueOf(Variant actual) {
                 return actual.getStudy(study);
+            }
+        };
+    }
+
+    public static Matcher<StudyEntry> withFileId(Matcher<? super Iterable<? super String>> subMatcher) {
+        return new FeatureMatcher<StudyEntry, List<String>>(subMatcher, "with fileIds ", "FileIds") {
+            @Override
+            protected List<String> featureValueOf(StudyEntry actual) {
+                return actual.getFiles()
+                        .stream()
+                        .map(FileEntry::getFileId).collect(Collectors.toList());
             }
         };
     }

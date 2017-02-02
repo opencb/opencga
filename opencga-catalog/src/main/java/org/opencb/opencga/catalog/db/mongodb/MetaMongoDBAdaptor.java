@@ -175,7 +175,7 @@ public class MetaMongoDBAdaptor extends MongoDBAdaptor implements MetaDBAdaptor 
         Admin admin = configuration.getAdmin();
         admin.setPassword(CatalogAuthenticationManager.cypherPassword(admin.getPassword()));
 
-        Metadata metadata = new Metadata().setIdCounter(0).setVersion(VERSION);
+        Metadata metadata = new Metadata().setIdCounter(configuration.getCatalog().getOffset()).setVersion(VERSION);
 
         if (configuration.isOpenRegister()) {
             metadata.setOpen("public");

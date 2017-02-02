@@ -172,7 +172,7 @@ public class VariantQueryCommandUtils {
         addParam(query, MISSING_GENOTYPES, queryVariantsOptions.missingGenotypeCount);
 
 
-        boolean returnVariants = !queryVariantsOptions.count && StringUtils.isEmpty(queryVariantsOptions.groupBy)
+        boolean returnVariants = !queryVariantsOptions.commonQueryOptions.count && StringUtils.isEmpty(queryVariantsOptions.groupBy)
                 && StringUtils.isEmpty(queryVariantsOptions.rank);
 
 
@@ -205,26 +205,26 @@ public class VariantQueryCommandUtils {
     public static QueryOptions parseQueryOptions(StorageVariantCommandOptions.VariantQueryCommandOptions queryVariantsOptions) {
         QueryOptions queryOptions = new QueryOptions(new HashMap<>(queryVariantsOptions.commonOptions.params));
 
-        if (StringUtils.isNotEmpty(queryVariantsOptions.include)) {
-            queryOptions.add("include", queryVariantsOptions.include);
+        if (StringUtils.isNotEmpty(queryVariantsOptions.commonQueryOptions.include)) {
+            queryOptions.add("include", queryVariantsOptions.commonQueryOptions.include);
         }
 
-        if (StringUtils.isNotEmpty(queryVariantsOptions.exclude)) {
-            queryOptions.add("exclude", queryVariantsOptions.exclude + ",_id");
+        if (StringUtils.isNotEmpty(queryVariantsOptions.commonQueryOptions.exclude)) {
+            queryOptions.add("exclude", queryVariantsOptions.commonQueryOptions.exclude + ",_id");
         }
 //        else {
 //            queryOptions.put("exclude", "_id");
 //        }
 
-        if (queryVariantsOptions.skip > 0) {
-            queryOptions.add("skip", queryVariantsOptions.skip);
+        if (queryVariantsOptions.commonQueryOptions.skip > 0) {
+            queryOptions.add("skip", queryVariantsOptions.commonQueryOptions.skip);
         }
 
-        if (queryVariantsOptions.limit > 0) {
-            queryOptions.add("limit", queryVariantsOptions.limit);
+        if (queryVariantsOptions.commonQueryOptions.limit > 0) {
+            queryOptions.add("limit", queryVariantsOptions.commonQueryOptions.limit);
         }
 
-        if (queryVariantsOptions.count) {
+        if (queryVariantsOptions.commonQueryOptions.count) {
             queryOptions.add("count", true);
         }
 
@@ -255,14 +255,14 @@ public class VariantQueryCommandUtils {
 
         // output format has priority over output name
         OutputStream outputStream;
-        if (queryVariantsOptions.output == null || queryVariantsOptions.output.isEmpty()) {
+        if (queryVariantsOptions.commonQueryOptions.output == null || queryVariantsOptions.commonQueryOptions.output.isEmpty()) {
             outputStream = System.out;
         } else {
-            if (gzip && !queryVariantsOptions.output.endsWith(".gz")) {
-                queryVariantsOptions.output += ".gz";
+            if (gzip && !queryVariantsOptions.commonQueryOptions.output.endsWith(".gz")) {
+                queryVariantsOptions.commonQueryOptions.output += ".gz";
             }
-            outputStream = new FileOutputStream(queryVariantsOptions.output);
-            logger.debug("writing to %s", queryVariantsOptions.output);
+            outputStream = new FileOutputStream(queryVariantsOptions.commonQueryOptions.output);
+            logger.debug("writing to %s", queryVariantsOptions.commonQueryOptions.output);
         }
 
         // If compressed a GZip output stream is used

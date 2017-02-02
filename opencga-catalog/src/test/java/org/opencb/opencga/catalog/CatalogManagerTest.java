@@ -749,20 +749,22 @@ public class CatalogManagerTest extends GenericTest {
         VariableSet vs4 = catalogManager.createVariableSet(studyId, "vs4", true, "Aries", null, variables, sessionIdUser).first();
 
         long numResults;
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(StudyDBAdaptor.VariableSetParams.NAME.key()
-                , "vs1"), sessionIdUser).getNumResults();
+        numResults = catalogManager.getStudyManager().searchVariableSets(Long.toString(studyId),
+                new Query(StudyDBAdaptor.VariableSetParams.NAME.key(), "vs1"), QueryOptions.empty(), sessionIdUser).getNumResults();
         assertEquals(1, numResults);
 
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(StudyDBAdaptor.VariableSetParams.NAME.key()
-                , "vs1,vs2"), sessionIdUser).getNumResults();
+        numResults = catalogManager.getStudyManager().searchVariableSets(Long.toString(studyId),
+                new Query(StudyDBAdaptor.VariableSetParams.NAME.key(), "vs1,vs2"), QueryOptions.empty(), sessionIdUser)
+                .getNumResults();
         assertEquals(2, numResults);
 
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(StudyDBAdaptor.VariableSetParams.NAME.key()
-                , "VS1"), sessionIdUser).getNumResults();
+        numResults = catalogManager.getStudyManager().searchVariableSets(Long.toString(studyId),
+                new Query(StudyDBAdaptor.VariableSetParams.NAME.key(), "VS1"), QueryOptions.empty(), sessionIdUser).getNumResults();
         assertEquals(0, numResults);
 
-        numResults = catalogManager.getAllVariableSet(studyId, new QueryOptions(StudyDBAdaptor.VariableSetParams.ID.key()
-                , vs1.getId() + "," + vs3.getId()), sessionIdUser).getNumResults();
+        numResults = catalogManager.getStudyManager().searchVariableSets(Long.toString(studyId),
+                new Query(StudyDBAdaptor.VariableSetParams.ID.key(), vs1.getId() + "," + vs3.getId()), QueryOptions.empty(),
+                sessionIdUser).getNumResults();
         assertEquals(2, numResults);
 
     }

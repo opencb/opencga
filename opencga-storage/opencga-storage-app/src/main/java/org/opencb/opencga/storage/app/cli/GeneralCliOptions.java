@@ -140,13 +140,10 @@ public class GeneralCliOptions {
 
     }
 
-    public class IndexCommandOptions extends GenericIndexCommandOptions {
+    public class IndexCommandOptions {
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name to load the data", required = false, arity = 1)
         public String dbName;
-    }
-
-    public class GenericIndexCommandOptions {
 
         @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, variableArity = true)
         public List<String> input;
@@ -154,18 +151,8 @@ public class GeneralCliOptions {
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1, required = false)
         public String outdir;
 
-//        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
-//        public String fileId;
-
-//        @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
-//        public boolean transform = false;
-//
-//        @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
-//        public boolean load = false;
-
     }
 
-    @Deprecated
     public class QueryCommandOptions {
 
         @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", required = false, arity = 1)
@@ -188,16 +175,6 @@ public class GeneralCliOptions {
 
         @Parameter(names = {"--count"}, description = "Count results. Do not return elements.", required = false, arity = 0)
         public boolean count;
-
-        @Deprecated
-        @Parameter(names = {"-c", "--credentials"}, description = "Path to the file where the backend credentials are stored", required =
-                false, arity = 1)
-        public String credentials;
-
-        @Deprecated
-        @Parameter(names = {"-b", "--backend"}, description = "StorageEngine plugin used to index files into: mongodb (default), hbase " +
-                "(pending)", required = false, arity = 1)
-        public String backend = "mongodb";
 
     }
 

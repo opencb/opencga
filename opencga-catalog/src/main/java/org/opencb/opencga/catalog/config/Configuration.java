@@ -52,7 +52,7 @@ public class Configuration {
     private List<StudyAclEntry> acl;
 
     private Email email;
-    private CatalogDBCredentials catalog;
+    private Catalog catalog;
 
     private ServerConfiguration server;
 
@@ -238,11 +238,11 @@ public class Configuration {
         return this;
     }
 
-    public CatalogDBCredentials getCatalog() {
+    public Catalog getCatalog() {
         return catalog;
     }
 
-    public Configuration setCatalog(CatalogDBCredentials catalog) {
+    public Configuration setCatalog(Catalog catalog) {
         this.catalog = catalog;
         return this;
     }

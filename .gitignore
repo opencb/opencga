@@ -16,7 +16,7 @@ node_modules
 *.so.*
 *.out
 *.log
-
+*.zip
 # Maven
 target/
 dependency-reduced-pom.xml

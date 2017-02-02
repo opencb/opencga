@@ -72,16 +72,16 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
     private void importUsers() throws CatalogException, NamingException {
         AdminCliOptionsParser.ImportUserCommandOptions executor = usersCommandOptions.importUserCommandOptions;
         if (executor.databaseUser != null) {
-            configuration.getCatalog().setUser(executor.databaseUser);
+            configuration.getCatalog().getDatabase().setUser(executor.databaseUser);
         }
         if (executor.databasePassword != null) {
-            configuration.getCatalog().setPassword(executor.databasePassword);
+            configuration.getCatalog().getDatabase().setPassword(executor.databasePassword);
         }
         if (executor.database != null) {
-            configuration.getCatalog().setDatabase(executor.database);
+            configuration.getCatalog().getDatabase().setDatabase(executor.database);
         }
         if (executor.databaseHost != null) {
-            configuration.getCatalog().setHosts(Collections.singletonList(executor.databaseHost));
+            configuration.getCatalog().getDatabase().setHosts(Collections.singletonList(executor.databaseHost));
         }
         if (executor.commonOptions.adminPassword != null) {
             configuration.getAdmin().setPassword(executor.commonOptions.adminPassword);
@@ -125,16 +125,17 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
 
     private void create() throws CatalogException, IOException {
         if (usersCommandOptions.createUserCommandOptions.databaseUser != null) {
-            configuration.getCatalog().setUser(usersCommandOptions.createUserCommandOptions.databaseUser);
+            configuration.getCatalog().getDatabase().setUser(usersCommandOptions.createUserCommandOptions.databaseUser);
         }
         if (usersCommandOptions.createUserCommandOptions.databasePassword != null) {
-            configuration.getCatalog().setPassword(usersCommandOptions.createUserCommandOptions.databasePassword);
+            configuration.getCatalog().getDatabase().setPassword(usersCommandOptions.createUserCommandOptions.databasePassword);
         }
         if (usersCommandOptions.createUserCommandOptions.database != null) {
-            configuration.getCatalog().setDatabase(usersCommandOptions.createUserCommandOptions.database);
+            configuration.getCatalog().getDatabase().setDatabase(usersCommandOptions.createUserCommandOptions.database);
         }
         if (usersCommandOptions.createUserCommandOptions.databaseHost != null) {
-            configuration.getCatalog().setHosts(Collections.singletonList(usersCommandOptions.createUserCommandOptions.databaseHost));
+            configuration.getCatalog().getDatabase()
+                    .setHosts(Collections.singletonList(usersCommandOptions.createUserCommandOptions.databaseHost));
         }
         if (usersCommandOptions.commonOptions.adminPassword != null) {
             configuration.getAdmin().setPassword(usersCommandOptions.commonOptions.adminPassword);
@@ -166,16 +167,17 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
 
     private void delete() throws CatalogException, IOException {
         if (usersCommandOptions.deleteUserCommandOptions.databaseUser != null) {
-            configuration.getCatalog().setUser(usersCommandOptions.deleteUserCommandOptions.databaseUser);
+            configuration.getCatalog().getDatabase().setUser(usersCommandOptions.deleteUserCommandOptions.databaseUser);
         }
         if (usersCommandOptions.deleteUserCommandOptions.databasePassword != null) {
-            configuration.getCatalog().setPassword(usersCommandOptions.deleteUserCommandOptions.databasePassword);
+            configuration.getCatalog().getDatabase().setPassword(usersCommandOptions.deleteUserCommandOptions.databasePassword);
         }
         if (usersCommandOptions.deleteUserCommandOptions.database != null) {
-            configuration.getCatalog().setDatabase(usersCommandOptions.deleteUserCommandOptions.database);
+            configuration.getCatalog().getDatabase().setDatabase(usersCommandOptions.deleteUserCommandOptions.database);
         }
         if (usersCommandOptions.deleteUserCommandOptions.databaseHost != null) {
-            configuration.getCatalog().setHosts(Collections.singletonList(usersCommandOptions.deleteUserCommandOptions.databaseHost));
+            configuration.getCatalog().getDatabase()
+                    .setHosts(Collections.singletonList(usersCommandOptions.deleteUserCommandOptions.databaseHost));
         }
         if (usersCommandOptions.commonOptions.adminPassword != null) {
             configuration.getAdmin().setPassword(usersCommandOptions.commonOptions.adminPassword);
@@ -203,16 +205,17 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
 
     private void setQuota() throws CatalogException {
         if (usersCommandOptions.QuotaUserCommandOptions.databaseUser != null) {
-            configuration.getCatalog().setUser(usersCommandOptions.QuotaUserCommandOptions.databaseUser);
+            configuration.getCatalog().getDatabase().setUser(usersCommandOptions.QuotaUserCommandOptions.databaseUser);
         }
         if (usersCommandOptions.QuotaUserCommandOptions.databasePassword != null) {
-            configuration.getCatalog().setPassword(usersCommandOptions.QuotaUserCommandOptions.databasePassword);
+            configuration.getCatalog().getDatabase().setPassword(usersCommandOptions.QuotaUserCommandOptions.databasePassword);
         }
         if (usersCommandOptions.QuotaUserCommandOptions.database != null) {
-            configuration.getCatalog().setDatabase(usersCommandOptions.QuotaUserCommandOptions.database);
+            configuration.getCatalog().getDatabase().setDatabase(usersCommandOptions.QuotaUserCommandOptions.database);
         }
         if (usersCommandOptions.QuotaUserCommandOptions.databaseHost != null) {
-            configuration.getCatalog().setHosts(Collections.singletonList(usersCommandOptions.QuotaUserCommandOptions.databaseHost));
+            configuration.getCatalog().getDatabase()
+                    .setHosts(Collections.singletonList(usersCommandOptions.QuotaUserCommandOptions.databaseHost));
         }
         if (usersCommandOptions.commonOptions.adminPassword != null) {
             configuration.getAdmin().setPassword(usersCommandOptions.commonOptions.adminPassword);

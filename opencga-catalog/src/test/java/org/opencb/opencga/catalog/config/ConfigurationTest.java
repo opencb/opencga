@@ -56,7 +56,10 @@ public class ConfigurationTest {
         configuration.setEmail(emailServer);
 
         CatalogDBCredentials databaseCredentials = new CatalogDBCredentials(Arrays.asList("localhost"), "opencga_catalog", "admin", "");
-        configuration.setCatalog(databaseCredentials);
+        Catalog catalog = new Catalog();
+        catalog.setOffset(1000000);
+        catalog.setDatabase(databaseCredentials);
+        configuration.setCatalog(catalog);
 
         Audit audit = new Audit(20000000, 100000000000L, "", Collections.emptyList());
         configuration.setAudit(audit);

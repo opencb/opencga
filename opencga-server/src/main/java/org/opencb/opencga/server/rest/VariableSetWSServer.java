@@ -18,6 +18,7 @@ package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.models.Variable;
@@ -131,14 +132,16 @@ public class VariableSetWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "CSV list of variablesetIds", required = false) @QueryParam("id") String id,
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
-                           @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes) {
+                           @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes,
+                           @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
+            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
+
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
-            long studyId = catalogManager.getStudyId(studyStr, sessionId);
-            queryOptions.put(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-            QueryResult<VariableSet> queryResult = catalogManager.getAllVariableSet(studyId, queryOptions, sessionId);
+            QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().searchVariableSets(studyStr, query, queryOptions,
+                    sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

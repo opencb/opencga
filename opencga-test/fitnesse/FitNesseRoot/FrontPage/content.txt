@@ -3,5 +3,14 @@
 
 OpenCga
 
+To execuate these tests, User need to prepare a working test envirnment with latest OpenCGA installation and test data.
+
+!3 Installation Guide :
+http://docs.opencb.org/display/opencga/Installation+Guide
+
+!3 Setup Test Envirnment : 
+http://docs.opencb.org/display/opencga/Getting+Started+in+5+minutes
+
+
 !note Release ${FITNESSE_VERSION}
 
