@@ -1322,14 +1322,12 @@ public class CatalogManagerTest extends GenericTest {
         long sampleId1 = catalogManager.getSampleManager().create("user@1000G:phase1", "SAMPLE_1", "", "", null, new QueryOptions(),
                 sessionIdUser).first().getId();
 
-        // It will not modify anything as the individualId is already -1
-        thrown.expect(CatalogDBException.class);
         catalogManager.getSampleManager()
                 .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1), null, sessionIdUser);
 
         Sample sample = catalogManager.getSampleManager()
                 .update(sampleId1, new ObjectMap(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -2), null, sessionIdUser).first();
-        assertEquals(-2, sample.getIndividual().getId());
+        assertEquals(-1, sample.getIndividual().getId());
     }
 
     @Test
