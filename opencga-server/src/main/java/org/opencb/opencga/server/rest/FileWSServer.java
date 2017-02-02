@@ -243,17 +243,17 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @ApiOperation(httpMethod = "POST", position = 4, value = "Resource to upload a file by chunks", response = File.class)
-    public Response upload(@FormDataParam("chunk_content") byte[] chunkBytes,
-                           @FormDataParam("chunk_content") FormDataContentDisposition contentDisposition,
+    public Response upload(@ApiParam(hidden = true) @FormDataParam("chunk_content") byte[] chunkBytes,
+                           @ApiParam(hidden = true) @FormDataParam("chunk_content") FormDataContentDisposition contentDisposition,
                            @FormDataParam("file") InputStream fileInputStream,
                            @FormDataParam("file") FormDataContentDisposition fileMetaData,
 
-                           @DefaultValue("") @FormDataParam("chunk_id") String chunk_id,
-                           @DefaultValue("false") @FormDataParam("last_chunk") String last_chunk,
-                           @DefaultValue("") @FormDataParam("chunk_total") String chunk_total,
-                           @DefaultValue("") @FormDataParam("chunk_size") String chunk_size,
-                           @DefaultValue("") @FormDataParam("chunk_hash") String chunkHash,
-                           @DefaultValue("false") @FormDataParam("resume_upload") String resume_upload,
+                           @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_id") String chunk_id,
+                           @ApiParam(hidden = true) @DefaultValue("false") @FormDataParam("last_chunk") String last_chunk,
+                           @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_total") String chunk_total,
+                           @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_size") String chunk_size,
+                           @ApiParam(hidden = true) @DefaultValue("") @FormDataParam("chunk_hash") String chunkHash,
+                           @ApiParam(hidden = true) @DefaultValue("false") @FormDataParam("resume_upload") String resume_upload,
 
                            @ApiParam(value = "filename", required = false) @FormDataParam("filename") String filename,
                            @ApiParam(value = "fileFormat", required = true) @DefaultValue("") @FormDataParam("fileFormat")
@@ -1521,14 +1521,15 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{files}/acl/{members}/delete")
+    @Path("/{files}/acl/{memberIds}/delete")
     @ApiOperation(value = "Remove all the permissions granted for the user or group", position = 22,
             response = QueryResponse.class)
     public Response deleteAcl(@ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("files")
                                       String fileIdsStr,
                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                               @QueryParam("study") String studyStr,
-                              @ApiParam(value = "Comma separated list of members", required = true) @PathParam("members") String members) {
+                              @ApiParam(value = "Comma separated list of members", required = true) @PathParam("memberIds") String
+                                          members) {
         try {
             return createOkResponse(catalogManager.getFileManager().removeFileAcls(fileIdsStr, studyStr, members, sessionId));
         } catch (Exception e) {
