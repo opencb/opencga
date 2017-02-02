@@ -168,7 +168,7 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         params.put("samplesMetadata", queryCommandOptions.genericVariantQueryOptions.samplesMetadata);
         params.putIfNotEmpty("groupBy", queryCommandOptions.genericVariantQueryOptions.groupBy);
         params.put("histogram", queryCommandOptions.genericVariantQueryOptions.histogram);
-        params.putIfNotEmpty("interval", queryCommandOptions.genericVariantQueryOptions.interval);
+        params.put("interval", queryCommandOptions.genericVariantQueryOptions.interval);
 
         boolean grpc = usingGrpcMode(queryCommandOptions.mode);
 
