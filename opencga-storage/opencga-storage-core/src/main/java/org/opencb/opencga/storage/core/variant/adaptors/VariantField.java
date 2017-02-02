@@ -159,7 +159,7 @@ public enum VariantField {
      * @param returnedFields Set of non pruned fields
      * @return  Pruned set of fields
      */
-    private static Set<VariantField> prune(Set<VariantField> returnedFields) {
+    public static Set<VariantField> prune(Set<VariantField> returnedFields) {
         if (returnedFields.containsAll(VariantField.STUDIES.getChildren())) {
             returnedFields.removeAll(VariantField.STUDIES.getChildren());
         } else {

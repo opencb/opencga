@@ -1306,6 +1306,12 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
+    public void groupBy_gene_limit_0() throws Exception {
+        QueryResult queryResult = dbAdaptor.groupBy(new Query(), "gene", new QueryOptions("limit", 0).append("count", true));
+        assertTrue(queryResult.getNumResults() > 0);
+    }
+
+    @Test
     public void groupBy_gene() throws Exception {
         int limit = 10;
         QueryResult<Map<String, Object>> queryResult_count = dbAdaptor.groupBy(new Query(), "gene", new QueryOptions("limit", limit)
