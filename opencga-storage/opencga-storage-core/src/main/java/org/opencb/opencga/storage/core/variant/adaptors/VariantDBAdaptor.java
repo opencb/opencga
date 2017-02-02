@@ -45,7 +45,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
 
     String ID_DESCR = "List of variant ids";
-    String REGION_DESCR = "List of regions: {chr}:{start}-{end}";
+    String REGION_DESCR = "List of regions: {chr}:{start}-{end}, e.g.: 2,3:1000000-2000000";
     String CHROMOSOME_DESCR = "List of chromosomes";
     String GENE_DESCR = "List of genes";
     String TYPE_DESCR = "Variant type: [SNV, MNV, INDEL, SV, CNV]";
