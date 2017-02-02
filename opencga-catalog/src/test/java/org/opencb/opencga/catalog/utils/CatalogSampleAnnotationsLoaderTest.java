@@ -71,7 +71,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
                 null, null, "GRCh38", new QueryOptions(), sessionId).getResult().get(0);
         Study study = catalogManager.createStudy(project.getId(), "default", "def", Study.Type.FAMILY, "", sessionId).getResult().get(0);
         studyId = study.getId();
-        pedFile = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.OTHER_PED, "data/" + pedFileName, "", true, -1,
+        pedFile = catalogManager.createFile(studyId, File.Format.PED, File.Bioformat.OTHER_PED, "data/" + pedFileName, "", true, -1,
                 sessionId).getResult().get(0);
         new CatalogFileUtils(catalogManager).upload(pedFileURL.toURI(), pedFile, null, sessionId, false, false, false, true, 10000000);
         pedFile = catalogManager.getFile(pedFile.getId(), sessionId).getResult().get(0);

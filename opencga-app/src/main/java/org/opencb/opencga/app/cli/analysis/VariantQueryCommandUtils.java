@@ -161,7 +161,7 @@ public class VariantQueryCommandUtils {
         addParam(query, ANNOT_GENE_TRAITS_NAME, queryVariantsOptions.genericVariantQueryOptions.geneTraitName);
         addParam(query, ANNOT_HPO, queryVariantsOptions.genericVariantQueryOptions.hpo);
         addParam(query, ANNOT_GO, queryVariantsOptions.genericVariantQueryOptions.go);
-        addParam(query, ANNOT_EXPRESSION, queryVariantsOptions.genericVariantQueryOptions.expression);
+//        addParam(query, ANNOT_EXPRESSION, queryVariantsOptions.genericVariantQueryOptions.expression);
         addParam(query, ANNOT_PROTEIN_KEYWORDS, queryVariantsOptions.genericVariantQueryOptions.proteinKeywords);
         addParam(query, ANNOT_DRUG, queryVariantsOptions.genericVariantQueryOptions.drugs);
 

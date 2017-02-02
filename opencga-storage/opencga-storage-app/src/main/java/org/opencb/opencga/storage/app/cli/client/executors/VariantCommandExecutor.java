@@ -175,7 +175,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 
         /** Add CLi options to the variant options **/
         ObjectMap params = storageConfiguration.getVariant().getOptions();
-        params.put(VariantStorageEngine.Options.STUDY_NAME.key(), indexVariantsCommandOptions.study);
+        params.put(VariantStorageEngine.Options.STUDY_NAME.key(), indexVariantsCommandOptions.studyName);
         params.put(VariantStorageEngine.Options.STUDY_ID.key(), indexVariantsCommandOptions.studyId);
         params.put(VariantStorageEngine.Options.FILE_ID.key(), indexVariantsCommandOptions.fileId);
         params.put(VariantStorageEngine.Options.SAMPLE_IDS.key(), indexVariantsCommandOptions.sampleIds);
@@ -220,14 +220,14 @@ public class VariantCommandExecutor extends CommandExecutor {
         /** Execute ETL steps **/
         boolean doExtract, doTransform, doLoad;
 
-        if (!indexVariantsCommandOptions.commonIndexOptions.load && !indexVariantsCommandOptions.commonIndexOptions.transform) {
+        if (!indexVariantsCommandOptions.load && !indexVariantsCommandOptions.transform) {
             doExtract = true;
             doTransform = true;
             doLoad = true;
         } else {
-            doExtract = indexVariantsCommandOptions.commonIndexOptions.transform;
-            doTransform = indexVariantsCommandOptions.commonIndexOptions.transform;
-            doLoad = indexVariantsCommandOptions.commonIndexOptions.load;
+            doExtract = indexVariantsCommandOptions.transform;
+            doTransform = indexVariantsCommandOptions.transform;
+            doLoad = indexVariantsCommandOptions.load;
         }
 
         variantStorageEngine.index(inputUris, outdirUri, doExtract, doTransform, doLoad);

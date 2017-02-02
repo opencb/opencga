@@ -157,11 +157,11 @@ public class GeneralCliOptions {
 //        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
 //        public String fileId;
 
-        @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
-        public boolean transform = false;
-
-        @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
-        public boolean load = false;
+//        @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
+//        public boolean transform = false;
+//
+//        @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
+//        public boolean load = false;
 
     }
 

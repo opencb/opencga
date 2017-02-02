@@ -43,13 +43,10 @@ public class StorageVariantCommandOptions {
     public JCommander jCommander;
     public GeneralCliOptions.CommonOptions commonCommandOptions;
     public GeneralCliOptions.IndexCommandOptions indexCommandOptions;
-    public GeneralCliOptions.QueryCommandOptions queryCommandOptions;
 
-    public StorageVariantCommandOptions(GeneralCliOptions.CommonOptions commonOptions, GeneralCliOptions.IndexCommandOptions indexCommandOptions,
-                                        GeneralCliOptions.QueryCommandOptions queryCommandOptions, JCommander jCommander) {
+    public StorageVariantCommandOptions(GeneralCliOptions.CommonOptions commonOptions, GeneralCliOptions.IndexCommandOptions indexCommandOptions, JCommander jCommander) {
         this.commonCommandOptions = commonOptions;
         this.indexCommandOptions  = indexCommandOptions;
-        this.queryCommandOptions = queryCommandOptions;
         this.jCommander = jCommander;
 
         this.indexVariantsCommandOptions = new VariantIndexCommandOptions();
@@ -62,17 +59,17 @@ public class StorageVariantCommandOptions {
     public static class GenericVariantIndexOptions {
 
         @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
-        public boolean transform = false;
+        public boolean transform;
 
         @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
-        public boolean load = false;
+        public boolean load;
 
         @Deprecated
         @Parameter(names = {"--include-stats"}, description = "Save statistics information available on the input file")
-        public boolean includeStats = false;
+        public boolean includeStats;
 
         @Parameter(names = {"--exclude-genotypes"}, description = "Index excluding the genotype information")
-        public boolean excludeGenotype = false;
+        public boolean excludeGenotype;
 
         @Parameter(names = {"--include-extra-fields"}, description = "Index including other genotype fields [CSV]")
         public String extraFields;
@@ -80,9 +77,8 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
         public VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
 
-        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF " +
-                "file")
-        public String aggregationMappingFile = null;
+        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
+        public String aggregationMappingFile;
 
         @Parameter(names = {"--gvcf"}, description = "The input file is in gvcf format")
         public boolean gvcf;
@@ -96,13 +92,13 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--annotate"}, description = "Annotate indexed variants after the load step")
         public boolean annotate;
 
-        @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
-        public VariantAnnotatorFactory.AnnotationSource annotator = null;
+        @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}", arity = 1)
+        public VariantAnnotatorFactory.AnnotationSource annotator;
 
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         public boolean overwriteAnnotations;
 
-        @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation", arity = 0)
+        @Parameter(names = {"--resume"}, description = "Resume a previously failed indexation")
         public boolean resume;
     }
 
@@ -115,24 +111,35 @@ public class StorageVariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.IndexCommandOptions commonIndexOptions = indexCommandOptions;
 
-        @Parameter(names = {"--study-name"}, description = "Full name of the study where the file is classified", arity = 1)
+
+        @Parameter(names = {"-s", "--study"}, description = "Full name of the study where the file is classified", arity = 1)
         public String study;
 
+        @Deprecated
+        @Parameter(names = {"--study-name"}, description = "Full name of the study where the file is classified", arity = 1)
+        public String studyName;
+
+        @Deprecated
         @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", arity = 1)
         public String studyId = VariantStorageEngine.Options.STUDY_ID.defaultValue().toString();
 
-        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", arity = 1)
+
+        @Deprecated
+        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", arity = 1, hidden = true)
         public String fileId = VariantStorageEngine.Options.FILE_ID.defaultValue().toString();
 
-        @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
-        public String pedigree;
-
-        @Parameter(names = {"--sample-ids"}, description = "CSV list of sampleIds. <sampleName>:<sampleId>[,<sampleName>:<sampleId>]*")
+        @Deprecated
+        @Parameter(names = {"--sample-ids"}, description = "CSV list of sampleIds. <sampleName>:<sampleId>[,<sampleName>:<sampleId>]*", hidden = true)
         public List<String> sampleIds;
 
 
+//        @Deprecated
+//        @Parameter(names = {"-p", "--pedigree"}, description = "File containing pedigree information (in PED format, optional)", arity = 1)
+//        public String pedigree;
+
+
         @Parameter(names = {"-t", "--study-type"}, description = "One of the following: FAMILY, TRIO, CONTROL, CASE, CASE_CONTROL, " +
-                "PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES", arity = 1)
+                "PAIRED, PAIRED_TUMOR, COLLECTION, TIME_SERIES", arity = 1, hidden = true)
         public VariantStudy.StudyType studyType = VariantStudy.StudyType.CASE_CONTROL;
 
         @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage" +
@@ -174,10 +181,6 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"-t", "--type"}, description = "Whether the variant is a: SNV, INDEL or SV")
         public String type;
 
-        @Parameter(names = {"--annotations"}, description = "Set variant annotation to return in the INFO column. " +
-                "Accepted values include 'all', 'default' aor a comma-separated list such as 'gene,biotype,consequenceType'", arity = 1)
-        public String annotations;
-
         @Parameter(names = {"--ct", "--consequence-type"}, description = "Consequence type SO term list. example: SO:0000045,SO:0000046",
                 arity = 1)
         public String consequenceType;
@@ -185,13 +188,13 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--gene-biotype"}, description = "Biotype CSV", arity = 1)
         public String geneBiotype;
 
-        @Parameter(names = {"--pf", "--population-frequency"}, description = "Alternate Population Frequency: " +
-                "{study}:{population}[<|>|<=|>=]{number}", arity = 1)
-        public String populationFreqs;
-
         @Parameter(names = {"--pmaf", "--population-maf"}, description = "Population minor allele frequency: " +
                 "{study}:{population}[<|>|<=|>=]{number}", arity = 1)
         public String populationMaf;
+
+        @Parameter(names = {"--apf", "--alt-population-frequency"}, description = "Alternate Population Frequency: " +
+                "{study}:{population}[<|>|<=|>=]{number}", arity = 1)
+        public String populationFreqs;
 
         @Parameter(names = {"-c", "--conservation"}, description = "Conservation score: {conservation_score}[<|>|<=|>=]{number} example: " +
                 "phastCons>0.5,phylop<0.1", arity = 1)
@@ -205,11 +208,11 @@ public class StorageVariantCommandOptions {
         public String geneTrait;
 
         @Deprecated
-        @Parameter(names = {"--gene-trait-id"}, description = "List of gene trait association names. e.g. \"Cardiovascular Diseases\"", arity = 1)
+        @Parameter(names = {"--gene-trait-id"}, description = "[DEPRECATED] List of gene trait association names. e.g. \"Cardiovascular Diseases\"", arity = 1)
         public String geneTraitId;
 
         @Deprecated
-        @Parameter(names = {"--gene-trait-name"}, description = "List of gene trait association id. e.g. \"umls:C0007222,OMIM:269600\"", arity = 1)
+        @Parameter(names = {"--gene-trait-name"}, description = "[DEPRECATED] List of gene trait association id. e.g. \"umls:C0007222,OMIM:269600\"", arity = 1)
         public String geneTraitName;
 
         @Parameter(names = {"--hpo"}, description = "List of HPO terms. e.g. \"HP:0000545,HP:0002812\"", arity = 1)
@@ -218,8 +221,8 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--go", "--gene-ontology"}, description = "List of Gene Ontology (GO) accessions or names. e.g. \"GO:0002020\"", arity = 1)
         public String go;
 
-        @Parameter(names = {"--expression", "--tissue"}, description = "List of tissues of interest. e.g. \"tongue\"", arity = 1)
-        public String expression;
+//        @Parameter(names = {"--expression", "--tissue"}, description = "List of tissues of interest. e.g. \"tongue\"", arity = 1)
+//        public String expression;
 
         @Parameter(names = {"--protein-keywords"}, description = "List of protein variant annotation keywords", arity = 1)
         public String proteinKeywords;
@@ -231,29 +234,26 @@ public class StorageVariantCommandOptions {
         public String proteinSubstitution;
 
         @Deprecated
-        @Parameter(names = {"--gwas"}, description = "", arity = 1)
+        @Parameter(names = {"--gwas"}, description = "[DEPRECATED]", arity = 1)
         public String gwas;
 
-        @Deprecated
-        @Parameter(names = {"--cosmic"}, description = "", arity = 1)
+        @Parameter(names = {"--cosmic"}, description = "", arity = 1, hidden = true)
         public String cosmic;
 
         @Parameter(names = {"--clinvar"}, description = "", arity = 1)
         public String clinvar;
 
         @Deprecated
-        @Parameter(names = {"--stats"}, description = " [CSV]")
+        @Parameter(names = {"--stats"}, description = "[DEPRECATED]")
         public String stats;
 
         @Parameter(names = {"--maf", "--stats-maf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Allele Frequency, example: 1000g:all>0.4")
         public String maf;
 
-        @Parameter(names = {"--mgf", "--stats-mgf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Genotype Frequency, example: " +
-                "1000g:all<=0.4")
+        @Parameter(names = {"--mgf", "--stats-mgf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Genotype Frequency, example: 1000g:all<=0.4")
         public String mgf;
 
-        @Parameter(names = {"--stats-missing-allele"}, description = "Take a <STUDY>:<COHORT> and filter by number of missing alleles, example:" +
-                " 1000g:all=5")
+        @Parameter(names = {"--stats-missing-allele"}, description = "Take a <STUDY>:<COHORT> and filter by number of missing alleles, example: 1000g:all=5")
         public String missingAlleleCount;
 
         @Parameter(names = {"--stats-missing-genotype"}, description = "Take a <STUDY>:<COHORT> and filter by number of missing genotypes, " +
@@ -280,27 +280,31 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--output-study"}, description = "A comma separated list of studies to be returned")
         public String returnStudy;
 
-        @Parameter(names = {"--return-sample"}, description = "A comma separated list of samples from the SAME study to be returned")
+        @Parameter(names = {"--output-sample"}, description = "A comma separated list of samples from the SAME study to be returned")
         public String returnSample;
 
-        @Parameter(names = {"--unknown-genotype"}, description = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]")
+        @Parameter(names = {"--annotations", "--output-vcf-info"}, description = "Set variant annotation to return in the INFO column. " +
+                "Accepted values include 'all', 'default' aor a comma-separated list such as 'gene,biotype,consequenceType'", arity = 1)
+        public String annotations;
+
+        @Parameter(names = {"--output-unknown-genotype"}, description = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]")
         public String unknownGenotype = "./.";
 
-        @Parameter(names = {"--histogram"}, description = "Calculate histogram. Requires one region.", arity = 0)
+        @Parameter(names = {"--output-histogram"}, description = "Calculate histogram. Requires --region.")
         public boolean histogram;
 
-        @Parameter(names = {"--interval"}, description = "Histogram interval size. Default:2000", arity = 1)
+        @Parameter(names = {"--histogram-interval"}, description = "Histogram interval size. Default:2000", arity = 1)
         public String interval;
 
-        @Parameter(names = {"--cadd", "--annot-functional-score"}, description = "Functional score: {functional_score}[<|>|<=|>=]{number} "
-                + "e.g. cadd_scaled>5.2 , cadd_raw<=0.3", arity = 1)
+        @Parameter(names = {"--cadd"}, description = "Functional score: {functional_score}[<|>|<=|>=]{number} "
+                + "e.g. cadd_scaled>5.2,cadd_raw<=0.3", arity = 1)
         public String functionalScore;
 
+        @Deprecated
         @Parameter(names = {"--annot-xref"}, description = "XRef", arity = 1)
-        public String annot_xref;
+        public String annotXref;
 
-        @Parameter(names = {"--samples-metadata"}, description = "Returns the samples metadata group by studyId, instead of the variants",
-                arity = 0)
+        @Parameter(names = {"--samples-metadata"}, description = "Returns the samples metadata group by studyId, instead of the variants")
         public boolean samplesMetadata;
 
     }
@@ -310,9 +314,6 @@ public class StorageVariantCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
-
-//        @ParametersDelegate
-//        public OptionsParser.QueryCommandOptions commonQueryOptions = queryCommandOptions;
 
 
         @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
@@ -336,10 +337,6 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--count"}, description = "Count results. Do not return elements.", arity = 0)
         public boolean count;
 
-
-        @Parameter(names = {"--mode"}, description = "Communication mode. grpc|rest|auto.")
-        public String mode = "auto";
-
         @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, json or json.gz", arity = 1)
         public String outputFormat = "vcf";
 
@@ -362,10 +359,10 @@ public class StorageVariantCommandOptions {
     public static class GenericVariantAnnotateOptions {
 
         @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by --output-filename)")
-        public boolean create = false;
+        public boolean create;
 
         @Parameter(names = {"--load"}, description = "Run only the load of the annotations into the DB from FILE")
-        public String load = null;
+        public String load;
 
         @Parameter(names = {"--custom-name"}, description = "Provide a name to the custom annotation")
         public String customAnnotationKey = null;
@@ -374,7 +371,7 @@ public class StorageVariantCommandOptions {
         public VariantAnnotatorFactory.AnnotationSource annotator;
 
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
-        public boolean overwriteAnnotations = false;
+        public boolean overwriteAnnotations;
 
         @Parameter(names = {"--output-filename"}, description = "Output file name. Default: dbName", arity = 1)
         public String fileName;
@@ -388,9 +385,11 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
         public List<String> filterRegion;
 
+        @Deprecated
         @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter.class)
         public List<String> filterChromosome;
 
+        @Deprecated
         @Parameter(names = {"--filter-gene"}, description = "Comma separated gene filters", splitter = CommaParameterSplitter.class)
         public String filterGene;
 

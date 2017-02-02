@@ -33,6 +33,7 @@
     <properties>
         <build.dir>${project.basedir}/../build</build.dir>
         <app.dir>${project.basedir}/app</app.dir>
+        <sonar.skip>true</sonar.skip>
     </properties>
 
     <dependencies>

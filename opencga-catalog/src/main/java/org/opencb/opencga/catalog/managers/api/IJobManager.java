@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
@@ -45,6 +46,28 @@ public interface IJobManager extends ResourceManager<Long, Job> {
     Long getStudyId(long jobId) throws CatalogException;
 
     /**
+     * Obtains the resource java bean containing the requested ids.
+     *
+     * @param jobStr Job id in string format. Could be either the id or name.
+     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param sessionId Session id of the user logged.
+     * @return the resource java bean containing the requested ids.
+     * @throws CatalogException when more than one job id is found.
+     */
+    AbstractManager.MyResourceId getId(String jobStr, @Nullable String studyStr, String sessionId) throws CatalogException;
+
+    /**
+     * Obtains the resource java bean containing the requested ids.
+     *
+     * @param jobStr Job id in string format. Could be either the id or name.
+     * @param studyStr Study id in string format. Could be one of [id|user@aliasProject:aliasStudy|aliasProject:aliasStudy|aliasStudy].
+     * @param sessionId Session id of the user logged.
+     * @return the resource java bean containing the requested ids.
+     * @throws CatalogException CatalogException.
+     */
+    AbstractManager.MyResourceIds getIds(String jobStr, @Nullable String studyStr, String sessionId) throws CatalogException;
+
+    /**
      * Obtains the numeric job id given a string.
      *
      * @param userId User id of the user asking for the job id.
@@ -53,6 +76,7 @@ public interface IJobManager extends ResourceManager<Long, Job> {
      * @return the numeric job id.
      * @throws CatalogException when more than one job id is found or the study or project ids cannot be resolved.
      */
+    @Deprecated
     Long getId(String userId, String jobStr) throws CatalogException;
 
     /**
@@ -63,6 +87,7 @@ public interface IJobManager extends ResourceManager<Long, Job> {
      * @return A list of job ids.
      * @throws CatalogException CatalogException.
      */
+    @Deprecated
     default List<Long> getIds(String userId, String jobStr) throws CatalogException {
         List<Long> jobIds = new ArrayList<>();
         for (String jobId : jobStr.split(",")) {
@@ -75,13 +100,15 @@ public interface IJobManager extends ResourceManager<Long, Job> {
      * Delete entries from Catalog.
      *
      * @param ids       Comma separated list of ids corresponding to the objects to delete
+     * @param studyStr  Study string.
      * @param options   Deleting options.
-     * @param sessionId sessionId
-     * @return A list with the deleted objects
+     * @param sessionId sessionId   @return A list with the deleted objects
      * @throws CatalogException CatalogException
      * @throws IOException IOException.
+     * @return A list of queryResult containing the jobs deleted.
      */
-    List<QueryResult<Job>> delete(String ids, QueryOptions options, String sessionId) throws CatalogException, IOException;
+    List<QueryResult<Job>> delete(String ids, @Nullable String studyStr, QueryOptions options, String sessionId)
+            throws CatalogException, IOException;
 
     /**
      * Retrieve the job Acls for the given members in the job.

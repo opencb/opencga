@@ -36,7 +36,7 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
         ClientConfiguration clientConfiguration = storageConfiguration.getCellbase().toClientConfiguration();
         clientConfiguration.getRest().setTimeout(TIMEOUT);
         CellBaseClient cellBaseClient;
-        cellBaseClient = new CellBaseClient(species, clientConfiguration);
+        cellBaseClient = new CellBaseClient(species, assembly, clientConfiguration);
         this.cellBaseClient = cellBaseClient;
     }
 

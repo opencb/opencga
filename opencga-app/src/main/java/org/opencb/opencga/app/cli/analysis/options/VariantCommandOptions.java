@@ -434,7 +434,7 @@ public class VariantCommandOptions {
     }
 
     @Parameters(commandNames = {"annotate"}, commandDescription = "Create and load variant annotations into the database")
-    public class VariantAnnotateCommandOptions {
+    public class VariantAnnotateCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
         public StorageVariantCommandOptions.GenericVariantAnnotateOptions genericVariantAnnotateOptions = new StorageVariantCommandOptions.GenericVariantAnnotateOptions();
@@ -445,11 +445,11 @@ public class VariantCommandOptions {
         @Parameter(names = {"-p", "--project-id"}, description = "Project to annotate.", arity = 1)
         public String project;
 
-        @Parameter(names = {"-s", "--study-id"}, description = "Studies to annotate. Must be in the same database.", arity = 1)
-        public String studyId;
+//        @Parameter(names = {"-s", "--study-id"}, description = "Studies to annotate. Must be in the same database.", arity = 1)
+//        public String study;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Output directory outside catalog boundaries.", required = true, arity = 1)
-        public String outdir = null;
+        public String outdir;
 
         @Parameter(names = {"--path"}, description = "Path within catalog boundaries where the results will be stored. If not present, "
                 + "transformed files will not be registered in catalog.", arity = 1)

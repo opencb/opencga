@@ -46,9 +46,9 @@ acl:                 # Do not touch the acl configuration. If this is not proper
   - "VIEW_FILE_HEADERS"
   - "VIEW_FILE_CONTENTS"
   - "VIEW_FILES"
-  - "UPDATE_FILES"
+  - "WRITE_FILES"
   - "VIEW_JOBS"
-  - "UPDATE_JOBS"
+  - "WRITE_JOBS"
 
 catalog:
   hosts:

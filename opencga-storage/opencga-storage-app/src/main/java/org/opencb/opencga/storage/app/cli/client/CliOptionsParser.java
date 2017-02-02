@@ -34,17 +34,14 @@ public class CliOptionsParser extends GeneralCliOptions {
     private final CliOptionsParser.IndexCommandOptions indexCommandOptions;
     private final CliOptionsParser.QueryCommandOptions queryCommandOptions;
 
-
     private StorageAlignmentCommandOptions alignmentCommandOptions;
     private StorageVariantCommandOptions variantCommandOptions;
 //    private FeatureCommandOptions featureCommandOptions;
-
 
     public CliOptionsParser() {
 
         indexCommandOptions = new IndexCommandOptions();
         queryCommandOptions = new QueryCommandOptions();
-
 
         alignmentCommandOptions = new StorageAlignmentCommandOptions(this.commonOptions, this.indexCommandOptions, this.queryCommandOptions,
                 this.jcommander);
@@ -53,9 +50,7 @@ public class CliOptionsParser extends GeneralCliOptions {
         alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexCommandOptions);
         alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryCommandOptions);
 
-
-        variantCommandOptions = new StorageVariantCommandOptions(this.commonOptions, this.indexCommandOptions, this.queryCommandOptions,
-                this.jcommander);
+        variantCommandOptions = new StorageVariantCommandOptions(this.commonOptions, this.indexCommandOptions, this.jcommander);
         jcommander.addCommand("variant", variantCommandOptions);
         JCommander variantSubCommands = jcommander.getCommands().get("variant");
         variantSubCommands.addCommand("index", variantCommandOptions.indexVariantsCommandOptions);
@@ -64,17 +59,6 @@ public class CliOptionsParser extends GeneralCliOptions {
         variantSubCommands.addCommand("annotate", variantCommandOptions.annotateVariantsCommandOptions);
 //        variantSubCommands.addCommand("benchmark", variantCommandOptions.benchmarkCommandOptions);
         variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantsCommandOptions);
-
-    }
-
-    /*
-     * Feature (GFF, BED) CLI options
-     */
-    @Parameters(commandNames = {"feature"}, commandDescription = "Implements different tools for working with BAM files")
-    public class FeatureCommandOptions extends CommandOptions {
-
-        public FeatureCommandOptions() {
-        }
     }
 
     /*
@@ -121,8 +105,6 @@ public class CliOptionsParser extends GeneralCliOptions {
 //        }
 //    }
 
-
-
 //    @Parameters(commandNames = {"query-grpc"}, commandDescription = "Search over indexed variants")
 //    public class QueryGrpCVariantsCommandOptions extends QueryVariantsCommandOptions {
 //
@@ -133,7 +115,6 @@ public class CliOptionsParser extends GeneralCliOptions {
 //        public int port;
 //
 //    }
-
 
 
     public void printUsage() {

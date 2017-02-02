@@ -557,7 +557,7 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             AbstractManager.MyResourceId resource = fileManager.getId(fileStr, studyStr, sessionId);
             catalogManager.getAuthorizationManager().checkFilePermission(resource.getResourceId(), resource.getUser(),
-                    FileAclEntry.FilePermissions.UPDATE);
+                    FileAclEntry.FilePermissions.WRITE);
 
             /** Obtain file uri **/
             File file = catalogManager.getFile(resource.getResourceId(), sessionId).getResult().get(0);
@@ -1426,7 +1426,8 @@ public class FileWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
                                        required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
-            return createOkResponse(catalogManager.createFileAcls(fileIdStr, studyStr, members, permissions, sessionId));
+            return createOkResponse(catalogManager.getFileManager().createAcls(fileIdStr, studyStr, members, permissions,
+                    sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1442,7 +1443,8 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value="JSON containing the parameters defined in GET. Mandatory keys: 'members'", required = true)
                     StudyWSServer.CreateAclCommands params) {
         try {
-            return createOkResponse(catalogManager.createFileAcls(fileIdStr, studyStr, params.members, params.permissions, sessionId));
+            return createOkResponse(catalogManager.getFileManager().createAcls(fileIdStr, studyStr, params.members, params.permissions,
+                    sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1476,8 +1478,8 @@ public class FileWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "Comma separated list of permissions to set", required = false)
                               @QueryParam("setPermissions") String setPermissions) {
         try {
-            return createOkResponse(catalogManager.updateFileAcl(fileIdStr, studyStr, memberId, addPermissions, removePermissions,
-                    setPermissions, sessionId));
+            return createOkResponse(catalogManager.getFileManager().updateAcls(fileIdStr, studyStr, memberId, addPermissions,
+                    removePermissions, setPermissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1494,7 +1496,7 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiParam(value="JSON containing one of the keys 'addPermissions', 'setPermissions' or 'removePermissions'", required = true)
                     StudyWSServer.MemberAclUpdate params) {
         try {
-            return createOkResponse(catalogManager.updateFileAcl(fileIdStr, studyStr, memberId, params.addPermissions,
+            return createOkResponse(catalogManager.getFileManager().updateAcls(fileIdStr, studyStr, memberId, params.addPermissions,
                     params.removePermissions, params.setPermissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1502,16 +1504,16 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{files}/acl/{memberId}/delete")
+    @Path("/{files}/acl/{members}/delete")
     @ApiOperation(value = "Remove all the permissions granted for the user or group", position = 22,
             response = QueryResponse.class)
     public Response deleteAcl(@ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("files")
                                           String fileIdsStr,
                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                     @QueryParam("study") String studyStr,
-                              @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
+                              @ApiParam(value = "Comma separated list of members", required = true) @PathParam("members") String members) {
         try {
-            return createOkResponse(catalogManager.removeFileAcl(fileIdsStr, studyStr, memberId, sessionId));
+            return createOkResponse(catalogManager.getFileManager().removeFileAcls(fileIdsStr, studyStr, members, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -36,8 +37,10 @@ import org.opencb.opencga.catalog.models.acls.permissions.DatasetAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.*;
 
@@ -120,7 +123,7 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
         }
         Bson bson;
         try {
-            bson = parseQuery(query);
+            bson = parseQuery(query, false);
         } catch (NumberFormatException e) {
             throw new CatalogDBException("Get dataset: Could not parse all the arguments from query - " + e.getMessage(), e.getCause());
         }
@@ -145,7 +148,7 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
             query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         try {
-            bson = parseQuery(query);
+            bson = parseQuery(query, false);
         } catch (NumberFormatException e) {
             throw new CatalogDBException("Get dataset: Could not parse all the arguments from query - " + e.getMessage(), e.getCause());
         }
@@ -194,11 +197,27 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
         }
 
         if (!datasetParams.isEmpty()) {
-            QueryResult<UpdateResult> update = datasetCollection.update(parseQuery(query), new Document("$set", datasetParams), null);
+            QueryResult<UpdateResult> update = datasetCollection.update(parseQuery(query, false), new Document("$set", datasetParams),
+                    null);
             return endQuery("Update cohort", startTime, Arrays.asList(update.getNumTotalResults()));
         }
 
         return endQuery("Update cohort", startTime, new QueryResult<>());
+    }
+
+    @Override
+    public void delete(long id) throws CatalogDBException {
+        Query query = new Query(QueryParams.ID.key(), id);
+        delete(query);
+    }
+
+    @Override
+    public void delete(Query query) throws CatalogDBException {
+        QueryResult<DeleteResult> remove = datasetCollection.remove(parseQuery(query, false), null);
+
+        if (remove.first().getDeletedCount() == 0) {
+            throw CatalogDBException.deleteError("Dataset");
+        }
     }
 
     @Override
@@ -281,7 +300,7 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
     @Override
     public QueryResult<Long> insertFilesIntoDatasets(Query query, List<Long> fileIds) throws CatalogDBException {
         long startTime = startQuery();
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, false);
         Bson update = new Document("$push", new Document(QueryParams.FILES.key(), new Document("$each", fileIds)));
         QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
         QueryResult<UpdateResult> updateQueryResult = datasetCollection.update(bsonQuery, update, multi);
@@ -291,7 +310,7 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
     @Override
     public QueryResult<Long> extractFilesFromDatasets(Query query, List<Long> fileIds) throws CatalogDBException {
         long startTime = startQuery();
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, false);
         Bson update = new Document("$pull", new Document(QueryParams.FILES.key(), new Document("$in", fileIds)));
         QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
         QueryResult<UpdateResult> updateQueryResult = datasetCollection.update(bsonQuery, update, multi);
@@ -413,13 +432,13 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
 
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
-        Bson bson = parseQuery(query);
+        Bson bson = parseQuery(query, false);
         return datasetCollection.count(bson);
     }
 
     @Override
     public QueryResult distinct(Query query, String field) throws CatalogDBException {
-        Bson bsonDocument = parseQuery(query);
+        Bson bsonDocument = parseQuery(query, false);
         return datasetCollection.distinct(field, bsonDocument);
     }
 
@@ -430,33 +449,33 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
 
     @Override
     public DBIterator<Dataset> iterator(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query);
+        Bson bson = parseQuery(query, false);
         MongoCursor<Document> iterator = datasetCollection.nativeQuery().find(bson, options).iterator();
         return new MongoDBIterator<>(iterator, datasetConverter);
     }
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query);
+        Bson bson = parseQuery(query, false);
         MongoCursor<Document> iterator = datasetCollection.nativeQuery().find(bson, options).iterator();
         return new MongoDBIterator<>(iterator);
     }
 
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, false);
         return rank(datasetCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, false);
         return groupBy(datasetCollection, bsonQuery, field, "name", options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, false);
         return groupBy(datasetCollection, bsonQuery, fields, "name", options);
     }
 
@@ -470,8 +489,12 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
         catalogDBIterator.close();
     }
 
-    private Bson parseQuery(Query query) throws CatalogDBException {
+    private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
+
+        if (isolated) {
+            andBsonList.add(new Document("$isolated", 1));
+        }
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
@@ -517,8 +540,14 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
     @Override
     public QueryResult<DatasetAclEntry> createAcl(long id, DatasetAclEntry acl) throws CatalogDBException {
         long startTime = startQuery();
-//        CatalogMongoDBUtils.createAcl(id, acl, datasetCollection, "DatasetAcl");
+//        CatalogMongoDBUtils.setAcl(id, acl, datasetCollection, "DatasetAcl");
         return endQuery("create dataset Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
+    }
+
+    @Override
+    public void createAcl(Query query, List<DatasetAclEntry> aclEntryList) throws CatalogDBException {
+        Bson queryDocument = parseQuery(query, true);
+        aclDBAdaptor.setAcl(queryDocument, aclEntryList);
     }
 
     @Override
@@ -557,10 +586,34 @@ public class DatasetMongoDBAdaptor extends MongoDBAdaptor implements DatasetDBAd
     }
 
     @Override
+    public void addAclsToMember(Query query, List<String> members, List<String> permissions) throws CatalogDBException {
+        QueryResult<Dataset> datasetQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        List<Long> datasetIds = datasetQueryResult.getResult().stream().map(dataset -> dataset.getId()).collect(Collectors.toList());
+
+        if (datasetIds == null || datasetIds.size() == 0) {
+            throw new CatalogDBException("No matches found for query when attempting to add new permissions");
+        }
+
+        aclDBAdaptor.addAclsToMembers(datasetIds, members, permissions);
+    }
+
+    @Override
     public QueryResult<DatasetAclEntry> removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException {
 //        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, datasetCollection);
         long startTime = startQuery();
         return endQuery("Remove Acls from member", startTime, Arrays.asList(aclDBAdaptor.removeAclsFromMember(id, member, permissions)));
+    }
+
+    @Override
+    public void removeAclsFromMember(Query query, List<String> members, @Nullable List<String> permissions) throws CatalogDBException {
+        QueryResult<Dataset> datasetQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        List<Long> datasetIds = datasetQueryResult.getResult().stream().map(Dataset::getId).collect(Collectors.toList());
+
+        if (datasetIds == null || datasetIds.size() == 0) {
+            throw new CatalogDBException("No matches found for query when attempting to remove permissions");
+        }
+
+        aclDBAdaptor.removeAclsFromMembers(datasetIds, members, permissions);
     }
 
     public void removeAclsFromStudy(long studyId, String member) throws CatalogDBException {
