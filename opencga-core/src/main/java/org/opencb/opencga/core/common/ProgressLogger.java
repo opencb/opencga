@@ -38,10 +38,11 @@ public class ProgressLogger {
     private final String message;
     private final int numLinesLog;
     private long totalCount;
+    private boolean isApproximated; // Total count is an approximated value
     private Future<Long> futureTotalCount;
     private final AtomicLong count;
 
-    private int batchSize;
+    private double batchSize;
 
     private Logger logger = LoggerFactory.getLogger(ProgressLogger.class);
 
@@ -88,9 +89,11 @@ public class ProgressLogger {
         if (totalCount == 0) {
             batchSize = DEFAULT_BATCH_SIZE;
         } else {
-            batchSize = (int) Math.max(totalCount / numLinesLog, MIN_BATCH_SIZE);
+            updateBatchSize();
         }
+        isApproximated = false;
     }
+
 
     public ProgressLogger setLogger(Logger logger) {
         this.logger = logger;
@@ -99,6 +102,13 @@ public class ProgressLogger {
 
     public ProgressLogger setBatchSize(int batchSize) {
         this.batchSize = batchSize;
+        return this;
+    }
+
+    public ProgressLogger setApproximateTotalCount(long aproximateTotalCount) {
+        isApproximated = true;
+        this.totalCount = aproximateTotalCount;
+        updateBatchSize();
         return this;
     }
 
@@ -115,28 +125,32 @@ public class ProgressLogger {
     }
 
     private void increment(long delta, String message, Supplier<String> supplier) {
-        long previousCount = count.addAndGet(delta);
+        long previousCount = count.getAndAdd(delta);
         long count = previousCount + delta;
 
-        if (previousCount / batchSize != count / batchSize) {
+        if ((int) (previousCount / batchSize) != (int) (count / batchSize) || count == totalCount && delta > 0) {
             log(count, supplier == null ? message : supplier.get());
         }
-
     }
 
-    protected void log(long count, String extraMessage) {
+    protected synchronized void log(long count, String extraMessage) {
         long totalCount = getTotalCount();
-        String space;
-        if (extraMessage.isEmpty() || (extraMessage.startsWith(" ") || extraMessage.startsWith(",") || extraMessage.startsWith("."))) {
-            space = "";
-        } else {
-            space = " ";
+
+        StringBuilder sb = new StringBuilder(message).append(count);
+        if (totalCount > 0) {
+            if (isApproximated) {
+                sb.append("/~");
+            } else {
+                sb.append('/');
+            }
+            sb.append(totalCount).append(' ').append(DECIMAL_FORMAT.format(((float) (count)) / totalCount));
         }
-        if (totalCount <= 0) {
-            print(message + (count) + space + extraMessage);
-        } else {
-            print(message + (count) + "/" + totalCount + " " + DECIMAL_FORMAT.format(((float) (count)) / totalCount) + space + extraMessage);
+        if (!extraMessage.isEmpty() && (!extraMessage.startsWith(" ") && !extraMessage.startsWith(",") && !extraMessage.startsWith("."))) {
+            sb.append(' ');
         }
+        sb.append(extraMessage);
+
+        print(sb.toString());
     }
 
     protected void print(String m) {
@@ -145,18 +159,23 @@ public class ProgressLogger {
 
     private long getTotalCount() {
         if (futureTotalCount != null) {
-            try {
-                if (futureTotalCount.isDone()) {
+            if (futureTotalCount.isDone()) {
+                try {
                     totalCount = futureTotalCount.get();
-                    batchSize = (int) Math.max(totalCount / numLinesLog, MIN_BATCH_SIZE);
+                    updateBatchSize();
+                    isApproximated = false;
+                } catch (InterruptedException | ExecutionException ignore) {
+                    logger.warn("There was a problem calculating the total number of elements");
+                } finally {
+                    futureTotalCount = null;
                 }
-            } catch (InterruptedException | ExecutionException ignore) {
-                logger.warn("There was a problem calculating the total number of elements");
-            } finally {
-                futureTotalCount = null;
             }
         }
         return this.totalCount;
+    }
+
+    private void updateBatchSize() {
+        batchSize = Math.max((double) totalCount / numLinesLog, MIN_BATCH_SIZE);
     }
 
     private static Future<Long> getFuture(Callable<Long> totalCountCallable) {

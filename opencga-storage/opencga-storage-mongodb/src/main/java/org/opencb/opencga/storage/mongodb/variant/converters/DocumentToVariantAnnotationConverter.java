@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.biodata.models.variant.avro.*;
@@ -68,6 +69,9 @@ public class DocumentToVariantAnnotationConverter
     public static final String CT_PROTEIN_FEATURE_END_FIELD = "end";
     public static final String CT_PROTEIN_FEATURE_TYPE_FIELD = "type";
     public static final String CT_PROTEIN_FEATURE_DESCRIPTION_FIELD = "desc";
+    public static final String CT_PROTEIN_UNIPROT_ACCESSION = "uni_a";
+    public static final String CT_PROTEIN_UNIPROT_NAME = "uni_n";
+    public static final String CT_PROTEIN_UNIPROT_VARIANT_ID = "uni_var";
 
     public static final String XREFS_FIELD = "xrefs";
     public static final String XREF_ID_FIELD = "id";
@@ -212,9 +216,12 @@ public class DocumentToVariantAnnotationConverter
 
 
                     ProteinVariantAnnotation proteinVariantAnnotation = buildProteinVariantAnnotation(
+                            getDefault(ct, CT_PROTEIN_UNIPROT_ACCESSION, null),
+                            getDefault(ct, CT_PROTEIN_UNIPROT_NAME, null),
                             getDefault(ct, CT_AA_POSITION_FIELD, 0),
                             getDefault(ct, CT_AA_REFERENCE_FIELD, ""),
                             getDefault(ct, CT_AA_ALTERNATE_FIELD, ""),
+                            getDefault(ct, CT_PROTEIN_UNIPROT_VARIANT_ID, null),
                             proteinSubstitutionScores,
                             getDefault(ct, CT_PROTEIN_KEYWORDS, Collections.emptyList()),
                             features);
@@ -381,11 +388,12 @@ public class DocumentToVariantAnnotationConverter
                 cDnaPosition, cdsPosition, codon, proteinVariantAnnotation, soTerms);
     }
 
-    private ProteinVariantAnnotation buildProteinVariantAnnotation(Integer aaPosition, String aaReference, String aaAlternate,
+    private ProteinVariantAnnotation buildProteinVariantAnnotation(String uniprotAccession, String uniprotName, Integer aaPosition,
+                                                                   String aaReference, String aaAlternate, String uniprotVariantId,
                                                                    List<Score> proteinSubstitutionScores, List<String> keywords,
                                                                    List<ProteinFeature> features) {
-        return new ProteinVariantAnnotation(null, null, aaPosition,
-                    aaReference, aaAlternate, null, null, proteinSubstitutionScores, keywords, features);
+        return new ProteinVariantAnnotation(uniprotAccession, uniprotName, aaPosition,
+                    aaReference, aaAlternate, uniprotVariantId, null, proteinSubstitutionScores, keywords, features);
     }
 
     private VariantTraitAssociation parseClinicalData(Document clinicalData) {
@@ -486,6 +494,9 @@ public class DocumentToVariantAnnotationConverter
                     putNotNull(ct, CT_AA_POSITION_FIELD, consequenceType.getProteinVariantAnnotation().getPosition());
                     putNotNull(ct, CT_AA_REFERENCE_FIELD, consequenceType.getProteinVariantAnnotation().getReference());
                     putNotNull(ct, CT_AA_ALTERNATE_FIELD, consequenceType.getProteinVariantAnnotation().getAlternate());
+                    putNotNull(ct, CT_PROTEIN_UNIPROT_ACCESSION, consequenceType.getProteinVariantAnnotation().getUniprotAccession());
+                    putNotNull(ct, CT_PROTEIN_UNIPROT_NAME, consequenceType.getProteinVariantAnnotation().getUniprotName());
+                    putNotNull(ct, CT_PROTEIN_UNIPROT_VARIANT_ID, consequenceType.getProteinVariantAnnotation().getUniprotVariantId());
                     //Protein substitution region score
                     if (consequenceType.getProteinVariantAnnotation().getSubstitutionScores() != null) {
                         List<Document> proteinSubstitutionScores = new LinkedList<>();
@@ -519,17 +530,26 @@ public class DocumentToVariantAnnotationConverter
                         putNotNull(ct, CT_PROTEIN_FEATURE_FIELD, documentFeatures);
                     }
 
+                    if (StringUtils.isNotEmpty(consequenceType.getProteinVariantAnnotation().getUniprotAccession())) {
+                        xrefs.add(convertXrefToStorage(consequenceType.getProteinVariantAnnotation().getUniprotAccession(), "UniProt"));
+                    }
+                    if (StringUtils.isNotEmpty(consequenceType.getProteinVariantAnnotation().getUniprotName())) {
+                        xrefs.add(convertXrefToStorage(consequenceType.getProteinVariantAnnotation().getUniprotName(), "UniProt"));
+                    }
+                    if (StringUtils.isNotEmpty(consequenceType.getProteinVariantAnnotation().getUniprotVariantId())) {
+                        xrefs.add(convertXrefToStorage(consequenceType.getProteinVariantAnnotation().getUniprotVariantId(), "UniProt"));
+                    }
                 }
 
                 cts.add(ct);
 
-                if (consequenceType.getGeneName() != null && !consequenceType.getGeneName().isEmpty()) {
+                if (StringUtils.isNotEmpty(consequenceType.getGeneName())) {
                     xrefs.add(convertXrefToStorage(consequenceType.getGeneName(), "HGNC"));
                 }
-                if (consequenceType.getEnsemblGeneId() != null && !consequenceType.getEnsemblGeneId().isEmpty()) {
+                if (StringUtils.isNotEmpty(consequenceType.getEnsemblGeneId())) {
                     xrefs.add(convertXrefToStorage(consequenceType.getEnsemblGeneId(), "ensemblGene"));
                 }
-                if (consequenceType.getEnsemblTranscriptId() != null && !consequenceType.getEnsemblTranscriptId().isEmpty()) {
+                if (StringUtils.isNotEmpty(consequenceType.getEnsemblTranscriptId())) {
                     xrefs.add(convertXrefToStorage(consequenceType.getEnsemblTranscriptId(), "ensemblTranscript"));
                 }
 
@@ -634,10 +654,24 @@ public class DocumentToVariantAnnotationConverter
         if (variantAnnotation.getVariantTraitAssociation() != null) {
             putNotNull(clinicalDocument, CLINICAL_COSMIC_FIELD,
                     generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getCosmic()));
+            if (variantAnnotation.getVariantTraitAssociation().getCosmic() != null) {
+                variantAnnotation.getVariantTraitAssociation().getCosmic()
+                        .stream()
+                        .map(Cosmic::getMutationId)
+                        .filter(StringUtils::isNotEmpty)
+                        .forEach(mutationId -> xrefs.add(convertXrefToStorage(mutationId, "COSMIC")));
+            }
             putNotNull(clinicalDocument, CLINICAL_GWAS_FIELD,
                     generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getGwas()));
             putNotNull(clinicalDocument, CLINICAL_CLINVAR_FIELD,
                     generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getClinvar()));
+            if (variantAnnotation.getVariantTraitAssociation().getClinvar() != null) {
+                variantAnnotation.getVariantTraitAssociation().getClinvar()
+                        .stream()
+                        .map(ClinVar::getAccession)
+                        .filter(StringUtils::isNotEmpty)
+                        .forEach(accession -> xrefs.add(convertXrefToStorage(accession, "ClinVar")));
+            }
         }
         if (!clinicalDocument.isEmpty()) {
             document.put(CLINICAL_DATA_FIELD, clinicalDocument);
@@ -647,9 +681,9 @@ public class DocumentToVariantAnnotationConverter
     }
 
 
-    private <T> List generateClinicalDBList(List<T> objectList) {
-        List list = new ArrayList(objectList.size());
+    private <T> List<Document> generateClinicalDBList(List<T> objectList) {
         if (objectList != null) {
+            List<Document> list = new ArrayList<>(objectList.size());
             for (T object : objectList) {
                 try {
                     if (object instanceof GenericRecord) {

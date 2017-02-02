@@ -27,7 +27,7 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.biodata.tools.variant.converter.Converter;
+import org.opencb.biodata.tools.variant.converters.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -239,6 +239,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                 // FIXME: Decide what to do with lists of genotypes
                 if (simpleGenotypes) {
                     returnedGenotype = getSimpleGenotype(genotype);
+                    logger.debug("Return simplified genotype: {} -> {}", genotype, returnedGenotype);
                 } else {
                     returnedGenotype = genotype;
                 }

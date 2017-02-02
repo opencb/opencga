@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.catalog.models.summaries.VariableSetSummary;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,8 +49,8 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      * Obtains the numeric study id given a string.
      *
      * @param userId User id of the user asking for the project id.
-     * @param studyStr Study id in string format. Could be one of [id | user@aliasProject:aliasStudy | user@aliasStudy |
-     *                 aliasProject:aliasStudy | aliasStudy ].
+     * @param studyStr Study id in string format. Could be one of [id | user@aliasProject:aliasStudy | aliasProject:aliasStudy |
+     *                 aliasStudy ].
      * @return the numeric study id.
      * @throws CatalogException CatalogDBException when more than one study id are found.
      */
@@ -63,13 +64,7 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      * @return A list of study ids.
      * @throws CatalogException CatalogException.
      */
-    default List<Long> getIds(String userId, String studyStr) throws CatalogException {
-        List<Long> studyIds = new ArrayList<>();
-        for (String studyId : studyStr.split(",")) {
-            studyIds.add(getId(userId, studyId));
-        }
-        return studyIds;
-    }
+    List<Long> getIds(String userId, String studyStr) throws CatalogException;
 
     @Deprecated
     Long getId(String studyId) throws CatalogException;
@@ -100,6 +95,18 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
                               Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats, Map<String, Object> attributes,
                               QueryOptions options, String sessionId) throws CatalogException;
 
+    /**
+     * Delete entries from Catalog.
+     *
+     * @param ids       Comma separated list of ids corresponding to the objects to delete
+     * @param options   Deleting options.
+     * @param sessionId sessionId
+     * @return A list with the deleted objects
+     * @throws CatalogException CatalogException
+     * @throws IOException IOException.
+     */
+    List<QueryResult<Study>> delete(String ids, QueryOptions options, String sessionId) throws CatalogException, IOException;
+
     @Deprecated
     QueryResult<Study> share(long studyId, AclEntry acl) throws CatalogException;
 
@@ -118,7 +125,8 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
 
     QueryResult<VariableSet> readVariableSet(long variableSet, QueryOptions options, String sessionId) throws CatalogException;
 
-    QueryResult<VariableSet> readAllVariableSets(long studyId, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult<VariableSet> searchVariableSets(String studyStr, Query query, QueryOptions options, String sessionId)
+            throws CatalogException;
 
     QueryResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions, String sessionId) throws CatalogException;
 

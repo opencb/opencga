@@ -16,7 +16,10 @@
 
 package org.opencb.opencga.storage.core.variant.stats;
 
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -25,21 +28,14 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
@@ -57,38 +53,44 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
-    @BeforeClass
-    public static void beforeClass() throws IOException {
-        Path rootDir = getTmpRootDir();
-        Path inputPath = rootDir.resolve(VCF_TEST_FILE_NAME);
-        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath,
-                StandardCopyOption.REPLACE_EXISTING);
-        inputUri = inputPath.toUri();
-    }
-
     @Override
     @Before
     public void before() throws Exception {
         studyConfiguration = newStudyConfiguration();
-        studyConfiguration.setAggregation(VariantSource.Aggregation.BASIC);
+        studyConfiguration.setAggregation(getAggregationType());
         clearDB(DB_NAME);
-        runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration,
-                new ObjectMap(VariantStorageManager.Options.ANNOTATE.key(), false)
-                        .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false));
-        dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+        inputUri = getInputUri();
+        runDefaultETL(inputUri, getVariantStorageEngine(), studyConfiguration,
+                new ObjectMap(VariantStorageEngine.Options.ANNOTATE.key(), false)
+                        .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false));
+        dbAdaptor = getVariantStorageEngine().getDBAdaptor(DB_NAME);
     }
 
+    protected URI getInputUri() throws IOException {
+        return getResourceUri(VCF_TEST_FILE_NAME);
+    }
+
+    protected VariantSource.Aggregation getAggregationType() {
+        return VariantSource.Aggregation.BASIC;
+    }
+
+    protected Properties getAggregationMappingFile() {
+        return null;
+    }
 
     @Test
     public void calculateAggregatedStatsTest() throws Exception {
         //Calculate stats for 2 cohorts at one time
-        VariantStatisticsManager vsm = new VariantStatisticsManager();
+        DefaultVariantStatisticsManager vsm = new DefaultVariantStatisticsManager(dbAdaptor);
 
         checkAggregatedCohorts(dbAdaptor, studyConfiguration);
 
         Integer fileId = studyConfiguration.getFileIds().get(Paths.get(inputUri).getFileName().toString());
-        QueryOptions options = new QueryOptions(VariantStorageManager.Options.FILE_ID.key(), fileId);
-        options.put(VariantStorageManager.Options.LOAD_BATCH_SIZE.key(), 100);
+        QueryOptions options = new QueryOptions(VariantStorageEngine.Options.FILE_ID.key(), fileId);
+        options.put(VariantStorageEngine.Options.LOAD_BATCH_SIZE.key(), 100);
+        if (getAggregationMappingFile() != null) {
+            options.put(VariantStorageEngine.Options.AGGREGATION_MAPPING_PROPERTIES.key(), getAggregationMappingFile());
+        }
 
 
         //Calculate stats
@@ -101,23 +103,28 @@ public abstract class VariantStatisticsManagerAggregatedTest extends VariantStor
         checkAggregatedCohorts(dbAdaptor, studyConfiguration);
     }
 
-    private static void checkAggregatedCohorts(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration) {
+    protected void checkAggregatedCohorts(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration) {
         for (Variant variant : dbAdaptor) {
             for (StudyEntry sourceEntry : variant.getStudies()) {
                 Map<String, VariantStats> cohortStats = sourceEntry.getStats();
                 String calculatedCohorts = cohortStats.keySet().toString();
-                for (Map.Entry<String, Integer> entry : studyConfiguration.getCohortIds().entrySet()) {
-                    assertTrue("CohortStats should contain stats for cohort " + entry.getKey()
+                for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
+                    String cohortName = studyConfiguration.getCohortIds().inverse().get(cohortId);
+                    assertTrue("CohortStats should contain stats for cohort " + cohortName
                                     + ". Only contains stats for " + calculatedCohorts,
-                            cohortStats.containsKey(entry.getKey()));    //Check stats are calculated
+                            cohortStats.containsKey(cohortName));    //Check stats are calculated
 
-                    assertNotEquals("Stats seem with no valid values, for instance (chr=" + variant.getChromosome()
-                                    + ", start=" + variant.getStart() + ", ref=" + variant.getReference() + ", alt="
-                                    + variant.getAlternate() + "), maf=" + cohortStats.get(entry.getKey()).getMaf(),
-                            -1,
-                            cohortStats.get(entry.getKey()).getMaf(), 0.001);
+                    assertValidStats(variant, cohortStats.get(cohortName));
                 }
             }
         }
+    }
+
+    protected void assertValidStats(Variant variant, VariantStats variantStats) {
+        assertNotEquals("Stats seem with no valid values, for instance (chr=" + variant.getChromosome()
+                        + ", start=" + variant.getStart() + ", ref=" + variant.getReference() + ", alt="
+                        + variant.getAlternate() + "), maf=" + variantStats.getMaf(),
+                -1,
+                variantStats.getMaf(), 0.001);
     }
 }

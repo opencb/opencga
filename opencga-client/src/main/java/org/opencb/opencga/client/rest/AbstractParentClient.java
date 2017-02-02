@@ -19,6 +19,7 @@ package org.opencb.opencga.client.rest;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
@@ -26,6 +27,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,10 +36,13 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by imedina on 04/05/16.
@@ -52,7 +57,9 @@ public abstract class AbstractParentClient {
 
     private static ObjectMapper jsonObjectMapper;
 
-    private static final int BATCH_SIZE = 2000;
+    private static int timeout = 10000;
+    private static int batchSize = 2000;
+    private static int defaultLimit = 2000;
     private static final int DEFAULT_SKIP = 0;
     protected static final String GET = "GET";
     protected static final String POST = "POST";
@@ -71,6 +78,18 @@ public abstract class AbstractParentClient {
         this.logger = LoggerFactory.getLogger(this.getClass().toString());
         this.client = ClientBuilder.newClient();
         jsonObjectMapper = new ObjectMapper();
+
+        if (configuration.getRest() != null) {
+            if (configuration.getRest().getTimeout() > 0) {
+                timeout = configuration.getRest().getTimeout();
+            }
+            if (configuration.getRest().getBatchQuerySize() > 0) {
+                batchSize = configuration.getRest().getBatchQuerySize();
+            }
+            if (configuration.getRest().getDefaultLimit() > 0) {
+                defaultLimit = configuration.getRest().getDefaultLimit();
+            }
+        }
     }
 
     protected <T> QueryResponse<T> execute(String category, String action, Map<String, Object> params, String method, Class<T> clazz)
@@ -101,6 +120,9 @@ public abstract class AbstractParentClient {
 //            }
 //        }
 
+        client.property(ClientProperties.CONNECT_TIMEOUT, 1000);
+        client.property(ClientProperties.READ_TIMEOUT, timeout);
+
         // Build the basic URL
         WebTarget path = client
                 .target(configuration.getRest().getHost())
@@ -126,8 +148,8 @@ public abstract class AbstractParentClient {
         // Add the last URL part, the 'action'
         path = path.path(action);
 
-        int numRequiredFeatures = params.getInt(QueryOptions.LIMIT, Integer.MAX_VALUE);
-        int limit = Math.min(numRequiredFeatures, BATCH_SIZE);
+        int numRequiredFeatures = params.getInt(QueryOptions.LIMIT, defaultLimit);
+        int limit = Math.min(numRequiredFeatures, batchSize);
 
         int skip = params.getInt(QueryOptions.SKIP, DEFAULT_SKIP);
 
@@ -142,11 +164,12 @@ public abstract class AbstractParentClient {
         while (true) {
             params.put(QueryOptions.SKIP, skip);
             params.put(QueryOptions.LIMIT, limit);
+            params.put(QueryOptions.TIMEOUT, timeout);
 
             if (!action.equals("upload")) {
-                queryResponse = (QueryResponse<T>) callRest(path, params, clazz, method);
+                queryResponse = callRest(path, params, clazz, method);
             } else {
-                queryResponse = (QueryResponse<T>) callUploadRest(path, params, clazz);
+                queryResponse = callUploadRest(path, params, clazz);
             }
             int numResults = queryResponse.getResponse().isEmpty() ? 0 : queryResponse.getResponse().get(0).getNumResults();
 
@@ -160,14 +183,14 @@ public abstract class AbstractParentClient {
             }
 
             int numTotalResults = queryResponse.getResponse().isEmpty() ? 0 : finalQueryResponse.getResponse().get(0).getNumResults();
-            if (numResults < limit || numTotalResults == numRequiredFeatures || numResults == 0) {
+            if (numResults < limit || numTotalResults >= numRequiredFeatures || numResults == 0) {
                 break;
             }
 
             // DO NOT CHANGE THE ORDER OF THE FOLLOWING CODE
             skip += numResults;
-            if (skip + BATCH_SIZE < numRequiredFeatures) {
-                limit = BATCH_SIZE;
+            if (skip + batchSize < numRequiredFeatures) {
+                limit = batchSize;
             } else {
                 limit = numRequiredFeatures - numTotalResults;
             }
@@ -193,7 +216,13 @@ public abstract class AbstractParentClient {
             // TODO we still have to check the limit of the query, and keep querying while there are more results
             if (params != null) {
                 for (String s : params.keySet()) {
-                    path = path.queryParam(s, params.get(s));
+                    Object o = params.get(s);
+                    if (o instanceof Collection) {
+                        String value = ((Collection<?>) o).stream().map(Object::toString).collect(Collectors.joining(","));
+                        path = path.queryParam(s, value);
+                    } else {
+                        path = path.queryParam(s, o);
+                    }
                 }
             }
 
@@ -224,9 +253,9 @@ public abstract class AbstractParentClient {
 //            ObjectMap json = new ObjectMap("body", params.get("body"));
 
             logger.debug("POST URL: " + path.getUri().toURL());
-//            jsonString = path.request().accept(MediaType.APPLICATION_JSON).post(Entity.entity(json, MediaType.APPLICATION_JSON),
-//                    String.class);est().accept(MediaType.APPLICATION_JSON).post(Entity.entity(json, MediaType.APPLICATION_JSON),
-            jsonString = path.request().post(Entity.json(params.get("body")), String.class);
+            Response body = path.request().post(Entity.json(params.get("body")));
+            jsonString = body.readEntity(String.class);
+//            jsonString = path.request().post(Entity.json(params.get("body")), String.class);
         }
         return parseResult(jsonString, clazz);
     }
@@ -321,7 +350,14 @@ public abstract class AbstractParentClient {
         return this;
     }
 
-    public String getUserId() {
+    public String getUserId(ObjectMap options) throws CatalogException {
+        String userId = this.userId;
+        if (options != null && options.containsKey("userId")) {
+            userId = options.getString("userId");
+        }
+        if (userId == null || userId.isEmpty()) {
+            throw new CatalogException("Missing user id");
+        }
         return userId;
     }
 

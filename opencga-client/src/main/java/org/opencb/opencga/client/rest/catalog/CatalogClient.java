@@ -9,6 +9,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.AbstractParentClient;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 
 /**
@@ -26,9 +27,9 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
     }
 
     public enum AclParams {
-        ADD_PERMISSIONS("addPermissions"),
-        REMOVE_PERMISSIONS("removePermissions"),
-        SET_PERMISSIONS("setPermissions");
+        ADD("add"),
+        REMOVE("remove"),
+        SET("set");
 
         private String key;
 
@@ -45,8 +46,8 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
         return execute(category, "count", query, GET, Long.class);
     }
 
-    public QueryResponse<T> get(String id, QueryOptions options) throws CatalogException, IOException {
-        return execute(category, id, "info", options, GET, clazz);
+    public QueryResponse<T> get(String id, ObjectMap params) throws IOException {
+        return execute(category, id, "info", params, GET, clazz);
     }
 
     public QueryResponse<T> search(Query query, QueryOptions options) throws IOException {
@@ -55,14 +56,17 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
         return execute(category, "search", myQuery, GET, clazz);
     }
 
-    public QueryResponse<T> update(String id, ObjectMap params) throws CatalogException, IOException {
+    public QueryResponse<T> update(String id, @Nullable String study, ObjectMap params)
+            throws CatalogException, IOException {
         //TODO Check that everything is correct
         if (params.containsKey("method") && params.get("method").equals("GET")) {
+            params.remove("method");
             return execute(category, id, "update", params, GET, clazz);
         }
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(params);
         ObjectMap p = new ObjectMap("body", json);
+        p.putIfNotNull("study", study);
         logger.debug("Json in update client: " + json);
         return execute(category, id, "update", p, POST, clazz);
     }
@@ -73,22 +77,21 @@ public abstract class CatalogClient<T, A> extends AbstractParentClient {
 
     // Acl methods
 
-    public QueryResponse<A> getAcls(String id) throws IOException {
-        return execute(category, id, "acl", new ObjectMap(), GET, aclClass);
+    public QueryResponse<A> getAcls(String id, ObjectMap params) throws IOException {
+        return execute(category, id, "acl", params, GET, aclClass);
     }
 
-    public QueryResponse<A> getAcl(String id, String memberId) throws CatalogException, IOException {
-        return execute(category, id, "acl", memberId, "info", new ObjectMap(), GET, aclClass);
+    public QueryResponse<A> getAcl(String id, String memberId, ObjectMap params) throws CatalogException, IOException {
+        return execute(category, id, "acl", memberId, "info", params, GET, aclClass);
     }
 
-    public QueryResponse<A> createAcl(String id, String members, ObjectMap params) throws CatalogException,
-            IOException {
+    public QueryResponse<A> createAcl(String id, String members, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "members", members);
         return execute(category, id, "acl", null, "create", params, GET, aclClass);
     }
 
-    public QueryResponse<A> deleteAcl(String id, String memberId) throws CatalogException, IOException {
-        return execute(category, id, "acl", memberId, "delete", new ObjectMap(), GET, aclClass);
+    public QueryResponse<A> deleteAcl(String id, String memberId, ObjectMap params) throws CatalogException, IOException {
+        return execute(category, id, "acl", memberId, "delete", params, GET, aclClass);
     }
 
     public QueryResponse<A> updateAcl(String id, String memberId, ObjectMap params) throws CatalogException, IOException {

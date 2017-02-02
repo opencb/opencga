@@ -24,8 +24,8 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
+import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.util.*;
@@ -33,6 +33,7 @@ import java.util.*;
 /**
 * Created by hpccoll1 on 13/02/15.
 */
+@Deprecated
 public abstract class CatalogVariantDBAdaptor implements VariantDBAdaptor {
 
     private final CatalogManager catalogManager;
@@ -43,17 +44,17 @@ public abstract class CatalogVariantDBAdaptor implements VariantDBAdaptor {
         this.dbAdaptor = dbAdaptor;
     }
 
-    public CatalogVariantDBAdaptor(CatalogManager catalogManager, String fileId, String sessionId) throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageManagerException {
+    public CatalogVariantDBAdaptor(CatalogManager catalogManager, String fileId, String sessionId) throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, StorageEngineException {
         this.catalogManager = catalogManager;
         this.dbAdaptor = buildDBAdaptor(catalogManager, fileId, sessionId);
     }
 
-    private static VariantDBAdaptor buildDBAdaptor(CatalogManager catalogManager, String fileId, String sessionId) throws CatalogException, ClassNotFoundException, IllegalAccessException, InstantiationException, StorageManagerException {
+    private static VariantDBAdaptor buildDBAdaptor(CatalogManager catalogManager, String fileId, String sessionId) throws CatalogException, ClassNotFoundException, IllegalAccessException, InstantiationException, StorageEngineException {
         long id = catalogManager.getFileId(fileId);
         File file = catalogManager.getFile(id, sessionId).getResult().get(0);
         String dbName = file.getAttributes().get("dbName").toString();
         String storageEngine = file.getAttributes().get("storageEngine").toString();
-        return StorageManagerFactory.get().getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
+        return StorageEngineFactory.get().getVariantStorageEngine(storageEngine).getDBAdaptor(dbName);
     }
 
     @Override

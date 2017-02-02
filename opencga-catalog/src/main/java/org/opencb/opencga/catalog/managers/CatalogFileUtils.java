@@ -503,9 +503,9 @@ public class CatalogFileUtils {
                                 params.get(FileDBAdaptor.QueryParams.ATTRIBUTES.key()));
                         catalogManager.getFileManager().update(file.getId(), attributes, new QueryOptions(), sessionId);
                     }
-                    if (params.get(FileDBAdaptor.QueryParams.DISK_USAGE.key()) != null) {
+                    if (params.get(FileDBAdaptor.QueryParams.SIZE.key()) != null) {
                         catalogManager.getFileManager()
-                                .setDiskUsage(file.getId(), params.getLong(FileDBAdaptor.QueryParams.DISK_USAGE.key()), sessionId);
+                                .setDiskUsage(file.getId(), params.getLong(FileDBAdaptor.QueryParams.SIZE.key()), sessionId);
                     }
                     if (params.get(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()) != null) {
                         catalogManager.getFileManager()
@@ -543,7 +543,7 @@ public class CatalogFileUtils {
 
     /**
      * Update some file attributes.
-     * diskUsage
+     * size
      * modificationDate
      * attributes.checksum
      *
@@ -563,7 +563,7 @@ public class CatalogFileUtils {
 
     /**
      * Get a ObjectMap with some fields if they have been modified.
-     * diskUsage
+     * size
      * modificationDate
      * attributes.checksum
      * uri
@@ -571,7 +571,7 @@ public class CatalogFileUtils {
      * @param file              file
      * @param fileUri           If null, calls to getFileUri()
      *                          <p>
-     *                          TODO: Lazy checksum: Only calculate checksum if the diskUsage has changed.
+     *                          TODO: Lazy checksum: Only calculate checksum if the size has changed.
      * @param calculateChecksum Calculate checksum to check if have changed
      * @return ObjectMap ObjectMap
      * @throws CatalogException CatalogException
@@ -590,7 +590,7 @@ public class CatalogFileUtils {
 
     /**
      * Update some file attributes.
-     * diskUsage
+     * size
      * modificationDate
      * attributes.checksum
      * uri
@@ -614,9 +614,9 @@ public class CatalogFileUtils {
                             .setStatus(Long.toString(file.getId()), parameters.getString(FileDBAdaptor.QueryParams.STATUS_NAME.key()), null,
                                     sessionId);
                 }
-                if (parameters.get(FileDBAdaptor.QueryParams.DISK_USAGE.key()) != null) {
+                if (parameters.get(FileDBAdaptor.QueryParams.SIZE.key()) != null) {
                     catalogManager.getFileManager()
-                            .setDiskUsage(file.getId(), parameters.getLong(FileDBAdaptor.QueryParams.DISK_USAGE.key()), sessionId);
+                            .setDiskUsage(file.getId(), parameters.getLong(FileDBAdaptor.QueryParams.SIZE.key()), sessionId);
                 }
                 if (parameters.get(FileDBAdaptor.QueryParams.MODIFICATION_DATE.key()) != null) {
                     catalogManager.getFileManager()
@@ -635,7 +635,7 @@ public class CatalogFileUtils {
 
     /**
      * Get a ObjectMap with some fields if they have been modified.
-     * diskUsage
+     * size
      * modificationDate
      * attributes.checksum
      * uri
@@ -661,8 +661,8 @@ public class CatalogFileUtils {
 
         try {
             long size = catalogIOManager.getFileSize(fileUri);
-            if (file.getDiskUsage() != size) {
-                parameters.put(FileDBAdaptor.QueryParams.DISK_USAGE.key(), size);
+            if (file.getSize() != size) {
+                parameters.put(FileDBAdaptor.QueryParams.SIZE.key(), size);
             }
         } catch (CatalogIOException e) {
             e.printStackTrace();

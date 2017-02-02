@@ -19,7 +19,7 @@ package org.opencb.opencga.storage.core.metadata;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Function;
 
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
@@ -51,16 +52,19 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
 
     protected abstract QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options);
 
-    public LockCloseable closableLockStudy(int studyId) throws StorageManagerException {
+    public LockCloseable closableLockStudy(int studyId) throws StorageEngineException {
         long lock = lockStudy(studyId);
         return () -> unLockStudy(studyId, lock);
     }
 
-    public long lockStudy(int studyId) throws StorageManagerException {
+    public long lockStudy(int studyId) throws StorageEngineException {
         try {
             return lockStudy(studyId, 10000, 20000);
-        } catch (InterruptedException | TimeoutException e) {
-            throw new StorageManagerException("Unable to lock the Study " + studyId, e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new StorageEngineException("Unable to lock the Study " + studyId, e);
+        } catch (TimeoutException e) {
+            throw new StorageEngineException("Unable to lock the Study " + studyId, e);
         }
     }
 
@@ -71,6 +75,24 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
 
     public void unLockStudy(int studyId, long lockId) {
         logger.warn("Ignoring unLock");
+    }
+
+    public StudyConfiguration lockAndUpdate(String studyName, Function<StudyConfiguration, StudyConfiguration> updater)
+            throws StorageEngineException {
+        Integer studyId = getStudies(QueryOptions.empty()).get(studyName);
+        return lockAndUpdate(studyId, updater);
+    }
+
+    public StudyConfiguration lockAndUpdate(int studyId, Function<StudyConfiguration, StudyConfiguration> updater)
+            throws StorageEngineException {
+        try (LockCloseable lock = closableLockStudy(studyId)) {
+            StudyConfiguration sc = getStudyConfiguration(studyId, new QueryOptions(CACHED, false)).first();
+
+            sc = updater.apply(sc);
+
+            updateStudyConfiguration(sc, QueryOptions.empty());
+            return sc;
+        }
     }
 
     protected abstract QueryResult internalUpdateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);
@@ -158,12 +180,12 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
         return new ArrayList<>(getStudies(options).values());
     }
 
-    public Map<String, Integer> getStudies(QueryOptions options) {
-        return Collections.emptyMap();
-    }
+    public abstract Map<String, Integer> getStudies(QueryOptions options);
 
     public final QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
-        studyConfiguration.setTimeStamp(System.currentTimeMillis());
+        long timeStamp = System.currentTimeMillis();
+        logger.debug("Timestamp : {} -> {}", studyConfiguration.getTimeStamp(), timeStamp);
+        studyConfiguration.setTimeStamp(timeStamp);
         Map<Integer, String> headers = studyConfiguration.getHeaders();
 
         studyConfiguration.setHeaders(null);

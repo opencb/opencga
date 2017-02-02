@@ -18,8 +18,6 @@ package org.opencb.opencga.server.grpc;
 
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
-import io.grpc.inprocess.InProcessServerBuilder;
-import io.grpc.netty.NettyServerBuilder;
 import org.opencb.opencga.server.AbstractStorageServer;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.LoggerFactory;
@@ -59,7 +57,7 @@ public class GrpcServer extends AbstractStorageServer {
     private void init() {
         logger = LoggerFactory.getLogger(this.getClass());
         if (configuration != null) {
-            this.port = configuration.getGrpc().getPort();
+            this.port = configuration.getServer().getGrpc().getPort();
         }
     }
 
@@ -69,9 +67,9 @@ public class GrpcServer extends AbstractStorageServer {
 //                .addService(AdminServiceGrpc.bindService(new AdminGrpcService(catalogConfiguration, storageConfiguration, this)))
 //                .addService(VariantServiceGrpc.bindService(new VariantGrpcService(catalogConfiguration, storageConfiguration)))
 //                .addService(AlignmentServiceGrpc.bindService(new AlignmentGrpcService(catalogConfiguration, storageConfiguration)))
-                .addService(new AdminGrpcService(catalogConfiguration, storageConfiguration, this))
-                .addService(new VariantGrpcService(catalogConfiguration, storageConfiguration))
-                .addService(new AlignmentGrpcService(catalogConfiguration, storageConfiguration))
+                .addService(new AdminGrpcService(configuration, storageConfiguration, this))
+                .addService(new VariantGrpcService(configuration, storageConfiguration))
+                .addService(new AlignmentGrpcService(configuration, storageConfiguration))
                 .build()
                 .start();
         logger.info("gRPC server started, listening on {}", port);

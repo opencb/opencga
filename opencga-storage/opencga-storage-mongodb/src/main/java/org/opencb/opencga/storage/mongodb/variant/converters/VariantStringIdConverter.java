@@ -73,12 +73,9 @@ public class VariantStringIdConverter implements ComplexTypeConverter<Variant, D
     }
 
     public String buildId(String chromosome, int start, String reference, String alternate) {
-        StringBuilder stringBuilder = new StringBuilder();
+        StringBuilder stringBuilder = buildId(chromosome, start, new StringBuilder());
 
-        appendChromosome(chromosome, stringBuilder)
-                .append(SEPARATOR_CHAR)
-                .append(StringUtils.leftPad(Integer.toString(start), 10, " "))
-                .append(SEPARATOR_CHAR);
+        stringBuilder.append(SEPARATOR_CHAR);
 
         if (reference.length() > Variant.SV_THRESHOLD) {
             stringBuilder.append(new String(CryptoUtils.encryptSha1(reference)));
@@ -92,6 +89,20 @@ public class VariantStringIdConverter implements ComplexTypeConverter<Variant, D
             stringBuilder.append(alternate);
         }
         return stringBuilder.toString();
+    }
+
+
+
+    public static String buildId(String chromosome, int start) {
+        return buildId(chromosome, start, new StringBuilder()).toString();
+    }
+
+    private static StringBuilder buildId(String chromosome, int start, StringBuilder stringBuilder) {
+
+        appendChromosome(chromosome, stringBuilder)
+                .append(SEPARATOR_CHAR)
+                .append(StringUtils.leftPad(Integer.toString(start), 10, " "));
+        return stringBuilder;
     }
 
     public static String convertChromosome(String chromosome) {

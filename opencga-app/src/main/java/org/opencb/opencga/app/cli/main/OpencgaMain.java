@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.main;
 import com.beust.jcommander.ParameterException;
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.analysis.AlignmentCommandExecutor;
+import org.opencb.opencga.app.cli.main.executors.analysis.VariantCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
@@ -65,50 +66,44 @@ public class OpencgaMain {
                     cliOptionsParser.printUsage();
                 } else {
                     switch (parsedCommand) {
-//                        case "catalog":
-//                            commandExecutor = new CatalogCommandExecutor(cliOptionsParser.getCatalogCommandOptions());
-//                            break;
                         case "users":
-                            commandExecutor = new UsersCommandExecutor(cliOptionsParser.getUsersCommandOptions());
+                            commandExecutor = new UserCommandExecutor(cliOptionsParser.getUsersCommandOptions());
                             break;
-//                        case "audit":
-//                            commandExecutor = new AuditCommandExecutor(cliOptionsParser.getAuditCommandOptions());
-//                            break;
-//                        case "server":
-//                            commandExecutor = new ServerCommandExecutor(cliOptionsParser.getServerCommandOptions());
-//                            break;
                         case "projects":
-                            commandExecutor = new ProjectsCommandExecutor(cliOptionsParser.getProjectCommandOptions());
+                            commandExecutor = new ProjectCommandExecutor(cliOptionsParser.getProjectCommandOptions());
                             break;
                         case "studies":
-                            commandExecutor = new StudiesCommandExecutor(cliOptionsParser.getStudyCommandOptions());
+                            commandExecutor = new StudyCommandExecutor(cliOptionsParser.getStudyCommandOptions());
                             break;
                         case "files":
-                            commandExecutor = new FilesCommandExecutor(cliOptionsParser.getFileCommands());
+                            commandExecutor = new FileCommandExecutor(cliOptionsParser.getFileCommands());
                             break;
                         case "jobs":
-                            commandExecutor = new JobsCommandExecutor(cliOptionsParser.getJobsCommands());
+                            commandExecutor = new JobCommandExecutor(cliOptionsParser.getJobsCommands());
                             break;
                         case "individuals":
-                            commandExecutor = new IndividualsCommandExecutor(cliOptionsParser.getIndividualsCommands());
+                            commandExecutor = new IndividualCommandExecutor(cliOptionsParser.getIndividualsCommands());
                             break;
                         case "samples":
-                            commandExecutor = new SamplesCommandExecutor(cliOptionsParser.getSampleCommands());
+                            commandExecutor = new SampleCommandExecutor(cliOptionsParser.getSampleCommands());
                             break;
                         case "cohorts":
-                            commandExecutor = new CohortsCommandExecutor(cliOptionsParser.getCohortCommands());
+                            commandExecutor = new CohortCommandExecutor(cliOptionsParser.getCohortCommands());
                             break;
                         case "panels":
-                            commandExecutor = new PanelsCommandExecutor(cliOptionsParser.getPanelCommands());
+                            commandExecutor = new PanelCommandExecutor(cliOptionsParser.getPanelCommands());
                             break;
                         case "tools":
-                            commandExecutor = new ToolsCommandExecutor(cliOptionsParser.getToolCommands());
+                            commandExecutor = new ToolCommandExecutor(cliOptionsParser.getToolCommands());
                             break;
                         case "variables":
-                            commandExecutor = new VariablesCommandExecutor(cliOptionsParser.getVariableCommands());
+                            commandExecutor = new VariableCommandExecutor(cliOptionsParser.getVariableCommands());
                             break;
                         case "alignments":
                             commandExecutor = new AlignmentCommandExecutor(cliOptionsParser.getAlignmentCommands());
+                            break;
+                        case "variant":
+                            commandExecutor = new VariantCommandExecutor(cliOptionsParser.getVariantCommands());
                             break;
                         default:
                             System.out.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
@@ -116,7 +111,6 @@ public class OpencgaMain {
                     }
 
                     if (commandExecutor != null) {
-//                        commandExecutor.loadConfigurations();
                         try {
                             commandExecutor.execute();
                         } catch (Exception e) {
@@ -128,7 +122,6 @@ public class OpencgaMain {
                         System.exit(1);
                     }
                 }
-
             }
         }
     }

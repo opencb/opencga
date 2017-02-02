@@ -18,7 +18,9 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.opencb.biodata.models.variant.Variant;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 
@@ -30,6 +32,11 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
     public static final EmptyVariantDBIterator EMPTY_ITERATOR = new EmptyVariantDBIterator();
     protected long timeFetching = 0;
     protected long timeConverting = 0;
+    private List<AutoCloseable> closeables = new ArrayList<>();
+
+    public void addCloseable(AutoCloseable closeable) {
+        this.closeables.add(closeable);
+    }
 
     public long getTimeConverting() {
         return timeConverting;
@@ -77,6 +84,13 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
         }
     }
 
+    @Override
+    public void close() throws Exception {
+        for (AutoCloseable closeable : closeables) {
+            closeable.close();
+        }
+    }
+
     public static VariantDBIterator emptyIterator() {
         return EMPTY_ITERATOR;
     }
@@ -96,7 +110,8 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
         }
 
         @Override
-        public void close() {
+        public void close() throws Exception {
+            super.close();
         }
     }
 

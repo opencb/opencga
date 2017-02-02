@@ -19,14 +19,14 @@ package org.opencb.opencga.app.cli.main.options.commons;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
 
 /**
  * Created by imedina on 26/07/16.
  */
 public class AclCommandOptions {
 
-    private OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonCommandOptions;
+    private GeneralCliOptions.CommonCommandOptions commonCommandOptions;
 
     private AclsCommandOptions aclsCommandOptions;
     private AclsCreateCommandOptions aclsCreateCommandOptions;
@@ -34,15 +34,15 @@ public class AclCommandOptions {
     private AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
     private AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
 
-    public AclCommandOptions(OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonCommandOptions) {
+    public AclCommandOptions(GeneralCliOptions.CommonCommandOptions commonCommandOptions) {
         this.commonCommandOptions = commonCommandOptions;
     }
 
     @Parameters(commandNames = {"acl"}, commandDescription = "Return the acl of the resource")
-    public class AclsCommandOptions {
+    public class AclsCommandOptions extends GeneralCliOptions.StudyOption {
 
         @ParametersDelegate
-        public OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public GeneralCliOptions.CommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "Id of the resource", required = true, arity = 1)
         public String id;
@@ -58,15 +58,10 @@ public class AclCommandOptions {
         public String permissions;
     }
 
-    public class AclsCreateCommandOptionsTemplate extends AclsCreateCommandOptions {
-        @Parameter(names = {"--template-id"}, description = "Template of permissions to be used (admin, analyst or locked)", arity = 1)
-        public String templateId;
-    }
-
     @Parameters(commandNames = {"acl-member-delete"}, commandDescription = "Delete all the permissions granted for the user or group")
     public class AclsMemberDeleteCommandOptions extends AclsCommandOptions {
 
-        @Parameter(names = {"--member-id"}, description = "Member id ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
+        @Parameter(names = {"--member"}, description = "Member id ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
         public String memberId;
     }
 
@@ -74,7 +69,7 @@ public class AclCommandOptions {
             commandDescription = "Return the set of permissions granted for the user or group")
     public class AclsMemberInfoCommandOptions extends AclsCommandOptions {
 
-        @Parameter(names = {"--member-id"}, description = "Member id  ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
+        @Parameter(names = {"--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
         public String memberId;
     }
 
@@ -82,7 +77,7 @@ public class AclCommandOptions {
             commandDescription = "Update the set of permissions granted for the user or group")
     public class AclsMemberUpdateCommandOptions extends AclsCommandOptions {
 
-        @Parameter(names = {"--member-id"}, description = "Member id  ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
+        @Parameter(names = {"--member"}, description = "Member id  ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
         public String memberId;
 
         @Parameter(names = {"--add-permissions"}, description = "Comma separated list of permissions to add", arity = 1)
@@ -107,13 +102,6 @@ public class AclCommandOptions {
             this.aclsCreateCommandOptions = new AclsCreateCommandOptions();
         }
         return aclsCreateCommandOptions;
-    }
-
-    public AclsCreateCommandOptionsTemplate getAclsCreateCommandOptionsTemplate() {
-        if (this.aclsCreateCommandOptions == null) {
-            this.aclsCreateCommandOptions = new AclsCreateCommandOptionsTemplate();
-        }
-        return ((AclsCreateCommandOptionsTemplate) aclsCreateCommandOptions);
     }
 
     public AclsMemberDeleteCommandOptions getAclsMemberDeleteCommandOptions() {

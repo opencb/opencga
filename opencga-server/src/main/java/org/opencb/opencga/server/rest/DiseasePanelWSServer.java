@@ -94,7 +94,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{panelIds}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of members", position = 19)
+    @ApiOperation(value = "Define a set of permissions for a list of members", hidden = true, position = 19)
     public Response createRole(@ApiParam(value = "Comma separated list of panel ids", required = true) @PathParam("panelIds") String panelIdsStr,
                                @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
@@ -119,12 +119,15 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{panelId}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    @ApiOperation(value = "Update the set of permissions granted for the member", hidden = true, position = 21)
     public Response updateAcl(@ApiParam(value = "panelId", required = true) @PathParam("panelId") String panelIdStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
-                              @ApiParam(value = "Comma separated list of permissions to add", required = false) @PathParam("addPermissions") String addPermissions,
-                              @ApiParam(value = "Comma separated list of permissions to remove", required = false) @PathParam("removePermissions") String removePermissions,
-                              @ApiParam(value = "Comma separated list of permissions to set", required = false) @PathParam("setPermissions") String setPermissions) {
+                              @ApiParam(value = "Comma separated list of permissions to add", required = false) @QueryParam("add")
+                                          String addPermissions,
+                              @ApiParam(value = "Comma separated list of permissions to remove", required = false) @QueryParam("remove")
+                                          String removePermissions,
+                              @ApiParam(value = "Comma separated list of permissions to set", required = false) @QueryParam("set")
+                                          String setPermissions) {
         try {
             return createOkResponse(catalogManager.updatePanelAcl(panelIdStr, memberId, addPermissions, removePermissions, setPermissions, sessionId));
         } catch (Exception e) {

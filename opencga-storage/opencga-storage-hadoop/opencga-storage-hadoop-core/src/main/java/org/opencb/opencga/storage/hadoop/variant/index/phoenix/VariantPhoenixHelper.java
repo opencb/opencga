@@ -249,13 +249,14 @@ public class VariantPhoenixHelper {
         phoenixHelper.addMissingColumns(con, tableName, annotColumns, true);
     }
 
-    public void updateStatsFields(Connection con, String tableName, StudyConfiguration studyConfiguration) throws SQLException {
+    public void updateStatsColumns(Connection con, String tableName, StudyConfiguration studyConfiguration) throws SQLException {
+        List<Column> columns = new ArrayList<>();
         for (Integer cohortId : studyConfiguration.getCohortIds().values()) {
             for (Column column : getStatsColumns(studyConfiguration.getStudyId(), cohortId)) {
-                String sql = phoenixHelper.buildAlterAddColumn(tableName, column.column(), column.sqlType(), true);
-                phoenixHelper.execute(con, sql);
+                columns.add(column);
             }
         }
+        phoenixHelper.addMissingColumns(con, tableName, columns, true);
     }
 
     public void registerNewStudy(Connection con, String table, Integer studyId) throws SQLException {
@@ -275,9 +276,13 @@ public class VariantPhoenixHelper {
     }
 
     public void createTableIfNeeded(Connection con, String table) throws SQLException {
-        String sql = buildCreate(table);
-        logger.info(sql);
-        phoenixHelper.execute(con, sql);
+        if (!phoenixHelper.tableExists(con, table)) {
+            String sql = buildCreate(table);
+            logger.info(sql);
+            phoenixHelper.execute(con, sql);
+        } else {
+            logger.info("Table {} already exists", table);
+        }
     }
 
     private void addColumns(Connection con, String tableName, Integer studyId, PDataType<?> dataType, String ... columns)

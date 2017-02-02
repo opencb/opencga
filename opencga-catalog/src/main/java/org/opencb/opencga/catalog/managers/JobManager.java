@@ -25,10 +25,11 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -48,9 +49,9 @@ import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -66,15 +67,15 @@ public class JobManager extends AbstractManager implements IJobManager {
     public static final String DELETE_FILES = "deleteFiles";
 
     public JobManager(AuthorizationManager authorizationManager, AuditManager auditManager, DBAdaptorFactory catalogDBAdaptorFactory,
-                      CatalogIOManagerFactory ioManagerFactory, CatalogConfiguration catalogConfiguration) {
-        super(authorizationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogConfiguration);
+                      CatalogIOManagerFactory ioManagerFactory, Configuration configuration) {
+        super(authorizationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, configuration);
     }
 
     public JobManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                       DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                      CatalogConfiguration catalogConfiguration) {
+                      Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
-                catalogConfiguration);
+                configuration);
         this.userManager = catalogManager.getUserManager();
     }
 
@@ -91,6 +92,88 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
+    public MyResourceId getId(String jobStr, @Nullable String studyStr, String sessionId) throws CatalogException {
+        if (StringUtils.isEmpty(jobStr)) {
+            throw new CatalogException("Missing job parameter");
+        }
+
+        String userId;
+        long studyId;
+        long jobId;
+
+        if (StringUtils.isNumeric(jobStr) && Long.parseLong(jobStr) > configuration.getCatalog().getOffset()) {
+            jobId = Long.parseLong(jobStr);
+            jobDBAdaptor.exists(jobId);
+            studyId = jobDBAdaptor.getStudyId(jobId);
+            userId = userManager.getId(sessionId);
+        } else {
+            if (jobStr.contains(",")) {
+                throw new CatalogException("More than one job found");
+            }
+
+            userId = userManager.getId(sessionId);
+            studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+            jobId = smartResolutor(jobStr, studyId);
+        }
+
+        return new MyResourceId(userId, studyId, jobId);
+    }
+
+    @Override
+    public MyResourceIds getIds(String jobStr, @Nullable String studyStr, String sessionId) throws CatalogException {
+        if (StringUtils.isEmpty(jobStr)) {
+            throw new CatalogException("Missing job parameter");
+        }
+
+        String userId;
+        long studyId;
+        List<Long> jobIds;
+
+        if (StringUtils.isNumeric(jobStr) && Long.parseLong(jobStr) > configuration.getCatalog().getOffset()) {
+            jobIds = Arrays.asList(Long.parseLong(jobStr));
+            jobDBAdaptor.exists(jobIds.get(0));
+            studyId = jobDBAdaptor.getStudyId(jobIds.get(0));
+            userId = userManager.getId(sessionId);
+        } else {
+            userId = userManager.getId(sessionId);
+            studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+            String[] jobSplit = jobStr.split(",");
+            jobIds = new ArrayList<>(jobSplit.length);
+            for (String jobStrAux : jobSplit) {
+                jobIds.add(smartResolutor(jobStrAux, studyId));
+            }
+        }
+
+        return new MyResourceIds(userId, studyId, jobIds);
+    }
+
+    private Long smartResolutor(String jobName, long studyId) throws CatalogException {
+        if (StringUtils.isNumeric(jobName)) {
+            long jobId = Long.parseLong(jobName);
+            if (jobId > configuration.getCatalog().getOffset()) {
+                jobDBAdaptor.exists(jobId);
+                return jobId;
+            }
+        }
+
+        Query query = new Query()
+                .append(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(JobDBAdaptor.QueryParams.NAME.key(), jobName);
+        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, JobDBAdaptor.QueryParams.ID.key());
+        QueryResult<Job> queryResult = jobDBAdaptor.get(query, qOptions);
+
+        if (queryResult.getNumResults() > 1) {
+            throw new CatalogException("Error: More than one job id found based on " + jobName);
+        } else if (queryResult.getNumResults() == 0) {
+            throw new CatalogException("Error: No job found based on " + jobName);
+        } else {
+            return queryResult.first().getId();
+        }
+    }
+
+    @Override
+    @Deprecated
     public Long getId(String userId, String jobStr) throws CatalogException {
         if (StringUtils.isNumeric(jobStr)) {
             return Long.parseLong(jobStr);
@@ -204,7 +287,6 @@ public class JobManager extends AbstractManager implements IJobManager {
         // Update queryResult info
         jobAclQueryResult.setId(jobStr);
         jobAclQueryResult.setNumResults(jobAclList.size());
-        jobAclQueryResult.setNumTotalResults(jobAclList.size());
         jobAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
         jobAclQueryResult.setResult(jobAclList);
 
@@ -216,37 +298,6 @@ public class JobManager extends AbstractManager implements IJobManager {
         String userId = userManager.getId(sessionId);
         authorizationManager.checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.VIEW);
         return jobDBAdaptor.incJobVisits(jobId);
-    }
-
-    @Deprecated
-    @Override
-    public QueryResult<Job> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(objectMap, "objectMap");
-        try {
-
-            return create(
-                    objectMap.getLong("studyId"),
-                    objectMap.getString("name"),
-                    objectMap.getString("toolName"),
-                    objectMap.getString("description"),
-                    objectMap.getString("execution"),
-                    Collections.emptyMap(),
-                    objectMap.getString("commandLine"),
-                    objectMap.containsKey("tmpOutDirUri") ? new URI(null, objectMap.getString("tmpOutDirUri"), null) : null,
-                    objectMap.getLong("outDirId"),
-                    objectMap.getAsLongList("inputFiles"),
-                    objectMap.getAsLongList("outputFiles"),
-                    objectMap.getMap("attributes"),
-                    objectMap.getMap("resourceManagerAttributes"),
-                    new Job.JobStatus(options.getString("status")),
-                    objectMap.getLong("startTime"),
-                    objectMap.getLong("endTime"),
-                    options,
-                    sessionId
-            );
-        } catch (URISyntaxException e) {
-            throw new CatalogException(e);
-        }
     }
 
     @Override
@@ -264,12 +315,12 @@ public class JobManager extends AbstractManager implements IJobManager {
         inputFiles = ParamUtils.defaultObject(inputFiles, Collections.<Long>emptyList());
         outputFiles = ParamUtils.defaultObject(outputFiles, Collections.<Long>emptyList());
 
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_JOBS);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
 
         // FIXME check inputFiles? is a null conceptually valid?
 //        URI tmpOutDirUri = createJobOutdir(studyId, randomString, sessionId);
 
-        authorizationManager.checkFilePermission(outDirId, userId, FileAclEntry.FilePermissions.CREATE);
+        authorizationManager.checkFilePermission(outDirId, userId, FileAclEntry.FilePermissions.WRITE);
         for (Long inputFile : inputFiles) {
             authorizationManager.checkFilePermission(inputFile, userId, FileAclEntry.FilePermissions.VIEW);
         }
@@ -363,45 +414,76 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public List<QueryResult<Job>> delete(String jobIdStr, QueryOptions options, String sessionId) throws CatalogException, IOException {
+    public List<QueryResult<Job>> delete(String jobIdStr, @Nullable String studyStr, QueryOptions options, String sessionId)
+            throws CatalogException, IOException {
         ParamUtils.checkParameter(jobIdStr, "id");
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
+//        options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        boolean deleteFiles = options.getBoolean(DELETE_FILES);
-        options.remove(DELETE_FILES);
+//        boolean deleteFiles = options.getBoolean(DELETE_FILES);
+//        options.remove(DELETE_FILES);
 
-        String userId = userManager.getId(sessionId);
-        List<Long> jobIds = getIds(userId, jobIdStr);
+        MyResourceIds resourceIds = getIds(jobIdStr, studyStr, sessionId);
+        String userId = resourceIds.getUser();
 
-        List<QueryResult<Job>> queryResultList = new ArrayList<>(jobIds.size());
-        for (Long jobId : jobIds) {
+        List<QueryResult<Job>> queryResultList = new ArrayList<>(resourceIds.getResourceIds().size());
+        for (Long jobId : resourceIds.getResourceIds()) {
             QueryResult<Job> queryResult = null;
             try {
                 authorizationManager.checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.DELETE);
-                queryResult = jobDBAdaptor.delete(jobId, options);
-                auditManager.recordDeletion(AuditRecord.Resource.job, jobId, userId, queryResult.first(), null, null);
+
+                QueryResult<Job> jobQueryResult = jobDBAdaptor.get(jobId, QueryOptions.empty());
+                if (jobQueryResult.first().getOutput() != null && jobQueryResult.first().getOutput().size() > 0) {
+                    throw new CatalogException("The job created " + jobQueryResult.first().getOutput().size() + " files. Please, delete "
+                            + "them first.");
+                }
+
+                switch (jobQueryResult.first().getStatus().getName()) {
+                    case Job.JobStatus.TRASHED:
+                    case Job.JobStatus.DELETED:
+                        throw new CatalogException("The job {" + jobId + "} was already " + jobQueryResult.first().getStatus().getName());
+                    case Job.JobStatus.PREPARED:
+                    case Job.JobStatus.RUNNING:
+                    case Job.JobStatus.QUEUED:
+                        throw new CatalogException("The job {" + jobId + "} is " + jobQueryResult.first().getStatus().getName()
+                                + ". Please, stop the job before deleting it.");
+                    case Job.JobStatus.DONE:
+                    case Job.JobStatus.ERROR:
+                    case Job.JobStatus.READY:
+                    default:
+                        break;
+                }
+
+                ObjectMap params = new ObjectMap()
+                        .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.DELETED);
+                queryResult = jobDBAdaptor.update(jobId, params);
+                auditManager.recordAction(AuditRecord.Resource.job, AuditRecord.Action.delete, AuditRecord.Magnitude.high, jobId, userId,
+                        jobQueryResult.first(), queryResult.first(), "", null);
+
             } catch (CatalogAuthorizationException e) {
                 auditManager.recordAction(AuditRecord.Resource.job, AuditRecord.Action.delete, AuditRecord.Magnitude.high,
                         jobId, userId, null, null, e.getMessage(), null);
                 queryResult = new QueryResult<>("Delete job " + jobId);
                 queryResult.setErrorMsg(e.getMessage());
+
             } catch (CatalogException e) {
                 e.printStackTrace();
                 queryResult = new QueryResult<>("Delete job " + jobId);
                 queryResult.setErrorMsg(e.getMessage());
+
             } finally {
                 queryResultList.add(queryResult);
             }
 
-            // Delete the output files of the job if they are not in use.
-            // 2. Check the output files that were created with the deleted jobs.
-            if (deleteFiles) {
-                Query query = new Query(FileDBAdaptor.QueryParams.ID.key(), queryResult.first().getOutput());
-                try {
-                    catalogManager.getFileManager().delete(query, new QueryOptions(), sessionId);
-                } catch (CatalogDBException e) {
-                    logger.info("Error deleting files from job { Job: " + queryResult.first() + " }:" + e.getMessage());
-                }
+            // Remove jobId references from file
+            try {
+                Query query = new Query()
+                        .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), resourceIds.getStudyId())
+                        .append(FileDBAdaptor.QueryParams.JOB_ID.key(), jobId);
+
+                ObjectMap params = new ObjectMap(FileDBAdaptor.QueryParams.JOB_ID.key(), -1);
+                fileDBAdaptor.update(query, params);
+            } catch (CatalogDBException e) {
+                logger.error("An error occurred when removing reference of job " + jobId + " from files", e);
             }
 
         }
@@ -415,7 +497,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         QueryResult<Job> jobQueryResult = jobDBAdaptor.get(query, queryOptions);
         List<Long> jobIds = jobQueryResult.getResult().stream().map(Job::getId).collect(Collectors.toList());
         String jobStr = StringUtils.join(jobIds, ",");
-        return delete(jobStr, options, sessionId);
+        return delete(jobStr, null, QueryOptions.empty(), sessionId);
     }
 
     @Override
@@ -472,39 +554,21 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public QueryResult groupBy(long studyId, Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-        ParamUtils.checkObj(field, "field");
-        ParamUtils.checkObj(studyId, "studyId");
-        ParamUtils.checkObj(sessionId, "sessionId");
-
-        String userId = userManager.getId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_JOBS);
-
-        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
-        boolean count = true;
-//        query.append(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-        QueryResult queryResult = null;
-        if (count) {
-            // We do not need to check for permissions when we show the count of files
-            queryResult = jobDBAdaptor.groupBy(query, field, options);
-        }
-
-        return ParamUtils.defaultObject(queryResult, QueryResult::new);
-    }
-
-    @Override
-    public QueryResult groupBy(long studyId, Query query, List<String> fields, QueryOptions options, String sessionId)
+    public QueryResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         ParamUtils.checkObj(fields, "fields");
-        ParamUtils.checkObj(studyId, "studyId");
-        ParamUtils.checkObj(sessionId, "sessionId");
+        if (fields == null || fields.size() == 0) {
+            throw new CatalogException("Empty fields parameter.");
+        }
 
         String userId = userManager.getId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_JOBS);
+
+        // Add study id to the query
+        query.put(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -522,7 +586,7 @@ public class JobManager extends AbstractManager implements IJobManager {
     public QueryResult<Job> queue(long studyId, String jobName, String executable, Job.Type type, Map<String, String> params,
                                   List<Long> input, List<Long> output, long outDirId, String userId, Map<String, Object> attributes)
             throws CatalogException {
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_JOBS);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
 
         Job job = new Job(jobName, userId, executable, type, input, output, outDirId, params);
         job.setAttributes(attributes);

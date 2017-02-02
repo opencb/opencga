@@ -25,9 +25,10 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -66,24 +67,10 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
     public IndividualManager(AuthorizationManager authorizationManager, AuditManager auditManager, CatalogManager catalogManager,
                              DBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                             CatalogConfiguration catalogConfiguration) {
+                             Configuration configuration) {
         super(authorizationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
-                catalogConfiguration);
+                configuration);
         this.userManager = catalogManager.getUserManager();
-    }
-
-    @Deprecated
-    @Override
-    public QueryResult<Individual> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(objectMap, "objectMap");
-        return create(
-                objectMap.getInt(IndividualDBAdaptor.QueryParams.STUDY_ID.key()),
-                objectMap.getString(IndividualDBAdaptor.QueryParams.NAME.key()),
-                objectMap.getString(IndividualDBAdaptor.QueryParams.FAMILY.key()),
-                objectMap.getInt(IndividualDBAdaptor.QueryParams.FATHER_ID.key()),
-                objectMap.getInt(IndividualDBAdaptor.QueryParams.MOTHER_ID.key()),
-                objectMap.get(IndividualDBAdaptor.QueryParams.SEX.key(), Individual.Sex.class), "", "", "", "", "", "", "",
-                Individual.KaryotypicSex.UNKNOWN, Individual.LifeStatus.UNKNOWN, Individual.AffectationStatus.UNKNOWN, options, sessionId);
     }
 
     @Override
@@ -95,7 +82,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                                           QueryOptions options, String sessionId) throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         sex = ParamUtils.defaultObject(sex, Individual.Sex.UNKNOWN);
-        ParamUtils.checkAlias(name, "name");
+        logger.info(Long.toString(configuration.getCatalog().getOffset()));
+        ParamUtils.checkAlias(name, "name", configuration.getCatalog().getOffset());
         family = ParamUtils.defaultObject(family, "");
         ethnicity = ParamUtils.defaultObject(ethnicity, "");
         speciesCommonName = ParamUtils.defaultObject(speciesCommonName, "");
@@ -109,7 +97,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         affectationStatus = ParamUtils.defaultObject(affectationStatus, Individual.AffectationStatus.UNKNOWN);
 
         String userId = userManager.getId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_INDIVIDUALS);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_INDIVIDUALS);
 
         Individual individual = new Individual(0, name, fatherId, motherId,
                 family, sex, karyotypicSex, ethnicity, new Individual.Species(speciesCommonName, speciesScientificName,
@@ -133,7 +121,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         String userId = userManager.getId(sessionId);
         authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.VIEW);
         QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(individualId, options);
-        long studyId = individualDBAdaptor.getStudyIdByIndividualId(individualId);
+        long studyId = individualDBAdaptor.getStudyId(individualId);
         authorizationManager.filterIndividuals(userId, studyId, individualQueryResult.getResult());
         individualQueryResult.setNumResults(individualQueryResult.getResult().size());
         return individualQueryResult;
@@ -305,7 +293,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         // Update queryResult info
         individualAclQueryResult.setId(individualStr);
         individualAclQueryResult.setNumResults(individualAclList.size());
-        individualAclQueryResult.setNumTotalResults(individualAclList.size());
         individualAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
         individualAclQueryResult.setResult(individualAclList);
 
@@ -314,7 +301,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
     @Override
     public Long getStudyId(long individualId) throws CatalogException {
-        return individualDBAdaptor.getStudyIdByIndividualId(individualId);
+        return individualDBAdaptor.getStudyId(individualId);
     }
 
     @Override
@@ -360,6 +347,113 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     }
 
     @Override
+    public MyResourceId getId(String individualStr, @Nullable String studyStr, String sessionId) throws CatalogException {
+        if (StringUtils.isEmpty(individualStr)) {
+            throw new CatalogException("Missing individual parameter");
+        }
+
+        String userId;
+        long studyId;
+        long individualId;
+
+        if (StringUtils.isNumeric(individualStr) && Long.parseLong(individualStr) > configuration.getCatalog().getOffset()) {
+            individualId = Long.parseLong(individualStr);
+            individualDBAdaptor.exists(individualId);
+            studyId = individualDBAdaptor.getStudyId(individualId);
+            userId = userManager.getId(sessionId);
+        } else {
+            if (individualStr.contains(",")) {
+                throw new CatalogException("More than one individual found");
+            }
+
+            userId = userManager.getId(sessionId);
+            studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+            Query query = new Query()
+                    .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(IndividualDBAdaptor.QueryParams.NAME.key(), individualStr);
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
+            QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
+            if (individualQueryResult.getNumResults() == 1) {
+                individualId = individualQueryResult.first().getId();
+            } else {
+                if (individualQueryResult.getNumResults() == 0) {
+                    throw new CatalogException("Individual " + individualStr + " not found in study " + studyStr);
+                } else {
+                    throw new CatalogException("More than one individual found under " + individualStr + " in study " + studyStr);
+                }
+            }
+        }
+
+        return new MyResourceId(userId, studyId, individualId);
+    }
+
+    @Override
+    public MyResourceIds getIds(String individualStr, @Nullable String studyStr, String sessionId) throws CatalogException {
+        if (StringUtils.isEmpty(individualStr)) {
+            throw new CatalogException("Missing individual parameter");
+        }
+
+        String userId;
+        long studyId;
+        List<Long> individualIds;
+
+        if (StringUtils.isNumeric(individualStr) && Long.parseLong(individualStr) > configuration.getCatalog().getOffset()) {
+            individualIds = Arrays.asList(Long.parseLong(individualStr));
+            individualDBAdaptor.exists(individualIds.get(0));
+            studyId = individualDBAdaptor.getStudyId(individualIds.get(0));
+            userId = userManager.getId(sessionId);
+        } else {
+            userId = userManager.getId(sessionId);
+            studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
+            List<String> individualSplit = Arrays.asList(individualStr.split(","));
+            Query query = new Query()
+                    .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(IndividualDBAdaptor.QueryParams.NAME.key(), individualSplit);
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, IndividualDBAdaptor.QueryParams.ID.key());
+            QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
+            if (individualQueryResult.getNumResults() == individualSplit.size()) {
+                individualIds = individualQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList());
+            } else {
+                throw new CatalogException("Found only " + individualQueryResult.getNumResults() + " out of the " + individualSplit.size()
+                        + " individuals looked for in study " + studyStr);
+            }
+        }
+
+        return new MyResourceIds(userId, studyId, individualIds);
+    }
+
+    @Override
+    public QueryResult<Individual> search(String studyStr, Query query, QueryOptions options, String sessionId) throws CatalogException {
+        String userId = userManager.getId(sessionId);
+        List<Long> studyIds = catalogManager.getStudyManager().getIds(userId, studyStr);
+
+        // Check any permission in studies
+        for (Long studyId : studyIds) {
+            authorizationManager.memberHasPermissionsInStudy(studyId, userId);
+        }
+
+        QueryResult<Individual> queryResult = null;
+        for (Long studyId : studyIds) {
+            query.append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+            QueryResult<Individual> queryResultAux = individualDBAdaptor.get(query, options);
+            authorizationManager.filterIndividuals(userId, studyId, queryResultAux.getResult());
+
+            if (queryResult == null) {
+                queryResult = queryResultAux;
+            } else {
+                queryResult.getResult().addAll(queryResultAux.getResult());
+                queryResult.setNumTotalResults(queryResult.getNumTotalResults() + queryResultAux.getNumTotalResults());
+                queryResult.setDbTime(queryResult.getDbTime() + queryResultAux.getDbTime());
+            }
+        }
+        queryResult.setNumResults(queryResult.getResult().size());
+
+        return queryResult;
+    }
+
+    @Override
     @Deprecated
     public QueryResult<AnnotationSet> annotate(long individualId, String annotationSetName, long variableSetId, Map<String, Object>
             annotations, Map<String, Object> attributes, String sessionId) throws CatalogException {
@@ -368,7 +462,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
         String userId = userManager.getId(sessionId);
-        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.CREATE_ANNOTATIONS);
+        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS);
 
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
 
@@ -400,7 +494,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         ParamUtils.checkObj(newAnnotations, "newAnnotations");
 
         String userId = userManager.getId(sessionId);
-        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.UPDATE_ANNOTATIONS);
+        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS);
 
         QueryOptions queryOptions = new QueryOptions("include", "projects.studies.individuals.annotationSets");
 
@@ -442,19 +536,6 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     }
 
     @Override
-    @Deprecated
-    public QueryResult<AnnotationSet> deleteAnnotation(long individualId, String annotationId, String sessionId) throws CatalogException {
-        String userId = userManager.getId(sessionId);
-
-        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.DELETE_ANNOTATIONS);
-
-        QueryResult<AnnotationSet> queryResult = individualDBAdaptor.deleteAnnotation(individualId, annotationId);
-        auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId,
-                new ObjectMap("annotationSets", queryResult.first()), "deleteAnnotation", null);
-        return queryResult;
-    }
-
-    @Override
     public QueryResult<Individual> update(Long individualId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.defaultObject(parameters, QueryOptions::new);
@@ -467,6 +548,14 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
             IndividualDBAdaptor.QueryParams queryParam = IndividualDBAdaptor.QueryParams.getParam(param.getKey());
             switch (queryParam) {
                 case NAME:
+                    String myName = parameters.getString(IndividualDBAdaptor.QueryParams.NAME.key());
+                    long studyId = individualDBAdaptor.getStudyId(individualId);
+                    Query query = new Query()
+                            .append(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                            .append(IndividualDBAdaptor.QueryParams.NAME.key(), myName);
+                    if (individualDBAdaptor.count(query).first() > 0) {
+                        throw new CatalogException("Individual name " + myName + " already in use");
+                    }
                 case FATHER_ID:
                 case MOTHER_ID:
                 case FAMILY:
@@ -495,21 +584,51 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     }
 
     @Override
-    public List<QueryResult<Individual>> delete(String individualIdStr, QueryOptions options, String sessionId)
+    public List<QueryResult<Individual>> delete(String individualIdStr, @Nullable String studyStr, QueryOptions options, String sessionId)
             throws CatalogException, IOException {
         ParamUtils.checkParameter(individualIdStr, "id");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        String userId = userManager.getId(sessionId);
-        List<Long> individualIds = getIds(userId, individualIdStr);
+        MyResourceIds resourceId = getIds(individualIdStr, studyStr, sessionId);
+        List<Long> individualIds = resourceId.getResourceIds();
+        String userId = resourceId.getUser();
 
         List<QueryResult<Individual>> queryResultList = new ArrayList<>(individualIds.size());
         for (Long individualId : individualIds) {
             QueryResult<Individual> queryResult = null;
             try {
                 authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.DELETE);
-                queryResult = individualDBAdaptor.delete(individualId, options);
-                auditManager.recordDeletion(AuditRecord.Resource.individual, individualId, userId, queryResult.first(), null, null);
+
+                // We can delete an individual if their samples can be deleted
+                // We obtain the samples associated to the individual and check if those can be deleted
+                Query query = new Query()
+                        .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId())
+                        .append(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
+                QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
+                QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, queryOptions);
+
+                if (sampleQueryResult.getNumResults() > 0) {
+                    List<Long> sampleIds = sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList());
+                    MyResourceIds sampleResource = new MyResourceIds(resourceId.getUser(), resourceId.getStudyId(), sampleIds);
+                    // FIXME:
+                    // We are first checking and deleting later because that delete method does not check if all the samples can be deleted
+                    // directly. Instead, it makes a loop and checks one by one. Changes should be done there.
+                    catalogManager.getSampleManager().checkCanDeleteSamples(sampleResource);
+                    catalogManager.getSampleManager().delete(StringUtils.join(sampleIds, ","),
+                            Long.toString(resourceId.getStudyId()), QueryOptions.empty(), sessionId);
+                }
+
+                // Get the individual info before the update
+                QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(individualId, QueryOptions.empty());
+
+                String newIndividualName = individualQueryResult.first().getName() + ".DELETED_" + TimeUtils.getTime();
+                ObjectMap updateParams = new ObjectMap()
+                        .append(IndividualDBAdaptor.QueryParams.NAME.key(), newIndividualName)
+                        .append(IndividualDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
+                queryResult = individualDBAdaptor.update(individualId, updateParams);
+
+                auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.delete, AuditRecord.Magnitude.high,
+                        individualId, resourceId.getUser(), individualQueryResult.first(), queryResult.first(), "", null);
             } catch (CatalogAuthorizationException e) {
                 auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.delete, AuditRecord.Magnitude.high,
                         individualId, userId, null, null, e.getMessage(), null);
@@ -533,7 +652,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
         List<Long> individualIds = individualQueryResult.getResult().stream().map(Individual::getId).collect(Collectors.toList());
         String individualStr = StringUtils.join(individualIds, ",");
-        return delete(individualStr, options, sessionId);
+        return delete(individualStr, null, options, sessionId);
     }
 
     @Override
@@ -560,40 +679,18 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     }
 
     @Override
-    public QueryResult groupBy(long studyId, Query query, String field, QueryOptions options, String sessionId)
-            throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-        ParamUtils.checkObj(field, "field");
-        ParamUtils.checkObj(studyId, "studyId");
-        ParamUtils.checkObj(sessionId, "sessionId");
-
-        String userId = userManager.getId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
-
-        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
-        boolean count = true;
-//        query.append(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-        QueryResult queryResult = null;
-        if (count) {
-            // We do not need to check for permissions when we show the count of files
-            queryResult = individualDBAdaptor.groupBy(query, field, options);
-        }
-
-        return ParamUtils.defaultObject(queryResult, QueryResult::new);
-    }
-
-    @Override
-    public QueryResult groupBy(long studyId, Query query, List<String> fields, QueryOptions options, String sessionId)
+    public QueryResult groupBy(@Nullable String studyStr, Query query, List<String> fields, QueryOptions options, String sessionId)
             throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         ParamUtils.checkObj(fields, "fields");
-        ParamUtils.checkObj(studyId, "studyId");
-        ParamUtils.checkObj(sessionId, "sessionId");
 
         String userId = userManager.getId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS);
+
+        // Add study id to the query
+        query.put(IndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -607,84 +704,87 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
+    private long commonGetAllInvidualSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
+        MyResourceId resource = getId(id, studyStr, sessionId);
+        authorizationManager.checkIndividualPermission(resource.getResourceId(), resource.getUser(),
+                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
+        return resource.getResourceId();
+    }
+
+    private long commonGetAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
+            throws CatalogException {
+        ParamUtils.checkAlias(annotationSetName, "annotationSetName", configuration.getCatalog().getOffset());
+        MyResourceId resource = getId(id, studyStr, sessionId);
+        authorizationManager.checkIndividualPermission(resource.getResourceId(), resource.getUser(),
+                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
+        return resource.getResourceId();
+    }
+
     @Override
-    public QueryResult<AnnotationSet> createAnnotationSet(String id, long variableSetId, String annotationSetName,
-                                                          Map<String, Object> annotations, Map<String, Object> attributes,
-                                                          String sessionId) throws CatalogException {
+    public QueryResult<AnnotationSet> createAnnotationSet(String id, @Nullable String studyStr, long variableSetId,
+                                                          String annotationSetName, Map<String, Object> annotations,
+                                                          Map<String, Object> attributes, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
         ParamUtils.checkObj(annotations, "annotations");
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
-        String userId = userManager.getId(sessionId);
-        long individualId = getId(userId, id);
-        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.CREATE_ANNOTATIONS);
+        MyResourceId resource = catalogManager.getIndividualManager().getId(id, studyStr, sessionId);
+        authorizationManager.checkIndividualPermission(resource.getResourceId(), resource.getUser(),
+                IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS);
 
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
 
-        QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(individualId, variableSet, annotationSetName,
-                annotations, attributes, individualDBAdaptor);
+        QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(resource.getResourceId(), variableSet,
+                annotationSetName, annotations, attributes, individualDBAdaptor);
 
-        auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId,
+        auditManager.recordUpdate(AuditRecord.Resource.individual, resource.getResourceId(), resource.getUser(),
                 new ObjectMap("annotationSets", annotationSet.first()), "annotate", null);
 
         return annotationSet;
     }
 
     @Override
-    public QueryResult<AnnotationSet> getAllAnnotationSets(String id, String sessionId) throws CatalogException {
-        long individualId = commonGetAllInvidualSets(id, sessionId);
+    public QueryResult<AnnotationSet> getAllAnnotationSets(String id, @Nullable String studyStr, String sessionId) throws CatalogException {
+        long individualId = commonGetAllInvidualSets(id, studyStr, sessionId);
         return individualDBAdaptor.getAnnotationSet(individualId, null);
     }
 
     @Override
-    public QueryResult<ObjectMap> getAllAnnotationSetsAsMap(String id, String sessionId) throws CatalogException {
-        long individualId = commonGetAllInvidualSets(id, sessionId);
+    public QueryResult<ObjectMap> getAllAnnotationSetsAsMap(String id, @Nullable String studyStr, String sessionId)
+            throws CatalogException {
+        long individualId = commonGetAllInvidualSets(id, studyStr, sessionId);
         return individualDBAdaptor.getAnnotationSetAsMap(individualId, null);
     }
 
-    private long commonGetAllInvidualSets(String id, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(id, "id");
-        String userId = userManager.getId(sessionId);
-        long individualId = getId(userId, id);
-        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
-        return individualId;
-    }
-
     @Override
-    public QueryResult<AnnotationSet> getAnnotationSet(String id, String annotationSetName, String sessionId) throws CatalogException {
-        long individualId = commonGetAnnotationSet(id, annotationSetName, sessionId);
+    public QueryResult<AnnotationSet> getAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
+            throws CatalogException {
+        long individualId = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
         return individualDBAdaptor.getAnnotationSet(individualId, annotationSetName);
     }
 
     @Override
-    public QueryResult<ObjectMap> getAnnotationSetAsMap(String id, String annotationSetName, String sessionId) throws CatalogException {
-        long individualId = commonGetAnnotationSet(id, annotationSetName, sessionId);
+    public QueryResult<ObjectMap> getAnnotationSetAsMap(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
+            throws CatalogException {
+        long individualId = commonGetAnnotationSet(id, studyStr, annotationSetName, sessionId);
         return individualDBAdaptor.getAnnotationSetAsMap(individualId, annotationSetName);
     }
 
-    private long commonGetAnnotationSet(String id, String annotationSetName, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(id, "id");
-        ParamUtils.checkAlias(annotationSetName, "annotationSetName");
-        String userId = userManager.getId(sessionId);
-        long individualId = getId(userId, id);
-        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
-        return individualId;
-    }
-
     @Override
-    public QueryResult<AnnotationSet> updateAnnotationSet(String id, String annotationSetName, Map<String, Object> newAnnotations,
-                                                          String sessionId) throws CatalogException {
+    public QueryResult<AnnotationSet> updateAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, Map<String,
+                Object> newAnnotations, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
         ParamUtils.checkObj(newAnnotations, "newAnnotations");
 
-        String userId = userManager.getId(sessionId);
-        long individualId = getId(userId, id);
-        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.UPDATE_ANNOTATIONS);
+        MyResourceId resource = getId(id, studyStr, sessionId);
+        authorizationManager.checkIndividualPermission(resource.getResourceId(), resource.getUser(),
+                IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS);
 
         // Update the annotation
         QueryResult<AnnotationSet> queryResult =
-                AnnotationManager.updateAnnotationSet(individualId, annotationSetName, newAnnotations, individualDBAdaptor, studyDBAdaptor);
+                AnnotationManager.updateAnnotationSet(resource.getResourceId(), annotationSetName, newAnnotations, individualDBAdaptor,
+                        studyDBAdaptor);
 
         if (queryResult == null || queryResult.getNumResults() == 0) {
             throw new CatalogException("There was an error with the update");
@@ -697,39 +797,40 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                 newAnnotations.entrySet().stream()
                         .map(entry -> new Annotation(entry.getKey(), entry.getValue()))
                         .collect(Collectors.toSet()), annotationSet.getCreationDate(), null);
-        auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, new ObjectMap("annotationSets",
-                Collections.singletonList(annotationSetUpdate)), "update annotation", null);
+        auditManager.recordUpdate(AuditRecord.Resource.individual, resource.getResourceId(), resource.getUser(),
+                new ObjectMap("annotationSets", Collections.singletonList(annotationSetUpdate)), "update annotation", null);
 
         return queryResult;
     }
 
     @Override
-    public QueryResult<AnnotationSet> deleteAnnotationSet(String id, String annotationSetName, String sessionId) throws CatalogException {
+    public QueryResult<AnnotationSet> deleteAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
+            throws CatalogException {
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
 
-        String userId = userManager.getId(sessionId);
-        long individualId = getId(userId, id);
-        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.DELETE_ANNOTATIONS);
+        MyResourceId resource = getId(id, studyStr, sessionId);
+        authorizationManager.checkIndividualPermission(resource.getResourceId(), resource.getUser(),
+                IndividualAclEntry.IndividualPermissions.DELETE_ANNOTATIONS);
 
-        QueryResult<AnnotationSet> annotationSet = individualDBAdaptor.getAnnotationSet(individualId, annotationSetName);
+        QueryResult<AnnotationSet> annotationSet = individualDBAdaptor.getAnnotationSet(resource.getResourceId(), annotationSetName);
         if (annotationSet == null || annotationSet.getNumResults() == 0) {
             throw new CatalogException("Could not delete annotation set. The annotation set with name " + annotationSetName + " could not "
                     + "be found in the database.");
         }
 
-        individualDBAdaptor.deleteAnnotationSet(individualId, annotationSetName);
+        individualDBAdaptor.deleteAnnotationSet(resource.getResourceId(), annotationSetName);
 
-        auditManager.recordDeletion(AuditRecord.Resource.individual, individualId, userId, new ObjectMap("annotationSets",
-                Collections.singletonList(annotationSet.first())), "delete annotation", null);
+        auditManager.recordDeletion(AuditRecord.Resource.individual, resource.getResourceId(), resource.getUser(),
+                new ObjectMap("annotationSets", Collections.singletonList(annotationSet.first())), "delete annotation", null);
 
         return annotationSet;
     }
 
     @Override
-    public QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, long variableSetId, @Nullable String annotation, String sessionId)
-            throws CatalogException {
-        QueryResult<Individual> individualQueryResult = commonSearchAnnotationSet(id, variableSetId, annotation, sessionId);
+    public QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, @Nullable String studyStr, long variableSetId,
+                                                           @Nullable String annotation, String sessionId) throws CatalogException {
+        QueryResult<Individual> individualQueryResult = commonSearchAnnotationSet(id, studyStr, variableSetId, annotation, sessionId);
         List<ObjectMap> annotationSets;
 
         if (individualQueryResult == null || individualQueryResult.getNumResults() == 0) {
@@ -743,9 +844,9 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     }
 
     @Override
-    public QueryResult<AnnotationSet> searchAnnotationSet(String id, long variableSetId, @Nullable String annotation,
-                                                          String sessionId) throws CatalogException {
-        QueryResult<Individual> individualQueryResult = commonSearchAnnotationSet(id, variableSetId, annotation, sessionId);
+    public QueryResult<AnnotationSet> searchAnnotationSet(String id, @Nullable String studyStr, long variableSetId,
+                                                          @Nullable String annotation, String sessionId) throws CatalogException {
+        QueryResult<Individual> individualQueryResult = commonSearchAnnotationSet(id, studyStr, variableSetId, annotation, sessionId);
         List<AnnotationSet> annotationSets;
 
         if (individualQueryResult == null || individualQueryResult.getNumResults() == 0) {
@@ -758,13 +859,13 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                 individualQueryResult.getWarningMsg(), individualQueryResult.getErrorMsg(), annotationSets);
     }
 
-    private QueryResult<Individual> commonSearchAnnotationSet(String id, long variableSetId, @Nullable String annotation, String sessionId)
-            throws CatalogException {
+    private QueryResult<Individual> commonSearchAnnotationSet(String id, @Nullable String studyStr, long variableSetId,
+                                                              @Nullable String annotation, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(id, "id");
 
-        String userId = userManager.getId(sessionId);
-        long individualId = getId(userId, id);
-        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
+        MyResourceId resource = getId(id, studyStr, sessionId);
+        authorizationManager.checkIndividualPermission(resource.getResourceId(), resource.getUser(),
+                IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
 
         Query query = new Query(IndividualDBAdaptor.QueryParams.ID.key(), id);
 

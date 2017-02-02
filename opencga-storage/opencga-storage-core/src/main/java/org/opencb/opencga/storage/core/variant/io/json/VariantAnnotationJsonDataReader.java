@@ -92,7 +92,7 @@ public class VariantAnnotationJsonDataReader implements DataReader<VariantAnnota
                 batch.add(parser.readValueAs(VariantAnnotation.class));
                 readsCounter++;
                 if (readsCounter % 1000 == 0) {
-                    logger.info("Element {}", readsCounter);
+                    logger.debug("Element {}", readsCounter);
                 }
             }
         } catch (IOException e) {

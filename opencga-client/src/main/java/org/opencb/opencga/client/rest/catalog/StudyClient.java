@@ -69,6 +69,7 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
         if (params.containsKey("method")) {
             if (params.get("method").equals("GET")) {
                 params = addParamsToObjectMap(params, "projectId", projectId, "name", studyName, "alias", studyAlias);
+                params.remove("method");
                 return execute(STUDY_URL, "create", params, GET, Study.class);
             } else {
                 params.remove("method");
@@ -78,7 +79,7 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
         ObjectMapper mapper = new ObjectMapper();
         String json = "[" + mapper.writeValueAsString(params) + "]";
         //String json = mapper.writeValueAsString(params);
-        System.out.println("Json: " + json);
+//        System.out.println("Json: " + json);
         ObjectMap p = new ObjectMap("body", json);
         p = addParamsToObjectMap(p, "projectId", projectId);
         return execute(STUDY_URL, "create", p, POST, Study.class);
@@ -96,7 +97,7 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
         }
         ObjectMapper mapper = new ObjectMapper();
         String json = mapper.writeValueAsString(query);
-        System.out.println("Json: " + json);
+//        System.out.println("Json: " + json);
         ObjectMap p = new ObjectMap("body", json);
         p.putAll(options);
         return execute(category, "search", p, POST, clazz);
@@ -179,9 +180,10 @@ public class StudyClient extends CatalogClient<Study, StudyAclEntry> {
         return execute(STUDY_URL, studyId, "groups", groupId, "info", objectMap, GET, ObjectMap.class);
     }
 
-    public QueryResponse<Study> update(String studyId, ObjectMap params) throws CatalogException, IOException {
+    public QueryResponse<Study> update(String studyId, String study, ObjectMap params) throws CatalogException, IOException {
         if (params.containsKey("method")) {
             if (params.get("method").equals("GET")) {
+                params.remove("method");
                 return execute(STUDY_URL, studyId, "update", params, GET, Study.class);
             }
         }

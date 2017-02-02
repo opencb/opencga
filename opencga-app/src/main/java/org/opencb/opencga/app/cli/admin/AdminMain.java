@@ -78,13 +78,13 @@ public class AdminMain {
                             commandExecutor = new ServerCommandExecutor(cliOptionsParser.getServerCommandOptions());
                             break;
                         default:
-                            System.out.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
+                            System.out.printf(String.format("ERROR: not valid command passed: '%s'", parsedCommand));
                             break;
                     }
 
                     if (commandExecutor != null) {
                         try {
-                            commandExecutor.loadCatalogConfiguration();
+                            commandExecutor.loadConfiguration();
                         } catch (IOException ex) {
                             if (commandExecutor.getLogger() == null) {
                                 ex.printStackTrace();

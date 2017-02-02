@@ -36,15 +36,15 @@ import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.exceptions.StorageETLException;
+import org.opencb.opencga.storage.core.StoragePipelineResult;
+import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.io.VariantVcfExporter;
+import org.opencb.opencga.storage.core.variant.io.VariantVcfDataWriter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
@@ -65,6 +65,7 @@ import java.util.stream.IntStream;
 
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
+import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariants;
 import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariantsFromArchiveTable;
 import static org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils.printVariantsFromVariantsTable;
 
@@ -85,7 +86,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
     @Before
     public void setUp() throws Exception {
-        HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
+        HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
         clearDB(variantStorageManager.getVariantTableName(DB_NAME));
         clearDB(variantStorageManager.getArchiveTableName(STUDY_ID));
         //Force HBaseConverter to fail if something goes wrong
@@ -107,7 +108,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     public VariantSource loadFile(String resourceName, int fileId, StudyConfiguration studyConfiguration,
                                   Map<? extends String, ?> otherParams, boolean doTransform, boolean loadArchive, boolean loadVariant)
             throws Exception {
-        return VariantHbaseTestUtils.loadFile(getVariantStorageManager(), DB_NAME, outputUri, resourceName, fileId, studyConfiguration,
+        return VariantHbaseTestUtils.loadFile(getVariantStorageEngine(), DB_NAME, outputUri, resourceName, fileId, studyConfiguration,
                 otherParams, doTransform, loadArchive, loadVariant);
     }
 
@@ -115,14 +116,15 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     public void testTwoFiles() throws Exception {
 
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
-        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor(DB_NAME);
         VariantSource source1 = loadFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
         checkArchiveTableTimeStamp(dbAdaptor);
 
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         VariantSource source2 = loadFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());
         checkArchiveTableTimeStamp(dbAdaptor);
-        printVariantsFromArchiveTable(dbAdaptor, studyConfiguration);
+//        printVariantsFromArchiveTable(dbAdaptor, studyConfiguration);
+        printVariants(studyConfiguration, dbAdaptor, newOutputUri());
 
 
         checkLoadedFilesS1S2(studyConfiguration, dbAdaptor);
@@ -133,24 +135,24 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     public void testTwoFilesConcurrent() throws Exception {
 
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
-        HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
+        HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
         ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
-        options.put(HadoopVariantStorageManager.HADOOP_LOAD_DIRECT, true);
-        options.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "proto");
-        options.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
-        options.put(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
-        options.put(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
+        options.put(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true);
+        options.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto");
+        options.put(VariantStorageEngine.Options.DB_NAME.key(), DB_NAME);
+        options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
+        options.put(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
 
         List<URI> inputFiles = Arrays.asList(getResourceUri("s1.genome.vcf"), getResourceUri("s2.genome.vcf"));
-        List<StorageETLResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
+        List<StoragePipelineResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
 
 
         VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
 
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
 
-        for (StorageETLResult storageETLResult : index) {
-            System.out.println(storageETLResult);
+        for (StoragePipelineResult storagePipelineResult : index) {
+            System.out.println(storagePipelineResult);
         }
 
         try(PrintStream out = new PrintStream(new FileOutputStream(outputUri.resolve("s1-2.merged.archive.json").getPath()))){
@@ -171,15 +173,15 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         List<URI> protoFiles = new LinkedList<>();
 
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
-        HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
+        HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
         ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
-        options.put(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, false);
-        options.put(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, false);
-        options.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "proto");
-        options.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
-        options.put(VariantStorageManager.Options.STUDY_ID.key(), STUDY_ID);
-        options.put(VariantStorageManager.Options.STUDY_NAME.key(), STUDY_NAME);
-        options.put(VariantStorageManager.Options.FILE_ID.key(), -1);
+        options.put(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE, false);
+        options.put(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT, false);
+        options.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto");
+        options.put(VariantStorageEngine.Options.DB_NAME.key(), DB_NAME);
+        options.put(VariantStorageEngine.Options.STUDY_ID.key(), STUDY_ID);
+        options.put(VariantStorageEngine.Options.STUDY_NAME.key(), STUDY_NAME);
+        options.put(VariantStorageEngine.Options.FILE_ID.key(), -1);
 
         List<URI> inputFiles = new LinkedList<>();
 
@@ -187,7 +189,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         for (int fileId = 12877; fileId <= 12879; fileId++) {
             String fileName = "platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz";
 //            inputFiles.add(getResourceUri(fileName));
-            List<StorageETLResult> results = variantStorageManager.index(Collections.singletonList(getResourceUri(fileName)), outputUri, true, true, false);
+            List<StoragePipelineResult> results = variantStorageManager.index(Collections.singletonList(getResourceUri(fileName)), outputUri, true, true, false);
             protoFiles.add(results.get(0).getTransformResult());
 
         }
@@ -196,12 +198,12 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
         protoFiles = protoFiles.subList(0,2); // TODO remove
 
-        options.put(HadoopVariantStorageManager.HADOOP_LOAD_DIRECT, true);
-        options.put(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, true);
-        options.put(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, false);
-        options.put(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT_PENDING_FILES, Arrays.asList(5,6,7));
+        options.put(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true);
+        options.put(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE, true);
+        options.put(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT, false);
+        options.put(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_PENDING_FILES, Arrays.asList(5,6,7));
 
-        List<StorageETLResult> index2 = variantStorageManager.index(protoFiles, outputUri, false, false, true);
+        List<StoragePipelineResult> index2 = variantStorageManager.index(protoFiles, outputUri, false, false, true);
 
         System.out.println(index2);
 
@@ -219,7 +221,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     public void testMultipleFilesConcurrent(boolean specificput) throws Exception {
 
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
-        HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
+        HadoopVariantStorageEngine variantStorageManager = getVariantStorageEngine();
         VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
 
         List<URI> inputFiles = new LinkedList<>();
@@ -230,16 +232,16 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         }
 
         ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
-        options.put(HadoopVariantStorageManager.HADOOP_LOAD_DIRECT, true);
-        options.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "proto");
-        options.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
-        options.put(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
-        options.put(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
+        options.put(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true);
+        options.put(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto");
+        options.put(VariantStorageEngine.Options.DB_NAME.key(), DB_NAME);
+        options.put(VariantStorageEngine.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
+        options.put(VariantStorageEngine.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
         options.put(AbstractVariantTableMapReduce.SPECIFIC_PUT, specificput);
-        List<StorageETLResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
+        List<StoragePipelineResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
 
-        for (StorageETLResult storageETLResult : index) {
-            System.out.println(storageETLResult);
+        for (StoragePipelineResult storagePipelineResult : index) {
+            System.out.println(storagePipelineResult);
         }
 
         try(PrintStream out = new PrintStream(new FileOutputStream(outputUri.resolve("platinum.merged.archive.json").getPath()))){
@@ -271,7 +273,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         URI outputUri = newOutputUri();
         FileStudyConfigurationManager.write(studyConfiguration, new File(outputUri.resolve("study_configuration.json").getPath()).toPath());
         try (FileOutputStream out = new FileOutputStream(outputUri.resolve("platinum.merged.vcf").getPath())) {
-            VariantVcfExporter.htsExport(dbAdaptor.iterator(), studyConfiguration, dbAdaptor.getVariantSourceDBAdaptor(),
+            VariantVcfDataWriter.htsExport(dbAdaptor.iterator(), studyConfiguration, dbAdaptor.getVariantSourceDBAdaptor(),
                     out, new QueryOptions());
         }
     }
@@ -280,12 +282,12 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
     public void testTwoFilesFailOne() throws Exception {
 
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
-        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor(DB_NAME);
         try {
             VariantSource source1 = loadFile("s1.genome.vcf", studyConfiguration,
                     Collections.singletonMap(VariantTableMapperFail.SLICE_TO_FAIL, "1_000000000011"));
             fail();
-        } catch (StorageETLException e) {
+        } catch (StoragePipelineException e) {
             HBaseStudyConfigurationManager scm = (HBaseStudyConfigurationManager) dbAdaptor.getStudyConfigurationManager();
             studyConfiguration = scm.getStudyConfiguration(STUDY_ID, new QueryOptions()).first();
             System.out.println("studyConfiguration: " + studyConfiguration);
@@ -396,10 +398,11 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         List<VariantSource> sources = new LinkedList<>();
         Set<String> expectedVariants = new HashSet<>();
 
-        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor(DB_NAME);
         HBaseStudyConfigurationManager scm = (HBaseStudyConfigurationManager) dbAdaptor.getStudyConfigurationManager();
 
 
+        int maxFilesLoaded = 3;
         for (int fileId = 12877; fileId <= 12893; fileId++) {
             VariantSource source = loadFile("platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz", fileId, studyConfiguration);
 
@@ -413,6 +416,9 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
 
 //            checkLoadedVariants(expectedVariants, dbAdaptor, PLATINUM_SKIP_VARIANTS);
             checkArchiveTableTimeStamp(dbAdaptor);
+            if (sources.size() >= maxFilesLoaded) {
+                break;
+            }
         }
 
 
@@ -434,20 +440,20 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         StudyConfiguration studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         List<VariantSource> sources = new LinkedList<>();
         Set<String> expectedVariants = new HashSet<>();
-        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor(DB_NAME);
         List<Integer> fileIds = IntStream.range(12877, 12894).mapToObj(i -> i).collect(Collectors.toList());
 
         for (Integer fileId : fileIds.subList(0,fileIds.size()-1)) {
             VariantSource source = loadFile("platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz", fileId, studyConfiguration,
-                    new ObjectMap(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, false));
+                    new ObjectMap(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT, false));
             sources.add(source);
             expectedVariants.addAll(checkArchiveTableLoadedVariants(studyConfiguration, dbAdaptor, source));
             assertFalse(studyConfiguration.getIndexedFiles().contains(fileId));
         }
         Integer fileId = fileIds.get(fileIds.size()-1);
         VariantSource source = loadFile("platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz", fileId, studyConfiguration,
-                new ObjectMap(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, true)
-                .append(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT_PENDING_FILES, StringUtils.join(fileIds, ","))
+                new ObjectMap(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT, true)
+                .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_PENDING_FILES, StringUtils.join(fileIds, ","))
         );
         sources.add(source);
         expectedVariants.addAll(checkArchiveTableLoadedVariants(studyConfiguration, dbAdaptor, source));
@@ -542,7 +548,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         HBaseStudyConfigurationManager scm = (HBaseStudyConfigurationManager) dbAdaptor.getStudyConfigurationManager();
         StudyConfiguration studyConfiguration = scm.getStudyConfiguration(STUDY_ID, new QueryOptions()).first();
 
-        String tableName = HadoopVariantStorageManager.getArchiveTableName(STUDY_ID, dbAdaptor.getConfiguration());
+        String tableName = HadoopVariantStorageEngine.getArchiveTableName(STUDY_ID, dbAdaptor.getConfiguration());
         System.out.println("Query from archive HBase " + tableName);
         HBaseManager hm = new HBaseManager(configuration.get());
 

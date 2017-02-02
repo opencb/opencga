@@ -42,6 +42,7 @@ public class StorageConfiguration {
     private CellBaseConfiguration cellbase;
     private ServerConfiguration server;
     private CacheConfiguration cache;
+    private SearchConfiguration search;
 
     private BenchmarkConfiguration benchmark;
     private List<StorageEngineConfiguration> storageEngines;
@@ -59,6 +60,7 @@ public class StorageConfiguration {
         this.cellbase = new CellBaseConfiguration();
         this.server = new ServerConfiguration();
         this.cache = new CacheConfiguration();
+        this.search = new SearchConfiguration();
     }
 
 //    /*
@@ -168,6 +170,7 @@ public class StorageConfiguration {
         sb.append(", cellbase=").append(cellbase);
         sb.append(", server=").append(server);
         sb.append(", cache=").append(cache);
+        sb.append(", search=").append(search);
         sb.append(", storageEngines=").append(storageEngines);
         sb.append('}');
         return sb.toString();
@@ -227,6 +230,15 @@ public class StorageConfiguration {
 
     public StorageConfiguration setCache(CacheConfiguration cache) {
         this.cache = cache;
+        return this;
+    }
+
+    public SearchConfiguration getSearch() {
+        return search;
+    }
+
+    public StorageConfiguration setSearch(SearchConfiguration search) {
+        this.search = search;
         return this;
     }
 

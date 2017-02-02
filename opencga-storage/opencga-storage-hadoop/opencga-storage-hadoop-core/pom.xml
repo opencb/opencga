@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage-hadoop</artifactId>
-        <version>1.0.0-rc3</version>
+        <version>1.0.0-rc4</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -30,7 +30,7 @@
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-hadoop-deps</artifactId>
-            <version>${opencga.version}-SNAPSHOT</version>
+            <version>${opencga-storage-hadoop-deps.version}</version>
             <classifier>shaded</classifier>
         </dependency>
 
@@ -87,20 +87,22 @@
             <artifactId>junit</artifactId>
             <scope>test</scope>
         </dependency>
-
-        <!--Test dependencies-->
         <dependency>
-            <groupId>org.apache.mrunit</groupId>
-            <artifactId>mrunit</artifactId>
-            <version>1.1.0</version>
-            <classifier>hadoop2</classifier>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+
 
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-hadoop-deps</artifactId>
-            <version>${opencga.version}-SNAPSHOT</version>
+            <version>${opencga-storage-hadoop-deps.version}</version>
             <classifier>tests</classifier>
             <type>test-jar</type>
             <scope>test</scope>

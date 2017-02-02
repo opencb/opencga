@@ -63,8 +63,9 @@ public class FileScannerTest {
         catalogManager = catalogManagerExternalResource.getCatalogManager();
 
         catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, null);
-        sessionIdUser = catalogManager.login("user", PASSWORD, "127.0.0.1").first().getString("sessionId");
-        project = catalogManager.createProject("Project about some genomes", "1000G", "", "ACME", null, sessionIdUser).first();
+        sessionIdUser = catalogManager.login("user", PASSWORD, "127.0.0.1").first().getId();
+        project = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
+                null, null, "GRCh38", new QueryOptions(), sessionIdUser).first();
         study = catalogManager.createStudy(project.getId(), "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser).first();
         folder = catalogManager.createFolder(study.getId(), Paths.get("data/test/folder/"), true, null, sessionIdUser).first();
 
@@ -124,7 +125,7 @@ public class FileScannerTest {
         File file = catalogManager.createFile(study.getId(), File.Format.PLAIN, File.Bioformat.NONE, folder.getPath() + "file1.txt",
                 CatalogManagerTest.createDebugFile().toURI(), "", false, sessionIdUser).first();
 
-        catalogManager.getFileManager().delete(Long.toString(file.getId()), new QueryOptions(), sessionIdUser);
+        catalogManager.getFileManager().delete(Long.toString(file.getId()), null, new QueryOptions(), sessionIdUser);
 
         QueryResult<File> fileQueryResult = catalogManager.getFileManager().get(new Query()
                         .append(FileDBAdaptor.QueryParams.ID.key(), file.getId())
@@ -210,7 +211,7 @@ public class FileScannerTest {
         files = fileScanner.scan(root, studyUri, FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
 
         assertEquals(1, files.size());
-        files.forEach((f) -> assertTrue(f.getDiskUsage() > 0));
+        files.forEach((f) -> assertTrue(f.getSize() > 0));
         files.forEach((f) -> assertEquals(f.getStatus().getName(), File.FileStatus.READY));
         files.forEach((f) -> assertTrue(f.getAttributes().containsKey("checksum")));
     }
@@ -232,7 +233,7 @@ public class FileScannerTest {
 
         assertEquals(1, files.size());
         File file = files.get(0);
-        assertTrue(file.getDiskUsage() > 0);
+        assertTrue(file.getSize() > 0);
         assertEquals(File.FileStatus.READY, file.getStatus().getName());
         assertTrue(file.getAttributes().containsKey("checksum"));
 

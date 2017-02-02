@@ -17,16 +17,16 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
-import org.opencb.biodata.formats.drug.drugbank.v43jaxb.KnownActionType;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.IndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
+import org.opencb.opencga.catalog.managers.api.IIndividualManager;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
-import org.opencb.opencga.catalog.models.Variable;
-import org.opencb.opencga.catalog.models.VariableSet;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -40,7 +40,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 22/06/15.
@@ -51,35 +50,53 @@ import java.util.stream.Collectors;
 @Api(value = "Individuals", position = 6, description = "Methods for working with 'individuals' endpoint")
 public class IndividualWSServer extends OpenCGAWSServer {
 
+    private IIndividualManager individualManager;
 
     public IndividualWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
             throws IOException, VersionException {
         super(uriInfo, httpServletRequest);
+        individualManager = catalogManager.getIndividualManager();
     }
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create individual", position = 1, response = Individual.class)
-    public Response createIndividual(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
+    @ApiOperation(value = "Create individual [WARNING]", position = 1, response = Individual.class,
+            notes = "Using the GET method is discouraged. Please use the POST one.")
+    public Response createIndividual(@ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId")
+                                                 String studyIdStr,
+                                     @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                            @QueryParam("study") String studyStr,
                                      @ApiParam(value = "name", required = true) @QueryParam("name") String name,
                                      @ApiParam(value = "family", required = false) @QueryParam("family") String family,
                                      @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") long fatherId,
                                      @ApiParam(value = "motherId", required = false) @QueryParam("motherId") long motherId,
-                                     @ApiParam(value = "sex", required = false) @QueryParam("sex") @DefaultValue("UNKNOWN") Individual.Sex sex,
+                                     @ApiParam(value = "sex", required = false) @QueryParam("sex") @DefaultValue("UNKNOWN")
+                                                 Individual.Sex sex,
                                      @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-                                     @ApiParam(value = "Species taxonomy code", required = false) @QueryParam("species.taxonomyCode") String speciesTaxonomyCode,
-                                     @ApiParam(value = "Species scientific name", required = false) @QueryParam("species.scientificName") String speciesScientificName,
-                                     @ApiParam(value = "Species common name", required = false) @QueryParam("species.commonName") String speciesCommonName,
-                                     @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
-                                     @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation") String populationSubpopulation,
-                                     @ApiParam(value = "Population description", required = false) @QueryParam("population.description") String populationDescription,
-                                     @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex") Individual.KaryotypicSex karyotypicSex,
-                                     @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") Individual.LifeStatus lifeStatus,
-                                     @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")Individual.AffectationStatus affectationStatus){
-        //TODO add ethnicity param
+                                     @ApiParam(value = "Species taxonomy code", required = false) @QueryParam("species.taxonomyCode")
+                                                 String speciesTaxonomyCode,
+                                     @ApiParam(value = "Species scientific name", required = false) @QueryParam("species.scientificName")
+                                                 String speciesScientificName,
+                                     @ApiParam(value = "Species common name", required = false) @QueryParam("species.commonName")
+                                                 String speciesCommonName,
+                                     @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
+                                                 String populationName,
+                                     @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
+                                                 String populationSubpopulation,
+                                     @ApiParam(value = "Population description", required = false) @QueryParam("population.description")
+                                                 String populationDescription,
+                                     @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
+                                                 Individual.KaryotypicSex karyotypicSex,
+                                     @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus")
+                                                 Individual.LifeStatus lifeStatus,
+                                     @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
+                                                 Individual.AffectationStatus affectationStatus){
         try {
-            long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
-            QueryResult<Individual> queryResult = catalogManager.getIndividualManager().create(studyId, name, family, fatherId, motherId,
+            if (StringUtils.isNotEmpty(studyIdStr)) {
+                studyStr = studyIdStr;
+            }
+            long studyId = catalogManager.getStudyId(studyStr, sessionId);
+            QueryResult<Individual> queryResult = individualManager.create(studyId, name, family, fatherId, motherId,
                     sex, ethnicity, speciesCommonName, speciesScientificName, speciesTaxonomyCode, populationName, populationSubpopulation,
                     populationDescription, karyotypicSex, lifeStatus, affectationStatus, queryOptions, sessionId);
             return createOkResponse(queryResult);
@@ -88,19 +105,80 @@ public class IndividualWSServer extends OpenCGAWSServer {
         }
     }
 
+    private static class IndividualParameters {
+        public String name;
+        public String family;
+        public long fatherId;
+        public long motherId;
+        public Individual.Sex sex;
+        public String ethnicity;
+        public Individual.Species species;
+        public Individual.Population population;
+        public Individual.KaryotypicSex karyotypicSex;
+        public Individual.LifeStatus lifeStatus;
+        public Individual.AffectationStatus affectationStatus;
+    }
+
+    @POST
+    @Path("/create")
+    @ApiOperation(value = "Create individual", position = 1, response = Individual.class)
+    public Response createIndividualPOST(
+            @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+                    String studyStr,
+            @ApiParam(value="JSON containing individual information", required = true) IndividualParameters params){
+        try {
+            if (StringUtils.isNotEmpty(studyIdStr)) {
+                studyStr = studyIdStr;
+            }
+            long studyId = catalogManager.getStudyId(studyStr, sessionId);
+
+            String scientificName = "";
+            String commonName = "";
+            String taxonomyCode = "";
+            if (params.species != null) {
+                commonName = params.species.getCommonName();
+                scientificName = params.species.getScientificName();
+                taxonomyCode = params.species.getTaxonomyCode();
+            }
+
+            String populationName = "";
+            String subpopulationName = "";
+            String description = "";
+            if (params.population != null) {
+                populationName = params.population.getName();
+                subpopulationName = params.population.getSubpopulation();
+                description = params.population.getDescription();
+            }
+
+            QueryResult<Individual> queryResult = individualManager.create(studyId, params.name, params.family, params.fatherId,
+                    params.motherId, params.sex, params.ethnicity, commonName, scientificName, taxonomyCode, populationName,
+                    subpopulationName, description, params.karyotypicSex, params.lifeStatus, params.affectationStatus, queryOptions,
+                    sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
     @GET
-    @Path("/{individualIds}/info")
+    @Path("/{individuals}/info")
     @ApiOperation(value = "Get individual information", position = 2, response = Individual.class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
+                    example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
+                    example = "id,status", dataType = "string", paramType = "query"),
     })
     public Response infoIndividual(@ApiParam(value = "Comma separated list of individual names or ids", required = true)
-                                       @PathParam("individualIds") String individualStr) {
+                                       @PathParam("individuals") String individualStr,
+                                   @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                        @QueryParam("study") String studyStr) {
         try {
             List<QueryResult<Individual>> queryResults = new LinkedList<>();
-            List<Long> individualIds = catalogManager.getIndividualIds(individualStr, sessionId);
-            for (Long individualId : individualIds) {
+            AbstractManager.MyResourceIds resourceId = individualManager.getIds(individualStr, studyStr, sessionId);
+
+            for (Long individualId : resourceId.getResourceIds()) {
                 queryResults.add(catalogManager.getIndividual(individualId, queryOptions, sessionId));
             }
             return createOkResponse(queryResults);
@@ -113,129 +191,172 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @Path("/search")
     @ApiOperation(value = "Search for individuals", position = 3, response = Individual[].class)
     @ApiImplicitParams({
-            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
-            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
+                    example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided",
+                    example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer",
+                    paramType = "query"),
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
-    public Response searchIndividuals(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
-                                      @ApiParam(value = "id", required = false) @QueryParam("id") String id,
+    public Response searchIndividuals(@ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
+                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
+                                              + "alias") @QueryParam("study") String studyStr,
+                                      @ApiParam(value = "DEPRECATED: id", hidden = true) @QueryParam("id") String id,
                                       @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                                       @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") String fatherId,
                                       @ApiParam(value = "motherId", required = false) @QueryParam("motherId") String motherId,
                                       @ApiParam(value = "family", required = false) @QueryParam("family") String family,
                                       @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
                                       @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-                                      @ApiParam(value = "Species taxonomy code", required = false) @QueryParam("species.taxonomyCode") String speciesTaxonomyCode,
-                                      @ApiParam(value = "Species scientific name", required = false) @QueryParam("species.scientificName") String speciesScientificName,
-                                      @ApiParam(value = "Species common name", required = false) @QueryParam("species.commonName") String speciesCommonName,
-                                      @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
-                                      @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation") String populationSubpopulation,
-                                      @ApiParam(value = "Population description", required = false) @QueryParam("population.description") String populationDescription,
-                                      @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex") Individual.KaryotypicSex karyotypicSex,
-                                      @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") Individual.LifeStatus lifeStatus,
-                                      @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")Individual.AffectationStatus affectationStatus,
+                                      @ApiParam(value = "Species taxonomy code", required = false) @QueryParam("species.taxonomyCode")
+                                                  String speciesTaxonomyCode,
+                                      @ApiParam(value = "Species scientific name", required = false) @QueryParam("species.scientificName")
+                                                  String speciesScientificName,
+                                      @ApiParam(value = "Species common name", required = false) @QueryParam("species.commonName")
+                                                  String speciesCommonName,
+                                      @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
+                                                  String populationName,
+                                      @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
+                                                  String populationSubpopulation,
+                                      @ApiParam(value = "Population description", required = false) @QueryParam("population.description")
+                                                  String populationDescription,
+                                      @ApiParam(value = "Ontology terms", required = false) @QueryParam("ontologies") String ontologies,
+                                      @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
+                                                  Individual.KaryotypicSex karyotypicSex,
+                                      @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus")
+                                                  Individual.LifeStatus lifeStatus,
+                                      @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
+                                                  Individual.AffectationStatus affectationStatus,
                                       @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
-                                      @ApiParam(value = "annotationSetName", required = false) @QueryParam("annotationSetName") String annotationSetName,
-                                      @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
+                                      @ApiParam(value = "annotationsetName", required = false) @QueryParam("annotationsetName")
+                                                  String annotationsetName,
+                                      @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
+                                      @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
-            long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
-            QueryResult<Individual> queryResult = catalogManager.getAllIndividuals(studyId, query, queryOptions, sessionId);
+            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
+
+            if (StringUtils.isNotEmpty(studyIdStr)) {
+                studyStr = studyIdStr;
+            }
+            QueryResult<Individual> queryResult = individualManager.search(studyStr, query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
+
     @Deprecated
     @POST
-    @Path("/{individualId}/annotate")
+    @Path("/{individual}/annotate")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Annotate an individual [DEPRECATED]", position = 4)
-    public Response annotateSamplePOST(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
-                                       @ApiParam(value = "Annotation set name. Must be unique for the individual", required = true) @QueryParam("annotateSetName") String annotateSetName,
+    @ApiOperation(value = "Annotate an individual [DEPRECATED]", position = 4, hidden = true)
+    public Response annotateSamplePOST(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
+                                       @ApiParam(value = "Annotation set name. Must be unique for the individual", required = true)
+                                       @QueryParam("annotateSetName") String annotateSetName,
                                        @ApiParam(value = "VariableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
-                                       @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
-                                       @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete,
+                                       @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update")
+                                           @DefaultValue("false") boolean update,
+                                       @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete")
+                                           @DefaultValue("false") boolean delete,
                                        Map<String, Object> annotations) {
-        try {
-            long individualId = catalogManager.getIndividualId(individualStr, sessionId);
-            QueryResult<AnnotationSet> queryResult;
-            if (update && delete) {
-                return createErrorResponse("Annotate individual", "Unable to update and delete annotations at the same time");
-            } else if (update) {
-                queryResult = catalogManager.updateIndividualAnnotation(individualId, annotateSetName, annotations, sessionId);
-            } else if (delete) {
-                queryResult = catalogManager.deleteIndividualAnnotation(individualId, annotateSetName, sessionId);
-            } else {
-                queryResult = catalogManager.annotateIndividual(individualId, annotateSetName, variableSetId,
-                        annotations, Collections.emptyMap(), sessionId);
-            }
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+        return createErrorResponse(new CatalogException("Webservice no longer supported. Please, use "
+                + "/{individual}/annotationsets/..."));
+//        try {
+//            long individualId = catalogManager.getIndividualId(individualStr, sessionId);
+//            QueryResult<AnnotationSet> queryResult;
+//            if (update && delete) {
+//                return createErrorResponse("Annotate individual", "Unable to update and delete annotations at the same"
+//                        + " time");
+//            } else if (update) {
+//                queryResult = catalogManager.updateIndividualAnnotation(individualId, annotateSetName, annotations, sessionId);
+//            } else if (delete) {
+//                queryResult = catalogManager.deleteIndividualAnnotation(individualId, annotateSetName, sessionId);
+//            } else {
+//                queryResult = catalogManager.annotateIndividual(individualId, annotateSetName, variableSetId,
+//                        annotations, Collections.emptyMap(), sessionId);
+//            }
+//            return createOkResponse(queryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
     }
 
     @Deprecated
     @GET
-    @Path("/{individualId}/annotate")
+    @Path("/{individual}/annotate")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Annotate an individual [DEPRECATED]", position = 5)
-    public Response annotateSampleGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
-                                      @ApiParam(value = "Annotation set name. Must be unique", required = true) @QueryParam("annotateSetName") String annotateSetName,
+    @ApiOperation(value = "Annotate an individual [DEPRECATED]", position = 5, hidden = true)
+    public Response annotateSampleGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual")
+                                                  String individualStr,
+                                      @ApiParam(value = "Annotation set name. Must be unique", required = true)
+                                      @QueryParam("annotateSetName") String annotateSetName,
                                       @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
-                                      @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
-                                      @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete) {
-        try {
-            long individualId = catalogManager.getIndividualId(individualStr, sessionId);
-            QueryResult<AnnotationSet> queryResult;
-            if (update && delete) {
-                return createErrorResponse("Annotate individual", "Unable to update and delete annotations at the same time");
-            } else if (delete) {
-                queryResult = catalogManager.deleteIndividualAnnotation(individualId, annotateSetName, sessionId);
-            } else {
-                if (update) {
-                    for (AnnotationSet annotationSet : catalogManager.getIndividual(individualId, null, sessionId).first().getAnnotationSets()) {
-                        if (annotationSet.getName().equals(annotateSetName)) {
-                            variableSetId = annotationSet.getVariableSetId();
-                        }
-                    }
-                }
-                QueryResult<VariableSet> variableSetResult = catalogManager.getVariableSet(variableSetId, null, sessionId);
-                if(variableSetResult.getResult().isEmpty()) {
-                    return createErrorResponse("sample annotate", "VariableSet not find.");
-                }
-                Map<String, Object> annotations = variableSetResult.getResult().get(0).getVariables().stream()
-                        .filter(variable -> params.containsKey(variable.getName()))
-                        .collect(Collectors.toMap(Variable::getName, variable -> params.getFirst(variable.getName())));
-
-                if (update) {
-                    queryResult = catalogManager.updateIndividualAnnotation(individualId, annotateSetName, annotations, sessionId);
-                } else {
-                    queryResult = catalogManager.annotateIndividual(individualId, annotateSetName, variableSetId,
-                            annotations, Collections.emptyMap(), sessionId);
-                }
-            }
-
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
+                                      @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update")
+                                          @DefaultValue("false") boolean update,
+                                      @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete")
+                                          @DefaultValue("false") boolean delete) {
+        return createErrorResponse(new CatalogException("Webservice no longer supported. Please, use "
+                + "/{individual}/annotationsets/..."));
+//        try {
+//            long individualId = catalogManager.getIndividualId(individualStr, sessionId);
+//            QueryResult<AnnotationSet> queryResult;
+//            if (update && delete) {
+//                return createErrorResponse("Annotate individual", "Unable to update and delete annotations at the same"
+//                        + " time");
+//            } else if (delete) {
+//                queryResult = catalogManager.deleteIndividualAnnotation(individualId, annotateSetName, sessionId);
+//            } else {
+//                if (update) {
+//                    for (AnnotationSet annotationset : catalogManager.getIndividual(individualId, null, sessionId).first()
+//                            .getAnnotationSets()) {
+//                        if (annotationset.getName().equals(annotateSetName)) {
+//                            variableSetId = annotationset.getVariableSetId();
+//                        }
+//                    }
+//                }
+//                QueryResult<VariableSet> variableSetResult = catalogManager.getVariableSet(variableSetId, null, sessionId);
+//                if(variableSetResult.getResult().isEmpty()) {
+//                    return createErrorResponse("sample annotate", "VariableSet not find.");
+//                }
+//                Map<String, Object> annotations = variableSetResult.getResult().get(0).getVariables().stream()
+//                        .filter(variable -> params.containsKey(variable.getName()))
+//                        .collect(Collectors.toMap(Variable::getName, variable -> params.getFirst(variable.getName())));
+//
+//                if (update) {
+//                    queryResult = catalogManager.updateIndividualAnnotation(individualId, annotateSetName, annotations, sessionId);
+//                } else {
+//                    queryResult = catalogManager.annotateIndividual(individualId, annotateSetName, variableSetId,
+//                            annotations, Collections.emptyMap(), sessionId);
+//                }
+//            }
+//
+//            return createOkResponse(queryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
     }
 
     @GET
-    @Path("/{individualId}/annotationSets/search")
+    @Path("/{individual}/annotationsets/search")
     @ApiOperation(value = "Search annotation sets [NOT TESTED]", position = 11)
-    public Response searchAnnotationSetGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
-                                           @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
+    public Response searchAnnotationSetGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual")
+                                                       String individualStr,
+                                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
+                                                   + "alias") @QueryParam("study") String studyStr,
+                                           @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId")
+                                                       long variableSetId,
                                            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
-                                           @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("asMap") boolean asMap) {
+                                           @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false,
+                                                   defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
-                return createOkResponse(catalogManager.getIndividualManager().searchAnnotationSetAsMap(individualStr, variableSetId, annotation, sessionId));
+                return createOkResponse(individualManager.searchAnnotationSetAsMap(individualStr, studyStr, variableSetId, annotation,
+                        sessionId));
             } else {
-                return createOkResponse(catalogManager.getIndividualManager().searchAnnotationSet(individualStr, variableSetId, annotation, sessionId));
+                return createOkResponse(individualManager.searchAnnotationSet(individualStr, studyStr, variableSetId, annotation,
+                        sessionId));
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -243,15 +364,18 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{individualId}/annotationSets/info")
+    @Path("/{individual}/annotationsets/info")
     @ApiOperation(value = "Return all the annotation sets of the individual [NOT TESTED]", position = 12)
-    public Response infoAnnotationSetGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
-                                         @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("asMap") boolean asMap) {
+    public Response infoAnnotationSetGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
+                                         @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
+                                                 + "alias") @QueryParam("study") String studyStr,
+                                         @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value",
+                                                 required = false, defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
-                return createOkResponse(catalogManager.getIndividualManager().getAllAnnotationSetsAsMap(individualStr, sessionId));
+                return createOkResponse(individualManager.getAllAnnotationSetsAsMap(individualStr, studyStr, sessionId));
             } else {
-                return createOkResponse(catalogManager.getIndividualManager().getAllAnnotationSets(individualStr, sessionId));
+                return createOkResponse(individualManager.getAllAnnotationSets(individualStr, studyStr, sessionId));
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -259,16 +383,19 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{individualId}/annotationSets/create")
+    @Path("/{individual}/annotationsets/create")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create an annotation set for the individual [NOT TESTED]", position = 13)
-    public Response annotateSamplePOST(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
-                                       @ApiParam(value = "VariableSetId of the new annotation", required = true) @QueryParam("variableSetId") long variableSetId,
-                                       @ApiParam(value = "Annotation set name. Must be unique for the individual", required = true) @QueryParam("annotateSetName") String annotateSetName,
-                                       Map<String, Object> annotations) {
+    public Response annotateSamplePOST(
+            @ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+                    String studyStr,
+            @ApiParam(value = "VariableSetId of the new annotation", required = true) @QueryParam("variableSetId") long variableSetId,
+            @ApiParam(value="JSON containing the annotation set name and the array of annotations. The name should be unique for the "
+                    + "individual", required = true) CohortWSServer.AnnotationsetParameters params) {
         try {
-            QueryResult<AnnotationSet> queryResult = catalogManager.createIndividualAnnotationSet(individualStr, variableSetId,
-                    annotateSetName, annotations, Collections.emptyMap(), sessionId);
+            QueryResult<AnnotationSet> queryResult = individualManager.createAnnotationSet(individualStr, studyStr, variableSetId,
+                    params.name, params.annotations, Collections.emptyMap(), sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -276,17 +403,21 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{individualId}/annotationSets/{annotationSetName}/delete")
+    @Path("/{individual}/annotationsets/{annotationsetName}/delete")
     @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [NOT TESTED]", position = 14)
-    public Response deleteAnnotationGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
-                                        @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
-                                        @ApiParam(value = "[NOT IMPLEMENTED] Comma separated list of annotation names to be deleted", required = false) @QueryParam("annotations") String annotations) {
+    public Response deleteAnnotationGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
+                                        @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
+                                                + "alias") @QueryParam("study") String studyStr,
+                                        @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName")
+                                                    String annotationsetName,
+                                        @ApiParam(value = "[NOT IMPLEMENTED] Comma separated list of annotation names to be deleted",
+                                                required = false) @QueryParam("annotations") String annotations) {
         try {
             QueryResult<AnnotationSet> queryResult;
             if (annotations != null) {
-                queryResult = catalogManager.deleteIndividualAnnotations(individualStr, annotationSetName, annotations, sessionId);
+                queryResult = individualManager.deleteAnnotations(individualStr, studyStr, annotationsetName, annotations, sessionId);
             } else {
-                queryResult = catalogManager.deleteIndividualAnnotationSet(individualStr, annotationSetName, sessionId);
+                queryResult = individualManager.deleteAnnotationSet(individualStr, studyStr, annotationsetName, sessionId);
             }
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
@@ -295,16 +426,19 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{individualId}/annotationSets/{annotationSetName}/update")
+    @Path("/{individual}/annotationsets/{annotationsetName}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update the annotations [NOT TESTED]", position = 15)
-    public Response updateAnnotationGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
-                                        @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
-//                                        @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
+    public Response updateAnnotationGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
+                                        @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or"
+                                                + " alias") @QueryParam("study") String studyStr,
+                                        @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName")
+                                                    String annotationsetName,
+//                                      @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
 //                                        @ApiParam(value = "reset", required = false) @QueryParam("reset") String reset,
                                         Map<String, Object> annotations) {
         try {
-            QueryResult<AnnotationSet> queryResult = catalogManager.updateIndividualAnnotationSet(individualStr, annotationSetName,
+            QueryResult<AnnotationSet> queryResult = individualManager.updateAnnotationSet(individualStr, studyStr, annotationsetName,
                     annotations, sessionId);
             return createOkResponse(queryResult);
         } catch (CatalogException e) {
@@ -313,16 +447,20 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{individualId}/annotationSets/{annotationSetName}/info")
+    @Path("/{individual}/annotationsets/{annotationsetName}/info")
     @ApiOperation(value = "Return the annotation set [NOT TESTED]", position = 16)
-    public Response infoAnnotationGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
-                                      @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
-                                      @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("asMap") boolean asMap) {
+    public Response infoAnnotationGET(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
+                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
+                                              + "alias") @QueryParam("study") String studyStr,
+                                      @ApiParam(value = "annotationsetName", required = true) @PathParam("annotationsetName")
+                                                  String annotationsetName,
+                                      @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false,
+                                              defaultValue = "false") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
-                return createOkResponse(catalogManager.getIndividualManager().getAnnotationSetAsMap(individualStr, annotationSetName, sessionId));
+                return createOkResponse(individualManager.getAnnotationSetAsMap(individualStr, studyStr, annotationsetName, sessionId));
             } else {
-                return createOkResponse(catalogManager.getIndividualManager().getAnnotationSet(individualStr, annotationSetName, sessionId));
+                return createOkResponse(individualManager.getAnnotationSet(individualStr, studyStr, annotationsetName, sessionId));
             }
         } catch (CatalogException e) {
             return createErrorResponse(e);
@@ -331,26 +469,38 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
 
     @GET
-    @Path("/{individualId}/update")
-    @ApiOperation(value = "Update individual information", position = 6, response = Individual.class)
-    public Response updateIndividual(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
+    @Path("/{individual}/update")
+    @ApiOperation(value = "Update individual information [WARNING]", position = 6, response = Individual.class,
+    notes = "Using the GET method is discouraged. Please use the POST one.")
+    public Response updateIndividual(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
+                                     @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                            @QueryParam("study") String studyStr,
                                      @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                                      @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") Long fatherId,
                                      @ApiParam(value = "motherId", required = false) @QueryParam("motherId") Long motherId,
                                      @ApiParam(value = "family", required = false) @QueryParam("family") String family,
                                      @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
                                      @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-                                     @ApiParam(value = "Species taxonomy code", required = false) @QueryParam("species.taxonomyCode") String speciesTaxonomyCode,
-                                     @ApiParam(value = "Species scientific name", required = false) @QueryParam("species.scientificName") String speciesScientificName,
-                                     @ApiParam(value = "Species common name", required = false) @QueryParam("species.commonName") String speciesCommonName,
-                                     @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
-                                     @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation") String populationSubpopulation,
-                                     @ApiParam(value = "Population description", required = false) @QueryParam("population.description") String populationDescription,
-                                     @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex") Individual.KaryotypicSex karyotypicSex,
-                                     @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") Individual.LifeStatus lifeStatus,
-                                     @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")Individual.AffectationStatus affectationStatus) {
+                                     @ApiParam(value = "Species taxonomy code", required = false) @QueryParam("species.taxonomyCode")
+                                                 String speciesTaxonomyCode,
+                                     @ApiParam(value = "Species scientific name", required = false) @QueryParam("species.scientificName")
+                                                 String speciesScientificName,
+                                     @ApiParam(value = "Species common name", required = false) @QueryParam("species.commonName")
+                                                 String speciesCommonName,
+                                     @ApiParam(value = "Population name", required = false) @QueryParam("population.name")
+                                                 String populationName,
+                                     @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
+                                                 String populationSubpopulation,
+                                     @ApiParam(value = "Population description", required = false) @QueryParam("population.description")
+                                                 String populationDescription,
+                                     @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
+                                                 Individual.KaryotypicSex karyotypicSex,
+                                     @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus")
+                                                 Individual.LifeStatus lifeStatus,
+                                     @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
+                                                 Individual.AffectationStatus affectationStatus) {
         try {
-            long individualId = catalogManager.getIndividualId(individualStr, sessionId);
+            AbstractManager.MyResourceId resource = individualManager.getId(individualStr, studyStr, sessionId);
             ObjectMap params = new ObjectMap();
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.NAME.key(), name);
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.FATHER_ID.key(), fatherId);
@@ -367,7 +517,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.KARYOTYPIC_SEX.key(), karyotypicSex);
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.LIFE_STATUS.key(), lifeStatus);
             params.putIfNotNull(IndividualDBAdaptor.QueryParams.AFFECTATION_STATUS.key(), affectationStatus);
-            QueryResult<Individual> queryResult = catalogManager.getIndividualManager().update(individualId, params, queryOptions, sessionId);
+            QueryResult<Individual> queryResult = individualManager.update(resource.getResourceId(), params, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -387,14 +537,16 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @POST
-    @Path("/{individualId}/update")
+    @Path("/{individual}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some individual attributes using POST method", position = 6)
-    public Response updateByPost(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
+    public Response updateByPost(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
+                                 @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                        @QueryParam("study") String studyStr,
                                  @ApiParam(value = "params", required = true) UpdateIndividual updateParams) {
         try {
-            long individualId = catalogManager.getIndividualId(individualStr, sessionId);
-            QueryResult<Individual> queryResult = catalogManager.modifyIndividual(individualId,
+            AbstractManager.MyResourceId resource = individualManager.getId(individualStr, studyStr, sessionId);
+            QueryResult<Individual> queryResult = catalogManager.modifyIndividual(resource.getResourceId(),
                     new QueryOptions(jsonObjectMapper.writeValueAsString(updateParams)), sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -403,70 +555,59 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{individualIds}/delete")
+    @Path("/{individuals}/delete")
     @ApiOperation(value = "Delete individual information", position = 7)
-    public Response deleteIndividual(@ApiParam(value = "Comma separated list of individual ids", required = true) @PathParam("individualIds") String individualIds) {
+    public Response deleteIndividual(@ApiParam(value = "Comma separated list of individual IDs or names", required = true)
+                                         @PathParam ("individuals") String individualIds,
+                                     @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                            @QueryParam("study") String studyStr) {
         try {
-            List<QueryResult<Individual>> queryResult = catalogManager.getIndividualManager().delete(individualIds, queryOptions, sessionId);
+            List<QueryResult<Individual>> queryResult = individualManager.delete(individualIds, studyStr, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
-//
-//    @GET
-//    @Path("/{individualIds}/share")
-//    @ApiOperation(value = "Share individuals with other members", position = 8)
-//    public Response share(@PathParam(value = "individualIds") String individualIds,
-//                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-//                          @ApiParam(value = "Comma separated list of individual permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
-//                          @ApiParam(value = "Boolean indicating whether to allow the change of of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
-//        try {
-//            return createOkResponse(catalogManager.shareIndividual(individualIds, members, Arrays.asList(permissions.split(",")), override, sessionId));
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
-//
-//    @GET
-//    @Path("/{individualIds}/unshare")
-//    @ApiOperation(value = "Remove the permissions for the list of members", position = 9)
-//    public Response unshare(@PathParam(value = "individualIds") String individualIds,
-//                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-//                            @ApiParam(value = "Comma separated list of individual permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions) {
-//        try {
-//            return createOkResponse(catalogManager.unshareIndividual(individualIds, members, permissions, sessionId));
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
 
     @GET
     @Path("/groupBy")
     @ApiOperation(value = "Group individuals by several fields", position = 10)
-    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("fields") String fields,
-                            @ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
-                            //@ApiParam(value = "id", required = false) @QueryParam("id") String ids,
+    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("")
+                                @QueryParam("fields") String fields,
+                            @ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId") String studyIdStr,
+                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                @QueryParam("study") String studyStr,
                             @ApiParam(value = "name", required = false) @QueryParam("name") String names,
                             @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") String fatherId,
                             @ApiParam(value = "motherId", required = false) @QueryParam("motherId") String motherId,
                             @ApiParam(value = "family", required = false) @QueryParam("family") String family,
                             @ApiParam(value = "sex", required = false) @QueryParam("sex") Individual.Sex sex,
                             @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
-                            @ApiParam(value = "Species taxonomy code", required = false) @QueryParam("species.taxonomyCode") String speciesTaxonomyCode,
-                            @ApiParam(value = "Species scientific name", required = false) @QueryParam("species.scientificName") String speciesScientificName,
-                            @ApiParam(value = "Species common name", required = false) @QueryParam("species.commonName") String speciesCommonName,
+                            @ApiParam(value = "Species taxonomy code", required = false) @QueryParam("species.taxonomyCode")
+                                        String speciesTaxonomyCode,
+                            @ApiParam(value = "Species scientific name", required = false) @QueryParam("species.scientificName")
+                                        String speciesScientificName,
+                            @ApiParam(value = "Species common name", required = false) @QueryParam("species.commonName")
+                                        String speciesCommonName,
                             @ApiParam(value = "Population name", required = false) @QueryParam("population.name") String populationName,
-                            @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation") String populationSubpopulation,
-                            @ApiParam(value = "Population description", required = false) @QueryParam("population.description") String populationDescription,
-                            @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex") Individual.KaryotypicSex karyotypicSex,
+                            @ApiParam(value = "Subpopulation name", required = false) @QueryParam("population.subpopulation")
+                                        String populationSubpopulation,
+                            @ApiParam(value = "Population description", required = false) @QueryParam("population.description")
+                                        String populationDescription,
+                            @ApiParam(value = "Karyotypic sex", required = false) @QueryParam("karyotypicSex")
+                                        Individual.KaryotypicSex karyotypicSex,
                             @ApiParam(value = "Life status", required = false) @QueryParam("lifeStatus") Individual.LifeStatus lifeStatus,
-                            @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")Individual.AffectationStatus affectationStatus,
+                            @ApiParam(value = "Affectation status", required = false) @QueryParam("affectationStatus")
+                                        Individual.AffectationStatus affectationStatus,
                             @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
-                            @ApiParam(value = "annotationSetName", required = false) @QueryParam("annotationSetName") String annotationSetName,
+                            @ApiParam(value = "annotationsetName", required = false) @QueryParam("annotationsetName")
+                                        String annotationsetName,
                             @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
         try {
-            QueryResult result = catalogManager.individualGroupBy(query, queryOptions, fields, sessionId);
+            if (StringUtils.isNotEmpty(studyIdStr)) {
+                studyStr = studyIdStr;
+            }
+            QueryResult result = individualManager.groupBy(studyStr, query, queryOptions, fields, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -474,11 +615,14 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{individualIds}/acl")
+    @Path("/{individuals}/acl")
     @ApiOperation(value = "Return the acl of the individual", position = 18)
-    public Response getAcls(@ApiParam(value = "Comma separated list of individual ids", required = true) @PathParam("individualIds") String individualIdsStr) {
+    public Response getAcls(@ApiParam(value = "Comma separated list of individual ids", required = true) @PathParam("individuals")
+                                        String individualIdsStr,
+                            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                @QueryParam("study") String studyStr) {
         try {
-            return createOkResponse(catalogManager.getAllIndividualAcls(individualIdsStr, sessionId));
+            return createOkResponse(catalogManager.getAllIndividualAcls(individualIdsStr, studyStr, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -486,52 +630,103 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
 
     @GET
-    @Path("/{individualIds}/acl/create")
+    @Path("/{individuals}/acl/create")
+    @ApiOperation(value = "Define a set of permissions for a list of members", hidden = true, position = 19)
+    public Response createAcl(@ApiParam(value = "Comma separated list of individual ids", required = true) @PathParam("individuals")
+                                          String individualIdsStr,
+                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                    @QueryParam("study") String studyStr,
+                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list",
+                                       required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
+                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
+                                       required = true) @DefaultValue("") @QueryParam("members") String members) {
+        try {
+            return createOkResponse(catalogManager.createIndividualAcls(individualIdsStr, studyStr, members, permissions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{individuals}/acl/create")
     @ApiOperation(value = "Define a set of permissions for a list of members", position = 19)
-    public Response createAcl   (@ApiParam(value = "Comma separated list of individual ids", required = true) @PathParam("individualIds") String individualIdsStr,
-                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
-                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
+    public Response createAcl(
+            @ApiParam(value = "Comma separated list of individual ids", required = true) @PathParam("individuals") String individualIdsStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+            @QueryParam("study") String studyStr,
+            @ApiParam(value="JSON containing the parameters defined in GET. Mandatory keys: 'members'", required = true)
+                    StudyWSServer.CreateAclCommands params) {
         try {
-            return createOkResponse(catalogManager.createIndividualAcls(individualIdsStr, members, permissions, sessionId));
+            return createOkResponse(catalogManager.createIndividualAcls(individualIdsStr, studyStr, params.members, params.permissions,
+                    sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
-    @Path("/{individualId}/acl/{memberId}/info")
+    @Path("/{individual}/acl/{memberId}/info")
     @ApiOperation(value = "Return the set of permissions granted for the member", position = 20)
-    public Response getAcl(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualIdStr,
+    public Response getAcl(@ApiParam(value = "individualId", required = true) @PathParam("individual") String individualIdStr,
+                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                @QueryParam("study") String studyStr,
                            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
         try {
-            return createOkResponse(catalogManager.getIndividualAcl(individualIdStr, memberId, sessionId));
+            return createOkResponse(catalogManager.getIndividualAcl(individualIdStr, studyStr, memberId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
-    @Path("/{individualId}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
-    public Response updateAcl(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualIdStr,
+    @Path("/{individual}/acl/{memberId}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member", hidden = true, position = 21)
+    public Response updateAcl(@ApiParam(value = "individualId", required = true) @PathParam("individual") String individualIdStr,
+                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                    @QueryParam("study") String studyStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
-                              @ApiParam(value = "Comma separated list of permissions to add", required = false) @QueryParam("addPermissions") String addPermissions,
-                              @ApiParam(value = "Comma separated list of permissions to remove", required = false) @QueryParam("removePermissions") String removePermissions,
-                              @ApiParam(value = "Comma separated list of permissions to set", required = false) @QueryParam("setPermissions") String setPermissions) {
+                              @ApiParam(value = "Comma separated list of permissions to add", required = false)
+                                  @QueryParam("add") String addPermissions,
+                              @ApiParam(value = "Comma separated list of permissions to remove", required = false)
+                                  @QueryParam("remove") String removePermissions,
+                              @ApiParam(value = "Comma separated list of permissions to set", required = false)
+                                  @QueryParam("set") String setPermissions) {
         try {
-            return createOkResponse(catalogManager.updateIndividualAcl(individualIdStr, memberId, addPermissions, removePermissions, setPermissions, sessionId));
+            return createOkResponse(catalogManager.updateIndividualAcl(individualIdStr, studyStr, memberId, addPermissions,
+                    removePermissions, setPermissions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{individual}/acl/{memberId}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    public Response updateAcl(
+            @ApiParam(value = "individualId", required = true) @PathParam("individual") String individualIdStr,
+            @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias") @QueryParam("study")
+                    String studyStr,
+            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
+            @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true)
+                    StudyWSServer.MemberAclUpdate params) {
+        try {
+            return createOkResponse(catalogManager.updateIndividualAcl(individualIdStr, studyStr, memberId, params.add,
+                    params.remove, params.set, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
-    @Path("/{individualIds}/acl/{memberId}/delete")
+    @Path("/{individuals}/acl/{memberId}/delete")
     @ApiOperation(value = "Remove all the permissions granted for the member", position = 22)
-    public Response deleteAcl(@ApiParam(value = "Comma separated list of individual ids", required = true) @PathParam("individualIds") String individualIdsStr,
+    public Response deleteAcl(@ApiParam(value = "Comma separated list of individual ids", required = true) @PathParam("individuals")
+                                          String individualIdsStr,
+                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                                    @QueryParam("study") String studyStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
         try {
-            return createOkResponse(catalogManager.removeIndividualAcl(individualIdsStr, memberId, sessionId));
+            return createOkResponse(catalogManager.removeIndividualAcl(individualIdsStr, studyStr, memberId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

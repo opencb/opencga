@@ -1,0 +1,74 @@
+---
+logLevel: "INFO"
+logFile: null
+
+openRegister: true
+userDefaultQuota: 200000
+
+databasePrefix: "opencga_test"
+dataDir: "file:///tmp/opencga/sessions"
+tempJobsDir: "file:///tmp/opencga/sessions/jobs"
+toolDir: "tools"
+
+admin:
+  password: "admin"
+  email: "admin@admin.com"
+
+audit:
+  maxDocuments: 20000000 # Maximum number of documents that will be created in the audit collection.
+  maxSize: 100000000000  # Maximum size that the audit collection will have in bytes.
+  javaClass: ""          # Java class of the audit implementation to be used to audit.
+  exclude: []            # Array of resource:action to select pairwise resource-actions to be excluded for audit purposes.
+
+monitor:
+  daysToRemove: 30
+  executionDaemonInterval: 4000 # number of milliseconds between checks
+  fileDaemonInterval: 8000      # number of milliseconds between checks
+  port: 9092
+
+execution:
+  mode: "local"
+  defaultQueue: ""
+  availableQueues: ""
+  toolsPerQueue: {}
+
+email:
+  host: "localhost"
+  port: ""
+  user: ""
+  password: ""
+  from: ""
+  ssl: false
+
+acl:
+- member: "admin"
+  permissions:
+  - "VIEW_FILE_HEADERS"
+  - "VIEW_FILE_CONTENTS"
+  - "VIEW_FILES"
+  - "WRITE_FILES"
+  - "VIEW_JOBS"
+  - "WRITE_JOBS"
+
+catalog:
+  # offset: Starting point for the catalog internal ids. Use a big offset number (1000000 for instance) if you plan to use numerical ids
+  #         for names or aliases of any entity.
+  offset: 0
+  database:
+    hosts:
+    - "localhost:27017"
+    user: ""
+    password: ""
+    options:
+      authenticationDatabase: ""
+
+server:
+  rest:
+    port: 8080
+    logFile: null
+    defaultLimit: 2000
+    maxLimit: 5000
+
+  grpc:
+    port: 8081
+    logFile: null

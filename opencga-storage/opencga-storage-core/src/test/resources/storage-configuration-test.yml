@@ -51,7 +51,7 @@ storageEngines:
 - id: "mongodb"
   options: {}     ## this field is intended to be removed, try not to use it.
   alignment:
-    manager: "org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageManager"
+    manager: "org.opencb.opencga.storage.mongodb.alignment.MongoDBAlignmentStorageEngine"
     options:
       database.name: "opencga_variants_test"
       tools.samtools: "${OPENCGA.INSTALLATION.DIR}/tools/samtools/samtools"
@@ -64,7 +64,7 @@ storageEngines:
       user: "${OPENCGA.STORAGE.ALIGNMENT.DB.USER}"
       password: "${OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD}"
   variant:
-    manager: "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager"
+    manager: "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine"
     options:
       database.name: "opencga"
       collection.variants: "variants"
@@ -93,7 +93,7 @@ storageEngines:
 - id: "hadoop"
   options: {}
   alignment:
-    manager: "org.opencb.opencga.storage.hadoop.alignment.MongoDBAlignmentStorageManager"
+    manager: "org.opencb.opencga.storage.hadoop.alignment.MongoDBAlignmentStorageEngine"
     options: {}
     database:
       hosts:
@@ -101,7 +101,7 @@ storageEngines:
       user: "admin"
       password: "password"
   variant:
-    manager: "org.opencb.opencga.storage.hadoop.variant.MongoDBVariantStorageManager"
+    manager: "org.opencb.opencga.storage.hadoop.variant.MongoDBVariantStorageEngine"
     options: {}
     database:
       hosts:

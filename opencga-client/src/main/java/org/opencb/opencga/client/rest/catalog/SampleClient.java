@@ -18,6 +18,7 @@ package org.opencb.opencga.client.rest.catalog;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
@@ -40,9 +41,11 @@ public class SampleClient extends AnnotationClient<Sample, SampleAclEntry> {
         this.aclClass = SampleAclEntry.class;
     }
 
-    public QueryResponse<Sample> create(String studyId, String sampleName, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "studyId", studyId, "name", sampleName);
-        return execute(SAMPLES_URL, "create", params, GET, Sample.class);
+    public QueryResponse<Sample> create(String studyId, ObjectMap bodyParams) throws CatalogException, IOException {
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull(SampleDBAdaptor.QueryParams.STUDY.key(), studyId);
+        params.putIfNotNull("body", bodyParams);
+        return execute(SAMPLES_URL, "create", params, POST, Sample.class);
     }
 
     public QueryResponse<Sample> annotate(String sampleId, String annotateSetName, ObjectMap params) throws CatalogException, IOException {
@@ -51,12 +54,12 @@ public class SampleClient extends AnnotationClient<Sample, SampleAclEntry> {
     }
 
     public QueryResponse<Sample> loadFromPed(String studyId, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "studyId", studyId);
+        params = addParamsToObjectMap(params, "study", studyId);
         return execute(SAMPLES_URL, "load", params, GET, Sample.class);
     }
 
     public QueryResponse<ObjectMap> groupBy(String studyId, String fields, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "studyId", studyId, "fields", fields);
+        params = addParamsToObjectMap(params, "study", studyId, "fields", fields);
         return execute(SAMPLES_URL, "groupBy", params, GET, ObjectMap.class);
     }
 

@@ -20,10 +20,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,9 +41,25 @@ public interface IProjectManager extends ResourceManager<Long, Project> {
      * @param userId User id of the user asking for the project id.
      * @param projectStr Project id in string format. Could be one of [id | user@project | project].
      * @return the numeric project id.
-     * @throws CatalogDBException CatalogDBException.
+     * @throws CatalogException CatalogException.
      */
-    long getId(String userId, String projectStr) throws CatalogDBException;
+    long getId(String userId, String projectStr) throws CatalogException;
+
+    /**
+     * Obtains the list of projectIds corresponding to the comma separated list of project strings given in projectStr.
+     *
+     * @param userId User demanding the action.
+     * @param projectList List of project ids.
+     * @return A list of project ids.
+     * @throws CatalogException CatalogException.
+     */
+    default List<Long> getIds(String userId, List<String> projectList) throws CatalogException {
+        List<Long> projectIds = new ArrayList<>();
+        for (String projectStr : projectList) {
+            projectIds.add(getId(userId, projectStr));
+        }
+        return projectIds;
+    }
 
     /**
      * Obtains the list of projectIds corresponding to the comma separated list of project strings given in projectStr.
@@ -53,19 +69,26 @@ public interface IProjectManager extends ResourceManager<Long, Project> {
      * @return A list of project ids.
      * @throws CatalogException CatalogException.
      */
-    default List<Long> getIds(String userId, String projectStr) throws CatalogException {
-        List<Long> projectIds = new ArrayList<>();
-        for (String projectId : projectStr.split(",")) {
-            projectIds.add(getId(userId, projectId));
-        }
-        return projectIds;
-    }
+    List<Long> getIds(String userId, String projectStr) throws CatalogException;
 
     @Deprecated
     long getId(String projectId) throws CatalogException;
 
-    QueryResult<Project> create(String name, String alias, String description, String organization, QueryOptions options,
-                                String sessionId) throws CatalogException;
+    QueryResult<Project> create(String name, String alias, String description, String organization, String scientificName,
+                                String commonName, String taxonomyCode, String assembly, QueryOptions options, String sessionId)
+            throws CatalogException;
+
+    /**
+     * Delete entries from Catalog.
+     *
+     * @param ids       Comma separated list of ids corresponding to the objects to delete
+     * @param options   Deleting options.
+     * @param sessionId sessionId
+     * @return A list with the deleted objects
+     * @throws CatalogException CatalogException
+     * @throws IOException IOException.
+     */
+    List<QueryResult<Project>> delete(String ids, QueryOptions options, String sessionId) throws CatalogException, IOException;
 
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.
@@ -131,4 +154,14 @@ public interface IProjectManager extends ResourceManager<Long, Project> {
         return groupBy(userId, query, field, options, sessionId);
     }
 
+    /**
+     * Obtain the list of projects and studies that are shared with the user.
+     *
+     * @param userId user whose projects and studies are being shared with.
+     * @param queryOptions QueryOptions object.
+     * @param sessionId Session id which should correspond to userId.
+     * @return A QueryResult object containing the list of projects and studies that are shared with the user.
+     * @throws CatalogException CatalogException
+     */
+    QueryResult<Project> getSharedProjects(String userId, QueryOptions queryOptions, String sessionId) throws CatalogException;
 }

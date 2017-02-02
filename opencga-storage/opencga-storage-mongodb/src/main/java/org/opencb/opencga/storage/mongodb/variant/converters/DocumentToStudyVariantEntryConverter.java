@@ -233,22 +233,24 @@ public class DocumentToStudyVariantEntryConverter {
         return studyIds.get(studyId);
     }
 
-    public Document convertToStorageType(Variant variant, StudyEntry object) {
+    public Document convertToStorageType(Variant variant, StudyEntry studyEntry) {
 
-        if (object.getFiles().size() != 1) {
+        if (studyEntry.getFiles().size() != 1) {
             throw new IllegalArgumentException("Expected just one file in the study to convert");
         }
-        FileEntry file = object.getFiles().get(0);
+        FileEntry file = studyEntry.getFiles().get(0);
 
-        return convertToStorageType(variant, object, file, object.getSamplesName());
+        return convertToStorageType(variant, studyEntry, file, new LinkedHashSet<>(studyEntry.getOrderedSamplesName()));
     }
 
-    public Document convertToStorageType(Variant variant, StudyEntry studyEntry, FileEntry file, Set<String> sampleNames) {
+    public Document convertToStorageType(Variant variant, StudyEntry studyEntry, FileEntry file, LinkedHashSet<String> sampleNames) {
+        return convertToStorageType(variant, studyEntry, Collections.singletonList(file), sampleNames);
+    }
+
+    public Document convertToStorageType(Variant variant, StudyEntry studyEntry, List<FileEntry> files, LinkedHashSet<String> sampleNames) {
 
         int studyId = Integer.parseInt(studyEntry.getStudyId());
-        int fileId = Integer.parseInt(file.getFileId());
         Document studyObject = new Document(STUDYID_FIELD, studyId);
-        Document fileObject = new Document(FILEID_FIELD, fileId);
 
         // Alternate alleles
         List<Document> alternates = new LinkedList<>();
@@ -266,6 +268,38 @@ public class DocumentToStudyVariantEntryConverter {
             }
         }
 
+        final List<Document> fileDocuments;
+        if (!files.isEmpty()) {
+            fileDocuments = new ArrayList<>(files.size());
+
+            for (FileEntry file : files) {
+                Document fileObject = convertFileDocument(studyEntry, file);
+                fileDocuments.add(fileObject);
+
+                if (samplesConverter != null) {
+                    Document otherFields = new Document();
+                    fileObject.append(SAMPLE_DATA_FIELD, otherFields);
+                    studyObject.putAll(samplesConverter.convertToStorageType(studyEntry, studyId, otherFields, sampleNames));
+                }
+            }
+
+        } else {
+            fileDocuments = Collections.singletonList(convertFileDocument(studyEntry, new FileEntry()));
+        }
+
+        studyObject.append(FILES_FIELD, fileDocuments);
+        if (alternates != null && !alternates.isEmpty()) {
+            studyObject.append(ALTERNATES_FIELD, alternates);
+        }
+
+
+
+        return studyObject;
+    }
+
+    protected Document convertFileDocument(StudyEntry studyEntry, FileEntry file) {
+        int fileId = Integer.parseInt(file.getFileId());
+        Document fileObject = new Document(FILEID_FIELD, fileId);
         // Attributes
         if (file.getAttributes().size() > 0) {
             Document attrs = null;
@@ -317,22 +351,7 @@ public class DocumentToStudyVariantEntryConverter {
                     new Document("s", call.substring(0, indexOf))
                             .append("i", Integer.parseInt(call.substring(indexOf + 1))));
         }
-
-        studyObject.append(FILES_FIELD, Collections.singletonList(fileObject));
-        if (alternates != null && !alternates.isEmpty()) {
-            studyObject.append(ALTERNATES_FIELD, alternates);
-        }
-
-//        if (samples != null && !samples.isEmpty()) {
-        if (samplesConverter != null) {
-            Document otherFields = new Document();
-            fileObject.append(SAMPLE_DATA_FIELD, otherFields);
-            studyObject.putAll(samplesConverter.convertToStorageType(studyEntry, studyId, fileId, otherFields, sampleNames));
-
-        }
-
-
-        return studyObject;
+        return fileObject;
     }
 
     public DocumentToSamplesConverter getSamplesConverter() {

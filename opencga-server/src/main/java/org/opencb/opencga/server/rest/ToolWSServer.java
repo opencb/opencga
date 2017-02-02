@@ -63,7 +63,7 @@ public class ToolWSServer extends OpenCGAWSServer {
         try {
             List<QueryResult> results = new LinkedList<>();
             for (String id : toolIds) {
-                QueryResult<Tool> toolResult = catalogManager.getTool(catalogManager.getToolId(id), sessionId);
+                QueryResult<Tool> toolResult = catalogManager.getJobManager().getTool(catalogManager.getToolId(id), sessionId);
                 Tool tool = toolResult.getResult().get(0);
                 ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
                 tool.setManifest(toolManager.getManifest());
@@ -88,9 +88,11 @@ public class ToolWSServer extends OpenCGAWSServer {
     })
     public Response search(@ApiParam(value = "id", required = false) @QueryParam(value = "id") @DefaultValue("") String toolId,
                            @ApiParam(value = "userId", required = false) @QueryParam(value = "userId") @DefaultValue("") String userId,
-                           @ApiParam(value = "alias", required = false) @QueryParam(value = "alias") @DefaultValue("") String alias) {
+                           @ApiParam(value = "alias", required = false) @QueryParam(value = "alias") @DefaultValue("") String alias,
+                           @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
-            QueryResult<Tool> toolResult = catalogManager.getAllTools(query, queryOptions, sessionId);
+            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
+            QueryResult<Tool> toolResult = catalogManager.getJobManager().getTools(query, queryOptions, sessionId);
             for (Tool tool : toolResult.getResult()) {
                 ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), "");
                 tool.setManifest(toolManager.getManifest());
@@ -111,7 +113,7 @@ public class ToolWSServer extends OpenCGAWSServer {
         try {
             List<String> results = new LinkedList<>();
             for (String id : toolIds) {
-                Tool tool = catalogManager.getTool(catalogManager.getToolId(id), sessionId).getResult().get(0);
+                Tool tool = catalogManager.getJobManager().getTool(catalogManager.getToolId(id), sessionId).getResult().get(0);
                 ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
                 String help = toolManager.help("");
                 System.out.println(help);

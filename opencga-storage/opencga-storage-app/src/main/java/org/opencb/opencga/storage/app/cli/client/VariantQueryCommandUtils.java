@@ -230,6 +230,7 @@ public class VariantQueryCommandUtils {
         return queryOptions;
     }
 
+    @Deprecated
     public static OutputStream getOutputStream(CliOptionsParser.QueryVariantsCommandOptions queryVariantsOptions) throws IOException {
         /*
          * Output parameters

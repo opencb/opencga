@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.hadoop.variant.executors;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.exec.Command;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 
 import java.util.List;
 
@@ -31,7 +31,7 @@ public class ExternalMRExecutor implements MRExecutor {
     private final List<String> env;
 
     public ExternalMRExecutor(ObjectMap options) {
-        env = options.getAsStringList(HadoopVariantStorageManager.HADOOP_ENV);
+        env = options.getAsStringList(HadoopVariantStorageEngine.HADOOP_ENV);
     }
 
     @Override

@@ -139,6 +139,24 @@ public class Cohort extends Annotable<CohortAclEntry> {
             this.probands = probands;
             return this;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof Family)) {
+                return false;
+            }
+            Family family = (Family) o;
+            return Objects.equals(id, family.id)
+                    && Objects.equals(probands, family.probands);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(id, probands);
+        }
     }
 
     @Override
@@ -264,6 +282,32 @@ public class Cohort extends Annotable<CohortAclEntry> {
     public Cohort setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Cohort)) {
+            return false;
+        }
+        Cohort cohort = (Cohort) o;
+        return id == cohort.id
+                && Objects.equals(name, cohort.name)
+                && type == cohort.type
+                && Objects.equals(creationDate, cohort.creationDate)
+                && Objects.equals(status, cohort.status)
+                && Objects.equals(description, cohort.description)
+                && Objects.equals(samples, cohort.samples)
+                && Objects.equals(family, cohort.family)
+                && Objects.equals(stats, cohort.stats)
+                && Objects.equals(attributes, cohort.attributes);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, type, creationDate, status, description, samples, family, stats, attributes);
     }
 
 }

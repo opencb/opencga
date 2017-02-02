@@ -71,9 +71,10 @@ public class VariableSetWSServerTest {
     public void init() throws Exception {
 //        serverTestUtils.setUp();
         webTarget = serverTestUtils.getWebTarget();
-        sessionId = OpenCGAWSServer.catalogManager.login("user", CatalogManagerTest.PASSWORD, "localhost").first().getString("sessionId");
+        sessionId = OpenCGAWSServer.catalogManager.login("user", CatalogManagerTest.PASSWORD, "localhost").first().getId();
         studyId = OpenCGAWSServer.catalogManager.getStudyId("user@1000G:phase1");
-        variableSetId = OpenCGAWSServer.catalogManager.getAllVariableSet(studyId, null, sessionId).first().getId();
+        variableSetId = OpenCGAWSServer.catalogManager.getStudyManager().searchVariableSets(Long.toString(studyId), null,null, sessionId)
+                .first().getId();
 
     }
 

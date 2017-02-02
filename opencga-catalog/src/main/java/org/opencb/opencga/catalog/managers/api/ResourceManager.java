@@ -32,18 +32,6 @@ import java.util.List;
 public interface ResourceManager<I, R> {
 
     /**
-     * Creates a R object entry in Catalog.
-     *
-     * @param objectMap Object with all the attributes of the object
-     * @param options Object the includes/excludes to obtain the object after the creation
-     * @param sessionId sessionId
-     * @return The created object
-     * @throws CatalogException CatalogException
-     */
-    @Deprecated
-    QueryResult<R> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException;
-
-    /**
      * Reads an object from Catalog given an ID.
      *
      * @param id        Id of the object to read
@@ -76,18 +64,6 @@ public interface ResourceManager<I, R> {
      * @throws CatalogException CatalogException
      */
     QueryResult<R> update(I id, ObjectMap parameters, QueryOptions options, String sessionId) throws CatalogException;
-
-    /**
-     * Delete entries from Catalog.
-     *
-     * @param ids       Comma separated list of ids corresponding to the objects to delete
-     * @param options   Deleting options.
-     * @param sessionId sessionId
-     * @return A list with the deleted objects
-     * @throws CatalogException CatalogException
-     * @throws IOException IOException.
-     */
-    List<QueryResult<R>> delete(String ids, QueryOptions options, String sessionId) throws CatalogException, IOException;
 
     /**
      * Delete the entries satisfying the query.

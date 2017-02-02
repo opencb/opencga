@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.api;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -32,6 +33,16 @@ import java.util.function.Consumer;
  */
 public interface DBAdaptor<T> extends Iterable<T> {
 
+    /**
+     * SKIP_CHECK is used when deleting a document. If SKIP_CHECK is set to false, the document will be deleted no matter if other
+     * documents might depend on that one.
+     */
+    String SKIP_CHECK = "skipCheck";
+    /**
+     * Deprecated constant. Use SKIP_CHECK instead.
+     */
+    @Deprecated
+    String FORCE = "force";
 
     default QueryResult<Long> count() throws CatalogDBException {
         return count(new Query());
@@ -81,14 +92,29 @@ public interface DBAdaptor<T> extends Iterable<T> {
 
     QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException;
 
-    QueryResult<T> delete(long id, QueryOptions queryOptions) throws CatalogDBException;
+    void delete(long id) throws CatalogDBException;
 
-    QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException;
+    void delete(Query query) throws CatalogDBException;
 
     @Deprecated
-    QueryResult<T> remove(long id, QueryOptions queryOptions) throws CatalogDBException;
+    default QueryResult<T> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
+        throw new NotImplementedException();
+    }
 
-    QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException;
+    @Deprecated
+    default QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        throw new NotImplementedException();
+    }
+
+    @Deprecated
+    default QueryResult<T> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+        throw new NotImplementedException();
+    }
+
+    @Deprecated
+    default QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        throw new NotImplementedException();
+    }
 
     QueryResult<T> restore(long id, QueryOptions queryOptions) throws CatalogDBException;
 
@@ -103,9 +129,8 @@ public interface DBAdaptor<T> extends Iterable<T> {
         try {
             return iterator(new Query(), new QueryOptions());
         } catch (CatalogDBException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-        return null;
     }
 
     DBIterator<T> iterator(Query query, QueryOptions options) throws CatalogDBException;
@@ -129,7 +154,7 @@ public interface DBAdaptor<T> extends Iterable<T> {
         try {
             forEach(new Query(), action, new QueryOptions());
         } catch (CatalogDBException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
