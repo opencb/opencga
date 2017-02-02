@@ -66,17 +66,17 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
 //    public static final String GENE_FIELD = "gene";
 
     protected static final Map<VariantField, List<String>> FIELDS_MAP;
-    public static final Set<String> REQUIRED_FIELDS_SET;
+    public static final Set<VariantField> REQUIRED_FIELDS_SET;
 
 
     static {
-        Set<String> requiredFieldsSet = new HashSet<>();
-        requiredFieldsSet.add(CHROMOSOME_FIELD);
-        requiredFieldsSet.add(START_FIELD);
-        requiredFieldsSet.add(END_FIELD);
-        requiredFieldsSet.add(REFERENCE_FIELD);
-        requiredFieldsSet.add(ALTERNATE_FIELD);
-        requiredFieldsSet.add(TYPE_FIELD);
+        Set<VariantField> requiredFieldsSet = new HashSet<>();
+        requiredFieldsSet.add(VariantField.CHROMOSOME);
+        requiredFieldsSet.add(VariantField.START);
+        requiredFieldsSet.add(VariantField.END);
+        requiredFieldsSet.add(VariantField.REFERENCE);
+        requiredFieldsSet.add(VariantField.ALTERNATE);
+        requiredFieldsSet.add(VariantField.TYPE);
         REQUIRED_FIELDS_SET = Collections.unmodifiableSet(requiredFieldsSet);
 
         Map<VariantField, List<String>> map = new EnumMap<>(VariantField.class);

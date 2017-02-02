@@ -278,10 +278,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private QueryResult<Variant> getVariantQueryResult(Query query, QueryOptions options) {
-        //        parseQueryOptions(options, qb);
         Document mongoQuery = parseQuery(query);
-
-//        DBObject projection = parseProjectionQueryOptions(options);
         Document projection = createProjection(query, options);
 //        logger.debug("Query to be executed: '{}'", mongoQuery.toJson(new JsonWriterSettings(JsonMode.SHELL, false)));
         options.putIfAbsent(QueryOptions.SKIP_COUNT, true);
@@ -1483,7 +1480,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        Set<VariantField> returnedFields = VariantField.getReturnedFields(options, true);
+        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
+        // Add all required fields
+        returnedFields.addAll(DocumentToVariantConverter.REQUIRED_FIELDS_SET);
+        if (returnedFields.contains(VariantField.STUDIES) && !returnedFields.contains(VariantField.STUDIES_STUDY_ID)) {
+            returnedFields.add(VariantField.STUDIES_STUDY_ID);
+        }
+
+        returnedFields = VariantField.prune(returnedFields);
         logger.info(returnedFields.toString());
 
         if (!returnedFields.isEmpty()) { //Include some
@@ -1498,10 +1502,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     logger.warn("Unknown include field: {}", s);
                 }
             }
-        }
-
-        for (String key : DocumentToVariantConverter.REQUIRED_FIELDS_SET) {
-            projection.put(key, 1);
         }
 
 //        if (query.containsKey(VariantQueryParams.RETURNED_FILES.key()) && projection.containsKey(DocumentToVariantConverter
@@ -1544,7 +1544,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        logger.debug("Projection: {}", projection);
+        logger.debug("QueryOptions: {}", options.toJson());
+        logger.debug("Projection:   {}", projection);
         return projection;
     }
 
