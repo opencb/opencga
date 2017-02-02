@@ -38,6 +38,7 @@ import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -147,7 +148,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         this.utils = new VariantDBAdaptorUtils(this);
         String species = configuration.getString(VariantAnnotationManager.SPECIES);
         String assembly = configuration.getString(VariantAnnotationManager.ASSEMBLY);
-        cellBaseClient = new CellBaseClient(species, assembly, cellbaseConfiguration.toClientConfiguration());
+        ClientConfiguration clientConfiguration = cellbaseConfiguration.toClientConfiguration();
+        if (StringUtils.isEmpty(species)) {
+            species = clientConfiguration.getDefaultSpecies();
+        }
+        cellBaseClient = new CellBaseClient(species, assembly, clientConfiguration);
         this.cacheManager = new CacheManager(storageConfiguration);
         NUMBER_INSTANCES.incrementAndGet();
     }
