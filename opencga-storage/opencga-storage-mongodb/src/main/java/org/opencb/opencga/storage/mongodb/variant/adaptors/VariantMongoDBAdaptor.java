@@ -610,8 +610,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         Document mongoQuery = parseQuery(query);
 
-        boolean count = options != null && options.getBoolean("count", false);
-        int order = options != null ? options.getInt("order", -1) : -1;
+        if (options == null) {
+            options = new QueryOptions();
+        } else {
+            options = new QueryOptions(options); // Copy given QueryOptions.
+        }
+        boolean count = options.getBoolean("count", false);
+        int order = options.getInt("order", -1);
 
         Document project;
         Document projectAndCount;
@@ -644,12 +649,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         Document groupAndAddToSet = new Document("$group", new Document("_id", "$field")
                 .append("values", new Document("$addToSet", "$_id"))); // sum, count, avg, ...?
         Document sort = new Document("$sort", new Document("count", order)); // 1 = ascending, -1 = descending
-        Document skip = null;
-        if (options != null && options.getInt("skip", -1) > 0) {
-            skip = new Document("$skip", options.getInt("skip", -1));
-        }
-        Document limit = new Document("$limit",
-                options != null && options.getInt("limit", -1) > 0 ? options.getInt("limit") : 10);
+
+        int skip = options.getInt(QueryOptions.SKIP, -1);
+        Document skipStep = skip > 0 ? new Document("$skip", skip) : null;
+
+        int limit = options.getInt(QueryOptions.LIMIT, -1) > 0 ? options.getInt(QueryOptions.LIMIT) : 10;
+        options.remove(QueryOptions.LIMIT); // Remove limit or Datastore will add a new limit step
+        Document limitStep = new Document("$limit", limit);
 
         List<Bson> operations = new LinkedList<>();
         operations.add(match);
@@ -661,10 +667,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         operations.add(groupAndAddToSet);
         operations.add(projectAndCount);
         operations.add(sort);
-        if (skip != null) {
-            operations.add(skip);
+        if (skipStep != null) {
+            operations.add(skipStep);
         }
-        operations.add(limit);
+        operations.add(limitStep);
         logger.debug("db." + collectionName + ".aggregate( " + operations + " )");
         QueryResult<Document> queryResult = variantsCollection.aggregate(operations, options);
 
@@ -1493,7 +1499,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
 
         returnedFields = VariantField.prune(returnedFields);
-        logger.info(returnedFields.toString());
 
         if (!returnedFields.isEmpty()) { //Include some
             for (VariantField s : returnedFields) {
