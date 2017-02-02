@@ -146,7 +146,7 @@ public class GeneralCliOptions {
         public String dbName;
 
         @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, variableArity = true)
-        public List<String> input;
+        public String input;
 
         @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1, required = false)
         public String outdir;

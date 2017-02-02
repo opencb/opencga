@@ -145,7 +145,8 @@ public class VariantCommandExecutor extends CommandExecutor {
     private void index() throws URISyntaxException, IOException, StorageEngineException, FileFormatException {
         StorageVariantCommandOptions.VariantIndexCommandOptions indexVariantsCommandOptions = variantCommandOptions.indexVariantsCommandOptions;
         List<URI> inputUris = new LinkedList<>();
-        for (String uri : indexVariantsCommandOptions.commonIndexOptions.input) {
+        String inputs[] = indexVariantsCommandOptions.commonIndexOptions.input.split(",");
+        for (String uri: inputs) {
             URI variantsUri = UriUtils.createUri(uri);
             if (variantsUri.getScheme().startsWith("file") || variantsUri.getScheme().isEmpty()) {
                 FileUtils.checkFile(Paths.get(variantsUri));

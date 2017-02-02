@@ -133,7 +133,7 @@ public class StorageVariantCommandOptions {
 
         @Deprecated
         @Parameter(names = {"--sample-ids"}, description = "CSV list of sampleIds. <sampleName>:<sampleId>[,<sampleName>:<sampleId>]*", hidden = true)
-        public List<String> sampleIds;
+        public String sampleIds;
 
 
 //        @Deprecated
@@ -297,7 +297,7 @@ public class StorageVariantCommandOptions {
         public boolean histogram;
 
         @Parameter(names = {"--histogram-interval"}, description = "Histogram interval size. Default:2000", arity = 1)
-        public String interval;
+        public int interval;
 
         @Parameter(names = {"--cadd"}, description = "Functional score: {functional_score}[<|>|<=|>=]{number} "
                 + "e.g. cadd_scaled>5.2,cadd_raw<=0.3", arity = 1)
@@ -388,11 +388,11 @@ public class StorageVariantCommandOptions {
         public String assembly = "GRCh37";
 
         @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
-        public List<String> filterRegion;
+        public String filterRegion;
 
         @Deprecated
         @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter.class)
-        public List<String> filterChromosome;
+        public String filterChromosome;
 
         @Deprecated
         @Parameter(names = {"--filter-gene"}, description = "Comma separated gene filters", splitter = CommaParameterSplitter.class)

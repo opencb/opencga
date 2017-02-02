@@ -106,7 +106,8 @@ public class AlignmentCommandExecutor extends CommandExecutor {
     private void index() throws Exception {
         StorageAlignmentCommandOptions.IndexAlignmentsCommandOptions indexAlignmentsCommandOptions = alignmentCommandOptions.indexAlignmentsCommandOptions;
 
-        URI inputUri = UriUtils.createUri(indexAlignmentsCommandOptions.commonIndexOptions.input.get(0));
+        String inputs[] = indexAlignmentsCommandOptions.commonIndexOptions.input.split(",");
+        URI inputUri = UriUtils.createUri(inputs[0]);
 //        FileUtils.checkFile(Paths.get(inputUri.getPath()));
 
         URI outdirUri = (indexAlignmentsCommandOptions.commonIndexOptions.outdir != null && !indexAlignmentsCommandOptions.commonIndexOptions.outdir.isEmpty())
