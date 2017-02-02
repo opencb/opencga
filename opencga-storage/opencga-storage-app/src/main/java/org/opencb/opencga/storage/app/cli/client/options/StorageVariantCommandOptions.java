@@ -120,7 +120,7 @@ public class StorageVariantCommandOptions {
         public String studyName;
 
         @Deprecated
-        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", arity = 1)
+        @Parameter(names = {"--study-id"}, description = "Unique ID for the study where the file is classified", arity = 1)
         public String studyId = VariantStorageEngine.Options.STUDY_ID.defaultValue().toString();
 
 

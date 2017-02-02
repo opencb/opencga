@@ -123,7 +123,7 @@ public class VariantCommandExecutor extends CommandExecutor {
                 configure(variantCommandOptions.importVariantsCommandOptions.commonOptions);
                 importData();
                 break;
-            case "annotation":
+            case "annotate":
                 configure(variantCommandOptions.annotateVariantsCommandOptions.commonOptions);
                 annotation();
                 break;
@@ -153,12 +153,12 @@ public class VariantCommandExecutor extends CommandExecutor {
             inputUris.add(variantsUri);
         }
 
-        URI pedigreeUri = (indexVariantsCommandOptions.pedigree != null && !indexVariantsCommandOptions.pedigree.isEmpty())
-                ? UriUtils.createUri(indexVariantsCommandOptions.pedigree)
-                : null;
-        if (pedigreeUri != null) {
-            FileUtils.checkFile(Paths.get(pedigreeUri));
-        }
+//        URI pedigreeUri = (indexVariantsCommandOptions.pedigree != null && !indexVariantsCommandOptions.pedigree.isEmpty())
+//                ? UriUtils.createUri(indexVariantsCommandOptions.pedigree)
+//                : null;
+//        if (pedigreeUri != null) {
+//            FileUtils.checkFile(Paths.get(pedigreeUri));
+//        }
 
         URI outdirUri = (indexVariantsCommandOptions.commonIndexOptions.outdir != null && !indexVariantsCommandOptions.commonIndexOptions.outdir.isEmpty())
                 ? UriUtils.createDirectoryUri(indexVariantsCommandOptions.commonIndexOptions.outdir)
