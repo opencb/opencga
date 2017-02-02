@@ -43,10 +43,13 @@ public class StorageVariantCommandOptions {
     public JCommander jCommander;
     public GeneralCliOptions.CommonOptions commonCommandOptions;
     public GeneralCliOptions.IndexCommandOptions indexCommandOptions;
+    public GeneralCliOptions.QueryCommandOptions queryCommandOptions;
 
-    public StorageVariantCommandOptions(GeneralCliOptions.CommonOptions commonOptions, GeneralCliOptions.IndexCommandOptions indexCommandOptions, JCommander jCommander) {
+    public StorageVariantCommandOptions(GeneralCliOptions.CommonOptions commonOptions, GeneralCliOptions.IndexCommandOptions indexCommandOptions,
+                                        GeneralCliOptions.QueryCommandOptions queryCommandOptions, JCommander jCommander) {
         this.commonCommandOptions = commonOptions;
         this.indexCommandOptions  = indexCommandOptions;
+        this.queryCommandOptions = queryCommandOptions;
         this.jCommander = jCommander;
 
         this.indexVariantsCommandOptions = new VariantIndexCommandOptions();
@@ -315,27 +318,29 @@ public class StorageVariantCommandOptions {
         @ParametersDelegate
         public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
 
+        @ParametersDelegate
+        public GeneralCliOptions.QueryCommandOptions commonQueryOptions = queryCommandOptions;
 
-        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
-        public String output;
-
-        @Parameter(names = {"-d", "--database"}, description = "DataBase name", arity = 1)
-        public String dbName;
-
-        @Parameter(names = {"-i", "--include"}, description = "", arity = 1)
-        public String include;
-
-        @Parameter(names = {"-e", "--exclude"}, description = "", arity = 1)
-        public String exclude;
-
-        @Parameter(names = {"--skip"}, description = "Skip some number of elements.", arity = 1)
-        public int skip;
-
-        @Parameter(names = {"--limit"}, description = "Limit the number of returned elements.", arity = 1)
-        public int limit;
-
-        @Parameter(names = {"--count"}, description = "Count results. Do not return elements.", arity = 0)
-        public boolean count;
+//        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", arity = 1)
+//        public String output;
+//
+//        @Parameter(names = {"-d", "--database"}, description = "DataBase name", arity = 1)
+//        public String dbName;
+//
+//        @Parameter(names = {"-i", "--include"}, description = "", arity = 1)
+//        public String include;
+//
+//        @Parameter(names = {"-e", "--exclude"}, description = "", arity = 1)
+//        public String exclude;
+//
+//        @Parameter(names = {"--skip"}, description = "Skip some number of elements.", arity = 1)
+//        public int skip;
+//
+//        @Parameter(names = {"--limit"}, description = "Limit the number of returned elements.", arity = 1)
+//        public int limit;
+//
+//        @Parameter(names = {"--count"}, description = "Count results. Do not return elements.", arity = 0)
+//        public boolean count;
 
         @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, json or json.gz", arity = 1)
         public String outputFormat = "vcf";

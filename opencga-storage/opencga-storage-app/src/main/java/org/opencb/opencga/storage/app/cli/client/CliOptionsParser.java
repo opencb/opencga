@@ -50,7 +50,8 @@ public class CliOptionsParser extends GeneralCliOptions {
         alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexCommandOptions);
         alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryCommandOptions);
 
-        variantCommandOptions = new StorageVariantCommandOptions(this.commonOptions, this.indexCommandOptions, this.jcommander);
+        variantCommandOptions = new StorageVariantCommandOptions(this.commonOptions, this.indexCommandOptions, this.queryCommandOptions,
+                this.jcommander);
         jcommander.addCommand("variant", variantCommandOptions);
         JCommander variantSubCommands = jcommander.getCommands().get("variant");
         variantSubCommands.addCommand("index", variantCommandOptions.indexVariantsCommandOptions);
