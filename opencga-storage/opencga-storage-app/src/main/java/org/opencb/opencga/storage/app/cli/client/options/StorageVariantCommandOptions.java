@@ -146,13 +146,13 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--id"}, description = VariantDBAdaptor.ID_DESCR)
         public String id;
 
-        @Parameter(names = {"-r", "--region"}, description = "CSV list of regions: {chr}[:{start}-{end}], eg.: 2,3:1000000-2000000")
+        @Parameter(names = {"-r", "--region"}, description = VariantDBAdaptor.REGION_DESCR)
         public String region;
 
         @Parameter(names = {"--region-file"}, description = "GFF File with regions")
         public String regionFile;
 
-        @Parameter(names = {"-g", "--gene"}, description = "CSV list of genes")
+        @Parameter(names = {"-g", "--gene"}, description = VariantDBAdaptor.GENE_DESCR)
         public String gene;
 
         @Parameter(names = {"--group-by"}, description = "Group by gene, ensembl gene or consequence_type")
