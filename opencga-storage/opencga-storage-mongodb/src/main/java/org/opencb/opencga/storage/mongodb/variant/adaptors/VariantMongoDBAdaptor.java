@@ -54,11 +54,8 @@ import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.auth.MongoCredentials;
@@ -1247,12 +1244,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
 
             // If using an elemMatch for the study, keys don't need to start with "studies"
-            String studyQueryPrefix = studyElemMatch ? "" : STUDIES_FIELD + '.';
+            String studyQueryPrefix = studyElemMatch ? "" : DocumentToVariantConverter.STUDIES_FIELD + '.';
             QueryBuilder studyBuilder = QueryBuilder.start();
             final StudyConfiguration defaultStudyConfiguration;
 
             if (isValidParam(query, VariantQueryParams.STUDIES)) {
-                String sidKey = STUDIES_FIELD + '.' + DocumentToStudyVariantEntryConverter.STUDYID_FIELD;
+                String sidKey = DocumentToVariantConverter.STUDIES_FIELD + '.' + DocumentToStudyVariantEntryConverter.STUDYID_FIELD;
                 String value = objectToString(query.get(VariantQueryParams.STUDIES.key()));
 
                 // Check that the study exists
@@ -1485,22 +1482,26 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 options.remove(QueryOptions.SORT);
             }
         }
-        Set<String> returnedFields = getReturnedFields(options);
+
+        Set<VariantField> returnedFields = VariantField.getReturnedFields(options, true);
+        logger.info(returnedFields.toString());
+
         if (!returnedFields.isEmpty()) { //Include some
-            for (String s : returnedFields) {
-                String key = DocumentToVariantConverter.toShortFieldName(s);
-                if (key != null) {
-                    projection.put(key, 1);
-                } else {
-                    if (!s.equals(VariantFields.FILES.toString()) && !s.equals(VariantFields.SAMPLES.toString())) {
-                        logger.warn("Unknown include field: {}", s);
+            for (VariantField s : returnedFields) {
+                List<String> keys = DocumentToVariantConverter.toShortFieldName(s);
+//                String key = DocumentToVariantConverter.toShortFieldName(s.fieldName());
+                if (keys != null) {
+                    for (String key : keys) {
+                        projection.put(key, 1);
                     }
+                } else {
+                    logger.warn("Unknown include field: {}", s);
                 }
             }
         }
 
-        for (String field : DocumentToVariantConverter.REQUIRED_FIELDS_SET) {
-            projection.put(field, 1);
+        for (String key : DocumentToVariantConverter.REQUIRED_FIELDS_SET) {
+            projection.put(key, 1);
         }
 
 //        if (query.containsKey(VariantQueryParams.RETURNED_FILES.key()) && projection.containsKey(DocumentToVariantConverter
@@ -1861,12 +1862,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             samplesConverter.setReturnedUnknownGenotype(query.getString(VariantQueryParams.UNKNOWN_GENOTYPE.key()));
         }
 
-        samplesConverter.setReturnedSamples(getReturnedSamplesList(query, options));
+        Set<VariantField> fields = VariantField.getReturnedFields(options);
+        samplesConverter.setReturnedSamples(getReturnedSamplesList(query, fields));
 
         DocumentToStudyVariantEntryConverter studyEntryConverter;
         Collection<Integer> returnedFiles;
-        if (!Collections.disjoint(options.getAsStringList(QueryOptions.EXCLUDE),
-                DocumentToVariantConverter.EXCLUDE_STUDIES_FILES_FIELD)) {
+        if (!fields.contains(VariantField.STUDIES_FILES)) {
             returnedFiles = Collections.emptyList();
         } else if (query.containsKey(VariantQueryParams.RETURNED_FILES.key())) {
             returnedFiles = query.getAsIntegerList(VariantQueryParams.RETURNED_FILES.key());

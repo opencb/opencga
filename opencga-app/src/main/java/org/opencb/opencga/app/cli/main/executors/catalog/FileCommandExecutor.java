@@ -143,36 +143,6 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
 
         createOutput(queryResponse);
     }
-//
-//    private QueryResponse<File> copy() throws CatalogException {
-//        logger.debug("Creating a new file");
-//        //openCGAClient.getFileClient(). /******************* Falta el create en FileClient.java ?? **//
-////        OptionsParser.FileCommands.CreateCommand c = optionsParser.getFileCommands().createCommand;
-//        FileCommandOptions.CopyCommandOptions copyCommandOptions = filesCommandOptions.copyCommandOptions;
-//        long studyId = catalogManager.getStudyId(copyCommandOptions.study);
-//        Path inputFile = Paths.get(copyCommandOptions.inputFile);
-//        URI sourceUri;
-//        try {
-//            sourceUri = new URI(null, copyCommandOptions.inputFile, null);
-//        } catch (URISyntaxException e) {
-//            throw new CatalogException("Input file is not a proper URI");
-//        }
-//        if (sourceUri.getScheme() == null || sourceUri.getScheme().isEmpty()) {
-//            sourceUri = inputFile.toUri();
-//        }
-//        if (!catalogManager.getCatalogIOManagerFactory().get(sourceUri).exists(sourceUri)) {
-//            throw new CatalogException("File " + sourceUri + " does not exist");
-//        }
-//
-//        String path = ParamUtils.defaultString(copyCommandOptions.path, "");
-//        QueryResult<File> file = catalogManager.createFile(studyId, copyCommandOptions.format, copyCommandOptions.bioformat,
-//                Paths.get(path, inputFile.getFileName().toString()).toString(), copyCommandOptions.description,
-//                copyCommandOptions.parents, -1, sessionId);
-//        new CatalogFileUtils(catalogManager).upload(sourceUri, file.first(), null, sessionId, false, false,
-//                copyCommandOptions.move, copyCommandOptions.calculateChecksum);
-//        FileMetadataReader.get(catalogManager).setMetadataInformation(file.first(), null, new QueryOptions(), sessionId, false);
-//        return new QueryResponse<>(new QueryOptions(), Arrays.asList(file));
-//    }
 
     private QueryResponse createFolder() throws CatalogException, IOException {
         logger.debug("Creating a new folder");

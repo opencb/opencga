@@ -61,7 +61,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @GET
     @Path("/create")
     @ApiOperation(value = "Create individual [WARNING]", position = 1, response = Individual.class,
-            notes = "Using the GET method is discouraged. Please use the POST one.")
+            notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web "
+                    + "service is not tested and this can be deprecated in a future version.")
     public Response createIndividual(@ApiParam(value = "(DEPRECATED) Use study instead", hidden = true) @QueryParam("studyId")
                                                  String studyIdStr,
                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
@@ -471,7 +472,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{individual}/update")
     @ApiOperation(value = "Update individual information [WARNING]", position = 6, response = Individual.class,
-    notes = "Using the GET method is discouraged. Please use the POST one.")
+    notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+            + "is not tested and this can be deprecated in a future version.")
     public Response updateIndividual(@ApiParam(value = "Individual ID or name", required = true) @PathParam("individual") String individualStr,
                                      @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                             @QueryParam("study") String studyStr,

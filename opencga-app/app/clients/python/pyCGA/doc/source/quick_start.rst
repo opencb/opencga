@@ -1,4 +1,0 @@
-Quick-start
-===========
-
-inf
