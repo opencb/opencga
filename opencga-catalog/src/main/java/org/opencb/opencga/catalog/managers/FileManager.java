@@ -1102,6 +1102,14 @@ public class FileManager extends AbstractManager implements IFileManager {
             }
         }
 
+        // We obtain the numeric ids of the samples given
+        if (StringUtils.isNotEmpty(parameters.getString(FileDBAdaptor.QueryParams.SAMPLE_IDS.key()))) {
+            String sampleIdStr = parameters.getString(FileDBAdaptor.QueryParams.SAMPLE_IDS.key());
+            long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
+            MyResourceIds resourceIds = catalogManager.getSampleManager().getIds(sampleIdStr, Long.toString(studyId), sessionId);
+            parameters.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), resourceIds.getResourceIds());
+        }
+
         //Name must be changed with "rename".
         if (parameters.containsKey("name")) {
             logger.info("Rename file using update method!");

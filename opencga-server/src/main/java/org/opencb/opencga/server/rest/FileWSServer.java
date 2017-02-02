@@ -1141,6 +1141,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 params.put(FileDBAdaptor.QueryParams.JOB_ID.key(), params.get("jobId"));
                 params.remove("jobId");
             }
+            params.remove(FileDBAdaptor.QueryParams.STUDY.key());
 //            params.putIfNotEmpty(FileDBAdaptor.QueryParams.NAME.key(), name);
 //            params.putIfNotEmpty(FileDBAdaptor.QueryParams.FORMAT.key(), format);
 //            params.putIfNotEmpty(FileDBAdaptor.QueryParams.BIOFORMAT.key(), bioformat);
@@ -1152,6 +1153,7 @@ public class FileWSServer extends OpenCGAWSServer {
 //            params.putIfNotEmpty(FileDBAdaptor.QueryParams.JOB_ID.key(), jobId);
             AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
             QueryResult queryResult = fileManager.update(resource.getResourceId(), params, queryOptions, sessionId);
+            queryResult.setId("Update file");
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -1169,7 +1171,7 @@ public class FileWSServer extends OpenCGAWSServer {
         public String description;
         //        public Long size;
 //        public int experimentId;
-        public List<Integer> sampleIds;
+        public String sampleIds;
         public Long jobId;
         public Map<String, Object> stats;
         public Map<String, Object> attributes;
@@ -1193,6 +1195,7 @@ public class FileWSServer extends OpenCGAWSServer {
             }
 
             QueryResult<File> queryResult = fileManager.update(resource.getResourceId(), map, queryOptions, sessionId);
+            queryResult.setId("Update file");
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
