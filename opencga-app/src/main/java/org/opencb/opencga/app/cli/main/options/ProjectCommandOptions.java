@@ -131,17 +131,11 @@ public class ProjectCommandOptions {
         @Parameter(names = {"-a", "--attributes"}, description = "Attributes", required = false, arity = 1)
         public String attributes;
 
-        @Parameter(names = {"--organism-scientific-name"}, description = "Organism scientific name", required = false, arity = 1)
-        public String scientificName;
-
         @Parameter(names = {"--organism-common-name"}, description = "Organism common name", required = false, arity = 1)
         public String commonName;
 
         @Parameter(names = {"--organism-taxonomy-code"}, description = "Organism taxonomy code", required = false, arity = 1)
         public String taxonomyCode;
-
-        @Parameter(names = {"--organism-assembly"}, description = "Organism assembly", required = false, arity = 1)
-        public String assembly;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "[PENDING] Delete a project")

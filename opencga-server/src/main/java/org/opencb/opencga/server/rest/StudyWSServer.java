@@ -815,8 +815,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/groups/{groupId}/delete")
-    @ApiOperation(value = "Delete the group", position = 17, notes = "Delete the group selected from the study. When filled in with a "
-            + "list of users, it will just take them out from the group leaving the group untouched.")
+    @ApiOperation(value = "Delete the group", position = 17, notes = "Delete the group selected from the study.")
     public Response deleteMembersFromGroup(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id "
                                                    + "or alias", required = true) @PathParam("study") String studyStr,
                                            @ApiParam(value = "groupId", required = true) @DefaultValue("")
