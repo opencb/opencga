@@ -55,11 +55,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
@@ -595,28 +597,36 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<File> createFolder(long studyId, String path, File.FileStatus status, boolean parents, String description,
+    public QueryResult<File> createFolder(String studyStr, String path, File.FileStatus status, boolean parents, String description,
                                           QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkPath(path, "folderPath");
         options = ParamUtils.defaultObject(options, QueryOptions::new);
+
+        String userId = catalogManager.getUserManager().getId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
+
         if (path.startsWith("/")) {
             path = path.substring(1);
         }
         if (!path.endsWith("/")) {
             path = path + "/";
         }
+
         Query query = new Query()
                 .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                 .append(FileDBAdaptor.QueryParams.PATH.key(), path);
         QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, options);
+
         if (fileQueryResult.getNumResults() == 0) {
-            return create(studyId, File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, path, null, description, status, 0, -1,
-                    null, -1, null, null, parents, options, sessionId);
+            fileQueryResult = create(Long.toString(studyId), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, path, null,
+                    description, status, 0, -1, null, -1, null, null, parents, null, options, sessionId);
+        } else {
+            // The folder already exists
+            authorizationManager.checkFilePermission(fileQueryResult.first().getId(), userId, FileAclEntry.FilePermissions.VIEW);
+            fileQueryResult.setWarningMsg("Folder was already created");
         }
-        // The folder already exists
-        // Check if the user had permissions
-        String userId = userManager.getId(sessionId);
-        authorizationManager.checkFilePermission(fileQueryResult.first().getId(), userId, FileAclEntry.FilePermissions.WRITE);
+
+        fileQueryResult.setId("Create folder");
         return fileQueryResult;
     }
 
@@ -632,13 +642,14 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<File> create(long studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path,
+    public QueryResult<File> create(String studyStr, File.Type type, File.Format format, File.Bioformat bioformat, String path,
                                     String creationDate, String description, File.FileStatus status, long size, long experimentId,
                                     List<Long> sampleIds, long jobId, Map<String, Object> stats, Map<String, Object> attributes,
-                                    boolean parents, QueryOptions options, String sessionId) throws CatalogException {
+                                    boolean parents, String content, QueryOptions options, String sessionId) throws CatalogException {
         /** Check and set all the params and create a File object **/
         ParamUtils.checkPath(path, "filePath");
         String userId = userManager.getId(sessionId);
+        long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
         type = ParamUtils.defaultObject(type, File.Type.FILE);
         format = ParamUtils.defaultObject(format, File.Format.PLAIN);
@@ -670,9 +681,9 @@ public class FileManager extends AbstractManager implements IFileManager {
         stats = ParamUtils.defaultObject(stats, HashMap<String, Object>::new);
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
-        if (!Objects.equals(status.getName(), File.FileStatus.STAGE) && type == File.Type.FILE) {
-            throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a file with status != STAGE and INDEXING");
-        }
+//        if (!Objects.equals(status.getName(), File.FileStatus.STAGE) && type == File.Type.FILE) {
+//            throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a file with status != STAGE and INDEXING");
+//        }
 
         if (type == File.Type.DIRECTORY && !path.endsWith("/")) {
             path += "/";
@@ -724,11 +735,10 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (parentFileId < 0 && StringUtils.isNotEmpty(parentPath)) {
             if (parents) {
                 newParent = true;
-                parentFileId = create(studyId, File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, parentPath,
+                parentFileId = create(Long.toString(studyId), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, parentPath,
                         file.getCreationDate(), "", new File.FileStatus(File.FileStatus.READY), 0, -1,
                         Collections.<Long>emptyList(), -1, Collections.<String, Object>emptyMap(),
-                        Collections.<String, Object>emptyMap(), true,
-                        options, sessionId).first().getId();
+                        Collections.<String, Object>emptyMap(), true, null, options, sessionId).first().getId();
             } else {
                 throw new CatalogDBException("Directory not found " + parentPath);
             }
@@ -748,9 +758,15 @@ public class FileManager extends AbstractManager implements IFileManager {
         QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(userId, parentFileId);
         file.setAcl(allFileAcls.getResult());
 
-        if (file.getType() == File.Type.DIRECTORY && Objects.equals(file.getStatus().getName(), File.FileStatus.READY)) {
+        if (Objects.equals(file.getStatus().getName(), File.FileStatus.READY)) {
             CatalogIOManager ioManager = catalogIOManagerFactory.get(uri);
-            ioManager.createDirectory(uri, parents);
+            if (file.getType() == File.Type.DIRECTORY) {
+                ioManager.createDirectory(uri, parents);
+            } else {
+                content = content != null ? content : "";
+                InputStream inputStream = new ByteArrayInputStream(content.getBytes(StandardCharsets.UTF_8));
+                ioManager.createFile(uri, inputStream);
+            }
         }
 
         QueryResult<File> queryResult = fileDBAdaptor.insert(file, studyId, options);
@@ -1100,6 +1116,14 @@ public class FileManager extends AbstractManager implements IFileManager {
                 default:
                     throw new CatalogException("Parameter '" + queryParam + "' cannot be changed.");
             }
+        }
+
+        // We obtain the numeric ids of the samples given
+        if (StringUtils.isNotEmpty(parameters.getString(FileDBAdaptor.QueryParams.SAMPLE_IDS.key()))) {
+            String sampleIdStr = parameters.getString(FileDBAdaptor.QueryParams.SAMPLE_IDS.key());
+            long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
+            MyResourceIds resourceIds = catalogManager.getSampleManager().getIds(sampleIdStr, Long.toString(studyId), sessionId);
+            parameters.put(FileDBAdaptor.QueryParams.SAMPLE_IDS.key(), resourceIds.getResourceIds());
         }
 
         //Name must be changed with "rename".
@@ -2356,7 +2380,8 @@ public class FileManager extends AbstractManager implements IFileManager {
             outDirId = getId(outDirPath, Long.toString(studyId), sessionId).getResourceId();
         } catch (CatalogException e) {
             logger.warn("'{}' does not exist. Trying to create the output directory.", outDirPath);
-            QueryResult<File> folder = createFolder(studyId, outDirPath, new File.FileStatus(), true, "", new QueryOptions(), sessionId);
+            QueryResult<File> folder = createFolder(Long.toString(studyId), outDirPath, new File.FileStatus(), true, "",
+                    new QueryOptions(), sessionId);
             outDirId = folder.first().getId();
         }
 
@@ -2375,7 +2400,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                     path = path + "/";
                 }
                 // It is a path, so we will try to create the folder
-                createFolder(studyId, path, new File.FileStatus(), true, "", new QueryOptions(), sessionId);
+                createFolder(Long.toString(studyId), path, new File.FileStatus(), true, "", new QueryOptions(), sessionId);
                 outDirId = getId(userId, path);
                 logger.info("Outdir {} -> {}", outDirId, path);
             }

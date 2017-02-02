@@ -123,7 +123,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "count", value = "Get a count of the number of results obtained. Deactivated by default.",
                     dataType = "boolean", paramType = "query")
     })
-    public Response getAllStudies(@ApiParam(value = "Project id or alias") @QueryParam("projectId") String projectId,
+    public Response getAllStudies(@ApiParam(value = "Project id or alias", required = true) @QueryParam("projectId") String projectId,
                                   @ApiParam(value = "Study name") @QueryParam("name") String name,
                                   @ApiParam(value = "Study alias") @QueryParam("alias") String alias,
                                   @ApiParam(value = "Type of study: CASE_CONTROL, CASE_SET...") @QueryParam("type") String type,
@@ -149,7 +149,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @POST
     @Path("/search")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Search studies", position = 2, response = Study[].class)
+    @ApiOperation(value = "Search studies", position = 2, hidden = true, response = Study[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
                     example = "name,attributes", dataType = "string", paramType = "query"),
@@ -815,8 +815,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/groups/{groupId}/delete")
-    @ApiOperation(value = "Delete the group", position = 17, notes = "Delete the group selected from the study. When filled in with a "
-            + "list of users, it will just take them out from the group leaving the group untouched.")
+    @ApiOperation(value = "Delete the group", position = 17, notes = "Delete the group selected from the study.")
     public Response deleteMembersFromGroup(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id "
                                                    + "or alias", required = true) @PathParam("study") String studyStr,
                                            @ApiParam(value = "groupId", required = true) @DefaultValue("")

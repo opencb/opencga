@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.server.rest;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -247,7 +248,8 @@ public class SampleWSServer extends OpenCGAWSServer {
         public String name;
         public String description;
         public String source;
-        public long individualId;
+        @JsonProperty("individual.id")
+        public String individualId;
         public Map<String, Object> attributes;
     }
 
@@ -258,7 +260,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     public Response updateByPost(@ApiParam(value = "sampleId", required = true) @PathParam("sample") String sampleStr,
                                  @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                  @QueryParam("study") String studyStr,
-                                 @ApiParam(value = "params", required = true) ObjectMap parameters) {
+                                 @ApiParam(value = "params", required = true) UpdateSample parameters) {
         try {
             AbstractManager.MyResourceId resourceId = catalogManager.getSampleManager().getId(sampleStr, studyStr, sessionId);
 

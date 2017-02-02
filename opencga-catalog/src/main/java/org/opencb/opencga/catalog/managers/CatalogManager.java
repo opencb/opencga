@@ -690,24 +690,24 @@ public class CatalogManager implements AutoCloseable {
     //create file with byte[]
     public QueryResult<File> createFile(long studyId, File.Format format, File.Bioformat bioformat, String path, byte[] bytes, String
             description, boolean parents, String sessionId) throws CatalogException, IOException {
-        QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null,
-                description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, sessionId);
+        QueryResult<File> queryResult = fileManager.create(Long.toString(studyId), File.Type.FILE, format, bioformat, path, null,
+                description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, null, sessionId);
         new CatalogFileUtils(this).upload(new ByteArrayInputStream(bytes), queryResult.first(), sessionId, false, false, true);
         return getFile(queryResult.first().getId(), sessionId);
     }
 
     public QueryResult<File> createFile(long studyId, File.Format format, File.Bioformat bioformat, String path, URI fileLocation, String
             description, boolean parents, String sessionId) throws CatalogException, IOException {
-        QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null,
-                description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, sessionId);
+        QueryResult<File> queryResult = fileManager.create(Long.toString(studyId), File.Type.FILE, format, bioformat, path, null,
+                description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, null, sessionId);
         new CatalogFileUtils(this).upload(fileLocation, queryResult.first(), null, sessionId, false, false, true, true, Long.MAX_VALUE);
         return getFile(queryResult.first().getId(), sessionId);
     }
 
     public QueryResult<File> createFile(long studyId, File.Format format, File.Bioformat bioformat, String path, String description,
                                         boolean parents, long jobId, String sessionId) throws CatalogException {
-        return fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, description, null, 0, -1, null,
-                jobId, null, null, parents, null, sessionId);
+        return fileManager.create(Long.toString(studyId), File.Type.FILE, format, bioformat, path, null, description, null, 0, -1, null,
+                jobId, null, null, parents, null, null, sessionId);
     }
 
 
@@ -716,19 +716,21 @@ public class CatalogManager implements AutoCloseable {
                                         List<Long> sampleIds, long jobId, Map<String, Object> stats, Map<String, Object> attributes,
                                         boolean parents, QueryOptions options, String sessionId)
             throws CatalogException {
-        return fileManager.create(studyId, type, format, bioformat, path, creationDate, description, status,
-                size, experimentId, sampleIds, jobId, stats, attributes, parents, options, sessionId);
+        return fileManager.create(Long.toString(studyId), type, format, bioformat, path, creationDate, description, status,
+                size, experimentId, sampleIds, jobId, stats, attributes, parents, null, options, sessionId);
     }
 
+    @Deprecated
     public QueryResult<File> createFolder(long studyId, Path folderPath, boolean parents, QueryOptions options, String sessionId)
             throws CatalogException {
-        return fileManager.createFolder(studyId, folderPath.toString(), null, parents, null, options, sessionId);
+        return fileManager.createFolder(Long.toString(studyId), folderPath.toString(), null, parents, null, options, sessionId);
     }
 
+    @Deprecated
     public QueryResult<File> createFolder(long studyId, Path folderPath, File.FileStatus status, boolean parents, String description,
                                           QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkPath(folderPath, "folderPath");
-        return fileManager.createFolder(studyId, folderPath.toString(), status, parents, description, options, sessionId);
+        return fileManager.createFolder(Long.toString(studyId), folderPath.toString(), status, parents, description, options, sessionId);
     }
 
     @Deprecated
