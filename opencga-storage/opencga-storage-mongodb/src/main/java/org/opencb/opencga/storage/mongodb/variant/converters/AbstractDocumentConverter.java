@@ -63,6 +63,18 @@ public class AbstractDocumentConverter {
         return document;
     }
 
+    protected boolean areAllEmpty(Object... objects) {
+        for (Object object : objects) {
+            if (!(object == null
+                    || ((object instanceof Collection) && ((Collection) object).isEmpty())
+                    || ((object instanceof String) && ((String) object).isEmpty())
+                    || ((object instanceof Number) && ((Number) object).doubleValue() == 0))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     protected final String getDefault(Document object, String key, String defaultValue) {
         Object o = object.get(key);
         if (o != null) {
