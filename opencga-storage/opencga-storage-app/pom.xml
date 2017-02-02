@@ -104,8 +104,8 @@
                             </platforms>
                         </program>
                         <program>
-                            <mainClass>org.opencb.opencga.storage.app.StorageServerMain</mainClass>
-                            <name>opencga-storage-server.sh</name>
+                            <mainClass>org.opencb.opencga.storage.app.StorageAdminMain</mainClass>
+                            <name>opencga-storage-admin.sh</name>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>

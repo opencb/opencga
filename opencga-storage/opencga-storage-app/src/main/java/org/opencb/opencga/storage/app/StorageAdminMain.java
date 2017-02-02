@@ -19,63 +19,64 @@ package org.opencb.opencga.storage.app;
 import com.beust.jcommander.ParameterException;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
-import org.opencb.opencga.storage.app.cli.server.GrpcCommandExecutor;
-import org.opencb.opencga.storage.app.cli.server.RestCommandExecutor;
-import org.opencb.opencga.storage.app.cli.server.ServerCliOptionsParser;
+import org.opencb.opencga.storage.app.cli.server.AdminCliOptionsParser;
+import org.opencb.opencga.storage.app.cli.server.executors.ServerCommandExecutor;
 
 import java.io.IOException;
 
 /**
  * Created by imedina on 02/03/15.
  */
-public class StorageServerMain {
+public class StorageAdminMain {
 
     public static void main(String[] args) {
         System.exit(privateMain(args));
     }
 
     public static int privateMain(String[] args) {
-        ServerCliOptionsParser serverCliOptionsParser = new ServerCliOptionsParser();
+        AdminCliOptionsParser adminCliOptionsParser = new AdminCliOptionsParser();
 
         try {
-            serverCliOptionsParser.parse(args);
+            adminCliOptionsParser.parse(args);
         } catch (ParameterException e) {
             System.err.println(e.getMessage());
-            serverCliOptionsParser.printUsage();
+            adminCliOptionsParser.printUsage();
             return 1;
         }
 
-        String parsedCommand = serverCliOptionsParser.getCommand();
+        String parsedCommand = adminCliOptionsParser.getCommand();
         if (parsedCommand == null || parsedCommand.isEmpty()) {
-            if (serverCliOptionsParser.getGeneralOptions().version) {
+            if (adminCliOptionsParser.getGeneralOptions().version) {
                 System.out.println("Version " + GitRepositoryState.get().getBuildVersion());
                 System.out.println("Git version: " + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
                 return 0;
-            } else if (serverCliOptionsParser.getGeneralOptions().help) {
-                serverCliOptionsParser.printUsage();
+            } else if (adminCliOptionsParser.getGeneralOptions().help) {
+                adminCliOptionsParser.printUsage();
                 return 0;
             } else {
-                serverCliOptionsParser.printUsage();
+                adminCliOptionsParser.printUsage();
                 return 1;
             }
         } else {
             CommandExecutor commandExecutor = null;
             // Check if any command -h option is present
-            if (serverCliOptionsParser.isHelp()) {
-                serverCliOptionsParser.printUsage();
+            if (adminCliOptionsParser.isHelp()) {
+                adminCliOptionsParser.printUsage();
                 return 0;
             } else {
-                String parsedSubCommand = serverCliOptionsParser.getSubCommand();
+                String parsedSubCommand = adminCliOptionsParser.getSubCommand();
                 if (parsedSubCommand == null || parsedSubCommand.isEmpty()) {
-                    serverCliOptionsParser.printUsage();
+                    adminCliOptionsParser.printUsage();
                 } else {
                     switch (parsedCommand) {
-                        case "rest":
-                            commandExecutor = new RestCommandExecutor(serverCliOptionsParser.getRestCommandOptions());
+                        case "server":
+
+                            commandExecutor = new ServerCommandExecutor(
+                                    adminCliOptionsParser.getServerCommandOptions());
                             break;
-                        case "grpc":
-                            commandExecutor = new GrpcCommandExecutor(serverCliOptionsParser.getGrpcCommandOptions());
-                            break;
+//                        case "grpc":
+//                            commandExecutor = new GrpcCommandExecutor(adminCliOptionsParser.getGrpcCommandOptions());
+//                            break;
                         default:
                             System.out.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
                             break;
@@ -97,7 +98,7 @@ public class StorageServerMain {
                             return 1;
                         }
                     } else {
-                        serverCliOptionsParser.printUsage();
+                        adminCliOptionsParser.printUsage();
                         return 1;
                     }
                 }
@@ -105,5 +106,4 @@ public class StorageServerMain {
         }
         return 0;
     }
-
 }

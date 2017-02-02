@@ -28,6 +28,7 @@ import java.util.List;
 /**
  * Created by imedina on 22/01/17.
  */
+@Parameters(commandNames = {"alignment"}, commandDescription = "Alignment management.")
 public class StorageAlignmentCommandOptions {
 
     public IndexAlignmentsCommandOptions indexAlignmentsCommandOptions;

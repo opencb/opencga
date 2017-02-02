@@ -32,6 +32,7 @@ import java.util.Map;
 /**
  * Created by imedina on 22/01/17.
  */
+@Parameters(commandNames = {"variant"}, commandDescription = "Variant management.")
 public class StorageVariantCommandOptions {
 
     public VariantIndexCommandOptions indexVariantsCommandOptions;
