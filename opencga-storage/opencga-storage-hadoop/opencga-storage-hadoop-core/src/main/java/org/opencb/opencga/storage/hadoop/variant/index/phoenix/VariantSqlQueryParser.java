@@ -29,6 +29,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
@@ -150,7 +151,7 @@ public class VariantSqlQueryParser {
             return sb.append(" COUNT(*) ");
         } else {
 
-            Set<String> returnedFields = getReturnedFields(options);
+            Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
 
             List<Integer> studyIds = utils.getStudyIds(options.getAsList(RETURNED_STUDIES.key()), options);
             if (studyIds == null || studyIds.isEmpty()) {
@@ -163,7 +164,7 @@ public class VariantSqlQueryParser {
                     .append(VariantColumn.ALTERNATE).append(',')
                     .append(VariantColumn.TYPE);
 
-            if (returnedFields.contains(STUDIES_FIELD)) {
+            if (returnedFields.contains(VariantField.STUDIES)) {
                 for (Integer studyId : studyIds) {
                     List<String> studyColumns = STUDY_COLUMNS;
 //                    if (returnedFields.contains(SAMPLES_FIELD)) {
@@ -175,7 +176,7 @@ public class VariantSqlQueryParser {
                     for (String studyColumn : studyColumns) {
                         sb.append(",\"").append(buildColumnKey(studyId, studyColumn)).append('"');
                     }
-                    if (returnedFields.contains(STATS_FIELD)) {
+                    if (returnedFields.contains(VariantField.STUDIES_STATS)) {
                         StudyConfiguration studyConfiguration = utils.getStudyConfigurationManager()
                                 .getStudyConfiguration(studyId, null).first();
                         for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
@@ -186,7 +187,7 @@ public class VariantSqlQueryParser {
                 }
             }
 
-            if (returnedFields.contains(ANNOTATION_FIELD)) {
+            if (returnedFields.contains(VariantField.ANNOTATION)) {
                 sb.append(',').append(VariantColumn.FULL_ANNOTATION);
             }
 

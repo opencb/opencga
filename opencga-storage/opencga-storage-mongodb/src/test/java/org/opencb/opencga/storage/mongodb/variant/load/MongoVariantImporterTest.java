@@ -9,7 +9,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageTest;
 
@@ -81,7 +81,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
 
         System.out.println("outputFile = " + outputFile);
         Query query = new Query();
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantDBAdaptorUtils.SAMPLES_FIELD);
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_SAMPLES_DATA);
         variantStorageManager.exportData(outputFile, VariantOutputFormat.AVRO, DB_NAME, query, queryOptions);
 
         clearDB(DB_NAME);
