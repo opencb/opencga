@@ -39,6 +39,9 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.everyResult;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.withFileId;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.withStudy;
 
 /**
  * Tests that all the VariantDBAdaptor filters and methods work correctly with more than one study loaded.
@@ -344,92 +347,56 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
     @Test
     public void testGetAllVariants_filterStudies2_AND_3() {
         String studyIds = studyConfiguration2.getStudyName() + ";" + studyConfiguration3.getStudyName();
-        query.append(STUDIES.key(), studyIds);
+        Query query = new Query(STUDIES.key(), studyIds);
+        QueryResult<Variant> queryResult = dbAdaptor.get(query, options);
+
+        assertThat(queryResult, everyResult(allVariants,
+                allOf(withStudy(studyConfiguration2.getStudyName()), withStudy(studyConfiguration3.getStudyName()))));
+
+
+        query = new Query(STUDIES.key(), studyIds).append(FILES.key(), Arrays.asList(file3, file4, file5));
         queryResult = dbAdaptor.get(query, options);
 
-        int expectedVariants = 0;
-        for (Variant variant : allVariants.getResult()) {
-            List<String> studies = variant.getStudies().stream().map(StudyEntry::getStudyId).collect(Collectors.toList());
-            if (studies.contains(studyConfiguration2.getStudyName()) && studies.contains(studyConfiguration3.getStudyName())) {
-                expectedVariants++;
-            }
-        }
-        assertTrue(expectedVariants > 0);
-        assertEquals(expectedVariants, queryResult.getNumResults());
-        assertEquals(expectedVariants, queryResult.getNumTotalResults());
+        assertThat(queryResult, everyResult(allVariants,
+                allOf(withStudy(studyConfiguration2.getStudyName()), withStudy(studyConfiguration3.getStudyName()))));
 
-        for (Variant variant : queryResult.getResult()) {
-            List<String> returnedStudyIds = variant.getStudies().stream().map(StudyEntry::getStudyId).collect(Collectors.toList());
-            assertThat(returnedStudyIds, hasItems(studyConfiguration2.getStudyName(), studyConfiguration3.getStudyName()));
-        }
     }
 
     @Test
     public void testGetAllVariants_filterStudies2_not_3() {
         String studyIds = studyConfiguration2.getStudyName() + ";!" + studyConfiguration3.getStudyName();
-        query.append(STUDIES.key(), studyIds);
+        query = new Query(STUDIES.key(), studyIds);
         queryResult = dbAdaptor.get(query, options);
 
-        int expectedVariants = 0;
-        for (Variant variant : allVariants.getResult()) {
-            List<String> studies = variant.getStudies().stream().map(StudyEntry::getStudyId).collect(Collectors.toList());
-            if (studies.contains(studyConfiguration2.getStudyName()) && !studies.contains(studyConfiguration3.getStudyName())) {
-                expectedVariants++;
-            }
-        }
-        assertTrue(expectedVariants > 0);
-        assertEquals(expectedVariants, queryResult.getNumResults());
-        assertEquals(expectedVariants, queryResult.getNumTotalResults());
+        assertThat(queryResult, everyResult(allVariants,
+                allOf(withStudy(studyConfiguration2.getStudyName()), withStudy(studyConfiguration3.getStudyName(), nullValue()))));
 
-        for (Variant variant : queryResult.getResult()) {
-            List<String> returnedStudyIds = variant.getStudies().stream().map(StudyEntry::getStudyId).collect(Collectors.toList());
-            assertThat(returnedStudyIds, allOf(hasItem(studyConfiguration2.getStudyName()), not(hasItem(studyConfiguration3.getStudyName()))));
-        }
+
+        query = new Query(STUDIES.key(), studyIds).append(FILES.key(), Arrays.asList(file3, file4));
+        queryResult = dbAdaptor.get(query, options);
+
+        assertThat(queryResult, everyResult(allVariants,
+                allOf(withStudy(studyConfiguration2.getStudyName()), withStudy(studyConfiguration3.getStudyName(), nullValue()))));
     }
 
     @Test
     public void testGetAllVariants_filterFiles1_2() {
-        List<Integer> files = Arrays.asList(
-                file1,
-                file2);
-        query.append(FILES.key(), files);
+        long count = dbAdaptor.count(new Query(STUDIES.key(), studyConfiguration1.getStudyName())).first();
+
+        Query query = new Query().append(FILES.key(), Arrays.asList(file1, file2));
+        QueryResult<Variant> queryResult = dbAdaptor.get(query, options);
+
+        assertThat(queryResult, everyResult(allVariants,
+                withStudy(studyConfiguration1.getStudyName(), withFileId(anyOf(hasItem(file1.toString()), hasItem(file2.toString()))))));
+        assertEquals(count, queryResult.getNumResults());
+
+        query = new Query().append(FILES.key(), Arrays.asList(file1, file2)).append(STUDIES.key(), studyConfiguration1.getStudyName());
         queryResult = dbAdaptor.get(query, options);
 
-        query = new Query(STUDIES.key(), studyConfiguration1.getStudyName());
-        QueryResult<Variant> queryResultStudy = dbAdaptor.get(query, options.append(QueryOptions.LIMIT, 1)
-                .append(QueryOptions.SKIP_COUNT, false));
+        assertThat(queryResult, everyResult(allVariants,
+                withStudy(studyConfiguration1.getStudyName(), withFileId(anyOf(hasItem(file1.toString()), hasItem(file2.toString()))))));
+        assertEquals(count, queryResult.getNumResults());
 
-        int expectedCount = 0;
-        for (Variant variant : allVariants.getResult()) {
-            Set<Integer> returnedFileIds = variant.getStudies()
-                    .stream()
-                    .map(StudyEntry::getFiles)
-                    .flatMap(Collection::stream)
-                    .map(FileEntry::getFileId)
-                    .map(Integer::valueOf)
-                    .collect(Collectors.toSet());
-            if (returnedFileIds.contains(file1) || returnedFileIds.contains(file2)) {
-                expectedCount++;
-            }
-        }
-        assertTrue(expectedCount > 0);
-        assertEquals(queryResultStudy.getNumTotalResults(), queryResult.getNumResults());
-        assertEquals(expectedCount, queryResult.getNumResults());
-        assertEquals(expectedCount, queryResult.getNumTotalResults());
-
-        for (Variant variant : queryResult.getResult()) {
-            Set<Integer> returnedFileIds = variant.getStudies()
-                    .stream()
-                    .map(StudyEntry::getFiles)
-                    .flatMap(Collection::stream)
-                    .map(FileEntry::getFileId)
-                    .map(Integer::valueOf)
-                    .collect(Collectors.toSet());
-            assertThat(returnedFileIds, anyOf(hasItem(file1), hasItem(file2)));
-
-            Set<String> returnedStudiesIds = variant.getStudies().stream().map(StudyEntry::getStudyId).collect(Collectors.toSet());
-            assertThat("Returned studies :" + returnedStudiesIds.toString(), returnedStudiesIds, hasItem(studyConfiguration1.getStudyName()));
-        }
     }
 
     @Test

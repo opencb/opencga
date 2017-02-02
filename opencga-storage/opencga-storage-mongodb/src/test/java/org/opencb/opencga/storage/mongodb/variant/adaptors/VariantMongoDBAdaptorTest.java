@@ -44,12 +44,7 @@ public class VariantMongoDBAdaptorTest extends VariantDBAdaptorTest implements M
 
     @Before
     public void setUpLoggers() throws Exception {
-        ConsoleAppender stderr = (ConsoleAppender) LogManager.getRootLogger().getAppender("stderr");
-        stderr.setThreshold(Level.toLevel("debug"));
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.protocol.update").setLevel(Level.WARN);
-        org.apache.log4j.Logger.getLogger("org.mongodb.driver.protocol.command").setLevel(Level.WARN);
+        logLevelDebug();
     }
 
     @Test

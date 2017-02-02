@@ -1149,6 +1149,14 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         long numResults = dbAdaptor.count(query).first();
         assertEquals(NUM_VARIANTS, numResults);
 
+        query = new Query(FILES.key(), 6).append(STUDIES.key(), studyConfiguration.getStudyId());
+        numResults = dbAdaptor.count(query).first();
+        assertEquals(NUM_VARIANTS, numResults);
+
+        query = new Query().append(STUDIES.key(), studyConfiguration.getStudyId());
+        numResults = dbAdaptor.count(query).first();
+        assertEquals(NUM_VARIANTS, numResults);
+
         query = new Query(FILES.key(), -1);
         numResults = dbAdaptor.count(query).first();
         assertEquals("There is no file with ID -1", 0, numResults);
