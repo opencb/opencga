@@ -91,7 +91,8 @@ public class AnalysisMainTest {
                 null, null, null, datastores, null,
                 Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.NONE),
                 null, sessionId).first().getId();
-        outdirId = catalogManager.createFolder(studyId, Paths.get("data", "index"), false, null, sessionId).first().getId();
+        outdirId = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("data", "index").toString(), null,
+                false, null, QueryOptions.empty(), sessionId).first().getId();
     }
 
     @Test

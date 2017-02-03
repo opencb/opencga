@@ -157,7 +157,8 @@ public class FileWSServer extends OpenCGAWSServer {
             for (String folder : folderList) {
                 try {
                     java.nio.file.Path folderPath = Paths.get(folder);
-                    QueryResult<File> newFolder = catalogManager.createFolder(studyId, folderPath, parents, queryOptions, sessionId);
+                    QueryResult<File> newFolder = catalogManager.getFileManager().createFolder(Long.toString(studyId), folderPath.toString(),
+                            null, parents, null, queryOptions, sessionId);
                     newFolder.setId("Create folder");
                     queryResultList.add(newFolder);
                 } catch (CatalogException e) {
@@ -444,7 +445,8 @@ public class FileWSServer extends OpenCGAWSServer {
                 if (relativeFilePath.length() > 1 && !relativeFilePath.equals("./")) {
                     try {
                         // Create parents directory if necessary
-                        catalogManager.createFolder(studyId, Paths.get(relativeFilePath), parents, null, sessionId);
+                        catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get(relativeFilePath).toString(),
+                                null, parents, null, QueryOptions.empty(), sessionId);
                     } catch (CatalogException e) {
                         logger.debug("The folder {} already exists", relativeFilePath);
                     }

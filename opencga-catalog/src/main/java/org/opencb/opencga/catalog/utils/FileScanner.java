@@ -265,7 +265,8 @@ public class FileScanner {
             if (file == null) {
                 long start, end;
                 if (uri.getPath().endsWith("/")) {
-                    file = catalogManager.createFolder(studyId, Paths.get(filePath), true, null, sessionId).first();
+                    file = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get(filePath).toString(), null, true,
+                            null, QueryOptions.empty(), sessionId).first();
                 } else {
                     start = System.currentTimeMillis();
                     File.Format format = FormatDetector.detect(uri);

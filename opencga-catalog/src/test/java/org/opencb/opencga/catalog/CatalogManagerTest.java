@@ -134,12 +134,16 @@ public class CatalogManagerTest extends GenericTest {
         studyId2 = catalogManager.createStudy(project1, "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser).first().getId();
         catalogManager.createStudy(project2, "Study 1", "s1", Study.Type.CONTROL_SET, "", sessionIdUser2).first().getId();
 
-        catalogManager.createFolder(studyId2, Paths.get("data/test/folder/"), true, null, sessionIdUser);
+        catalogManager.getFileManager().createFolder(Long.toString(studyId2), Paths.get("data/test/folder/").toString(), null, true,
+                null, QueryOptions.empty(), sessionIdUser);
 
-        catalogManager.createFolder(studyId, Paths.get("analysis/"), true, null, sessionIdUser);
-        catalogManager.createFolder(studyId2, Paths.get("analysis/"), true, null, sessionIdUser);
+        catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("analysis/").toString(), null, true, null,
+                QueryOptions.empty(), sessionIdUser);
+        catalogManager.getFileManager().createFolder(Long.toString(studyId2), Paths.get("analysis/").toString(), null, true, null,
+                QueryOptions.empty(), sessionIdUser);
 
-        testFolder = catalogManager.createFolder(studyId, Paths.get("data/test/folder/"), true, null, sessionIdUser).first();
+        testFolder = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("data/test/folder/").toString(),
+                null, true, null, QueryOptions.empty(), sessionIdUser).first();
         ObjectMap attributes = new ObjectMap();
         attributes.put("field", "value");
         attributes.put("numValue", 5);
@@ -596,7 +600,8 @@ public class CatalogManagerTest extends GenericTest {
         long projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
         long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser).first().getId();
 
-        File outDir = catalogManager.createFolder(studyId, Paths.get("jobs", "myJob"), true, null, sessionIdUser).first();
+        File outDir = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("jobs", "myJob").toString(),
+                null, true, null, QueryOptions.empty(), sessionIdUser).first();
 
         URI tmpJobOutDir = catalogManager.createJobOutDir(studyId, StringUtils.randomString(5), sessionIdUser);
         catalogManager.createJob(
@@ -645,7 +650,8 @@ public class CatalogManagerTest extends GenericTest {
     public void testGetAllJobs() throws CatalogException {
         long projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
         long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser).first().getId();
-        File outDir = catalogManager.createFolder(studyId, Paths.get("jobs", "myJob"), true, null, sessionIdUser).first();
+        File outDir = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("jobs", "myJob").toString(),
+                null, true, null, QueryOptions.empty(), sessionIdUser).first();
 
         URI tmpJobOutDir = catalogManager.createJobOutDir(studyId, StringUtils.randomString(5), sessionIdUser);
         catalogManager.createJob(

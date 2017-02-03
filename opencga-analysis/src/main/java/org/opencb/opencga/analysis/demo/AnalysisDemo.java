@@ -77,7 +77,8 @@ public class AnalysisDemo {
                 new Query(FileDBAdaptor.QueryParams.PATH.key(), "data/jobs/"), sessionId);
         long outDirId;
         if (outdirResult.getResult().isEmpty()) {
-            outDirId = catalogManager.createFolder(studyId, Paths.get("data/jobs/"), true, null, sessionId).first().getId();
+            outDirId = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("data/jobs/").toString(), null,
+                    true, null, QueryOptions.empty(), sessionId).first().getId();
         } else {
             outDirId = outdirResult.first().getId();
         }
