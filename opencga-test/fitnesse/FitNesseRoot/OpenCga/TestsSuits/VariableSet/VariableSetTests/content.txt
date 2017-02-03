@@ -1,0 +1,14 @@
+!define TEST_SYSTEM {slim}
+!define user {test}
+!define baseURL {http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-rc4/webservices/rest/}
+!define study {2}
+
+!3 Generate Random Variables 
+!|Table: Rest Fixture | ${baseURL} |
+|let|vsName|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+
+!3 Create Variable Set  
+!|Table: Rest Fixture  | ${baseURL} |
+| setBody |  {  "unique": false,  "name": "$vsName",  "description": "string",  "variables": [    {      "name": "hjgh",      "category": "string",      "type": "BOOLEAN",      "defaultValue": {},      "required": false,      "multiValue": false          }  ]}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/variableset/create?sid=$sessionId&study=${study} |200| Content-Type : application/json||
