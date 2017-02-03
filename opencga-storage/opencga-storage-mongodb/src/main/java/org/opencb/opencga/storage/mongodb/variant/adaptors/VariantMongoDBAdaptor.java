@@ -31,6 +31,8 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.json.JsonMode;
+import org.bson.json.JsonWriterSettings;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -862,10 +864,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private Document parseQuery(Query query) {
-        return parseQuery(query, new Document());
-    }
-
-    private Document parseQuery(Query query, Document mongoQuery) {
         QueryBuilder builder = new QueryBuilder();
         if (query != null) {
             /** VARIANT PARAMS **/
@@ -1016,8 +1014,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             parseStatsQueryParams(query, builder, defaultStudyConfiguration);
         }
         logger.debug("Query         = {}", query == null ? "{}" : query.toJson());
-        logger.debug("MongoDB Query = {}", builder.get());
-        mongoQuery.putAll(builder.get().toMap());
+        Document mongoQuery = new Document(builder.get().toMap());
+        logger.debug("MongoDB Query = {}", mongoQuery.toJson(new JsonWriterSettings(JsonMode.SHELL, false)));
         return mongoQuery;
     }
 
@@ -1554,8 +1552,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        logger.debug("QueryOptions: {}", options.toJson());
-        logger.debug("Projection:   {}", projection);
+        logger.debug("QueryOptions: = {}", options.toJson());
+        logger.debug("Projection:   = {}", projection.toJson(new JsonWriterSettings(JsonMode.SHELL, false)));
         return projection;
     }
 

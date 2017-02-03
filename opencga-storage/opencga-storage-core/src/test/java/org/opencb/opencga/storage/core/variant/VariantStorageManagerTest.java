@@ -42,6 +42,8 @@ import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -59,6 +61,7 @@ import static org.junit.Assert.*;
 @Ignore
 public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
 
+    private static Logger logger = LoggerFactory.getLogger(VariantStorageManagerTest.class);
     @Test
     public void basicIndex() throws Exception {
         clearDB(DB_NAME);

@@ -70,6 +70,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     protected ObjectMap getOtherParams() {
         return new ObjectMap(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
                 .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, false)
+                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "")
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
     }
 
