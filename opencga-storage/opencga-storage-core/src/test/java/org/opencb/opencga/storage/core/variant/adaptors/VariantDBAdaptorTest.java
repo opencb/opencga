@@ -100,7 +100,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 //            variantSource = new VariantSource(smallInputUri.getPath(), "testAlias", "testStudy", "Study for testing purposes");
             clearDB(DB_NAME);
             ObjectMap params = new ObjectMap(VariantStorageEngine.Options.STUDY_TYPE.key(), VariantStudy.StudyType.FAMILY)
-                    .append(VariantStorageEngine.Options.ANNOTATE.key(), false)
+                    .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
                     .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DS,GL")
                     .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, CellBaseRestVariantAnnotator.class.getName())
                     .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "json")

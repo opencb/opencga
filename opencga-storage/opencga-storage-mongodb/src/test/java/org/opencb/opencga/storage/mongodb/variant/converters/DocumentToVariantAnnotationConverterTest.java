@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.mongodb.variant.converters;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.util.JSON;
@@ -25,6 +26,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static java.util.Arrays.asList;
@@ -39,11 +41,12 @@ public class DocumentToVariantAnnotationConverterTest {
 
     private VariantAnnotation variantAnnotation;
     private Document dbObject;
-    private static final Object ANY = new Object();
+    private static final Document ANY = new Document();
+    private static final List ANY_LIST = Arrays.asList();
 
 
     @Before
-    public void setUp() {
+    public void setUp() throws JsonProcessingException {
         //Setup variant
         // 19:45411941:T:C
         // curl 'http://${CELLBASE_HOST}/cellbase/webservices/rest/v3/hsapiens/genomic/variant/19:45411941:T:C/full_annotation?exclude
@@ -140,6 +143,7 @@ public class DocumentToVariantAnnotationConverterTest {
         jsonObjectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         variantAnnotation = jsonObjectMapper.convertValue(JSON.parse(variantJson), VariantAnnotation.class);
 
+//        System.out.println("annotation = " + jsonObjectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(variantAnnotation));
         dbObject = new Document()
                 .append(ANNOT_ID_FIELD, "?")
                 .append(CONSEQUENCE_TYPE_FIELD, asList(
@@ -171,7 +175,28 @@ public class DocumentToVariantAnnotationConverterTest {
                                 .append(CT_PROTEIN_POLYPHEN_FIELD, new Document()
                                         .append(SCORE_SCORE_FIELD, 0.0)/*.append(SCORE_DESCRIPTION_FIELD, "benign")*/)
                                 .append(CT_PROTEIN_KEYWORDS, asList("3D-structure", "Alzheimer disease", "Amyloidosis", "Cholesterol metabolism", "Chylomicron", "Complete proteome", "Direct protein sequencing", "Disease mutation", "Glycation", "Glycoprotein", "HDL", "Heparin-binding", "Hyperlipidemia", "Lipid metabolism", "Lipid transport", "Neurodegeneration", "Oxidation", "Phosphoprotein", "Polymorphism", "Reference proteome", "Repeat", "Secreted", "Signal", "Steroid metabolism", "Sterol metabolism", "Transport", "VLDL"))
-                                .append(CT_PROTEIN_FEATURE_FIELD, ANY),
+                                .append(CT_PROTEIN_FEATURE_FIELD, asList(new Document()
+                                                .append(CT_PROTEIN_FEATURE_START_FIELD, 106)
+                                                .append(CT_PROTEIN_FEATURE_END_FIELD, 141)
+                                                .append(CT_PROTEIN_FEATURE_TYPE_FIELD, "helix"),
+                                        new Document()
+                                                .append(CT_PROTEIN_FEATURE_START_FIELD, 80)
+                                                .append(CT_PROTEIN_FEATURE_END_FIELD, 255)
+                                                .append(CT_PROTEIN_FEATURE_TYPE_FIELD, "region of interest")
+                                                .append(CT_PROTEIN_FEATURE_DESCRIPTION_FIELD, "8 X 22 AA approximate tandem repeats"),
+                                        new Document()
+                                                .append(CT_PROTEIN_FEATURE_START_FIELD, 124)
+                                                .append(CT_PROTEIN_FEATURE_END_FIELD, 145)
+                                                .append(CT_PROTEIN_FEATURE_TYPE_FIELD, "repeat")
+                                                .append(CT_PROTEIN_FEATURE_DESCRIPTION_FIELD, "3"),
+                                        new Document()
+                                                .append(CT_PROTEIN_FEATURE_ID_FIELD, "PRO_0000001987")
+                                                .append(CT_PROTEIN_FEATURE_START_FIELD, 19)
+                                                .append(CT_PROTEIN_FEATURE_END_FIELD, 317)
+                                                .append(CT_PROTEIN_FEATURE_TYPE_FIELD, "chain")
+                                                .append(CT_PROTEIN_FEATURE_DESCRIPTION_FIELD, "Apolipoprotein E")
+
+                                )),
                         ANY,
                         ANY,
                         ANY,
@@ -181,37 +206,37 @@ public class DocumentToVariantAnnotationConverterTest {
                 .append(CONSERVED_REGION_PHASTCONS_FIELD, new Document(SCORE_SCORE_FIELD, 0.11100000143051147))
                 .append(CONSERVED_REGION_PHYLOP_FIELD, new Document(SCORE_SCORE_FIELD, 0.5609999895095825))
                 .append(CLINICAL_DATA_FIELD, new Document()
-                .append(CLINICAL_COSMIC_FIELD, asList(
-                        new Document()
-                                .append("mutationId", "3749517")
-                                .append("primarySite", "large_intestine")
-                                .append("siteSubtype", "rectum")
-                                .append("primaryHistology", "carcinoma")
-                                .append("histologySubtype", "adenocarcinoma")
-                                .append("sampleSource", "NS")
-                                .append("tumourOrigin", "primary")
-                                .append("geneName", "APOE")
-                                .append("mutationSomaticStatus", "Confirmed somatic variant")))
-                .append(CLINICAL_GWAS_FIELD, asList(
-                        new Document()
-                                .append("snpIdCurrent", "429358")
-                                .append("traits", asList("Alzheimer's disease biomarkers"))
-                                .append("riskAlleleFrequency", 0.28)
-                                .append("reportedGenes", "APOE")))
-                .append(CLINICAL_CLINVAR_FIELD, asList(
-                        new Document()
-                                .append("accession", "RCV000019456")
-                                .append("clinicalSignificance", "Pathogenic")
-                                .append("traits", singletonList("APOE4(-)-FREIBURG"))
-                                .append("geneNames", singletonList("APOE"))
-                                .append("reviewStatus", "CLASSIFIED_BY_SINGLE_SUBMITTER"),
-                        ANY,
-                        ANY,
-                        ANY,
-                        ANY
-                )))
-                .append(XREFS_FIELD, ANY)
-                .append(POPULATION_FREQUENCIES_FIELD, ANY);
+                        .append(CLINICAL_COSMIC_FIELD, asList(
+                                new Document()
+                                        .append("mutationId", "3749517")
+                                        .append("primarySite", "large_intestine")
+                                        .append("siteSubtype", "rectum")
+                                        .append("primaryHistology", "carcinoma")
+                                        .append("histologySubtype", "adenocarcinoma")
+                                        .append("sampleSource", "NS")
+                                        .append("tumourOrigin", "primary")
+                                        .append("geneName", "APOE")
+                                        .append("mutationSomaticStatus", "Confirmed somatic variant")))
+                        .append(CLINICAL_GWAS_FIELD, asList(
+                                new Document()
+                                        .append("snpIdCurrent", "429358")
+                                        .append("traits", asList("Alzheimer's disease biomarkers"))
+                                        .append("riskAlleleFrequency", 0.28)
+                                        .append("reportedGenes", "APOE")))
+                        .append(CLINICAL_CLINVAR_FIELD, asList(
+                                new Document()
+                                        .append("accession", "RCV000019456")
+                                        .append("clinicalSignificance", "Pathogenic")
+                                        .append("traits", singletonList("APOE4(-)-FREIBURG"))
+                                        .append("geneNames", singletonList("APOE"))
+                                        .append("reviewStatus", "CLASSIFIED_BY_SINGLE_SUBMITTER"),
+                                ANY,
+                                ANY,
+                                ANY,
+                                ANY
+                        )))
+                .append(XREFS_FIELD, ANY_LIST)
+                .append(POPULATION_FREQUENCIES_FIELD, ANY_LIST);
 
 //        Document drugDBObject = new Document(DRUG_NAME_FIELD, "TOMM40")
 //                .append(DRUG_NAME_FIELD, "PA164712505")
@@ -227,8 +252,7 @@ public class DocumentToVariantAnnotationConverterTest {
     public void testConvertToDataModelType() throws Exception {
         DocumentToVariantAnnotationConverter documentToVariantAnnotationConverter = new DocumentToVariantAnnotationConverter();
         VariantAnnotation convertedVariantAnnotation = documentToVariantAnnotationConverter.convertToDataModelType(dbObject);
-        assertEquals(convertedVariantAnnotation.getConsequenceTypes().get(1).getProteinVariantAnnotation().getReference(), "CYS");
-        assertEquals(convertedVariantAnnotation.getGeneDrugInteraction().get(0).getDrugName(), "PA164712505");
+        assertEquals(convertedVariantAnnotation.getConsequenceTypes().get(2).getProteinVariantAnnotation().getReference(), "CYS");
         assertEquals(convertedVariantAnnotation.getVariantTraitAssociation().getCosmic().get(0).getPrimarySite(), "large_intestine");
 
     }
@@ -252,7 +276,7 @@ public class DocumentToVariantAnnotationConverterTest {
     }
 
     private void checkEqualObjects(Object expected, Object actual, String path) {
-        if (expected == ANY) {
+        if (expected == ANY || expected == ANY_LIST) {
             // Accept ANY field. Ignore
             return;
         }
