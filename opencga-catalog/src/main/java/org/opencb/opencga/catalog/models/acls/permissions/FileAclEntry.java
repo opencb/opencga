@@ -32,9 +32,8 @@ public class FileAclEntry extends AbstractAclEntry<FileAclEntry.FilePermissions>
         VIEW_HEADER,  // Includes permission to view the sample ids from a VCF file.
         VIEW_CONTENT,
         VIEW,
-        CREATE,       // If a folder contains this permission for a user, the user will be able to create files under that folder.
+        WRITE,       // If a folder contains this permission for a user, the user will be able to create files under that folder.
         DELETE,
-        UPDATE,       // Modify metadata fields
         DOWNLOAD,
         UPLOAD,
         SHARE

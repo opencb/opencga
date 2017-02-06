@@ -12,7 +12,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 
 import java.util.Collections;
 import java.util.List;
@@ -57,7 +57,7 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
 
     @Test
     public void testQueryExcludeSamples() throws Exception {
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantDBAdaptorUtils.VariantFields.SAMPLES);
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_SAMPLES_DATA);
         Query query = new Query();
 
         // Without studies
@@ -73,7 +73,7 @@ public class VariantManagerFetchTest extends AbstractVariantStorageOperationTest
     @Test
     public void testQueryExcludeStudies() throws Exception {
         Query query = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantDBAdaptorUtils.VariantFields.STUDIES);
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES);
 
         Map<Long, List<Sample>> longListMap = variantManager.checkSamplesPermissions(query, queryOptions, mockVariantDBAdaptor(), sessionId);
         Assert.assertEquals(Collections.emptyMap(), longListMap);

@@ -19,10 +19,12 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Sorts;
 import org.bson.Document;
+import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -40,6 +42,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor;
+import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
 import org.slf4j.Logger;
@@ -850,7 +853,16 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
     @Override
     public void multiIndexPlatinum() throws Exception {
         super.multiIndexPlatinum();
+        checkPlatinumDatabase(d -> 17, Collections.singleton("0/0"));
+    }
 
+    @Test
+    public void multiIndexPlatinumNoUnknownGenotypes() throws Exception {
+        super.multiIndexPlatinum(new ObjectMap(MongoDBVariantOptions.DEFAULT_GENOTYPE.key(), DocumentToSamplesConverter.UNKNOWN_GENOTYPE));
+        checkPlatinumDatabase(d -> ((List) d.get(FILES_FIELD)).size(), Collections.singleton(DocumentToSamplesConverter.UNKNOWN_GENOTYPE));
+    }
+
+    private void checkPlatinumDatabase(Function<Document, Integer> getExpectedSamples, Set<String> defaultGenotypes) throws Exception {
         try (VariantMongoDBAdaptor dbAdaptor = getVariantStorageEngine().getDBAdaptor(DB_NAME)) {
             MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
 
@@ -865,7 +877,9 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
                 for (Document study : studies) {
                     Document gts = study.get(GENOTYPES_FIELD, Document.class);
                     Set<Integer> samples = new HashSet<>();
-
+                    for (String defaultGenotype : defaultGenotypes) {
+                        assertThat(gts.keySet(), not(hasItem(defaultGenotype)));
+                    }
                     for (Map.Entry<String, Object> entry : gts.entrySet()) {
                         List<Integer> sampleIds = (List<Integer>) entry.getValue();
                         for (Integer sampleId : sampleIds) {
@@ -873,7 +887,7 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
                             assertTrue(id, samples.add(sampleId));
                         }
                     }
-                    assertEquals("\"" + id + "\" study: " + study.get(STUDYID_FIELD), 17, samples.size());
+                    assertEquals("\"" + id + "\" study: " + study.get(STUDYID_FIELD), (int) getExpectedSamples.apply(study), samples.size());
                 }
 
                 Document gt1 = studies.get(0).get(GENOTYPES_FIELD, Document.class);

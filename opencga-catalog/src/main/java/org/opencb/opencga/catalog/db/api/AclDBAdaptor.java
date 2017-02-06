@@ -16,9 +16,11 @@
 
 package org.opencb.opencga.catalog.db.api;
 
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 /**
@@ -34,7 +36,17 @@ public interface AclDBAdaptor<T, U> extends DBAdaptor<T> {
      * @return the new created Acl.
      * @throws CatalogDBException if there is any internal error.
      */
+    @Deprecated
     QueryResult<U> createAcl(long id, U acl) throws CatalogDBException;
+
+    /**
+     * Creates new ACLs for the documents matching the query.
+     *
+     * @param query Query object.
+     * @param aclEntryList List of ACLs to be created.
+     * @throws CatalogDBException if there is any internal error.
+     */
+    void createAcl(Query query, List<U> aclEntryList) throws CatalogDBException;
 
     /**
      * Obtains the acl given the following parameters. If only the id is given, a list containing all the acls will be returned.
@@ -75,7 +87,10 @@ public interface AclDBAdaptor<T, U> extends DBAdaptor<T> {
      * @return a Acl after the permissions update.
      * @throws CatalogDBException when there is an internal error.
      */
+    @Deprecated
     QueryResult<U> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException;
+
+    void addAclsToMember(Query query, List<String> members, List<String> permissions) throws CatalogDBException;
 
     /**
      * Remove the permissions passed from the ACLs the member had.
@@ -86,6 +101,9 @@ public interface AclDBAdaptor<T, U> extends DBAdaptor<T> {
      * @return an Acl after the removal of permissions.
      * @throws CatalogDBException when there is an internal error.
      */
+    @Deprecated
     QueryResult<U> removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException;
+
+    void removeAclsFromMember(Query query, List<String> members, @Nullable List<String> permissions) throws CatalogDBException;
 
 }

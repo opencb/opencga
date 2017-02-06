@@ -22,13 +22,13 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>1.0.0-rc4</version>
+        <version>1.0.0-final</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <!-- Version must be set to a literal, variables cannot be used in nested modules -->
     <artifactId>opencga-storage</artifactId>
-    <version>1.0.0-rc4</version>
+    <version>1.0.0-final</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -125,9 +125,7 @@
                         <configuration>
                             <configLocation>checkstyle.xml</configLocation>
                             <excludes>
-                                org/opencb/opencga/storage/app/cli/client/CliOptionsParser.java,
-                                org/opencb/opencga/storage/app/cli/server/ServerCliOptionsParser.java,
-                                org/opencb/opencga/storage/app/cli/OptionsParser.java,
+                                org/opencb/opencga/storage/app/cli/**,
                                 org/opencb/opencga/storage/core/variant/io/VariantFieldsProtos.java,
                                 org/opencb/opencga/storage/core/variant/io/VariantEffectProtos.java,
                                 org/opencb/opencga/storage/mongodb/utils/TabixReader.java,

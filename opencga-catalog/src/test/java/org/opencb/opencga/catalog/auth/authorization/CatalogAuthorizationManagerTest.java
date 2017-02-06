@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.api.IFileManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
@@ -84,6 +85,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
     private CatalogManager catalogManager;
+    private IFileManager fileManager;
     private String ownerSessionId;
     private String studyAdmin1SessionId;
     private String studyAdmin2SessionId;
@@ -115,6 +117,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
         catalogManager = new CatalogManager(configuration);
         catalogManager.installCatalogDB();
+        fileManager = catalogManager.getFileManager();
 
         catalogManager.createUser(ownerUser, ownerUser, "email@ccc.ccc", password, "ASDF", null, null);
         catalogManager.createUser(studyAdminUser1, studyAdminUser1, "email@ccc.ccc", password, "ASDF", null, null);
@@ -131,10 +134,14 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         p1 = catalogManager.getProjectManager().create("p1", "p1", null, null, "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), ownerSessionId).first().getId();
         s1 = catalogManager.createStudy(p1, "s1", "s1", Study.Type.CASE_CONTROL, null, ownerSessionId).first().getId();
-        data_d1 = catalogManager.createFolder(s1, Paths.get("data/d1/"), true, null, ownerSessionId).first().getId();
-        data_d1_d2 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/"), false, null, ownerSessionId).first().getId();
-        data_d1_d2_d3 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/d3/"), false, null, ownerSessionId).first().getId();
-        data_d1_d2_d3_d4 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/d3/d4/"), false, null, ownerSessionId).first().getId();
+        data_d1 = catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/").toString(), null, true, null,
+                QueryOptions.empty(), ownerSessionId).first().getId();
+        data_d1_d2 = catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/d2/").toString(), null, false,
+                null, QueryOptions.empty(), ownerSessionId).first().getId();
+        data_d1_d2_d3 = catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/d2/d3/").toString(), null,
+        false, null, QueryOptions.empty(), ownerSessionId).first().getId();
+        data_d1_d2_d3_d4 = catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/d2/d3/d4/").toString(),
+                null, false, null, QueryOptions.empty(), ownerSessionId).first().getId();
         data_d1_d2_d3_d4_txt = catalogManager.createFile(s1, File.Format.PLAIN, File.Bioformat.NONE, "data/d1/d2/d3/d4/my.txt", ("file " +
                 "content").getBytes(), "", false, ownerSessionId).first().getId();
         data = catalogManager.searchFile(s1, new Query(FileDBAdaptor.QueryParams.PATH.key(), "data/"), ownerSessionId).first().getId();
@@ -146,10 +153,11 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.createStudyAcls(Long.toString(s1), memberUser, "", AuthorizationManager.ROLE_ANALYST, studyAdmin1SessionId);
         catalogManager.createStudyAcls(Long.toString(s1), externalUser, "", AuthorizationManager.ROLE_LOCKED, studyAdmin1SessionId);
 
-        catalogManager.createFileAcls(Long.toString(data_d1), Long.toString(s1), externalUser, ALL_FILE_PERMISSIONS, ownerSessionId);
-        catalogManager.createFileAcls(Long.toString(data_d1), Long.toString(s1), studyAdminUser1, ALL_FILE_PERMISSIONS, ownerSessionId);
-        catalogManager.createFileAcls(Long.toString(data_d1_d2_d3), Long.toString(s1), externalUser, DENY_FILE_PERMISSIONS, ownerSessionId);
-        catalogManager.createFileAcls(Long.toString(data_d1_d2_d3_d4_txt), Long.toString(s1), externalUser, ALL_FILE_PERMISSIONS,
+        fileManager.createAcls(Long.toString(data_d1), Long.toString(s1), externalUser, ALL_FILE_PERMISSIONS, ownerSessionId);
+        fileManager.createAcls(Long.toString(data_d1), Long.toString(s1), studyAdminUser1, ALL_FILE_PERMISSIONS, ownerSessionId);
+        fileManager.updateAcls(Long.toString(data_d1_d2_d3), Long.toString(s1), externalUser, null, null, DENY_FILE_PERMISSIONS,
+                ownerSessionId);
+        fileManager.updateAcls(Long.toString(data_d1_d2_d3_d4_txt), Long.toString(s1), externalUser, null, null, ALL_FILE_PERMISSIONS,
                 ownerSessionId);
 
         smp1 = catalogManager.createSample(s1, "smp1", null, null, null, null, ownerSessionId).first().getId();
@@ -446,7 +454,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         QueryResult<File> file = catalogManager.getFile(data_d1, memberSessionId);
         assertEquals(1, file.getNumResults());
         // Set an ACL with no permissions
-        catalogManager.createFileAcls(Long.toString(data_d1), Long.toString(s1), memberUser, "", ownerSessionId);
+        fileManager.createAcls(Long.toString(data_d1), Long.toString(s1), memberUser, "", ownerSessionId);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getFile(data_d1, memberSessionId);
     }
@@ -502,14 +510,15 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         // Add the group to the locked role, so no permissions will be given
         catalogManager.createStudyAcls(Long.toString(s1), newGroup, "", AuthorizationManager.ROLE_LOCKED, ownerSessionId);
         // Specify all file permissions for that concrete file
-        catalogManager.createFileAcls(Long.toString(data_d1_d2_d3_d4), Long.toString(s1), newGroup, ALL_FILE_PERMISSIONS, ownerSessionId);
+        fileManager.createAcls(Long.toString(data_d1_d2_d3_d4), Long.toString(s1), newGroup, ALL_FILE_PERMISSIONS, ownerSessionId);
         catalogManager.getFile(data_d1_d2_d3_d4, sessionId);
     }
 
     @Test
-    public void readFileForbiddenForGroup() throws CatalogException {
+    public void readFileForbiddenForUser() throws CatalogException {
         // Remove all permissions to the admin group in that folder
-        catalogManager.createFileAcls(Long.toString(data_d1_d2), Long.toString(s1), groupAdmin, DENY_FILE_PERMISSIONS, ownerSessionId);
+        fileManager.updateAcls(Long.toString(data_d1_d2), Long.toString(s1), studyAdminUser1, null, null, DENY_FILE_PERMISSIONS,
+                ownerSessionId);
         thrown.expect(CatalogAuthorizationException.class);
         catalogManager.getFile(data_d1_d2, studyAdmin1SessionId);
     }
@@ -525,7 +534,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.createGroup(Long.toString(s1), newGroup, newUser, ownerSessionId);
         // Add the group to the locked role, so no permissions will be given
         catalogManager.createStudyAcls(Long.toString(s1), newGroup, "", AuthorizationManager.ROLE_LOCKED, ownerSessionId);
-        catalogManager.createFileAcls(Long.toString(data_d1_d2), Long.toString(s1), newUser, ALL_FILE_PERMISSIONS, ownerSessionId);
+        fileManager.createAcls(Long.toString(data_d1_d2), Long.toString(s1), newUser, ALL_FILE_PERMISSIONS, ownerSessionId);
         QueryResult<File> file = catalogManager.getFile(data_d1_d2, sessionId);
         assertEquals(1, file.getNumResults());
     }
@@ -536,36 +545,42 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void createFileByOwnerNoGroups() throws CatalogException {
-        QueryResult<File> folder = catalogManager.createFolder(s1, Paths.get("data/newFolder"), true, null, ownerSessionId);
+        QueryResult<File> folder = catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/newFolder").toString(),
+                null, true, null, QueryOptions.empty(), ownerSessionId);
         assertEquals(1, folder.getNumResults());
     }
 
     @Test
     public void createExplicitlySharedFile() throws CatalogException {
-        catalogManager.createFolder(s1, Paths.get("data/d1/folder/"), false, null, externalSessionId);
+        catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/folder/").toString(), null, false, null,
+                QueryOptions.empty(), externalSessionId);
     }
 
     @Test
     public void createInheritedSharedFile() throws CatalogException {
-        catalogManager.createFolder(s1, Paths.get("data/d1/d2/folder/"), false, null, externalSessionId);
+        catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/d2/folder/").toString(), null, false,
+                null, QueryOptions.empty(), externalSessionId);
     }
 
     @Test
     public void createExplicitlyForbiddenFile() throws CatalogException {
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.createFolder(s1, Paths.get("data/d1/d2/d3/folder/"), false, null, externalSessionId);
+        catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/d2/d3/folder/").toString(), null, false,
+                null, QueryOptions.empty(), externalSessionId);
     }
 
     @Test
     public void createInheritedForbiddenFile() throws CatalogException {
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.createFolder(s1, Paths.get("data/d1/d2/d3/d4/folder/"), false, null, externalSessionId);
+        catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/d2/d3/d4/folder/").toString(), null, false,
+                null, QueryOptions.empty(), externalSessionId);
     }
 
     @Test
     public void createNonSharedFile() throws CatalogException {
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.createFolder(s1, Paths.get("folder/"), false, null, externalSessionId);
+        catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("folder/").toString(), null, false, null,
+                QueryOptions.empty(), externalSessionId);
     }
 
     @Test
@@ -574,7 +589,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.createUser(newUser, newUser, "asda@mail.com", password, "org", 1000L, null);
         String sessionId = catalogManager.login(newUser, password, "localhost").first().getId().toString();
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.createFolder(s1, Paths.get("data/my_folder/"), false, null, sessionId);
+        catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/my_folder/").toString(), null, false, null,
+                QueryOptions.empty(), sessionId);
     }
 
     /*--------------------------*/

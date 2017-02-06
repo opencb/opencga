@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.managers;
 
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -27,6 +28,8 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.CohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -130,7 +133,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
         String userId = userManager.getId(sessionId);
-        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.CREATE_ANNOTATIONS);
+        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS);
 
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
 
@@ -162,7 +165,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkObj(newAnnotations, "newAnnotations");
 
         String userId = userManager.getId(sessionId);
-        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.UPDATE_ANNOTATIONS);
+        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS);
 
         // Get sample
         QueryOptions queryOptions = new QueryOptions("include", Collections.singletonList("projects.studies.samples.annotationSets"));
@@ -233,7 +236,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         String userId = userManager.getId(sessionId);
         long studyId = catalogManager.getStudyManager().getId(userId, studyStr);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_SAMPLES);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_SAMPLES);
 
         Sample sample = new Sample(-1, name, source, new Individual(), description, Collections.emptyList(), Collections.emptyList(),
                 attributes);
@@ -256,7 +259,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         long studyId;
         long sampleId;
 
-        if (StringUtils.isNumeric(sampleStr)) {
+        if (StringUtils.isNumeric(sampleStr) && Long.parseLong(sampleStr) > configuration.getCatalog().getOffset()) {
             sampleId = Long.parseLong(sampleStr);
             sampleDBAdaptor.exists(sampleId);
             studyId = sampleDBAdaptor.getStudyId(sampleId);
@@ -296,9 +299,9 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         String userId;
         long studyId;
-        List<Long> sampleIds;
+        List<Long> sampleIds = new ArrayList<>();
 
-        if (StringUtils.isNumeric(sampleStr)) {
+        if (StringUtils.isNumeric(sampleStr) && Long.parseLong(sampleStr) > configuration.getCatalog().getOffset()) {
             sampleIds = Arrays.asList(Long.parseLong(sampleStr));
             sampleDBAdaptor.exists(sampleIds.get(0));
             studyId = sampleDBAdaptor.getStudyId(sampleIds.get(0));
@@ -308,15 +311,26 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             studyId = catalogManager.getStudyManager().getId(userId, studyStr);
 
             List<String> sampleSplit = Arrays.asList(sampleStr.split(","));
+            for (String sampleStrAux : sampleSplit) {
+                if (StringUtils.isNumeric(sampleStrAux)) {
+                    long sampleId = Long.parseLong(sampleStrAux);
+                    sampleDBAdaptor.exists(sampleId);
+                    sampleIds.add(sampleId);
+                }
+            }
+
             Query query = new Query()
                     .append(SampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                     .append(SampleDBAdaptor.QueryParams.NAME.key(), sampleSplit);
             QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, SampleDBAdaptor.QueryParams.ID.key());
             QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, queryOptions);
-            if (sampleQueryResult.getNumResults() == sampleSplit.size()) {
-                sampleIds = sampleQueryResult.getResult().stream().map(sample -> sample.getId()).collect(Collectors.toList());
-            } else {
-                throw new CatalogException("Found only " + sampleQueryResult.getNumResults() + " out of the " + sampleSplit.size()
+
+            if (sampleQueryResult.getNumResults() > 0) {
+                sampleIds.addAll(sampleQueryResult.getResult().stream().map(Sample::getId).collect(Collectors.toList()));
+            }
+
+            if (sampleIds.size() < sampleSplit.size()) {
+                throw new CatalogException("Found only " + sampleIds.size() + " out of the " + sampleSplit.size()
                         + " samples looked for in study " + studyStr);
             }
         }
@@ -392,21 +406,40 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         return queryResult;
     }
 
+    // TODO
+    // This implementation should be changed and made better. Check the comment in IndividualManager -> delete(). Those changes
+    // will probably make the delete from individualManager to be changed.
     @Override
     public List<QueryResult<Sample>> delete(String sampleIdStr, @Nullable String studyStr, QueryOptions options, String sessionId)
             throws CatalogException, IOException {
         ParamUtils.checkParameter(sampleIdStr, "id");
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-
+//        options = ParamUtils.defaultObject(options, QueryOptions::new);
         MyResourceIds resourceId = getIds(sampleIdStr, studyStr, sessionId);
 
         List<QueryResult<Sample>> queryResultList = new ArrayList<>(resourceId.getResourceIds().size());
         for (Long sampleId : resourceId.getResourceIds()) {
             QueryResult<Sample> queryResult = null;
             try {
-                authorizationManager.checkSamplePermission(sampleId, resourceId.getUser(), SampleAclEntry.SamplePermissions.DELETE);
-                queryResult = sampleDBAdaptor.delete(sampleId, options);
-                auditManager.recordDeletion(AuditRecord.Resource.sample, sampleId, resourceId.getUser(), queryResult.first(), null, null);
+                MyResourceIds myResourceId = new MyResourceIds(resourceId.getUser(), resourceId.getStudyId(), Arrays.asList(sampleId));
+                checkCanDeleteSamples(myResourceId);
+
+                // Get the sample info before the update
+                QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(sampleId, QueryOptions.empty());
+
+                String newSampleName = sampleQueryResult.first().getName() + ".DELETED_" + TimeUtils.getTime();
+                ObjectMap updateParams = new ObjectMap()
+                        .append(SampleDBAdaptor.QueryParams.NAME.key(), newSampleName)
+                        .append(SampleDBAdaptor.QueryParams.STATUS_NAME.key(), Status.DELETED);
+                queryResult = sampleDBAdaptor.update(sampleId, updateParams);
+
+                auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.Action.delete, AuditRecord.Magnitude.high, sampleId,
+                        resourceId.getUser(), sampleQueryResult.first(), queryResult.first(), "", null);
+
+                // Remove the references to the sample id from the array of files
+                Query query = new Query()
+                        .append(FileDBAdaptor.QueryParams.STUDY_ID.key(), resourceId.getStudyId());
+                fileDBAdaptor.extractSampleFromFiles(query, Arrays.asList(sampleId));
+
             } catch (CatalogAuthorizationException e) {
                 auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.Action.delete, AuditRecord.Magnitude.high, sampleId,
                         resourceId.getUser(), null, null, e.getMessage(), null);
@@ -422,6 +455,27 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         }
 
         return queryResultList;
+    }
+
+    @Override
+    public void checkCanDeleteSamples(MyResourceIds resources) throws CatalogException {
+        for (Long sampleId : resources.getResourceIds()) {
+            authorizationManager.checkSamplePermission(sampleId, resources.getUser(), SampleAclEntry.SamplePermissions.DELETE);
+        }
+
+        // Check that the samples are not being used in cohorts
+        Query query = new Query()
+                .append(CohortDBAdaptor.QueryParams.STUDY_ID.key(), resources.getStudyId())
+                .append(CohortDBAdaptor.QueryParams.SAMPLES.key(), resources.getResourceIds());
+        long count = cohortDBAdaptor.count(query).first();
+        if (count > 0) {
+            if (resources.getResourceIds().size() == 1) {
+                throw new CatalogException("The sample " + resources.getResourceIds().get(0) + " is part of " + count + " cohorts. Please, "
+                        + "first update or delete the cohorts");
+            } else {
+                throw new CatalogException("Some samples are part of " + count + " cohorts. Please, first update or delete the cohorts");
+            }
+        }
     }
 
     @Override
@@ -571,7 +625,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         // Update queryResult info
         sampleAclQueryResult.setId(sampleStr);
         sampleAclQueryResult.setNumResults(sampleAclList.size());
-        sampleAclQueryResult.setNumTotalResults(sampleAclList.size());
         sampleAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
         sampleAclQueryResult.setResult(sampleAclList);
 
@@ -595,7 +648,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getId(sessionId);
-
         authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.UPDATE);
 
         for (Map.Entry<String, Object> param : parameters.entrySet()) {
@@ -609,6 +661,17 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                     break;
                 default:
                     throw new CatalogException("Cannot update " + queryParam);
+            }
+        }
+
+        if (StringUtils.isNotEmpty(parameters.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key()))) {
+            String individualStr = parameters.getString(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key());
+            if (NumberUtils.isCreatable(individualStr) && Long.parseLong(individualStr) <= 0) {
+                parameters.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1);
+            } else {
+                long studyId = sampleDBAdaptor.getStudyId(sampleId);
+                MyResourceId resource = catalogManager.getIndividualManager().getId(individualStr, Long.toString(studyId), sessionId);
+                parameters.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), resource.getResourceId());
             }
         }
 
@@ -681,7 +744,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     private long commonGetAnnotationSet(String id, @Nullable String studyStr, String annotationSetName, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(id, "id");
-        ParamUtils.checkAlias(annotationSetName, "annotationSetName");
+        ParamUtils.checkAlias(annotationSetName, "annotationSetName", configuration.getCatalog().getOffset());
         MyResourceId resourceId = catalogManager.getSampleManager().getId(id, studyStr, sessionId);
         authorizationManager.checkSamplePermission(resourceId.getResourceId(), resourceId.getUser(),
                 SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
@@ -698,7 +761,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         MyResourceId resourceId = catalogManager.getSampleManager().getId(id, studyStr, sessionId);
         authorizationManager.checkSamplePermission(resourceId.getResourceId(), resourceId.getUser(),
-                SampleAclEntry.SamplePermissions.CREATE_ANNOTATIONS);
+                SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS);
 
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
 
@@ -747,7 +810,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         MyResourceId resourceId = catalogManager.getSampleManager().getId(id, studyStr, sessionId);
         authorizationManager.checkSamplePermission(resourceId.getResourceId(), resourceId.getUser(),
-                SampleAclEntry.SamplePermissions.UPDATE_ANNOTATIONS);
+                SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS);
 
         // Update the annotation
         QueryResult<AnnotationSet> queryResult =

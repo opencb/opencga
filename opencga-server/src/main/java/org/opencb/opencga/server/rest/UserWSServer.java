@@ -53,7 +53,9 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create a new user", response = User.class)
+    @ApiOperation(value = "Create a new user [WARNING]", response = User.class,
+    notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+            + "is not tested and this can be deprecated in a future version.")
     public Response createUser(@ApiParam(value = "User id", required = true) @QueryParam("userId") String userId,
                                @ApiParam(value = "User name", required = true) @QueryParam("name") String name,
                                @ApiParam(value = "User's email", required = true) @QueryParam("email") String email,
@@ -248,7 +250,9 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{user}/update")
-    @ApiOperation(value = "Update some user attributes", response = User.class)
+    @ApiOperation(value = "Update some user attributes [WARNING]", response = User.class,
+    notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+            + "is not tested and this can be deprecated in a future version.")
     public Response update(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                            @ApiParam(value = "User name") @QueryParam("name") String name,
                            @ApiParam(value = "User's email") @QueryParam("email") String email,
@@ -300,7 +304,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @Path("/{user}/configs/create")
     @ApiOperation(value = "Store a user configuration", notes = "Some applications might want to store some configuration parameters "
             + "containing the preferences of the user. The intention of this is to provide a place to store this things for every user.",
-            response = Map.class)
+            response = Map.class, hidden = true)
     public Response setConfiguration(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                                          @ApiParam(value = "Unique name (typically the name of the application)", required = true)
                                          @QueryParam("name") String name,
@@ -360,7 +364,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @Path("/{user}/configs/filters/create")
     @ApiOperation(value = "Store a custom filter", notes = "Users normally try to query the data using the same filters most of "
             + "the times. The aim of this WS is to allow storing as many different filters as the user might want in order not to type "
-            + "the same filters.", response = User.Filter.class)
+            + "the same filters.", response = User.Filter.class, hidden = true)
     public Response addFilter(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                               @ApiParam(value = "Name of the filter", required = true) @QueryParam("name") String name,
                               @ApiParam(value = "Bioformat for which the filters will make sense (generally VARIANT or ALIGNMENT). The "
@@ -427,7 +431,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{user}/configs/filters/{name}/update")
-    @ApiOperation(value = "Update a custom filter", response = User.Filter.class)
+    @ApiOperation(value = "Update a custom filter", response = User.Filter.class, hidden = true)
     public Response updateFilter(@ApiParam(value = "User id", required = true) @PathParam("user") String userId,
                                  @ApiParam(value = "Filter name", required = true) @PathParam("name") String name,
                                  @ApiParam(value = "Bioformat for which the filters will make sense (generally VARIANT or ALIGNMENT). The "

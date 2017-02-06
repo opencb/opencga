@@ -112,6 +112,8 @@ public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotati
     List<QueryResult<Sample>> delete(String ids, @Nullable String studyStr, QueryOptions options, String sessionId)
             throws CatalogException, IOException;
 
+    void checkCanDeleteSamples(AbstractManager.MyResourceIds resources) throws CatalogException;
+
     QueryResult<Annotation> load(File file) throws CatalogException;
 
     QueryResult<Sample> get(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;

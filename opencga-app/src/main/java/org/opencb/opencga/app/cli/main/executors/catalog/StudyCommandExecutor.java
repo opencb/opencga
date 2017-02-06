@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.analysis.storage.variant.CatalogVariantDBAdaptor;
-import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.StudyCommandOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -269,8 +269,8 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.searchCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.searchCommandOptions.dataModelOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, studiesCommandOptions.searchCommandOptions.numericOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, studiesCommandOptions.searchCommandOptions.numericOptions.skip);
+        queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.searchCommandOptions.numericOptions.limit);
+        queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.searchCommandOptions.numericOptions.skip);
         queryOptions.put("count", studiesCommandOptions.searchCommandOptions.numericOptions.count);
 
         return openCGAClient.getStudyClient().search(query, queryOptions);
@@ -313,8 +313,8 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
         queryOptions.putIfNotEmpty(FileDBAdaptor.QueryParams.NATTRIBUTES.key(), studiesCommandOptions.filesCommandOptions.nattributes);
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.filesCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.filesCommandOptions.dataModelOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, studiesCommandOptions.filesCommandOptions.numericOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, studiesCommandOptions.filesCommandOptions.numericOptions.skip);
+        queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.filesCommandOptions.numericOptions.limit);
+        queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.filesCommandOptions.numericOptions.skip);
         queryOptions.put("count", studiesCommandOptions.filesCommandOptions.numericOptions.count);
 
         return openCGAClient.getStudyClient().getFiles(studiesCommandOptions.filesCommandOptions.study, queryOptions);
@@ -339,8 +339,8 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.jobsCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.jobsCommandOptions.dataModelOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, studiesCommandOptions.jobsCommandOptions.numericOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, studiesCommandOptions.jobsCommandOptions.numericOptions.skip);
+        queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.jobsCommandOptions.numericOptions.limit);
+        queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.jobsCommandOptions.numericOptions.skip);
         queryOptions.put("count", studiesCommandOptions.jobsCommandOptions.numericOptions.count);
 
         return openCGAClient.getStudyClient().getJobs(studiesCommandOptions.jobsCommandOptions.study, queryOptions);
@@ -367,8 +367,8 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, studiesCommandOptions.samplesCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, studiesCommandOptions.samplesCommandOptions.dataModelOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, studiesCommandOptions.samplesCommandOptions.numericOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, studiesCommandOptions.samplesCommandOptions.numericOptions.skip);
+        queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.samplesCommandOptions.numericOptions.limit);
+        queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.samplesCommandOptions.numericOptions.skip);
         queryOptions.put("count", studiesCommandOptions.samplesCommandOptions.numericOptions.count);
 
         return openCGAClient.getStudyClient().getSamples(studiesCommandOptions.samplesCommandOptions.study, queryOptions);
@@ -495,8 +495,7 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
 
         QueryOptions queryOptions = new QueryOptions();
         return openCGAClient.getStudyClient().createGroup(studiesCommandOptions.groupsCreateCommandOptions.study,
-                studiesCommandOptions.groupsCreateCommandOptions.groupId, studiesCommandOptions.groupsCreateCommandOptions.users,
-                queryOptions);
+                studiesCommandOptions.groupsCreateCommandOptions.groupId, studiesCommandOptions.groupsCreateCommandOptions.users);
     }
 
     private QueryResponse<ObjectMap> groupsDelete() throws CatalogException,IOException {
@@ -585,11 +584,11 @@ public class StudyCommandExecutor extends OpencgaCommandExecutor {
                 getSingleValidStudy(studiesCommandOptions.aclsMemberUpdateCommandOptions.study);
 
         ObjectMap params = new ObjectMap();
-        params.putIfNotNull(StudyClient.AclParams.ADD_PERMISSIONS.key(),
+        params.putIfNotNull(StudyClient.AclParams.ADD.key(),
                 studiesCommandOptions.aclsMemberUpdateCommandOptions.addPermissions);
-        params.putIfNotNull(StudyClient.AclParams.REMOVE_PERMISSIONS.key(),
+        params.putIfNotNull(StudyClient.AclParams.REMOVE.key(),
                 studiesCommandOptions.aclsMemberUpdateCommandOptions.removePermissions);
-        params.putIfNotNull(StudyClient.AclParams.SET_PERMISSIONS.key(),
+        params.putIfNotNull(StudyClient.AclParams.SET.key(),
                 studiesCommandOptions.aclsMemberUpdateCommandOptions.setPermissions);
 
         return openCGAClient.getStudyClient().updateAcl(studiesCommandOptions.aclsMemberUpdateCommandOptions.study,

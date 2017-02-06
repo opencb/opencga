@@ -19,7 +19,7 @@ package org.opencb.opencga.app.cli.main.executors.catalog;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.FileCommandOptions;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
@@ -143,36 +143,6 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
 
         createOutput(queryResponse);
     }
-//
-//    private QueryResponse<File> copy() throws CatalogException {
-//        logger.debug("Creating a new file");
-//        //openCGAClient.getFileClient(). /******************* Falta el create en FileClient.java ?? **//
-////        OptionsParser.FileCommands.CreateCommand c = optionsParser.getFileCommands().createCommand;
-//        FileCommandOptions.CopyCommandOptions copyCommandOptions = filesCommandOptions.copyCommandOptions;
-//        long studyId = catalogManager.getStudyId(copyCommandOptions.study);
-//        Path inputFile = Paths.get(copyCommandOptions.inputFile);
-//        URI sourceUri;
-//        try {
-//            sourceUri = new URI(null, copyCommandOptions.inputFile, null);
-//        } catch (URISyntaxException e) {
-//            throw new CatalogException("Input file is not a proper URI");
-//        }
-//        if (sourceUri.getScheme() == null || sourceUri.getScheme().isEmpty()) {
-//            sourceUri = inputFile.toUri();
-//        }
-//        if (!catalogManager.getCatalogIOManagerFactory().get(sourceUri).exists(sourceUri)) {
-//            throw new CatalogException("File " + sourceUri + " does not exist");
-//        }
-//
-//        String path = ParamUtils.defaultString(copyCommandOptions.path, "");
-//        QueryResult<File> file = catalogManager.createFile(studyId, copyCommandOptions.format, copyCommandOptions.bioformat,
-//                Paths.get(path, inputFile.getFileName().toString()).toString(), copyCommandOptions.description,
-//                copyCommandOptions.parents, -1, sessionId);
-//        new CatalogFileUtils(catalogManager).upload(sourceUri, file.first(), null, sessionId, false, false,
-//                copyCommandOptions.move, copyCommandOptions.calculateChecksum);
-//        FileMetadataReader.get(catalogManager).setMetadataInformation(file.first(), null, new QueryOptions(), sessionId, false);
-//        return new QueryResponse<>(new QueryOptions(), Arrays.asList(file));
-//    }
 
     private QueryResponse createFolder() throws CatalogException, IOException {
         logger.debug("Creating a new folder");
@@ -243,8 +213,8 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, filesCommandOptions.searchCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, filesCommandOptions.searchCommandOptions.dataModelOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, filesCommandOptions.searchCommandOptions.numericOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, filesCommandOptions.searchCommandOptions.numericOptions.skip);
+        queryOptions.put(QueryOptions.LIMIT, filesCommandOptions.searchCommandOptions.numericOptions.limit);
+        queryOptions.put(QueryOptions.SKIP, filesCommandOptions.searchCommandOptions.numericOptions.skip);
         queryOptions.put("count", filesCommandOptions.searchCommandOptions.numericOptions.count);
 
         return openCGAClient.getFileClient().search(query,queryOptions);
@@ -257,8 +227,8 @@ public class FileCommandExecutor extends OpencgaCommandExecutor {
         params.putIfNotEmpty(FileDBAdaptor.QueryParams.STUDY.key(), filesCommandOptions.listCommandOptions.study);
         params.putIfNotEmpty(QueryOptions.INCLUDE, filesCommandOptions.listCommandOptions.dataModelOptions.include);
         params.putIfNotEmpty(QueryOptions.EXCLUDE, filesCommandOptions.listCommandOptions.dataModelOptions.exclude);
-        params.putIfNotEmpty(QueryOptions.LIMIT, filesCommandOptions.listCommandOptions.numericOptions.limit);
-        params.putIfNotEmpty(QueryOptions.SKIP, filesCommandOptions.listCommandOptions.numericOptions.skip);
+        params.put(QueryOptions.LIMIT, filesCommandOptions.listCommandOptions.numericOptions.limit);
+        params.put(QueryOptions.SKIP, filesCommandOptions.listCommandOptions.numericOptions.skip);
         params.put("count", filesCommandOptions.listCommandOptions.numericOptions.count);
 
         String folder = ".";

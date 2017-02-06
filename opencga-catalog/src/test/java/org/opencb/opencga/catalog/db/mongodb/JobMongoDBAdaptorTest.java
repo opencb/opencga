@@ -26,9 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.common.TimeUtils;
 
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Date;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -65,36 +63,16 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
                 ()), studyId, null).first();
         long jobId = job.getId();
         assertEquals(Job.JobStatus.PREPARED, job.getStatus().getName());
+        catalogJobDBAdaptor.delete(jobId);
+
         thrown.expect(CatalogDBException.class);
-        thrown.expectMessage("Please, stop the job before");
-        catalogJobDBAdaptor.delete(jobId, new QueryOptions());
-    }
-
-    @Test
-    public void deleteJobTest2() throws CatalogException {
-        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-
-        Job job = catalogJobDBAdaptor.insert(new Job("name", user3.getId(), "", "", "", 4, Collections.<Long>emptyList
-                ()), studyId, null).first();
-        long jobId = job.getId();
-        assertEquals(Job.JobStatus.PREPARED, job.getStatus().getName());
-        catalogJobDBAdaptor.setStatus(jobId, Job.JobStatus.READY);
-        QueryResult<Job> queryResult = catalogJobDBAdaptor.delete(jobId, new QueryOptions());
-        System.out.println(queryResult);
-        assertTrue(queryResult.getNumResults() == 1);
-        assertEquals(Job.JobStatus.TRASHED, queryResult.first().getStatus().getName());
-        try {
-            System.out.println(catalogJobDBAdaptor.delete(-1, new QueryOptions()));
-            fail("error: Expected \"Job not found\" exception");
-        } catch (CatalogDBException e) {
-            System.out.println("correct exception: " + e);
-        }
+        thrown.expectMessage("not exist");
+        catalogJobDBAdaptor.get(jobId, QueryOptions.empty());
     }
 
     @Test
     public void getAllJobTest() throws CatalogDBException {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-//        long analysisId = catalogDBAdaptor.getAnalysisId(studyId, "analysis1Alias");
         QueryResult<Job> allJobs = catalogJobDBAdaptor.getAllInStudy(studyId, null);
         System.out.println(allJobs);
     }
@@ -177,6 +155,29 @@ public class JobMongoDBAdaptorTest extends MongoDBAdaptorTest {
 
         assertTrue("job2".equals(jobQueryResult2.getResult().get(0).getName()));
         assertTrue("job1".equals(jobQueryResult2.getResult().get(1).getName()));
+    }
+
+    @Test
+    public void extractFilesFromJobs() throws Exception {
+        Job job = new Job();
+        job.setOutDirId(5);
+        job.setInput(Arrays.asList(1L, 2L, 3L, 4L));
+        job.setOutput(Arrays.asList(6L, 7L, 8L, 9L));
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        job.setName("jobName1");
+        QueryResult<Job> insert = catalogJobDBAdaptor.insert(job, studyId, null);
+
+        List<Long> longList = Arrays.asList(1L, 3L, 5L, 6L, 8L);
+        catalogJobDBAdaptor.extractFilesFromJobs(new Query(JobDBAdaptor.QueryParams.STUDY_ID.key(), studyId), longList);
+
+        QueryResult<Job> jobQueryResult = catalogJobDBAdaptor.get(insert.first().getId(), QueryOptions.empty());
+        assertEquals(-1L, jobQueryResult.first().getOutDirId());
+
+        assertTrue(jobQueryResult.first().getInput().containsAll(Arrays.asList(2L, 4L)));
+        assertEquals(2, jobQueryResult.first().getInput().size());
+
+        assertTrue(jobQueryResult.first().getOutput().containsAll(Arrays.asList(7L, 9L)));
+        assertEquals(2, jobQueryResult.first().getOutput().size());
     }
 
 }

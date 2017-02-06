@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.DuplicateKeyException;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -37,8 +38,10 @@ import org.opencb.opencga.catalog.models.acls.permissions.DiseasePanelAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.filterOptions;
 import static org.opencb.opencga.catalog.db.mongodb.MongoDBUtils.filterStringParams;
@@ -104,12 +107,12 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
-        return panelCollection.count(parseQuery(query));
+        return panelCollection.count(parseQuery(query, false));
     }
 
     @Override
     public QueryResult distinct(Query query, String field) throws CatalogDBException {
-        return panelCollection.distinct(field, parseQuery(query));
+        return panelCollection.distinct(field, parseQuery(query, false));
     }
 
     @Override
@@ -125,7 +128,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         }
         Bson bson;
         try {
-            bson = parseQuery(query);
+            bson = parseQuery(query, false);
         } catch (NumberFormatException e) {
             throw new CatalogDBException("Get panel: Could not parse all the arguments from query - " + e.getMessage(), e.getCause());
         }
@@ -150,7 +153,7 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         }
         Bson bson;
         try {
-            bson = parseQuery(query);
+            bson = parseQuery(query, false);
         } catch (NumberFormatException e) {
             throw new CatalogDBException("Get panel: Could not parse all the arguments from query - " + e.getMessage(), e.getCause());
         }
@@ -221,11 +224,26 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         }
 
         if (updateOperations.size() > 0) {
-            QueryResult<UpdateResult> update = panelCollection.update(parseQuery(query), updateOperations, null);
+            QueryResult<UpdateResult> update = panelCollection.update(parseQuery(query, false), updateOperations, null);
             return endQuery("Update panel", startTime, Arrays.asList(update.getNumTotalResults()));
         }
 
         return endQuery("Update sample", startTime, new QueryResult<>());
+    }
+
+    @Override
+    public void delete(long id) throws CatalogDBException {
+        Query query = new Query(QueryParams.ID.key(), id);
+        delete(query);
+    }
+
+    @Override
+    public void delete(Query query) throws CatalogDBException {
+        QueryResult<DeleteResult> remove = panelCollection.remove(parseQuery(query, false), null);
+
+        if (remove.first().getDeletedCount() == 0) {
+            throw CatalogDBException.deleteError("Disease panel");
+        }
     }
 
     @Override
@@ -260,33 +278,33 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
 
     @Override
     public DBIterator<DiseasePanel> iterator(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query);
+        Bson bson = parseQuery(query, false);
         MongoCursor<Document> iterator = panelCollection.nativeQuery().find(bson, options).iterator();
         return new MongoDBIterator<>(iterator, panelConverter);
     }
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query);
+        Bson bson = parseQuery(query, false);
         MongoCursor<Document> iterator = panelCollection.nativeQuery().find(bson, options).iterator();
         return new MongoDBIterator<>(iterator);
     }
 
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, false);
         return rank(panelCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, false);
         return groupBy(panelCollection, bsonQuery, field, "name", options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, false);
         return groupBy(panelCollection, bsonQuery, fields, "name", options);
     }
 
@@ -300,8 +318,12 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
         catalogDBIterator.close();
     }
 
-    private Bson parseQuery(Query query) throws CatalogDBException {
+    private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
+
+        if (isolated) {
+            andBsonList.add(new Document("$isolated", 1));
+        }
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
@@ -335,8 +357,14 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     @Override
     public QueryResult<DiseasePanelAclEntry> createAcl(long id, DiseasePanelAclEntry acl) throws CatalogDBException {
         long startTime = startQuery();
-//        CatalogMongoDBUtils.createAcl(id, acl, panelCollection, "DiseasePanelAcl");
+//        CatalogMongoDBUtils.setAcl(id, acl, panelCollection, "DiseasePanelAcl");
         return endQuery("create panel Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
+    }
+
+    @Override
+    public void createAcl(Query query, List<DiseasePanelAclEntry> aclEntryList) throws CatalogDBException {
+        Bson queryDocument = parseQuery(query, true);
+        aclDBAdaptor.setAcl(queryDocument, aclEntryList);
     }
 
     @Override
@@ -375,11 +403,35 @@ public class PanelMongoDBAdaptor extends MongoDBAdaptor implements PanelDBAdapto
     }
 
     @Override
+    public void addAclsToMember(Query query, List<String> members, List<String> permissions) throws CatalogDBException {
+        QueryResult<DiseasePanel> panelQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        List<Long> panelIds = panelQueryResult.getResult().stream().map(panel -> panel.getId()).collect(Collectors.toList());
+
+        if (panelIds == null || panelIds.size() == 0) {
+            throw new CatalogDBException("No matches found for query when attempting to add new permissions");
+        }
+
+        aclDBAdaptor.addAclsToMembers(panelIds, members, permissions);
+    }
+
+    @Override
     public QueryResult<DiseasePanelAclEntry> removeAclsFromMember(long id, String member, List<String> permissions)
             throws CatalogDBException {
 //        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, panelCollection);
         long startTime = startQuery();
         return endQuery("Remove Acls from member", startTime, Arrays.asList(aclDBAdaptor.removeAclsFromMember(id, member, permissions)));
+    }
+
+    @Override
+    public void removeAclsFromMember(Query query, List<String> members, @Nullable List<String> permissions) throws CatalogDBException {
+        QueryResult<DiseasePanel> panelQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        List<Long> panelIds = panelQueryResult.getResult().stream().map(DiseasePanel::getId).collect(Collectors.toList());
+
+        if (panelIds == null || panelIds.size() == 0) {
+            throw new CatalogDBException("No matches found for query when attempting to remove permissions");
+        }
+
+        aclDBAdaptor.removeAclsFromMembers(panelIds, members, permissions);
     }
 
     public void removeAclsFromStudy(long studyId, String member) throws CatalogDBException {

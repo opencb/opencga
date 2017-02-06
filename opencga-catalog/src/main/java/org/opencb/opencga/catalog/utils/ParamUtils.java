@@ -85,12 +85,13 @@ public class ParamUtils {
         }
     }
 
-    public static void checkAlias(String alias, String name) throws CatalogParameterException {
+    public static void checkAlias(String alias, String name, long offset) throws CatalogParameterException {
         if (alias == null || alias.isEmpty() || !alias.matches("^[_A-Za-z0-9-\\+]+$")) {
             throw new CatalogParameterException("Error in alias: Invalid alias for '" + name + "'.");
         }
-        if (StringUtils.isNumeric(alias)) {
-            throw new CatalogParameterException("Error in alias: Invalid alias for '" + name + "'. Alias cannot be numeric.");
+        if (StringUtils.isNumeric(alias) && Long.parseLong(alias) >= offset) {
+            throw new CatalogParameterException("Error in alias: Invalid alias for '" + name + "'. Alias cannot be a numeric value above "
+                    + offset);
         }
     }
 

@@ -71,3 +71,5 @@ git.properties
 *.Rproj
 .Rproj.user
 /opencga-catalog/src/test/java/org/opencb/opencga/catalog/config/CatalogConfigurationTest.java
+
+opencga-test/fitnesse/FitNesseRoot/files

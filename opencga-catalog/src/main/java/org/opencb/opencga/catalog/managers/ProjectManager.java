@@ -28,7 +28,6 @@ import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.db.DBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.DBAdaptor;
 import org.opencb.opencga.catalog.db.api.ProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -73,8 +72,10 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     public long getId(String userId, String projectStr) throws CatalogException {
         if (StringUtils.isNumeric(projectStr)) {
             long projectId = Long.parseLong(projectStr);
-            projectDBAdaptor.checkId(projectId);
-            return projectId;
+            if (projectId > configuration.getCatalog().getOffset()) {
+                projectDBAdaptor.checkId(projectId);
+                return projectId;
+            }
         }
 
         String userOwner;
@@ -180,7 +181,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkParameter(scientificName, "organism.scientificName");
         ParamUtils.checkParameter(assembly, "organism.assembly");
-        ParamUtils.checkAlias(alias, "alias");
+        ParamUtils.checkAlias(alias, "alias", configuration.getCatalog().getOffset());
         ParamUtils.checkParameter(sessionId, "sessionId");
 
         //Only the user can create a project
@@ -221,8 +222,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             catalogIOManagerFactory.getDefault().createProject(userId, Long.toString(project.getId()));
         } catch (CatalogIOException e) {
             try {
-                QueryOptions deleteOptions = new QueryOptions(DBAdaptor.SKIP_CHECK, true).append(DBAdaptor.FORCE, true);
-                projectDBAdaptor.delete(project.getId(), deleteOptions);
+                projectDBAdaptor.delete(project.getId());
             } catch (Exception e1) {
                 logger.error("Error deleting project from catalog after failing creating the folder in the filesystem", e1);
                 throw e;
@@ -350,7 +350,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
 
     public QueryResult rename(long projectId, String newProjectAlias, String sessionId)
             throws CatalogException {
-        ParamUtils.checkAlias(newProjectAlias, "newProjectAlias");
+        ParamUtils.checkAlias(newProjectAlias, "newProjectAlias", configuration.getCatalog().getOffset());
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         String ownerId = projectDBAdaptor.getOwnerId(projectId);

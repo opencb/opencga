@@ -33,9 +33,8 @@ public class SampleAclEntry extends AbstractAclEntry<SampleAclEntry.SamplePermis
         UPDATE,
         DELETE,
         SHARE,
-        CREATE_ANNOTATIONS,
+        WRITE_ANNOTATIONS,
         VIEW_ANNOTATIONS,
-        UPDATE_ANNOTATIONS,
         DELETE_ANNOTATIONS
     }
 

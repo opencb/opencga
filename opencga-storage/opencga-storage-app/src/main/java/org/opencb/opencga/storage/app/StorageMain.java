@@ -19,9 +19,9 @@ package org.opencb.opencga.storage.app;
 import com.beust.jcommander.ParameterException;
 import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
-import org.opencb.opencga.storage.app.cli.client.AlignmentCommandExecutor;
+import org.opencb.opencga.storage.app.cli.client.executors.AlignmentCommandExecutor;
 import org.opencb.opencga.storage.app.cli.client.CliOptionsParser;
-import org.opencb.opencga.storage.app.cli.client.VariantCommandExecutor;
+import org.opencb.opencga.storage.app.cli.client.executors.VariantCommandExecutor;
 
 import java.io.IOException;
 

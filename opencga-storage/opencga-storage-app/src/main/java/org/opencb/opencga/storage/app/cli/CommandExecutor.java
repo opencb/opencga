@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.app.cli;
 
+import com.beust.jcommander.JCommander;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.*;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -48,11 +49,11 @@ public abstract class CommandExecutor {
 
     protected Logger logger;
 
-    public CommandExecutor(OptionsParser.CommonOptions options) {
+    public CommandExecutor(GeneralCliOptions.CommonOptions options) {
         init(options);
     }
 
-    protected void init(OptionsParser.CommonOptions options) {
+    protected void init(GeneralCliOptions.CommonOptions options) {
         init(options.logLevel, options.verbose, options.configFile, options.storageEngine);
     }
 
@@ -232,4 +233,13 @@ public abstract class CommandExecutor {
         this.configuration = configuration;
     }
 
+    protected static String getParsedSubCommand(JCommander jCommander) {
+        String parsedCommand = jCommander.getParsedCommand();
+        if (jCommander.getCommands().containsKey(parsedCommand)) {
+            String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
+            return subCommand != null ? subCommand: "";
+        } else {
+            return "";
+        }
+    }
 }

@@ -553,6 +553,21 @@ public class UserMongoDBAdaptor extends MongoDBAdaptor implements UserDBAdaptor 
     }
 
     @Override
+    public void delete(long id) throws CatalogDBException {
+        Query query = new Query(QueryParams.ID.key(), id);
+        delete(query);
+    }
+
+    @Override
+    public void delete(Query query) throws CatalogDBException {
+        QueryResult<DeleteResult> remove = userCollection.remove(parseQuery(query), null);
+
+        if (remove.first().getDeletedCount() == 0) {
+            throw CatalogDBException.deleteError("User");
+        }
+    }
+
+    @Override
     public QueryResult<User> update(long id, ObjectMap parameters) throws CatalogDBException {
         throw new NotImplementedException("Update user by int id. The id should be a string.");
     }

@@ -22,9 +22,16 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBWriter;
 
 import java.util.*;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+import static java.util.Collections.unmodifiableMap;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantAnnotationConverter.*;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
@@ -58,60 +65,68 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
 //    public static final String SOTERM_FIELD = "so";
 //    public static final String GENE_FIELD = "gene";
 
-    public static final Map<String, String> FIELDS_MAP;
-    public static final Set<String> REQUIRED_FIELDS_SET;
-    public static final Set<String> EXCLUDE_STUDIES_SAMPLES_DATA_FIELD;
-    public static final Set<String> EXCLUDE_STUDIES_FILES_FIELD;
+    protected static final Map<VariantField, List<String>> FIELDS_MAP;
+    public static final Set<VariantField> REQUIRED_FIELDS_SET;
 
 
     static {
-        Set<String> requiredFieldsSet = new HashSet<>();
-        requiredFieldsSet.add(CHROMOSOME_FIELD);
-        requiredFieldsSet.add(START_FIELD);
-        requiredFieldsSet.add(END_FIELD);
-        requiredFieldsSet.add(REFERENCE_FIELD);
-        requiredFieldsSet.add(ALTERNATE_FIELD);
-        requiredFieldsSet.add(TYPE_FIELD);
+        Set<VariantField> requiredFieldsSet = new HashSet<>();
+        requiredFieldsSet.add(VariantField.CHROMOSOME);
+        requiredFieldsSet.add(VariantField.START);
+        requiredFieldsSet.add(VariantField.END);
+        requiredFieldsSet.add(VariantField.REFERENCE);
+        requiredFieldsSet.add(VariantField.ALTERNATE);
+        requiredFieldsSet.add(VariantField.TYPE);
         REQUIRED_FIELDS_SET = Collections.unmodifiableSet(requiredFieldsSet);
 
-        HashSet<String> samplesData = new HashSet<>();
-        samplesData.add("studies.samplesData");
-        samplesData.add("samplesData");
-        samplesData.add("samples");
-        EXCLUDE_STUDIES_SAMPLES_DATA_FIELD = Collections.unmodifiableSet(samplesData);
+        Map<VariantField, List<String>> map = new EnumMap<>(VariantField.class);
+        map.put(VariantField.ID, singletonList(IDS_FIELD));
+        map.put(VariantField.CHROMOSOME, singletonList(CHROMOSOME_FIELD));
+        map.put(VariantField.START, singletonList(START_FIELD));
+        map.put(VariantField.END, singletonList(END_FIELD));
+        map.put(VariantField.REFERENCE, singletonList(REFERENCE_FIELD));
+        map.put(VariantField.ALTERNATE, singletonList(ALTERNATE_FIELD));
+        map.put(VariantField.LENGTH, singletonList(LENGTH_FIELD));
+        map.put(VariantField.TYPE, singletonList(TYPE_FIELD));
+        map.put(VariantField.HGVS, singletonList(HGVS_FIELD));
+        map.put(VariantField.STUDIES, Arrays.asList(STUDIES_FIELD, STATS_FIELD));
+        map.put(VariantField.STUDIES_SAMPLES_DATA, Arrays.asList(
+                STUDIES_FIELD + '.' + GENOTYPES_FIELD
+//                , STUDIES_FIELD + '.' + FILES_FIELD + '.' + SAMPLE_DATA_FIELD
+        ));
+        map.put(VariantField.STUDIES_FILES, singletonList(STUDIES_FIELD + '.' + FILES_FIELD));
+        map.put(VariantField.STUDIES_STATS, singletonList(STATS_FIELD));
+        map.put(VariantField.STUDIES_SECONDARY_ALTERNATES, singletonList(
+                STUDIES_FIELD + '.' + ALTERNATES_FIELD));
+        map.put(VariantField.STUDIES_STUDY_ID, singletonList(
+                STUDIES_FIELD + '.' + STUDYID_FIELD));
 
-        HashSet<String> files = new HashSet<>();
-        files.add("studies.files");
-        files.add("files");
-        EXCLUDE_STUDIES_FILES_FIELD = Collections.unmodifiableSet(files);
+        map.put(VariantField.ANNOTATION, singletonList(ANNOTATION_FIELD));
+        map.put(VariantField.ANNOTATION_ANCESTRAL_ALLELE, emptyList());
+        map.put(VariantField.ANNOTATION_ID, emptyList());
+        map.put(VariantField.ANNOTATION_XREFS, singletonList(ANNOTATION_FIELD + '.' + XREFS_FIELD));
+        map.put(VariantField.ANNOTATION_HGVS, emptyList());
+        map.put(VariantField.ANNOTATION_DISPLAY_CONSEQUENCE_TYPE, emptyList());
+        map.put(VariantField.ANNOTATION_CONSEQUENCE_TYPES, singletonList(ANNOTATION_FIELD + '.' + CONSEQUENCE_TYPE_FIELD));
+        map.put(VariantField.ANNOTATION_POPULATION_FREQUENCIES, singletonList(ANNOTATION_FIELD + '.' + POPULATION_FREQUENCIES_FIELD));
+        map.put(VariantField.ANNOTATION_MINOR_ALLELE, emptyList());
+        map.put(VariantField.ANNOTATION_MINOR_ALLELE_FREQ, emptyList());
+        map.put(VariantField.ANNOTATION_CONSERVATION, Arrays.asList(
+                ANNOTATION_FIELD + '.' + CONSERVED_REGION_PHYLOP_FIELD,
+                ANNOTATION_FIELD + '.' + CONSERVED_REGION_PHASTCONS_FIELD,
+                ANNOTATION_FIELD + '.' + CONSERVED_REGION_GERP_FIELD
+        ));
+        map.put(VariantField.ANNOTATION_GENE_EXPRESSION, emptyList());
+        map.put(VariantField.ANNOTATION_GENE_TRAIT_ASSOCIATION, singletonList(ANNOTATION_FIELD + '.' + GENE_TRAIT_FIELD));
+        map.put(VariantField.ANNOTATION_GENE_DRUG_INTERACTION, singletonList(ANNOTATION_FIELD + '.' + DRUG_FIELD));
+        map.put(VariantField.ANNOTATION_VARIANT_TRAIT_ASSOCIATION, singletonList(ANNOTATION_FIELD + '.' + CLINICAL_DATA_FIELD));
+        map.put(VariantField.ANNOTATION_FUNCTIONAL_SCORE, Arrays.asList(
+                ANNOTATION_FIELD + '.' + FUNCTIONAL_CADD_RAW_FIELD,
+                ANNOTATION_FIELD + '.' + FUNCTIONAL_CADD_SCALED_FIELD));
+        map.put(VariantField.ANNOTATION_ADDITIONAL_ATTRIBUTES, singletonList(CUSTOM_ANNOTATION_FIELD));
 
-        Map<String, String> fieldsMap = new HashMap<>();
-        fieldsMap.put("chromosome", CHROMOSOME_FIELD);
-        fieldsMap.put("start", START_FIELD);
-        fieldsMap.put("end", END_FIELD);
-        fieldsMap.put("length", LENGTH_FIELD);
-        fieldsMap.put("reference", REFERENCE_FIELD);
-        fieldsMap.put("alternate", ALTERNATE_FIELD);
-        fieldsMap.put("ids", IDS_FIELD);
-        fieldsMap.put("type", TYPE_FIELD);
-        fieldsMap.put("hgvs", HGVS_FIELD);
-//        fieldsMap.put("hgvs.type", HGVS_FIELD + "." + HGVS_TYPE_FIELD);
-//        fieldsMap.put("hgvs.name", HGVS_FIELD + "." + HGVS_NAME_FIELD);
-        fieldsMap.put("sourceEntries", STUDIES_FIELD);
-        fieldsMap.put("studies", STUDIES_FIELD);
-        for (String key : EXCLUDE_STUDIES_SAMPLES_DATA_FIELD) {
-            fieldsMap.put(key, null);
-        }
-        for (String key : EXCLUDE_STUDIES_FILES_FIELD) {
-            fieldsMap.put(key, null);
-        }
-        fieldsMap.put("annotation", ANNOTATION_FIELD);
-        fieldsMap.put("annotation.additionalAttributes", CUSTOM_ANNOTATION_FIELD);
-        fieldsMap.put("sourceEntries.cohortStats", STATS_FIELD);
-        fieldsMap.put("studies.stats", STATS_FIELD);
-        fieldsMap.put("stats", STATS_FIELD);
-        fieldsMap.put("annotation", ANNOTATION_FIELD);
-        FIELDS_MAP = Collections.unmodifiableMap(fieldsMap);
+        FIELDS_MAP = unmodifiableMap(map);
+
     }
 
     private DocumentToStudyVariantEntryConverter variantStudyEntryConverter;
@@ -183,7 +198,7 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
                 if (addDefaultId) {
                     variant.setId(variant.toString());
                 }
-                variant.setNames(Collections.emptyList());
+                variant.setNames(emptyList());
             } else {
                 variant.setId(ids.get(0));
                 variant.setNames(ids.subList(1, ids.size()));
@@ -208,8 +223,7 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
             if (mongoFiles != null) {
                 for (Object o : mongoFiles) {
                     Document dbo = (Document) o;
-                    if (returnStudies == null
-                            || returnStudies.contains(((Number) dbo.get(DocumentToStudyVariantEntryConverter.STUDYID_FIELD)).intValue())) {
+                    if (returnStudies == null || returnStudies.contains(((Number) dbo.get(STUDYID_FIELD)).intValue())) {
                         variant.addStudyEntry(variantStudyEntryConverter.convertToDataModelType(dbo));
                     }
                 }
@@ -299,13 +313,13 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
         }
 
 //        // Annotations
-        mongoVariant.append(ANNOTATION_FIELD, Collections.emptyList());
+        mongoVariant.append(ANNOTATION_FIELD, emptyList());
         if (variantAnnotationConverter != null) {
             if (variant.getAnnotation() != null
                     && variant.getAnnotation().getConsequenceTypes() != null
                     && !variant.getAnnotation().getConsequenceTypes().isEmpty()) {
                 Document annotation = variantAnnotationConverter.convertToStorageType(variant.getAnnotation());
-                mongoVariant.append(ANNOTATION_FIELD, Collections.singletonList(annotation));
+                mongoVariant.append(ANNOTATION_FIELD, singletonList(annotation));
             }
         }
 
@@ -351,17 +365,8 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
 //        return builder.toString();
     }
 
-    public static String toShortFieldName(String longFieldName) {
-        if (FIELDS_MAP.containsKey(longFieldName)) {
-            return FIELDS_MAP.get(longFieldName);
-        }
-//        int idx = longFieldName.indexOf(".");
-        if (longFieldName.contains(".")) {
-            String[] split = longFieldName.split("\\.");
-//            return FIELDS_MAP.get(longFieldName.substring(idx));
-            return FIELDS_MAP.get(split[0]);
-        }
-        return FIELDS_MAP.get(longFieldName);
+    public static List<String> toShortFieldName(VariantField field) {
+        return FIELDS_MAP.get(field);
     }
 
 }

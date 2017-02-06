@@ -154,14 +154,16 @@ public abstract class AbstractVariantStorageOperationTest extends GenericTest {
                 Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), getAggregation()),
                 null, sessionId).first().getId();
         studyStr = String.valueOf(studyId);
-        outputId = catalogManager.createFolder(studyId, Paths.get("data", "index"), true, null, sessionId).first().getId();
+        outputId = catalogManager.getFileManager().createFolder(studyStr, Paths.get("data", "index").toString(), null,  true, null,
+                QueryOptions.empty(), sessionId).first().getId();
         outputStr = String.valueOf(outputId);
         outputPath = "data/index/";
         studyId2 = catalogManager.createStudy(projectId, "s2", "s2", Study.Type.CASE_CONTROL, null, "Study 2", null,
                 null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(getStorageEngine(), dbName)), null,
                 Collections.singletonMap(VariantStorageEngine.Options.AGGREGATED_TYPE.key(), getAggregation()),
                 null, sessionId).first().getId();
-        outputId2 = catalogManager.createFolder(studyId2, Paths.get("data", "index"), true, null, sessionId).first().getId();
+        outputId2 = catalogManager.getFileManager().createFolder(Long.toString(studyId2), Paths.get("data", "index").toString(), null,
+                true, null, QueryOptions.empty(), sessionId).first().getId();
 
         files = Arrays.asList(new File[5]);
     }

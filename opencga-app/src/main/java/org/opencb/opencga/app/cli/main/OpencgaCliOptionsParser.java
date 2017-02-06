@@ -17,9 +17,7 @@
 package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
@@ -277,11 +275,11 @@ public class OpencgaCliOptionsParser {
         alignmentSubCommands.addCommand("stats", alignmentCommandOptions.statsAlignmentCommandOptions);
         alignmentSubCommands.addCommand("coverage", alignmentCommandOptions.coverageAlignmentCommandOptions);
 
-        variantCommandOptions = new VariantCommandOptions(this.commonCommandOptions, jCommander);
+        variantCommandOptions = new VariantCommandOptions(this.commonCommandOptions, dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("variant", variantCommandOptions);
         JCommander variantSubCommands = jCommander.getCommands().get("variant");
-        variantSubCommands.addCommand("index", variantCommandOptions.indexCommandOptions);
-        variantSubCommands.addCommand("query", variantCommandOptions.queryCommandOptions);
+        variantSubCommands.addCommand("index", variantCommandOptions.indexVariantCommandOptions);
+        variantSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);
 
     }
 

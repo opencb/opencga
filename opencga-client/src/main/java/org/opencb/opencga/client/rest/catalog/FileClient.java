@@ -43,9 +43,12 @@ public class FileClient extends CatalogClient<File, FileAclEntry> {
         this.aclClass = FileAclEntry.class;
     }
 
-    public QueryResponse<File> createFolder(String studyId, String paths, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, FileDBAdaptor.QueryParams.STUDY.key(), studyId, "folders", paths);
-        return execute(FILES_URL, "create-folder", params, GET, File.class);
+    public QueryResponse<File> createFolder(String studyId, String path, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "path", path, "directory", true);
+        ObjectMap myParams = new ObjectMap()
+                .append("study", studyId)
+                .append("body", params);
+        return execute(FILES_URL, "create", myParams, POST, File.class);
     }
 
     public QueryResponse<File> relink(String fileId, String uri, QueryOptions options) throws CatalogException, IOException {

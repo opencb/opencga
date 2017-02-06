@@ -67,73 +67,62 @@ public class StudyAclEntry extends AbstractAclEntry<StudyAclEntry.StudyPermissio
         VIEW_STUDY,
         UPDATE_STUDY,
         SHARE_STUDY, // Add members to groups, add members/groups to roles.
-        CREATE_VARIABLE_SET,
         VIEW_VARIABLE_SET,
-        UPDATE_VARIABLE_SET,
+        WRITE_VARIABLE_SET,
         DELETE_VARIABLE_SET,
 
         // FILES
-        CREATE_FILES(FileAclEntry.FilePermissions.CREATE.name(), FILE),
+        WRITE_FILES(FileAclEntry.FilePermissions.WRITE.name(), FILE),
         VIEW_FILE_HEADERS(FileAclEntry.FilePermissions.VIEW_HEADER.name(), FILE),
         VIEW_FILE_CONTENTS(FileAclEntry.FilePermissions.VIEW_CONTENT.name(), FILE),
         VIEW_FILES(FileAclEntry.FilePermissions.VIEW.name(), FILE),
         DELETE_FILES(FileAclEntry.FilePermissions.DELETE.name(), FILE),
-        UPDATE_FILES(FileAclEntry.FilePermissions.UPDATE.name(), FILE),
         DOWNLOAD_FILES(FileAclEntry.FilePermissions.DOWNLOAD.name(), FILE),
         UPLOAD_FILES(FileAclEntry.FilePermissions.UPLOAD.name(), FILE),
         SHARE_FILES(FileAclEntry.FilePermissions.SHARE.name(), FILE),
 
         // JOBS
-        CREATE_JOBS,
         VIEW_JOBS(JobAclEntry.JobPermissions.VIEW.name(), JOB),
-        UPDATE_JOBS(JobAclEntry.JobPermissions.UPDATE.name(), JOB),
+        WRITE_JOBS(JobAclEntry.JobPermissions.UPDATE.name(), JOB),
         DELETE_JOBS(JobAclEntry.JobPermissions.DELETE.name(), JOB),
         SHARE_JOBS(JobAclEntry.JobPermissions.SHARE.name(), JOB),
 
         // SAMPLES
-        CREATE_SAMPLES,
         VIEW_SAMPLES(SampleAclEntry.SamplePermissions.VIEW.name(), SAMPLE),
-        UPDATE_SAMPLES(SampleAclEntry.SamplePermissions.UPDATE.name(), SAMPLE),
+        WRITE_SAMPLES(SampleAclEntry.SamplePermissions.UPDATE.name(), SAMPLE),
         DELETE_SAMPLES(SampleAclEntry.SamplePermissions.DELETE.name(), SAMPLE),
         SHARE_SAMPLES(SampleAclEntry.SamplePermissions.SHARE.name(), SAMPLE),
-        CREATE_SAMPLE_ANNOTATIONS(SampleAclEntry.SamplePermissions.CREATE_ANNOTATIONS.name(), SAMPLE),
+        WRITE_SAMPLE_ANNOTATIONS(SampleAclEntry.SamplePermissions.WRITE_ANNOTATIONS.name(), SAMPLE),
         VIEW_SAMPLE_ANNOTATIONS(SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS.name(), SAMPLE),
-        UPDATE_SAMPLE_ANNOTATIONS(SampleAclEntry.SamplePermissions.UPDATE_ANNOTATIONS.name(), SAMPLE),
         DELETE_SAMPLE_ANNOTATIONS(SampleAclEntry.SamplePermissions.DELETE_ANNOTATIONS.name(), SAMPLE),
 
         // INDIVIDUALS
-        CREATE_INDIVIDUALS,
         VIEW_INDIVIDUALS(IndividualAclEntry.IndividualPermissions.VIEW.name(), INDIVIDUAL),
-        UPDATE_INDIVIDUALS(IndividualAclEntry.IndividualPermissions.UPDATE.name(), INDIVIDUAL),
+        WRITE_INDIVIDUALS(IndividualAclEntry.IndividualPermissions.UPDATE.name(), INDIVIDUAL),
         DELETE_INDIVIDUALS(IndividualAclEntry.IndividualPermissions.DELETE.name(), INDIVIDUAL),
         SHARE_INDIVIDUALS(IndividualAclEntry.IndividualPermissions.SHARE.name(), INDIVIDUAL),
-        CREATE_INDIVIDUAL_ANNOTATIONS(IndividualAclEntry.IndividualPermissions.CREATE_ANNOTATIONS.name(), INDIVIDUAL),
+        WRITE_INDIVIDUAL_ANNOTATIONS(IndividualAclEntry.IndividualPermissions.WRITE_ANNOTATIONS.name(), INDIVIDUAL),
         VIEW_INDIVIDUAL_ANNOTATIONS(IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS.name(), INDIVIDUAL),
-        UPDATE_INDIVIDUAL_ANNOTATIONS(IndividualAclEntry.IndividualPermissions.UPDATE_ANNOTATIONS.name(), INDIVIDUAL),
         DELETE_INDIVIDUAL_ANNOTATIONS(IndividualAclEntry.IndividualPermissions.DELETE_ANNOTATIONS.name(), INDIVIDUAL),
 
         // COHORTS
-        CREATE_COHORTS,
         VIEW_COHORTS(CohortAclEntry.CohortPermissions.VIEW.name(), COHORT),
-        UPDATE_COHORTS(CohortAclEntry.CohortPermissions.UPDATE.name(), COHORT),
+        WRITE_COHORTS(CohortAclEntry.CohortPermissions.UPDATE.name(), COHORT),
         DELETE_COHORTS(CohortAclEntry.CohortPermissions.DELETE.name(), COHORT),
         SHARE_COHORTS(CohortAclEntry.CohortPermissions.SHARE.name(), COHORT),
-        CREATE_COHORT_ANNOTATIONS(CohortAclEntry.CohortPermissions.CREATE_ANNOTATIONS.name(), COHORT),
+        WRITE_COHORT_ANNOTATIONS(CohortAclEntry.CohortPermissions.WRITE_ANNOTATIONS.name(), COHORT),
         VIEW_COHORT_ANNOTATIONS(CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS.name(), COHORT),
-        UPDATE_COHORT_ANNOTATIONS(CohortAclEntry.CohortPermissions.UPDATE_ANNOTATIONS.name(), COHORT),
         DELETE_COHORT_ANNOTATIONS(CohortAclEntry.CohortPermissions.DELETE_ANNOTATIONS.name(), COHORT),
 
         // DATASETS
-        CREATE_DATASETS,
         VIEW_DATASETS(DatasetAclEntry.DatasetPermissions.VIEW.name(), DATASET),
-        UPDATE_DATASETS(DatasetAclEntry.DatasetPermissions.UPDATE.name(), DATASET),
+        WRITE_DATASETS(DatasetAclEntry.DatasetPermissions.UPDATE.name(), DATASET),
         DELETE_DATASETS(DatasetAclEntry.DatasetPermissions.DELETE.name(), DATASET),
         SHARE_DATASETS(DatasetAclEntry.DatasetPermissions.SHARE.name(), DATASET),
 
         // DISEASE PANELS
-        CREATE_PANELS,
         VIEW_PANELS(DiseasePanelAclEntry.DiseasePanelPermissions.VIEW.name(), DISEASE_PANEL),
-        UPDATE_PANELS(DiseasePanelAclEntry.DiseasePanelPermissions.UPDATE.name(), DISEASE_PANEL),
+        WRITE_PANELS(DiseasePanelAclEntry.DiseasePanelPermissions.UPDATE.name(), DISEASE_PANEL),
         DELETE_PANELS(DiseasePanelAclEntry.DiseasePanelPermissions.DELETE.name(), DISEASE_PANEL),
         SHARE_PANELS(DiseasePanelAclEntry.DiseasePanelPermissions.SHARE.name(), DISEASE_PANEL);
 

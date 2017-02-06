@@ -22,7 +22,7 @@
 
     <groupId>org.opencb.opencga</groupId>
     <artifactId>opencga</artifactId>
-    <version>1.0.0-rc4</version>
+    <version>1.0.0-final</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -36,7 +36,7 @@
     </modules>
 
     <properties>
-        <opencga.version>1.0.0-rc4</opencga.version>
+        <opencga.version>1.0.0-final</opencga.version>
         <java.version>1.8</java.version>
         <biodata.version>1.0.0-SNAPSHOT</biodata.version>
         <cellbase.version>4.5.0-SNAPSHOT</cellbase.version>
@@ -483,6 +483,7 @@
 
                 <!-- Client -->
                 <OPENCGA.CLIENT.REST.HOST>http://localhost:8080/${opencga.war.name}</OPENCGA.CLIENT.REST.HOST>
+                <OPENCGA.CLIENT.REST.TIMEOUT>30000</OPENCGA.CLIENT.REST.TIMEOUT>
                 <OPENCGA.CLIENT.GRPC.HOST>localhost:9091</OPENCGA.CLIENT.GRPC.HOST>
                 <OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME></OPENCGA.CLIENT.ORGANISM.SCIENTIFIC_NAME>
                 <OPENCGA.CLIENT.ORGANISM.COMMON_NAME></OPENCGA.CLIENT.ORGANISM.COMMON_NAME>

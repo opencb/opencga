@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.AbstractManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.catalog.utils.FileScanner;
@@ -62,7 +63,9 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create a new study", response = Study.class)
+    @ApiOperation(value = "Create a new study [WARNING]", response = Study.class,
+            notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web "
+                    + "service is not tested and this can be deprecated in a future version.")
     public Response createStudy(@ApiParam(value = "Project id or alias", required = true) @QueryParam("projectId") String projectIdStr,
                                 @ApiParam(value = "Study name", required = true) @QueryParam("name") String name,
                                 @ApiParam(value = "Study alias", required = true) @QueryParam("alias") String alias,
@@ -82,18 +85,14 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Create a new study", response = Study.class,
-            notes = "Wont't accept files, jobs, experiments, samples.<br>" +
-                    "Will accept: acl, uri, cohorts, datasets.<br>" +
-//            "Work in progress.<br>" +
-//            "Only nested files parameter accepted, and only a few parameters.<br>" +
-//            "<b>{ files:[ { format, bioformat, path, description, type, jobId, attributes } ] }</b><br>" +
-                    "<ul>" +
-                    "<il><b>id</b>, <b>lastModified</b> and <b>size</b> parameters will be ignored.<br></il>" +
-                    "<il><b>type</b> accepted values: [<b>'CASE_CONTROL', 'CASE_SET', 'CONTROL_SET', 'FAMILY', 'PAIRED', 'TRIO'</b>].<br>"
+            notes = "Wont't accept files, jobs, experiments, samples.<br>"
+                    + "Will accept: acl, uri, cohorts, datasets.<br>"
+                    + "<ul>"
+                    + "<il><b>id</b>, <b>lastModified</b> and <b>size</b> parameters will be ignored.<br></il>"
+                    + "<il><b>type</b> accepted values: [<b>'CASE_CONTROL', 'CASE_SET', 'CONTROL_SET', 'FAMILY', 'PAIRED', 'TRIO'</b>].<br>"
                     + "</il><ul>")
     public Response createStudyPOST(@ApiParam(value = "Project id or alias", required = true) @QueryParam("projectId") String projectIdStr,
-                                    @ApiParam(value="studies", required = true) List<Study> studies) {
-        List<QueryResult<Study>> queryResults = new LinkedList<>();
+                                    @ApiParam(value="study", required = true) Study study) {
         long projectId;
         try {
             String userId = catalogManager.getUserManager().getId(sessionId);
@@ -101,19 +100,15 @@ public class StudyWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-        for (Study study : studies) {
-            System.out.println("study = " + study);
-            try {
-                QueryResult<Study> queryResult = catalogManager.createStudy(projectId, study.getName(),
-                        study.getAlias(), study.getType(), study.getCreationDate(),
-                        study.getDescription(), new Status(), study.getCipher(), null, null, null, study.getStats(),
-                        study.getAttributes(), queryOptions, sessionId);
-                queryResults.add(queryResult);
-            } catch (Exception e) {
-                return createErrorResponse(e);
-            }
+        logger.debug("study = {}", study);
+        try {
+            return createOkResponse(catalogManager.createStudy(projectId, study.getName(),
+                    study.getAlias(), study.getType(), study.getCreationDate(),
+                    study.getDescription(), new Status(), study.getCipher(), null, null, null, study.getStats(),
+                    study.getAttributes(), queryOptions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
         }
-        return createOkResponse(queryResults);
     }
 
     @GET
@@ -129,7 +124,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "count", value = "Get a count of the number of results obtained. Deactivated by default.",
                     dataType = "boolean", paramType = "query")
     })
-    public Response getAllStudies(@ApiParam(value = "Project id or alias") @QueryParam("projectId") String projectId,
+    public Response getAllStudies(@ApiParam(value = "Project id or alias", required = true) @QueryParam("projectId") String projectId,
                                   @ApiParam(value = "Study name") @QueryParam("name") String name,
                                   @ApiParam(value = "Study alias") @QueryParam("alias") String alias,
                                   @ApiParam(value = "Type of study: CASE_CONTROL, CASE_SET...") @QueryParam("type") String type,
@@ -137,8 +132,11 @@ public class StudyWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "Status") @QueryParam("status") String status,
                                   @ApiParam(value = "Attributes") @QueryParam("attributes") String attributes,
                                   @Deprecated @ApiParam(value = "Numerical attributes") @QueryParam("nattributes") String nattributes,
-                                  @Deprecated @ApiParam(value = "Boolean attributes") @QueryParam("battributes") boolean battributes) {
+                                  @Deprecated @ApiParam(value = "Boolean attributes") @QueryParam("battributes") boolean battributes,
+                                  @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
+            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
+
             if (projectId != null) {
                 query.put(StudyDBAdaptor.QueryParams.PROJECT_ID.key(), catalogManager.getProjectId(projectId, sessionId));
             }
@@ -152,7 +150,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @POST
     @Path("/search")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Search studies", position = 2, response = Study[].class)
+    @ApiOperation(value = "Search studies", position = 2, hidden = true, response = Study[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided",
                     example = "name,attributes", dataType = "string", paramType = "query"),
@@ -163,8 +161,11 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
-    public Response getAllStudiesByPost(@ApiParam(value="studies", required = true) Query query) {
+    public Response getAllStudiesByPost(@ApiParam(value="studies", required = true) Query query,
+                                        @ApiParam(value = "Skip count", defaultValue = "false") @QueryParam("skipCount") boolean skipCount) {
         try {
+            queryOptions.put(QueryOptions.SKIP_COUNT, skipCount);
+
             QueryResult<Study> queryResult = catalogManager.getAllStudies(query, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -174,7 +175,9 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/update")
-    @ApiOperation(value = "Update some study attributes", response = Study.class)
+    @ApiOperation(value = "Update some study attributes [WARNING]", response = Study.class,
+    notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+            + "is not tested and this can be deprecated in a future version.")
     public Response update(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
                                    required = true) @PathParam("study") String studyStr,
                            @ApiParam(value = "Study name") @QueryParam("name") String name,
@@ -561,7 +564,8 @@ public class StudyWSServer extends OpenCGAWSServer {
             File file;
             URI fileUri;
             try {
-                fileIdNum = catalogManager.getFileId(fileId);
+                AbstractManager.MyResourceId resource = catalogManager.getFileManager().getId(fileId, Long.toString(studyId), sessionId);
+                fileIdNum = resource.getResourceId();
                 QueryResult<File> queryResult = catalogManager.getFile(fileIdNum, sessionId);
                 file = queryResult.getResult().get(0);
                 fileUri = catalogManager.getFileUri(file);
@@ -728,7 +732,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/groups/create")
-    @ApiOperation(value = "Create a group", position = 14)
+    @ApiOperation(value = "Create a group", position = 14, hidden = true)
     public Response createGroup(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
                                         required = true) @PathParam("study") String studyStr,
                                 @ApiParam(value = "Id of the new group to be created", required = true)
@@ -777,7 +781,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/groups/{groupId}/update")
-    @ApiOperation(value = "Updates the members of the group")
+    @ApiOperation(value = "Updates the members of the group", hidden = true)
     public Response addMembersToGroup(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or "
                                               + "alias", required = true) @PathParam("study") String studyStr,
                                       @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId,
@@ -813,8 +817,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/groups/{groupId}/delete")
-    @ApiOperation(value = "Delete the group", position = 17, notes = "Delete the group selected from the study. When filled in with a "
-            + "list of users, it will just take them out from the group leaving the group untouched.")
+    @ApiOperation(value = "Delete the group", position = 17, notes = "Delete the group selected from the study.")
     public Response deleteMembersFromGroup(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id "
                                                    + "or alias", required = true) @PathParam("study") String studyStr,
                                            @ApiParam(value = "groupId", required = true) @DefaultValue("")
@@ -849,7 +852,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/acl/create")
-    @ApiOperation(value = "Define a set of permissions for a list of users or groups")
+    @ApiOperation(value = "Define a set of permissions for a list of users or groups", hidden = true)
     public Response createRole(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
             required = true) @PathParam("study") String studyStr,
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
@@ -899,16 +902,16 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{study}/acl/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the user or group", position = 21)
+    @ApiOperation(value = "Update the set of permissions granted for the user or group", hidden = true, position = 21)
     public Response updateAcl(@ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
                                       required = true) @PathParam("study") String studyStr,
                               @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
                               @ApiParam(value = "Comma separated list of permissions to add")
-                                  @QueryParam("addPermissions") String addPermissions,
+                                  @QueryParam("add") String addPermissions,
                               @ApiParam(value = "Comma separated list of permissions to remove")
-                                  @QueryParam("removePermissions") String removePermissions,
+                                  @QueryParam("remove") String removePermissions,
                               @ApiParam(value = "Comma separated list of permissions to set")
-                                  @QueryParam("setPermissions") String setPermissions) {
+                                  @QueryParam("set") String setPermissions) {
         try {
             return createOkResponse(catalogManager.updateStudyAcl(studyStr, memberId, addPermissions, removePermissions, setPermissions,
                     sessionId));
@@ -918,9 +921,9 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     public static class MemberAclUpdate {
-        public String addPermissions;
-        public String setPermissions;
-        public String removePermissions;
+        public String add;
+        public String set;
+        public String remove;
     }
 
     @POST
@@ -930,14 +933,13 @@ public class StudyWSServer extends OpenCGAWSServer {
             @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias", required = true)
             @PathParam("study") String studyStr,
             @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
-            @ApiParam(value="JSON containing one of the keys 'addPermissions', 'setPermissions' or 'removePermissions'", required = true)
+            @ApiParam(value="JSON containing one of the keys 'add', 'set' or 'remove'", required = true)
                     MemberAclUpdate params) {
 //        if (params == null || params.isEmpty()) {
 //            return createErrorResponse(new CatalogException("At least one of the keys 'addUsers', 'setUsers' or 'removeUsers'"));
 //        }
         try {
-            return createOkResponse(catalogManager.updateStudyAcl(studyStr, memberId, params.addPermissions, params.removePermissions,
-                    params.setPermissions, sessionId));
+            return createOkResponse(catalogManager.updateStudyAcl(studyStr, memberId, params.add, params.remove, params.set, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

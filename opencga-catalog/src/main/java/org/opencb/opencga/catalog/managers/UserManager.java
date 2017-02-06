@@ -204,33 +204,6 @@ public class UserManager extends AbstractManager implements IUserManager {
         }
 
         String userId = id;
-
-//        switch (creationUserPolicy) {
-//            case ONLY_ADMIN: {
-//                userId = getUserId(sessionId);
-//                if (!userId.isEmpty() && authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
-//                    user.getAttributes().put("creatorUserId", userId);
-//                } else {
-//                    throw new CatalogException("CreateUser Fail. Required Admin role");
-//                }
-//                break;
-//            }
-//            case ANY_LOGGED_USER: {
-//                ParamUtils.checkParameter(sessionId, "sessionId");
-//                userId = getUserId(sessionId);
-//                if (userId.isEmpty()) {
-//                    throw new CatalogException("CreateUser Fail. Required existing account");
-//                }
-//                user.getAttributes().put("creatorUserId", userId);
-//                break;
-//            }
-//            case ALWAYS:
-//            default:
-//                userId = id;
-//                break;
-//        }
-
-
         try {
             catalogIOManagerFactory.getDefault().createUser(user.getId());
             QueryResult<User> queryResult = userDBAdaptor.insert(user, options);

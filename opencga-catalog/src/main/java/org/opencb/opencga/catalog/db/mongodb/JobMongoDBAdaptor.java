@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
@@ -30,16 +31,20 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBQueryUtils;
 import org.opencb.opencga.catalog.db.api.DBIterator;
-import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.JobDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.catalog.models.Status;
+import org.opencb.opencga.catalog.models.Tool;
+import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -76,9 +81,47 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Document jobObject = jobConverter.convertToStorageType(job);
         jobObject.put(PRIVATE_ID, jobId);
         jobObject.put(PRIVATE_STUDY_ID, studyId);
-        QueryResult insertResult = jobCollection.insert(jobObject, null); //TODO: Check results.get(0).getN() != 0
+        jobCollection.insert(jobObject, null); //TODO: Check results.get(0).getN() != 0
 
         return endQuery("Create Job", startTime, get(jobId, filterOptions(options, FILTER_ROUTE_JOBS)));
+    }
+
+    @Override
+    public QueryResult<Long> extractFilesFromJobs(Query query, List<Long> fileIds) throws CatalogDBException {
+        if (fileIds == null || fileIds.size() == 0) {
+            throw new CatalogDBException("The array of fileIds is empty");
+        }
+
+        QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+
+        Query queryAux = new Query(query);
+        queryAux.append(QueryParams.OUT_DIR_ID.key(), fileIds);
+        ObjectMap params = new ObjectMap(QueryParams.OUT_DIR_ID.key(), -1);
+        Document update = new Document("$set", params);
+        QueryResult<UpdateResult> update1 = jobCollection.update(parseQuery(queryAux, true), update, multi);
+        logger.debug("{} out of {} documents changed to have outDirId = -1", update1.first().getMatchedCount(),
+                update1.first().getModifiedCount());
+
+        queryAux = new Query(query);
+        queryAux.append(QueryParams.INPUT.key(), fileIds);
+        update = new Document("$pullAll", new Document(QueryParams.INPUT.key(), fileIds));
+        QueryResult<UpdateResult> update2 = jobCollection.update(parseQuery(queryAux, true), update, multi);
+        logger.debug("{} out of {} documents changed to pull input file ids", update2.first().getMatchedCount(),
+                update2.first().getModifiedCount());
+
+        queryAux = new Query(query);
+        queryAux.append(QueryParams.OUTPUT.key(), fileIds);
+        update = new Document("$pullAll", new Document(QueryParams.OUTPUT.key(), fileIds));
+        QueryResult<UpdateResult> update3 = jobCollection.update(parseQuery(queryAux, true), update, multi);
+        logger.debug("{} out of {} documents changed to pull input file ids", update3.first().getMatchedCount(),
+                update3.first().getModifiedCount());
+
+        QueryResult retResult = new QueryResult("Extract fileIds from jobs");
+        retResult.setNumResults(1);
+        retResult.setNumTotalResults(1);
+        retResult.setResult(Arrays.asList(update1.first().getModifiedCount() + update2.first().getModifiedCount()
+                + update3.first().getModifiedCount()));
+        return retResult;
     }
 
     /**
@@ -163,20 +206,21 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
+    @Deprecated
     public QueryResult<Long> extractFiles(List<Long> fileIds) throws CatalogDBException {
         long startTime = startQuery();
         long numResults;
 
         // Check for input
         Query query = new Query(QueryParams.INPUT.key(), fileIds);
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, false);
         Bson update = new Document("$pull", new Document(QueryParams.INPUT.key(), new Document("$in", fileIds)));
         QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
         numResults = jobCollection.update(bsonQuery, update, multi).first().getModifiedCount();
 
         // Check for output
         query = new Query(QueryParams.OUTPUT.key(), fileIds);
-        bsonQuery = parseQuery(query);
+        bsonQuery = parseQuery(query, false);
         update = new Document("$pull", new Document(QueryParams.OUTPUT.key(), new Document("$in", fileIds)));
         numResults += jobCollection.update(bsonQuery, update, multi).first().getModifiedCount();
 
@@ -281,7 +325,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         List<Bson> aggregations = Arrays.asList(
                 Aggregates.project(Projections.include("tools")),
                 Aggregates.unwind("$tools"),
-                Aggregates.match(parseQuery(query))
+                Aggregates.match(parseQuery(query, false))
         );
         QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection()
                 .aggregate(aggregations, queryOptions);
@@ -312,13 +356,13 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
-        Bson bsonDocument = parseQuery(query);
+        Bson bsonDocument = parseQuery(query, false);
         return jobCollection.count(bsonDocument);
     }
 
     @Override
     public QueryResult distinct(Query query, String field) throws CatalogDBException {
-        Bson bsonDocument = parseQuery(query);
+        Bson bsonDocument = parseQuery(query, false);
         return jobCollection.distinct(field, bsonDocument);
     }
 
@@ -364,7 +408,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
             query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
-        Bson bson = parseQuery(query);
+        Bson bson = parseQuery(query, false);
         QueryOptions qOptions;
         if (options != null) {
             qOptions = options;
@@ -381,14 +425,14 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
             query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
-        Bson bson = parseQuery(query);
+        Bson bson = parseQuery(query, false);
         QueryOptions qOptions;
         if (options != null) {
             qOptions = options;
         } else {
             qOptions = new QueryOptions();
         }
-        //qOptions.append(MongoDBCollection.EXCLUDE, Arrays.asList(PRIVATE_ID, PRIVATE_STUDY_ID));
+
         qOptions = filterOptions(qOptions, FILTER_ROUTE_JOBS);
         return jobCollection.find(bson, qOptions);
     }
@@ -396,6 +440,54 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
+        Map<String, Object> jobParameters = getValidatedUpdateParams(parameters);
+
+        if (!jobParameters.isEmpty()) {
+            QueryResult<UpdateResult> update = jobCollection.update(parseQuery(query, false), new Document("$set", jobParameters), null);
+            return endQuery("Update job", startTime, Arrays.asList(update.getNumTotalResults()));
+        }
+        return endQuery("Update job", startTime, new QueryResult<Long>());
+    }
+
+    @Override
+    public void delete(long id) throws CatalogDBException {
+        Query query = new Query(QueryParams.ID.key(), id);
+        delete(query);
+    }
+
+    @Override
+    public void delete(Query query) throws CatalogDBException {
+        QueryResult<DeleteResult> remove = jobCollection.remove(parseQuery(query, false), null);
+
+        if (remove.first().getDeletedCount() == 0) {
+            throw CatalogDBException.deleteError("Job");
+        }
+    }
+
+    @Override
+    public QueryResult<Job> update(long id, ObjectMap parameters) throws CatalogDBException {
+        long startTime = startQuery();
+        Bson query = parseQuery(new Query(QueryParams.ID.key(), id), true);
+        Map<String, Object> myParams = getValidatedUpdateParams(parameters);
+
+        if (myParams.isEmpty()) {
+            logger.debug("The map of parameters to update the job is empty. It originally contained {}", parameters.safeToString());
+            throw new CatalogDBException("Nothing to update");
+        }
+
+        logger.debug("Update job. Query: {}, Update: {}",
+                query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()), myParams);
+
+        QueryResult<UpdateResult> update = jobCollection.update(query, new Document("$set", myParams), new QueryOptions("multi", true));
+        if (update.first().getMatchedCount() == 0) {
+            throw new CatalogDBException("Job " + id + " not found.");
+        }
+
+        QueryResult<Job> queryResult = jobCollection.find(query, jobConverter, QueryOptions.empty());
+        return endQuery("Update job", startTime, queryResult);
+    }
+
+    private Map<String, Object> getValidatedUpdateParams(ObjectMap parameters) throws CatalogDBException {
         Map<String, Object> jobParameters = new HashMap<>();
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.USER_ID.key(), QueryParams.TOOL_NAME.key(),
@@ -404,9 +496,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         };
         filterStringParams(parameters, jobParameters, acceptedParams);
 
-//        Map<String, Class<? extends Enum>> acceptedEnums =
-//                Collections.singletonMap((QueryParams.JOB_STATUS.key()), Job.JobStatusEnum.class);
-//        filterEnumParams(parameters, jobParameters, acceptedEnums);
         if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
             jobParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
             jobParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
@@ -426,7 +515,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         filterIntegerListParams(parameters, jobParameters, acceptedIntegerListParams);
         if (parameters.containsKey(QueryParams.OUTPUT.key())) {
             for (Integer fileId : parameters.getAsIntegerList(QueryParams.OUTPUT.key())) {
-//                checkFileExists(fileId, "Output File");
                 dbAdaptorFactory.getCatalogFileDBAdaptor().checkId(fileId);
             }
         }
@@ -434,23 +522,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key()};
         filterMapParams(parameters, jobParameters, acceptedMapParams);
 
-        if (!jobParameters.isEmpty()) {
-            QueryResult<UpdateResult> update = jobCollection.update(parseQuery(query), new Document("$set", jobParameters), null);
-            return endQuery("Update job", startTime, Arrays.asList(update.getNumTotalResults()));
-        }
-        return endQuery("Update job", startTime, new QueryResult<Long>());
-    }
-
-    @Override
-    public QueryResult<Job> update(long id, ObjectMap parameters) throws CatalogDBException {
-        long startTime = startQuery();
-        checkId(id);
-        Query query = new Query(QueryParams.ID.key(), id);
-        QueryResult<Long> update = update(query, parameters);
-        if (update.getResult().isEmpty() || update.first() != 1) {
-            throw new CatalogDBException("Could not update job " + id);
-        }
-        return endQuery("Update user", startTime, get(query, null));
+        return jobParameters;
     }
 
 
@@ -458,7 +530,7 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         Query query = new Query(QueryParams.ID.key(), id);
         QueryResult<Job> jobQueryResult = get(query, null);
         if (jobQueryResult.getResult().size() == 1) {
-            QueryResult<DeleteResult> delete = jobCollection.remove(parseQuery(query), null);
+            QueryResult<DeleteResult> delete = jobCollection.remove(parseQuery(query, false), null);
             if (delete.getResult().size() == 0) {
                 throw CatalogDBException.newInstance("Job id '{}' has not been deleted", id);
             }
@@ -466,88 +538,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
             throw CatalogDBException.idNotFound("Job id '{}' does not exist (or there are too many)", id);
         }
         return jobQueryResult;
-    }
-
-    @Override
-    public QueryResult<Job> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-
-        checkId(id);
-
-        // Check the status of the job
-        Query query = new Query(QueryParams.ID.key(), id);
-        Job job = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_NAME.key())).first();
-        switch (job.getStatus().getName()) {
-            case Job.JobStatus.TRASHED:
-            case Job.JobStatus.DELETED:
-                throw new CatalogDBException("The job {" + id + "} was already " + job.getStatus().getName());
-            case Job.JobStatus.PREPARED:
-            case Job.JobStatus.RUNNING:
-            case Job.JobStatus.QUEUED:
-                throw new CatalogDBException("The job {" + id + "} is " + job.getStatus().getName()
-                        + ". Please, stop the job before deleting it.");
-            case Job.JobStatus.DONE:
-            case Job.JobStatus.ERROR:
-            case Job.JobStatus.READY:
-            default:
-                break;
-        }
-
-        // If we don't find the force and the keep output files parameter, we check first if the job has any active file.
-        if ((!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE))
-                && (!queryOptions.containsKey(KEEP_OUTPUT_FILES) || !queryOptions.getBoolean(KEEP_OUTPUT_FILES))) {
-            checkCanDelete(id);
-        }
-
-        query = new Query(FileDBAdaptor.QueryParams.JOB_ID.key(), id);
-        if (queryOptions.containsKey(KEEP_OUTPUT_FILES) && queryOptions.getBoolean(KEEP_OUTPUT_FILES)) {
-            // unlink the files from the job
-            ObjectMap objectMap = new ObjectMap(FileDBAdaptor.QueryParams.JOB_ID.key(), -1);
-            dbAdaptorFactory.getCatalogFileDBAdaptor().update(query, objectMap);
-        } else {
-            // Remove the files created by the job
-            dbAdaptorFactory.getCatalogFileDBAdaptor().delete(query, queryOptions);
-        }
-
-        // Change the status of the job to deleted
-        setStatus(id, Status.TRASHED);
-
-        query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.TRASHED);
-
-        return endQuery("Delete job", startTime, get(query, null));
-    }
-
-    @Override
-    public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        long startTime = startQuery();
-        query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
-        QueryResult<Job> jobQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
-        for (Job job : jobQueryResult.getResult()) {
-            delete(job.getId(), queryOptions);
-        }
-        return endQuery("Delete job", startTime, Collections.singletonList(jobQueryResult.getNumTotalResults()));
-    }
-
-
-    /**
-     * Checks whether the files created by the jobId can be deleted.
-     *
-     * @param jobId job id.
-     * @throws CatalogDBException when any of the files created by the job cannot be deleted.
-     */
-    private void checkCanDelete(long jobId) throws CatalogDBException {
-        Query query = new Query(QueryParams.ID.key(), jobId);
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.OUTPUT);
-
-        Job job = get(query, queryOptions).first();
-        List<Long> output = job.getOutput();
-        if (output != null && output.size() > 0) {
-            query = new Query(QueryParams.INPUT.key(), job.getOutput());
-            if (count(query).first() > 0) {
-                throw new CatalogDBException("Cannot delete/remove the job {" + jobId + "}. The files generated by the job have been used "
-                        + "as input of other(s). You might want to make use of force/keepOutputFiles parameters.");
-            }
-        }
     }
 
     @Override
@@ -588,33 +578,33 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
 
     @Override
     public DBIterator<Job> iterator(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query);
+        Bson bson = parseQuery(query, false);
         MongoCursor<Document> iterator = jobCollection.nativeQuery().find(bson, options).iterator();
         return new MongoDBIterator<>(iterator, jobConverter);
     }
 
     @Override
     public DBIterator nativeIterator(Query query, QueryOptions options) throws CatalogDBException {
-        Bson bson = parseQuery(query);
+        Bson bson = parseQuery(query, false);
         MongoCursor<Document> iterator = jobCollection.nativeQuery().find(bson, options).iterator();
         return new MongoDBIterator<>(iterator);
     }
 
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc) throws CatalogDBException {
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, false);
         return rank(jobCollection, bsonQuery, field, "name", numResults, asc);
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options) throws CatalogDBException {
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, false);
         return groupBy(jobCollection, bsonQuery, field, "name", options);
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) throws CatalogDBException {
-        Bson bsonQuery = parseQuery(query);
+        Bson bsonQuery = parseQuery(query, false);
         return groupBy(jobCollection, bsonQuery, fields, "name", options);
     }
 
@@ -628,8 +618,12 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
         catalogDBIterator.close();
     }
 
-    private Bson parseQuery(Query query) throws CatalogDBException {
+    private Bson parseQuery(Query query, boolean isolated) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
+
+        if (isolated) {
+            andBsonList.add(new Document("$isolated", 1));
+        }
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
@@ -661,6 +655,11 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
+                    case INPUT:
+                    case OUTPUT:
+                        addQueryFilter(queryParam.key(), queryParam.key(), query, queryParam.type(),
+                            MongoDBQueryUtils.ComparisonOperator.IN, MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
+                        break;
                     case NAME:
                     case USER_ID:
                     case TOOL_NAME:
@@ -680,8 +679,6 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
                     case SIZE:
                     case OUT_DIR_ID:
                     case TMP_OUT_DIR_URI:
-                    case INPUT:
-                    case OUTPUT:
                     case TAGS:
                     case ACL:
                     case ACL_MEMBER:
@@ -708,8 +705,14 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     @Override
     public QueryResult<JobAclEntry> createAcl(long id, JobAclEntry acl) throws CatalogDBException {
         long startTime = startQuery();
-//        CatalogMongoDBUtils.createAcl(id, acl, jobCollection, "JobAcl");
+//        CatalogMongoDBUtils.setAcl(id, acl, jobCollection, "JobAcl");
         return endQuery("create job Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
+    }
+
+    @Override
+    public void createAcl(Query query, List<JobAclEntry> aclEntryList) throws CatalogDBException {
+        Bson queryDocument = parseQuery(query, true);
+        aclDBAdaptor.setAcl(queryDocument, aclEntryList);
     }
 
     @Override
@@ -748,10 +751,34 @@ public class JobMongoDBAdaptor extends MongoDBAdaptor implements JobDBAdaptor {
     }
 
     @Override
+    public void addAclsToMember(Query query, List<String> members, List<String> permissions) throws CatalogDBException {
+        QueryResult<Job> jobQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        List<Long> jobIds = jobQueryResult.getResult().stream().map(job -> job.getId()).collect(Collectors.toList());
+
+        if (jobIds == null || jobIds.size() == 0) {
+            throw new CatalogDBException("No matches found for query when attempting to add new permissions");
+        }
+
+        aclDBAdaptor.addAclsToMembers(jobIds, members, permissions);
+    }
+
+    @Override
     public QueryResult<JobAclEntry> removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException {
 //        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, jobCollection);
         long startTime = startQuery();
         return endQuery("Remove Acls from member", startTime, Arrays.asList(aclDBAdaptor.removeAclsFromMember(id, member, permissions)));
+    }
+
+    @Override
+    public void removeAclsFromMember(Query query, List<String> members, @Nullable List<String> permissions) throws CatalogDBException {
+        QueryResult<Job> jobQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        List<Long> jobIds = jobQueryResult.getResult().stream().map(Job::getId).collect(Collectors.toList());
+
+        if (jobIds == null || jobIds.size() == 0) {
+            throw new CatalogDBException("No matches found for query when attempting to remove permissions");
+        }
+
+        aclDBAdaptor.removeAclsFromMembers(jobIds, members, permissions);
     }
 
     public void removeAclsFromStudy(long studyId, String member) throws CatalogDBException {

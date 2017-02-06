@@ -53,75 +53,10 @@ public class VariantDBAdaptorUtils {
     public static final String STUDY_POP_FREQ_SEPARATOR = ":";
 //    public static final Map<String, String> PROJECT_FIELD_ALIAS;
 
-    public static final String SAMPLES_FIELD = VariantFields.SAMPLES.fieldName();
-    public static final String STUDIES_FIELD = VariantFields.STUDIES.fieldName();
-    public static final String STATS_FIELD = VariantFields.STATS.fieldName();
-    public static final String ANNOTATION_FIELD = VariantFields.ANNOTATION.fieldName();
-
     private static final int GENE_EXTRA_REGION = 5000;
     private static Logger logger = LoggerFactory.getLogger(VariantDBAdaptorUtils.class);
 
     private VariantDBAdaptor adaptor;
-
-    public enum VariantFields {
-        IDS,
-        CHROMOSOME,
-        START,
-        END,
-        REFERENCE,
-        ALTERNATE,
-        LENGTH,
-        TYPE,
-        HGVS,
-        STUDIES("studies", "sourceEntries"),
-        SAMPLES("samples", "studies.samplesData", "samplesData"),
-        FILES("files", "studies.files"),
-        STATS("stats", "studies.cohortStats", "studies.stats", "sourceEntries.stats"),
-        ANNOTATION("annotation");
-
-        private final List<String> names;
-        private static final Map<String, VariantFields> NAMES_MAP = new HashMap<>();
-
-        VariantFields(String ... names) {
-            if (names.length == 0) {
-                this.names = Collections.singletonList(name().toLowerCase());
-            } else {
-                this.names = Collections.unmodifiableList(Arrays.asList(names));
-            }
-        }
-
-        public String fieldName() {
-            return names.get(0);
-        }
-
-        @Override
-        public String toString() {
-            return fieldName();
-        }
-
-        public static VariantFields get(String field) {
-            return getNamesMap().get(field);
-        }
-
-        public static List<String> valuesString() {
-            return Arrays.stream(values()).map(VariantFields::fieldName).collect(Collectors.toList());
-        }
-
-        private static Map<String, VariantFields> getNamesMap() {
-            if (NAMES_MAP.isEmpty()) {
-                synchronized (NAMES_MAP) {
-                    if (NAMES_MAP.isEmpty()) {
-                        for (VariantFields variantFields : VariantFields.values()) {
-                            for (String name : variantFields.names) {
-                                NAMES_MAP.put(name, variantFields);
-                            }
-                        }
-                    }
-                }
-            }
-            return NAMES_MAP;
-        }
-    }
 
     public enum QueryOperation {
         AND(VariantDBAdaptorUtils.AND),
@@ -385,56 +320,6 @@ public class VariantDBAdaptorUtils {
         return sampleId;
     }
 
-    public static Set<String> getReturnedFields(QueryOptions options) {
-        Set<String> returnedFields;
-
-        List<String> includeList = options == null ? Collections.emptyList() : options.getAsStringList(QueryOptions.INCLUDE);
-        if (includeList != null && !includeList.isEmpty()) {
-//            System.out.println("includeList = " + includeList);
-            returnedFields = new HashSet<>();
-            for (String include : includeList) {
-                VariantFields variantFields = VariantFields.get(include);
-                if (variantFields == null) {
-                    continue;
-                }
-                String includeAlias = variantFields.fieldName();
-                if (includeAlias != null) {
-                    returnedFields.add(includeAlias);
-                } else {
-                    returnedFields.add(include);
-                }
-            }
-            if (returnedFields.contains(STUDIES_FIELD)) {
-                returnedFields.add(SAMPLES_FIELD);
-                returnedFields.add(STATS_FIELD);
-            } else if (returnedFields.contains(SAMPLES_FIELD) || returnedFields.contains(STATS_FIELD)) {
-                returnedFields.add(STUDIES_FIELD);
-            }
-
-        } else {
-            List<String> excludeList = options == null ? Collections.emptyList() : options.getAsStringList(QueryOptions.EXCLUDE);
-            if (excludeList != null && !excludeList.isEmpty()) {
-//                System.out.println("excludeList = " + excludeList);
-                returnedFields = new HashSet<>(VariantFields.valuesString());
-                for (String exclude : excludeList) {
-                    VariantFields variantFields = VariantFields.get(exclude);
-                    if (variantFields == null) {
-                        continue;
-                    }
-                    returnedFields.remove(variantFields.fieldName());
-                }
-            } else {
-                returnedFields = new HashSet<>(VariantFields.valuesString());
-            }
-            if (!returnedFields.contains(STUDIES_FIELD)) {
-                returnedFields.remove(SAMPLES_FIELD);
-                returnedFields.remove(STATS_FIELD);
-            }
-        }
-//        System.out.println("returnedFields = " + returnedFields);
-        return returnedFields;
-    }
-
     public List<Integer> getReturnedStudies(Query query, QueryOptions options) {
         List<Integer> studyIds = getStudyIds(query.getAsList(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key()), options);
         if (studyIds.isEmpty()) {
@@ -482,7 +367,11 @@ public class VariantDBAdaptorUtils {
     }
 
     public static List<String> getReturnedSamplesList(Query query, QueryOptions options) {
-        if (!getReturnedFields(options).contains(SAMPLES_FIELD)) {
+        return getReturnedSamplesList(query, VariantField.getReturnedFields(options));
+    }
+
+    public static List<String> getReturnedSamplesList(Query query, Set<VariantField> returnedFields) {
+        if (!returnedFields.contains(VariantField.STUDIES_SAMPLES_DATA)) {
             return Collections.singletonList("none");
         } else {
             //Remove the studyName, if any

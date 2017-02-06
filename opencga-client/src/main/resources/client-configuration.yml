@@ -17,7 +17,7 @@ organism:
 rest:
   host: "${OPENCGA.CLIENT.REST.HOST}"
   batchQuerySize: 200
-  timeout: 10000
+  timeout: ${OPENCGA.CLIENT.REST.TIMEOUT}
   defaultLimit: 2000
 
 ## gRPC configuration options

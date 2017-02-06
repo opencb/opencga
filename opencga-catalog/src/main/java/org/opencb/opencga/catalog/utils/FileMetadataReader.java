@@ -224,7 +224,9 @@ public class FileMetadataReader {
                 modifyParams.remove(FileDBAdaptor.QueryParams.URI.key());
             }
 
-            catalogManager.getFileManager().update(file.getId(), modifyParams, new QueryOptions(), sessionId);
+            if (!modifyParams.isEmpty()) {
+                catalogManager.getFileManager().update(file.getId(), modifyParams, new QueryOptions(), sessionId);
+            }
 //            logger.trace("modifyFile = " + (System.currentTimeMillis() - start) / 1000.0);
 
             return catalogManager.getFile(file.getId(), options, sessionId).first();
@@ -385,7 +387,7 @@ public class FileMetadataReader {
         } else {
             //Get samples from file.sampleIds
             Query query = new Query("id", file.getSampleIds());
-            sampleList = catalogManager.getAllSamples(study.getId(), query, options, sessionId).getResult();
+            sampleList = catalogManager.getAllSamples(study.getId(), query, new QueryOptions(), sessionId).getResult();
         }
 
         List<Long> sampleIdsList = sampleList.stream().map(Sample::getId).collect(Collectors.toList());

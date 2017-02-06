@@ -33,9 +33,8 @@ public class CohortAclEntry extends AbstractAclEntry<CohortAclEntry.CohortPermis
         UPDATE,
         DELETE,
         SHARE,
-        CREATE_ANNOTATIONS,
+        WRITE_ANNOTATIONS,
         VIEW_ANNOTATIONS,
-        UPDATE_ANNOTATIONS,
         DELETE_ANNOTATIONS
     }
 

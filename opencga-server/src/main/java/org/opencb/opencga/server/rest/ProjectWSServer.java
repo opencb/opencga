@@ -49,7 +49,9 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create a new project", response = Project.class)
+    @ApiOperation(value = "Create a new project [WARNING]", response = Project.class,
+    notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+            + "is not tested and this can be deprecated in a future version.")
     public Response createProject(@ApiParam(value = "Project name", required = true) @QueryParam("name") String name,
                                   @ApiParam(value = "Project alias. Unique name without spaces that will be used to identify the project",
                                           required = true) @QueryParam("alias") String alias,
@@ -147,28 +149,24 @@ public class ProjectWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{project}/update")
-    @ApiOperation(value = "Update some project attributes", position = 4)
+    @ApiOperation(value = "Update some project attributes [WARNING]", position = 4,
+    notes = "WARNING: the usage of this web service is discouraged, please use the POST version instead. Be aware that this is web service "
+            + "is not tested and this can be deprecated in a future version.")
     public Response update(@ApiParam(value = "Project id or alias", required = true) @PathParam("project") String projectStr,
                            @ApiParam(value = "Project name") @QueryParam("name") String name,
-                           @ApiParam(value = "Project alias") @QueryParam("alias") String alias,
                            @ApiParam(value = "Project description") @QueryParam("description") String description,
                            @ApiParam(value = "Project organization") @QueryParam("organization") String organization,
                            @ApiParam(value = "Project attributes") @QueryParam("attributes") String attributes,
-                           @ApiParam(value = "Organism scientific name") @QueryParam("organism.scientificName") String scientificName,
                            @ApiParam(value = "Organism common name") @QueryParam("organism.commonName") String commonName,
-                           @ApiParam(value = "Organism taxonomy code") @QueryParam("organism.taxonomyCode") String taxonomyCode,
-                           @ApiParam(value = "Organism assembly") @QueryParam("organism.assembly") String assembly) throws IOException {
+                           @ApiParam(value = "Organism taxonomy code") @QueryParam("organism.taxonomyCode") String taxonomyCode) throws IOException {
         try {
             ObjectMap params = new ObjectMap();
             params.putIfNotNull("name", name);
-            params.putIfNotNull("alias", alias);
             params.putIfNotNull("description", description);
             params.putIfNotNull("organization", organization);
             params.putIfNotNull("attributes", attributes);
-            params.putIfNotNull("organism.scientificName", scientificName);
             params.putIfNotNull("organism.commonName", commonName);
             params.putIfNotNull("organism.taxonomyCode", taxonomyCode);
-            params.putIfNotNull("organism.assembly", assembly);
 
             String userId = catalogManager.getUserManager().getId(sessionId);
             long projectId = catalogManager.getProjectManager().getId(userId, projectStr);
@@ -182,7 +180,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{project}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some project attributes [NO TESTED]", response = Project.class)
+    @ApiOperation(value = "Update some project attributes", response = Project.class)
     public Response updateByPost(@ApiParam(value = "Project id or alias", required = true) @PathParam("project") String projectStr,
                                  @ApiParam(value = "JSON containing the params to be updated. Supported keys can be found in the update "
                                          + "via GET", required = true) ObjectMap params)

@@ -21,7 +21,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.executors.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.catalog.commons.AnnotationCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.CohortCommandOptions;
@@ -148,8 +148,8 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, commandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, commandOptions.dataModelOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, commandOptions.numericOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, commandOptions.numericOptions.skip);
+        queryOptions.put(QueryOptions.LIMIT, commandOptions.numericOptions.limit);
+        queryOptions.put(QueryOptions.SKIP, commandOptions.numericOptions.skip);
         queryOptions.put("count", commandOptions.numericOptions.count);
 
         return openCGAClient.getCohortClient().search(query,queryOptions);
@@ -189,8 +189,8 @@ public class CohortCommandExecutor extends OpencgaCommandExecutor {
         QueryOptions queryOptions = new QueryOptions();
         queryOptions.putIfNotEmpty(QueryOptions.INCLUDE, cohortsCommandOptions.samplesCommandOptions.dataModelOptions.include);
         queryOptions.putIfNotEmpty(QueryOptions.EXCLUDE, cohortsCommandOptions.samplesCommandOptions.dataModelOptions.exclude);
-        queryOptions.putIfNotEmpty(QueryOptions.LIMIT, cohortsCommandOptions.samplesCommandOptions.numericOptions.limit);
-        queryOptions.putIfNotEmpty(QueryOptions.SKIP, cohortsCommandOptions.samplesCommandOptions.numericOptions.skip);
+        queryOptions.put(QueryOptions.LIMIT,  cohortsCommandOptions.samplesCommandOptions.numericOptions.limit);
+        queryOptions.put(QueryOptions.SKIP, cohortsCommandOptions.samplesCommandOptions.numericOptions.skip);
         queryOptions.put("count", cohortsCommandOptions.samplesCommandOptions.numericOptions.count);
         return openCGAClient.getCohortClient().getSamples(cohortsCommandOptions.samplesCommandOptions.cohort, query, queryOptions);
     }

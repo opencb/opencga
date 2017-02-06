@@ -160,7 +160,7 @@ public class CatalogManager implements AutoCloseable {
 
     private void clearCatalog() {
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : configuration.getCatalog().getHosts()) {
+        for (String hostPort : configuration.getCatalog().getDatabase().getHosts()) {
             if (hostPort.contains(":")) {
                 String[] split = hostPort.split(":");
                 Integer port = Integer.valueOf(split[1]);
@@ -225,13 +225,13 @@ public class CatalogManager implements AutoCloseable {
     private void configureDBAdaptor(Configuration configuration) throws CatalogDBException {
 
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", configuration.getCatalog().getUser())
-                .add("password", configuration.getCatalog().getPassword())
-                .add("authenticationDatabase", configuration.getCatalog().getOptions().get("authenticationDatabase"))
+                .add("username", configuration.getCatalog().getDatabase().getUser())
+                .add("password", configuration.getCatalog().getDatabase().getPassword())
+                .add("authenticationDatabase", configuration.getCatalog().getDatabase().getOptions().get("authenticationDatabase"))
                 .build();
 
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : configuration.getCatalog().getHosts()) {
+        for (String hostPort : configuration.getCatalog().getDatabase().getHosts()) {
             if (hostPort.contains(":")) {
                 String[] split = hostPort.split(":");
                 Integer port = Integer.valueOf(split[1]);
@@ -457,8 +457,7 @@ public class CatalogManager implements AutoCloseable {
      * ***************************
      */
     public QueryResult<Study> createStudy(long projectId, String name, String alias, Study.Type type, String description,
-                                          String sessionId)
-            throws CatalogException {
+                                          String sessionId) throws CatalogException {
         return createStudy(projectId, name, alias, type, null, description, null, null, null, null, null, null, null, null,
                 sessionId);
     }
@@ -490,10 +489,6 @@ public class CatalogManager implements AutoCloseable {
             throws CatalogException {
         QueryResult<Study> result = studyManager.create(projectId, name, alias, type, creationDate, description, status, cipher, uriScheme,
                 uri, datastores, stats, attributes, options, sessionId);
-        //if (uri != null) {
-//        createFolder(result.getResult().get(0).getId(), Paths.get("data"), true, null, sessionId);
-//        createFolder(result.getResult().get(0).getId(), Paths.get("analysis"), true, null, sessionId);
-        //}
         return result;
     }
 
@@ -695,24 +690,24 @@ public class CatalogManager implements AutoCloseable {
     //create file with byte[]
     public QueryResult<File> createFile(long studyId, File.Format format, File.Bioformat bioformat, String path, byte[] bytes, String
             description, boolean parents, String sessionId) throws CatalogException, IOException {
-        QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null,
-                description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, sessionId);
+        QueryResult<File> queryResult = fileManager.create(Long.toString(studyId), File.Type.FILE, format, bioformat, path, null,
+                description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, null, sessionId);
         new CatalogFileUtils(this).upload(new ByteArrayInputStream(bytes), queryResult.first(), sessionId, false, false, true);
         return getFile(queryResult.first().getId(), sessionId);
     }
 
     public QueryResult<File> createFile(long studyId, File.Format format, File.Bioformat bioformat, String path, URI fileLocation, String
             description, boolean parents, String sessionId) throws CatalogException, IOException {
-        QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null,
-                description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, sessionId);
+        QueryResult<File> queryResult = fileManager.create(Long.toString(studyId), File.Type.FILE, format, bioformat, path, null,
+                description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, null, sessionId);
         new CatalogFileUtils(this).upload(fileLocation, queryResult.first(), null, sessionId, false, false, true, true, Long.MAX_VALUE);
         return getFile(queryResult.first().getId(), sessionId);
     }
 
     public QueryResult<File> createFile(long studyId, File.Format format, File.Bioformat bioformat, String path, String description,
                                         boolean parents, long jobId, String sessionId) throws CatalogException {
-        return fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, description, null, 0, -1, null,
-                jobId, null, null, parents, null, sessionId);
+        return fileManager.create(Long.toString(studyId), File.Type.FILE, format, bioformat, path, null, description, null, 0, -1, null,
+                jobId, null, null, parents, null, null, sessionId);
     }
 
 
@@ -721,19 +716,8 @@ public class CatalogManager implements AutoCloseable {
                                         List<Long> sampleIds, long jobId, Map<String, Object> stats, Map<String, Object> attributes,
                                         boolean parents, QueryOptions options, String sessionId)
             throws CatalogException {
-        return fileManager.create(studyId, type, format, bioformat, path, creationDate, description, status,
-                size, experimentId, sampleIds, jobId, stats, attributes, parents, options, sessionId);
-    }
-
-    public QueryResult<File> createFolder(long studyId, Path folderPath, boolean parents, QueryOptions options, String sessionId)
-            throws CatalogException {
-        return fileManager.createFolder(studyId, folderPath.toString(), null, parents, null, options, sessionId);
-    }
-
-    public QueryResult<File> createFolder(long studyId, Path folderPath, File.FileStatus status, boolean parents, String description,
-                                          QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkPath(folderPath, "folderPath");
-        return fileManager.createFolder(studyId, folderPath.toString(), status, parents, description, options, sessionId);
+        return fileManager.create(Long.toString(studyId), type, format, bioformat, path, creationDate, description, status,
+                size, experimentId, sampleIds, jobId, stats, attributes, parents, null, options, sessionId);
     }
 
     @Deprecated
@@ -859,45 +843,10 @@ public class CatalogManager implements AutoCloseable {
         return aclList;
     }
 
-    public List<QueryResult<FileAclEntry>> createFileAcls(String fileIdsStr, @Nullable String studyStr, String members, String permissions,
-                                                          String sessionId) throws CatalogException {
-        AbstractManager.MyResourceIds resource = fileManager.getIds(fileIdsStr, studyStr, sessionId);
-        List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(resource.getResourceIds().size());
-        for (int i = 0; i < resource.getResourceIds().size(); i++) {
-            Long fileId = resource.getResourceIds().get(i);
-            QueryResult<FileAclEntry> fileAcls = authorizationManager.createFileAcls(resource.getUser(), fileId, members, permissions);
-            fileAcls.setId(Long.toString(resource.getResourceIds().get(i)));
-            fileAclList.add(fileAcls);
-        }
-        return fileAclList;
-    }
-
-    public List<QueryResult<FileAclEntry>> removeFileAcl(String fileIdsStr, @Nullable String studyStr, String member, String sessionId)
-            throws CatalogException {
-        AbstractManager.MyResourceIds resource = fileManager.getIds(fileIdsStr, studyStr, sessionId);
-        List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(resource.getResourceIds().size());
-        for (int i = 0; i < resource.getResourceIds().size(); i++) {
-            Long fileId = resource.getResourceIds().get(i);
-            QueryResult<FileAclEntry> fileAcls = authorizationManager.removeFileAcl(resource.getUser(), fileId, member);
-            fileAcls.setId(Long.toString(resource.getResourceIds().get(i)));
-            fileAclList.add(fileAcls);
-        }
-        return fileAclList;
-    }
-
     public QueryResult<FileAclEntry> getFileAcl(String fileIdStr, @Nullable String studyStr, String member, String sessionId)
             throws CatalogException {
         AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
         return authorizationManager.getFileAcl(resource.getUser(), resource.getResourceId(), member);
-    }
-
-    public QueryResult<FileAclEntry> updateFileAcl(String fileIdStr, @Nullable String studyStr, String member,
-                                                   @Nullable String addPermissions, @Nullable String removePermissions,
-                                                   @Nullable String setPermissions, String sessionId) throws CatalogException {
-        AbstractManager.MyResourceId resource = fileManager.getId(fileIdStr, studyStr, sessionId);
-        return authorizationManager.updateFileAcl(resource.getUser(), resource.getResourceId(), member, addPermissions, removePermissions,
-                setPermissions);
-
     }
 
     /*Require role admin*/
@@ -1149,16 +1098,9 @@ public class CatalogManager implements AutoCloseable {
     public List<QueryResult<IndividualAclEntry>> createIndividualAcls(String individualIdsStr, @Nullable String studyStr, String members,
                                                                       String permissions, String sessionId) throws CatalogException {
         AbstractManager.MyResourceIds resource = individualManager.getIds(individualIdsStr, studyStr, sessionId);
-        List<Long> individualIds = resource.getResourceIds();
-        List<QueryResult<IndividualAclEntry>> individualAclList = new ArrayList<>(individualIds.size());
-        for (int i = 0; i < individualIds.size(); i++) {
-            Long individualId = individualIds.get(i);
-            QueryResult<IndividualAclEntry> individualAcls = authorizationManager.createIndividualAcls(resource.getUser(), individualId,
-                    members, permissions);
-            individualAcls.setId(Long.toString(individualId));
-            individualAclList.add(individualAcls);
-        }
-        return individualAclList;
+
+        return authorizationManager.createIndividualAcls(resource, Arrays.asList(StringUtils.split(members, ",")),
+                Arrays.asList(StringUtils.split(permissions, ",")));
     }
 
     public List<QueryResult<IndividualAclEntry>> removeIndividualAcl(String individualIdsStr, @Nullable String studyStr, String member,
@@ -1225,30 +1167,6 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<Sample> modifySample(long sampleId, QueryOptions queryOptions, String sessionId) throws CatalogException {
         return sampleManager.update(sampleId, queryOptions, queryOptions, sessionId);
     }
-
-    @Deprecated
-    public QueryResult shareSample(String sampleIds, String userIds, AclEntry acl, String sessionId)
-            throws CatalogException {
-        throw new CatalogException("Calling to deprecated shareSample method.");
-//        return authorizationManager.setSampleACL(sampleIds, userIds, acl, sessionId);
-    }
-
-//    public QueryResult shareSample(String sampleIds, String members, List<String> permissions, boolean override, String sessionId)
-//            throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        List<Long> sampleList = sampleManager.getSampleIds(userId, sampleIds);
-//        return authorizationManager.setSamplePermissions(userId, sampleList, members, permissions, override);
-//    }
-//
-//    public QueryResult unshareSample(String sampleIds, String userIds, String permissions, String sessionId)
-//            throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        List<Long> sampleList = sampleManager.getSampleIds(userId, sampleIds);
-//        List<String> permissionList = permissions != null && !permissions.isEmpty()
-//                ? Arrays.asList(permissions.split(",")) : Collections.emptyList();
-//        authorizationManager.unsetSamplePermissions(userId, sampleList, userIds, permissionList);
-//        return new QueryResult("unshareSample");
-//    }
 
     @Deprecated
     public QueryResult<AnnotationSet> annotateSample(long sampleId, String id, long variableSetId,
@@ -1321,11 +1239,6 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.readVariableSet(variableSet, options, sessionId);
     }
 
-    public QueryResult<VariableSet> getAllVariableSet(long studyId, QueryOptions options, String sessionId)
-            throws CatalogException {
-        return studyManager.readAllVariableSets(studyId, options, sessionId);
-    }
-
     public QueryResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions, String sessionId)
             throws CatalogException {
         return studyManager.deleteVariableSet(variableSetId, queryOptions, sessionId);
@@ -1390,16 +1303,9 @@ public class CatalogManager implements AutoCloseable {
     public List<QueryResult<CohortAclEntry>> createCohortAcls(String cohortIdsStr, @Nullable String studyStr, String members,
                                                               String permissions, String sessionId) throws CatalogException {
         AbstractManager.MyResourceIds resource = cohortManager.getIds(cohortIdsStr, studyStr, sessionId);
-        List<Long> cohortIds = resource.getResourceIds();
-        List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(cohortIds.size());
-        for (int i = 0; i < cohortIds.size(); i++) {
-            Long cohortId = cohortIds.get(i);
-            QueryResult<CohortAclEntry> cohortAcls = authorizationManager.createCohortAcls(resource.getUser(), cohortId, members,
-                    permissions);
-            cohortAcls.setId(Long.toString(cohortId));
-            cohortAclList.add(cohortAcls);
-        }
-        return cohortAclList;
+
+        return authorizationManager.createCohortAcls(resource, Arrays.asList(StringUtils.split(members, ",")),
+                Arrays.asList(StringUtils.split(permissions, ",")));
     }
 
     public List<QueryResult<CohortAclEntry>> removeCohortAcl(String cohortIdsStr, @Nullable String studyStr, String member,

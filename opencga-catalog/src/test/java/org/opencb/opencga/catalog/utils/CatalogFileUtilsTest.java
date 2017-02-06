@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.utils;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -66,12 +67,12 @@ public class CatalogFileUtilsTest {
                 .openStream());
 
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", configuration.getCatalog().getUser())
-                .add("password", configuration.getCatalog().getPassword())
-                .add("authenticationDatabase", configuration.getCatalog().getOptions().get("authenticationDatabase"))
+                .add("username", configuration.getCatalog().getDatabase().getUser())
+                .add("password", configuration.getCatalog().getDatabase().getPassword())
+                .add("authenticationDatabase", configuration.getCatalog().getDatabase().getOptions().get("authenticationDatabase"))
                 .build();
 
-        String[] split = configuration.getCatalog().getHosts().get(0).split(":");
+        String[] split = configuration.getCatalog().getDatabase().getHosts().get(0).split(":");
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(split[0], Integer.parseInt(split[1]));
 
         CatalogManagerExternalResource.clearCatalog(configuration);
@@ -482,7 +483,8 @@ public class CatalogFileUtilsTest {
 
 
     private File prepareFiles(List<File> folderFiles) throws CatalogException, IOException {
-        File folder = catalogManager.createFolder(studyId, Paths.get("folder"), false, null, userSessionId).first();
+        File folder = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("folder").toString(), null, false,
+                null, QueryOptions.empty(), userSessionId).first();
         folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/my.txt", StringUtils
                 .randomString(200).getBytes(), "", true, userSessionId).first());
         folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/my2.txt", StringUtils

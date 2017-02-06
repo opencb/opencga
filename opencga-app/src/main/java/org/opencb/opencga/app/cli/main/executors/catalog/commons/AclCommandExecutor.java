@@ -20,7 +20,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.client.rest.catalog.CatalogClient;
 import org.opencb.opencga.client.rest.catalog.StudyClient;
 
@@ -31,11 +30,14 @@ import java.io.IOException;
  */
 public class AclCommandExecutor<T,U> {
 
+    // We put .replace("/",":") because there are some pathParams such as in files where "/" cannot be sent in the url. Instead, we will
+    // change it for :
+
     public QueryResponse<U> acls(AclCommandOptions.AclsCommandOptions aclCommandOptions, CatalogClient<T,U> client)
             throws CatalogException,IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty("study", aclCommandOptions.study);
-        return client.getAcls(aclCommandOptions.id, params);
+        return client.getAcls(aclCommandOptions.id.replace("/", ":"), params);
     }
 
     public QueryResponse<U> aclsCreate(AclCommandOptions.AclsCreateCommandOptions aclCommandOptions, CatalogClient<T,U> client)
@@ -43,31 +45,31 @@ public class AclCommandExecutor<T,U> {
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty("study", aclCommandOptions.study);
         params.putIfNotNull("permissions", aclCommandOptions.permissions);
-        return client.createAcl(aclCommandOptions.id, aclCommandOptions.members, params);
+        return client.createAcl(aclCommandOptions.id.replace("/", ":"), aclCommandOptions.members, params);
     }
 
     public QueryResponse<U> aclMemberDelete(AclCommandOptions.AclsMemberDeleteCommandOptions aclCommandOptions,
                                             CatalogClient<T,U> client) throws CatalogException,IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty("study", aclCommandOptions.study);
-        return client.deleteAcl(aclCommandOptions.id, aclCommandOptions.memberId, params);
+        return client.deleteAcl(aclCommandOptions.id.replace("/", ":"), aclCommandOptions.memberId, params);
     }
 
     public QueryResponse<U> aclMemberInfo(AclCommandOptions.AclsMemberInfoCommandOptions aclCommandOptions,
                                           CatalogClient<T,U> client) throws CatalogException,IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty("study", aclCommandOptions.study);
-        return client.getAcl(aclCommandOptions.id, aclCommandOptions.memberId, params);
+        return client.getAcl(aclCommandOptions.id.replace("/", ":"), aclCommandOptions.memberId, params);
     }
 
     public QueryResponse<U> aclMemberUpdate(AclCommandOptions.AclsMemberUpdateCommandOptions aclCommandOptions,
                                             CatalogClient<T,U> client) throws CatalogException,IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotEmpty("study", aclCommandOptions.study);
-        params.putIfNotNull(StudyClient.AclParams.ADD_PERMISSIONS.key(), aclCommandOptions.addPermissions);
-        params.putIfNotNull(StudyClient.AclParams.REMOVE_PERMISSIONS.key(), aclCommandOptions.removePermissions);
-        params.putIfNotNull(StudyClient.AclParams.SET_PERMISSIONS.key(), aclCommandOptions.setPermissions);
-        return client.updateAcl(aclCommandOptions.id, aclCommandOptions.memberId, params);
+        params.putIfNotNull(StudyClient.AclParams.ADD.key(), aclCommandOptions.addPermissions);
+        params.putIfNotNull(StudyClient.AclParams.REMOVE.key(), aclCommandOptions.removePermissions);
+        params.putIfNotNull(StudyClient.AclParams.SET.key(), aclCommandOptions.setPermissions);
+        return client.updateAcl(aclCommandOptions.id.replace("/", ":"), aclCommandOptions.memberId, params);
     }
 
 }

@@ -37,10 +37,13 @@ public class AnalysisCliOptionsParser {
 
     private final GeneralCliOptions.GeneralOptions generalOptions;
     private final GeneralCliOptions.CommonCommandOptions commonCommandOptions;
+    private final GeneralCliOptions.DataModelOptions dataModelOptions;
+    private final GeneralCliOptions.NumericOptions numericOptions;
 
     private ExpressionCommandOptions expressionCommandOptions;
     private FunctionalCommandOptions functionalCommandOptions;
-    private VariantCommandOptions variantCommandOptions;
+    private org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions variantCommandOptions;
+//    private VariantCommandOptions variantCommandOptions;
     private ToolsCommandOptions toolsCommandOptions;
     private AlignmentCommandOptions alignmentCommandOptions;
 
@@ -52,6 +55,8 @@ public class AnalysisCliOptionsParser {
         jCommander.setProgramName("opencga-analysis.sh");
 
         commonCommandOptions = new GeneralCliOptions.CommonCommandOptions();
+        dataModelOptions = new GeneralCliOptions.DataModelOptions();
+        numericOptions = new GeneralCliOptions.NumericOptions();
 
         expressionCommandOptions = new ExpressionCommandOptions();
         jCommander.addCommand("expression", expressionCommandOptions);
@@ -65,7 +70,8 @@ public class AnalysisCliOptionsParser {
         usersSubCommands.addCommand("fatigo", functionalCommandOptions.fatigoFunctionalCommandOptions);
         usersSubCommands.addCommand("gene-set", functionalCommandOptions.genesetFunctionalCommandOptions);
 
-        variantCommandOptions = new VariantCommandOptions();
+        variantCommandOptions = new org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions(commonCommandOptions,
+                dataModelOptions, numericOptions, jCommander);
         jCommander.addCommand("variant", variantCommandOptions);
         JCommander variantSubCommands = jCommander.getCommands().get("variant");
         variantSubCommands.addCommand("index", variantCommandOptions.indexVariantCommandOptions);
@@ -206,6 +212,7 @@ public class AnalysisCliOptionsParser {
     /*
      * Variant CLI options
      */
+    @Deprecated
     @Parameters(commandNames = {"variant"}, commandDescription = "Implement several tools for the genomic variant analysis")
     public class VariantCommandOptions extends CommandOptions {
 
@@ -347,6 +354,7 @@ public class AnalysisCliOptionsParser {
      *  Variant SUB-COMMANDS
      */
 
+    @Deprecated
     @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
     public class IndexVariantCommandOptions extends GeneralCliOptions.StudyOption {
 
@@ -428,6 +436,7 @@ public class AnalysisCliOptionsParser {
 
     }
 
+    @Deprecated
     @Parameters(commandNames = {"stats"}, commandDescription = "Create and load stats into a database.")
     public class StatsVariantCommandOptions extends CatalogDatabaseCommandOptions {
 
@@ -492,6 +501,7 @@ public class AnalysisCliOptionsParser {
     }
 
 
+    @Deprecated
     @Parameters(commandNames = {"annotate"}, commandDescription = "Create and load variant annotations into the database")
     public class AnnotateVariantCommandOptions extends CatalogDatabaseCommandOptions {
 
@@ -554,6 +564,7 @@ public class AnalysisCliOptionsParser {
 
     }
 
+    @Deprecated
     @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed variants")
     public class QueryVariantCommandOptions extends QueryCommandOptions {
 
@@ -764,6 +775,7 @@ public class AnalysisCliOptionsParser {
 
     }
 
+    @Deprecated
     @Parameters(commandNames = {"ibs"}, commandDescription = "[PENDING] ")
     public class IbsVariantCommandOptions extends CatalogDatabaseCommandOptions {
 
@@ -1033,7 +1045,7 @@ public class AnalysisCliOptionsParser {
         return commonCommandOptions;
     }
 
-    public VariantCommandOptions getVariantCommandOptions() {
+    public org.opencb.opencga.app.cli.analysis.options.VariantCommandOptions getVariantCommandOptions() {
         return variantCommandOptions;
     }
 
