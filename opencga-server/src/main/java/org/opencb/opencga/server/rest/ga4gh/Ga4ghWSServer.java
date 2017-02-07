@@ -199,27 +199,4 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
         }
     }
 
-//    @GET
-//    @Path("/variants/{id}")
-//    @Consumes(MediaType.APPLICATION_JSON)
-//    @ApiOperation(value = "Description", position = 1, notes = "Notes")
-//    public Response getVariant(@PathParam("id") String id) {
-//
-//
-//        SearchVariantsResponse response = new SearchVariantsResponse();
-//        return createOkResponse(response);
-//    }
-
-
-
-//    @Path("/variantsets/search")
-//    @Path("/variantsets/{id}/sequences/search")
-//    @Path("/variantsets/{id}/sequences/{id}")
-//    @Path("/alleles/search")
-//    @Path("/alleles/{id}")
-//    @Path("/callsets/search")
-//    @Path("/callsets/{id}")
-//    @Path("/call/search")
-//    @Path("/allelecalls/search")
-
 }
