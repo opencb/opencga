@@ -483,7 +483,8 @@ public class CatalogFileUtilsTest {
 
 
     private File prepareFiles(List<File> folderFiles) throws CatalogException, IOException {
-        File folder = catalogManager.createFolder(studyId, Paths.get("folder"), false, null, userSessionId).first();
+        File folder = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("folder").toString(), null, false,
+                null, QueryOptions.empty(), userSessionId).first();
         folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/my.txt", StringUtils
                 .randomString(200).getBytes(), "", true, userSessionId).first());
         folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/my2.txt", StringUtils

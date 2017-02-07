@@ -67,7 +67,8 @@ public class FileScannerTest {
         project = catalogManager.getProjectManager().create("Project about some genomes", "1000G", "", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionIdUser).first();
         study = catalogManager.createStudy(project.getId(), "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser).first();
-        folder = catalogManager.createFolder(study.getId(), Paths.get("data/test/folder/"), true, null, sessionIdUser).first();
+        folder = catalogManager.getFileManager().createFolder(Long.toString(study.getId()), Paths.get("data/test/folder/").toString(),
+                null, true, null, QueryOptions.empty(), sessionIdUser).first();
 
         directory = catalogManagerExternalResource.getOpencgaHome().resolve("catalog_scan_test_folder").toAbsolutePath();
         if (directory.toFile().exists()) {

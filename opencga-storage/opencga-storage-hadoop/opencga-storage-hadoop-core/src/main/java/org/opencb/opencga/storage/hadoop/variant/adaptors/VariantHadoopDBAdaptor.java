@@ -28,6 +28,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
+import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -111,7 +112,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         String species = options.getString(VariantAnnotationManager.SPECIES);
         String assembly = options.getString(VariantAnnotationManager.ASSEMBLY);
         CellBaseConfiguration cellbaseConfiguration = configuration.getCellbase();
-        cellBaseClient = new CellBaseClient(species, assembly, cellbaseConfiguration.toClientConfiguration());
+        ClientConfiguration clientConfiguration = cellbaseConfiguration.toClientConfiguration();
+        if (StringUtils.isEmpty(species)) {
+            species = clientConfiguration.getDefaultSpecies();
+        }
+        cellBaseClient = new CellBaseClient(species, assembly, clientConfiguration);
 
         this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable, new VariantDBAdaptorUtils(this), cellBaseClient);
 

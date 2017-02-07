@@ -134,10 +134,14 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         p1 = catalogManager.getProjectManager().create("p1", "p1", null, null, "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), ownerSessionId).first().getId();
         s1 = catalogManager.createStudy(p1, "s1", "s1", Study.Type.CASE_CONTROL, null, ownerSessionId).first().getId();
-        data_d1 = catalogManager.createFolder(s1, Paths.get("data/d1/"), true, null, ownerSessionId).first().getId();
-        data_d1_d2 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/"), false, null, ownerSessionId).first().getId();
-        data_d1_d2_d3 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/d3/"), false, null, ownerSessionId).first().getId();
-        data_d1_d2_d3_d4 = catalogManager.createFolder(s1, Paths.get("data/d1/d2/d3/d4/"), false, null, ownerSessionId).first().getId();
+        data_d1 = catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/").toString(), null, true, null,
+                QueryOptions.empty(), ownerSessionId).first().getId();
+        data_d1_d2 = catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/d2/").toString(), null, false,
+                null, QueryOptions.empty(), ownerSessionId).first().getId();
+        data_d1_d2_d3 = catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/d2/d3/").toString(), null,
+        false, null, QueryOptions.empty(), ownerSessionId).first().getId();
+        data_d1_d2_d3_d4 = catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/d2/d3/d4/").toString(),
+                null, false, null, QueryOptions.empty(), ownerSessionId).first().getId();
         data_d1_d2_d3_d4_txt = catalogManager.createFile(s1, File.Format.PLAIN, File.Bioformat.NONE, "data/d1/d2/d3/d4/my.txt", ("file " +
                 "content").getBytes(), "", false, ownerSessionId).first().getId();
         data = catalogManager.searchFile(s1, new Query(FileDBAdaptor.QueryParams.PATH.key(), "data/"), ownerSessionId).first().getId();
@@ -541,36 +545,42 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void createFileByOwnerNoGroups() throws CatalogException {
-        QueryResult<File> folder = catalogManager.createFolder(s1, Paths.get("data/newFolder"), true, null, ownerSessionId);
+        QueryResult<File> folder = catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/newFolder").toString(),
+                null, true, null, QueryOptions.empty(), ownerSessionId);
         assertEquals(1, folder.getNumResults());
     }
 
     @Test
     public void createExplicitlySharedFile() throws CatalogException {
-        catalogManager.createFolder(s1, Paths.get("data/d1/folder/"), false, null, externalSessionId);
+        catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/folder/").toString(), null, false, null,
+                QueryOptions.empty(), externalSessionId);
     }
 
     @Test
     public void createInheritedSharedFile() throws CatalogException {
-        catalogManager.createFolder(s1, Paths.get("data/d1/d2/folder/"), false, null, externalSessionId);
+        catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/d2/folder/").toString(), null, false,
+                null, QueryOptions.empty(), externalSessionId);
     }
 
     @Test
     public void createExplicitlyForbiddenFile() throws CatalogException {
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.createFolder(s1, Paths.get("data/d1/d2/d3/folder/"), false, null, externalSessionId);
+        catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/d2/d3/folder/").toString(), null, false,
+                null, QueryOptions.empty(), externalSessionId);
     }
 
     @Test
     public void createInheritedForbiddenFile() throws CatalogException {
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.createFolder(s1, Paths.get("data/d1/d2/d3/d4/folder/"), false, null, externalSessionId);
+        catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/d1/d2/d3/d4/folder/").toString(), null, false,
+                null, QueryOptions.empty(), externalSessionId);
     }
 
     @Test
     public void createNonSharedFile() throws CatalogException {
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.createFolder(s1, Paths.get("folder/"), false, null, externalSessionId);
+        catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("folder/").toString(), null, false, null,
+                QueryOptions.empty(), externalSessionId);
     }
 
     @Test
@@ -579,7 +589,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager.createUser(newUser, newUser, "asda@mail.com", password, "org", 1000L, null);
         String sessionId = catalogManager.login(newUser, password, "localhost").first().getId().toString();
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.createFolder(s1, Paths.get("data/my_folder/"), false, null, sessionId);
+        catalogManager.getFileManager().createFolder(Long.toString(s1), Paths.get("data/my_folder/").toString(), null, false, null,
+                QueryOptions.empty(), sessionId);
     }
 
     /*--------------------------*/

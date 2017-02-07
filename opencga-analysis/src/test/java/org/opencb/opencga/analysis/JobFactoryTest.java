@@ -60,7 +60,8 @@ public class JobFactoryTest {
         projectId = catalogManager.getProjectManager().create("p1", "p1", "Project 1", "ACME", "Homo sapiens",
                 null, null, "GRCh38", new QueryOptions(), sessionId).first().getId();
         studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, "Study 1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", DB_NAME)), null, null, null, sessionId).first().getId();
-        output = catalogManager.createFolder(studyId, Paths.get("data", "index"), false, null, sessionId).first();
+        output = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("data", "index").toString(), null, false,
+                null, QueryOptions.empty(), sessionId).first();
 
         temporalOutDirUri = catalogManager.createJobOutDir(studyId, "JOB_TMP", sessionId);
     }

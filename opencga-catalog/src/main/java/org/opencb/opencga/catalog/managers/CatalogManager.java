@@ -721,19 +721,6 @@ public class CatalogManager implements AutoCloseable {
     }
 
     @Deprecated
-    public QueryResult<File> createFolder(long studyId, Path folderPath, boolean parents, QueryOptions options, String sessionId)
-            throws CatalogException {
-        return fileManager.createFolder(Long.toString(studyId), folderPath.toString(), null, parents, null, options, sessionId);
-    }
-
-    @Deprecated
-    public QueryResult<File> createFolder(long studyId, Path folderPath, File.FileStatus status, boolean parents, String description,
-                                          QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkPath(folderPath, "folderPath");
-        return fileManager.createFolder(Long.toString(studyId), folderPath.toString(), status, parents, description, options, sessionId);
-    }
-
-    @Deprecated
     public QueryResult moveFile(long fileId, String newPath, QueryOptions options, String sessionId) throws CatalogException {
         return fileManager.move(fileId, newPath, options, sessionId);
     }

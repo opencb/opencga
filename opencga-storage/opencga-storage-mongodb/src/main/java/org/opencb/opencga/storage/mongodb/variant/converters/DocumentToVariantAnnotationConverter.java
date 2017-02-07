@@ -214,7 +214,6 @@ public class DocumentToVariantAnnotationConverter
                         }
                     }
 
-
                     ProteinVariantAnnotation proteinVariantAnnotation = buildProteinVariantAnnotation(
                             getDefault(ct, CT_PROTEIN_UNIPROT_ACCESSION, null),
                             getDefault(ct, CT_PROTEIN_UNIPROT_NAME, null),
@@ -388,12 +387,17 @@ public class DocumentToVariantAnnotationConverter
                 cDnaPosition, cdsPosition, codon, proteinVariantAnnotation, soTerms);
     }
 
-    private ProteinVariantAnnotation buildProteinVariantAnnotation(String uniprotAccession, String uniprotName, Integer aaPosition,
+    private ProteinVariantAnnotation buildProteinVariantAnnotation(String uniprotAccession, String uniprotName, int aaPosition,
                                                                    String aaReference, String aaAlternate, String uniprotVariantId,
                                                                    List<Score> proteinSubstitutionScores, List<String> keywords,
                                                                    List<ProteinFeature> features) {
-        return new ProteinVariantAnnotation(uniprotAccession, uniprotName, aaPosition,
+        if (areAllEmpty(uniprotAccession, uniprotName, aaPosition, aaReference, aaAlternate,
+                uniprotVariantId, proteinSubstitutionScores, keywords, features)) {
+            return null;
+        } else {
+            return new ProteinVariantAnnotation(uniprotAccession, uniprotName, aaPosition,
                     aaReference, aaAlternate, uniprotVariantId, null, proteinSubstitutionScores, keywords, features);
+        }
     }
 
     private VariantTraitAssociation parseClinicalData(Document clinicalData) {

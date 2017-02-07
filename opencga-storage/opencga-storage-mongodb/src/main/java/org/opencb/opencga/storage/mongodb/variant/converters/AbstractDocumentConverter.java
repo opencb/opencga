@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.mongodb.variant.converters;
 import org.bson.Document;
 
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Created on 12/05/16.
@@ -63,6 +64,18 @@ public class AbstractDocumentConverter {
         return document;
     }
 
+    protected boolean areAllEmpty(Object... objects) {
+        for (Object object : objects) {
+            if (!(object == null
+                    || ((object instanceof Collection) && ((Collection) object).isEmpty())
+                    || ((object instanceof String) && ((String) object).isEmpty())
+                    || ((object instanceof Number) && ((Number) object).doubleValue() == 0))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     protected final String getDefault(Document object, String key, String defaultValue) {
         Object o = object.get(key);
         if (o != null) {
@@ -72,6 +85,7 @@ public class AbstractDocumentConverter {
         }
     }
 
+    @SuppressWarnings("unchecked")
     protected final <T> T getDefault(Document object, String key, T defaultValue) {
         Object o = object.get(key);
         if (o != null) {
@@ -115,4 +129,8 @@ public class AbstractDocumentConverter {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    protected <T> List<T> getList(Document document, String key) {
+        return (List<T>) document.get(key, List.class);
+    }
 }

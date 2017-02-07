@@ -19,11 +19,16 @@ package org.opencb.opencga.storage.hadoop.variant.adaptors;
 import org.junit.*;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
+
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -65,6 +70,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     protected ObjectMap getOtherParams() {
         return new ObjectMap(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
                 .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, false)
+                .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "")
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
     }
 
@@ -88,6 +94,13 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     public void testGetAllVariants_missingAllele() throws Exception {
         Assume.assumeTrue(false);
         super.testGetAllVariants_missingAllele();
+    }
+
+    @Override
+    @Ignore
+    public void groupBy_gene_limit_0() throws Exception {
+        Assume.assumeTrue(false);
+        super.groupBy_gene_limit_0();
     }
 
     @Override

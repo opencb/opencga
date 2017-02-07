@@ -36,14 +36,14 @@ import java.util.logging.Logger;
  */
 public class DocumentToStudyVariantEntryConverter {
 
-    public static final String FILEID_FIELD = "fid";
     public static final String STUDYID_FIELD = "sid";
-    public static final String ATTRIBUTES_FIELD = "attrs";
     //    public static final String FORMAT_FIELD = "fm";
     public static final String GENOTYPES_FIELD = "gt";
 
     public static final String FILES_FIELD = "files";
+    public static final String FILEID_FIELD = "fid";
     public static final String SAMPLE_DATA_FIELD = "sampleData";
+    public static final String ATTRIBUTES_FIELD = "attrs";
     public static final String ORI_FIELD = "_ori";
 
     public static final String ALTERNATES_FIELD = "alts";

@@ -43,7 +43,7 @@ import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEn
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
-public class DocumentToSamplesConverter /*implements ComplexTypeConverter<VariantSourceEntry, Document>*/ {
+public class DocumentToSamplesConverter extends AbstractDocumentConverter {
 
     public static final String UNKNOWN_GENOTYPE = "?/?";
     public static final String UNKNOWN_FIELD = ".";
@@ -199,19 +199,40 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
 //        final BiMap<String, Integer> samplesPosition = StudyConfiguration.getIndexedSamplesPosition(studyConfiguration);
         final LinkedHashMap<String, Integer> samplesPositionToReturn = getReturnedSamplesPosition(studyConfiguration);
 
-        // Make a copy of the extraFields. They may be modified
-        List<String> extraFields = new LinkedList<>(studyConfiguration.getAttributes()
-                .getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key()));
         boolean excludeGenotypes = !object.containsKey(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD)
                 || studyConfiguration.getAttributes().getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
         boolean compressExtraParams = studyConfiguration.getAttributes()
                 .getBoolean(Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.key(),
                         Options.EXTRA_GENOTYPE_FIELDS_COMPRESS.defaultValue());
         if (sampleIds == null || sampleIds.isEmpty()) {
-            fillStudyEntryFields(study, samplesPositionToReturn, extraFields, Collections.emptyList(), excludeGenotypes);
+            fillStudyEntryFields(study, samplesPositionToReturn, Collections.emptyList(), Collections.emptyList(), excludeGenotypes);
             return Collections.emptyList();
         }
 
+        final Set<Integer> filesWithSamplesData;
+        final Map<Integer, Document> files;
+        final List<String> extraFields;
+        if (object.containsKey(DocumentToStudyVariantEntryConverter.FILES_FIELD)) {
+            List<Document> fileObjects = getList(object, DocumentToStudyVariantEntryConverter.FILES_FIELD);
+            files = fileObjects.stream()
+                    .collect(Collectors.toMap(
+                            f -> f.get(DocumentToStudyVariantEntryConverter.FILEID_FIELD, Number.class).intValue(),
+                            f -> f));
+
+            filesWithSamplesData = new HashSet<>();
+            studyConfiguration.getSamplesInFiles().forEach((fileId, samplesInFile) -> {
+                // File indexed and contains any sample (not disjoint)
+                if (studyConfiguration.getIndexedFiles().contains(fileId) && !Collections.disjoint(samplesInFile, sampleIds.values())) {
+                    filesWithSamplesData.add(fileId);
+                }
+            });
+
+            extraFields = getExtraFormatFields(filesWithSamplesData, files);
+        } else {
+            files = Collections.emptyMap();
+            extraFields = Collections.emptyList();
+            filesWithSamplesData = Collections.emptySet();
+        }
 
         List<List<String>> samplesData = new ArrayList<>(sampleIds.size());
 
@@ -269,29 +290,11 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
             }
         }
 
-        if (object.containsKey(DocumentToStudyVariantEntryConverter.FILES_FIELD)) {
-            List<Document> fileObjects = (List<Document>) object.get(DocumentToStudyVariantEntryConverter.FILES_FIELD);
-            Map<Integer, Document> files = fileObjects.stream()
-                    .collect(Collectors.toMap(f -> (Integer) f.get(DocumentToStudyVariantEntryConverter.FILEID_FIELD), f -> f));
-
-            Set<String> extraFieldsSet = new HashSet<>();
-            for (Integer fid : studyConfiguration.getIndexedFiles()) {
-                if (files.containsKey(fid)) {
-                    Document sampleDatas = (Document) files.get(fid).get(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD);
-                    extraFieldsSet.addAll(sampleDatas.keySet());
-                }
-            }
-            Iterator<String> it = extraFields.iterator();
-            while (it.hasNext()) {
-                String extraField = it.next();
-                if (!extraFieldsSet.contains(extraField.toLowerCase())) {
-                    it.remove();
-                }
-            }
-
-            for (Integer fid : studyConfiguration.getIndexedFiles()) {
-                if (files.containsKey(fid)) {
-                    Document sampleDatas = (Document) files.get(fid).get(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD);
+        if (!extraFields.isEmpty()) {
+            for (Integer fid : filesWithSamplesData) {
+                if (files.containsKey(fid) && files.get(fid).containsKey(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD)) {
+                    Document samplesDataDocument = files.get(fid)
+                            .get(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD, Document.class);
 
                     int extraFieldPosition;
                     if (excludeGenotypes) {
@@ -301,9 +304,9 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
                     }
                     for (String extraField : extraFields) {
                         extraField = extraField.toLowerCase();
-                        byte[] byteArray = sampleDatas == null || !sampleDatas.containsKey(extraField)
+                        byte[] byteArray = samplesDataDocument == null || !samplesDataDocument.containsKey(extraField)
                                 ? null
-                                : sampleDatas.get(extraField, Binary.class).getData();
+                                : samplesDataDocument.get(extraField, Binary.class).getData();
 
                         VariantMongoDBProto.OtherFields otherFields = null;
                         if (compressExtraParams && byteArray != null) {
@@ -390,6 +393,31 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
 
         fillStudyEntryFields(study, samplesPositionToReturn, extraFields, samplesData, excludeGenotypes);
         return samplesData;
+    }
+
+    public List<String> getExtraFormatFields(Set<Integer> filesWithSamplesData, Map<Integer, Document> files) {
+        final List<String> extraFields;
+        if (!files.isEmpty()) {
+            Set<String> extraFieldsSet = new HashSet<>();
+            for (Integer fid : filesWithSamplesData) {
+                if (files.containsKey(fid)) {
+                    Document sampleDatas = (Document) files.get(fid).get(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD);
+                    extraFieldsSet.addAll(sampleDatas.keySet());
+                }
+            }
+            extraFields = new ArrayList<>(extraFieldsSet.size());
+            extraFieldsSet.stream().map(String::toUpperCase).sorted().forEach(extraFields::add);
+//            Iterator<String> it = extraFields.iterator();
+//            while (it.hasNext()) {
+//                String extraField = it.next();
+//                if (!extraFieldsSet.contains(extraField.toLowerCase())) {
+//                    it.remove();
+//                }
+//            }
+        } else {
+            extraFields = Collections.emptyList();
+        }
+        return extraFields;
     }
 
     private void fillStudyEntryFields(StudyEntry study, LinkedHashMap<String, Integer> samplesPositionToReturn, List<String> extraFields,
@@ -653,8 +681,6 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
         return StudyConfiguration.getReturnedSamplesPosition(studyConfiguration, returnedSamples, StudyConfiguration::getIndexedSamples);
     }
 
-
-
     public static String genotypeToDataModelType(String genotype) {
         return genotype.replace("-1", ".");
     }
@@ -663,16 +689,4 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
         return genotype.replace(".", "-1");
     }
 
-    public List<String> getFormat(int studyId) {
-        StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
-        List<String> extraFields = studyConfiguration.getAttributes().getAsStringList(Options.EXTRA_GENOTYPE_FIELDS
-                .key());
-        if (extraFields.isEmpty()) {
-            return Collections.singletonList("GT");
-        } else {
-            List<String> format = new ArrayList<>(1 + extraFields.size());
-            format.addAll(extraFields);
-            return format;
-        }
-    }
 }

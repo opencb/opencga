@@ -31,6 +31,8 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.json.JsonMode;
+import org.bson.json.JsonWriterSettings;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -38,6 +40,7 @@ import org.opencb.biodata.models.variant.avro.AdditionalAttribute;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -147,7 +150,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         this.utils = new VariantDBAdaptorUtils(this);
         String species = configuration.getString(VariantAnnotationManager.SPECIES);
         String assembly = configuration.getString(VariantAnnotationManager.ASSEMBLY);
-        cellBaseClient = new CellBaseClient(species, assembly, cellbaseConfiguration.toClientConfiguration());
+        ClientConfiguration clientConfiguration = cellbaseConfiguration.toClientConfiguration();
+        if (StringUtils.isEmpty(species)) {
+            species = clientConfiguration.getDefaultSpecies();
+        }
+        cellBaseClient = new CellBaseClient(species, assembly, clientConfiguration);
         this.cacheManager = new CacheManager(storageConfiguration);
         NUMBER_INSTANCES.incrementAndGet();
     }
@@ -278,10 +285,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private QueryResult<Variant> getVariantQueryResult(Query query, QueryOptions options) {
-        //        parseQueryOptions(options, qb);
         Document mongoQuery = parseQuery(query);
-
-//        DBObject projection = parseProjectionQueryOptions(options);
         Document projection = createProjection(query, options);
 //        logger.debug("Query to be executed: '{}'", mongoQuery.toJson(new JsonWriterSettings(JsonMode.SHELL, false)));
         options.putIfAbsent(QueryOptions.SKIP_COUNT, true);
@@ -608,8 +612,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         Document mongoQuery = parseQuery(query);
 
-        boolean count = options != null && options.getBoolean("count", false);
-        int order = options != null ? options.getInt("order", -1) : -1;
+        if (options == null) {
+            options = new QueryOptions();
+        } else {
+            options = new QueryOptions(options); // Copy given QueryOptions.
+        }
+        boolean count = options.getBoolean("count", false);
+        int order = options.getInt("order", -1);
 
         Document project;
         Document projectAndCount;
@@ -642,12 +651,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         Document groupAndAddToSet = new Document("$group", new Document("_id", "$field")
                 .append("values", new Document("$addToSet", "$_id"))); // sum, count, avg, ...?
         Document sort = new Document("$sort", new Document("count", order)); // 1 = ascending, -1 = descending
-        Document skip = null;
-        if (options != null && options.getInt("skip", -1) > 0) {
-            skip = new Document("$skip", options.getInt("skip", -1));
-        }
-        Document limit = new Document("$limit",
-                options != null && options.getInt("limit", -1) > 0 ? options.getInt("limit") : 10);
+
+        int skip = options.getInt(QueryOptions.SKIP, -1);
+        Document skipStep = skip > 0 ? new Document("$skip", skip) : null;
+
+        int limit = options.getInt(QueryOptions.LIMIT, -1) > 0 ? options.getInt(QueryOptions.LIMIT) : 10;
+        options.remove(QueryOptions.LIMIT); // Remove limit or Datastore will add a new limit step
+        Document limitStep = new Document("$limit", limit);
 
         List<Bson> operations = new LinkedList<>();
         operations.add(match);
@@ -659,10 +669,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         operations.add(groupAndAddToSet);
         operations.add(projectAndCount);
         operations.add(sort);
-        if (skip != null) {
-            operations.add(skip);
+        if (skipStep != null) {
+            operations.add(skipStep);
         }
-        operations.add(limit);
+        operations.add(limitStep);
         logger.debug("db." + collectionName + ".aggregate( " + operations + " )");
         QueryResult<Document> queryResult = variantsCollection.aggregate(operations, options);
 
@@ -854,10 +864,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private Document parseQuery(Query query) {
-        return parseQuery(query, new Document());
-    }
-
-    private Document parseQuery(Query query, Document mongoQuery) {
         QueryBuilder builder = new QueryBuilder();
         if (query != null) {
             /** VARIANT PARAMS **/
@@ -1008,8 +1014,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             parseStatsQueryParams(query, builder, defaultStudyConfiguration);
         }
         logger.debug("Query         = {}", query == null ? "{}" : query.toJson());
-        logger.debug("MongoDB Query = {}", builder.get());
-        mongoQuery.putAll(builder.get().toMap());
+        Document mongoQuery = new Document(builder.get().toMap());
+        logger.debug("MongoDB Query = {}", mongoQuery.toJson(new JsonWriterSettings(JsonMode.SHELL, false)));
         return mongoQuery;
     }
 
@@ -1483,8 +1489,14 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        Set<VariantField> returnedFields = VariantField.getReturnedFields(options, true);
-        logger.info(returnedFields.toString());
+        Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
+        // Add all required fields
+        returnedFields.addAll(DocumentToVariantConverter.REQUIRED_FIELDS_SET);
+        if (returnedFields.contains(VariantField.STUDIES) && !returnedFields.contains(VariantField.STUDIES_STUDY_ID)) {
+            returnedFields.add(VariantField.STUDIES_STUDY_ID);
+        }
+
+        returnedFields = VariantField.prune(returnedFields);
 
         if (!returnedFields.isEmpty()) { //Include some
             for (VariantField s : returnedFields) {
@@ -1498,10 +1510,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     logger.warn("Unknown include field: {}", s);
                 }
             }
-        }
-
-        for (String key : DocumentToVariantConverter.REQUIRED_FIELDS_SET) {
-            projection.put(key, 1);
         }
 
 //        if (query.containsKey(VariantQueryParams.RETURNED_FILES.key()) && projection.containsKey(DocumentToVariantConverter
@@ -1544,7 +1552,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        logger.debug("Projection: {}", projection);
+        logger.debug("QueryOptions: = {}", options.toJson());
+        logger.debug("Projection:   = {}", projection.toJson(new JsonWriterSettings(JsonMode.SHELL, false)));
         return projection;
     }
 
