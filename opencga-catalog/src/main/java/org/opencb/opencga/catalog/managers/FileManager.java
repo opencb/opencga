@@ -2410,11 +2410,23 @@ public class FileManager extends AbstractManager implements IFileManager {
         List<Long> fileIdList = new ArrayList<>();
         String indexDaemonType = null;
         String jobName = null;
+        String description = null;
 
         if (type.equals("VCF")) {
 
             indexDaemonType = IndexDaemon.VARIANT_TYPE;
-            jobName = "VariantIndex";
+            Boolean transform = Boolean.valueOf(params.get("transform"));
+            Boolean load = Boolean.valueOf(params.get("load"));
+            if (transform && !load) {
+                jobName = "variant_transform";
+                description = "Transform variants from " + fileIdStr;
+            } else if (load && !transform) {
+                description = "Load variants from " + fileIdStr;
+                jobName = "variant_load";
+            } else {
+                description = "Index variants from " + fileIdStr;
+                jobName = "variant_index";
+            }
 
             for (Long fileId : fileFolderIdList) {
                 QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
@@ -2531,7 +2543,8 @@ public class FileManager extends AbstractManager implements IFileManager {
         List<Long> outputList = outDirId > 0 ? Arrays.asList(outDirId) : Collections.emptyList();
         Map<String, Object> attributes = new HashMap<>();
         attributes.put(IndexDaemon.INDEX_TYPE, indexDaemonType);
-        jobQueryResult = catalogManager.getJobManager().queue(studyId, jobName, "opencga-analysis.sh",
+        logger.info("job description: " + description);
+        jobQueryResult = catalogManager.getJobManager().queue(studyId, jobName, description, "opencga-analysis.sh",
                 Job.Type.INDEX, params, fileIdList, outputList, outDirId, userId, attributes);
         jobQueryResult.first().setToolName(jobName);
 
