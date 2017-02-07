@@ -286,14 +286,14 @@ public class IndexDaemon extends MonitorParentDaemon {
         try {
             catalogIOManager.createDirectory(path.toUri());
         } catch (CatalogIOException e) {
-            logger.warn("Could not create the temporal output directory {} to run the job", path);
+            logger.warn("Could not create the temporal output directory " + path + " to run the job", e);
             return;
             // TODO: Maximum attemps ... -> Error !
         }
 
         // Defined where the stdout and stderr will be stored
-        String stderr = path.resolve(job.getName() + "_" + job.getId() + ".err").toString();
-        String stdout = path.resolve(job.getName() + "_" + job.getId() + ".out").toString();
+        String stderr = path.resolve(job.getName() + '_' + job.getId() + ".err").toString();
+        String stdout = path.resolve(job.getName() + '_' + job.getId() + ".out").toString();
 
         // Obtain a new session id for the user so we can guarantee the session will be open during execution.
         String userId = job.getUserId();

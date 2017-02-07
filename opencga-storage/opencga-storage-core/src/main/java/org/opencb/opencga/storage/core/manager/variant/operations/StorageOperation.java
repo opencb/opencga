@@ -159,13 +159,18 @@ public abstract class StorageOperation {
         try {
             logger.info("Scanning files from {} to move to {}", tmpOutdirPath, outDir.getUri());
             // Avoid copy the job.status file!
-            Predicate<URI> fileStatusFilter = uri -> !uri.getPath().endsWith(JOB_STATUS_FILE);
-            // TODO: Check whether we want to store the logs as well. At this point, we are also storing them.
-//            Predicate<URI> fileStatusFilter = uri -> (!uri.getPath().endsWith(JOB_STATUS_FILE)
-//                    && !uri.getPath().endsWith(OUT_LOG_EXTENSION)
-//                    && !uri.getPath().endsWith(ERR_LOG_EXTENSION));
+            Predicate<URI> fileStatusFilter = uri -> !uri.getPath().endsWith(JOB_STATUS_FILE)
+                    && !uri.getPath().endsWith(OUT_LOG_EXTENSION)
+                    && !uri.getPath().endsWith(ERR_LOG_EXTENSION);
             files = fileScanner.scan(outDir, tmpOutdirPath.toUri(), FileScanner.FileScannerPolicy.DELETE, true, false, fileStatusFilter, -1,
                     sessionId);
+
+            // TODO: Check whether we want to store the logs as well. At this point, we are also storing them.
+            // Do not execute checksum for log files! They may not be closed yet
+            fileStatusFilter = uri -> uri.getPath().endsWith(OUT_LOG_EXTENSION) || uri.getPath().endsWith(ERR_LOG_EXTENSION);
+            files.addAll(fileScanner.scan(outDir, tmpOutdirPath.toUri(), FileScanner.FileScannerPolicy.DELETE, false, false,
+                    fileStatusFilter, -1, sessionId));
+
         } catch (IOException e) {
             logger.warn("IOException when scanning temporal directory. Error: {}", e.getMessage());
             throw e;
