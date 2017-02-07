@@ -32,8 +32,8 @@ import org.opencb.opencga.catalog.db.api.FileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.api.IFileManager;
-import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.*;
@@ -47,8 +47,6 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Created by pfurio on 24/08/16.
@@ -137,10 +135,12 @@ public class FileManagerTest extends GenericTest {
         studyId2 = catalogManager.createStudy(projectId, "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser).first().getId();
         catalogManager.createStudy(project2.getId(), "Study 1", "s1", Study.Type.CONTROL_SET, "", sessionIdUser2).first().getId();
 
-        catalogManager.createFolder(studyId2, Paths.get("data/test/folder/"), true, null, sessionIdUser);
+        catalogManager.getFileManager().createFolder(Long.toString(studyId2), Paths.get("data/test/folder/").toString(), null, true,
+                null, QueryOptions.empty(), sessionIdUser);
 
 
-        testFolder = catalogManager.createFolder(studyId, Paths.get("data/test/folder/"), true, null, sessionIdUser).first();
+        testFolder = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("data/test/folder/").toString(),
+                null, true, null, QueryOptions.empty(), sessionIdUser).first();
         ObjectMap attributes = new ObjectMap();
         attributes.put("field", "value");
         attributes.put("numValue", 5);
@@ -429,6 +429,32 @@ public class FileManagerTest extends GenericTest {
     }
 
     @Test
+    public void testCreateFile() throws CatalogException, IOException {
+        long projectId = catalogManager.getAllProjects("user2", null, sessionIdUser2).first().getId();
+        Study study = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser2).first();
+
+        String content = "This is the content\tof the file";
+        try {
+            fileManager.create(Long.toString(study.getId()), File.Type.FILE, File.Format.UNKNOWN, File.Bioformat.UNKNOWN,
+                    "data/test/myTest/myFile.txt", null, null, new File.FileStatus(File.FileStatus.READY), 0, -1, null, -1,
+                    null, null, false, "This is the content\tof the file", null, sessionIdUser2);
+            fail("An error should be raised because parents is false");
+        } catch (CatalogException e) {
+            System.out.println("Correct");
+        }
+
+        QueryResult<File> fileQueryResult = fileManager.create(Long.toString(study.getId()), File.Type.FILE, File.Format.UNKNOWN,
+                File.Bioformat.UNKNOWN, "data/test/myTest/myFile.txt", null, null,
+                new File.FileStatus(File.FileStatus.READY), 0, -1, null, -1, null, null, true, content,
+                null, sessionIdUser2);
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(fileQueryResult.first().getUri());
+        assertTrue(ioManager.exists(fileQueryResult.first().getUri()));
+
+        DataInputStream fileObject = ioManager.getFileObject(fileQueryResult.first().getUri(), -1, -1);
+        assertEquals(content, fileObject.readLine());
+    }
+
+    @Test
     public void testCreateFolder() throws Exception {
         long projectId = catalogManager.getAllProjects("user2", null, sessionIdUser2).first().getId();
         long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser2).first().getId();
@@ -441,7 +467,11 @@ public class FileManagerTest extends GenericTest {
 //        assertTrue(paths.contains("analysis/"));    //analysis
 
         Path folderPath = Paths.get("data", "new", "folder");
-        File folder = catalogManager.createFolder(studyId, folderPath, true, null, sessionIdUser2).first();
+        File folder = catalogManager.getFileManager().createFolder(Long.toString(studyId), folderPath.toString(), null, true, null,
+                QueryOptions.empty(), sessionIdUser2).first();
+        System.out.println(folder);
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(folder.getUri());
+        assertTrue(ioManager.exists(folder.getUri()));
 
         paths = catalogManager.getAllFiles(studyId, new Query(FileDBAdaptor.QueryParams.TYPE.key(), File.Type.DIRECTORY),
                 new QueryOptions(), sessionIdUser2).getResult().stream().map(File::getPath).collect(Collectors.toSet());
@@ -452,13 +482,15 @@ public class FileManagerTest extends GenericTest {
         URI uri = catalogManager.getFileUri(folder);
         assertTrue(catalogManager.getCatalogIOManagerFactory().get(uri).exists(uri));
 
-        folder = catalogManager.createFolder(studyId, Paths.get("WOLOLO"), true, null, sessionIdUser2).first();
+        folder = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("WOLOLO").toString(), null, true,
+                null, QueryOptions.empty(), sessionIdUser2).first();
 
         Path myStudy = Files.createDirectory(catalogManagerResource.getOpencgaHome().resolve("myStudy"));
         long id = catalogManager.createStudy(projectId, "name", "alias", Study.Type.CASE_CONTROL, "", "",
                 null, null, null, myStudy.toUri(), null, null, null, null, sessionIdUser2).first().getId();
         System.out.println("studyId = " + id);
-        folder = catalogManager.createFolder(id, Paths.get("WOLOLO"), true, null, sessionIdUser2).first();
+        folder = catalogManager.getFileManager().createFolder(Long.toString(id), Paths.get("WOLOLO").toString(), null, true, null,
+                QueryOptions.empty(), sessionIdUser2).first();
         System.out.println("folder = " + folder);
         System.out.println(catalogManager.getFileUri(folder));
 
@@ -1395,7 +1427,8 @@ public class FileManagerTest extends GenericTest {
     }
 
     private File createBasicDirectoryFileTestEnvironment(List<File> folderFiles, long studyId) throws CatalogException, IOException {
-        File folder = catalogManager.createFolder(studyId, Paths.get("folder"), false, null, sessionIdUser).first();
+        File folder = catalogManager.getFileManager().createFolder(Long.toString(studyId), Paths.get("folder").toString(), null, false,
+                null, QueryOptions.empty(), sessionIdUser).first();
         folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/my.txt", StringUtils
                 .randomString(200).getBytes(), "", true, sessionIdUser).first());
         folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/my2.txt", StringUtils
