@@ -41,7 +41,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -92,9 +91,9 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
     protected static URI corruptedInputUri;
     protected static URI outputUri;
     protected VariantStorageEngine variantStorageManager;
-    public static Logger logger;
+    private static Logger logger = LoggerFactory.getLogger(VariantStorageBaseTest.class);
     private static Path rootDir = null;
-    private static AtomicInteger count = new AtomicInteger(0);
+//    private static AtomicInteger count = new AtomicInteger(0);
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -121,8 +120,7 @@ public abstract class VariantStorageBaseTest extends GenericTest implements Vari
         smallInputUri = smallInputPath.toUri();
         corruptedInputUri = corruptedInputPath.toUri();
         outputUri = rootDir.toUri();
-        logger = LoggerFactory.getLogger(VariantStorageManagerTest.class);
-        logger.info("count: " + count.getAndIncrement());
+//        logger.info("count: " + count.getAndIncrement());
 
     }
 

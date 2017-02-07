@@ -537,7 +537,7 @@
 
                 <!-- cellbase -->
                 <OPENCGA.CELLBASE.VERSION>v4</OPENCGA.CELLBASE.VERSION>
-                <OPENCGA.CELLBASE.REST.HOST>http://bioinfodev.hpc.cam.ac.uk/cellbase-4.5.0-beta1.1/</OPENCGA.CELLBASE.REST.HOST>
+                <OPENCGA.CELLBASE.REST.HOST>http://bioinfo.hpc.cam.ac.uk/cellbase/</OPENCGA.CELLBASE.REST.HOST>
                 <OPENCGA.CELLBASE.DB.HOST>localhost:27017</OPENCGA.CELLBASE.DB.HOST>
                 <OPENCGA.CELLBASE.DB.USER></OPENCGA.CELLBASE.DB.USER>
                 <OPENCGA.CELLBASE.DB.PASSWORD></OPENCGA.CELLBASE.DB.PASSWORD>

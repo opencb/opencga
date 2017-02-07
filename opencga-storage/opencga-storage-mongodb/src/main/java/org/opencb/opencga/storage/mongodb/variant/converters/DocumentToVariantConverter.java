@@ -91,10 +91,14 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
         map.put(VariantField.HGVS, singletonList(HGVS_FIELD));
         map.put(VariantField.STUDIES, Arrays.asList(STUDIES_FIELD, STATS_FIELD));
         map.put(VariantField.STUDIES_SAMPLES_DATA, Arrays.asList(
-                STUDIES_FIELD + '.' + GENOTYPES_FIELD
-//                , STUDIES_FIELD + '.' + FILES_FIELD + '.' + SAMPLE_DATA_FIELD
+                STUDIES_FIELD + '.' + GENOTYPES_FIELD,
+                STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD,
+                STUDIES_FIELD + '.' + FILES_FIELD + '.' + SAMPLE_DATA_FIELD
         ));
-        map.put(VariantField.STUDIES_FILES, singletonList(STUDIES_FIELD + '.' + FILES_FIELD));
+        map.put(VariantField.STUDIES_FILES, Arrays.asList(
+                STUDIES_FIELD + '.' + FILES_FIELD + '.' + FILEID_FIELD,
+                STUDIES_FIELD + '.' + FILES_FIELD + '.' + ATTRIBUTES_FIELD,
+                STUDIES_FIELD + '.' + FILES_FIELD + '.' + ORI_FIELD));
         map.put(VariantField.STUDIES_STATS, singletonList(STATS_FIELD));
         map.put(VariantField.STUDIES_SECONDARY_ALTERNATES, singletonList(
                 STUDIES_FIELD + '.' + ALTERNATES_FIELD));

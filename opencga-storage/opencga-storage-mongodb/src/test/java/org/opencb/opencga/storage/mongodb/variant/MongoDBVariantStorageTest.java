@@ -109,5 +109,7 @@ public interface MongoDBVariantStorageTest extends VariantStorageTest {
         org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
         org.apache.log4j.Logger.getLogger("org.mongodb.driver.protocol.update").setLevel(Level.WARN);
         org.apache.log4j.Logger.getLogger("org.mongodb.driver.protocol.command").setLevel(Level.WARN);
+        org.apache.log4j.Logger.getLogger("org.mongodb.driver.protocol.query").setLevel(Level.WARN);
+        org.apache.log4j.Logger.getLogger("org.mongodb.driver.protocol.getmore").setLevel(Level.WARN);
     }
 }
