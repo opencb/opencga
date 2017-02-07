@@ -324,9 +324,16 @@ public class IndexDaemon extends MonitorParentDaemon {
             for (Map.Entry<String, String> param : job.getParams().entrySet()) {
                 commandLine.append(' ');
                 if (knownParams.contains(param.getKey())) {
-                    commandLine.append("--").append(param.getKey());
-                    if (!param.getValue().equalsIgnoreCase("true")) {
-                        commandLine.append(" ").append(param.getValue());
+                    if (!param.getValue().equalsIgnoreCase("false")) {
+                        if (param.getKey().length() == 1) {
+                            commandLine.append('-');
+                        } else {
+                            commandLine.append("--");
+                        }
+                        commandLine.append(param.getKey());
+                        if (!param.getValue().equalsIgnoreCase("true")) {
+                            commandLine.append(' ').append(param.getValue());
+                        }
                     }
                 } else {
                     if (!param.getKey().startsWith("-D")) {
