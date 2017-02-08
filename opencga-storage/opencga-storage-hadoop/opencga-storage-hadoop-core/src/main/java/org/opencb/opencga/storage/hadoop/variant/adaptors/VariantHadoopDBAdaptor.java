@@ -129,9 +129,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             try {
                 java.sql.Connection connection = phoenixHelper.newJdbcConnection(this.configuration);
                 if (!phoenixCon.compareAndSet(null, connection)) {
-                    connection.close(); // already set in the mean time
+                    close(connection); // already set in the mean time
+                } else {
+                    logger.info("Opened Phoenix Connection " + connection);
                 }
-                logger.info("Opened Phoenix Connection " + connection);
             } catch (SQLException | ClassNotFoundException e) {
                 throw new IllegalStateException(e);
             }
@@ -202,14 +203,18 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     public void close() throws IOException {
         this.genomeHelper.close();
-        java.sql.Connection connection = this.phoenixCon.getAndSet(null);
+        try {
+           close(this.phoenixCon.getAndSet(null));
+        } catch (SQLException e) {
+            throw new IOException(e);
+        }
+    }
+
+    private void close(java.sql.Connection connection) throws SQLException {
         if (connection != null) {
-            try {
-                logger.info("Close Phoenix Connection " + connection);
-                connection.close();
-            } catch (SQLException e) {
-                throw new IOException(e);
-            }
+            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+            logger.info("Close Phoenix connection {} called from {}", connection, Arrays.toString(stackTrace));
+            connection.close();
         }
     }
 
@@ -315,9 +320,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         long startTime = System.currentTimeMillis();
         String sql = queryParser.parse(query, new QueryOptions(VariantSqlQueryParser.COUNT, true));
         logger.info(sql);
-        try {
-            Statement statement = getJdbcConnection().createStatement();
-            ResultSet resultSet = statement.executeQuery(sql);
+        try (Statement statement = getJdbcConnection().createStatement();
+             ResultSet resultSet = statement.executeQuery(sql)) { // Cleans up Statement and RS
             resultSet.next();
             long count = resultSet.getLong(1);
             return new QueryResult<>("count", ((int) (System.currentTimeMillis() - startTime)),
@@ -419,32 +423,18 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             logger.debug("Table name = " + variantTable);
             String sql = queryParser.parse(query, options);
             logger.info(sql);
-
-//            try (Statement statement = phoenixCon.createStatement()) {
-//                ResultSet resultSet = statement.executeQuery(sql);
-//                return new VariantHBaseResultIterator(resultSet, genomeHelper, studyConfigurationManager, options);
-//            } catch (SQLException e) {
-//                throw new RuntimeException(e);
-//            }
-
             logger.debug("Creating {} iterator", VariantHBaseResultSetIterator.class);
             try {
                 if (true) {
                     logger.info("---- " + "EXPLAIN " + sql);
                     phoenixHelper.getPhoenixHelper().explain(getJdbcConnection(), sql, Logger::info);
-//                    logger.info("EXPLANATION: \n" + explain);
-//                    try (Statement statement = getJdbcConnection().createStatement()) {
-//                        ResultSet resultSet = statement.executeQuery("EXPLAIN " + sql);
-//                        String explain = QueryUtil.getExplainPlan(resultSet);
-//                        System.err.println("EXPLANATION: \n" + explain);
-//                    }
                 }
 
-                Statement statement = getJdbcConnection().createStatement();
+                Statement statement = getJdbcConnection().createStatement(); // Statemnet closed by iterator
                 statement.setFetchSize(options.getInt("batchSize", -1));
-                ResultSet resultSet = statement.executeQuery(sql);
+                ResultSet resultSet = statement.executeQuery(sql); // RS closed by iterator
                 List<String> returnedSamples = getReturnedSamplesList(query, options);
-                VariantHBaseResultSetIterator iterator = new VariantHBaseResultSetIterator(
+                VariantHBaseResultSetIterator iterator = new VariantHBaseResultSetIterator(statement,
                         resultSet, genomeHelper, getStudyConfigurationManager(), options, returnedSamples);
 
                 // Client side skip!
@@ -575,10 +565,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                      new VariantAnnotationUpsertExecutor(conn, SchemaUtil.getEscapedFullTableName(variantTable))) {
             upsertExecutor.execute(records);
             upsertExecutor.close();
+            getLog().info("Phoenix connection is autoclosed ... " + conn);
         } catch (SQLException | ClassNotFoundException | IOException e) {
             throw new RuntimeException(e);
         }
-
         return new QueryResult("Update annotations", (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
     }
 

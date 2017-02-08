@@ -19,6 +19,7 @@
  */
 package org.opencb.opencga.storage.hadoop.variant.index;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
@@ -27,6 +28,8 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collection;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -51,6 +54,29 @@ public class VariantTableDriver extends AbstractVariantTableDriver {
         getConf().setStrings(CONFIG_VARIANT_FILE_IDS, args[4].split(","));
         for (int i = fixedSizeArgs; i < args.length; i = i + 2) {
             getConf().set(args[i], args[i + 1]);
+        }
+
+        // Set parallel pool size
+        String fjpKey = "java.util.concurrent.ForkJoinPool.common.parallelism";
+        boolean hasForkJoinPool = false;
+        Integer vCores = getConf().getInt("mapreduce.map.cpu.vcores", 1);
+        Collection<String> opts = getConf().getStringCollection("opencga.variant.table.mapreduce.map.java.opts");
+        String optString = StringUtils.EMPTY;
+        if (!opts.isEmpty()) {
+            for (String opt : opts) {
+                if (opt.contains(fjpKey)) {
+                    hasForkJoinPool = true;
+                }
+                optString += opt + " ";
+            }
+        }
+        if (!hasForkJoinPool && vCores > 1) {
+            optString += " -D" + fjpKey + "=" + vCores;
+            getLog().warn("Force ForkJoinPool to {}", vCores);
+        }
+        if (StringUtils.isNotBlank(optString)) {
+            getLog().info("Set mapreduce java opts: {}", optString);
+            getConf().set("mapreduce.map.java.opts", optString);
         }
         return super.run(args);
     }

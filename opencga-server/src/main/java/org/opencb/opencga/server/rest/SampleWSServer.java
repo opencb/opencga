@@ -233,6 +233,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                 params.put(SampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), params.get("individualId"));
                 params.remove("individualId");
             }
+            params.remove(SampleDBAdaptor.QueryParams.STUDY.key());
 //            params.putIfNotNull(SampleDBAdaptor.QueryParams.NAME.key(), name);
 //            params.putIfNotNull(SampleDBAdaptor.QueryParams.DESCRIPTION.key(), description);
 //            params.putIfNotNull(SampleDBAdaptor.QueryParams.SOURCE.key(), source);

@@ -424,7 +424,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                 }
 
                 Integer readFileId = Integer.parseInt(readSource.getFileId());
-                logger.info("Found source for file id {} with registered id {} ", loadedFileId, readFileId);
+                logger.debug("Found source for file id {} with registered id {} ", loadedFileId, readFileId);
                 if (!studyConfiguration.getFileIds().inverse().containsKey(readFileId)) {
                     checkNewFile(studyConfiguration, readFileId, readSource.getFileName());
                     studyConfiguration.getFileIds().put(readSource.getFileName(), readFileId);
@@ -437,14 +437,9 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                     pendingFiles.add(readFileId);
                 }
             }
-
-//            //VariantSource source = readVariantSource(input, options);
-            fileId = checkNewFile(studyConfiguration, fileId, source.getFileName());
-
-
             logger.info("Found pending in DB: " + pendingFiles);
-//            if (missingFilesDetected) {
-//            }
+
+            fileId = checkNewFile(studyConfiguration, fileId, source.getFileName());
 
             if (!loadArch) {
                 //If skip archive loading, input fileId must be already in archiveTable, so "pending to be loaded"
@@ -480,7 +475,6 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
                     || options.getBoolean(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT_RESUME, false);
             BatchFileOperation op = addBatchOperation(studyConfiguration, VariantTableDriver.JOB_OPERATION_NAME, pendingFiles, resume,
                     BatchFileOperation.Type.LOAD);
-
             options.put(HADOOP_LOAD_VARIANT_STATUS, op.currentStatus());
             options.put(AbstractVariantTableDriver.TIMESTAMP, op.getTimestamp());
 

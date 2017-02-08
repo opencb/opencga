@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.catalog.models.acls.AbstractAcl;
 import org.opencb.opencga.catalog.models.acls.permissions.AbstractAclEntry;
@@ -40,6 +41,7 @@ public abstract class Annotable<T extends AbstractAclEntry> extends AbstractAcl<
         return this;
     }
 
+    @JsonIgnore
     public List<ObjectMap> getAnnotationSetAsMap() {
         List<ObjectMap> objectMapList = new ArrayList<>(annotationSets.size());
 
