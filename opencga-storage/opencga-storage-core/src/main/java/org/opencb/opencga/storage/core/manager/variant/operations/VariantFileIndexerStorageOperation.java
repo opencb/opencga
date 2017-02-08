@@ -42,6 +42,8 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.models.FileInfo;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.LoggerFactory;
 
@@ -182,6 +184,13 @@ public class VariantFileIndexerStorageOperation extends StorageOperation {
         } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
             throw new StorageEngineException("Unable to create StorageEngine", e);
         }
+
+        // Add species and assembly
+        String scientificName = studyInfo.getOrganism().getScientificName();
+        scientificName = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(scientificName);
+        options.put(VariantAnnotationManager.SPECIES, scientificName);
+        options.put(VariantAnnotationManager.ASSEMBLY, studyInfo.getOrganism().getAssembly());
+
         variantStorageEngine.getOptions().putAll(options);
         boolean calculateStats = options.getBoolean(VariantStorageEngine.Options.CALCULATE_STATS.key())
                 && (step.equals(Type.LOAD) || step.equals(Type.INDEX));
