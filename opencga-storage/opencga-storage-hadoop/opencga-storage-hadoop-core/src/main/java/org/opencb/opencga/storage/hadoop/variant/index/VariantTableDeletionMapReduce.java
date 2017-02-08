@@ -22,10 +22,7 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 import com.google.common.collect.BiMap;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Delete;
-import org.apache.hadoop.hbase.client.Mutation;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -53,8 +50,9 @@ public class VariantTableDeletionMapReduce extends AbstractVariantTableMapReduce
     protected void setup(Mapper<ImmutableBytesWritable, Result, ImmutableBytesWritable, Mutation>.Context context) throws IOException,
             InterruptedException {
         super.setup(context);
-        this.analysisTable = getDbConnection().getTable(TableName.valueOf(getHelper().getOutputTable()));
-        this.archiveTable = getDbConnection().getTable(TableName.valueOf(getHelper().getIntputTable()));
+        Connection connection = getHelper().getHBaseManager().getConnection();
+        this.analysisTable = connection.getTable(TableName.valueOf(getHelper().getOutputTable()));
+        this.archiveTable = connection.getTable(TableName.valueOf(getHelper().getIntputTable()));
     }
 
     @Override

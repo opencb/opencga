@@ -172,7 +172,8 @@ public class VariantLocalConflictResolver {
 
         // While there are items in the sorted ALT list
         // OR there are no overlaps anymore
-        NavigableSet<Variant> remaining = altSorted.tailSet(altConflicts.last(), false);
+        NavigableSet<Variant> remaining = new TreeSet<>(variantPositionRefAltComparator);
+        remaining.addAll(altSorted.tailSet(altConflicts.last(), false));
         while (!remaining.isEmpty()) {
             Variant q = remaining.first();
             boolean hasOverlap = altConflicts.stream().filter(a -> hasConflictOverlap(a, q)).findAny().isPresent();
@@ -203,7 +204,8 @@ public class VariantLocalConflictResolver {
                 }
             }
             altConflicts.addAll(qAlts);
-            remaining = altSorted.tailSet(altConflicts.last(), false);
+            remaining.clear();
+            remaining.addAll(altSorted.tailSet(altConflicts.last(), false));
         }
         return altConflicts;
     }
