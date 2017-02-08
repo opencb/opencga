@@ -487,23 +487,23 @@ public class VariantTableStudyRow {
 
     public VariantTableStudyRow(Variant variant, Integer studyId, NavigableMap<byte[], byte[]> familyMap,
                 boolean skipOtherStudies) {
-            this(studyId, variant);
-            for (Entry<byte[], byte[]> entry : familyMap.entrySet()) {
-                if (entry.getValue() == null || entry.getValue().length == 0) {
-                    continue; // use default values, if no data for column exist
+        this(studyId, variant);
+        for (Entry<byte[], byte[]> entry : familyMap.entrySet()) {
+            if (entry.getValue() == null || entry.getValue().length == 0) {
+                continue; // use default values, if no data for column exist
+            }
+            String colStr = Bytes.toString(entry.getKey());
+            String[] colSplit = colStr.split("_", 2);
+            if (!colSplit[0].equals(studyId.toString())) { // check study ID for consistency check
+                if (skipOtherStudies) {
+                    continue;
+                } else {
+                    throw new IllegalStateException(String.format("Expected study id %s, but found %s in row %s",
+                            studyId.toString(), colSplit[0], colStr));
                 }
-                String colStr = Bytes.toString(entry.getKey());
-                String[] colSplit = colStr.split("_", 2);
-                if (!colSplit[0].equals(studyId.toString())) { // check study ID for consistency check
-                    if (skipOtherStudies) {
-                        continue;
-                    } else {
-                        throw new IllegalStateException(String.format("Expected study id %s, but found %s in row %s",
-                                studyId.toString(), colSplit[0], colStr));
-                    }
-                }
-                String gt = colSplit[1];
-                switch (gt) {
+            }
+            String gt = colSplit[1];
+            switch (gt) {
                 case HOM_REF:
                     homRefCount = parseCount(entry.getValue());
                     break;
@@ -529,9 +529,12 @@ public class VariantTableStudyRow {
                         throw new UncheckedIOException(e);
                     }
                     break;
-                default:
-                    PhoenixArray phoenixArray = (PhoenixArray) PUnsignedIntArray.INSTANCE.toObject(entry.getValue());
+                case NOCALL:
+                case HET_REF:
+                case HOM_VAR:
+                case OTHER:
                     try {
+                        PhoenixArray phoenixArray = (PhoenixArray) PUnsignedIntArray.INSTANCE.toObject(entry.getValue());
                         HashSet<Integer> value = new HashSet<>();
                         if (phoenixArray.getArray() != null) {
                             int[] array = (int[]) phoenixArray.getArray();
@@ -540,14 +543,19 @@ public class VariantTableStudyRow {
                             }
                         }
                         callMap.put(gt, value);
-                    } catch (SQLException e) {
-                        //Impossible
-                        throw new IllegalStateException(e);
+                    } catch (Exception e) {
+                        //possible!!!
+                        throw new IllegalStateException(
+                                "Issue parsing " + gt + "(" + colStr + ")" + " for " + variant
+                                        + "; hexstring:[" + Bytes.toHex(entry.getValue()) + "]", e);
                     }
                     break;
-                }
+                default:
+                    // ignore otherwise
+                    break;
             }
         }
+    }
 
     public static List<VariantTableStudyRow> parse(Variant variant, ResultSet resultSet, GenomeHelper helper) throws SQLException {
         ResultSetMetaData metaData = resultSet.getMetaData();
@@ -627,7 +635,9 @@ public class VariantTableStudyRow {
 
     public static Integer extractStudyId(String columnKey, boolean failOnMissing) {
         String study = StringUtils.split(columnKey, COLUMN_KEY_SEPARATOR)[0];
-        if (StringUtils.isNumeric(study)) {
+        if (StringUtils.isNotBlank(columnKey)
+                && Character.isDigit(columnKey.charAt(0))
+                && StringUtils.isNumeric(study)) {
             return Integer.parseInt(study);
         } else {
             if (failOnMissing) {
@@ -682,6 +692,9 @@ public class VariantTableStudyRow {
 
             for (String sample : sampleSet) {
                 Integer sid = sampleIds.get(sample);
+                if (null == sid) {
+                    throw new IllegalStateException("Sample id found for " + sample);
+                }
                 // Work out Genotype
                 String gtStr = se.getSampleData(sample, GT_KEY);
                 List<Genotype> gtLst = Genotype.parse(gtStr);

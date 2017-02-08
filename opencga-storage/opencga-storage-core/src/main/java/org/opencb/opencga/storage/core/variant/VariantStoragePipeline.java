@@ -887,6 +887,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         }
     }
 
+
     /**
      * Check if the file(name,id) can be added to the StudyConfiguration.
      *
@@ -929,10 +930,10 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
                         + idFiles.get(fileId) + " (" + fileId + ")");
             }
         }
+
         if (studyConfiguration.getIndexedFiles().contains(fileId)) {
             throw StorageEngineException.alreadyLoaded(fileId, fileName);
         }
-
         return fileId;
     }
 

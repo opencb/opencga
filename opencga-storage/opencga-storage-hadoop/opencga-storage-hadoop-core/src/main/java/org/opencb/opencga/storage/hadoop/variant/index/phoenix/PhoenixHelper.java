@@ -55,8 +55,8 @@ public class PhoenixHelper {
         if (!sql.startsWith("explain") && !sql.startsWith("EXPLAIN")) {
             sql = "EXPLAIN " + sql;
         }
-        try (Statement statement = con.createStatement()) {
-            ResultSet resultSet = statement.executeQuery(sql);
+        try (Statement statement = con.createStatement();
+             ResultSet resultSet = statement.executeQuery(sql)) { // Close both - Statement and RS to make sure
             return QueryUtil.getExplainPlan(resultSet);
         }
     }
@@ -124,7 +124,10 @@ public class PhoenixHelper {
     }
 
     public Connection newJdbcConnection(Configuration conf) throws SQLException, ClassNotFoundException {
-        return QueryUtil.getConnection(conf);
+        Connection connection = QueryUtil.getConnection(conf);
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        logger.info("Opened Phoenix DB connection {} called from {}", connection, Arrays.toString(stackTrace));
+        return connection;
     }
 
     public static byte[] toBytes(Collection collection, PArrayDataType arrayType) {
@@ -213,8 +216,8 @@ public class PhoenixHelper {
         String sql = "SELECT * FROM " + SchemaUtil.getEscapedFullTableName(tableName) + " LIMIT 0";
         logger.debug(sql);
 
-        try (Statement statement = con.createStatement()) {
-            ResultSet resultSet = statement.executeQuery(sql);
+        try (Statement statement = con.createStatement(); // Clean up Statement and RS
+             ResultSet resultSet = statement.executeQuery(sql)) {
             ResultSetMetaData metaData = resultSet.getMetaData();
             List<Column> columns = new ArrayList<>(metaData.getColumnCount());
             // 1-based
