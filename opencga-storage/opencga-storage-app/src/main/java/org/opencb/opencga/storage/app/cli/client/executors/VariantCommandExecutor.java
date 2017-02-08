@@ -131,6 +131,10 @@ public class VariantCommandExecutor extends CommandExecutor {
                 configure(variantCommandOptions.statsVariantsCommandOptions.commonOptions);
                 stats();
                 break;
+            case "export":
+                configure(variantCommandOptions.exportVariantsCommandOptions.commonOptions);
+                export();
+                break;
 //            case "benchmark":
 //                configure(variantCommandOptions.statsVariantsCommandOptions.commonOptions);
 //                benchmark();
@@ -552,6 +556,48 @@ public class VariantCommandExecutor extends CommandExecutor {
         }
     }
 
+    private void export() throws URISyntaxException, StorageEngineException, IOException {
+        StorageVariantCommandOptions.VariantExportCommandOptions exportVariantsCommandOptions = variantCommandOptions.exportVariantsCommandOptions;
+//
+//        ObjectMap options = storageConfiguration.getVariant().getOptions();
+//        if (exportVariantsCommandOptions.dbName != null && !exportVariantsCommandOptions.dbName.isEmpty()) {
+//            options.put(VariantStorageEngine.Options.DB_NAME.key(), exportVariantsCommandOptions.dbName);
+//        }
+//        options.putIfNotEmpty(VariantStorageEngine.Options.FILE_ID.key(), exportVariantsCommandOptions.fileId);
+//        options.put(VariantStorageEngine.Options.STUDY_ID.key(), exportVariantsCommandOptions.studyId);
+//        if (exportVariantsCommandOptions.studyConfigurationFile != null && !exportVariantsCommandOptions.studyConfigurationFile.isEmpty()) {
+//            options.put(FileStudyConfigurationManager.STUDY_CONFIGURATION_PATH, exportVariantsCommandOptions.studyConfigurationFile);
+//        }
+//
+//        if (exportVariantsCommandOptions.commonOptions.params != null) {
+//            options.putAll(exportVariantsCommandOptions.commonOptions.params);
+//        }
+//
+//
+//        VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor(exportVariantsCommandOptions.dbName);
+//
+//        URI outputUri = UriUtils.createUri(exportVariantsCommandOptions.outFilename == null ? "" : exportVariantsCommandOptions.outFilename);
+//        URI directoryUri = outputUri.resolve(".");
+//        StudyConfiguration studyConfiguration = dbAdaptor.getStudyConfigurationManager()
+//                .getStudyConfiguration(exportVariantsCommandOptions.studyId, new QueryOptions(options)).first();
+//        if (studyConfiguration == null) {
+//            studyConfiguration = new StudyConfiguration(Integer.parseInt(exportVariantsCommandOptions.studyId),
+//                    exportVariantsCommandOptions.dbName);
+//        }
+//        String filename = outputUri.equals(directoryUri) ? VariantStorageEngine.buildFilename(studyConfiguration.getStudyName(),
+//                Integer.parseInt(exportVariantsCommandOptions.fileId))
+//                : Paths.get(outputUri.getPath()).getFileName().toString();
+//
+        URI outputFile = Paths.get(exportVariantsCommandOptions.outFilename).toUri();
+        VariantWriterFactory.VariantOutputFormat outputFormat = VariantWriterFactory.toOutputFormat(null,
+                outputFile.getPath());
+
+        Query query = new Query();
+        QueryOptions queryOptions = new QueryOptions();
+
+        variantStorageEngine.exportData(outputFile, outputFormat, exportVariantsCommandOptions.dbName,
+                query, queryOptions);
+    }
 
 
     private void executeRank(Query query, VariantDBAdaptor variantDBAdaptor,

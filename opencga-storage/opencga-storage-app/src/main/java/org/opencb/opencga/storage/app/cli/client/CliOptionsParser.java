@@ -59,6 +59,7 @@ public class CliOptionsParser extends GeneralCliOptions {
         variantSubCommands.addCommand("annotate", variantCommandOptions.annotateVariantsCommandOptions);
 //        variantSubCommands.addCommand("benchmark", variantCommandOptions.benchmarkCommandOptions);
         variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantsCommandOptions);
+        variantSubCommands.addCommand("export", variantCommandOptions.exportVariantsCommandOptions);
     }
 
 

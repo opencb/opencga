@@ -40,6 +40,7 @@ public class StorageVariantCommandOptions {
     public ImportVariantsCommandOptions importVariantsCommandOptions;
     public VariantAnnotateCommandOptions annotateVariantsCommandOptions;
     public VariantStatsCommandOptions statsVariantsCommandOptions;
+    public VariantExportCommandOptions exportVariantsCommandOptions;
 
     public JCommander jCommander;
     public GeneralCliOptions.CommonOptions commonCommandOptions;
@@ -58,8 +59,12 @@ public class StorageVariantCommandOptions {
         this.importVariantsCommandOptions = new ImportVariantsCommandOptions();
         this.annotateVariantsCommandOptions = new VariantAnnotateCommandOptions();
         this.statsVariantsCommandOptions = new VariantStatsCommandOptions();
+        this.exportVariantsCommandOptions = new VariantExportCommandOptions();
     }
 
+    /**
+     *  index: generic and specific options
+     */
     public static class GenericVariantIndexOptions {
 
         @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
@@ -152,6 +157,9 @@ public class StorageVariantCommandOptions {
 
     }
 
+    /**
+     *  query: generic and specific options
+     */
     public static class GenericVariantQueryOptions {
 
         @Parameter(names = {"--id"}, description = VariantDBAdaptor.ID_DESCR)
@@ -351,6 +359,9 @@ public class StorageVariantCommandOptions {
 
     }
 
+    /**
+     *  import: specific options
+     */
     @Parameters(commandNames = {"import"}, commandDescription = "Import a variants dataset into an empty database")
     public class ImportVariantsCommandOptions {
 
@@ -365,6 +376,9 @@ public class StorageVariantCommandOptions {
 
     }
 
+    /**
+     *  annotate: generic and specific options
+     */
     public static class GenericVariantAnnotateOptions {
 
         @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by --output-filename)")
@@ -420,7 +434,9 @@ public class StorageVariantCommandOptions {
         public String outdir;
     }
 
-
+    /**
+     *  benchmark: specific options
+     */
     @Parameters(commandNames = {"benchmark"}, commandDescription = "[PENDING] Benchmark load and fetch variants with different databases")
     public class BenchmarkCommandOptions {
 
@@ -451,6 +467,9 @@ public class StorageVariantCommandOptions {
 
     }
 
+    /**
+     *  stats: generic and specific options
+     */
     public static class GenericVariantStatsOptions {
 
         @Parameter(names = {"--create"}, description = "Run only the creation of the stats to a file")
@@ -518,4 +537,40 @@ public class StorageVariantCommandOptions {
                 ".core.StudyConfiguration", arity = 1)
         public String studyConfigurationFile;
     }
+
+    /**
+     * export: generic and specific options
+     */
+
+    public static class GenericVariantExportOptions {
+
+        @Parameter(names = {"-f", "--file-id"}, description = "Calculate stats only for the selected file", arity = 1)
+        public String fileId;
+
+        @Parameter(names = {"-o", "--output-filename"}, description = "Output filename.", arity = 1)
+        public String outFilename = ".";
+
+//        @Parameter(names = {"--region"}, description = "Variant region to export.")
+//        public String region;
+
+        @Parameter(names = {"--study-configuration-file"}, description = "File with the study configuration. org.opencb.opencga.storage" +
+                ".core.StudyConfiguration", arity = 1)
+        public String studyConfigurationFile;
+    }
+
+
+    @Parameters(commandNames = {"export"}, commandDescription = "Export variants into a VCF file.")
+    public class VariantExportCommandOptions extends GenericVariantExportOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true,
+                arity = 1)
+        public String studyId;
+
+        @Parameter(names = {"-d", "--database"}, description = "DataBase name", arity = 1)
+        public String dbName;
+    }
+
 }
