@@ -42,6 +42,8 @@ import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.mixin.VariantStatsJsonMixin;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -59,11 +61,12 @@ import static org.junit.Assert.*;
 @Ignore
 public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
 
+    private static Logger logger = LoggerFactory.getLogger(VariantStorageManagerTest.class);
     @Test
     public void basicIndex() throws Exception {
         clearDB(DB_NAME);
         StudyConfiguration studyConfiguration = newStudyConfiguration();
-        StoragePipelineResult etlResult = runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
+        StoragePipelineResult etlResult = runDefaultETL(smallInputUri, variantStorageManager, studyConfiguration,
                 new ObjectMap(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "json"));
         assertTrue("Incorrect transform file extension " + etlResult.getTransformResult() + ". Expected 'variants.json.gz'",
                 Paths.get(etlResult.getTransformResult()).toFile().getName().endsWith("variants.json.gz"));
@@ -78,7 +81,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
     public void avroBasicIndex() throws Exception {
         clearDB(DB_NAME);
         StudyConfiguration studyConfiguration = newStudyConfiguration();
-        StoragePipelineResult etlResult = runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
+        StoragePipelineResult etlResult = runDefaultETL(smallInputUri, variantStorageManager, studyConfiguration,
                 new ObjectMap(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro"));
         assertTrue("Incorrect transform file extension " + etlResult.getTransformResult() + ". Expected 'variants.avro.gz'",
                 Paths.get(etlResult.getTransformResult()).toFile().getName().endsWith("variants.avro.gz"));
@@ -470,12 +473,17 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
             studyEntry.getFiles().get(0).setFileId("2");
             variant.setStudies(Collections.singletonList(studyEntry));
 
-            Variant loadedVariant = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.ID.key(), variant), new QueryOptions()).first();
+            Variant loadedVariant = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.ID.key(), variant.toString()), new QueryOptions()).first();
 
             loadedVariant.setAnnotation(null);                                          //Remove annotation
-            loadedVariant.getStudy(STUDY_NAME).setStats(Collections.emptyMap());        //Remove calculated stats
-            loadedVariant.getStudy(STUDY_NAME).getSamplesData().forEach(values -> {
+            StudyEntry loadedStudy = loadedVariant.getStudy(STUDY_NAME);
+            loadedStudy.setFormat(Arrays.asList(loadedStudy.getFormat().get(0), loadedStudy.getFormat().get(2), loadedStudy.getFormat().get(1)));
+            loadedStudy.setStats(Collections.emptyMap());        //Remove calculated stats
+            loadedStudy.getSamplesData().forEach(values -> {
                 values.set(0, values.get(0).replace("0/0", "0|0"));
+                String v1 = values.get(1);
+                values.set(1, values.get(2));
+                values.set(2, v1);
                 while (values.get(2).length() < 5) values.set(2, values.get(2) + "0");   //Set lost zeros
             });
             variant.resetLength();
@@ -844,6 +852,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageBaseTest {
 
 
     @Test
+    @Ignore
     public void insertVariantIntoSolr() throws Exception {
         clearDB(DB_NAME);
         ObjectMap params = new ObjectMap();

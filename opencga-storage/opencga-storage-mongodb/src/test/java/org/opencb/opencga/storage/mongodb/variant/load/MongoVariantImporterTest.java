@@ -81,7 +81,7 @@ public class MongoVariantImporterTest extends VariantStorageBaseTest implements 
 
         System.out.println("outputFile = " + outputFile);
         Query query = new Query();
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_SAMPLES_DATA);
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.EXCLUDE, VariantField.STUDIES_SAMPLES_DATA.toString());
         variantStorageManager.exportData(outputFile, VariantOutputFormat.AVRO, DB_NAME, query, queryOptions);
 
         clearDB(DB_NAME);

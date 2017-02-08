@@ -31,7 +31,7 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
             Query query = createQuery(request);
             QueryOptions queryOptions = createQueryOptions(request);
 
-            String studyIdStr = query.getString("studyId");
+            String studyIdStr = query.getString("study");
             String fileIdStr = query.getString("fileId");
             String sessionId = query.getString("sid");
 
@@ -62,7 +62,7 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
         Query query = createQuery(request);
         QueryOptions queryOptions = createQueryOptions(request);
 
-        String studyIdStr = query.getString("studyId");
+        String studyIdStr = query.getString("study");
         String fileIdStr = query.getString("fileId");
         String sessionId = query.getString("sid");
 
@@ -83,7 +83,7 @@ public class AlignmentGrpcService extends AlignmentServiceGrpc.AlignmentServiceI
         Query query = createQuery(request);
         QueryOptions queryOptions = createQueryOptions(request);
 
-        String studyIdStr = query.getString("studyId");
+        String studyIdStr = query.getString("study");
         String fileIdStr = query.getString("fileId");
         String sessionId = query.getString("sid");
 

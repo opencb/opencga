@@ -43,6 +43,8 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.CellBaseRestVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.stats.DefaultVariantStatisticsManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -73,6 +75,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     private static final String GENOMES_PHASE_3 = "1kG_phase3";
     private static final String ESP_6500 = "ESP6500";
     protected static int NUM_VARIANTS = 998;
+    protected static Set<String> FORMAT;
     protected static boolean fileIndexed;
     protected static VariantSource source;
     protected static StudyConfiguration studyConfiguration;
@@ -80,6 +83,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     protected QueryOptions options;
     protected QueryResult<Variant> queryResult;
     protected QueryResult<Variant> allVariants;
+    private static Logger logger = LoggerFactory.getLogger(VariantDBAdaptorTest.class);
 
     @BeforeClass
     public static void beforeClass() throws IOException {
@@ -97,10 +101,18 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             clearDB(DB_NAME);
             ObjectMap params = new ObjectMap(VariantStorageEngine.Options.STUDY_TYPE.key(), VariantStudy.StudyType.FAMILY)
                     .append(VariantStorageEngine.Options.ANNOTATE.key(), true)
+                    .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "DS,GL")
                     .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, CellBaseRestVariantAnnotator.class.getName())
                     .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "json")
                     .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
             params.putAll(getOtherParams());
+            FORMAT = new HashSet<>();
+            if (!params.getBoolean(VariantStorageEngine.Options.EXCLUDE_GENOTYPES.key(),
+                    VariantStorageEngine.Options.EXCLUDE_GENOTYPES.defaultValue())) {
+                FORMAT.add("GT");
+            }
+            FORMAT.addAll(params.getAsStringList(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key()));
+
             StoragePipelineResult etlResult = runDefaultETL(smallInputUri, getVariantStorageEngine(), studyConfiguration, params);
             source = variantStorageManager.getVariantReaderUtils().readVariantSource(Paths.get(etlResult.getTransformResult().getPath()).toUri());
             NUM_VARIANTS = getExpectedNumLoadedVariants(source);
@@ -1531,9 +1543,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
             for (Variant variant : queryResult.getResult()) {
                 assertThat(variant.getStudies().get(0).getFiles(), is(Collections.emptyList()));
+                assertThat(new HashSet<>(variant.getStudies().get(0).getFormat()), is(FORMAT));
             }
         }
-
     }
 
     @Test
