@@ -548,6 +548,8 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
             IndividualDBAdaptor.QueryParams queryParam = IndividualDBAdaptor.QueryParams.getParam(param.getKey());
             switch (queryParam) {
                 case NAME:
+                    ParamUtils.checkAlias(parameters.getString(queryParam.key()), "name", configuration.getCatalog().getOffset());
+
                     String myName = parameters.getString(IndividualDBAdaptor.QueryParams.NAME.key());
                     long studyId = individualDBAdaptor.getStudyId(individualId);
                     Query query = new Query()
@@ -556,6 +558,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                     if (individualDBAdaptor.count(query).first() > 0) {
                         throw new CatalogException("Individual name " + myName + " already in use");
                     }
+                    break;
                 case FATHER_ID:
                 case MOTHER_ID:
                 case FAMILY:
