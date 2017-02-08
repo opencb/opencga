@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -50,7 +51,7 @@ import java.util.stream.Collectors;
  * Created on 18/08/15.
  */
 @Deprecated
-public class VariantFetcher {
+public class VariantFetcher implements AutoCloseable {
 
     public static final String SAMPLES_METADATA = "samplesMetadata";
     private final CatalogManager catalogManager;
@@ -59,6 +60,7 @@ public class VariantFetcher {
 
     public static final int LIMIT_DEFAULT = 1000;
     public static final int LIMIT_MAX = 5000;
+    private final ConcurrentHashMap<String, VariantDBAdaptor> variantDBAdaptor = new ConcurrentHashMap<>();
 
     public VariantFetcher(CatalogManager catalogManager, StorageEngineFactory storageEngineFactory) {
         this.catalogManager = catalogManager;
@@ -90,16 +92,14 @@ public class VariantFetcher {
 
     public Map<Long, List<Sample>> getSamplesMetadata(long studyId, Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
-        try (VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(studyId, sessionId)) {
-            return checkSamplesPermissions(query, queryOptions, variantDBAdaptor, sessionId);
-        }
+        VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(studyId, sessionId);
+        return checkSamplesPermissions(query, queryOptions, variantDBAdaptor, sessionId);
     }
 
     public StudyConfiguration getStudyConfiguration(long studyId, QueryOptions options, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
-        try (VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(studyId, sessionId)) {
-            return variantDBAdaptor.getStudyConfigurationManager().getStudyConfiguration((int) studyId, options).first();
-        }
+        VariantDBAdaptor variantDBAdaptor = getVariantDBAdaptor(studyId, sessionId); // DB con closed by VariantFetcher
+        return variantDBAdaptor.getStudyConfigurationManager().getStudyConfiguration((int) studyId, options).first();
     }
 
     public QueryResult getVariantsPerFile(String region, boolean histogram, String groupBy, int interval, String fileId, String sessionId, QueryOptions queryOptions)
@@ -197,7 +197,6 @@ public class VariantFetcher {
         long studyId = getMainStudyId(query, sessionId);
 
         VariantDBAdaptor dbAdaptor = getVariantDBAdaptor(studyId, sessionId);
-
         checkSamplesPermissions(query, queryOptions, dbAdaptor, sessionId);
         // TODO: Check returned files
 
@@ -226,12 +225,10 @@ public class VariantFetcher {
 
         long studyId = getMainStudyId(query, sessionId);
 
-        try (VariantDBAdaptor dbAdaptor = getVariantDBAdaptor(studyId, sessionId)) {
-
+        // Closed by Variant Fetcher
+        VariantDBAdaptor dbAdaptor = getVariantDBAdaptor(studyId, sessionId);
             // TODO: Check permissions?
-
-            return dbAdaptor.count(query);
-        }
+        return dbAdaptor.count(query);
     }
 
     protected int addDefaultLimit(QueryOptions queryOptions) {
@@ -325,18 +322,41 @@ public class VariantFetcher {
         return samplesMap;
     }
 
-    protected VariantDBAdaptor getVariantDBAdaptor(long studyId, String sessionId) throws CatalogException, StorageEngineException {
-        DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
-
-        String storageEngine = dataStore.getStorageEngine();
-        String dbName = dataStore.getDbName();
-
-//        dbAdaptor.setStudyConfigurationManager(new CatalogStudyConfigurationManager(catalogManager, sessionId));
-        try {
-            return storageEngineFactory.getVariantStorageEngine(storageEngine).getDBAdaptor(dbName);
-        } catch (ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-            throw new StorageEngineException("Unable to get VariantDBAdaptor", e);
+    @Override
+    public void close() throws Exception {
+        while (!this.variantDBAdaptor.isEmpty()) {
+            String key = this.variantDBAdaptor.keys().nextElement();
+            VariantDBAdaptor adaptor = this.variantDBAdaptor.remove(key);
+            if (adaptor != null) {
+                try{
+                    adaptor.close();
+                } catch (Exception e) {
+                    logger.error("Issue closing VariantDBadaptor", e);
+                }
+            }
         }
+    }
+
+    protected VariantDBAdaptor getVariantDBAdaptor(long studyId, String sessionId) throws CatalogException, StorageEngineException {
+        String key = studyId + "_" + sessionId;
+        if (!this.variantDBAdaptor.containsKey(key)) {
+            // Set new key
+            DataStore dataStore = StorageOperation.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
+            String storageEngine = dataStore.getStorageEngine();
+            String dbName = dataStore.getDbName();
+            try {
+                this.variantDBAdaptor.computeIfAbsent(key, (str) -> {
+                    try {
+                        return storageEngineFactory.getVariantStorageEngine(storageEngine).getDBAdaptor(dbName);
+                    } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | StorageEngineException e) {
+                        throw new IllegalStateException("Unable to get VariantDBAdaptor", e);
+                    }
+                });
+            } catch (IllegalStateException e) {
+                throw new StorageEngineException("Problems creating VariantDBAdaptor", e);
+            }
+        }
+        return variantDBAdaptor.get(key);
     }
 
     protected QueryResult<org.ga4gh.models.Variant> convertToGA4GH(QueryResult<Variant> result) {

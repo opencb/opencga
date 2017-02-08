@@ -122,7 +122,7 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
                         try {
                             return objectMapper.readValue(entry.getValue(), VariantSource.class);
                         } catch (IOException e) {
-                            throw new UncheckedIOException(e);
+                            throw new UncheckedIOException("Problem with " + Bytes.toString(entry.getKey()), e);
                         }
                     })
                     .iterator();
