@@ -36,6 +36,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
@@ -1176,38 +1177,34 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testGetAllVariants_returned_samples() {
-
-//        queryResult = dbAdaptor.get(query, options);
-        List<Variant> variants = allVariants.getResult();
-
-        checkSamplesData("NA19600", variants);
-        checkSamplesData("NA19660", variants);
-        checkSamplesData("NA19661", variants);
-        checkSamplesData("NA19685", variants);
-        checkSamplesData("NA19600,NA19685", variants);
-        checkSamplesData("NA19685,NA19600", variants);
-        checkSamplesData("NA19660,NA19661,NA19600", variants);
-        checkSamplesData("", variants);
+        checkSamplesData("NA19600");
+        checkSamplesData("NA19660");
+        checkSamplesData("NA19661");
+        checkSamplesData("NA19685");
+        checkSamplesData("NA19600,NA19685");
+        checkSamplesData("NA19685,NA19600");
+        checkSamplesData("NA19660,NA19661,NA19600");
+        checkSamplesData("");
     }
 
-    public void checkSamplesData(String samples, List<Variant> allVariants) {
+    public void checkSamplesData(String samples) {
         Query query = new Query();
         QueryOptions options = new QueryOptions(QueryOptions.SORT, true); //no limit;
 
-        System.out.println("options = " + options.toJson());
         query.put(RETURNED_SAMPLES.key(), samples);
-        QueryResult<Variant> queryResult = dbAdaptor.get(query, options);
+        VariantQueryResult<Variant> queryResult = dbAdaptor.get(query, options);
         List<String> samplesName;
         if (samples.isEmpty()) {
             samplesName = Collections.emptyList();
         } else {
             samplesName = query.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key());
         }
+        Map<String, List<String>> expectedSamples = Collections.singletonMap(studyConfiguration.getStudyName(), samplesName);
 
-        Iterator<Variant> it_1 = allVariants.iterator();
+        Iterator<Variant> it_1 = allVariants.getResult().iterator();
         Iterator<Variant> it_2 = queryResult.getResult().iterator();
 
-        assertEquals(allVariants.size(), queryResult.getResult().size());
+        assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
 
         LinkedHashMap<String, Integer> samplesPosition1 = null;
         LinkedHashMap<String, Integer> samplesPosition2 = null;
@@ -1216,6 +1213,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
             Variant variant2 = it_2.next();
 
             assertEquals(variant1.toString(), variant2.toString());
+            assertEquals(expectedSamples, queryResult.getSamples());
 
             if (samplesPosition1 == null) {
                 samplesPosition1 = variant1.getStudy(studyConfiguration.getStudyName()).getSamplesPosition();

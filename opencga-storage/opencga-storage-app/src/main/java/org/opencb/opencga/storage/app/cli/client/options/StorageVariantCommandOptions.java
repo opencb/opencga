@@ -307,7 +307,7 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--annot-xref"}, description = "XRef", arity = 1)
         public String annotXref;
 
-        @Parameter(names = {"--samples-metadata"}, description = "Returns the samples metadata group by studyId, instead of the variants")
+        @Parameter(names = {"--samples-metadata"}, description = "Returns the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.")
         public boolean samplesMetadata;
 
     }
