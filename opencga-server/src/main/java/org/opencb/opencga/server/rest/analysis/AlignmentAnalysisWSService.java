@@ -38,6 +38,7 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -108,7 +109,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                                   @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
                                   @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                       @QueryParam("study") String studyStr,
-                                  @ApiParam(value = "Region 'chr:start-end'", required = false) @QueryParam("region") String region,
+                                  @ApiParam(value = "Comma separated list of regions 'chr:start-end'", required = false) @QueryParam
+                                          ("region") String region,
                                   @ApiParam(value = "Minimum mapping quality", required = false) @QueryParam("minMapQ") Integer minMapQ,
                                   @ApiParam(value = "Only alignments completely contained within boundaries of region", required = false)
                                   @QueryParam("contained") Boolean contained,
@@ -122,7 +124,6 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             }
 
             Query query = new Query();
-            query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), region);
             query.putIfNotNull(AlignmentDBAdaptor.QueryParams.MIN_MAPQ.key(), minMapQ);
 
             QueryOptions queryOptions = new QueryOptions();
@@ -134,9 +135,19 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
             queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.BIN_QUALITIES.key(), binQualities);
 
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
-            return createOkResponse(
-                    alignmentStorageManager.query(studyStr, fileIdStr, query, queryOptions, sessionId)
-            );
+
+            if (StringUtils.isNotEmpty(region)) {
+                String[] regionList = region.split(",");
+                List<QueryResult<ReadAlignment>> queryResultList = new ArrayList<>(regionList.length);
+                for (String regionAux : regionList) {
+                    query.putIfNotNull(AlignmentDBAdaptor.QueryParams.REGION.key(), regionAux);
+                    queryResultList.add(alignmentStorageManager.query(studyStr, fileIdStr, query, queryOptions, sessionId));
+                }
+                return createOkResponse(queryResultList);
+            } else {
+                return createOkResponse(alignmentStorageManager.query(studyStr, fileIdStr, query, queryOptions, sessionId));
+            }
+
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -259,6 +270,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                                     @QueryParam("study") String studyStr,
                                 @ApiParam(value = "Region 'chr:start-end'", required = false) @QueryParam("region") String region,
                                 @ApiParam(value = "Minimum mapping quality", required = false) @QueryParam("minMapQ") Integer minMapQ,
+                                @ApiParam(value = "Window size", required = false, defaultValue = "1") @QueryParam("windowSize")
+                                    Integer windowSize,
                                 @ApiParam(value = "Only alignments completely contained within boundaries of region", required = false)
                                     @QueryParam("contained") Boolean contained) {
         try {
@@ -272,11 +285,12 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
 
             QueryOptions queryOptions = new QueryOptions();
             queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.CONTAINED.key(), contained);
+            queryOptions.putIfNotNull(AlignmentDBAdaptor.QueryParams.WINDOW_SIZE.key(), windowSize);
 
             AlignmentStorageManager alignmentStorageManager = new AlignmentStorageManager(catalogManager, storageEngineFactory);
 
             return createOkResponse(
-                    alignmentStorageManager.coverage(studyId, fileIdStr, query, queryOptions, sessionId)
+                    alignmentStorageManager.coverage(studyStr, fileIdStr, query, queryOptions, sessionId)
             );
         } catch (Exception e) {
             return createErrorResponse(e);
