@@ -665,7 +665,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
 
             return super.postLoad(input, output);
         } else {
-            System.out.println(Thread.currentThread().getName() + " - DO NOTHING!");
+            logger.debug("Skip post load");
             return input;
         }
     }

@@ -29,6 +29,7 @@ import org.apache.hadoop.hbase.coprocessor.CoprocessorHost;
 import org.apache.hadoop.hbase.fs.HFileSystem;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.io.hfile.CacheConfig;
+import org.apache.hadoop.hbase.mapreduce.TableInputFormatBase;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.master.*;
 import org.apache.hadoop.hbase.master.procedure.MasterDDLOperationHelper;
@@ -55,6 +56,9 @@ import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.http.HttpServer2;
 import org.apache.hadoop.io.compress.CodecPool;
+import org.apache.hadoop.mapred.LocalJobRunner;
+import org.apache.hadoop.mapred.MapTask;
+import org.apache.hadoop.mapred.Task;
 import org.apache.log4j.Level;
 import org.apache.phoenix.coprocessor.MetaDataEndpointImpl;
 import org.apache.phoenix.hbase.index.Indexer;
@@ -64,6 +68,8 @@ import org.apache.phoenix.hbase.index.write.ParallelWriterIndexCommitter;
 import org.apache.phoenix.hbase.index.write.recovery.TrackingParallelWriterIndexCommitter;
 import org.apache.phoenix.query.QueryServices;
 import org.apache.phoenix.schema.MetaDataClient;
+import org.apache.phoenix.util.PhoenixRuntime;
+import org.apache.phoenix.util.SchemaUtil;
 import org.apache.tools.ant.types.Commandline;
 import org.apache.zookeeper.ClientCnxn;
 import org.apache.zookeeper.ZooKeeper;
@@ -83,6 +89,7 @@ import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -193,6 +200,12 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 org.apache.log4j.Logger.getLogger(FSHLog.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(EditLogFileOutputStream.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger("org.apache.hadoop.hdfs.server.datanode.fsdataset.impl.FsDatasetAsyncDiskService").setLevel(Level.WARN);
+
+                // MR loggers
+                org.apache.log4j.Logger.getLogger(LocalJobRunner.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(Task.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(MapTask.class).setLevel(Level.WARN);
+                org.apache.log4j.Logger.getLogger(TableInputFormatBase.class).setLevel(Level.WARN);
 
                 utility.set(new HBaseTestingUtility());
                 Configuration conf = utility.get().getConfiguration();
@@ -368,6 +381,13 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
 
     @Override
     default void clearDB(String tableName) throws Exception {
+        LoggerFactory.getLogger(HadoopVariantStorageTest.class).info("Drop table " + tableName);
+        PhoenixHelper phoenixHelper = new PhoenixHelper(configuration.get());
+        try (java.sql.Connection con = phoenixHelper.newJdbcConnection()) {
+            if (phoenixHelper.tableExists(con, tableName)) {
+                phoenixHelper.dropTable(con, tableName, true, true);
+            }
+        }
         utility.get().deleteTableIfAny(TableName.valueOf(tableName));
     }
 

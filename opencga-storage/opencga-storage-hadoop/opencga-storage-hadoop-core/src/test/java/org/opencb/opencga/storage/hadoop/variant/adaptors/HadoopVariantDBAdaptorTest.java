@@ -60,16 +60,13 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();
 
-//    @Override
-//    protected ObjectMap getOtherParams() {
-//        return new ObjectMap(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto")
-//                .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true)
-//                .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), false);
-//    }
     @Override
     protected ObjectMap getOtherParams() {
-        return new ObjectMap(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
-                .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, false)
+        return new ObjectMap()
+                .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "proto")
+                .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true)
+//                .append(VariantStorageEngine.Options.TRANSFORM_FORMAT.key(), "avro")
+//                .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, false)
                 .append(VariantStorageEngine.Options.EXTRA_GENOTYPE_FIELDS.key(), "")
                 .append(VariantStorageEngine.Options.CALCULATE_STATS.key(), true);
     }

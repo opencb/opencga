@@ -40,6 +40,9 @@ public class PhoenixHelper {
         logger.debug(sql);
         try (Statement statement = con.createStatement()) {
             return statement.execute(sql);
+        } catch (Exception e) {
+            logger.error("Error executing '{}'", sql);
+            throw e;
         }
     }
 
@@ -95,6 +98,22 @@ public class PhoenixHelper {
             }
         }
         return sb.toString();
+    }
+
+    public String buildDropTable(String tableName, boolean ifExists, boolean cascade) {
+        StringBuilder sb = new StringBuilder().append("DROP TABLE ");
+        if (ifExists) {
+            sb.append("IF EXISTS ");
+        }
+        sb.append(SchemaUtil.getEscapedFullTableName(tableName));
+        if (cascade) {
+            sb.append(" CASCADE");
+        }
+        return sb.toString();
+    }
+
+    public void dropTable(Connection con, String tableName, boolean ifExists, boolean cascade) throws SQLException {
+        execute(con, buildDropTable(tableName, ifExists, cascade));
     }
 
     public void addMissingColumns(Connection con, String tableName, Collection<Column> annotColumns, boolean oneCall)

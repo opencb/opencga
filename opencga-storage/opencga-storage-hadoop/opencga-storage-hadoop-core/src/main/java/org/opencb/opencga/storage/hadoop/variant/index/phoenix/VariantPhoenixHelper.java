@@ -279,7 +279,16 @@ public class VariantPhoenixHelper {
         if (!phoenixHelper.tableExists(con, table)) {
             String sql = buildCreate(table);
             logger.info(sql);
-            phoenixHelper.execute(con, sql);
+            try {
+                phoenixHelper.execute(con, sql);
+            } catch (Exception e) {
+                if (!phoenixHelper.tableExists(con, table)) {
+                    throw e;
+                } else {
+                    logger.info("Table {} already exists", table);
+                    logger.debug("Table " + table + " already exists. Hide exception", e);
+                }
+            }
         } else {
             logger.info("Table {} already exists", table);
         }
