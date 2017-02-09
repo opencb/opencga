@@ -44,7 +44,6 @@ public final class VariantAnnotatorFactory {
         AnnotationSource annotationSource =
                 AnnotationSource.valueOf(storageOptions.getString(ANNOTATION_SOURCE, defaultValue).toUpperCase());
 
-        logger.info("Annotating with {}", annotationSource);
 
         switch (annotationSource) {
             case CELLBASE_DB_ADAPTOR:
@@ -56,6 +55,7 @@ public final class VariantAnnotatorFactory {
             case OTHER:
             default:
                 String className = storageOptions.getString(VARIANT_ANNOTATOR_CLASSNAME);
+                logger.info("Annotating with {} = {}", annotationSource, className);
                 try {
                     Class<?> clazz = Class.forName(className);
                     if (VariantAnnotator.class.isAssignableFrom(clazz)) {

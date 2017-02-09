@@ -316,7 +316,7 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--annot-xref"}, description = "XRef", arity = 1)
         public String annotXref;
 
-        @Parameter(names = {"--samples-metadata"}, description = "Returns the samples metadata group by studyId, instead of the variants")
+        @Parameter(names = {"--samples-metadata"}, description = "Returns the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.")
         public boolean samplesMetadata;
 
     }
@@ -399,12 +399,6 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--output-filename"}, description = "Output file name. Default: dbName", arity = 1)
         public String fileName;
 
-        @Parameter(names = {"--species"}, description = "Species. Default hsapiens", arity = 1)
-        public String species = "hsapiens";
-
-        @Parameter(names = {"--assembly"}, description = "Assembly. Default GRc37", arity = 1)
-        public String assembly = "GRCh37";
-
         @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
         public String filterRegion;
 
@@ -426,6 +420,12 @@ public class StorageVariantCommandOptions {
 
         @ParametersDelegate
         public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--species"}, description = "Species. Default hsapiens", arity = 1)
+        public String species = "hsapiens";
+
+        @Parameter(names = {"--assembly"}, description = "Assembly. Default GRc37", arity = 1)
+        public String assembly = "GRCh37";
 
         @Parameter(names = {"-d", "--database"}, description = "DataBase name", required = true, arity = 1)
         public String dbName;

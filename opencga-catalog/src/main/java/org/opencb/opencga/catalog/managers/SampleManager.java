@@ -229,7 +229,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     public QueryResult<Sample> create(String studyStr, String name, String source, String description,
                                       Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
-        ParamUtils.checkParameter(name, "name");
+        ParamUtils.checkAlias(name, "name", configuration.getCatalog().getOffset());
         source = ParamUtils.defaultString(source, "");
         description = ParamUtils.defaultString(description, "");
         attributes = ParamUtils.defaultObject(attributes, Collections.<String, Object>emptyMap());
@@ -645,7 +645,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     public QueryResult<Sample> update(Long sampleId, ObjectMap parameters, QueryOptions options, String sessionId) throws
             CatalogException {
         ParamUtils.checkObj(parameters, "parameters");
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
+//        options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userManager.getId(sessionId);
         authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.UPDATE);
@@ -655,6 +655,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             switch (queryParam) {
                 case SOURCE:
                 case NAME:
+                    ParamUtils.checkAlias(parameters.getString(queryParam.key()), "name", configuration.getCatalog().getOffset());
+                    break;
                 case INDIVIDUAL_ID:
                 case DESCRIPTION:
                 case ATTRIBUTES:
@@ -675,9 +677,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             }
         }
 
-        // TODO: Change this for ObjectMap
-        options.putAll(parameters);
-        QueryResult<Sample> queryResult = sampleDBAdaptor.update(sampleId, options);
+        QueryResult<Sample> queryResult = sampleDBAdaptor.update(sampleId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userId, parameters, null, null);
         return queryResult;
 

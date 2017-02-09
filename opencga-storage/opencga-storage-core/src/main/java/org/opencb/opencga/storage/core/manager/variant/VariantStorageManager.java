@@ -35,17 +35,15 @@ import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.StorageEngineFactory;
 import org.opencb.opencga.storage.core.StoragePipelineResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.manager.StorageManager;
 import org.opencb.opencga.storage.core.manager.models.StudyInfo;
 import org.opencb.opencga.storage.core.manager.variant.operations.*;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.io.VariantWriterFactory.VariantOutputFormat;
 
 import java.io.IOException;
@@ -213,24 +211,24 @@ public class VariantStorageManager extends StorageManager {
     //   Query methods      //
     // ---------------------//
 
-    public QueryResult<Variant> get(Query query, QueryOptions queryOptions, String sessionId)
+    public VariantQueryResult<Variant> get(Query query, QueryOptions queryOptions, String sessionId)
             throws CatalogException, StorageEngineException, IOException {
         return secure(query, queryOptions, sessionId, dbAdaptor -> {
             addDefaultLimit(queryOptions);
             logger.debug("getVariants {}, {}", query, queryOptions);
-            QueryResult<Variant> result = dbAdaptor.get(query, queryOptions);
+            VariantQueryResult<Variant> result = dbAdaptor.get(query, queryOptions);
             logger.debug("gotVariants {}, {}, in {}ms", result.getNumResults(), result.getNumTotalResults(), result.getDbTime());
             return result;
         });
     }
 
     @SuppressWarnings("unchecked")
-    public <T> QueryResult<T> get(Query query, QueryOptions queryOptions, String sessionId, Class<T> clazz)
+    public <T> VariantQueryResult<T> get(Query query, QueryOptions queryOptions, String sessionId, Class<T> clazz)
             throws CatalogException, IOException, StorageEngineException {
-        QueryResult<Variant> result = get(query, queryOptions, sessionId);
+        VariantQueryResult<Variant> result = get(query, queryOptions, sessionId);
         List<T> variants;
         if (clazz == Variant.class) {
-            return (QueryResult<T>) result;
+            return (VariantQueryResult<T>) result;
         } else if (clazz == org.ga4gh.models.Variant.class) {
             Ga4ghVariantConverter<org.ga4gh.models.Variant> converter = new Ga4ghVariantConverter<>(new AvroGa4GhVariantFactory());
             variants = (List<T>) converter.apply(result.getResult());
@@ -240,13 +238,15 @@ public class VariantStorageManager extends StorageManager {
         } else {
             throw new IllegalArgumentException("Unknown variant format " + clazz);
         }
-        return new QueryResult<>(
+        return new VariantQueryResult<>(
                 result.getId(),
                 result.getDbTime(),
                 result.getNumResults(),
                 result.getNumTotalResults(),
                 result.getWarningMsg(),
-                result.getErrorMsg(), variants);
+                result.getErrorMsg(),
+                variants,
+                result.getSamples());
 
     }
 
@@ -277,7 +277,7 @@ public class VariantStorageManager extends StorageManager {
         throw new UnsupportedOperationException();
     }
 
-    public QueryResult<Variant> getPhased(Variant variant, String study, String sample, String sessionId, QueryOptions options)
+    public VariantQueryResult<Variant> getPhased(Variant variant, String study, String sample, String sessionId, QueryOptions options)
             throws CatalogException, IOException, StorageEngineException {
         return secure(new Query(VariantQueryParams.STUDIES.key(), study), options, sessionId,
                 dbAdaptor -> dbAdaptor.getPhased(variant.toString(), study, sample, options, 5000));
@@ -314,7 +314,7 @@ public class VariantStorageManager extends StorageManager {
 //        return null;
 //    }
 
-    public QueryResult<Variant> intersect(Query query, QueryOptions queryOptions, List<String> studyIds, String sessionId)
+    public VariantQueryResult<Variant> intersect(Query query, QueryOptions queryOptions, List<String> studyIds, String sessionId)
             throws CatalogException, IOException, StorageEngineException {
         Query intersectQuery = new Query(query);
         intersectQuery.put(VariantQueryParams.STUDIES.key(), String.join(VariantDBAdaptorUtils.AND, studyIds));

@@ -467,7 +467,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
                                 @ApiParam(value = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]")
                                     @QueryParam("unknownGenotype") String unknownGenotype,
-                                @ApiParam(value = "Returns the samples metadata group by studyId, instead of the variants")
+                                @ApiParam(value = "Returns the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.")
                                     @QueryParam("samplesMetadata") boolean samplesMetadata,
                                 @ApiParam(value = "Count results", required = false) @QueryParam("count") boolean count,
                                 @ApiParam(value = "Sort the results", required = false) @QueryParam("sort") boolean sort,

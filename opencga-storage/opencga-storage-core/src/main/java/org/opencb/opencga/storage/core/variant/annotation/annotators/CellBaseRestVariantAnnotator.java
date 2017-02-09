@@ -38,6 +38,9 @@ public class CellBaseRestVariantAnnotator extends AbstractCellBaseVariantAnnotat
         CellBaseClient cellBaseClient;
         cellBaseClient = new CellBaseClient(species, assembly, clientConfiguration);
         this.cellBaseClient = cellBaseClient;
+
+        logger.info("Annotating with Cellbase REST. host '{}', version '{}', species '{}', assembly '{}'",
+                cellbaseRest, cellbaseVersion, species, assembly);
     }
 
     @Override

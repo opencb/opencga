@@ -15,13 +15,11 @@ import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,20 +56,20 @@ public class DummyVariantDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult<Variant> get(Query query, QueryOptions options) {
+    public VariantQueryResult<Variant> get(Query query, QueryOptions options) {
         List<Variant> variants = new ArrayList<>();
         iterator(query, options).forEachRemaining(variants::add);
 
-        return new QueryResult<>("", 0, variants.size(), variants.size(), "", "", variants);
+        return new VariantQueryResult<>("", 0, variants.size(), variants.size(), "", "", variants, null);
     }
 
     @Override
-    public List<QueryResult<Variant>> get(List<Query> queries, QueryOptions options) {
+    public List<VariantQueryResult<Variant>> get(List<Query> queries, QueryOptions options) {
         return null;
     }
 
     @Override
-    public QueryResult<Variant> getPhased(String variant, String studyName, String sampleName, QueryOptions options, int windowsSize) {
+    public VariantQueryResult<Variant> getPhased(String variant, String studyName, String sampleName, QueryOptions options, int windowsSize) {
         return null;
     }
 
