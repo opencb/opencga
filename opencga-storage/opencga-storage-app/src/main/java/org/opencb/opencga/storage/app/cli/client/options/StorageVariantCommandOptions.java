@@ -560,17 +560,20 @@ public class StorageVariantCommandOptions {
 
 
     @Parameters(commandNames = {"export"}, commandDescription = "Export variants into a VCF file.")
-    public class VariantExportCommandOptions extends GenericVariantExportOptions {
+    public class VariantExportCommandOptions  { //extends GenericVariantExportOptions
+
+//        @ParametersDelegate
+//        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+        public VariantQueryCommandOptions queryOptions = new VariantQueryCommandOptions();
 
-        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true,
-                arity = 1)
-        public String studyId;
-
-        @Parameter(names = {"-d", "--database"}, description = "DataBase name", arity = 1)
-        public String dbName;
+//        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true,
+//                arity = 1)
+//        public String studyId;
+//
+//        @Parameter(names = {"-d", "--database"}, description = "DataBase name", arity = 1)
+//        public String dbName;
     }
 
 }

@@ -24,7 +24,7 @@ import java.util.List;
 public class SearchManager {
 
     private SearchConfiguration searchConfiguration;
-    private static HttpSolrClient solrServer;
+    private HttpSolrClient solrServer;
     private static VariantSearchFactory variantSearchFactory;
 
 
@@ -32,6 +32,16 @@ public class SearchManager {
         //TODO remove testing constructor
         if (this.solrServer == null) {
             this.solrServer = new HttpSolrClient("http://localhost:8983/solr/variants");
+            solrServer.setRequestWriter(new BinaryRequestWriter());
+        }
+        if (variantSearchFactory == null) {
+            variantSearchFactory = new VariantSearchFactory();
+        }
+    }
+
+    public SearchManager(String host, String collection) {
+        if (this.solrServer == null) {
+            this.solrServer = new HttpSolrClient(host + collection);
             solrServer.setRequestWriter(new BinaryRequestWriter());
         }
         if (variantSearchFactory == null) {

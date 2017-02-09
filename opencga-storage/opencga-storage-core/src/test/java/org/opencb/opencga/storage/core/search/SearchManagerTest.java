@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import org.apache.solr.client.solrj.response.RangeFacet;
 import org.junit.Assert;
 import org.junit.Before;
@@ -14,13 +15,12 @@ import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.search.iterators.SolrVariantSearchIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,7 +47,30 @@ public class SearchManagerTest extends GenericTest {
         jsonObjectMapper = new ObjectMapper();
         initJSONParser(new File(VariantStorageBaseTest.getResourceUri("variant-solr-sample.json.gz")));
         variantList = readNextVariantFromJSON(100);
-        searchManager = new SearchManager();
+        searchManager = new SearchManager("http://localhost:8983/solr/", "biotest_core2");
+    }
+
+    @Test
+    public void loadVariantFileIntoSolrTest() {
+
+        String test = "Test_Variant_Insert_";
+        try {
+            BufferedReader bufferedReader = FileUtils.newBufferedReader(Paths.get("/home/imedina/Downloads/variation_chr22.full.json"));
+
+            VariantSearchFactory variantSearchFactory = new VariantSearchFactory();
+            ObjectReader objectReader = jsonObjectMapper.readerFor(Variant.class);
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                Variant variant = objectReader.readValue(line);
+//                VariantSearch variantSearch = variantSearchFactory.create(variant);
+
+                searchManager.insert(variant);
+            }
+
+            bufferedReader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Test

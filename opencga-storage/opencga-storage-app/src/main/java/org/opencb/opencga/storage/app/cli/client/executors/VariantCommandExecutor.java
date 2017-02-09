@@ -19,14 +19,17 @@ package org.opencb.opencga.storage.app.cli.client.executors;
 import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import htsjdk.variant.variantcontext.VariantContext;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.tools.variant.converters.VariantContextToAvroVariantConverter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
+import org.opencb.hpg.bigdata.core.converters.variation.VariantContext2VariantConverter;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
@@ -132,7 +135,7 @@ public class VariantCommandExecutor extends CommandExecutor {
                 stats();
                 break;
             case "export":
-                configure(variantCommandOptions.exportVariantsCommandOptions.commonOptions);
+                configure(variantCommandOptions.exportVariantsCommandOptions.queryOptions.commonOptions);
                 export();
                 break;
 //            case "benchmark":
@@ -588,15 +591,41 @@ public class VariantCommandExecutor extends CommandExecutor {
 //                Integer.parseInt(exportVariantsCommandOptions.fileId))
 //                : Paths.get(outputUri.getPath()).getFileName().toString();
 //
-        URI outputFile = Paths.get(exportVariantsCommandOptions.outFilename).toUri();
-        VariantWriterFactory.VariantOutputFormat outputFormat = VariantWriterFactory.toOutputFormat(null,
-                outputFile.getPath());
 
-        Query query = new Query();
-        QueryOptions queryOptions = new QueryOptions();
 
-        variantStorageEngine.exportData(outputFile, outputFormat, exportVariantsCommandOptions.dbName,
-                query, queryOptions);
+//        URI outputFile = Paths.get(exportVariantsCommandOptions.outFilename).toUri();
+//        VariantWriterFactory.VariantOutputFormat outputFormat = VariantWriterFactory.toOutputFormat(null,
+//                outputFile.getPath());
+//
+//        Query query = new Query();
+//        QueryOptions queryOptions = new QueryOptions();
+//
+//        variantStorageEngine.exportData(outputFile, outputFormat, exportVariantsCommandOptions.dbName,
+//                query, queryOptions);
+
+
+//        storageConfiguration.getVariant().getOptions().putAll(exportVariantsCommandOptions.commonOptions.params);
+
+        VariantDBAdaptor variantDBAdaptor = variantStorageEngine.getDBAdaptor(exportVariantsCommandOptions.queryOptions.commonQueryOptions.dbName);
+        List<String> studyNames = variantDBAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
+
+        try {
+            Query query = VariantQueryCommandUtils.parseQuery(exportVariantsCommandOptions.queryOptions, studyNames);
+            QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(exportVariantsCommandOptions.queryOptions);
+
+            VariantContextToAvroVariantConverter variantContextToAvroVariantConverter =
+                    new VariantContextToAvroVariantConverter("default", Collections.emptyList(), Collections.emptyList());
+            VariantDBIterator iterator = variantDBAdaptor.iterator(query, options);
+            while (iterator.hasNext()) {
+                Variant variant = iterator.next();
+                VariantContext variantContext = variantContextToAvroVariantConverter.from(variant);
+
+                System.out.println(variantContext.toString());
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
 
