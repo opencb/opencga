@@ -501,7 +501,6 @@ public class FileWSServer extends OpenCGAWSServer {
             QueryResult<File> queryResult = catalogManager.getFile(resource.getResourceId(), this.queryOptions, sessionId);
             File file = queryResult.getResult().get(0);
             stream = catalogManager.downloadFile(resource.getResourceId(), sessionId);
-//             String content = org.apache.commons.io.IOUtils.toString(stream);
             return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, file.getName());
         } catch (Exception e) {
             return createErrorResponse(e);
