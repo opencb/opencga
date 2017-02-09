@@ -32,6 +32,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.opencb.commons</groupId>
+            <artifactId>commons-datastore-core</artifactId>
+            <version>${java-common-libs.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.opencb.biodata</groupId>
             <artifactId>biodata-formats</artifactId>
         </dependency>

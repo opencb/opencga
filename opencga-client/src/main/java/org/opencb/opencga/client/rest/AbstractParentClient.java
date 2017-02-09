@@ -55,7 +55,7 @@ public abstract class AbstractParentClient {
     private String sessionId;
     private ClientConfiguration configuration;
 
-    private static ObjectMapper jsonObjectMapper;
+    protected ObjectMapper jsonObjectMapper;
 
     private static int timeout = 10000;
     private static int batchSize = 2000;
@@ -269,7 +269,7 @@ public abstract class AbstractParentClient {
      * @return A queryResponse object containing the results of the query.
      * @throws IOException if the path is wrong and cannot be converted to a proper url.
      */
-    private <T> QueryResponse<T> callUploadRest(WebTarget path, Map<String, Object> params, Class clazz) throws IOException {
+    private <T> QueryResponse<T> callUploadRest(WebTarget path, Map<String, Object> params, Class<T> clazz) throws IOException {
 
         String jsonString;
 
@@ -294,7 +294,7 @@ public abstract class AbstractParentClient {
         return parseResult(jsonString, clazz);
     }
 
-    private static <T> QueryResponse<T> parseResult(String json, Class<T> clazz) throws IOException {
+    private <T> QueryResponse<T> parseResult(String json, Class<T> clazz) throws IOException {
         if (json != null && !json.isEmpty()) {
             ObjectReader reader = jsonObjectMapper
                     .readerFor(jsonObjectMapper.getTypeFactory().constructParametrizedType(QueryResponse.class, QueryResult.class, clazz));

@@ -247,8 +247,8 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
     @Override
     public QueryResult<RegionCoverage> coverage(Path path, Path workspace) throws Exception {
         QueryOptions options = new QueryOptions();
-        options.put("windowSize", DEFAULT_WINDOW_SIZE);
-        options.put("contained", false);
+        options.put(QueryParams.WINDOW_SIZE.key(), DEFAULT_WINDOW_SIZE);
+        options.put(QueryParams.CONTAINED.key(), false);
         return coverage(path, workspace, new Query(), options);
     }
 
@@ -287,7 +287,7 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
             if (region.getEnd() - region.getStart() > 50 * MINOR_CHUNK_SIZE) {
                 // if region is too big then we calculate the mean. We need to protect this code!
                 // and query SQLite database
-                windowSize = options.getInt("windowSize", DEFAULT_WINDOW_SIZE);
+                windowSize = options.getInt(QueryParams.WINDOW_SIZE.key(), DEFAULT_WINDOW_SIZE);
                 chunkFrequency = chunkFrequencyManager.query(region, path, windowSize);
             } else {
                 // if region is small enough we calculate all coverage for all positions dynamically
@@ -339,6 +339,10 @@ public class LocalAlignmentDBAdaptor implements AlignmentDBAdaptor {
     private AlignmentOptions parseQueryOptions(QueryOptions options) {
         AlignmentOptions alignmentOptions = new AlignmentOptions()
                 .setContained(options.getBoolean(QueryParams.CONTAINED.key()));
+        int windowSize = options.getInt(QueryParams.WINDOW_SIZE.key());
+        if (windowSize > 0) {
+            alignmentOptions.setWindowSize(windowSize);
+        }
         int limit = options.getInt(QueryParams.LIMIT.key());
         if (limit > 0) {
             alignmentOptions.setLimit(limit);

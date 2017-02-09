@@ -308,7 +308,7 @@ public class VariantCommandOptions {
                 arity = 1)
         public String unknownGenotype;
 
-        @Parameter(names = {"--samples-metadata"}, description = "Returns the samples metadata group by studyId, instead of the variants",
+        @Parameter(names = {"--samples-metadata"}, description = "Returns the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.",
                 arity = 0)
         public boolean samplesMetadata;
 

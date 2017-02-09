@@ -583,14 +583,20 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public QueryResult<Job> queue(long studyId, String jobName, String executable, Job.Type type, Map<String, String> params,
-                                  List<Long> input, List<Long> output, long outDirId, String userId, Map<String, Object> attributes)
+    public QueryResult<Job> queue(long studyId, String jobName, String description, String executable, Job.Type type,
+                                  Map<String, String> params, List<Long> input, List<Long> output, long outDirId, String userId,
+                                  Map<String, Object> attributes)
             throws CatalogException {
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.WRITE_JOBS);
 
-        Job job = new Job(jobName, userId, executable, type, input, output, outDirId, params);
-        job.setAttributes(attributes);
-        return jobDBAdaptor.insert(job, studyId, new QueryOptions());
+        Job job = new Job(jobName, userId, executable, type, input, output, outDirId, params)
+                .setDescription(description)
+                .setAttributes(attributes);
+
+        QueryResult<Job> queryResult = jobDBAdaptor.insert(job, studyId, new QueryOptions());
+        auditManager.recordAction(AuditRecord.Resource.job, AuditRecord.Action.create, AuditRecord.Magnitude.low,
+                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
+        return queryResult;
     }
 
     @Override

@@ -35,6 +35,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.config.CellBaseConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -258,7 +259,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult<Variant> get(Query query, QueryOptions options) {
+    public VariantQueryResult<Variant> get(Query query, QueryOptions options) {
 
         List<Variant> variants = new LinkedList<>();
         VariantDBIterator iterator = iterator(query, options);
@@ -291,13 +292,14 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        return new QueryResult<>("getVariants", ((int) iterator.getTimeFetching()), variants.size(), numTotalResults,
-                warn, error, variants);
+        Map<String, List<String>> samples = getDBAdaptorUtils().getSamplesMetadata(query, options);
+        return new VariantQueryResult<>("getVariants", ((int) iterator.getTimeFetching()), variants.size(), numTotalResults,
+                warn, error, variants, samples);
     }
 
     @Override
-    public List<QueryResult<Variant>> get(List<Query> queries, QueryOptions options) {
-        List<QueryResult<Variant>> results = new ArrayList<>(queries.size());
+    public List<VariantQueryResult<Variant>> get(List<Query> queries, QueryOptions options) {
+        List<VariantQueryResult<Variant>> results = new ArrayList<>(queries.size());
         for (Query query : queries) {
             results.add(get(query, options));
         }
@@ -305,7 +307,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult<Variant> getPhased(String variant, String studyName, String sampleName, QueryOptions options, int windowsSize) {
+    public VariantQueryResult<Variant> getPhased(String variant, String studyName, String sampleName, QueryOptions options,
+                                                 int windowsSize) {
         throw new UnsupportedOperationException("Unimplemented");
     }
 

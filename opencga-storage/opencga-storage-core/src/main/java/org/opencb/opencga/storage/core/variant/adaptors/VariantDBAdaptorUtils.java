@@ -33,10 +33,13 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.SAMPLES_METADATA;
 
 /**
  * Created on 29/01/16 .
@@ -332,7 +335,20 @@ public class VariantDBAdaptorUtils {
         List<Integer> returnedStudies = getReturnedStudies(query, options);
         return getReturnedSamples(query, options, returnedStudies, studyId -> getStudyConfigurationManager()
                 .getStudyConfiguration(studyId, options).first());
+    }
 
+    public Map<String, List<String>> getSamplesMetadata(Query query, QueryOptions options) {
+        if (query.getBoolean(SAMPLES_METADATA.key(), false)) {
+            if (VariantField.getReturnedFields(options).contains(VariantField.STUDIES)) {
+                List<Integer> returnedStudies = getReturnedStudies(query, options);
+                return getReturnedSamplesString(query, options, returnedStudies, studyId -> getStudyConfigurationManager()
+                        .getStudyConfiguration(studyId, options).first());
+            } else {
+                return Collections.emptyMap();
+            }
+        } else {
+            return null;
+        }
     }
 
     public static Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options, StudyConfiguration... studies) {
@@ -347,20 +363,39 @@ public class VariantDBAdaptorUtils {
     }
 
     public static Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options, Collection<Integer> studyIds,
-                                                          Function<Integer, StudyConfiguration> studyProvider) {
+                                                                               Function<Integer, StudyConfiguration> studyProvider) {
+        return getReturnedSamples(query, options, studyIds, studyProvider, (sc, s) -> sc.getSampleIds().get(s),
+                StudyConfiguration::getStudyId);
+    }
+
+    public static Map<String, List<String>> getReturnedSamplesString(Query query, QueryOptions options, Collection<Integer> studyIds,
+                                                                      Function<Integer, StudyConfiguration> studyProvider) {
+        return getReturnedSamples(query, options, studyIds, studyProvider, (sc, s) -> s, StudyConfiguration::getStudyName);
+    }
+
+    private static <T> Map<T, List<T>> getReturnedSamples(
+            Query query, QueryOptions options, Collection<Integer> studyIds,
+            Function<Integer, StudyConfiguration> studyProvider,
+            BiFunction<StudyConfiguration, String, T> getSample, Function<StudyConfiguration, T> getStudyId) {
+
         List<String> returnedSamples = getReturnedSamplesList(query, options);
         LinkedHashSet<String> returnedSamplesSet = new LinkedHashSet<>(returnedSamples);
 
-        Map<Integer, List<Integer>> samples = new HashMap<>(studyIds.size());
+        Map<T, List<T>> samples = new HashMap<>(studyIds.size());
         for (Integer studyId : studyIds) {
             StudyConfiguration sc = studyProvider.apply(studyId);
             if (sc == null) {
                 continue;
             }
             LinkedHashMap<String, Integer> returnedSamplesPosition = StudyConfiguration.getReturnedSamplesPosition(sc, returnedSamplesSet);
-            List<Integer> sampleNames = Arrays.asList(new Integer[returnedSamplesPosition.size()]);
-            returnedSamplesPosition.forEach((sample, position) -> sampleNames.set(position, sc.getSampleIds().get(sample)));
-            samples.put(studyId, sampleNames);
+
+            @SuppressWarnings("unchecked")
+            List<T> sampleNames = Arrays.asList((T[]) new Object[returnedSamplesPosition.size()]);
+
+            returnedSamplesPosition.forEach((sample, position) -> {
+                sampleNames.set(position, getSample.apply(sc, sample));
+            });
+            samples.put(getStudyId.apply(sc), sampleNames);
         }
 
         return samples;
