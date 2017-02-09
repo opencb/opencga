@@ -26,6 +26,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
@@ -54,6 +55,8 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
     String STUDIES_DESCR = "";
     String RETURNED_STUDIES_DESCR = "List of studies to be returned";
     String RETURNED_SAMPLES_DESCR = "List of samples to be returned";
+    String SAMPLES_METADATA_DESCR =
+            "Returns the samples metadata group by study. Sample names will appear in the same order as their corresponding genotypes.";
     String FILES_DESCR = "";
     String RETURNED_FILES_DESCR = "List of files to be returned";
 
@@ -104,6 +107,7 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
         STUDIES("studies", TEXT_ARRAY, STUDIES_DESCR),
         RETURNED_STUDIES("returnedStudies", TEXT_ARRAY, RETURNED_STUDIES_DESCR),
         RETURNED_SAMPLES("returnedSamples", TEXT_ARRAY, RETURNED_SAMPLES_DESCR),
+        SAMPLES_METADATA("samplesMetadata", TEXT_ARRAY, SAMPLES_METADATA_DESCR),
         FILES("files", TEXT_ARRAY, FILES_DESCR),
         RETURNED_FILES("returnedFiles", TEXT_ARRAY, RETURNED_FILES_DESCR),
 
@@ -238,7 +242,7 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
      * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count
      * @return A QueryResult with the result of the query
      */
-    QueryResult<Variant> get(Query query, QueryOptions options);
+    VariantQueryResult<Variant> get(Query query, QueryOptions options);
 
     /**
      * Fetch all variants resulting of executing all the queries in the database. Returned fields are taken from
@@ -248,7 +252,7 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
      * @param options Query modifiers, accepted values are: include, exclude, limit, skip, sort and count.
      * @return A list of QueryResult with the result of the queries
      */
-    List<QueryResult<Variant>> get(List<Query> queries, QueryOptions options);
+    List<VariantQueryResult<Variant>> get(List<Query> queries, QueryOptions options);
 
     /**
      * Return all the variants in the same phase set for a given sample in a given variant.
@@ -260,7 +264,7 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
      * @param windowsSize Windows size for searching the phased variants.
      * @return A QueryResult with the result of the query
      */
-    QueryResult<Variant> getPhased(String variant, String studyName, String sampleName, QueryOptions options, int windowsSize);
+    VariantQueryResult<Variant> getPhased(String variant, String studyName, String sampleName, QueryOptions options, int windowsSize);
 
     /**
      * Performs a distinct operation of the given field over the returned results.

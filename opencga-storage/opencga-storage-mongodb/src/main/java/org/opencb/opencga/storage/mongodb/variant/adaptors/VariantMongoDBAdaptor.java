@@ -50,6 +50,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.core.results.VariantQueryResult;
 import org.opencb.opencga.storage.core.cache.CacheManager;
 import org.opencb.opencga.storage.core.config.CellBaseConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -259,19 +260,19 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public QueryResult<Variant> get(Query query, QueryOptions options) {
+    public VariantQueryResult<Variant> get(Query query, QueryOptions options) {
 
         if (options == null) {
             options = new QueryOptions();
         }
 
-        QueryResult<Variant> queryResult;
+        VariantQueryResult<Variant> queryResult;
 
         if (options.getBoolean("cache") && cacheManager.isTypeAllowed("var")) {
             List<Integer> studyIds = utils.getStudyIds(query.getAsList(VariantQueryParams.STUDIES.key()), options);
             // TODO : ONLY USING ONE STUDY ID ?
             String key = cacheManager.createKey(studyIds.get(0).toString(), "var", query, options);
-            queryResult = cacheManager.get(key);
+            queryResult = new VariantQueryResult<>(cacheManager.get(key), null);
             if (queryResult.getResult() != null && queryResult.getResult().size() != 0) {
                 return queryResult;
             } else {
@@ -284,7 +285,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return queryResult;
     }
 
-    private QueryResult<Variant> getVariantQueryResult(Query query, QueryOptions options) {
+    private VariantQueryResult<Variant> getVariantQueryResult(Query query, QueryOptions options) {
         Document mongoQuery = parseQuery(query);
         Document projection = createProjection(query, options);
 //        logger.debug("Query to be executed: '{}'", mongoQuery.toJson(new JsonWriterSettings(JsonMode.SHELL, false)));
@@ -309,22 +310,24 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //                System.err.println("mongodb.explain = " + explain);
 //            }
 //        }
-        return variantsCollection.find(mongoQuery, projection, getDocumentToVariantConverter(query, options),
-                options);
+        DocumentToVariantConverter converter = getDocumentToVariantConverter(query, options);
+        Map<String, List<String>> samples = getDBAdaptorUtils().getSamplesMetadata(query, options);
+        return new VariantQueryResult<>(variantsCollection.find(mongoQuery, projection, converter, options), samples);
     }
 
     @Override
-    public List<QueryResult<Variant>> get(List<Query> queries, QueryOptions options) {
-        List<QueryResult<Variant>> queryResultList = new ArrayList<>(queries.size());
+    public List<VariantQueryResult<Variant>> get(List<Query> queries, QueryOptions options) {
+        List<VariantQueryResult<Variant>> queryResultList = new ArrayList<>(queries.size());
         for (Query query : queries) {
-            QueryResult<Variant> queryResult = get(query, options);
+            VariantQueryResult<Variant> queryResult = get(query, options);
             queryResultList.add(queryResult);
         }
         return queryResultList;
     }
 
     @Override
-    public QueryResult<Variant> getPhased(String varStr, String studyName, String sampleName, QueryOptions options, int windowsSize) {
+    public VariantQueryResult<Variant> getPhased(String varStr, String studyName, String sampleName, QueryOptions options,
+                                                 int windowsSize) {
         StopWatch watch = new StopWatch();
         watch.start();
 
@@ -336,7 +339,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 .append(VariantQueryParams.STUDIES.key(), studyName)
                 .append(VariantQueryParams.RETURNED_STUDIES.key(), studyName)
                 .append(VariantQueryParams.RETURNED_SAMPLES.key(), sampleName);
-        QueryResult<Variant> queryResult = get(query, new QueryOptions());
+        VariantQueryResult<Variant> queryResult = get(query, new QueryOptions());
         variant = queryResult.first();
         if (variant != null && !variant.getStudies().isEmpty()) {
             StudyEntry studyEntry = variant.getStudies().get(0);
@@ -367,12 +370,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     watch.stop();
                     queryResult.setDbTime(((int) watch.getTime()));
                     queryResult.setId("getPhased");
+                    queryResult.setSamples(getDBAdaptorUtils().getSamplesMetadata(query, options));
                     return queryResult;
                 }
             }
         }
         watch.stop();
-        return new QueryResult<>("getPhased", ((int) watch.getTime()), 0, 0, null, null, Collections.emptyList());
+        return new VariantQueryResult<>("getPhased", ((int) watch.getTime()), 0, 0, null, null, Collections.emptyList(), null);
     }
 
 

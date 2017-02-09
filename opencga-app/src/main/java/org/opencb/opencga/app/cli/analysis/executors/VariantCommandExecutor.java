@@ -279,8 +279,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
         QueryOptions options = new QueryOptions();
         options.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, cliOptions.genericVariantAnnotateOptions.overwriteAnnotations);
-        options.putIfNotEmpty(VariantAnnotationManager.SPECIES, cliOptions.genericVariantAnnotateOptions.species);
-        options.putIfNotEmpty(VariantAnnotationManager.ASSEMBLY, cliOptions.genericVariantAnnotateOptions.assembly);
         options.put(VariantAnnotationManager.CREATE, cliOptions.genericVariantAnnotateOptions.create);
         options.putIfNotEmpty(VariantAnnotationManager.LOAD_FILE, cliOptions.genericVariantAnnotateOptions.load);
         options.putIfNotEmpty(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, cliOptions.genericVariantAnnotateOptions.customAnnotationKey);

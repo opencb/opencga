@@ -139,8 +139,8 @@ public class VariantAnnotationStorageOperation extends StorageOperation {
             } else {
                 String scientificName = organism.getScientificName();
                 scientificName = AbstractCellBaseVariantAnnotator.toCellBaseSpeciesName(scientificName);
-                annotationOptions.putIfAbsent(VariantAnnotationManager.SPECIES, scientificName);
-                annotationOptions.putIfAbsent(VariantAnnotationManager.ASSEMBLY, organism.getAssembly());
+                annotationOptions.put(VariantAnnotationManager.SPECIES, scientificName);
+                annotationOptions.put(VariantAnnotationManager.ASSEMBLY, organism.getAssembly());
             }
 
 //            StudyConfiguration studyConfiguration = updateStudyConfiguration(sessionId, studyId, dataStore);
