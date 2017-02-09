@@ -29,6 +29,8 @@ import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 
+import java.util.Map;
+
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -43,6 +45,11 @@ public class VariantHadoopNamespaceTest extends VariantStorageBaseTest implement
 
     @Before
     public void setUp() throws Exception {
+    }
+
+    @Override
+    public Map<String, ?> getOtherStorageConfigurationOptions() {
+        return new ObjectMap(AbstractHadoopVariantStoragePipeline.SKIP_CREATE_PHOENIX_INDEXES, true);
     }
 
     @Test

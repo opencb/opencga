@@ -93,6 +93,11 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         HBaseToVariantConverter.setFailOnWrongVariants(true);
     }
 
+    @Override
+    public Map<String, ?> getOtherStorageConfigurationOptions() {
+        return new ObjectMap(AbstractHadoopVariantStoragePipeline.SKIP_CREATE_PHOENIX_INDEXES, true);
+    }
+
     public VariantSource loadFile(String resourceName, int fileId, StudyConfiguration studyConfiguration) throws Exception {
         return loadFile(resourceName, fileId, studyConfiguration, null);
     }

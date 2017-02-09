@@ -18,8 +18,12 @@ package org.opencb.opencga.storage.hadoop.variant.stats;
 
 import org.junit.Rule;
 import org.junit.rules.ExternalResource;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManagerTest;
+import org.opencb.opencga.storage.hadoop.variant.AbstractHadoopVariantStoragePipeline;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
+
+import java.util.Map;
 
 /**
  * Created on 12/07/16
@@ -31,4 +35,8 @@ public class HadoopVariantStatisticsManagerTest extends VariantStatisticsManager
     @Rule
     public ExternalResource externalResource = new HadoopExternalResource();
 
+    @Override
+    public Map<String, ?> getOtherStorageConfigurationOptions() {
+        return new ObjectMap(AbstractHadoopVariantStoragePipeline.SKIP_CREATE_PHOENIX_INDEXES, true);
+    }
 }

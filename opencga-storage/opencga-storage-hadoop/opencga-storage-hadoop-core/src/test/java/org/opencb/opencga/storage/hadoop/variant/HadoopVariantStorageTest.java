@@ -56,7 +56,6 @@ import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.http.HttpServer2;
 import org.apache.hadoop.io.compress.CodecPool;
-import org.apache.hadoop.mapred.LocalJobRunner;
 import org.apache.hadoop.mapred.MapTask;
 import org.apache.hadoop.mapred.Task;
 import org.apache.log4j.Level;
@@ -68,8 +67,6 @@ import org.apache.phoenix.hbase.index.write.ParallelWriterIndexCommitter;
 import org.apache.phoenix.hbase.index.write.recovery.TrackingParallelWriterIndexCommitter;
 import org.apache.phoenix.query.QueryServices;
 import org.apache.phoenix.schema.MetaDataClient;
-import org.apache.phoenix.util.PhoenixRuntime;
-import org.apache.phoenix.util.SchemaUtil;
 import org.apache.tools.ant.types.Commandline;
 import org.apache.zookeeper.ClientCnxn;
 import org.apache.zookeeper.ZooKeeper;
@@ -86,6 +83,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
+import org.opencb.opencga.storage.hadoop.variant.index.AbstractVariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
@@ -202,7 +200,7 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
                 org.apache.log4j.Logger.getLogger("org.apache.hadoop.hdfs.server.datanode.fsdataset.impl.FsDatasetAsyncDiskService").setLevel(Level.WARN);
 
                 // MR loggers
-                org.apache.log4j.Logger.getLogger(LocalJobRunner.class).setLevel(Level.WARN);
+//                org.apache.log4j.Logger.getLogger(LocalJobRunner.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(Task.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(MapTask.class).setLevel(Level.WARN);
                 org.apache.log4j.Logger.getLogger(TableInputFormatBase.class).setLevel(Level.WARN);
@@ -328,6 +326,10 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         Configuration conf = new Configuration(false);
         HBaseConfiguration.merge(conf, HadoopVariantStorageTest.configuration.get());
         StorageConfiguration storageConfiguration = getStorageConfiguration(conf);
+        storageConfiguration.getStorageEngine(HadoopVariantStorageEngine.STORAGE_ENGINE_ID)
+                .getVariant()
+                .getOptions()
+                .putAll(getOtherStorageConfigurationOptions());
 
         manager.setConfiguration(storageConfiguration, HadoopVariantStorageEngine.STORAGE_ENGINE_ID);
         manager.mrExecutor = new TestMRExecutor(conf);
@@ -367,8 +369,15 @@ public interface HadoopVariantStorageTest /*extends VariantStorageManagerTestUti
         options.put(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY, conf.get(CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY));
         options.put(HadoopVariantStorageEngine.OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY, intermediateDirectory);
 
+        options.put(ArchiveDriver.CONFIG_ARCHIVE_TABLE_PRESPLIT_SIZE, 5);
+        options.put(AbstractVariantTableDriver.CONFIG_VARIANT_TABLE_PRESPLIT_SIZE, 5);
+
         variantConfiguration.getDatabase().setHosts(Collections.singletonList("hbase://" + HadoopVariantStorageTest.configuration.get().get(HConstants.ZOOKEEPER_QUORUM)));
         return storageConfiguration;
+    }
+
+    default Map<String, ?> getOtherStorageConfigurationOptions() {
+        return new ObjectMap();
     }
 
     default void clearHBase() throws Exception {
