@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.variant;
 
+import org.apache.solr.client.solrj.SolrServerException;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
@@ -498,7 +499,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         return VariantStoragePipeline.buildFilename(studyName, fileId);
     }
 
-    public void insertVariantIntoSolr() throws StorageEngineException {
+    public void insertVariantIntoSolr() throws IOException, SolrServerException, StorageEngineException {
 
         VariantDBAdaptor dbAdaptor = getDBAdaptor();
         VariantDBIterator variantDBIterator = dbAdaptor.iterator();

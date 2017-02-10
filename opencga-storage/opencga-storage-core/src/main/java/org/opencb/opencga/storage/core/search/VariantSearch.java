@@ -77,19 +77,19 @@ public class VariantSearch {
     private double polyphen;
 
     @Field("clinvar")
-    private String clinvar;
-
-    @Field("studies")
-    private String[] studies;
+    private Set<String> clinvar;
 
     @Field("genes")
     private Set<String> genes;
 
-    @Field("geneToConsequenceType")
-    private Set<String> geneToConsequenceType;
+    @Field("soAccessions")
+    private Set<String> soAccessions;
 
-    @Field("accessions")
-    private Set<String> accessions;
+    @Field("geneToSOAccessions")
+    private List<String> geneToSOAccessions;
+
+    @Field("studies")
+    private List<String> studies;
 
     @Field("study_*")
     private Map<String, Float> populations;
@@ -105,9 +105,9 @@ public class VariantSearch {
 //    }
 
     public VariantSearch() {
-        this.accessions = new HashSet<>();
         this.genes = new HashSet<>();
-        this.geneToConsequenceType = new HashSet<>();
+        this.soAccessions = new HashSet<>();
+        this.geneToSOAccessions = new ArrayList<>();
         this.populations = new HashMap<>();
     }
 
@@ -128,10 +128,10 @@ public class VariantSearch {
         sb.append(", sift=").append(sift);
         sb.append(", polyphen=").append(polyphen);
         sb.append(", clinvar='").append(clinvar).append('\'');
-        sb.append(", studies=").append(Arrays.toString(studies));
+        sb.append(", studies=").append(studies);
         sb.append(", genes=").append(genes);
-        sb.append(", geneToConsequenceType=").append(geneToConsequenceType);
-        sb.append(", accessions=").append(accessions);
+        sb.append(", soAccessions=").append(soAccessions);
+        sb.append(", geneToSOAccessions=").append(geneToSOAccessions);
         sb.append(", populations=").append(populations);
         sb.append('}');
         return sb.toString();
@@ -254,20 +254,20 @@ public class VariantSearch {
         return this;
     }
 
-    public String getClinvar() {
+    public Set<String> getClinvar() {
         return clinvar;
     }
 
-    public VariantSearch setClinvar(String clinvar) {
+    public VariantSearch setClinvar(Set<String> clinvar) {
         this.clinvar = clinvar;
         return this;
     }
 
-    public String[] getStudies() {
+    public List<String> getStudies() {
         return studies;
     }
 
-    public VariantSearch setStudies(String[] studies) {
+    public VariantSearch setStudies(List<String> studies) {
         this.studies = studies;
         return this;
     }
@@ -281,21 +281,21 @@ public class VariantSearch {
         return this;
     }
 
-//    public Map<String, List<String>> getGeneToConsequenceType() {
-//        return geneToConsequenceType;
-//    }
-//
-//    public VariantSearch setGeneToConsequenceType(Map<String, List<String>> geneToConsequenceType) {
-//        this.geneToConsequenceType = geneToConsequenceType;
-//        return this;
-//    }
-
-    public Set<String> getAccessions() {
-        return accessions;
+    public Set<String> getSoAccessions() {
+        return soAccessions;
     }
 
-    public VariantSearch setAccessions(Set<String> accessions) {
-        this.accessions = accessions;
+    public VariantSearch setSoAccessions(Set<String> soAccessions) {
+        this.soAccessions = soAccessions;
+        return this;
+    }
+
+    public List<String> getGeneToSOAccessions() {
+        return geneToSOAccessions;
+    }
+
+    public VariantSearch setGeneToSOAccessions(List<String> geneToSOAccessions) {
+        this.geneToSOAccessions = geneToSOAccessions;
         return this;
     }
 

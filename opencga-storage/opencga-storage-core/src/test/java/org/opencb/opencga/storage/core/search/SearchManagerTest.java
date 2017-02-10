@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.RangeFacet;
 import org.junit.Assert;
 import org.junit.Before;
@@ -57,14 +58,14 @@ public class SearchManagerTest extends GenericTest {
         try {
             BufferedReader bufferedReader = FileUtils.newBufferedReader(Paths.get("/home/imedina/Downloads/variation_chr22.full.json"));
 
-            VariantSearchFactory variantSearchFactory = new VariantSearchFactory();
+            VariantSearchToVariantConverter variantSearchToVariantConverter = new VariantSearchToVariantConverter();
             ObjectReader objectReader = jsonObjectMapper.readerFor(Variant.class);
             String line;
             List<Variant> variants = new ArrayList<>(10000);
             int count = 0;
             while ((line = bufferedReader.readLine()) != null) {
                 Variant variant = objectReader.readValue(line);
-//                VariantSearch variantSearch = variantSearchFactory.create(variant);
+//                VariantSearch variantSearch = variantSearchToVariantConverter.create(variant);
                 variants.add(variant);
                 if (count % 10000 == 0) {
                     searchManager.insert(variants);
@@ -75,7 +76,7 @@ public class SearchManagerTest extends GenericTest {
             }
 
             bufferedReader.close();
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -84,86 +85,101 @@ public class SearchManagerTest extends GenericTest {
     public void insertSingleVariantIntoSolrTest() {
 
         String test = "Test_Variant_Insert_";
-        List<Variant> variants = modifyVariantsID(test);
+        try {
+            List<Variant> variants = modifyVariantsID(test);
 
-        searchManager.insert(variants.get(0));
-        Query query = new Query();
-        query.append("dbSNP", test + "*");
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.append(QueryOptions.LIMIT, 500);
+            searchManager.insert(variants.get(0));
+            Query query = new Query();
+            query.append("dbSNP", test + "*");
+            QueryOptions queryOptions = new QueryOptions();
+            queryOptions.append(QueryOptions.LIMIT, 500);
 
-        SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
-        List<VariantSearch> results = new ArrayList<>();
+            SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
+            List<VariantSearch> results = new ArrayList<>();
 
-        iterator.forEachRemaining(results::add);
+            iterator.forEachRemaining(results::add);
 
-        Assert.assertEquals(1, results.size());
+            Assert.assertEquals(1, results.size());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
     public void insertMultipleVariantsIntoSolrTest() {
 
         String test = "Test_Variants_Insert_";
-        List<Variant> variants = modifyVariantsID(test);
+        try {
+            List<Variant> variants = modifyVariantsID(test);
 
-        searchManager.insert(variants);
-        Query query = new Query();
-        query.append("dbSNP", test + "*");
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.append(QueryOptions.LIMIT, 500);
+            searchManager.insert(variants);
+            Query query = new Query();
+            query.append("dbSNP", test + "*");
+            QueryOptions queryOptions = new QueryOptions();
+            queryOptions.append(QueryOptions.LIMIT, 500);
 
-        SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
-        List<VariantSearch> results = new ArrayList<>();
+            SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
+            List<VariantSearch> results = new ArrayList<>();
 
-        iterator.forEachRemaining(results::add);
+            iterator.forEachRemaining(results::add);
 
-        Assert.assertEquals(variants.size(), results.size());
+            Assert.assertEquals(variants.size(), results.size());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
     public void verifyInsertedVariantTest() {
 
         String test = "Test_Variant_Verification_";
-        List<Variant> variants = modifyVariantsID(test);
+        try {
+            List<Variant> variants = modifyVariantsID(test);
 
-        searchManager.insert(variants.get(0));
-        Query query = new Query();
-        query.append("dbSNP", test + "*");
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.append(QueryOptions.LIMIT, 500);
+            searchManager.insert(variants.get(0));
+            Query query = new Query();
+            query.append("dbSNP", test + "*");
+            QueryOptions queryOptions = new QueryOptions();
+            queryOptions.append(QueryOptions.LIMIT, 500);
 
-        SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
-        List<VariantSearch> results = new ArrayList<>();
+            SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
+            List<VariantSearch> results = new ArrayList<>();
 
-        iterator.forEachRemaining(results::add);
+            iterator.forEachRemaining(results::add);
 
-        Assert.assertEquals(1, results.size());
-        Assert.assertTrue(variants.get(0).getStart() == results.get(0).getStart());
+            Assert.assertEquals(1, results.size());
+            Assert.assertTrue(variants.get(0).getStart() == results.get(0).getStart());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
     public void queryNonInsertedVariantTest() {
 
         String test = "Test_Variant_Non_Inserted_";
+        try {
+            Query query = new Query();
+            query.append("dbSNP", test + "*");
+            QueryOptions queryOptions = new QueryOptions();
+            queryOptions.append(QueryOptions.LIMIT, 500);
 
-        Query query = new Query();
-        query.append("dbSNP", test + "*");
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.append(QueryOptions.LIMIT, 500);
+            SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
+            List<VariantSearch> results = new ArrayList<>();
 
-        SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
-        List<VariantSearch> results = new ArrayList<>();
+            iterator.forEachRemaining(results::add);
 
-        iterator.forEachRemaining(results::add);
-
-        Assert.assertEquals(0, results.size());
+            Assert.assertEquals(0, results.size());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
     public void variantToVariantSearchConversionTest() {
 
         Variant variant = variantList.get(0);
-        VariantSearch variantSearch = SearchManager.getVariantSearchFactory().create(variant);
+        VariantSearch variantSearch = SearchManager.getVariantSearchToVariantConverter().convertToStorageType(variant);
         Assert.assertEquals(variantSearch.getId(), getVariantSolrID(variant));
         Assert.assertEquals(variantSearch.getDbSNP(), variant.getId());
         Assert.assertEquals(variantSearch.getChromosome(), variant.getChromosome());
@@ -173,117 +189,139 @@ public class SearchManagerTest extends GenericTest {
     @Test
     public void variantFacetFiledCountTest() {
 
-        String facetFieldName = "chromosome";
-        Query query = new Query();
-        QueryOptions queryOptions = new QueryOptions();
-        query.append("ids", facetFieldName);
-        query.append("facet.field", facetFieldName);
-        Variant variant = variantList.get(0);
-        variant.setId(facetFieldName);
-        searchManager.insert(variant);
-        VariantSearchFacet variantSearchFacet = searchManager.getFacet(query, queryOptions);
+        try {
+            String facetFieldName = "chromosome";
+            Query query = new Query();
+            QueryOptions queryOptions = new QueryOptions();
+            query.append("ids", facetFieldName);
+            query.append("facet.field", facetFieldName);
+            Variant variant = variantList.get(0);
+            variant.setId(facetFieldName);
+            searchManager.insert(variant);
+            VariantSearchFacet variantSearchFacet = searchManager.getFacet(query, queryOptions);
 
-        Assert.assertEquals(variantSearchFacet.getFacetFields().get(0).getName(), facetFieldName);
-        Assert.assertEquals(1, variantSearchFacet.getFacetFields().get(0).getValueCount());
+            Assert.assertEquals(variantSearchFacet.getFacetFields().get(0).getName(), facetFieldName);
+            Assert.assertEquals(1, variantSearchFacet.getFacetFields().get(0).getValueCount());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
     public void variantFacetFiledsCountTest() {
+        try {
+            Query query = new Query();
+            QueryOptions queryOptions = new QueryOptions();
+            query.append("ids", "*");
+            query.append("facet.fields", "type,sift");
+            searchManager.insert(variantList);
 
-        Query query = new Query();
-        QueryOptions queryOptions = new QueryOptions();
-        query.append("ids", "*");
-        query.append("facet.fields", "type,sift");
-        searchManager.insert(variantList);
+            VariantSearchFacet variantSearchFacet = searchManager.getFacet(query, queryOptions);
 
-        VariantSearchFacet variantSearchFacet = searchManager.getFacet(query, queryOptions);
+            Assert.assertEquals(variantSearchFacet.getFacetFields().get(0).getName(), "type");
+            Assert.assertEquals(variantSearchFacet.getFacetFields().get(1).getName(), "sift");
 
-        Assert.assertEquals(variantSearchFacet.getFacetFields().get(0).getName(), "type");
-        Assert.assertEquals(variantSearchFacet.getFacetFields().get(1).getName(), "sift");
+            Assert.assertEquals(TOTAL_VARIANTS, variantSearchFacet.getFacetFields().get(0).getValues().get(0).getCount());
+            Assert.assertEquals(TOTAL_VARIANTS, variantSearchFacet.getFacetFields().get(1).getValues().get(0).getCount());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-        Assert.assertEquals(TOTAL_VARIANTS, variantSearchFacet.getFacetFields().get(0).getValues().get(0).getCount());
-        Assert.assertEquals(TOTAL_VARIANTS, variantSearchFacet.getFacetFields().get(1).getValues().get(0).getCount());
     }
 
     @Test
     public void variantFacetQueryTest() {
+        try {
+            Query query = new Query();
+            QueryOptions queryOptions = new QueryOptions();
+            query.append("ids", "*");
+            query.append("facet.query", "type:SNV");
+            searchManager.insert(variantList);
 
-        Query query = new Query();
-        QueryOptions queryOptions = new QueryOptions();
-        query.append("ids", "*");
-        query.append("facet.query", "type:SNV");
-        searchManager.insert(variantList);
+            VariantSearchFacet variantSearchFacet = searchManager.getFacet(query, queryOptions);
 
-        VariantSearchFacet variantSearchFacet = searchManager.getFacet(query, queryOptions);
-
-        Assert.assertTrue(TOTAL_VARIANTS == variantSearchFacet.getFacetQueries().entrySet().iterator().next().getValue());
+            Assert.assertTrue(TOTAL_VARIANTS == variantSearchFacet.getFacetQueries().entrySet().iterator().next().getValue());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
     public void variantFacetRangeTest() {
+        try {
+            Query query = new Query();
+            QueryOptions queryOptions = new QueryOptions();
+            query.append("ids", "*");
 
-        Query query = new Query();
-        QueryOptions queryOptions = new QueryOptions();
-        query.append("ids", "*");
+            Map<String, Map<String, Double>> rangeFields = new HashMap<>();
 
-        Map<String, Map<String, Double>> rangeFields = new HashMap<>();
+            Map<String, Double> sift = new HashMap<>();
+            sift.put("facet.range.start", 0.0);
+            sift.put("facet.range.end", 11.0);
+            sift.put("facet.range.gap", 2.0);
+            rangeFields.put("sift", sift);
 
-        Map<String, Double> sift = new HashMap<>();
-        sift.put("facet.range.start", 0.0);
-        sift.put("facet.range.end", 11.0);
-        sift.put("facet.range.gap", 2.0);
-        rangeFields.put("sift", sift);
+            query.append("facet.range", rangeFields);
+            searchManager.insert(variantList);
 
-        query.append("facet.range", rangeFields);
-        searchManager.insert(variantList);
+            VariantSearchFacet variantSearchFacet = searchManager.getFacet(query, queryOptions);
 
-        VariantSearchFacet variantSearchFacet = searchManager.getFacet(query, queryOptions);
+            List<RangeFacet.Count> rangeEntries = variantSearchFacet.getFacetRanges().get(0).getCounts();
 
-        List<RangeFacet.Count> rangeEntries = variantSearchFacet.getFacetRanges().get(0).getCounts();
-
-        Assert.assertNotNull(rangeEntries);
-        Assert.assertEquals(0, rangeEntries.get(0).getCount());
-        Assert.assertEquals(0, rangeEntries.get(1).getCount());
-        Assert.assertEquals(0, rangeEntries.get(2).getCount());
-        Assert.assertEquals(0, rangeEntries.get(3).getCount());
-        Assert.assertEquals(0, rangeEntries.get(4).getCount());
-        Assert.assertEquals(TOTAL_VARIANTS, rangeEntries.get(5).getCount());
+            Assert.assertNotNull(rangeEntries);
+            Assert.assertEquals(0, rangeEntries.get(0).getCount());
+            Assert.assertEquals(0, rangeEntries.get(1).getCount());
+            Assert.assertEquals(0, rangeEntries.get(2).getCount());
+            Assert.assertEquals(0, rangeEntries.get(3).getCount());
+            Assert.assertEquals(0, rangeEntries.get(4).getCount());
+            Assert.assertEquals(TOTAL_VARIANTS, rangeEntries.get(5).getCount());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Test
     public void variantSolrQueryLimitTest() {
+        try {
+            Query query = new Query();
+            QueryOptions queryOptions = new QueryOptions();
+            query.append("ids", "*");
+            queryOptions.append(QueryOptions.LIMIT, 15);
+            searchManager.insert(variantList);
 
-        Query query = new Query();
-        QueryOptions queryOptions = new QueryOptions();
-        query.append("ids", "*");
-        queryOptions.append(QueryOptions.LIMIT, 15);
-        searchManager.insert(variantList);
+            SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
+            List<VariantSearch> results = new ArrayList<>();
 
-        SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
-        List<VariantSearch> results = new ArrayList<>();
+            iterator.forEachRemaining(results::add);
 
-        iterator.forEachRemaining(results::add);
+            Assert.assertEquals(15, results.size());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-        Assert.assertEquals(15, results.size());
     }
 
     @Test
     public void queryOptionSortTest() {
+        try {
+            Query query = new Query();
+            QueryOptions queryOptions = new QueryOptions();
+            query.append("ids", "*");
+            queryOptions.append(QueryOptions.LIMIT, 15);
+            queryOptions.add(QueryOptions.SORT, "start");
+            queryOptions.add(QueryOptions.ORDER, QueryOptions.DESCENDING);
+            searchManager.insert(variantList);
 
-        Query query = new Query();
-        QueryOptions queryOptions = new QueryOptions();
-        query.append("ids", "*");
-        queryOptions.append(QueryOptions.LIMIT, 15);
-        queryOptions.add(QueryOptions.SORT, "start");
-        queryOptions.add(QueryOptions.ORDER, QueryOptions.DESCENDING);
-        searchManager.insert(variantList);
+            SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
+            List<VariantSearch> results = new ArrayList<>();
 
-        SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
-        List<VariantSearch> results = new ArrayList<>();
+            iterator.forEachRemaining(results::add);
 
-        iterator.forEachRemaining(results::add);
+            Assert.assertTrue(results.get(0).getStart() > results.get(14).getStart());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-        Assert.assertTrue(results.get(0).getStart() > results.get(14).getStart());
     }
 
     private String getVariantSolrID(Variant variant) {
