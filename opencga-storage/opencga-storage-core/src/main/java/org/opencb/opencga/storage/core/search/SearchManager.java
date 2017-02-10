@@ -88,11 +88,11 @@ public class SearchManager {
 
     public void insert(Variant variant) {
 
-        VariantSearch variantSearche = variantSearchFactory.create(variant);
+        VariantSearch variantSearch = variantSearchFactory.create(variant);
 
-        if (variantSearche != null && variantSearche.getId() != null) {
+        if (variantSearch != null && variantSearch.getId() != null) {
             try {
-                UpdateResponse updateResponse = solrClient.addBean(variantSearche);
+                UpdateResponse updateResponse = solrClient.addBean(variantSearch);
                 if (0 == updateResponse.getStatus()) {
                     solrClient.commit();
                 }

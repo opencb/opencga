@@ -59,8 +59,10 @@ public class VariantSearchFactory {
                     for (SequenceOntologyTerm sequenceOntologyTerm : consequenceType.getSequenceOntologyTerms()) {
 //                        variantSearch.setAccessions(sequenceOntologyTerm.getAccession());
                         accessipns.add(sequenceOntologyTerm.getAccession());
-//                        variantSearch.getGeneToConsequenceType().get(consequenceType.getGeneName()).add(sequenceOntologyTerm.getAccession());
-                        variantSearch.getGeneToConsequenceType().put("genect_" + consequenceType.getGeneName(), sequenceOntologyTerm.getAccession());
+//                        variantSearch.getGeneToConsequenceType().get(consequenceType.getGeneName())
+// .add(sequenceOntologyTerm.getAccession());
+                        variantSearch.getGeneToConsequenceType().put("genect_" + consequenceType.getGeneName(),
+                                sequenceOntologyTerm.getAccession());
                     }
                 }
                 variantSearch.setGenes(genes);
@@ -71,7 +73,8 @@ public class VariantSearchFactory {
             if (variantAnnotation.getPopulationFrequencies() != null) {
                 for (PopulationFrequency populationFrequency : variantAnnotation.getPopulationFrequencies()) {
                     Map<String, Float> population = new HashMap<>();
-                    population.put("study_" + populationFrequency.getStudy() + "_" + populationFrequency.getPopulation(),
+                    population.put("study_" + populationFrequency.getStudy() + "_"
+                            + populationFrequency.getPopulation(),
                             populationFrequency.getAltAlleleFreq());
                     variantSearch.setPopulations(population);
 

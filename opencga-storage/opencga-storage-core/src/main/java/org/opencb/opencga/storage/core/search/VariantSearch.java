@@ -8,6 +8,31 @@ import java.util.*;
  * Created by wasim on 09/11/16.
  */
 
+/**
+ *  I M P O R T A N T:
+ *
+ * In order to insert VariantSearch objects into your solr cores/collections you must
+ * add the below fields in the the file schema.xml located in the core/collection folder.
+ *
+ <field name="names" type="text_general" indexed="true" stored="true" multiValued="false"/>
+ <field name="chromosome" type="string" indexed="true" stored="true" multiValued="false" />
+ <field name="dbSNP" type="string" indexed="true" stored="true" multiValued="false"/>
+ <field name="type" type="string" indexed="true" stored="true" multiValued="false"/>
+ <field name="start" type="int" indexed="true" stored="true" multiValued="false"/>
+ <field name="end" type="int" indexed="true" stored="true" multiValued="false"/>
+ <field name="gerp" type="double" indexed="true" stored="true" multiValued="false"/>
+ <field name="caddRaw" type="double" indexed="true" stored="true" multiValued="false"/>
+ <field name="caddScaled" type="double" indexed="true" stored="true" multiValued="false"/>
+ <field name="phastCons" type="double" indexed="true" stored="true" multiValued="false"/>
+ <field name="phylop" type="double" indexed="true" stored="true" multiValued="false"/>
+ <field name="sift" type="double" indexed="true" stored="true" multiValued="false"/>
+ <field name="polyphen" type="double" indexed="true" stored="true" multiValued="false"/>
+ <field name="genes" type="text_general" indexed="true" stored="true" multiValued="true"/>
+ <field name="studies" type="text_general" indexed="true" stored="true" multiValued="true"/>
+ <field name="accessions" type="text_general" indexed="true" stored="true" multiValued="true"/>
+ <field name="populations" type="text_general" indexed="true" stored="true" multiValued="true"/>
+ */
+
 public class VariantSearch {
 
     @Field
