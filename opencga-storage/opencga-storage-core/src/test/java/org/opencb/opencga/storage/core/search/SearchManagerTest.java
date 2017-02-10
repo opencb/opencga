@@ -16,7 +16,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.storage.core.search.iterators.SolrVariantSearchIterator;
+import org.opencb.opencga.storage.core.search.solr.SolrVariantSearchIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageBaseTest;
 
 import java.io.*;
@@ -47,7 +47,7 @@ public class SearchManagerTest extends GenericTest {
         jsonObjectMapper = new ObjectMapper();
         initJSONParser(new File(VariantStorageBaseTest.getResourceUri("variant-solr-sample.json.gz")));
         variantList = readNextVariantFromJSON(100);
-        searchManager = new SearchManager("http://localhost:8983/solr/", "biotest_core2");
+        searchManager = new SearchManager("http://localhost:8983/solr/", "biotest_core8");
     }
 
     @Test
@@ -60,11 +60,18 @@ public class SearchManagerTest extends GenericTest {
             VariantSearchFactory variantSearchFactory = new VariantSearchFactory();
             ObjectReader objectReader = jsonObjectMapper.readerFor(Variant.class);
             String line;
+            List<Variant> variants = new ArrayList<>(10000);
+            int count = 0;
             while ((line = bufferedReader.readLine()) != null) {
                 Variant variant = objectReader.readValue(line);
 //                VariantSearch variantSearch = variantSearchFactory.create(variant);
-
-                searchManager.insert(variant);
+                variants.add(variant);
+                if (count % 10000 == 0) {
+                    searchManager.insert(variants);
+                    variants.clear();
+                    System.out.println("count = " + count);
+                }
+                count++;
             }
 
             bufferedReader.close();

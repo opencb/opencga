@@ -3,10 +3,7 @@ package org.opencb.opencga.storage.core.search;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by wasim on 14/11/16.
@@ -14,60 +11,66 @@ import java.util.Map;
 public class VariantSearchFactory {
 
 
-    public VariantSearch create(Variant variant) {
-        return variantToSolrConverter(variant);
-    }
-
-    public List<VariantSearch> create(List<Variant> variants) {
-        List<VariantSearch> variantSearches = new ArrayList<VariantSearch>();
-        for (Variant variant : variants) {
-            VariantSearch variantSearch = variantToSolrConverter(variant);
+    public static List<VariantSearch> create(List<Variant> variants) {
+        List<VariantSearch> variantSearchList = new ArrayList<>(variants.size());
+        for (Variant variant: variants) {
+            VariantSearch variantSearch = create(variant);
             if (variantSearch.getId() != null) {
-                variantSearches.add(variantSearch);
+                variantSearchList.add(variantSearch);
             }
         }
-        return variantSearches;
+        return variantSearchList;
     }
 
-    private VariantSearch variantToSolrConverter(Variant variant) {
+    public static VariantSearch create(Variant variant) {
 
         VariantSearch variantSearch = new VariantSearch();
 
-        variantSearch.setDbSNP(variant.getId());
-        variantSearch.setType(variant.getType().toString());
+        variantSearch.setId(variant.getChromosome() + "_" + variant.getStart() + "_"
+                + variant.getReference() + "_" + variant.getAlternate());
         variantSearch.setChromosome(variant.getChromosome());
         variantSearch.setStart(variant.getStart());
         variantSearch.setEnd(variant.getEnd());
+        variantSearch.setDbSNP(variant.getId());
+        variantSearch.setType(variant.getType().toString());
 
         //TODO get clear with Nacho what to put in studies
 //        variantSearch.setStudies(variant.getStudies());
 
         VariantAnnotation variantAnnotation = variant.getAnnotation();
-
         if (variantAnnotation != null) {
-
-            variantSearch.setId(variantAnnotation.getChromosome() + "_" + variantAnnotation.getStart() + "_"
-                    + variantAnnotation.getReference() + "_" + variantAnnotation.getAlternate());
-
             List<ConsequenceType> consequenceTypes = variantAnnotation.getConsequenceTypes();
 
             if (consequenceTypes != null) {
+                Set<String> genes = new HashSet<>();
+                Set<String> accessipns = new HashSet<>();
+//                Map<String, List<String>> geneToConsequenceType = new HashMap<>();
                 for (ConsequenceType consequenceType : consequenceTypes) {
 
-                    variantSearch.setGenes(consequenceType.getGeneName());
+//                    variantSearch.setGenes(consequenceType.getGeneName());
+                    genes.add(consequenceType.getGeneName());
+//                    variantSearch.getGeneToConsequenceType().put(consequenceType.getGeneName(), new ArrayList<>());
+
                     //substitutionScores
-                    List<Double> proteinScores = getsubstitutionScores(consequenceType);
+                    List<Double> proteinScores = getSubstitutionScores(consequenceType);
                     variantSearch.setSift(proteinScores.get(0));
                     variantSearch.setPolyphen(proteinScores.get(1));
                     // Accession
                     for (SequenceOntologyTerm sequenceOntologyTerm : consequenceType.getSequenceOntologyTerms()) {
-                        variantSearch.setAccessions(sequenceOntologyTerm.getAccession());
+//                        variantSearch.setAccessions(sequenceOntologyTerm.getAccession());
+                        accessipns.add(sequenceOntologyTerm.getAccession());
+//                        variantSearch.getGeneToConsequenceType().get(consequenceType.getGeneName()).add(sequenceOntologyTerm.getAccession());
+                        variantSearch.getGeneToConsequenceType().put("genect_" + consequenceType.getGeneName(), sequenceOntologyTerm.getAccession());
                     }
                 }
+                variantSearch.setGenes(genes);
+                variantSearch.setAccessions(accessipns);
+//                variantSearch.setGeneToConsequenceType(geneToConsequenceType);
             }
+
             if (variantAnnotation.getPopulationFrequencies() != null) {
                 for (PopulationFrequency populationFrequency : variantAnnotation.getPopulationFrequencies()) {
-                    Map<String, Float> population = new HashMap<String, Float>();
+                    Map<String, Float> population = new HashMap<>();
                     population.put("study_" + populationFrequency.getStudy() + "_" + populationFrequency.getPopulation(),
                             populationFrequency.getAltAlleleFreq());
                     variantSearch.setPopulations(population);
@@ -102,7 +105,7 @@ public class VariantSearchFactory {
         return variantSearch;
     }
 
-    private List<Double> getsubstitutionScores(ConsequenceType consequenceType) {
+    private static List<Double> getSubstitutionScores(ConsequenceType consequenceType) {
 
         double min = 10;
         double max = 0;
@@ -120,13 +123,12 @@ public class VariantSearchFactory {
                     if (score.getScore() > max) {
                         max = score.getScore();
                     }
-
                 }
             }
         }
 
         // Always Two values : First value min and second max
-        List<Double> result = new ArrayList<Double>(2);
+        List<Double> result = new ArrayList<>(2);
         result.add(min);
         result.add(max);
 

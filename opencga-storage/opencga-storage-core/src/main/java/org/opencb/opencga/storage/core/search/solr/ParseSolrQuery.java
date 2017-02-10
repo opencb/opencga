@@ -1,4 +1,20 @@
-package org.opencb.opencga.storage.core.search;
+/*
+ * Copyright 2015-2016 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.opencb.opencga.storage.core.search.solr;
 
 import org.apache.solr.client.solrj.SolrQuery;
 import org.opencb.commons.datastore.core.Query;
@@ -10,7 +26,7 @@ import java.util.Map;
 /**
  * Created by wasim on 18/11/16.
  */
-public class SearchUtil {
+public class ParseSolrQuery {
 
     public enum VariantSolrFields {
         dbSNP,
@@ -30,9 +46,7 @@ public class SearchUtil {
         accessions
     }
 
-    public static SolrQuery createSolrQuery(Query query, QueryOptions queryOptions) {
-
-
+    public static SolrQuery parse(Query query, QueryOptions queryOptions) {
         StringBuilder queryString = new StringBuilder();
         SolrQuery solrQuery = new SolrQuery();
 

@@ -1,10 +1,8 @@
 package org.opencb.opencga.storage.core.search;
 
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -13,7 +11,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.config.SearchConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.core.search.iterators.SolrVariantSearchIterator;
+import org.opencb.opencga.storage.core.search.solr.ParseSolrQuery;
+import org.opencb.opencga.storage.core.search.solr.SolrVariantSearchIterator;
 
 import java.io.IOException;
 import java.util.List;
@@ -24,15 +23,18 @@ import java.util.List;
 public class SearchManager {
 
     private SearchConfiguration searchConfiguration;
-    private HttpSolrClient solrServer;
+//    private SolrClient solrClient;
+    private HttpSolrClient solrClient;
     private static VariantSearchFactory variantSearchFactory;
 
 
     public SearchManager() {
         //TODO remove testing constructor
-        if (this.solrServer == null) {
-            this.solrServer = new HttpSolrClient("http://localhost:8983/solr/variants");
-            solrServer.setRequestWriter(new BinaryRequestWriter());
+        if (this.solrClient == null) {
+//            this.solrClient = new HttpSolrClient("http://localhost:8983/solr/variants");
+            this.solrClient = new HttpSolrClient.Builder("http://localhost:8983/solr/variants").build();
+            solrClient.setRequestWriter(new BinaryRequestWriter());
+
         }
         if (variantSearchFactory == null) {
             variantSearchFactory = new VariantSearchFactory();
@@ -40,9 +42,11 @@ public class SearchManager {
     }
 
     public SearchManager(String host, String collection) {
-        if (this.solrServer == null) {
-            this.solrServer = new HttpSolrClient(host + collection);
-            solrServer.setRequestWriter(new BinaryRequestWriter());
+        if (this.solrClient == null) {
+//            this.solrClient = new HttpSolrClient(host + collection);
+            this.solrClient = new HttpSolrClient.Builder(host + collection).build();
+            solrClient.setRequestWriter(new BinaryRequestWriter());
+//            this.solrClient = new ConcurrentUpdateSolrClient.Builder(host+ collection).build();
         }
         if (variantSearchFactory == null) {
             variantSearchFactory = new VariantSearchFactory();
@@ -53,11 +57,12 @@ public class SearchManager {
 
         this.searchConfiguration = storageConfiguration.getSearch();
 
-        if (searchConfiguration.getHost() != null && searchConfiguration.getCollection() != null && solrServer == null) {
-            solrServer = new HttpSolrClient(searchConfiguration.getHost() + searchConfiguration.getCollection());
-            solrServer.setRequestWriter(new BinaryRequestWriter());
-            HttpClientUtil.setBasicAuth((DefaultHttpClient) solrServer.getHttpClient(), searchConfiguration.getUser(),
-                    searchConfiguration.getPassword());
+        if (searchConfiguration.getHost() != null && searchConfiguration.getCollection() != null && solrClient == null) {
+//            solrClient = new HttpSolrClient(searchConfiguration.getHost() + searchConfiguration.getCollection());
+            this.solrClient = new HttpSolrClient.Builder(searchConfiguration.getHost() + searchConfiguration.getCollection()).build();
+//            solrClient.setRequestWriter(new BinaryRequestWriter());
+//            HttpClientUtil.setBasicAuth((DefaultHttpClient) solrClient.getHttpClient(), searchConfiguration.getUser(),
+//                    searchConfiguration.getPassword());
         }
 
         if (variantSearchFactory == null) {
@@ -71,9 +76,9 @@ public class SearchManager {
 
         if (!variantSearches.isEmpty()) {
             try {
-                UpdateResponse updateResponse = solrServer.addBeans(variantSearches);
+                UpdateResponse updateResponse = solrClient.addBeans(variantSearches);
                 if (0 == updateResponse.getStatus()) {
-                    solrServer.commit();
+                    solrClient.commit();
                 }
             } catch (SolrServerException | IOException e) {
                 e.printStackTrace();
@@ -87,9 +92,9 @@ public class SearchManager {
 
         if (variantSearche != null && variantSearche.getId() != null) {
             try {
-                UpdateResponse updateResponse = solrServer.addBean(variantSearche);
+                UpdateResponse updateResponse = solrClient.addBean(variantSearche);
                 if (0 == updateResponse.getStatus()) {
-                    solrServer.commit();
+                    solrClient.commit();
                 }
             } catch (SolrServerException | IOException e) {
                 e.printStackTrace();
@@ -99,11 +104,11 @@ public class SearchManager {
 
     public SolrVariantSearchIterator iterator(Query query, QueryOptions queryOptions) {
 
-        SolrQuery solrQuery = SearchUtil.createSolrQuery(query, queryOptions);
+        SolrQuery solrQuery = ParseSolrQuery.parse(query, queryOptions);
         QueryResponse response = null;
 
         try {
-            response = solrServer.query(solrQuery);
+            response = solrClient.query(solrQuery);
         } catch (SolrServerException | IOException e) {
             e.printStackTrace();
         }
@@ -113,11 +118,11 @@ public class SearchManager {
 
     public VariantSearchFacet getFacet(Query query, QueryOptions queryOptions) {
 
-        SolrQuery solrQuery = SearchUtil.createSolrQuery(query, queryOptions);
+        SolrQuery solrQuery = ParseSolrQuery.parse(query, queryOptions);
         QueryResponse response = null;
 
         try {
-            response = solrServer.query(solrQuery);
+            response = solrClient.query(solrQuery);
         } catch (SolrServerException | IOException e) {
             e.printStackTrace();
         }
