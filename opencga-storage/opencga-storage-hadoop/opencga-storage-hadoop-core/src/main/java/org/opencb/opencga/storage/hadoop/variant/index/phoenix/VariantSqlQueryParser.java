@@ -352,10 +352,10 @@ public class VariantSqlQueryParser {
         List<String> subFilters = new ArrayList<>(3);
         subFilters.add(buildFilter(VariantColumn.CHROMOSOME, "=", region.getChromosome()));
         if (region.getStart() > 1) {
-            subFilters.add(buildFilter(VariantColumn.POSITION, ">=", Integer.toString(region.getStart())));
+            subFilters.add(buildFilter(VariantColumn.POSITION, ">=", region.getStart()));
         }
         if (region.getEnd() < Integer.MAX_VALUE) {
-            subFilters.add(buildFilter(VariantColumn.POSITION, "<=", Integer.toString(region.getEnd())));
+            subFilters.add(buildFilter(VariantColumn.POSITION, "<=", region.getEnd()));
         }
         return appendFilters(subFilters, QueryOperation.AND.toString());
     }
@@ -896,14 +896,14 @@ public class VariantSqlQueryParser {
                     if (value instanceof Collection) {
                         List<String> subSubFilters = new ArrayList<>(((Collection) value).size());
                         for (Object o : ((Collection) value)) {
-                            subSubFilters.add(buildFilter(column, op, o.toString(), "", extra, arrayIdx));
+                            subSubFilters.add(buildFilter(column, op, o.toString(), "", extra, arrayIdx, param, rawValue));
                         }
                         subFilters.add(negatedStr + appendFilters(subSubFilters, QueryOperation.OR.toString()));
                     } else {
-                        subFilters.add(buildFilter(column, op, value.toString(), negatedStr, extra, arrayIdx));
+                        subFilters.add(buildFilter(column, op, value.toString(), negatedStr, extra, arrayIdx, param, rawValue));
                     }
                 } else {
-                    subFilters.add(buildFilter(column, op, keyOpValue[2], negatedStr, extra, arrayIdx));
+                    subFilters.add(buildFilter(column, op, keyOpValue[2], negatedStr, extra, arrayIdx, param, rawValue));
                 }
             }
             filters.add(appendFilters(subFilters, logicOperation.toString()));
@@ -911,17 +911,17 @@ public class VariantSqlQueryParser {
         }
     }
 
-    private String buildFilter(Column column, String op, String value) {
-        return buildFilter(column, op, value, "", "", 0);
+    private String buildFilter(Column column, String op, Object value) {
+        return buildFilter(column, op, value, "", "", 0, null, null);
     }
 
-    private String buildFilter(Column column, String op, String value, boolean negated) {
-        return buildFilter(column, op, value, negated ? "NOT " : "", "", 0);
+    private String buildFilter(Column column, String op, Object value, boolean negated) {
+        return buildFilter(column, op, value, negated ? "NOT " : "", "", 0, null, null);
     }
 
 
-    private String buildFilter(Column column, String op, Object value,
-                               String negated, String extra, int idx) {
+    private String buildFilter(Column column, String op, Object value, String negated, String extra, int idx,
+                               VariantQueryParams param, String rawValue) {
         Object parsedValue;
         StringBuilder sb = new StringBuilder();
 
@@ -952,12 +952,12 @@ public class VariantSqlQueryParser {
                 parsedValue = value;
                 checkStringValue((String) parsedValue);
                 sb.append(negated)
-                        .append("'").append(parsedValue).append("' ")
+                        .append('\'').append(parsedValue).append("' ")
                         .append(parseOperator(op))
                         .append(" ANY(\"").append(column).append("\")");
                 break;
             case "INTEGER ARRAY":
-                parsedValue = value instanceof Number ? ((Number) value).intValue() : Integer.parseInt(value.toString());
+                parsedValue = parseInteger(value, param, rawValue);
                 String operator = flipOperator(parseNumericOperator(op));
                 sb.append(negated)
                         .append(parsedValue).append(' ')
@@ -966,7 +966,7 @@ public class VariantSqlQueryParser {
                 break;
             case "INTEGER":
             case "UNSIGNED_INT":
-                parsedValue = value instanceof Number ? ((Number) value).intValue() : Integer.parseInt(value.toString());
+                parsedValue = parseInteger(value, param, rawValue);
                 sb.append(negated)
                         .append('"').append(column).append('"').append(arrayPosition).append(' ')
                         .append(parseNumericOperator(op))
@@ -974,7 +974,7 @@ public class VariantSqlQueryParser {
                 break;
             case "FLOAT ARRAY":
             case "DOUBLE ARRAY":
-                parsedValue = value instanceof Number ? ((Number) value).doubleValue() : Double.parseDouble(value.toString());
+                parsedValue = parseDouble(value, param, rawValue);
                 String flipOperator = flipOperator(parseNumericOperator(op));
                 sb.append(negated)
                         .append(parsedValue).append(' ')
@@ -983,7 +983,7 @@ public class VariantSqlQueryParser {
                 break;
             case "FLOAT":
             case "DOUBLE":
-                parsedValue = value instanceof Number ? ((Number) value).doubleValue() : Double.parseDouble(value.toString());
+                parsedValue = parseDouble(value, param, rawValue);
                 sb.append(negated)
                         .append('"').append(column).append('"').append(arrayPosition).append(' ')
                         .append(parseNumericOperator(op))
@@ -997,6 +997,38 @@ public class VariantSqlQueryParser {
             sb.append(' ').append(extra).append(" )");
         }
         return sb.toString();
+    }
+
+    private double parseDouble(Object value, VariantQueryParams param, String rawValue) {
+        if (value instanceof Number) {
+            return ((Number) value).doubleValue();
+        } else {
+            try {
+                return Double.parseDouble(value.toString());
+            } catch (NumberFormatException e) {
+                if (param != null) {
+                    throw VariantQueryException.malformedParam(param, rawValue);
+                } else {
+                    throw new VariantQueryException("Error parsing decimal value '" + value + '\'', e);
+                }
+            }
+        }
+    }
+
+    private int parseInteger(Object value, VariantQueryParams param, String rawValue) {
+        if (value instanceof Number) {
+            return ((Number) value).intValue();
+        } else {
+            try {
+                return Integer.parseInt(value.toString());
+            } catch (NumberFormatException e) {
+                if (param != null) {
+                    throw VariantQueryException.malformedParam(param, rawValue);
+                } else {
+                    throw new VariantQueryException("Error parsing integer value '" + value + '\'', e);
+                }
+            }
+        }
     }
 
     private void checkStringValue(String parsedValue) {

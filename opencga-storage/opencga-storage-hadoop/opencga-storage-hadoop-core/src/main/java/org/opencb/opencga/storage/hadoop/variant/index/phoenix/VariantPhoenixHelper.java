@@ -452,7 +452,7 @@ public class VariantPhoenixHelper {
                 return GERP;
             default:
                 if (throwException) {
-                    throw VariantQueryException.malformedParam(ANNOT_CONSERVATION, rawValue, "Unknown conservation value.");
+                    throw VariantQueryException.malformedParam(ANNOT_CONSERVATION, rawValue);
                 } else {
                     logger.warn("Unknown Conservation source {}", rawValue);
                 }
