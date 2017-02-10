@@ -23,7 +23,6 @@ import org.apache.phoenix.util.SchemaUtil;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -61,7 +60,7 @@ public class VariantSqlQueryParser {
     private final String variantTable;
     private final Logger logger = LoggerFactory.getLogger(VariantSqlQueryParser.class);
     private final VariantDBAdaptorUtils utils;
-    private final CellBaseClient cellBaseClient;
+    private final boolean clientSideSkip;
 
     private static final Map<String, String> SQL_OPERATOR;
 
@@ -74,12 +73,11 @@ public class VariantSqlQueryParser {
     }
 
 
-    public VariantSqlQueryParser(GenomeHelper genomeHelper, String variantTable, VariantDBAdaptorUtils utils,
-                                 CellBaseClient cellBaseClient) {
+    public VariantSqlQueryParser(GenomeHelper genomeHelper, String variantTable, VariantDBAdaptorUtils utils, boolean clientSideSkip) {
         this.genomeHelper = genomeHelper;
         this.variantTable = variantTable;
         this.utils = utils;
-        this.cellBaseClient = cellBaseClient;
+        this.clientSideSkip = clientSideSkip;
     }
 
     public String parse(Query query, QueryOptions options) {
@@ -117,13 +115,21 @@ public class VariantSqlQueryParser {
             }
         }
 
-        if (options.getInt(QueryOptions.LIMIT) > 0) {
-            sb.append(" LIMIT ").append(options.getInt(QueryOptions.LIMIT));
+        if (clientSideSkip) {
+            int skip = Math.max(0, options.getInt(QueryOptions.SKIP));
+            if (options.getInt(QueryOptions.LIMIT) > 0) {
+                sb.append(" LIMIT ").append(skip + options.getInt(QueryOptions.LIMIT));
+            }
+        } else {
+            if (options.getInt(QueryOptions.LIMIT) > 0) {
+                sb.append(" LIMIT ").append(options.getInt(QueryOptions.LIMIT));
+            }
+
+            if (options.getInt(QueryOptions.SKIP) > 0) {
+                sb.append(" OFFSET ").append(options.getInt(QueryOptions.SKIP));
+            }
         }
 
-//        if (options.getInt(QueryOptions.SKIP) > 0) {
-//            sb.append(" OFFSET ").append(options.getInt(QueryOptions.SKIP));
-//        }
 
         return sb.toString();
     }

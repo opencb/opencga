@@ -198,21 +198,46 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testGetAllVariants_limit_skip() {
-        int numVariants = allVariants.getResult().size();
+        limitSkip(new Query(), new QueryOptions());
+    }
+
+    @Test
+    public void testGetAllVariants_limit_skip_sorted() {
+        limitSkip(new Query(), new QueryOptions(QueryOptions.SORT, true));
+    }
+
+    @Test
+    public void testGetAllVariants_limit_skip_filters() {
+        limitSkip(new Query(ANNOT_POLYPHEN.key(), "<0.5"), new QueryOptions());
+    }
+
+    @Test
+    public void testGetAllVariants_limit_skip_sorted_filters() {
+        limitSkip(new Query(ANNOT_POLYPHEN.key(), "<0.5"), new QueryOptions(QueryOptions.SORT, true));
+    }
+
+    public void limitSkip(Query query, QueryOptions options) {
+        VariantQueryResult<Variant> expected = dbAdaptor.get(query, options);
+        int numVariants = expected.getNumResults();
+//        expected.getResult().forEach(v -> logger.info("expected variant: == " + v));
         for (int batchSize : new int[]{50, 100, 1000}) {
             List<Variant> variants = new ArrayList<>();
             Set<String> variantStr = new HashSet<>();
             for (int i = 0; i < numVariants / batchSize + 1; i++) {
-                QueryResult<Variant> result = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.LIMIT, batchSize).append(QueryOptions.SKIP, i * batchSize));
+                QueryResult<Variant> result = dbAdaptor.get(query, new QueryOptions(options)
+                        .append(QueryOptions.LIMIT, batchSize)
+                        .append(QueryOptions.SKIP, i * batchSize));
+                logger.info("Got " + result.getNumResults() + " results");
                 variants.addAll(result.getResult());
                 for (Variant variant : result.getResult()) {
-                    variantStr.add(variant.toString());
+                    boolean repeated = !variantStr.add(variant.toString());
+                    assertFalse("Repeated variant! : " + variant.toString(), repeated);
                 }
             }
             assertEquals(numVariants, variants.size());
-            assertEquals(variantStr.size(), variants.size());
+            assertEquals(numVariants, variantStr.size());
+            assertEquals(expected.getResult().stream().map(Object::toString).collect(Collectors.toSet()), variantStr);
         }
-
     }
 
     @Test

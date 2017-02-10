@@ -29,6 +29,11 @@ import java.util.stream.Collectors;
 public class PhoenixHelper {
 
     public static final PTableType DEFAULT_TABLE_TYPE = PTableType.TABLE;
+
+    // Server offset, for server pagination, is only available in Phoenix4.8 or Phoenix4.7.0.2.5.0 (from HDP2.5.0)
+    // See https://issues.apache.org/jira/browse/PHOENIX-2722
+    public static final String PHOENIX_SERVER_OFFSET_AVAILABLE = "phoenix.server.offset.available";
+
     private final Configuration conf;
     private static Logger logger = LoggerFactory.getLogger(PhoenixHelper.class);
 
