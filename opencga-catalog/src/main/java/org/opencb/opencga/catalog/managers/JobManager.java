@@ -456,20 +456,18 @@ public class JobManager extends AbstractManager implements IJobManager {
                 ObjectMap params = new ObjectMap()
                         .append(JobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.DELETED);
                 queryResult = jobDBAdaptor.update(jobId, params);
+                queryResult.setId("Delete job " + jobId);
                 auditManager.recordAction(AuditRecord.Resource.job, AuditRecord.Action.delete, AuditRecord.Magnitude.high, jobId, userId,
                         jobQueryResult.first(), queryResult.first(), "", null);
-
             } catch (CatalogAuthorizationException e) {
                 auditManager.recordAction(AuditRecord.Resource.job, AuditRecord.Action.delete, AuditRecord.Magnitude.high,
                         jobId, userId, null, null, e.getMessage(), null);
                 queryResult = new QueryResult<>("Delete job " + jobId);
                 queryResult.setErrorMsg(e.getMessage());
-
             } catch (CatalogException e) {
                 e.printStackTrace();
                 queryResult = new QueryResult<>("Delete job " + jobId);
                 queryResult.setErrorMsg(e.getMessage());
-
             } finally {
                 queryResultList.add(queryResult);
             }
