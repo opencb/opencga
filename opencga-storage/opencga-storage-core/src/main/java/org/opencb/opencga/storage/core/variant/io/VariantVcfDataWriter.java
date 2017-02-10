@@ -83,14 +83,13 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
     private final QueryOptions queryOptions;
     private final AtomicReference<Function<String, String>> sampleNameConverter = new AtomicReference<>(s -> s);
     private final int studyId;
-    private final String studyIdString;
     private VariantContextWriter writer;
     private List<String> annotations;
     private int failedVariants;
     private final List<String> sampleNames = new ArrayList<>();
     private final Map<String, String> sampleNameMapping = new ConcurrentHashMap<>();
     private final AtomicReference<BiConsumer<Variant, RuntimeException>> converterErrorListener = new AtomicReference<>((v, r) -> { });
-    private final AtomicBoolean exportGenotype = new AtomicBoolean(false);
+    private final AtomicBoolean exportGenotype = new AtomicBoolean(true);
 
     public VariantVcfDataWriter(StudyConfiguration studyConfiguration, VariantSourceDBAdaptor sourceDBAdaptor, OutputStream outputStream,
                                 QueryOptions queryOptions) {
@@ -99,7 +98,6 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         this.outputStream = outputStream;
         this.queryOptions = queryOptions == null ? new QueryOptions() : queryOptions;
         studyId = this.studyConfiguration.getStudyId();
-        studyIdString = Integer.toString(studyId);
     }
 
     public void setSampleNameConverter(Function<String, String> converter) {
@@ -437,7 +435,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
     public List<String> buildAlleles(Variant variant, Pair<Integer, Integer> adjustedRange) {
         String reference = variant.getReference();
         String alternate = variant.getAlternate();
-        List<AlternateCoordinate> secAlts = variant.getStudy(this.studyIdString).getSecondaryAlternates();
+        List<AlternateCoordinate> secAlts = variant.getStudy(this.studyConfiguration.getStudyName()).getSecondaryAlternates();
         List<String> alleles = new ArrayList<>(secAlts.size() + 2);
         Integer origStart = variant.getStart();
         Integer origEnd = variant.getEnd();
@@ -495,7 +493,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         //Attributes for INFO column
         ObjectMap attributes = new ObjectMap();
         ArrayList<Genotype> genotypes = new ArrayList<>();
-        StudyEntry studyEntry = variant.getStudy(this.studyIdString);
+        StudyEntry studyEntry = variant.getStudy(this.studyConfiguration.getStudyName());
 
 //        Integer originalPosition = null;
 //        List<String> originalAlleles = null;
@@ -645,7 +643,7 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         if (StringUtils.isBlank(variant.getReference()) || StringUtils.isBlank(variant.getAlternate())) {
             start = start - 1;
         }
-        for (AlternateCoordinate alternateCoordinate : variant.getStudy(this.studyIdString).getSecondaryAlternates()) {
+        for (AlternateCoordinate alternateCoordinate : variant.getStudy(this.studyConfiguration.getStudyName()).getSecondaryAlternates()) {
             start = Math.min(start, alternateCoordinate.getStart());
             end = Math.max(end, alternateCoordinate.getEnd());
             if (StringUtils.isBlank(alternateCoordinate.getAlternate()) || StringUtils.isBlank(alternateCoordinate.getReference())) {

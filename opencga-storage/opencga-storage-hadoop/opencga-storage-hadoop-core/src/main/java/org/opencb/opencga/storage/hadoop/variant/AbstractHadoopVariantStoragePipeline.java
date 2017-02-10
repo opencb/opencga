@@ -93,6 +93,9 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     protected final HBaseCredentials variantsTableCredentials;
     protected MRExecutor mrExecutor = null;
 
+    // Do not create phoenix indexes. Testing purposes only
+    public static final String SKIP_CREATE_PHOENIX_INDEXES = "skip.create.phoenix.indexes";
+
     public AbstractHadoopVariantStoragePipeline(
             StorageConfiguration configuration, String storageEngineId, Logger logger,
             VariantHadoopDBAdaptor dbAdaptor,
@@ -361,13 +364,17 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
             Connection jdbcConnection = dbAdaptor.getJdbcConnection();
             String tableName = variantsTableCredentials.getTable();
             phoenixHelper.registerNewStudy(jdbcConnection, tableName, studyId);
-            if (options.getString(VariantAnnotationManager.SPECIES, "hsapiens").equalsIgnoreCase("hsapiens")) {
-                List<PhoenixHelper.Column> columns = VariantPhoenixHelper.getHumanPopulationFrequenciesColumns();
-                phoenixHelper.getPhoenixHelper().addMissingColumns(jdbcConnection, tableName, columns, true);
-                List<PhoenixHelper.Index> popFreqIndices = VariantPhoenixHelper.getPopFreqIndices(tableName);
-                phoenixHelper.getPhoenixHelper().createIndexes(jdbcConnection, tableName, popFreqIndices, false);
+            if (!options.getBoolean(SKIP_CREATE_PHOENIX_INDEXES, false)) {
+                if (options.getString(VariantAnnotationManager.SPECIES, "hsapiens").equalsIgnoreCase("hsapiens")) {
+                    List<PhoenixHelper.Column> columns = VariantPhoenixHelper.getHumanPopulationFrequenciesColumns();
+                    phoenixHelper.getPhoenixHelper().addMissingColumns(jdbcConnection, tableName, columns, true);
+                    List<PhoenixHelper.Index> popFreqIndices = VariantPhoenixHelper.getPopFreqIndices(tableName);
+                    phoenixHelper.getPhoenixHelper().createIndexes(jdbcConnection, tableName, popFreqIndices, false);
+                }
+                phoenixHelper.createVariantIndexes(jdbcConnection, tableName);
+            } else {
+                logger.info("Skip create indexes!!");
             }
-            phoenixHelper.createVariantIndexes(jdbcConnection, tableName);
         } catch (SQLException e) {
             throw new StorageEngineException("Unable to register study in Phoenix", e);
         }
@@ -665,7 +672,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
 
             return super.postLoad(input, output);
         } else {
-            System.out.println(Thread.currentThread().getName() + " - DO NOTHING!");
+            logger.debug("Skip post load");
             return input;
         }
     }

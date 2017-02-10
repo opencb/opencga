@@ -72,10 +72,10 @@ public class VariantTableDriver extends AbstractVariantTableDriver {
         }
         if (!hasForkJoinPool && vCores > 1) {
             optString += " -D" + fjpKey + "=" + vCores;
-            getLog().warn("Force ForkJoinPool to {}", vCores);
+            LOG.warn("Force ForkJoinPool to {}", vCores);
         }
         if (StringUtils.isNotBlank(optString)) {
-            getLog().info("Set mapreduce java opts: {}", optString);
+            LOG.info("Set mapreduce java opts: {}", optString);
             getConf().set("mapreduce.map.java.opts", optString);
         }
         return super.run(args);
