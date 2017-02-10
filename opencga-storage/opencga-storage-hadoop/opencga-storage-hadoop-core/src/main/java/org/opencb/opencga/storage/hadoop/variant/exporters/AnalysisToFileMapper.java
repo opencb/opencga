@@ -41,7 +41,8 @@ public class AnalysisToFileMapper extends AbstractHBaseMapReduce<Object, Object>
             returnedSamples = new ArrayList<>(this.getIndexedSamples().keySet());
         }
         getLog().info("Export Genotype [{}] of {} samples ... ", withGenotype, returnedSamples.size());
-        this.getHbaseToVariantConverter().setReturnedSamples(returnedSamples);
+        getHbaseToVariantConverter().setReturnedSamples(returnedSamples);
+        getHbaseToVariantConverter().setStudyNameAsStudyId(true);
 
         String typeString = context.getConfiguration()
                 .get(CONFIG_VARIANT_TABLE_EXPORT_TYPE, VariantTableExportDriver.ExportType.AVRO.name());
