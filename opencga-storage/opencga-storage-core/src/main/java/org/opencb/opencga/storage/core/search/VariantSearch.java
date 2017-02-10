@@ -14,7 +14,7 @@ import java.util.*;
  * In order to insert VariantSearch objects into your solr cores/collections you must
  * add the below fields in the the file schema.xml located in the core/collection folder.
  *
- <field name="names" type="text_general" indexed="true" stored="true" multiValued="false"/>
+ <field name="names" type="string" indexed="true" stored="true" multiValued="false"/>
  <field name="chromosome" type="string" indexed="true" stored="true" multiValued="false" />
  <field name="dbSNP" type="string" indexed="true" stored="true" multiValued="false"/>
  <field name="type" type="string" indexed="true" stored="true" multiValued="false"/>
@@ -27,10 +27,12 @@ import java.util.*;
  <field name="phylop" type="double" indexed="true" stored="true" multiValued="false"/>
  <field name="sift" type="double" indexed="true" stored="true" multiValued="false"/>
  <field name="polyphen" type="double" indexed="true" stored="true" multiValued="false"/>
- <field name="genes" type="text_general" indexed="true" stored="true" multiValued="true"/>
- <field name="studies" type="text_general" indexed="true" stored="true" multiValued="true"/>
- <field name="accessions" type="text_general" indexed="true" stored="true" multiValued="true"/>
- <field name="populations" type="text_general" indexed="true" stored="true" multiValued="true"/>
+ <field name="clinvar" type="text_general" indexed="true" stored="true" multiValued="true"/>
+ <field name="genes" type="string" indexed="true" stored="true" multiValued="true"/>
+ <field name="studies" type="string" indexed="true" stored="true" multiValued="true"/>
+ <field name="consequenceType" type="string" indexed="true" stored="true" multiValued="true"/>
+ <field name="geneToConsequenceType" type="string" indexed="true" stored="true" multiValued="true"/>
+ <field name="populations" type="string" indexed="true" stored="true" multiValued="true"/>
  */
 
 public class VariantSearch {
@@ -74,23 +76,17 @@ public class VariantSearch {
     @Field("polyphen")
     private double polyphen;
 
+    @Field("clinvar")
+    private String clinvar;
+
     @Field("studies")
     private String[] studies;
 
     @Field("genes")
     private Set<String> genes;
 
-    public Map<String, String> getGeneToConsequenceType() {
-        return geneToConsequenceType;
-    }
-
-    public VariantSearch setGeneToConsequenceType(Map<String, String> geneToConsequenceType) {
-        this.geneToConsequenceType = geneToConsequenceType;
-        return this;
-    }
-
-    @Field("genect_*")
-    private Map<String, String> geneToConsequenceType;
+    @Field("geneToConsequenceType")
+    private Set<String> geneToConsequenceType;
 
     @Field("accessions")
     private Set<String> accessions;
@@ -99,10 +95,19 @@ public class VariantSearch {
     private Map<String, Float> populations;
 
 
+//    public Map<String, String> getGeneToConsequenceType() {
+//        return geneToConsequenceType;
+//    }
+//
+//    public VariantSearch setGeneToConsequenceType(Map<String, String> geneToConsequenceType) {
+//        this.geneToConsequenceType = geneToConsequenceType;
+//        return this;
+//    }
+
     public VariantSearch() {
         this.accessions = new HashSet<>();
         this.genes = new HashSet<>();
-        this.geneToConsequenceType = new HashMap<>();
+        this.geneToConsequenceType = new HashSet<>();
         this.populations = new HashMap<>();
     }
 
@@ -122,6 +127,7 @@ public class VariantSearch {
         sb.append(", phylop=").append(phylop);
         sb.append(", sift=").append(sift);
         sb.append(", polyphen=").append(polyphen);
+        sb.append(", clinvar='").append(clinvar).append('\'');
         sb.append(", studies=").append(Arrays.toString(studies));
         sb.append(", genes=").append(genes);
         sb.append(", geneToConsequenceType=").append(geneToConsequenceType);
@@ -245,6 +251,15 @@ public class VariantSearch {
 
     public VariantSearch setPolyphen(double polyphen) {
         this.polyphen = polyphen;
+        return this;
+    }
+
+    public String getClinvar() {
+        return clinvar;
+    }
+
+    public VariantSearch setClinvar(String clinvar) {
+        this.clinvar = clinvar;
         return this;
     }
 

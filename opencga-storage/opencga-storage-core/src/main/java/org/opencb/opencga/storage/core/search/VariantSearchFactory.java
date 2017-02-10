@@ -61,8 +61,10 @@ public class VariantSearchFactory {
                         accessipns.add(sequenceOntologyTerm.getAccession());
 //                        variantSearch.getGeneToConsequenceType().get(consequenceType.getGeneName())
 // .add(sequenceOntologyTerm.getAccession());
-                        variantSearch.getGeneToConsequenceType().put("genect_" + consequenceType.getGeneName(),
-                                sequenceOntologyTerm.getAccession());
+
+                        // TODO: gene to consequence type support !
+//                        variantSearch.getGeneToConsequenceType().put("genect_" + consequenceType.getGeneName(),
+//                                sequenceOntologyTerm.getAccession());
                     }
                 }
                 variantSearch.setGenes(genes);
