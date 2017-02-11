@@ -615,7 +615,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 
             // TODO: get study id/name
             VariantContextToAvroVariantConverter variantContextToAvroVariantConverter =
-                    new VariantContextToAvroVariantConverter(0, Collections.emptyList(), Collections.emptyList());
+                    new VariantContextToAvroVariantConverter("" + 0, Collections.emptyList(), Collections.emptyList());
 //                    new VariantContextToAvroVariantConverter("default", Collections.emptyList(), Collections.emptyList());
             VariantDBIterator iterator = variantDBAdaptor.iterator(query, options);
             while (iterator.hasNext()) {

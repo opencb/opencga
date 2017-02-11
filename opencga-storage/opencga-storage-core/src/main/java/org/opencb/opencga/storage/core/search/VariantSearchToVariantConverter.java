@@ -98,8 +98,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             List<ConsequenceType> consequenceTypes = variantAnnotation.getConsequenceTypes();
             if (consequenceTypes != null) {
                 Set<String> genes = new HashSet<>();
-                Set<String> soAccessions = new HashSet<>();
-                List<String> geneToSOAccessions = new ArrayList<>();
+                Set<Integer> soAccessions = new HashSet<>();
+                Set<String> geneToSOAccessions = new HashSet<>();
 
                 for (ConsequenceType consequenceType : consequenceTypes) {
 
@@ -110,7 +110,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     for (SequenceOntologyTerm sequenceOntologyTerm : consequenceType.getSequenceOntologyTerms()) {
                         // remove SO: from the accession
                         String soNumber = sequenceOntologyTerm.getAccession().substring(3);
-                        soAccessions.add(soNumber);
+                        soAccessions.add(Integer.parseInt(soNumber));
                         geneToSOAccessions.add(consequenceType.getGeneName() + "_" + soNumber);
                     }
 
@@ -120,18 +120,18 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     variantSearch.setPolyphen(proteinScores.get(1));
                 }
                 variantSearch.setGenes(genes);
-                variantSearch.setSoAccessions(soAccessions);
-                variantSearch.setGeneToSOAccessions(geneToSOAccessions);
+                variantSearch.setSoAcc(soAccessions);
+                variantSearch.setGeneToSoAcc(geneToSOAccessions);
             }
 
             // set populations
             if (variantAnnotation.getPopulationFrequencies() != null) {
                 for (PopulationFrequency populationFrequency : variantAnnotation.getPopulationFrequencies()) {
                     Map<String, Float> population = new HashMap<>();
-                    population.put("study_" + populationFrequency.getStudy() + "_"
+                    population.put("popFreq_" + populationFrequency.getStudy() + "_"
                                     + populationFrequency.getPopulation(),
                             populationFrequency.getAltAlleleFreq());
-                    variantSearch.setPopulations(population);
+                    variantSearch.setPopFreq(population);
 
                 }
             }

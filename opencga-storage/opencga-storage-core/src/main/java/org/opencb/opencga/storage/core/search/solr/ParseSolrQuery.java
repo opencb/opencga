@@ -31,8 +31,13 @@ import java.util.regex.Pattern;
  */
 public class ParseSolrQuery {
 
-    private static final Pattern SCORE_PATTERN =
-            Pattern.compile("^([^=<>]+.*)(<=?|>=?|!=|!?=?~|==?)([^=<>]+.*)$");
+    private static final Pattern SCORE_PATTERN = Pattern.compile("^([^=<>]+.*)(<=?|>=?|!=|!?=?~|==?)([^=<>]+.*)$");
+
+    public enum IdFields {
+        dbSNP,
+        type,
+        chromosome
+    }
 
     public enum ScoreFields {
         gerp,
@@ -42,12 +47,6 @@ public class ParseSolrQuery {
         phylop,
         sift,
         polyphen
-    }
-
-    public enum IdFields {
-        dbSNP,
-        type,
-        chromosome
     }
 
     public enum VariantSolrFields {

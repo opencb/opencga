@@ -14,25 +14,25 @@ import java.util.*;
  * In order to insert VariantSearch objects into your solr cores/collections you must
  * add the below fields in the the file schema.xml located in the core/collection folder.
  *
- <field name="names" type="string" indexed="true" stored="true" multiValued="false"/>
- <field name="chromosome" type="string" indexed="true" stored="true" multiValued="false" />
+ <field name="id" type="string" indexed="true" stored="true" multiValued="false"/>
  <field name="dbSNP" type="string" indexed="true" stored="true" multiValued="false"/>
- <field name="type" type="string" indexed="true" stored="true" multiValued="false"/>
+ <field name="chromosome" type="string" indexed="true" stored="true" multiValued="false"/>
  <field name="start" type="int" indexed="true" stored="true" multiValued="false"/>
  <field name="end" type="int" indexed="true" stored="true" multiValued="false"/>
+ <field name="type" type="string" indexed="true" stored="true" multiValued="false"/>
+ <field name="phastCons" type="double" indexed="true" stored="true" multiValued="false"/>
+ <field name="phylop" type="double" indexed="true" stored="true" multiValued="false"/>
  <field name="gerp" type="double" indexed="true" stored="true" multiValued="false"/>
  <field name="caddRaw" type="double" indexed="true" stored="true" multiValued="false"/>
  <field name="caddScaled" type="double" indexed="true" stored="true" multiValued="false"/>
- <field name="phastCons" type="double" indexed="true" stored="true" multiValued="false"/>
- <field name="phylop" type="double" indexed="true" stored="true" multiValued="false"/>
  <field name="sift" type="double" indexed="true" stored="true" multiValued="false"/>
  <field name="polyphen" type="double" indexed="true" stored="true" multiValued="false"/>
  <field name="clinvar" type="text_general" indexed="true" stored="true" multiValued="true"/>
  <field name="genes" type="string" indexed="true" stored="true" multiValued="true"/>
+ <field name="soAcc" type="string" indexed="true" stored="true" multiValued="true"/>
+ <field name="geneToSoAcc" type="string" indexed="true" stored="true" multiValued="true"/>
+ <field name="popfreq" type="string" indexed="true" stored="true" multiValued="true"/>
  <field name="studies" type="string" indexed="true" stored="true" multiValued="true"/>
- <field name="consequenceType" type="string" indexed="true" stored="true" multiValued="true"/>
- <field name="geneToConsequenceType" type="string" indexed="true" stored="true" multiValued="true"/>
- <field name="populations" type="string" indexed="true" stored="true" multiValued="true"/>
  */
 
 public class VariantSearch {
@@ -43,9 +43,6 @@ public class VariantSearch {
     @Field("dbSNP")
     private String dbSNP;
 
-    @Field("type")
-    private String type;
-
     @Field("chromosome")
     private String chromosome;
 
@@ -55,6 +52,15 @@ public class VariantSearch {
     @Field("end")
     private int end;
 
+    @Field("type")
+    private String type;
+
+    @Field("phastCons")
+    private double phastCons;
+
+    @Field("phylop")
+    private double phylop;
+
     @Field("gerp")
     private double gerp;
 
@@ -63,12 +69,6 @@ public class VariantSearch {
 
     @Field("caddScaled")
     private double caddScaled;
-
-    @Field("phastCons")
-    private double phastCons;
-
-    @Field("phylop")
-    private double phylop;
 
     @Field("sift")
     private double sift;
@@ -82,33 +82,24 @@ public class VariantSearch {
     @Field("genes")
     private Set<String> genes;
 
-    @Field("soAccessions")
-    private Set<String> soAccessions;
+    @Field("soAcc")
+    private Set<Integer> soAcc;
 
-    @Field("geneToSOAccessions")
-    private List<String> geneToSOAccessions;
+    @Field("geneToSoAcc")
+    private Set<String> geneToSoAcc;
+
+    @Field("popFreq_*")
+    private Map<String, Float> popFreq;
 
     @Field("studies")
     private List<String> studies;
 
-    @Field("study_*")
-    private Map<String, Float> populations;
-
-
-//    public Map<String, String> getGeneToConsequenceType() {
-//        return geneToConsequenceType;
-//    }
-//
-//    public VariantSearch setGeneToConsequenceType(Map<String, String> geneToConsequenceType) {
-//        this.geneToConsequenceType = geneToConsequenceType;
-//        return this;
-//    }
 
     public VariantSearch() {
         this.genes = new HashSet<>();
-        this.soAccessions = new HashSet<>();
-        this.geneToSOAccessions = new ArrayList<>();
-        this.populations = new HashMap<>();
+        this.soAcc = new HashSet<>();
+        this.geneToSoAcc = new HashSet<>();
+        this.popFreq = new HashMap<>();
     }
 
     @Override
@@ -116,23 +107,23 @@ public class VariantSearch {
         final StringBuilder sb = new StringBuilder("VariantSearch{");
         sb.append("id='").append(id).append('\'');
         sb.append(", dbSNP='").append(dbSNP).append('\'');
-        sb.append(", type='").append(type).append('\'');
         sb.append(", chromosome='").append(chromosome).append('\'');
         sb.append(", start=").append(start);
         sb.append(", end=").append(end);
+        sb.append(", type='").append(type).append('\'');
+        sb.append(", phastCons=").append(phastCons);
+        sb.append(", phylop=").append(phylop);
         sb.append(", gerp=").append(gerp);
         sb.append(", caddRaw=").append(caddRaw);
         sb.append(", caddScaled=").append(caddScaled);
-        sb.append(", phastCons=").append(phastCons);
-        sb.append(", phylop=").append(phylop);
         sb.append(", sift=").append(sift);
         sb.append(", polyphen=").append(polyphen);
-        sb.append(", clinvar='").append(clinvar).append('\'');
-        sb.append(", studies=").append(studies);
+        sb.append(", clinvar=").append(clinvar);
         sb.append(", genes=").append(genes);
-        sb.append(", soAccessions=").append(soAccessions);
-        sb.append(", geneToSOAccessions=").append(geneToSOAccessions);
-        sb.append(", populations=").append(populations);
+        sb.append(", soAccessions=").append(soAcc);
+        sb.append(", geneToSoAccessions=").append(geneToSoAcc);
+        sb.append(", populationFrequencies=").append(popFreq);
+        sb.append(", studies=").append(studies);
         sb.append('}');
         return sb.toString();
     }
@@ -152,15 +143,6 @@ public class VariantSearch {
 
     public VariantSearch setDbSNP(String dbSNP) {
         this.dbSNP = dbSNP;
-        return this;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public VariantSearch setType(String type) {
-        this.type = type;
         return this;
     }
 
@@ -191,6 +173,33 @@ public class VariantSearch {
         return this;
     }
 
+    public String getType() {
+        return type;
+    }
+
+    public VariantSearch setType(String type) {
+        this.type = type;
+        return this;
+    }
+
+    public double getPhastCons() {
+        return phastCons;
+    }
+
+    public VariantSearch setPhastCons(double phastCons) {
+        this.phastCons = phastCons;
+        return this;
+    }
+
+    public double getPhylop() {
+        return phylop;
+    }
+
+    public VariantSearch setPhylop(double phylop) {
+        this.phylop = phylop;
+        return this;
+    }
+
     public double getGerp() {
         return gerp;
     }
@@ -215,24 +224,6 @@ public class VariantSearch {
 
     public VariantSearch setCaddScaled(double caddScaled) {
         this.caddScaled = caddScaled;
-        return this;
-    }
-
-    public double getPhastCons() {
-        return phastCons;
-    }
-
-    public VariantSearch setPhastCons(double phastCons) {
-        this.phastCons = phastCons;
-        return this;
-    }
-
-    public double getPhylop() {
-        return phylop;
-    }
-
-    public VariantSearch setPhylop(double phylop) {
-        this.phylop = phylop;
         return this;
     }
 
@@ -263,15 +254,6 @@ public class VariantSearch {
         return this;
     }
 
-    public List<String> getStudies() {
-        return studies;
-    }
-
-    public VariantSearch setStudies(List<String> studies) {
-        this.studies = studies;
-        return this;
-    }
-
     public Set<String> getGenes() {
         return genes;
     }
@@ -281,30 +263,39 @@ public class VariantSearch {
         return this;
     }
 
-    public Set<String> getSoAccessions() {
-        return soAccessions;
+    public Set<Integer> getSoAcc() {
+        return soAcc;
     }
 
-    public VariantSearch setSoAccessions(Set<String> soAccessions) {
-        this.soAccessions = soAccessions;
+    public VariantSearch setSoAcc(Set<Integer> soAcc) {
+        this.soAcc = soAcc;
         return this;
     }
 
-    public List<String> getGeneToSOAccessions() {
-        return geneToSOAccessions;
+    public Set<String> getGeneToSoAcc() {
+        return geneToSoAcc;
     }
 
-    public VariantSearch setGeneToSOAccessions(List<String> geneToSOAccessions) {
-        this.geneToSOAccessions = geneToSOAccessions;
+    public VariantSearch setGeneToSoAcc(Set<String> geneToSoAcc) {
+        this.geneToSoAcc = geneToSoAcc;
         return this;
     }
 
-    public Map<String, Float> getPopulations() {
-        return populations;
+    public Map<String, Float> getPopFreq() {
+        return popFreq;
     }
 
-    public VariantSearch setPopulations(Map<String, Float> populations) {
-        this.populations = populations;
+    public VariantSearch setPopFreq(Map<String, Float> popFreq) {
+        this.popFreq = popFreq;
+        return this;
+    }
+
+    public List<String> getStudies() {
+        return studies;
+    }
+
+    public VariantSearch setStudies(List<String> studies) {
+        this.studies = studies;
         return this;
     }
 
