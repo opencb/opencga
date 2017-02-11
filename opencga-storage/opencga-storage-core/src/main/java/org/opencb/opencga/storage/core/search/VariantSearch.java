@@ -14,11 +14,11 @@ import java.util.*;
  * In order to insert VariantSearch objects into your solr cores/collections you must
  * add the below fields in the the file schema.xml located in the core/collection folder.
  *
- <field name="id" type="string" indexed="true" stored="true" multiValued="false"/>
  <field name="dbSNP" type="string" indexed="true" stored="true" multiValued="false"/>
  <field name="chromosome" type="string" indexed="true" stored="true" multiValued="false"/>
  <field name="start" type="int" indexed="true" stored="true" multiValued="false"/>
  <field name="end" type="int" indexed="true" stored="true" multiValued="false"/>
+ <field name="xrefs" type="string" indexed="true" stored="true" multiValued="true"/>
  <field name="type" type="string" indexed="true" stored="true" multiValued="false"/>
  <field name="phastCons" type="double" indexed="true" stored="true" multiValued="false"/>
  <field name="phylop" type="double" indexed="true" stored="true" multiValued="false"/>
@@ -27,11 +27,11 @@ import java.util.*;
  <field name="caddScaled" type="double" indexed="true" stored="true" multiValued="false"/>
  <field name="sift" type="double" indexed="true" stored="true" multiValued="false"/>
  <field name="polyphen" type="double" indexed="true" stored="true" multiValued="false"/>
- <field name="clinvar" type="text_general" indexed="true" stored="true" multiValued="true"/>
+ <field name="clinvar" type="text_en" indexed="true" stored="true" multiValued="true"/>
  <field name="genes" type="string" indexed="true" stored="true" multiValued="true"/>
- <field name="soAcc" type="string" indexed="true" stored="true" multiValued="true"/>
+ <field name="soAcc" type="int" indexed="true" stored="true" multiValued="true"/>
  <field name="geneToSoAcc" type="string" indexed="true" stored="true" multiValued="true"/>
- <field name="popfreq" type="string" indexed="true" stored="true" multiValued="true"/>
+ <dynamicField name="popFreq_*" type="double" indexed="true" stored="true" multiValued="false"/>
  <field name="studies" type="string" indexed="true" stored="true" multiValued="true"/>
  */
 
@@ -51,6 +51,9 @@ public class VariantSearch {
 
     @Field("end")
     private int end;
+
+    @Field("xrefs")
+    private Set<String> xrefs;
 
     @Field("type")
     private String type;
@@ -110,6 +113,7 @@ public class VariantSearch {
         sb.append(", chromosome='").append(chromosome).append('\'');
         sb.append(", start=").append(start);
         sb.append(", end=").append(end);
+        sb.append(", xrefs=").append(xrefs);
         sb.append(", type='").append(type).append('\'');
         sb.append(", phastCons=").append(phastCons);
         sb.append(", phylop=").append(phylop);
@@ -120,9 +124,9 @@ public class VariantSearch {
         sb.append(", polyphen=").append(polyphen);
         sb.append(", clinvar=").append(clinvar);
         sb.append(", genes=").append(genes);
-        sb.append(", soAccessions=").append(soAcc);
-        sb.append(", geneToSoAccessions=").append(geneToSoAcc);
-        sb.append(", populationFrequencies=").append(popFreq);
+        sb.append(", soAcc=").append(soAcc);
+        sb.append(", geneToSoAcc=").append(geneToSoAcc);
+        sb.append(", popFreq=").append(popFreq);
         sb.append(", studies=").append(studies);
         sb.append('}');
         return sb.toString();
@@ -170,6 +174,15 @@ public class VariantSearch {
 
     public VariantSearch setEnd(int end) {
         this.end = end;
+        return this;
+    }
+
+    public Set<String> getXrefs() {
+        return xrefs;
+    }
+
+    public VariantSearch setXrefs(Set<String> xrefs) {
+        this.xrefs = xrefs;
         return this;
     }
 
@@ -298,6 +311,5 @@ public class VariantSearch {
         this.studies = studies;
         return this;
     }
-
 }
 

@@ -67,6 +67,7 @@
     <field name="chromosome" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="start" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="end" type="int" indexed="true" stored="true" multiValued="false"/>
+    <field name="xrefs" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="type" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="phastCons" type="double" indexed="true" stored="true" multiValued="false"/>
     <field name="phylop" type="double" indexed="true" stored="true" multiValued="false"/>

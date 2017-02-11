@@ -48,7 +48,7 @@ public class SearchManagerTest extends GenericTest {
         jsonObjectMapper = new ObjectMapper();
         initJSONParser(new File(VariantStorageBaseTest.getResourceUri("variant-solr-sample.json.gz")));
         variantList = readNextVariantFromJSON(100);
-        searchManager = new SearchManager("http://localhost:8983/solr/", "biotest_core13");
+        searchManager = new SearchManager("http://localhost:8983/solr/", "biotest_core16");
     }
 
     @Test
