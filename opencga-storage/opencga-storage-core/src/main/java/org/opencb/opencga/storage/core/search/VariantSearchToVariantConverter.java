@@ -2,7 +2,11 @@ package org.opencb.opencga.storage.core.search;
 
 import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.avro.VariantTraitAssociation;
 import org.opencb.biodata.models.variant.avro.*;
+import org.opencb.biodata.models.variant.avro.ConsequenceType;
+import org.opencb.biodata.models.variant.avro.Score;
+import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 
 import java.util.*;
@@ -42,24 +46,75 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
 
         // process annotation
-        boolean annotation = false;
         VariantAnnotation variantAnnotation = new VariantAnnotation();
 
-        // TODO: set annotation
         // consequence types
+        List<ConsequenceType> consequenceTypes = new ArrayList<>();
+
+        // TODO: genes, SO Accession and set consequence types
         // set genes
         // set SO Accession
-        // set protein substitution scores: sift and polyphen
-        // set populations
-        // set conservations
-        // set cadd
-        // set clinvar
+        if (variantSearch.getGeneToSOAccessions() != null && variantSearch.getGeneToSOAccessions().size() > 0) {
 
-
-        if (annotation) {
-            variant.setAnnotation(variantAnnotation);
         }
 
+        // set protein substitution scores: sift and polyphen
+        ProteinVariantAnnotation proteinAnnotation = new ProteinVariantAnnotation();
+        List<Score> scores = new ArrayList<>();
+        scores.add(new Score(variantSearch.getSift(), "sift", ""));
+        scores.add(new Score(variantSearch.getPolyphen(), "polyhen", ""));
+        proteinAnnotation.setSubstitutionScores(scores);
+
+        // set consequence types
+        variantAnnotation.setConsequenceTypes(consequenceTypes);
+
+        // set populations
+        if (variantSearch.getPopulations() != null && variantSearch.getPopulations().size() > 0) {
+            List<PopulationFrequency> populationFrequencies = new ArrayList<>();
+            for (String key : variantSearch.getPopulations().keySet()) {
+                PopulationFrequency populationFrequency = new PopulationFrequency();
+                String[] fields = key.split(",");
+                populationFrequency.setStudy(fields[1]);
+                populationFrequency.setPopulation(fields[2]);
+                populationFrequency.setAltAlleleFreq(variantSearch.getPopulations().get(key));
+                populationFrequencies.add(populationFrequency);
+            }
+            variantAnnotation.setPopulationFrequencies(populationFrequencies);
+        }
+
+        // set conservations
+        scores.clear();
+        scores.add(new Score(variantSearch.getGerp(), "gerp", ""));
+        scores.add(new Score(variantSearch.getPhastCons(), "phastCons", ""));
+        scores.add(new Score(variantSearch.getPhylop(), "phylop", ""));
+        variantAnnotation.setConservation(scores);
+
+        // set cadd
+        scores.clear();
+        scores.add(new Score(variantSearch.getCaddRaw(), "cadd_raw", ""));
+        scores.add(new Score(variantSearch.getCaddScaled(), "cadd_scaled", ""));
+        variantAnnotation.setFunctionalScore(scores);
+
+        // TODO: clinvar, a clinvar accession might have several traits !!!
+//        if (variantAnnotation.getVariantTraitAssociation() != null
+//                && variantAnnotation.getVariantTraitAssociation().getClinvar() != null) {
+//            Set<String> clinvar = new HashSet<>();
+//            variantAnnotation.getVariantTraitAssociation().getClinvar()
+//                    .forEach(cv -> {
+//                        clinvar.add(cv.getAccession());
+//                        cv.getTraits().forEach(cvt -> clinvar.add(cvt));
+//                    });
+//            variantSearch.setClinvar(clinvar);
+//        }
+        // set clinvar
+        VariantTraitAssociation traitAssociation = new VariantTraitAssociation();
+        List<ClinVar> clinVars = new ArrayList<>();
+        traitAssociation.setClinvar(clinVars);
+        variantAnnotation.setVariantTraitAssociation(traitAssociation);
+
+
+        // set variant annotation
+        variant.setAnnotation(variantAnnotation);
 
         return variant;
     }
