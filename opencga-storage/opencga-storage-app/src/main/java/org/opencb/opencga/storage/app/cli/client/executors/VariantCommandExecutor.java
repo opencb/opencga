@@ -19,17 +19,15 @@ package org.opencb.opencga.storage.app.cli.client.executors;
 import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import htsjdk.variant.variantcontext.VariantContext;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.tools.variant.converters.VariantContextToAvroVariantConverter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.hpg.bigdata.core.converters.variation.VariantContext2VariantConverter;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
@@ -40,6 +38,9 @@ import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.search.SearchManager;
+import org.opencb.opencga.storage.core.search.VariantSearch;
+import org.opencb.opencga.storage.core.search.solr.SolrVariantSearchIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
@@ -137,6 +138,10 @@ public class VariantCommandExecutor extends CommandExecutor {
             case "export":
                 configure(variantCommandOptions.exportVariantsCommandOptions.queryOptions.commonOptions);
                 export();
+                break;
+            case "search":
+                configure(variantCommandOptions.searchVariantsCommandOptions.commonOptions);
+                search();
                 break;
 //            case "benchmark":
 //                configure(variantCommandOptions.statsVariantsCommandOptions.commonOptions);
@@ -609,27 +614,54 @@ public class VariantCommandExecutor extends CommandExecutor {
         VariantDBAdaptor variantDBAdaptor = variantStorageEngine.getDBAdaptor(exportVariantsCommandOptions.queryOptions.commonQueryOptions.dbName);
         List<String> studyNames = variantDBAdaptor.getStudyConfigurationManager().getStudyNames(new QueryOptions());
 
-        try {
-            Query query = VariantQueryCommandUtils.parseQuery(exportVariantsCommandOptions.queryOptions, studyNames);
-            QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(exportVariantsCommandOptions.queryOptions);
-
-            // TODO: get study id/name
-            VariantContextToAvroVariantConverter variantContextToAvroVariantConverter =
-                    new VariantContextToAvroVariantConverter("" + 0, Collections.emptyList(), Collections.emptyList());
-//                    new VariantContextToAvroVariantConverter("default", Collections.emptyList(), Collections.emptyList());
-            VariantDBIterator iterator = variantDBAdaptor.iterator(query, options);
-            while (iterator.hasNext()) {
-                Variant variant = iterator.next();
-                VariantContext variantContext = variantContextToAvroVariantConverter.from(variant);
-
-                System.out.println(variantContext.toString());
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        // TODO: JT
+//        try {
+//            Query query = VariantQueryCommandUtils.parseQuery(exportVariantsCommandOptions.queryOptions, studyNames);
+//            QueryOptions options = VariantQueryCommandUtils.parseQueryOptions(exportVariantsCommandOptions.queryOptions);
+//
+//            // TODO: get study id/name
+//            VariantContextToAvroVariantConverter variantContextToAvroVariantConverter =
+//                    new VariantContextToAvroVariantConverter("" + 0, Collections.emptyList(), Collections.emptyList());
+////                    new VariantContextToAvroVariantConverter("default", Collections.emptyList(), Collections.emptyList());
+//            VariantDBIterator iterator = variantDBAdaptor.iterator(query, options);
+//            while (iterator.hasNext()) {
+//                Variant variant = iterator.next();
+//                VariantContext variantContext = variantContextToAvroVariantConverter.from(variant);
+//
+//                System.out.println(variantContext.toString());
+//            }
+//
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
     }
 
+    /**
+     * search command
+     */
+    private void search() throws IOException, SolrServerException {
+        StorageVariantCommandOptions.VariantSearchCommandOptions searchOptions = variantCommandOptions.searchVariantsCommandOptions;
+
+        SearchManager searchManager = new SearchManager();
+        if (searchOptions.index) {
+            // index
+            Path path = Paths.get(searchOptions.inputFilename);
+            searchManager.load(path);
+        } else {
+            // query
+            Query query = new Query(); // VariantQueryCommandUtils.parseQuery(searchOptions, null);
+            QueryOptions queryOptions = new QueryOptions(); // VariantQueryCommandUtils.parseQueryOptions(searchOptions);
+            SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
+            int count = 0;
+            while (iterator.hasNext()) {
+                VariantSearch variantSearch = iterator.next();
+                System.out.println("Variant #" + count);
+                System.out.println(variantSearch.toString());
+                count++;
+            }
+            System.out.println("Num. variants: " + count);
+        }
+    }
 
     private void executeRank(Query query, VariantDBAdaptor variantDBAdaptor,
                              StorageVariantCommandOptions.VariantQueryCommandOptions variantQueryCommandOptions) throws JsonProcessingException {

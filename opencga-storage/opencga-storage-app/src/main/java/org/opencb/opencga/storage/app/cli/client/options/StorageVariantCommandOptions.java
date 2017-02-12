@@ -41,6 +41,7 @@ public class StorageVariantCommandOptions {
     public VariantAnnotateCommandOptions annotateVariantsCommandOptions;
     public VariantStatsCommandOptions statsVariantsCommandOptions;
     public VariantExportCommandOptions exportVariantsCommandOptions;
+    public VariantSearchCommandOptions searchVariantsCommandOptions;
 
     public JCommander jCommander;
     public GeneralCliOptions.CommonOptions commonCommandOptions;
@@ -60,6 +61,7 @@ public class StorageVariantCommandOptions {
         this.annotateVariantsCommandOptions = new VariantAnnotateCommandOptions();
         this.statsVariantsCommandOptions = new VariantStatsCommandOptions();
         this.exportVariantsCommandOptions = new VariantExportCommandOptions();
+        this.searchVariantsCommandOptions = new VariantSearchCommandOptions();
     }
 
     /**
@@ -158,10 +160,10 @@ public class StorageVariantCommandOptions {
     }
 
     /**
-     *  query: generic and specific options
+     *  query: basic, generic and specific options
      */
-    public static class GenericVariantQueryOptions {
 
+    public static class BasicVariantQueryOptions {
         @Parameter(names = {"--id"}, description = VariantDBAdaptor.ID_DESCR)
         public String id;
 
@@ -173,6 +175,27 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"-g", "--gene"}, description = VariantDBAdaptor.GENE_DESCR)
         public String gene;
+
+        @Parameter(names = {"-t", "--type"}, description = "Whether the variant is a: SNV, INDEL or SV")
+        public String type;
+
+        @Parameter(names = {"--ct", "--consequence-type"}, description = "Consequence type SO term list. example: SO:0000045,SO:0000046",
+                arity = 1)
+        public String consequenceType;
+
+        @Parameter(names = {"-c", "--conservation"}, description = "Conservation score: {conservation_score}[<|>|<=|>=]{number} example: " +
+                "phastCons>0.5,phylop<0.1", arity = 1)
+        public String conservation;
+
+        @Parameter(names = {"--ps", "--protein-substitution"}, description = "Filter by Sift or/and Polyphen scores, e.g. \"sift<0.2;polyphen<0.4\"", arity = 1)
+        public String proteinSubstitution;
+
+        @Parameter(names = {"--cadd"}, description = "Functional score: {functional_score}[<|>|<=|>=]{number} "
+                + "e.g. cadd_scaled>5.2,cadd_raw<=0.3", arity = 1)
+        public String functionalScore;
+    }
+
+    public static class GenericVariantQueryOptions extends BasicVariantQueryOptions {
 
         @Parameter(names = {"--group-by"}, description = "Group by gene, ensembl gene or consequence_type")
         public String groupBy;
@@ -190,13 +213,6 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"-f", "--file"}, description = "A comma separated list of files to be used as filter", arity = 1)
         public String file;
 
-        @Parameter(names = {"-t", "--type"}, description = "Whether the variant is a: SNV, INDEL or SV")
-        public String type;
-
-        @Parameter(names = {"--ct", "--consequence-type"}, description = "Consequence type SO term list. example: SO:0000045,SO:0000046",
-                arity = 1)
-        public String consequenceType;
-
         @Parameter(names = {"--gene-biotype"}, description = "Biotype CSV", arity = 1)
         public String geneBiotype;
 
@@ -207,10 +223,6 @@ public class StorageVariantCommandOptions {
         @Parameter(names = {"--apf", "--alt-population-frequency"}, description = "Alternate Population Frequency: " +
                 "{study}:{population}[<|>|<=|>=]{number}", arity = 1)
         public String populationFreqs;
-
-        @Parameter(names = {"-c", "--conservation"}, description = "Conservation score: {conservation_score}[<|>|<=|>=]{number} example: " +
-                "phastCons>0.5,phylop<0.1", arity = 1)
-        public String conservation;
 
         @Parameter(names = {"--transcript-flag"}, description = "List of transcript annotation flags. e.g. CCDS,basic,cds_end_NF, mRNA_end_NF,cds_start_NF,mRNA_start_NF,seleno", arity = 1)
         public String flags;
@@ -241,9 +253,6 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--drug"}, description = "List of drug names", arity = 1)
         public String drugs;
-
-        @Parameter(names = {"--ps", "--protein-substitution"}, description = "Filter by Sift or/and Polyphen scores, e.g. \"sift<0.2;polyphen<0.4\"", arity = 1)
-        public String proteinSubstitution;
 
         @Deprecated
         @Parameter(names = {"--gwas"}, description = "[DEPRECATED]", arity = 1, hidden = true)
@@ -307,10 +316,6 @@ public class StorageVariantCommandOptions {
 
         @Parameter(names = {"--histogram-interval"}, description = "Histogram interval size. Default:2000", arity = 1)
         public int interval;
-
-        @Parameter(names = {"--cadd"}, description = "Functional score: {functional_score}[<|>|<=|>=]{number} "
-                + "e.g. cadd_scaled>5.2,cadd_raw<=0.3", arity = 1)
-        public String functionalScore;
 
         @Deprecated
         @Parameter(names = {"--annot-xref"}, description = "XRef", arity = 1)
@@ -576,4 +581,35 @@ public class StorageVariantCommandOptions {
 //        public String dbName;
     }
 
+    /**
+     * export: specific options
+     */
+
+    public static class GenericVariantSearchOptions extends BasicVariantQueryOptions {
+
+        // TODO: facet options
+    }
+
+    @Parameters(commandNames = {"search"}, commandDescription = "Solr support.")
+    public class VariantSearchCommandOptions extends GenericVariantSearchOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--index"}, description = "Index a file into Solr.", arity = 0)
+        public boolean index;
+
+        @Parameter(names = {"--input"}, description = "Path to the file to index. Valid formats: AVRO and JSON.", arity = 0)
+        public String inputFilename;
+
+//        @Parameter(names = {"-f", "--file-id"}, description = "Calculate stats only for the selected file", arity = 1)
+//        public String fileId;
+//
+//        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true,
+//                arity = 1)
+//        public String studyId;
+//
+//        @Parameter(names = {"-d", "--database"}, description = "DataBase name", arity = 1)
+//        public String dbName;
+    }
 }
