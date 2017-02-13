@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.log4j.Level;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -45,6 +46,7 @@ import org.opencb.opencga.storage.mongodb.variant.load.MongoVariantImporter;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageEngine.MongoDBVariantOptions.*;
 
@@ -213,7 +215,6 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                 List<Integer> filesToMerge = new ArrayList<>(batchLoad);
                 List<StoragePipelineResult> resultsToMerge = new ArrayList<>(batchLoad);
                 List<Integer> mergedFiles = new ArrayList<>();
-                String study = null;
 
                 Iterator<Map.Entry<URI, MongoDBVariantStoragePipeline>> iterator = storageETLMap.entrySet().iterator();
                 while (iterator.hasNext()) {
@@ -222,45 +223,78 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
                     URI input = etlResult.getPostTransformResult() == null ? entry.getKey() : etlResult.getPostTransformResult();
                     MongoDBVariantStoragePipeline storageETL = entry.getValue();
 
-                    if (doStage) {
-                        storageETL.getOptions().put(STAGE.key(), true);
-                        storageETL.getOptions().put(MERGE.key(), false);
-                        loadFile(storageETL, etlResult, results, input, outdirUri);
-                        etlResult.setLoadExecuted(false);
-                        etlResult.getLoadStats().put(STAGE.key(), true);
-                    }
+                    StopWatch loadWatch = StopWatch.createStarted();
+                    try {
+                        storageETL.getOptions().put(STAGE.key(), doStage);
+                        storageETL.getOptions().put(MERGE.key(), doMerge);
 
-                    if (doMerge) {
-                        filesToMerge.add(storageETL.getOptions().getInt(Options.FILE_ID.key()));
-                        study = storageETL.getStudyConfiguration().getStudyName();
-                        resultsToMerge.add(etlResult);
-                        if (filesToMerge.size() == batchLoad || !iterator.hasNext()) {
-                            long millis = System.currentTimeMillis();
-                            try {
-                                storageETL.getOptions().put(MERGE.key(), true);
-                                storageETL.getOptions().put(Options.FILE_ID.key(), new ArrayList<>(filesToMerge));
-                                storageETL.merge(filesToMerge);
-                                storageETL.postLoad(input, outdirUri);
-                            } catch (Exception e) {
-                                for (StoragePipelineResult storagePipelineResult : resultsToMerge) {
-                                    storagePipelineResult.setLoadError(e);
-                                }
-                                throw new StoragePipelineException("Exception executing merge.", e, results);
-                            } finally {
-                                long mergeTime = System.currentTimeMillis() - millis;
-                                for (StoragePipelineResult storagePipelineResult : resultsToMerge) {
-                                    storagePipelineResult.setLoadTimeMillis(storagePipelineResult.getLoadTimeMillis() + mergeTime);
-                                    for (Map.Entry<String, Object> statsEntry : storageETL.getLoadStats().entrySet()) {
-                                        storagePipelineResult.getLoadStats().putIfAbsent(statsEntry.getKey(), statsEntry.getValue());
+                        logger.info("PreLoad '{}'", input);
+                        input = storageETL.preLoad(input, outdirUri);
+                        etlResult.setPreLoadResult(input);
+
+                        if (doStage) {
+                            logger.info("Load - Stage '{}'", input);
+                            storageETL.stage(input);
+                            etlResult.setLoadResult(input);
+                            etlResult.setLoadStats(storageETL.getLoadStats());
+                            etlResult.getLoadStats().put(STAGE.key(), true);
+                            etlResult.setLoadTimeMillis(loadWatch.getTime(TimeUnit.MILLISECONDS));
+                        }
+
+                        if (doMerge) {
+                            logger.info("Load - Merge '{}'", input);
+                            filesToMerge.add(storageETL.getOptions().getInt(Options.FILE_ID.key()));
+                            resultsToMerge.add(etlResult);
+
+                            if (filesToMerge.size() == batchLoad || !iterator.hasNext()) {
+                                StopWatch mergeWatch = StopWatch.createStarted();
+                                try {
+                                    storageETL.merge(new ArrayList<>(filesToMerge));
+                                } catch (Exception e) {
+                                    for (StoragePipelineResult storagePipelineResult : resultsToMerge) {
+                                        storagePipelineResult.setLoadError(e);
                                     }
-                                    storagePipelineResult.setLoadExecuted(true);
+                                    throw new StoragePipelineException("Exception executing merge.", e, results);
+                                } finally {
+                                    long mergeTime = mergeWatch.getTime(TimeUnit.MILLISECONDS);
+                                    for (StoragePipelineResult storagePipelineResult : resultsToMerge) {
+                                        storagePipelineResult.setLoadTimeMillis(storagePipelineResult.getLoadTimeMillis() + mergeTime);
+                                        for (Map.Entry<String, Object> statsEntry : storageETL.getLoadStats().entrySet()) {
+                                            storagePipelineResult.getLoadStats().putIfAbsent(statsEntry.getKey(), statsEntry.getValue());
+                                        }
+                                        storagePipelineResult.setLoadExecuted(true);
+                                    }
+                                    mergedFiles.addAll(filesToMerge);
+                                    filesToMerge.clear();
+                                    resultsToMerge.clear();
                                 }
-                                mergedFiles.addAll(filesToMerge);
-                                filesToMerge.clear();
-                                resultsToMerge.clear();
+                            } else {
+                                // We don't execute merge for this file
+                                storageETL.getOptions().put(MERGE.key(), false);
                             }
                         }
+
+                        logger.info("PostLoad '{}'", input);
+                        input = storageETL.postLoad(input, outdirUri);
+                        etlResult.setPostLoadResult(input);
+                    } catch (Exception e) {
+                        if (etlResult.getLoadError() != null) {
+                            etlResult.setLoadError(e);
+                        }
+                        if (!(e instanceof StoragePipelineException)) {
+                            throw new StoragePipelineException("Exception executing load: " + e.getMessage(), e, results);
+                        } else {
+                            throw e;
+                        }
+                    } finally {
+                        if (etlResult.getLoadTimeMillis() == 0) {
+                            etlResult.setLoadTimeMillis(loadWatch.getTime(TimeUnit.MILLISECONDS));
+                        }
+                        if (etlResult.getLoadStats() == null) {
+                            etlResult.setLoadStats(storageETL.getLoadStats());
+                        }
                     }
+
                 }
                 if (doMerge) {
                     annotateLoadedFiles(outdirUri, inputFiles, results, getOptions());

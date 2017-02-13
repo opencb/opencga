@@ -169,8 +169,8 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         return input;
     }
 
-    protected VariantSource buildVariantSource(Path input, ObjectMap options) throws StorageEngineException {
-        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
+    protected VariantSource buildVariantSource(Path input) throws StorageEngineException {
+        StudyConfiguration studyConfiguration = getStudyConfiguration();
         Integer fileId;
         if (options.getBoolean(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION
                 .defaultValue())) {
@@ -232,7 +232,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         String format = options.getString(Options.TRANSFORM_FORMAT.key(), Options.TRANSFORM_FORMAT.defaultValue());
         String parser = options.getString("transform.parser", HTSJDK_PARSER);
 
-        VariantSource source = buildVariantSource(input, options);
+        VariantSource source = buildVariantSource(input);
         String fileName = source.getFileName();
         boolean generateReferenceBlocks = options.getBoolean(Options.GVCF.key(), false);
 
@@ -761,7 +761,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
 
         // Check loaded variants BEFORE updating the StudyConfiguration
-        checkLoadedVariants(input, fileIds, getStudyConfiguration(), options);
+        checkLoadedVariants(input, fileIds, getStudyConfiguration());
 
         StudyConfiguration studyConfiguration;
         try {
@@ -800,6 +800,7 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
             defaultCohortId = studyConfiguration.getCohortIds().values().stream().max(Integer::compareTo).orElse(1);
             studyConfiguration.getCohortIds().put(StudyEntry.DEFAULT_COHORT, defaultCohortId);
         }
+        logger.info("Add loaded samples to Default Cohort \"" + defaultCohortName + '"');
         studyConfiguration.getCohorts().put(defaultCohortId, indexedSamples.values());
 
     }
@@ -815,13 +816,13 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
         }
     }
 
-    protected abstract void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration, ObjectMap options)
+    protected abstract void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration)
             throws StorageEngineException;
 
-    protected void checkLoadedVariants(URI input, List<Integer> fileIds, StudyConfiguration studyConfiguration, ObjectMap options)
+    protected void checkLoadedVariants(URI input, List<Integer> fileIds, StudyConfiguration studyConfiguration)
             throws StorageEngineException {
         for (Integer fileId : fileIds) {
-            checkLoadedVariants(input, fileId, studyConfiguration, options);
+            checkLoadedVariants(input, fileId, studyConfiguration);
         }
     }
 
@@ -854,35 +855,29 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
      * @throws StorageEngineException If the study configuration is not found
      */
     public final StudyConfiguration getStudyConfiguration(boolean forceFetch) throws StorageEngineException {
-        if (forceFetch) {
-            options.remove(Options.STUDY_CONFIGURATION.key());
-        }
-        return getStudyConfiguration(options);
-    }
-
-    public final StudyConfiguration getStudyConfiguration(ObjectMap params) throws StorageEngineException {
-        if (params.containsKey(Options.STUDY_CONFIGURATION.key())) {
-            return params.get(Options.STUDY_CONFIGURATION.key(), StudyConfiguration.class);
+        // TODO: should StudyConfiguration be a class field?
+        if (!forceFetch && options.containsKey(Options.STUDY_CONFIGURATION.key())) {
+            return options.get(Options.STUDY_CONFIGURATION.key(), StudyConfiguration.class);
         } else {
             StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
             StudyConfiguration studyConfiguration;
-            if (!StringUtils.isEmpty(params.getString(Options.STUDY_NAME.key()))
-                    && !params.getString(Options.STUDY_NAME.key()).equals(Options.STUDY_NAME.defaultValue())) {
-                studyConfiguration = studyConfigurationManager.getStudyConfiguration(params.getString(Options.STUDY_NAME.key()),
-                        new QueryOptions(params)).first();
-                if (studyConfiguration != null && params.containsKey(Options.STUDY_ID.key())) {
+            if (!StringUtils.isEmpty(options.getString(Options.STUDY_NAME.key()))
+                    && !options.getString(Options.STUDY_NAME.key()).equals(Options.STUDY_NAME.defaultValue())) {
+                studyConfiguration = studyConfigurationManager.getStudyConfiguration(options.getString(Options.STUDY_NAME.key()),
+                        new QueryOptions(options)).first();
+                if (studyConfiguration != null && options.containsKey(Options.STUDY_ID.key())) {
                     //Check if StudyId matches
-                    if (studyConfiguration.getStudyId() != params.getInt(Options.STUDY_ID.key())) {
+                    if (studyConfiguration.getStudyId() != options.getInt(Options.STUDY_ID.key())) {
                         throw new StorageEngineException("Invalid StudyConfiguration. StudyId mismatches");
                     }
                 }
-            } else if (params.containsKey(Options.STUDY_ID.key())) {
-                studyConfiguration = studyConfigurationManager.getStudyConfiguration(params.getInt(Options.STUDY_ID.key()),
-                        new QueryOptions(params)).first();
+            } else if (options.containsKey(Options.STUDY_ID.key())) {
+                studyConfiguration = studyConfigurationManager.getStudyConfiguration(options.getInt(Options.STUDY_ID.key()),
+                        new QueryOptions(options)).first();
             } else {
                 throw new StorageEngineException("Unable to get StudyConfiguration. Missing studyId or studyName");
             }
-            params.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+            options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
             return studyConfiguration;
         }
     }

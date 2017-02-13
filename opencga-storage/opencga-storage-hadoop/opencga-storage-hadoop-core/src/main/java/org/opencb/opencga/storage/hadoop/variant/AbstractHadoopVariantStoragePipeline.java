@@ -653,7 +653,7 @@ public abstract class AbstractHadoopVariantStoragePipeline extends VariantStorag
     }
 
     @Override
-    protected void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration, ObjectMap options) throws
+    protected void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration) throws
             StorageEngineException {
         logger.warn("Skip check loaded variants");
     }
