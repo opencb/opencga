@@ -93,6 +93,11 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         HBaseToVariantConverter.setFailOnWrongVariants(true);
     }
 
+    @Override
+    public Map<String, ?> getOtherStorageConfigurationOptions() {
+        return new ObjectMap(AbstractHadoopVariantStoragePipeline.SKIP_CREATE_PHOENIX_INDEXES, true);
+    }
+
     public VariantSource loadFile(String resourceName, int fileId, StudyConfiguration studyConfiguration) throws Exception {
         return loadFile(resourceName, fileId, studyConfiguration, null);
     }
@@ -256,7 +261,6 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         }
 
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
-        studyConfiguration.getHeaders().clear();
         System.out.println("StudyConfiguration = " + studyConfiguration);
 
         HadoopVariantSourceDBAdaptor fileMetadataManager = dbAdaptor.getVariantSourceDBAdaptor();
@@ -273,8 +277,8 @@ public class VariantHadoopMultiSampleTest extends VariantStorageBaseTest impleme
         URI outputUri = newOutputUri();
         FileStudyConfigurationManager.write(studyConfiguration, new File(outputUri.resolve("study_configuration.json").getPath()).toPath());
         try (FileOutputStream out = new FileOutputStream(outputUri.resolve("platinum.merged.vcf").getPath())) {
-            VariantVcfDataWriter.htsExport(dbAdaptor.iterator(), studyConfiguration, dbAdaptor.getVariantSourceDBAdaptor(),
-                    out, new QueryOptions());
+            VariantVcfDataWriter.htsExport(dbAdaptor.iterator(new Query(), new QueryOptions(QueryOptions.SORT, true)),
+                    studyConfiguration, dbAdaptor.getVariantSourceDBAdaptor(), out, new QueryOptions());
         }
     }
 

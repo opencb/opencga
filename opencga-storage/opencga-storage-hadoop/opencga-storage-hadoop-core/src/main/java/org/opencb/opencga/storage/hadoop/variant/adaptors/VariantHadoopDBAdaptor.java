@@ -93,6 +93,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final VariantSqlQueryParser queryParser;
     private final HadoopVariantSourceDBAdaptor variantSourceDBAdaptor;
     private final CellBaseClient cellBaseClient;
+    private boolean clientSideSkip;
 
     public VariantHadoopDBAdaptor(HBaseCredentials credentials, StorageConfiguration configuration,
                                   Configuration conf) throws IOException {
@@ -119,7 +120,9 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         }
         cellBaseClient = new CellBaseClient(species, assembly, clientConfiguration);
 
-        this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable, new VariantDBAdaptorUtils(this), cellBaseClient);
+        clientSideSkip = !options.getBoolean(PhoenixHelper.PHOENIX_SERVER_OFFSET_AVAILABLE, true);
+        this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable, new VariantDBAdaptorUtils(this),
+                clientSideSkip);
 
         phoenixHelper = new VariantPhoenixHelper(genomeHelper);
     }
@@ -413,13 +416,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             }
         } else {
 
-            int limit = options.getInt(QueryOptions.LIMIT, -1);
-            int skip = options.getInt(QueryOptions.SKIP, -1);
-            // Increment the limit with the skip to do a client side skip
-            if (limit > 0 && skip > 0) {
-                options = new QueryOptions(options);
-                options.put(QueryOptions.LIMIT, limit + skip);
-            }
             logger.debug("Table name = " + variantTable);
             String sql = queryParser.parse(query, options);
             logger.info(sql);
@@ -437,8 +433,14 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 VariantHBaseResultSetIterator iterator = new VariantHBaseResultSetIterator(statement,
                         resultSet, genomeHelper, getStudyConfigurationManager(), options, returnedSamples);
 
-                // Client side skip!
-                iterator.skip(skip);
+                if (clientSideSkip) {
+                    // Client side skip!
+                    int skip = options.getInt(QueryOptions.SKIP, -1);
+                    if (skip > 0) {
+                        logger.info("Client side skip! skip = {}", skip);
+                        iterator.skip(skip);
+                    }
+                }
                 return iterator;
             } catch (SQLException e) {
                 throw new RuntimeException(e);

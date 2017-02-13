@@ -132,7 +132,7 @@ public class VariantMatchers {
 
             @Override
             public void describeTo(Description description) {
-                description.appendText("overlaps with " + region + (inclusive? "inclusively" : "non inclusively"));
+                description.appendText("overlaps with region " + region + (inclusive? " inclusively" : " non inclusively"));
             }
         };
     }
