@@ -479,7 +479,10 @@ public class CohortWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "numerical attributes", required = false) @DefaultValue("") @QueryParam("nattributes")
                                         String nattributes) {
         try {
-            QueryResult result = cohortManager.groupBy(studyIdStr, query, queryOptions, fields, sessionId);
+            if (StringUtils.isNotEmpty(studyIdStr)) {
+                studyStr = studyIdStr;
+            }
+            QueryResult result = cohortManager.groupBy(studyStr, query, queryOptions, fields, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

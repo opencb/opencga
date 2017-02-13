@@ -64,7 +64,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngi
  *
  */
 public abstract class AbstractVariantTableDriver extends Configured implements Tool {
-    protected static final Logger LOG = LoggerFactory.getLogger(AbstractVariantTableDriver.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractVariantTableDriver.class);
 
     public static final String CONFIG_VARIANT_FILE_IDS          = "opencga.variant.input.file_ids";
     public static final String CONFIG_VARIANT_TABLE_NAME        = "opencga.variant.table.name";
@@ -224,7 +224,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         return succeed;
     }
 
-    protected Logger getLog() {
+    private Logger getLog() {
         return LOG;
     }
 

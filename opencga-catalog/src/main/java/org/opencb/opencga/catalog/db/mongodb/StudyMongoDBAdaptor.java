@@ -897,6 +897,10 @@ public class StudyMongoDBAdaptor extends MongoDBAdaptor implements StudyDBAdapto
                 StudyDBAdaptor.VariableSetParams option = StudyDBAdaptor.VariableSetParams.getParam(key) != null
                         ? StudyDBAdaptor.VariableSetParams.getParam(key)
                         : StudyDBAdaptor.VariableSetParams.getParam(entry.getKey());
+                if (option == null) {
+                    logger.warn("{} unknown", entry.getKey());
+                    continue;
+                }
                 switch (option) {
                     case STUDY_ID:
                         studyId = query.getLong(VariableSetParams.STUDY_ID.key());

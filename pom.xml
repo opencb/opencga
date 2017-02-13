@@ -304,7 +304,7 @@
             <dependency>
                 <groupId>com.beust</groupId>
                 <artifactId>jcommander</artifactId>
-                <version>1.47</version>
+                <version>1.58</version>
             </dependency>
             <dependency>
                 <groupId>com.github.samtools</groupId>

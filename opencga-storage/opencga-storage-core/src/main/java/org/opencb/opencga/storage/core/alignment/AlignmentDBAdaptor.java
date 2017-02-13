@@ -44,6 +44,7 @@ public interface AlignmentDBAdaptor {
 //        SESSION_ID("sid", TEXT, ""),
 //        FILE_ID("fileId", TEXT, ""),
         REGION("region", TEXT, ""),
+        WINDOW_SIZE("windowSize", INTEGER, ""),
         MIN_MAPQ("minMapQ", INTEGER, ""),
         LIMIT("limit", INTEGER, ""),
         SKIP("skip", INTEGER, ""),

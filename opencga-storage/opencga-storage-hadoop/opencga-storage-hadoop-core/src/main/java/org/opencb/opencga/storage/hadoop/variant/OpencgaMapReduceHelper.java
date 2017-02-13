@@ -46,9 +46,11 @@ public class OpencgaMapReduceHelper {
         helper = new VariantTableHelper(context.getConfiguration());
         this.studyConfiguration = getHelper().loadMeta(); // Variant meta
 
-        hbaseToVariantConverter = new HBaseToVariantConverter(this.getHelper(),
-                new HBaseStudyConfigurationManager(this.getHelper(), this.getHelper().getOutputTableAsString(),
-                        this.getHelper().getConf(), new ObjectMap())).setFailOnEmptyVariants(true).setSimpleGenotypes(false);
+        HBaseStudyConfigurationManager scm = new HBaseStudyConfigurationManager(getHelper(), getHelper().getOutputTableAsString(),
+                getHelper().getConf(), new ObjectMap());
+        hbaseToVariantConverter = new HBaseToVariantConverter(getHelper(), scm)
+                .setFailOnEmptyVariants(true)
+                .setSimpleGenotypes(false);
         this.indexedSamples = StudyConfiguration.getIndexedSamples(this.studyConfiguration);
         timestamp = context.getConfiguration().getLong(AbstractVariantTableDriver.TIMESTAMP, -1);
         if (timestamp == -1) {

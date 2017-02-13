@@ -78,11 +78,11 @@ public class VariantHadoopManagerTest extends VariantStorageBaseTest implements 
 
         studyConfiguration = VariantStorageBaseTest.newStudyConfiguration();
         etlResult = VariantStorageBaseTest.runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
-                new ObjectMap(Options.TRANSFORM_FORMAT.key(), "avro")
+                new ObjectMap(Options.TRANSFORM_FORMAT.key(), "proto")
                         .append(Options.FILE_ID.key(), FILE_ID)
                         .append(Options.ANNOTATE.key(), true)
                         .append(Options.CALCULATE_STATS.key(), false)
-                        .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, false)
+                        .append(HadoopVariantStorageEngine.HADOOP_LOAD_DIRECT, true)
                         .append(HadoopVariantStorageEngine.HADOOP_LOAD_ARCHIVE, true)
                         .append(HadoopVariantStorageEngine.HADOOP_LOAD_VARIANT, true)
         );
