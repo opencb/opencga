@@ -252,15 +252,11 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     public QueryResult<Project> get(Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (userId.isEmpty()) {
-            throw new CatalogException("The session id is not valid.");
-        }
+        String userId = catalogManager.getUserManager().getId(sessionId);
 
         String ownerId = query.getString("ownerId", query.getString("userId", userId));
 
         ParamUtils.checkParameter(ownerId, "ownerId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
 
         QueryResult<Project> allProjects = projectDBAdaptor.get(ownerId, options);
 

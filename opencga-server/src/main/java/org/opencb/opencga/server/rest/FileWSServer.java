@@ -1065,6 +1065,7 @@ public class FileWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Histogram interval size", required = false) @DefaultValue("2000") @QueryParam("interval") int interval,
                                 @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge) {
 
+
         List<QueryResult> queryResults = new LinkedList<>();
         try {
             AbstractManager.MyResourceIds resource = fileManager.getIds(fileIdCsv, studyStr, sessionId);

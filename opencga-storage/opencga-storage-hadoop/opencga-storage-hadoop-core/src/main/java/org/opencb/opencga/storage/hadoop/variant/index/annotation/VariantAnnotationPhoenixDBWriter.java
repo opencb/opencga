@@ -10,6 +10,8 @@ import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor
 import org.opencb.opencga.storage.hadoop.variant.converters.annotation.VariantAnnotationToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.PhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -28,6 +30,7 @@ public class VariantAnnotationPhoenixDBWriter extends VariantAnnotationDBWriter 
     private final boolean closeConnection;
     private String variantTable;
     private GenomeHelper genomeHelper;
+    protected static Logger logger = LoggerFactory.getLogger(VariantAnnotationPhoenixDBWriter.class);
 
     public VariantAnnotationPhoenixDBWriter(VariantHadoopDBAdaptor dbAdaptor, QueryOptions options, String variantTable,
                                             Connection jdbcConnection, boolean closeConnection) {
@@ -92,6 +95,7 @@ public class VariantAnnotationPhoenixDBWriter extends VariantAnnotationDBWriter 
         try {
             upsertExecutor.close();
             if (closeConnection) {
+                logger.info("Close Phoenix connection " + connection);
                 connection.close();
             }
         } catch (IOException e) {

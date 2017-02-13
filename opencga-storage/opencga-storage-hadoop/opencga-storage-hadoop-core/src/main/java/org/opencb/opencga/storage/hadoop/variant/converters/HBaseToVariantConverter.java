@@ -173,25 +173,19 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 //                throw new IllegalStateException("No samples found for study!!!");
 //            }
 
+            BiMap<String, Integer> loadedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration);
+
             List<String> format = Arrays.asList(VariantMerger.GT_KEY, VariantMerger.GENOTYPE_FILTER_KEY);
             int gtIdx = format.indexOf(VariantMerger.GT_KEY);
             int ftIdx = format.indexOf(VariantMerger.GENOTYPE_FILTER_KEY);
 
+            int loadedSamplesSize = loadedSamples.size();
+            calculatePassCallRates(row, attributesMap, loadedSamplesSize);
+
             Integer nSamples = returnedSamplesPosition.size();
+
             @SuppressWarnings ("unchecked")
             List<String>[] samplesDataArray = new List[nSamples];
-
-            attributesMap.put("PASS", row.getPassCount().toString());
-            attributesMap.put("CALL", row.getCallCount().toString());
-
-            double passrate = row.getPassCount().doubleValue() / nSamples.doubleValue();
-            double callrate = row.getCallCount().doubleValue() / nSamples.doubleValue();
-            double opr = passrate * callrate;
-            attributesMap.put("PR", String.valueOf(passrate));
-            attributesMap.put("CR", String.valueOf(callrate));
-            attributesMap.put("OPR", String.valueOf(opr)); // OVERALL pass rate
-
-            BiMap<String, Integer> loadedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration);
 
             Set<Integer> sampleWithVariant = new HashSet<>();
             BiMap<Integer, String> mapSampleIds = studyConfiguration.getSampleIds().inverse();
@@ -256,7 +250,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             }
 
             // Set pass field
-            int passCount = loadedSamples.size();
+            int passCount = loadedSamplesSize;
             for (Entry<String, SampleList> entry : row.getComplexFilter().getFilterNonPass().entrySet()) {
                 String filterString = entry.getKey();
                 passCount -= entry.getValue().getSampleIdsCount();
@@ -273,12 +267,12 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             if (passCount != row.getPassCount()) {
                 String message = String.format(
                         "Error parsing variant %s. Pass count %s does not match filter fill count: %s using %s loaded samples.",
-                        row.toString(), row.getPassCount(), passCount, loadedSamples.size());
+                        row.toString(), row.getPassCount(), passCount, loadedSamplesSize);
                 wrongVariant(message);
             }
 
             // Check homRef count
-            int homRefCount = loadedSamples.size();
+            int homRefCount = loadedSamplesSize;
             homRefCount -= sampleWithVariant.size();
             if (homRefCount != row.getHomRefCount()) {
                 String message = "Wrong number of HomRef samples for variant " + variant + ". Got " + homRefCount + ", expect "
@@ -328,15 +322,22 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
         return variant;
     }
 
+    private void calculatePassCallRates(VariantTableStudyRow row, Map<String, String> attributesMap, int
+            loadedSamplesSize) {
+        attributesMap.put("PASS", row.getPassCount().toString());
+        attributesMap.put("CALL", row.getCallCount().toString());
+        double passRate = row.getPassCount().doubleValue() / loadedSamplesSize;
+        double callRate = row.getCallCount().doubleValue() / loadedSamplesSize;
+        double opr = passRate * callRate;
+        attributesMap.put("PR", String.valueOf(passRate));
+        attributesMap.put("CR", String.valueOf(callRate));
+        attributesMap.put("OPR", String.valueOf(opr)); // OVERALL pass rate
+        attributesMap.put("NS", String.valueOf(loadedSamplesSize)); // Number of Samples
+    }
+
     private String getSimpleGenotype(String genotype) {
         if (genotype.contains(",")) {
-            String[] split = genotype.split(",");
-            for (String gt : split) {
-                if (gt.contains("1")) {
-                    return "1/.";
-                }
-            }
-            return "0/.";
+            return genotype.split(",")[0];
         } else {
             return genotype;
         }
