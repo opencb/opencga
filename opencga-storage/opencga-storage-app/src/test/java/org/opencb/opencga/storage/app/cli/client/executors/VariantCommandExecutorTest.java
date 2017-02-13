@@ -57,16 +57,16 @@ public class VariantCommandExecutorTest {
             Query query = new Query();
             QueryOptions options = new QueryOptions();
 
-            VariantContextToAvroVariantConverter variantContextToAvroVariantConverter =
-                    new VariantContextToAvroVariantConverter("default", Collections.singletonList("NA06984"), Collections.emptyList());
-            VariantDBIterator iterator = variantDBAdaptor.iterator(query, options);
-            while (iterator.hasNext()) {
-                Variant variant = iterator.next();
-                VariantContext variantContext = variantContextToAvroVariantConverter.from(variant);
-
-//                System.out.println(variant.toJson());
-                System.out.println(variantContext.toStringDecodeGenotypes());
-            }
+//            VariantContextToAvroVariantConverter variantContextToAvroVariantConverter =
+//                    new VariantContextToAvroVariantConverter("default", Collections.singletonList("NA06984"), Collections.emptyList());
+//            VariantDBIterator iterator = variantDBAdaptor.iterator(query, options);
+//            while (iterator.hasNext()) {
+//                Variant variant = iterator.next();
+//                VariantContext variantContext = variantContextToAvroVariantConverter.from(variant);
+//
+////                System.out.println(variant.toJson());
+//                System.out.println(variantContext.toStringDecodeGenotypes());
+//            }
 
         } catch (Exception e) {
             e.printStackTrace();
