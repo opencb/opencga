@@ -83,7 +83,7 @@ public class VariantSearchModel {
     private double polyphen;
 
     @Field("genes")
-    private Set<String> genes;
+    private List<String> genes;
 
     @Field("soAcc")
     private Set<Integer> soAcc;
@@ -103,7 +103,7 @@ public class VariantSearchModel {
 
 
     public VariantSearchModel() {
-        this.genes = new HashSet<>();
+        this.genes = new ArrayList<>();
         this.soAcc = new HashSet<>();
         this.geneToSoAcc = new HashSet<>();
         this.popFreq = new HashMap<>();
@@ -272,11 +272,11 @@ public class VariantSearchModel {
         return this;
     }
 
-    public Set<String> getGenes() {
+    public List<String> getGenes() {
         return genes;
     }
 
-    public VariantSearchModel setGenes(Set<String> genes) {
+    public VariantSearchModel setGenes(List<String> genes) {
         this.genes = genes;
         return this;
     }

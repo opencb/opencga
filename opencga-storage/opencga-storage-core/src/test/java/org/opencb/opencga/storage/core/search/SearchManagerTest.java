@@ -50,12 +50,47 @@ public class SearchManagerTest extends GenericTest {
         searchManager = new SearchManager("http://localhost:8983/solr/", "biotest_core2");
     }
 
-    @Test
+//    @Test
+    public void conversionTest() {
+
+        try {
+//            String filename = "/home/imedina/Downloads/variation_chr1.full.json.gz";
+            String filename = "/home/jtarraga/data150/vcf/variation_chr22.3.json";
+            BufferedReader bufferedReader = FileUtils.newBufferedReader(Paths.get(filename));
+
+            VariantSearchToVariantConverter variantSearchToVariantConverter = new VariantSearchToVariantConverter();
+            ObjectReader objectReader = jsonObjectMapper.readerFor(Variant.class);
+            String line;
+            List<Variant> variants = new ArrayList<>(10000);
+            int count = 0;
+            while ((line = bufferedReader.readLine()) != null) {
+                Variant variant = objectReader.readValue(line);
+                VariantSearchModel variantSearchModel = variantSearchToVariantConverter.convertToStorageType(variant);
+                System.out.println("--------------- variant:");
+                System.out.println(variant.toJson());
+                System.out.println("--------------- variant search model:");
+                System.out.println(variantSearchModel.toString());
+                Variant variant2 = variantSearchToVariantConverter.convertToDataModelType(variantSearchModel);
+                System.out.println("--------------- variant2:");
+                System.out.println(variant2.toJson());
+                count++;
+            }
+
+            System.out.println("Number of processed variants: " + count);
+            bufferedReader.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+//    @Test
     public void loadVariantFileIntoSolrTest() {
 
         String test = "Test_Variant_Insert_";
         try {
-            BufferedReader bufferedReader = FileUtils.newBufferedReader(Paths.get("/home/imedina/Downloads/variation_chr1.full.json.gz"));
+//            String filename = "/home/imedina/Downloads/variation_chr1.full.json.gz";
+            String filename = "/home/jtarraga/data150/vcf/variation_chr22.3.json";
+            BufferedReader bufferedReader = FileUtils.newBufferedReader(Paths.get(filename));
 
             VariantSearchToVariantConverter variantSearchToVariantConverter = new VariantSearchToVariantConverter();
             ObjectReader objectReader = jsonObjectMapper.readerFor(Variant.class);
@@ -73,6 +108,11 @@ public class SearchManagerTest extends GenericTest {
                 }
                 count++;
             }
+            if (variants.size() > 0) {
+                searchManager.insert(variants);
+            }
+
+            System.out.println("Number of processed variants: " + count);
 
             bufferedReader.close();
         } catch (Exception e) {

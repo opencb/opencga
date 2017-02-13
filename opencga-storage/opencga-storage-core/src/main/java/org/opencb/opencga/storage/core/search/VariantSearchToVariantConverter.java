@@ -64,7 +64,9 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
         // consequence types
         List<ConsequenceType> consequenceTypes = new ArrayList<>();
-        String[] genes = (String[]) variantSearchModel.getGenes().toArray();
+//        String[] genes = (String[]) variantSearchModel.getGenes()
+//                .toArray(new String[variantSearchModel.getGenes().size()]);
+        String[] genes = variantSearchModel.getGenes().toArray(new String[variantSearchModel.getGenes().size()]);
         Map<String, ConsequenceType> consequenceTypeMap = new HashMap<>();
         for (int i = 0; i < genes.length; i += 3) {
             // genes are ordered: 1) gene name, 2) ensembl gene id, 3) ensembl transcript id, and then, repeat
@@ -101,7 +103,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             List<PopulationFrequency> populationFrequencies = new ArrayList<>();
             for (String key : variantSearchModel.getPopFreq().keySet()) {
                 PopulationFrequency populationFrequency = new PopulationFrequency();
-                String[] fields = key.split(",");
+                String[] fields = key.split("__");
                 populationFrequency.setStudy(fields[1]);
                 populationFrequency.setPopulation(fields[2]);
                 populationFrequency.setAltAlleleFreq(variantSearchModel.getPopFreq().get(key));
@@ -172,10 +174,18 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             clinVar.setTraits(clinVarMap.get(key));
             clinVarList.add(clinVar);
         }
-        variantTraitAssociation.setClinvar(clinVarList);
-        variantTraitAssociation.setCosmic(cosmicList);
-        variantAnnotation.setVariantTraitAssociation(variantTraitAssociation);
-        variantAnnotation.setGeneTraitAssociation(geneTraitAssociationList);
+        if (clinVarList.size() > 0 || cosmicList.size() > 0) {
+            if (clinVarList.size() > 0) {
+                variantTraitAssociation.setClinvar(clinVarList);
+            }
+            if (cosmicList.size() > 0) {
+                variantTraitAssociation.setCosmic(cosmicList);
+            }
+            variantAnnotation.setVariantTraitAssociation(variantTraitAssociation);
+        }
+        if (geneTraitAssociationList.size() > 0) {
+            variantAnnotation.setGeneTraitAssociation(geneTraitAssociationList);
+        }
 
         // set variant annotation
         variant.setAnnotation(variantAnnotation);
@@ -236,7 +246,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             // Set Genes and Consequence Types
             List<ConsequenceType> consequenceTypes = variantAnnotation.getConsequenceTypes();
             if (consequenceTypes != null) {
-                Set<String> genes = new LinkedHashSet<>();
+                List<String> genes = new ArrayList<>();
+//                Set<String> genes = new LinkedHashSet<>();
                 Set<Integer> soAccessions = new HashSet<>();
                 Set<String> geneToSOAccessions = new LinkedHashSet<>();
 
@@ -291,7 +302,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             if (variantAnnotation.getPopulationFrequencies() != null) {
                 Map<String, Float> populationFrequencies = new HashMap<>();
                 for (PopulationFrequency populationFrequency : variantAnnotation.getPopulationFrequencies()) {
-                    populationFrequencies.put("popFreq_" + populationFrequency.getStudy() + "_"
+                    populationFrequencies.put("popFreq__" + populationFrequency.getStudy() + "__"
                             + populationFrequency.getPopulation(), populationFrequency.getAltAlleleFreq());
                 }
                 if (!populationFrequencies.isEmpty()) {

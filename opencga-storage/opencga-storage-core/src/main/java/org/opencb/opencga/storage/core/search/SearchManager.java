@@ -87,13 +87,13 @@ public class SearchManager {
      * @throws IOException          IOException
      * @throws SolrServerException  SolrServerException
      */
-    public void load(Path path) throws IOException, SolrServerException {
+    public void load(Path path) throws IOException, SolrServerException, StorageEngineException {
         // TODO: can we use VariantReaderUtils as implemented in the function load00 below ?
         // TODO: VarriantReaderUtils supports JSON, AVRO and VCF file formats.
         if (path.endsWith(".json")) {
             loadJson(path);
-//        } else if (path.endsWith(".avro")) {
-//            loadAvro(path);
+        } else if (path.endsWith(".avro")) {
+            loadAvro(path);
         } else {
             throw new IOException("File format " + path + " not supported. Please, use Avro or JSON file formats.");
         }
@@ -101,23 +101,23 @@ public class SearchManager {
 
     // TODO: can we use VariantReaderUtils? It supports JSON, AVRO and VCF file formats.
     // TODO: test !
-    private void load00(Path path) throws IOException, SolrServerException, StorageEngineException {
-        // reader
-        VariantSource source = null;
-        VariantReader reader = VariantReaderUtils.getVariantReader(path, source);
-
-        List<Variant> variants;
-
-        // TODO: get the buffer size from configuration file
-        int bufferSize = 10000;
-
-        do {
-            variants = reader.read(bufferSize);
-            insert(variants);
-        } while (variants.size() == bufferSize);
-
-        reader.close();
-    }
+//    private void load00(Path path) throws IOException, SolrServerException, StorageEngineException {
+//        // reader
+//        VariantSource source = null;
+//        VariantReader reader = VariantReaderUtils.getVariantReader(path, source);
+//
+//        List<Variant> variants;
+//
+//        // TODO: get the buffer size from configuration file
+//        int bufferSize = 10000;
+//
+//        do {
+//            variants = reader.read(bufferSize);
+//            insert(variants);
+//        } while (variants.size() == bufferSize);
+//
+//        reader.close();
+//    }
 
     /**
      * Load a Solr core/collection from a variant DB iterator.
