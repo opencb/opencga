@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.SampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.StudyDBAdaptor;
 import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.catalog.models.VariableSet;
 import org.opencb.opencga.catalog.models.summaries.VariableSetSummary;
@@ -126,9 +127,9 @@ public class VariableSetWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "count", value = "Total number of results. [PENDING]", dataType = "boolean", paramType = "query")
     })
-    public Response search(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
-                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
-                                @QueryParam("study") String studyStr,
+    public Response search(@ApiParam(value = "studyId") @QueryParam("studyId") String studyIdStr,
+                           @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias",
+                                   required = true) @QueryParam("study") String studyStr,
                            @ApiParam(value = "CSV list of variablesetIds", required = false) @QueryParam("id") String id,
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
@@ -140,6 +141,10 @@ public class VariableSetWSServer extends OpenCGAWSServer {
             if (StringUtils.isNotEmpty(studyIdStr)) {
                 studyStr = studyIdStr;
             }
+            if (StringUtils.isNotEmpty(query.getString("study"))) {
+                query.remove("study");
+            }
+
             QueryResult<VariableSet> queryResult = catalogManager.getStudyManager().searchVariableSets(studyStr, query, queryOptions,
                     sessionId);
             return createOkResponse(queryResult);

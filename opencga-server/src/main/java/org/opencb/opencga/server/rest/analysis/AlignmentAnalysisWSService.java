@@ -276,7 +276,8 @@ public class AlignmentAnalysisWSService extends AnalysisWSService {
                                 @ApiParam(value = "(DEPRECATED) Study id", hidden = true) @QueryParam("studyId") String studyId,
                                 @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                                     @QueryParam("study") String studyStr,
-                                @ApiParam(value = "Comma separated list of regions 'chr:start-end'", required = false) @QueryParam("region") String region,
+                                @ApiParam(value = "Comma separated list of regions 'chr:start-end'", required = false) @QueryParam("region")
+                                            String region,
                                 @ApiParam(value = "Minimum mapping quality", required = false) @QueryParam("minMapQ") Integer minMapQ,
                                 @ApiParam(value = "Window size", required = false, defaultValue = "1") @QueryParam("windowSize")
                                     Integer windowSize,
