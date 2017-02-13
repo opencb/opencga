@@ -96,16 +96,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         scores.add(new Score(variantSearchModel.getCaddScaled(), "cadd_scaled", ""));
         variantAnnotation.setFunctionalScore(scores);
 
-        // TODO: clinvar, a clinvar accession might have several traits !!
-//        if (variantAnnotation.getVariantTraitAssociation() != null) {
-//            if (variantAnnotation.getVariantTraitAssociation().getClinvar() != null) {
-//                variantAnnotation.getVariantTraitAssociation().getClinvar()
-//                        .forEach(cv -> {
-//                            xrefs.add(cv.getAccession());
-//                            cv.getTraits().forEach(cvt -> traits.add("ClinVar" + " -- " + cv.getAccession() + " -- " + cvt));
-//                        });
-//            }
-
         // set clinvar, cosmic, hpo
         Map<String, List<String>> clinVarMap = new HashMap<>();
         List<Cosmic> cosmicList = new ArrayList<>();
