@@ -68,6 +68,7 @@ public class OpencgaCliOptionsParser {
         generalOptions = new GeneralCliOptions.GeneralOptions();
 
         jCommander = new JCommander(generalOptions);
+        jCommander.setExpandAtSign(false);
 
         commonCommandOptions = new GeneralCliOptions.CommonCommandOptions();
         dataModelOptions = new GeneralCliOptions.DataModelOptions();
