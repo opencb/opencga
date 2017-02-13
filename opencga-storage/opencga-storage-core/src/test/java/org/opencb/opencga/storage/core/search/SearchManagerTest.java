@@ -5,7 +5,6 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.RangeFacet;
 import org.junit.Assert;
 import org.junit.Before;
@@ -48,7 +47,7 @@ public class SearchManagerTest extends GenericTest {
         jsonObjectMapper = new ObjectMapper();
         initJSONParser(new File(VariantStorageBaseTest.getResourceUri("variant-solr-sample.json.gz")));
         variantList = readNextVariantFromJSON(100);
-        searchManager = new SearchManager("http://localhost:8983/solr/", "biotest_core16");
+        searchManager = new SearchManager("http://localhost:8983/solr/", "biotest_core2");
     }
 
     @Test
@@ -56,7 +55,7 @@ public class SearchManagerTest extends GenericTest {
 
         String test = "Test_Variant_Insert_";
         try {
-            BufferedReader bufferedReader = FileUtils.newBufferedReader(Paths.get("/home/imedina/Downloads/variation_chr22.full.json"));
+            BufferedReader bufferedReader = FileUtils.newBufferedReader(Paths.get("/home/imedina/Downloads/variation_chr1.full.json.gz"));
 
             VariantSearchToVariantConverter variantSearchToVariantConverter = new VariantSearchToVariantConverter();
             ObjectReader objectReader = jsonObjectMapper.readerFor(Variant.class);
@@ -95,7 +94,7 @@ public class SearchManagerTest extends GenericTest {
             queryOptions.append(QueryOptions.LIMIT, 500);
 
             SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
-            List<VariantSearch> results = new ArrayList<>();
+            List<VariantSearchModel> results = new ArrayList<>();
 
             iterator.forEachRemaining(results::add);
 
@@ -119,7 +118,7 @@ public class SearchManagerTest extends GenericTest {
             queryOptions.append(QueryOptions.LIMIT, 500);
 
             SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
-            List<VariantSearch> results = new ArrayList<>();
+            List<VariantSearchModel> results = new ArrayList<>();
 
             iterator.forEachRemaining(results::add);
 
@@ -143,7 +142,7 @@ public class SearchManagerTest extends GenericTest {
             queryOptions.append(QueryOptions.LIMIT, 500);
 
             SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
-            List<VariantSearch> results = new ArrayList<>();
+            List<VariantSearchModel> results = new ArrayList<>();
 
             iterator.forEachRemaining(results::add);
 
@@ -165,7 +164,7 @@ public class SearchManagerTest extends GenericTest {
             queryOptions.append(QueryOptions.LIMIT, 500);
 
             SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
-            List<VariantSearch> results = new ArrayList<>();
+            List<VariantSearchModel> results = new ArrayList<>();
 
             iterator.forEachRemaining(results::add);
 
@@ -179,11 +178,11 @@ public class SearchManagerTest extends GenericTest {
     public void variantToVariantSearchConversionTest() {
 
         Variant variant = variantList.get(0);
-        VariantSearch variantSearch = SearchManager.getVariantSearchToVariantConverter().convertToStorageType(variant);
-        Assert.assertEquals(variantSearch.getId(), getVariantSolrID(variant));
-        Assert.assertEquals(variantSearch.getDbSNP(), variant.getId());
-        Assert.assertEquals(variantSearch.getChromosome(), variant.getChromosome());
-        Assert.assertEquals(variantSearch.getType().toString(), variant.getType().toString());
+        VariantSearchModel variantSearchModel = SearchManager.getVariantSearchToVariantConverter().convertToStorageType(variant);
+        Assert.assertEquals(variantSearchModel.getId(), getVariantSolrID(variant));
+        Assert.assertEquals(variantSearchModel.getDbSNP(), variant.getId());
+        Assert.assertEquals(variantSearchModel.getChromosome(), variant.getChromosome());
+        Assert.assertEquals(variantSearchModel.getType().toString(), variant.getType().toString());
     }
 
     @Test
@@ -290,7 +289,7 @@ public class SearchManagerTest extends GenericTest {
             searchManager.insert(variantList);
 
             SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
-            List<VariantSearch> results = new ArrayList<>();
+            List<VariantSearchModel> results = new ArrayList<>();
 
             iterator.forEachRemaining(results::add);
 
@@ -313,7 +312,7 @@ public class SearchManagerTest extends GenericTest {
             searchManager.insert(variantList);
 
             SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
-            List<VariantSearch> results = new ArrayList<>();
+            List<VariantSearchModel> results = new ArrayList<>();
 
             iterator.forEachRemaining(results::add);
 

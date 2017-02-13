@@ -63,12 +63,13 @@
     <field name="_text_" type="text_general" multiValued="true" indexed="true" stored="false"/>
     <field name="_version_" type="long" indexed="false" stored="false"/>
 
-    <field name="dbSNP" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="dbSNP" type="string" indexed="false" stored="true" multiValued="false"/>
     <field name="chromosome" type="string" indexed="true" stored="true" multiValued="false"/>
     <field name="start" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="end" type="int" indexed="true" stored="true" multiValued="false"/>
     <field name="xrefs" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="type" type="string" indexed="true" stored="true" multiValued="false"/>
+    <field name="studies" type="string" indexed="true" stored="true" multiValued="true"/>
     <field name="phastCons" type="double" indexed="true" stored="true" multiValued="false"/>
     <field name="phylop" type="double" indexed="true" stored="true" multiValued="false"/>
     <field name="gerp" type="double" indexed="true" stored="true" multiValued="false"/>
@@ -76,11 +77,10 @@
     <field name="caddScaled" type="double" indexed="true" stored="true" multiValued="false"/>
     <field name="sift" type="double" indexed="true" stored="true" multiValued="false"/>
     <field name="polyphen" type="double" indexed="true" stored="true" multiValued="false"/>
-    <field name="clinvar" type="text_en" indexed="true" stored="true" multiValued="true"/>
-    <field name="genes" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="genes" type="string" indexed="false" stored="true" multiValued="true"/>
     <field name="soAcc" type="int" indexed="true" stored="true" multiValued="true"/>
     <field name="geneToSoAcc" type="string" indexed="true" stored="true" multiValued="true"/>
-    <!--<field name="popFreq" type="double" indexed="true" stored="true" multiValued="false"/>-->
+    <field name="traits" type="text_en" indexed="true" stored="true" multiValued="true"/>
+    <dynamicField name="stats_*" type="double" indexed="true" stored="true" multiValued="false"/>
     <dynamicField name="popFreq_*" type="double" indexed="true" stored="true" multiValued="false"/>
-    <field name="studies" type="string" indexed="true" stored="true" multiValued="true"/>
 </schema>

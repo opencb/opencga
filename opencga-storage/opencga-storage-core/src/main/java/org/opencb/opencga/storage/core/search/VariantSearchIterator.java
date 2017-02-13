@@ -21,7 +21,7 @@ import java.util.Iterator;
 /**
  * Created by wasim on 14/11/16.
  */
-public abstract class VariantSearchIterator implements Iterator<VariantSearch>, AutoCloseable {
+public abstract class VariantSearchIterator implements Iterator<VariantSearchModel>, AutoCloseable {
 
 
 }

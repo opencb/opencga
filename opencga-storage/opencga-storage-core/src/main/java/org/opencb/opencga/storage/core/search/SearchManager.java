@@ -144,10 +144,10 @@ public class SearchManager {
      */
     public void insert(List<Variant> variants) throws IOException, SolrServerException {
 
-        List<VariantSearch> variantSearches = variantSearchToVariantConverter.convertListToStorageType(variants);
+        List<VariantSearchModel> variantSearchModels = variantSearchToVariantConverter.convertListToStorageType(variants);
 
-        if (!variantSearches.isEmpty()) {
-            UpdateResponse updateResponse = solrClient.addBeans(variantSearches);
+        if (!variantSearchModels.isEmpty()) {
+            UpdateResponse updateResponse = solrClient.addBeans(variantSearchModels);
             if (0 == updateResponse.getStatus()) {
                 solrClient.commit();
             }
@@ -156,10 +156,10 @@ public class SearchManager {
 
     public void insert(Variant variant) throws IOException, SolrServerException {
 
-        VariantSearch variantSearch = variantSearchToVariantConverter.convertToStorageType(variant);
+        VariantSearchModel variantSearchModel = variantSearchToVariantConverter.convertToStorageType(variant);
 
-        if (variantSearch != null && variantSearch.getId() != null) {
-            UpdateResponse updateResponse = solrClient.addBean(variantSearch);
+        if (variantSearchModel != null && variantSearchModel.getId() != null) {
+            UpdateResponse updateResponse = solrClient.addBean(variantSearchModel);
             if (0 == updateResponse.getStatus()) {
                 solrClient.commit();
             }
@@ -185,7 +185,7 @@ public class SearchManager {
             e.printStackTrace();
         }
 
-        return new SolrVariantSearchIterator(response.getBeans(VariantSearch.class).iterator());
+        return new SolrVariantSearchIterator(response.getBeans(VariantSearchModel.class).iterator());
     }
 
     public VariantSearchFacet getFacet(Query query, QueryOptions queryOptions) {
