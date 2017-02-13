@@ -16,19 +16,22 @@
 
 package org.opencb.opencga.storage.hadoop.variant.adaptors;
 
-import org.junit.*;
+import org.junit.Assume;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
+import org.opencb.opencga.storage.hadoop.variant.AbstractHadoopVariantStoragePipeline;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageEngine;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageTest;
 import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 
-import static org.junit.Assert.assertTrue;
+import java.util.Map;
 
 
 /**
@@ -56,6 +59,10 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
         }
     }
 
+//    @Override
+//    public Map<String, ?> getOtherStorageConfigurationOptions() {
+//        return new ObjectMap(AbstractHadoopVariantStoragePipeline.SKIP_CREATE_PHOENIX_INDEXES, true);
+//    }
 
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();
@@ -126,6 +133,12 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
     public void testGetAllVariants() {
         Assume.assumeTrue(false);
         super.testGetAllVariants();
+    }
+
+    @Override
+    public void limitSkip(Query query, QueryOptions options) {
+        Assume.assumeTrue("Unable to paginate queries without sorting", options.getBoolean(QueryOptions.SORT, false));
+        super.limitSkip(query, options);
     }
 
     @Override
