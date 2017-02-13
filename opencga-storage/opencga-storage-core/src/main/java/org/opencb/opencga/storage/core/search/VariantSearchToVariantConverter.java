@@ -1,13 +1,10 @@
 package org.opencb.opencga.storage.core.search;
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.biodata.models.variant.avro.VariantTraitAssociation;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
-import org.opencb.biodata.models.variant.avro.ConsequenceType;
-import org.opencb.biodata.models.variant.avro.Score;
-import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 
 import java.util.*;
@@ -35,15 +32,31 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         variant.setId(variantSearchModel.getDbSNP());
         variant.setType(VariantType.valueOf(variantSearchModel.getType()));
 
-        // set studies
+        // set studies and stats
+        Map<String, StudyEntry> studyEntryMap = new HashMap<>();
         if (variantSearchModel.getStudies() != null && variantSearchModel.getStudies().size() > 0) {
             List<StudyEntry> studies = new ArrayList<>();
             variantSearchModel.getStudies().forEach(s -> {
                 StudyEntry entry = new StudyEntry();
                 entry.setStudyId(s);
                 studies.add(entry);
+                studyEntryMap.put(s, entry);
             });
             variant.setStudies(studies);
+        }
+        if (variantSearchModel.getStats() != null && variantSearchModel.getStats().size() > 0) {
+            for (String key: variantSearchModel.getStats().keySet()) {
+                // key is consists of "stats" + "_" + studyId + "_" + cohort
+                String[] fields = key.split("_");
+                if (studyEntryMap.containsKey(fields[1])) {
+                    VariantStats variantStats = new VariantStats();
+                    variantStats.setMaf(variantSearchModel.getStats().get(key));
+                    studyEntryMap.get(fields[1]).setStats(fields[2], variantStats);
+                } else {
+                    System.out.println("Something wrong happened: stats " + key + ", but there is no study for that"
+                            + " stats.");
+                }
+            }
         }
 
         // process annotation
@@ -51,22 +64,36 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
         // consequence types
         List<ConsequenceType> consequenceTypes = new ArrayList<>();
+        String[] genes = (String[]) variantSearchModel.getGenes().toArray();
+        Map<String, ConsequenceType> consequenceTypeMap = new HashMap<>();
+        for (int i = 0; i < genes.length; i += 3) {
+            // genes are ordered: 1) gene name, 2) ensembl gene id, 3) ensembl transcript id, and then, repeat
+            ConsequenceType consequenceType = new ConsequenceType();
+            consequenceType.setGeneName(genes[i]);
+            consequenceType.setEnsemblGeneId(genes[i + 1]);
+            consequenceType.setEnsemblTranscriptId(genes[i + 2]);
 
-        // TODO: genes, SO Accession and set consequence types
-        // set genes
-        // set SO Accession
-//        if (variantSearch.getGeneToSOAccessions() != null && variantSearch.getGeneToSOAccessions().size() > 0) {
-//
-//        }
-
-        // set protein substitution scores: sift and polyphen
-        ProteinVariantAnnotation proteinAnnotation = new ProteinVariantAnnotation();
-        List<Score> scores = new ArrayList<>();
-        scores.add(new Score(variantSearchModel.getSift(), "sift", ""));
-        scores.add(new Score(variantSearchModel.getPolyphen(), "polyhen", ""));
-        proteinAnnotation.setSubstitutionScores(scores);
-
-        // set consequence types
+            // for that consequence type, update the protein substitution scores: sift and polyphen
+            ProteinVariantAnnotation proteinAnnotation = new ProteinVariantAnnotation();
+            List<Score> scores = new ArrayList<>();
+            scores.add(new Score(variantSearchModel.getSift(), "sift", ""));
+            scores.add(new Score(variantSearchModel.getPolyphen(), "polyhen", ""));
+            proteinAnnotation.setSubstitutionScores(scores);
+            consequenceType.setProteinVariantAnnotation(proteinAnnotation);
+        }
+        // and finally, update the SO accession for each consequence type
+        for (String geneToSoAcc: variantSearchModel.getGeneToSoAcc()) {
+            String[] fields = geneToSoAcc.split("_");
+            if (consequenceTypeMap.containsKey(fields[0])) {
+                SequenceOntologyTerm sequenceOntologyTerm = new SequenceOntologyTerm();
+                sequenceOntologyTerm.setAccession("SO:" + String.format("%07d", fields[1]));
+                if (consequenceTypeMap.get(fields[0]).getSequenceOntologyTerms() == null) {
+                    consequenceTypeMap.get(fields[0]).setSequenceOntologyTerms(new ArrayList<>());
+                }
+                consequenceTypeMap.get(fields[0]).getSequenceOntologyTerms().add(sequenceOntologyTerm);
+            }
+        }
+        // and update the variant annotation with the consequence types
         variantAnnotation.setConsequenceTypes(consequenceTypes);
 
         // set populations
@@ -84,7 +111,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
 
         // set conservations
-        scores.clear();
+        List<Score> scores = new ArrayList<>();
         scores.add(new Score(variantSearchModel.getGerp(), "gerp", ""));
         scores.add(new Score(variantSearchModel.getPhastCons(), "phastCons", ""));
         scores.add(new Score(variantSearchModel.getPhylop(), "phylop", ""));
@@ -131,6 +158,10 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     geneTraitAssociationList.add(geneTraitAssociation);
                     break;
                 }
+                default: {
+                    System.out.println("Unknown trait type: " + fields[0] + ", it should be ClinVar, COSMIC or HPO");
+                    break;
+                }
             }
         }
         VariantTraitAssociation variantTraitAssociation = new VariantTraitAssociation();
@@ -145,7 +176,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         variantTraitAssociation.setCosmic(cosmicList);
         variantAnnotation.setVariantTraitAssociation(variantTraitAssociation);
         variantAnnotation.setGeneTraitAssociation(geneTraitAssociationList);
-
 
         // set variant annotation
         variant.setAnnotation(variantAnnotation);
@@ -175,7 +205,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         // This field contains all possible IDs: id, dbSNP, genes, transcripts, protein, clinvar, hpo, ...
         // This will help when searching by variant id
         Set<String> xrefs = new HashSet<>();
-        xrefs.add(variant.getChromosome() + ":" + variant.getStart() + ":" + variant.getReference() + ":" + variant.getAlternate());
+        xrefs.add(variant.getChromosome() + ":" + variant.getStart() + ":" + variant.getReference() + ":"
+                + variant.getAlternate());
         xrefs.add(variantSearchModel.getDbSNP());
 
         // Set Studies Alias
@@ -197,7 +228,6 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             variantSearchModel.setStudies(studies);
             variantSearchModel.setStats(stats);
         }
-
 
         // Check for annotation
         VariantAnnotation variantAnnotation = variant.getAnnotation();
@@ -223,7 +253,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                         xrefs.add(consequenceType.getEnsemblTranscriptId());
                     }
 
-                    // Remove 'SO:' prefix to Store SO Accessions as integers and also store the relation between genes and SO accessions
+                    // Remove 'SO:' prefix to Store SO Accessions as integers and also store the relation
+                    // between genes and SO accessions
                     for (SequenceOntologyTerm sequenceOntologyTerm : consequenceType.getSequenceOntologyTerms()) {
                         int soNumber = Integer.parseInt(sequenceOntologyTerm.getAccession().substring(3));
                         soAccessions.add(soNumber);
@@ -260,8 +291,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             if (variantAnnotation.getPopulationFrequencies() != null) {
                 Map<String, Float> populationFrequencies = new HashMap<>();
                 for (PopulationFrequency populationFrequency : variantAnnotation.getPopulationFrequencies()) {
-                    populationFrequencies.put("popFreq_" + populationFrequency.getStudy() + "_" + populationFrequency.getPopulation(),
-                            populationFrequency.getAltAlleleFreq());
+                    populationFrequencies.put("popFreq_" + populationFrequency.getStudy() + "_"
+                            + populationFrequency.getPopulation(), populationFrequency.getAltAlleleFreq());
                 }
                 if (!populationFrequencies.isEmpty()) {
                     variantSearchModel.setPopFreq(populationFrequencies);
@@ -282,7 +313,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             variantSearchModel.setGerp(score.getScore());
                             break;
                         default:
-                            System.out.println("Unknown 'conservation' source: score.getSource() = " + score.getSource());
+                            System.out.println("Unknown 'conservation' source: score.getSource() = "
+                                    + score.getSource());
                             break;
                     }
                 }
@@ -301,7 +333,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                             variantSearchModel.setCaddScaled(score.getScore());
                             break;
                         default:
-                            System.out.println("Unknown 'functional score' source: score.getSource() = " + score.getSource());
+                            System.out.println("Unknown 'functional score' source: score.getSource() = "
+                                    + score.getSource());
                             break;
                     }
                 }

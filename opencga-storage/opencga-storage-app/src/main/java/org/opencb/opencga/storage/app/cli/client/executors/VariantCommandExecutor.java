@@ -39,7 +39,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.search.SearchManager;
-import org.opencb.opencga.storage.core.search.VariantSearch;
+import org.opencb.opencga.storage.core.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.search.solr.SolrVariantSearchIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -654,7 +654,7 @@ public class VariantCommandExecutor extends CommandExecutor {
             SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
             int count = 0;
             while (iterator.hasNext()) {
-                VariantSearch variantSearch = iterator.next();
+                VariantSearchModel variantSearch = iterator.next();
                 System.out.println("Variant #" + count);
                 System.out.println(variantSearch.toString());
                 count++;
