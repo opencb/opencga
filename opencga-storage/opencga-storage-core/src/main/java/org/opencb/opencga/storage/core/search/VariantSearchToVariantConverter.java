@@ -96,22 +96,65 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         scores.add(new Score(variantSearchModel.getCaddScaled(), "cadd_scaled", ""));
         variantAnnotation.setFunctionalScore(scores);
 
-        // TODO: clinvar, a clinvar accession might have several traits !!!
-//        if (variantAnnotation.getVariantTraitAssociation() != null
-//                && variantAnnotation.getVariantTraitAssociation().getClinvar() != null) {
-//            Set<String> clinvar = new HashSet<>();
-//            variantAnnotation.getVariantTraitAssociation().getClinvar()
-//                    .forEach(cv -> {
-//                        clinvar.add(cv.getAccession());
-//                        cv.getTraits().forEach(cvt -> clinvar.add(cvt));
-//                    });
-//            variantSearch.setClinvar(clinvar);
-//        }
-        // set clinvar
-        VariantTraitAssociation traitAssociation = new VariantTraitAssociation();
-        List<ClinVar> clinVars = new ArrayList<>();
-        traitAssociation.setClinvar(clinVars);
-        variantAnnotation.setVariantTraitAssociation(traitAssociation);
+        // TODO: clinvar, a clinvar accession might have several traits !!
+//        if (variantAnnotation.getVariantTraitAssociation() != null) {
+//            if (variantAnnotation.getVariantTraitAssociation().getClinvar() != null) {
+//                variantAnnotation.getVariantTraitAssociation().getClinvar()
+//                        .forEach(cv -> {
+//                            xrefs.add(cv.getAccession());
+//                            cv.getTraits().forEach(cvt -> traits.add("ClinVar" + " -- " + cv.getAccession() + " -- " + cvt));
+//                        });
+//            }
+
+        // set clinvar, cosmic, hpo
+        Map<String, List<String>> clinVarMap = new HashMap<>();
+        List<Cosmic> cosmicList = new ArrayList<>();
+        List<GeneTraitAssociation> geneTraitAssociationList = new ArrayList<>();
+        for (String trait: variantSearchModel.getTraits()) {
+            String[] fields = trait.split(" -- ");
+            switch (fields[0]) {
+                case "ClinVar": {
+                    // variant trait
+                    // ClinVar -- accession -- trait
+                    if (!clinVarMap.containsKey(fields[1])) {
+                        clinVarMap.put(fields[1], new ArrayList<>());
+                    }
+                    clinVarMap.get(fields[1]).add(fields[2]);
+                    break;
+                }
+                case "COSMIC": {
+                    // variant trait
+                    // COSMIC -- mutation id -- primary histology -- histology subtype
+                    Cosmic cosmic = new Cosmic();
+                    cosmic.setMutationId(fields[1]);
+                    cosmic.setPrimaryHistology(fields[2]);
+                    cosmic.setHistologySubtype(fields[3]);
+                    cosmicList.add(cosmic);
+                    break;
+                }
+                case "HP0": {
+                    // gene trait
+                    // HPO -- hpo -- name
+                    GeneTraitAssociation geneTraitAssociation = new GeneTraitAssociation();
+                    geneTraitAssociation.setHpo(fields[1]);
+                    geneTraitAssociation.setName(fields[2]);
+                    geneTraitAssociationList.add(geneTraitAssociation);
+                    break;
+                }
+            }
+        }
+        VariantTraitAssociation variantTraitAssociation = new VariantTraitAssociation();
+        List<ClinVar> clinVarList = new ArrayList<>();
+        for (String key: clinVarMap.keySet()) {
+            ClinVar clinVar = new ClinVar();
+            clinVar.setAccession(key);
+            clinVar.setTraits(clinVarMap.get(key));
+            clinVarList.add(clinVar);
+        }
+        variantTraitAssociation.setClinvar(clinVarList);
+        variantTraitAssociation.setCosmic(cosmicList);
+        variantAnnotation.setVariantTraitAssociation(variantTraitAssociation);
+        variantAnnotation.setGeneTraitAssociation(geneTraitAssociationList);
 
 
         // set variant annotation
