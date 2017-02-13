@@ -1063,7 +1063,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         // If the user already has permissions set, we cannot create a new set of permissions
         List<StudyAclEntry> studyAclList = new ArrayList<>(members.size());
         for (String member : members) {
-            if (memberHasPermissionsInStudy(studyId, member)) {
+            if (memberExists(studyId, member)) {
                 throw new CatalogException("The member " + member + " already has some permissions set in study. Please, remove those"
                         + " permissions or add, remove or set new permissions.");
             }
@@ -1078,6 +1078,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         return new QueryResult<>("create study Acls", timeSpent, studyAclList.size(), studyAclList.size(), "", "", studyAclList);
+    }
+
+    private boolean memberExists(long studyId, String member) throws CatalogDBException {
+        QueryResult<StudyAclEntry> acl = studyDBAdaptor.getAcl(studyId, Arrays.asList(member));
+        return acl.getNumResults() > 0;
     }
 
     @Override
@@ -1220,7 +1225,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         // Check if all the members have a permission already set at the study level.
         long studyId = sampleDBAdaptor.getStudyId(sampleId);
         for (String member : members) {
-            if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
+            if (!member.equals("*") && !member.equals("anonymous") && !memberExists(studyId, member)) {
                 throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
                         + "defined for that member.");
             }
@@ -1392,7 +1397,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         // Check that all the members have permissions defined at the study level
         for (String member : members) {
-            if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
+            if (!member.equals("*") && !member.equals("anonymous") && !memberExists(studyId, member)) {
                 throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
                         + "defined for that member.");
             }
@@ -1649,7 +1654,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         // Check that all the members have permissions defined at the study level
         for (String member : members) {
-            if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
+            if (!member.equals("*") && !member.equals("anonymous") && !memberExists(studyId, member)) {
                 throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
                         + "defined for that member.");
             }
@@ -1914,7 +1919,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         // Check that all the members have permissions defined at the study level
         for (String member : members) {
-            if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
+            if (!member.equals("*") && !member.equals("anonymous") && !memberExists(studyId, member)) {
                 throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
                         + "defined for that member.");
             }
@@ -2115,7 +2120,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         // Check if all the members have a permission already set at the study level.
         long studyId = datasetDBAdaptor.getStudyIdByDatasetId(datasetId);
         for (String member : members) {
-            if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
+            if (!member.equals("*") && !member.equals("anonymous") && !memberExists(studyId, member)) {
                 throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
                         + "defined for that member.");
             }
@@ -2285,7 +2290,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         // Check if all the members have a permission already set at the study level.
         long studyId = jobDBAdaptor.getStudyId(jobId);
         for (String member : members) {
-            if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
+            if (!member.equals("*") && !member.equals("anonymous") && !memberExists(studyId, member)) {
                 throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
                         + "defined for that member.");
             }
@@ -2456,7 +2461,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         long studyId = panelDBAdaptor.getStudyId(panelId);
         studySet.add(studyId);
         for (String member : members) {
-            if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
+            if (!member.equals("*") && !member.equals("anonymous") && !memberExists(studyId, member)) {
                 throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
                         + "defined for that member.");
             }
