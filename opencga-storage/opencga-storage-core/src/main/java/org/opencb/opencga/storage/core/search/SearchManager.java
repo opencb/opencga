@@ -86,6 +86,7 @@ public class SearchManager {
      * @param path      Path to the file to load
      * @throws IOException          IOException
      * @throws SolrServerException  SolrServerException
+     * @throws StorageEngineException  SolrServerException
      */
     public void load(Path path) throws IOException, SolrServerException, StorageEngineException {
         // TODO: can we use VariantReaderUtils as implemented in the function load00 below ?

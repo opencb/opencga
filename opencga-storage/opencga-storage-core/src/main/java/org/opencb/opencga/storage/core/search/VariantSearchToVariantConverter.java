@@ -46,8 +46,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
         if (variantSearchModel.getStats() != null && variantSearchModel.getStats().size() > 0) {
             for (String key: variantSearchModel.getStats().keySet()) {
-                // key is consists of "stats" + "_" + studyId + "_" + cohort
-                String[] fields = key.split("_");
+                // key is consists of "stats" + "__" + studyId + "__" + cohort
+                String[] fields = key.split("__");
                 if (studyEntryMap.containsKey(fields[1])) {
                     VariantStats variantStats = new VariantStats();
                     variantStats.setMaf(variantSearchModel.getStats().get(key));
@@ -231,7 +231,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 // We store the cohort stats with the format stats_STUDY_COHORT = value, e.g. stats_1kg_phase3_ALL=0.02
                 if (studyEntry.getStats() != null && studyEntry.getStats().size() > 0) {
                     studyEntry.getStats().forEach((s, variantStats) ->
-                            stats.put("stats_" + studyEntry.getStudyId() + "_" + s, variantStats.getMaf()));
+                            stats.put("stats__" + studyEntry.getStudyId() + "__" + s, variantStats.getMaf()));
                 }
             }
 
