@@ -80,10 +80,10 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
     }
 
     private void demo() throws CatalogException, StorageEngineException, IOException, URISyntaxException {
-        if (catalogCommandOptions.demoCatalogCommandOptions.database != null) {
-            configuration.getCatalog().getDatabase().setDatabase(catalogCommandOptions.demoCatalogCommandOptions.database);
+        if (catalogCommandOptions.demoCatalogCommandOptions.prefix != null) {
+            configuration.setDatabasePrefix(catalogCommandOptions.demoCatalogCommandOptions.prefix);
         } else {
-            configuration.getCatalog().getDatabase().setDatabase("opencga_catalog_demo");
+            configuration.setDatabasePrefix("demo");
         }
         configuration.setOpenRegister(true);
         configuration.getAdmin().setPassword("demo");
@@ -100,8 +100,8 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         if (catalogCommandOptions.installCatalogCommandOptions.databasePassword != null) {
             configuration.getCatalog().getDatabase().setPassword(catalogCommandOptions.installCatalogCommandOptions.databasePassword);
         }
-        if (catalogCommandOptions.installCatalogCommandOptions.database != null) {
-            configuration.getCatalog().getDatabase().setDatabase(catalogCommandOptions.installCatalogCommandOptions.database);
+        if (catalogCommandOptions.installCatalogCommandOptions.prefix != null) {
+            configuration.setDatabasePrefix(catalogCommandOptions.installCatalogCommandOptions.prefix);
         }
         if (catalogCommandOptions.installCatalogCommandOptions.databaseHost != null) {
             configuration.getCatalog().getDatabase().setHosts(Collections.singletonList(catalogCommandOptions.installCatalogCommandOptions
@@ -150,8 +150,8 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         if (catalogCommandOptions.deleteCatalogCommandOptions.databasePassword != null) {
             configuration.getCatalog().getDatabase().setPassword(catalogCommandOptions.deleteCatalogCommandOptions.databasePassword);
         }
-        if (catalogCommandOptions.deleteCatalogCommandOptions.database != null) {
-            configuration.getCatalog().getDatabase().setDatabase(catalogCommandOptions.deleteCatalogCommandOptions.database);
+        if (catalogCommandOptions.deleteCatalogCommandOptions.prefix != null) {
+            configuration.setDatabasePrefix(catalogCommandOptions.deleteCatalogCommandOptions.prefix);
         }
         if (catalogCommandOptions.deleteCatalogCommandOptions.databaseHost != null) {
             configuration.getCatalog().getDatabase()
@@ -184,8 +184,8 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         if (catalogCommandOptions.indexCatalogCommandOptions.databasePassword != null) {
             configuration.getCatalog().getDatabase().setPassword(catalogCommandOptions.indexCatalogCommandOptions.databasePassword);
         }
-        if (catalogCommandOptions.indexCatalogCommandOptions.database != null) {
-            configuration.getCatalog().getDatabase().setDatabase(catalogCommandOptions.indexCatalogCommandOptions.database);
+        if (catalogCommandOptions.indexCatalogCommandOptions.prefix != null) {
+            configuration.setDatabasePrefix(catalogCommandOptions.indexCatalogCommandOptions.prefix);
         }
         if (catalogCommandOptions.indexCatalogCommandOptions.databaseHost != null) {
             configuration.getCatalog().getDatabase()
