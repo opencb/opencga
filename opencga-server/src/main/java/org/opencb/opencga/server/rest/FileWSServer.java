@@ -19,6 +19,7 @@ package org.opencb.opencga.server.rest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.core.Region;
@@ -55,16 +56,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import javax.ws.rs.core.*;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options.*;
 
@@ -502,6 +501,57 @@ public class FileWSServer extends OpenCGAWSServer {
             File file = queryResult.getResult().get(0);
             stream = catalogManager.downloadFile(resource.getResourceId(), sessionId);
             return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, file.getName());
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/ranges")
+    @ApiOperation(value = "Fetchs alignment files using HTTP Ranges protocol")
+    @Produces("text/plain")
+    public Response getRanges(@Context HttpHeaders headers,
+                              @ApiParam(value = "File id, name or path") @QueryParam("file") String fileIdStr,
+                              @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
+                              @QueryParam("study") String studyStr) {
+        try {
+            AbstractManager.MyResourceId resource = catalogManager.getFileManager().getId(fileIdStr, studyStr, sessionId);
+            catalogManager.getAuthorizationManager().checkFilePermission(resource.getResourceId(), resource.getUser(),
+                    FileAclEntry.FilePermissions.DOWNLOAD);
+            QueryResult<File> queryResult = catalogManager.getFile(resource.getResourceId(), this.queryOptions, sessionId);
+            File file = queryResult.getResult().get(0);
+
+            DataInputStream stream = catalogManager.downloadFile(resource.getResourceId(), sessionId);
+
+            List<String> rangeList = headers.getRequestHeader("range");
+            if (rangeList != null) {
+                int from;
+                int to;
+                String[] acceptedRanges = rangeList.get(0).split("=")[1].split("-");
+                from = Integer.parseInt(acceptedRanges[0]);
+                to = Integer.parseInt(acceptedRanges[1]);
+
+                byte[] buf = new byte[to - from + 1];
+                logger.debug("from: {} , to: {}, length:{}, available: {}", from, to, to - from + 1, stream.available());
+                StopWatch t = StopWatch.createStarted();
+                stream.skip(from);
+                stream.read(buf);
+                t.stop();
+                logger.debug("Skip {}B and read {}B in {}s", from, buf.length, t.getTime(TimeUnit.MILLISECONDS) / 1000.0);
+
+                return Response.ok(buf, MediaType.APPLICATION_OCTET_STREAM_TYPE)
+                        .header("Accept-Ranges", "bytes")
+                        .header("Access-Control-Allow-Origin", "*")
+                        .header("Access-Control-Allow-Headers", "x-requested-with, content-type, range")
+                        .header("Access-Control-Allow-Credentials", "true")
+                        .header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+                        .header("Content-Range", "bytes " + from + "-" + to + "/" + file.getSize())
+                        .header("Content-length", to - from + 1)
+                        .status(Response.Status.PARTIAL_CONTENT).build();
+
+            } else {
+                return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, file.getName());
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1233,7 +1283,6 @@ public class FileWSServer extends OpenCGAWSServer {
             logger.debug("study: {}", studyStr);
 
             path = path.replace(":", "/");
-            uriStr = uriStr.replace(":", "/");
 
             ObjectMap objectMap = new ObjectMap()
                     .append("parents", parents)

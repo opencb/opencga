@@ -6,8 +6,8 @@ openRegister: true
 userDefaultQuota: 200000
 
 databasePrefix: "opencga_test"
-dataDir: "file:///tmp/opencga/sessions"
-tempJobsDir: "file:///tmp/opencga/sessions/jobs"
+dataDir: "/tmp/opencga/sessions"
+tempJobsDir: "/tmp/opencga/sessions/jobs"
 toolDir: "tools"
 
 admin:
