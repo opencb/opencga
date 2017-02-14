@@ -42,6 +42,7 @@ import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.hpg.bigdata.core.io.avro.AvroFileWriter;
+import org.opencb.opencga.core.common.ProgressLogger;
 import org.opencb.opencga.storage.core.StoragePipeline;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
@@ -314,6 +315,14 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
             //Reader
             StringDataReader dataReader = new StringDataReader(input);
+            long fileSize = 0;
+            try {
+                fileSize = dataReader.getFileSize();
+            } catch (IOException e) {
+                throw new StorageEngineException("Error reading file " + input, e);
+            }
+            ProgressLogger progressLogger = new ProgressLogger("Transforming file:", fileSize, 200);
+            dataReader.setReadBytesListener((totalRead, delta) -> progressLogger.increment(delta, "Bytes"));
 
             //Writer
             DataWriter<ByteBuffer> dataWriter;
@@ -371,6 +380,14 @@ public abstract class VariantStoragePipeline implements StoragePipeline {
 
             //Reader
             StringDataReader dataReader = new StringDataReader(input);
+            long fileSize = 0;
+            try {
+                fileSize = dataReader.getFileSize();
+            } catch (IOException e) {
+                throw new StorageEngineException("Error reading file " + input, e);
+            }
+            ProgressLogger progressLogger = new ProgressLogger("Transforming file:", fileSize, 200);
+            dataReader.setReadBytesListener((totalRead, delta) -> progressLogger.increment(delta, "Bytes"));
 
             //Writers
             StringDataWriter dataWriter = new StringDataWriter(outputVariantsFile, true);

@@ -77,7 +77,8 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         MERGE("merge", false),
         MERGE_SKIP("merge.skip", false), // Internal use only
         MERGE_RESUME("merge.resume", false),
-        MERGE_PARALLEL_WRITE("merge.parallel.write", false);
+        MERGE_PARALLEL_WRITE("merge.parallel.write", false),
+        MERGE_BATCH_SIZE("merge.batch.size", 10);          //Number of files to merge directly from first to second collection
 
         private final String key;
         private final Object value;
@@ -210,7 +211,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
             }
 
             if (doLoad) {
-                int batchLoad = getOptions().getInt(Options.MERGE_BATCH_SIZE.key(), Options.MERGE_BATCH_SIZE.defaultValue());
+                int batchLoad = getOptions().getInt(MERGE_BATCH_SIZE.key(), MERGE_BATCH_SIZE.defaultValue());
                 // Files to merge
                 List<Integer> filesToMerge = new ArrayList<>(batchLoad);
                 List<StoragePipelineResult> resultsToMerge = new ArrayList<>(batchLoad);

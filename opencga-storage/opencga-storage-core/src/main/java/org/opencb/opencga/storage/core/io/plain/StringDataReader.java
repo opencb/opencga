@@ -22,12 +22,12 @@ import org.slf4j.LoggerFactory;
 import org.xerial.snappy.SnappyInputStream;
 
 import java.io.*;
-import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.BiConsumer;
 import java.util.zip.GZIPInputStream;
 
 /**
@@ -37,9 +37,12 @@ public class StringDataReader implements DataReader<String> {
 
     protected BufferedReader reader;
     protected final Path path;
-    protected long readLines = 0L;
-
     protected static Logger logger = LoggerFactory.getLogger(StringDataReader.class);
+    protected long readLines = 0L;
+    protected long lastAvailable = 0;
+    private SizeInputStream sizeInputStream;
+    private BiConsumer<Long, Long> readBytesListener;
+    private BiConsumer<Long, Long> readLinesListener;
 
     public StringDataReader(Path path) {
         this.path = path;
@@ -49,15 +52,18 @@ public class StringDataReader implements DataReader<String> {
     public boolean open() {
         try {
             String fileName = path.toFile().getName();
+            lastAvailable = getFileSize();
+            sizeInputStream = new SizeInputStream(new FileInputStream(path.toFile()), lastAvailable);
             if (fileName.endsWith(".gz")) {
                 logger.debug("Gzip input compress");
-                this.reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(path.toFile()))));
+                this.reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(sizeInputStream)));
             } else if (fileName.endsWith(".snappy") || fileName.endsWith(".snz")) {
                 logger.info("Snappy input compress");
-                this.reader = new BufferedReader(new InputStreamReader(new SnappyInputStream(new FileInputStream(path.toFile()))));
+                this.reader = new BufferedReader(new InputStreamReader(new SnappyInputStream(sizeInputStream)));
             } else {
                 logger.debug("Plain input compress");
-                this.reader = Files.newBufferedReader(path, Charset.defaultCharset());
+//                this.reader = Files.newBufferedReader(path, Charset.defaultCharset());
+                this.reader = new BufferedReader(new InputStreamReader(sizeInputStream));
             }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -76,20 +82,16 @@ public class StringDataReader implements DataReader<String> {
     }
 
     @Override
-    public boolean pre() {
-        return true;
-    }
-
-    @Override
-    public boolean post() {
-        return true;
-    }
-
-    @Override
     public List<String> read() {
         try {
-            onReadLine();
-            return Collections.singletonList(reader.readLine());
+            String line = reader.readLine();
+            if (line == null) {
+                return Collections.emptyList();
+            } else {
+                onReadBytes();
+                onReadLine();
+                return Collections.singletonList(line);
+            }
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -102,11 +104,12 @@ public class StringDataReader implements DataReader<String> {
             for (int i = 0; i < batchSize; i++) {
                 String line = reader.readLine();
                 if (line == null) {
-                    return batch;
+                    break;
                 }
                 batch.add(line);
                 onReadLine();
             }
+            onReadBytes();
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -117,5 +120,85 @@ public class StringDataReader implements DataReader<String> {
         if (++readLines % 100000 == 0) {
             logger.debug("read lines = " + readLines);
         }
+        if (readLinesListener != null) {
+            readLinesListener.accept(readLines, 1L);
+        }
     }
+
+    private void onReadBytes() throws IOException {
+        long newAvailable = sizeInputStream.availableLong();
+        if (readBytesListener != null) {
+            readBytesListener.accept(sizeInputStream.size() - newAvailable, lastAvailable - newAvailable);
+        }
+//        logger.info((sizeInputStream.size - newAvailable) + "/" + sizeInputStream.size + " : " + (lastAvailable - newAvailable));
+        lastAvailable = newAvailable;
+        this.readLines += readLines;
+    }
+
+    public StringDataReader setReadBytesListener(BiConsumer<Long, Long> readBytesListener) {
+        this.readBytesListener = readBytesListener;
+        return this;
+    }
+
+    public StringDataReader setReadLinesListener(BiConsumer<Long, Long> readLinesListener) {
+        this.readLinesListener = readLinesListener;
+        return this;
+    }
+
+    public long getFileSize() throws IOException {
+        return Files.size(path);
+    }
+
+    class SizeInputStream extends InputStream {
+        // The InputStream to read bytes from
+        private InputStream in = null;
+
+        // The number of bytes that can be read from the InputStream
+        private long size = 0;
+
+        // The number of bytes that have been read from the InputStream
+        private long bytesRead = 0;
+
+        SizeInputStream(InputStream in, long size) {
+            this.in = in;
+            this.size = size;
+        }
+
+        /**
+         * Do not overwrite {@link InputStream#available()}.
+         * Return long instead of int.
+         * @return An estimate of the number of bytes that can be read
+         */
+        public long availableLong() {
+            return (size - bytesRead);
+        }
+
+        public long size() {
+            return size;
+        }
+
+        @Override
+        public int read() throws IOException {
+            int b = in.read();
+            if (b != -1) {
+                bytesRead++;
+            }
+            return b;
+        }
+
+        @Override
+        public int read(byte[] b) throws IOException {
+            int read = in.read(b);
+            bytesRead += read;
+            return read;
+        }
+
+        @Override
+        public int read(byte[] b, int off, int len) throws IOException {
+            int read = in.read(b, off, len);
+            bytesRead += read;
+            return read;
+        }
+    }
+
 }
