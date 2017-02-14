@@ -11,10 +11,11 @@ import java.util.*;
 /**
  *  I M P O R T A N T:
  *
- * In order to insert VariantSearch objects into your solr cores/collections you must
- * add the below fields in the the file schema.xml located in the core/collection folder.
+ * In order to insert VariantSearchModel objects into your solr cores you must
+ * add the below fields in the the file schema.xml located in the core/collection folder. Or you
+ * can use the solr_schema.xml file from opencga/opencga-storage/opencga-storage-core/src/main/resources/solr_schema.xml
  *
- <field name="dbSNP" type="string" indexed="true" stored="true" multiValued="false"/>
+ <field name="dbSNP" type="string" indexed="false" stored="true" multiValued="false"/>
  <field name="chromosome" type="string" indexed="true" stored="true" multiValued="false"/>
  <field name="start" type="int" indexed="true" stored="true" multiValued="false"/>
  <field name="end" type="int" indexed="true" stored="true" multiValued="false"/>
@@ -28,10 +29,11 @@ import java.util.*;
  <field name="caddScaled" type="double" indexed="true" stored="true" multiValued="false"/>
  <field name="sift" type="double" indexed="true" stored="true" multiValued="false"/>
  <field name="polyphen" type="double" indexed="true" stored="true" multiValued="false"/>
- <field name="genes" type="string" indexed="true" stored="true" multiValued="true"/>
+ <field name="genes" type="string" indexed="false" stored="true" multiValued="true"/>
  <field name="soAcc" type="int" indexed="true" stored="true" multiValued="true"/>
  <field name="geneToSoAcc" type="string" indexed="true" stored="true" multiValued="true"/>
  <field name="traits" type="text_en" indexed="true" stored="true" multiValued="true"/>
+ <dynamicField name="stats_*" type="double" indexed="true" stored="true" multiValued="false"/>
  <dynamicField name="popFreq_*" type="double" indexed="true" stored="true" multiValued="false"/>
  */
 

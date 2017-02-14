@@ -167,7 +167,7 @@ public class SearchManager {
     }
 
     /**
-     * Return a Solr variant iterator to retrieve VariantSearch objects from a Solr core/collection
+     * Return a Solr variant iterator to retrieve VariantSearchModel objects from a Solr core/collection
      * according a given query.
      *
      * @param query         Query
@@ -186,6 +186,40 @@ public class SearchManager {
         }
 
         return new SolrVariantSearchIterator(response.getBeans(VariantSearchModel.class).iterator());
+    }
+
+    /**
+     * Return the list of VariantSearchModel objects from a Solr core/collection
+     * according a given query.
+     *
+     * @param query         Query
+     * @param queryOptions  Query options
+     * @return              List of VariantSearchModel objects
+     */
+    public List<VariantSearchModel> query(Query query, QueryOptions queryOptions) {
+        List<VariantSearchModel> results = new ArrayList<>();
+        SolrVariantSearchIterator iterator = iterator(query, queryOptions);
+        while (iterator.hasNext()) {
+            results.add(iterator.next());
+        }
+        return results;
+    }
+
+    /**
+     * Return the list of Variant objects from a Solr core/collection
+     * according a given query.
+     *
+     * @param query         Query
+     * @param queryOptions  Query options
+     * @return              List of Variant objects
+     */
+    public List<Variant> queryVariant(Query query, QueryOptions queryOptions) {
+        List<Variant> results = new ArrayList<>();
+        SolrVariantSearchIterator iterator = iterator(query, queryOptions);
+        while (iterator.hasNext()) {
+            results.add(variantSearchToVariantConverter.convertToDataModelType(iterator.next()));
+        }
+        return results;
     }
 
     public VariantSearchFacet getFacet(Query query, QueryOptions queryOptions) {
