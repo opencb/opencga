@@ -32,6 +32,7 @@ import org.opencb.opencga.catalog.db.mongodb.MongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.*;
 import org.opencb.opencga.catalog.models.*;
@@ -142,6 +143,12 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public void installCatalogDB() throws CatalogException {
+        // Check jobs folder is empty
+        URI jobsURI = Paths.get(configuration.getTempJobsDir()).toUri();
+        CatalogIOManager ioManager = getCatalogIOManagerFactory().get(jobsURI);
+        if (!ioManager.isDirectory(jobsURI) || ioManager.listFiles(jobsURI).size() > 0) {
+            throw new CatalogException("Cannot install openCGA. Jobs folder is not empty.\nPlease, empty it first.");
+        }
         catalogDBAdaptorFactory.installCatalogDB(configuration);
     }
 

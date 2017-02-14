@@ -53,8 +53,8 @@ public class GeneralCliOptions {
         @Parameter(names = {"--log-file"}, description = "Set the file to write the log")
         public String logFile;
 
-        @Parameter(names = {"-C", "--conf"}, description = "Configuration folder that contains opencga.yml, catalog-configuration.yaml, "
-                + "storage-configuration.yml and client-configuration.yaml files.")
+        @Parameter(names = {"-C", "--conf"}, description = "Configuration folder that contains configuration.yml, "
+                + "storage-configuration.yml and client-configuration.yml files.")
         public String conf;
 
         @Deprecated

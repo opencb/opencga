@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.BasicDBObject;
 import com.mongodb.DuplicateKeyException;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -156,7 +157,12 @@ public class MongoDBAdaptorFactory implements DBAdaptorFactory {
         // TODO: Check META object does not exist. Use {@link isCatalogDBReady}
         // TODO: Check all collections do not exists, or are empty
         // TODO: Catch DuplicatedKeyException while inserting META object
+
         MongoDataStore mongoDataStore = mongoManager.get(database, this.configuration);
+        if (mongoDataStore.getCollectionNames().size() > 0) {
+            throw new CatalogException("Database " + database + " already exists with the following collections: "
+                + StringUtils.join(mongoDataStore.getCollectionNames()) + ".\nPlease, remove the database or choose a different one.");
+        }
         COLLECTIONS_LIST.forEach(mongoDataStore::createCollection);
         metaDBAdaptor.createIndexes();
         metaDBAdaptor.initializeMetaCollection(configuration);

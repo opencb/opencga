@@ -77,8 +77,8 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         if (executor.databasePassword != null) {
             configuration.getCatalog().getDatabase().setPassword(executor.databasePassword);
         }
-        if (executor.database != null) {
-            configuration.getCatalog().getDatabase().setDatabase(executor.database);
+        if (executor.prefix != null) {
+            configuration.setDatabasePrefix(executor.prefix);
         }
         if (executor.databaseHost != null) {
             configuration.getCatalog().getDatabase().setHosts(Collections.singletonList(executor.databaseHost));
@@ -130,8 +130,8 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         if (usersCommandOptions.createUserCommandOptions.databasePassword != null) {
             configuration.getCatalog().getDatabase().setPassword(usersCommandOptions.createUserCommandOptions.databasePassword);
         }
-        if (usersCommandOptions.createUserCommandOptions.database != null) {
-            configuration.getCatalog().getDatabase().setDatabase(usersCommandOptions.createUserCommandOptions.database);
+        if (usersCommandOptions.createUserCommandOptions.prefix != null) {
+            configuration.setDatabasePrefix(usersCommandOptions.createUserCommandOptions.prefix);
         }
         if (usersCommandOptions.createUserCommandOptions.databaseHost != null) {
             configuration.getCatalog().getDatabase()
@@ -172,8 +172,8 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         if (usersCommandOptions.deleteUserCommandOptions.databasePassword != null) {
             configuration.getCatalog().getDatabase().setPassword(usersCommandOptions.deleteUserCommandOptions.databasePassword);
         }
-        if (usersCommandOptions.deleteUserCommandOptions.database != null) {
-            configuration.getCatalog().getDatabase().setDatabase(usersCommandOptions.deleteUserCommandOptions.database);
+        if (usersCommandOptions.deleteUserCommandOptions.prefix != null) {
+            configuration.setDatabasePrefix(usersCommandOptions.deleteUserCommandOptions.prefix);
         }
         if (usersCommandOptions.deleteUserCommandOptions.databaseHost != null) {
             configuration.getCatalog().getDatabase()
@@ -210,8 +210,8 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         if (usersCommandOptions.QuotaUserCommandOptions.databasePassword != null) {
             configuration.getCatalog().getDatabase().setPassword(usersCommandOptions.QuotaUserCommandOptions.databasePassword);
         }
-        if (usersCommandOptions.QuotaUserCommandOptions.database != null) {
-            configuration.getCatalog().getDatabase().setDatabase(usersCommandOptions.QuotaUserCommandOptions.database);
+        if (usersCommandOptions.QuotaUserCommandOptions.prefix != null) {
+            configuration.setDatabasePrefix(usersCommandOptions.QuotaUserCommandOptions.prefix);
         }
         if (usersCommandOptions.QuotaUserCommandOptions.databaseHost != null) {
             configuration.getCatalog().getDatabase()
