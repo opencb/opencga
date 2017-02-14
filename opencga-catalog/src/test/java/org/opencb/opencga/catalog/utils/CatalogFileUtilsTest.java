@@ -42,6 +42,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
@@ -62,7 +63,7 @@ public class CatalogFileUtilsTest {
     private CatalogManager catalogManager;
 
     @Before
-    public void before() throws CatalogException, IOException {
+    public void before() throws CatalogException, IOException, URISyntaxException {
         Configuration configuration = Configuration.load(getClass().getResource("/configuration-test.yml")
                 .openStream());
 

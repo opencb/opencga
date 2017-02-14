@@ -91,8 +91,11 @@ public class AnnotationManager {
      * @throws CatalogException when the annotation set name could not be found or the new annotation is not valid.
      */
     public static QueryResult<AnnotationSet> updateAnnotationSet(long id, String annotationSetName, Map<String, Object> newAnnotations,
-                                                                 AnnotationSetDBAdaptor dbAdaptor,
-                                                                 StudyDBAdaptor studyDBAdaptor) throws CatalogException {
+                                                                 AnnotationSetDBAdaptor dbAdaptor, StudyDBAdaptor studyDBAdaptor)
+            throws CatalogException {
+        if (newAnnotations == null) {
+            throw new CatalogException("Missing annotations to be updated");
+        }
         // Obtain the annotation set to be updated
         QueryResult<AnnotationSet> queryResult = dbAdaptor.getAnnotationSet(id, annotationSetName);
         if (queryResult == null || queryResult.getNumResults() == 0) {

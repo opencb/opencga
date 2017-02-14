@@ -41,6 +41,7 @@ import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.catalog.session.DefaultSessionManager;
 import org.opencb.opencga.catalog.session.SessionManager;
 import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.core.common.UriUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +50,7 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -144,7 +146,12 @@ public class CatalogManager implements AutoCloseable {
 
     public void installCatalogDB() throws CatalogException {
         // Check jobs folder is empty
-        URI jobsURI = Paths.get(configuration.getTempJobsDir()).toUri();
+        URI jobsURI;
+        try {
+            jobsURI = UriUtils.createDirectoryUri(configuration.getTempJobsDir());
+        } catch (URISyntaxException e) {
+            throw new CatalogException("Failed to create a directory URI from " + configuration.getTempJobsDir());
+        }
         CatalogIOManager ioManager = getCatalogIOManagerFactory().get(jobsURI);
         if (!ioManager.isDirectory(jobsURI) || ioManager.listFiles(jobsURI).size() > 0) {
             throw new CatalogException("Cannot install openCGA. Jobs folder is not empty.\nPlease, empty it first.");
