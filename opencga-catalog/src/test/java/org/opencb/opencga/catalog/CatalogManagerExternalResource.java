@@ -25,9 +25,11 @@ import org.opencb.opencga.catalog.config.Configuration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.common.UriUtils;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -100,7 +102,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
         return opencgaHome;
     }
 
-    public static void clearCatalog(Configuration configuration) throws IOException, CatalogException {
+    public static void clearCatalog(Configuration configuration) throws IOException, CatalogException, URISyntaxException {
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
         for (String hostPort : configuration.getCatalog().getDatabase().getHosts()) {
             if (hostPort.contains(":")) {
@@ -123,10 +125,10 @@ public class CatalogManagerExternalResource extends ExternalResource {
 //        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
         mongoManager.close(catalogManager.getCatalogDatabase());
 
-        Path rootdir = Paths.get(URI.create(configuration.getDataDir()));
+        Path rootdir = Paths.get(UriUtils.createDirectoryUri(configuration.getDataDir()));
         deleteFolderTree(rootdir.toFile());
         if (!configuration.getTempJobsDir().isEmpty()) {
-            Path jobsDir = Paths.get(URI.create(configuration.getTempJobsDir()));
+            Path jobsDir = Paths.get(UriUtils.createDirectoryUri(configuration.getTempJobsDir()));
             if (jobsDir.toFile().exists()) {
                 deleteFolderTree(jobsDir.toFile());
             }
