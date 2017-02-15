@@ -1280,7 +1280,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 // or it is not and it has not been added to the root
                 if (studyElemMatch || !studyFilterAtRoot) {
                     if (!studyIds.isEmpty()) {
-                        if (!singleStudy || anyNegated) {
+                        if (!singleStudy || anyNegated || validFilesFilter) {
                             String studyIdsCsv = studyIds.stream().map(Object::toString).collect(Collectors.joining(","));
                             addQueryIntegerFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.STUDYID_FIELD, studyIdsCsv,
                                     studyBuilder, QueryOperation.AND);
