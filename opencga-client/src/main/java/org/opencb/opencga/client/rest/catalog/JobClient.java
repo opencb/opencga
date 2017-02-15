@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.client.rest.catalog;
 
-import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryResponse;
@@ -42,18 +41,14 @@ public class JobClient extends CatalogClient<Job, JobAclEntry> {
         this.aclClass = JobAclEntry.class;
     }
 
-    public QueryResponse<Job> create(String studyId, String jobName, String toolId, ObjectMap params) throws CatalogException, IOException {
-
-        if (params.containsKey("method") && params.get("method").equals("GET")) {
-            params = addParamsToObjectMap(params, "study", studyId, "name", jobName, "toolId", toolId);
-            return execute(JOBS_URL, "create", params, GET, Job.class);
+    public QueryResponse<Job> create(String studyId, ObjectMap bodyParams) throws CatalogException, IOException {
+        if (bodyParams == null || bodyParams.size() == 0) {
+            throw new CatalogException("Missing body parameters");
         }
-        params = addParamsToObjectMap(params, "name", jobName, "toolId", toolId);
-        ObjectMapper mapper = new ObjectMapper();
-        String json = mapper.writeValueAsString(params);
-        ObjectMap p = new ObjectMap("body", json);
-        p.append("study", studyId);
-        return execute(JOBS_URL, "create", p, POST, Job.class);
+
+        ObjectMap params = new ObjectMap("body", bodyParams);
+        params.append("study", studyId);
+        return execute(JOBS_URL, "create", params, POST, Job.class);
     }
 
     public QueryResponse<Job> visit(String jobId, Query query) throws CatalogException, IOException {
