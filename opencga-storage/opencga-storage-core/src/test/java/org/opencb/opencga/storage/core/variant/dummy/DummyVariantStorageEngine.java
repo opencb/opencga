@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.variant.dummy;
 
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.ExportMetadata;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -13,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Map;
 
 /**
  * Created on 28/11/16.
@@ -55,7 +57,8 @@ public class DummyVariantStorageEngine extends VariantStorageEngine {
     protected VariantImporter newVariantImporter(VariantDBAdaptor dbAdaptor) {
         return new VariantImporter(dbAdaptor) {
             @Override
-            public void importData(URI input, ExportMetadata metadata) throws StorageEngineException, IOException {
+            public void importData(URI input, ExportMetadata metadata, Map<StudyConfiguration, StudyConfiguration> map)
+                    throws StorageEngineException, IOException {
             }
         };
     }
