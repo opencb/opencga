@@ -639,25 +639,31 @@ public class VariantCommandExecutor extends CommandExecutor {
     /**
      * search command
      */
-    private void search() throws IOException, SolrServerException {
+    private void search() throws IOException, SolrServerException, StorageEngineException {
         StorageVariantCommandOptions.VariantSearchCommandOptions searchOptions = variantCommandOptions.searchVariantsCommandOptions;
 
-        SearchManager searchManager = new SearchManager();
+        // TODO: initialize SearchManager from the configuration file
+        SearchManager searchManager = new SearchManager("http://localhost:8983/solr/", "biotest_core2");
         if (searchOptions.index) {
             // index
             Path path = Paths.get(searchOptions.inputFilename);
             searchManager.load(path);
         } else {
             // query
-            Query query = new Query(); // VariantQueryCommandUtils.parseQuery(searchOptions, null);
-            QueryOptions queryOptions = new QueryOptions(); // VariantQueryCommandUtils.parseQueryOptions(searchOptions);
-            SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
             int count = 0;
-            while (iterator.hasNext()) {
-                VariantSearchModel variantSearch = iterator.next();
-                System.out.println("Variant #" + count);
-                System.out.println(variantSearch.toString());
-                count++;
+            try {
+                Query query = new Query();
+                query = VariantQueryCommandUtils.parseQuery(searchOptions, query);
+                QueryOptions queryOptions = new QueryOptions(); // VariantQueryCommandUtils.parseQueryOptions(searchOptions);
+                SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
+                while (iterator.hasNext()) {
+                    VariantSearchModel variantSearch = iterator.next();
+                    System.out.println("Variant #" + count);
+                    System.out.println(variantSearch.toString());
+                    count++;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
             System.out.println("Num. variants: " + count);
         }

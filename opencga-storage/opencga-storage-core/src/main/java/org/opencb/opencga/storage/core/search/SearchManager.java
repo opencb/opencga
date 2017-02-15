@@ -180,6 +180,7 @@ public class SearchManager {
         SolrQuery solrQuery = ParseSolrQuery.parse(query, queryOptions);
         QueryResponse response = null;
 
+        System.out.println("solrQuery.toQueryString = " + solrQuery.toQueryString());
         try {
             response = solrClient.query(solrQuery);
         } catch (SolrServerException | IOException e) {

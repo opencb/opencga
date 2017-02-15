@@ -291,8 +291,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
                 // We store the accumulated data
                 variantSearchModel.setGenes(genes);
-                variantSearchModel.setSoAcc(soAccessions);
-                variantSearchModel.setGeneToSoAcc(geneToSOAccessions);
+                variantSearchModel.setSoAcc(new ArrayList<>(soAccessions));
+                variantSearchModel.setGeneToSoAcc(new ArrayList<>(geneToSOAccessions));
 
                 // We accumulate genes in xrefs
                 xrefs.addAll(genes);
@@ -377,10 +377,10 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                     }
                 }
             }
-            variantSearchModel.setTraits(traits);
+            variantSearchModel.setTraits(new ArrayList<>(traits));
         }
 
-        variantSearchModel.setXrefs(xrefs);
+        variantSearchModel.setXrefs(new ArrayList<>(xrefs));
         return variantSearchModel;
     }
 

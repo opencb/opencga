@@ -55,7 +55,8 @@ public class VariantSearchModel {
     private int end;
 
     @Field("xrefs")
-    private Set<String> xrefs;
+//    private Set<String> xrefs;
+    private List<String> xrefs;
 
     @Field("type")
     private String type;
@@ -88,13 +89,16 @@ public class VariantSearchModel {
     private List<String> genes;
 
     @Field("soAcc")
-    private Set<Integer> soAcc;
+    private List<Integer> soAcc;
+//    private Set<Integer> soAcc;
 
     @Field("geneToSoAcc")
-    private Set<String> geneToSoAcc;
+    private List<String> geneToSoAcc;
+//    private Set<String> geneToSoAcc;
 
     @Field("traits")
-    private Set<String> traits;
+    private List<String> traits;
+//    private Set<String> traits;
 
     @Field("stats_*")
     private Map<String, Float> stats;
@@ -106,8 +110,8 @@ public class VariantSearchModel {
 
     public VariantSearchModel() {
         this.genes = new ArrayList<>();
-        this.soAcc = new HashSet<>();
-        this.geneToSoAcc = new HashSet<>();
+        this.soAcc = new ArrayList<>();
+        this.geneToSoAcc = new ArrayList<>();
         this.popFreq = new HashMap<>();
     }
 
@@ -184,11 +188,11 @@ public class VariantSearchModel {
         return this;
     }
 
-    public Set<String> getXrefs() {
+    public List<String> getXrefs() {
         return xrefs;
     }
 
-    public VariantSearchModel setXrefs(Set<String> xrefs) {
+    public VariantSearchModel setXrefs(List<String> xrefs) {
         this.xrefs = xrefs;
         return this;
     }
@@ -283,29 +287,29 @@ public class VariantSearchModel {
         return this;
     }
 
-    public Set<Integer> getSoAcc() {
+    public List<Integer> getSoAcc() {
         return soAcc;
     }
 
-    public VariantSearchModel setSoAcc(Set<Integer> soAcc) {
+    public VariantSearchModel setSoAcc(List<Integer> soAcc) {
         this.soAcc = soAcc;
         return this;
     }
 
-    public Set<String> getGeneToSoAcc() {
+    public List<String> getGeneToSoAcc() {
         return geneToSoAcc;
     }
 
-    public VariantSearchModel setGeneToSoAcc(Set<String> geneToSoAcc) {
+    public VariantSearchModel setGeneToSoAcc(List<String> geneToSoAcc) {
         this.geneToSoAcc = geneToSoAcc;
         return this;
     }
 
-    public Set<String> getTraits() {
+    public List<String> getTraits() {
         return traits;
     }
 
-    public VariantSearchModel setTraits(Set<String> traits) {
+    public VariantSearchModel setTraits(List<String> traits) {
         this.traits = traits;
         return this;
     }
