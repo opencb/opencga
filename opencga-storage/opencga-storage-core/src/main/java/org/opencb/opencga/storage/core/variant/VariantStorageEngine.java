@@ -505,7 +505,7 @@ public abstract class VariantStorageEngine extends StorageEngine<VariantDBAdapto
         VariantDBIterator variantDBIterator = dbAdaptor.iterator();
 
         while (variantDBIterator.hasNext()) {
-            searchManager.insert(variantDBIterator.next());
+            variantSearchManager.insert(variantDBIterator.next());
         }
     }
 

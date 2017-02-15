@@ -38,7 +38,7 @@ import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
 import org.opencb.opencga.storage.core.metadata.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
-import org.opencb.opencga.storage.core.search.SearchManager;
+import org.opencb.opencga.storage.core.search.VariantSearchManager;
 import org.opencb.opencga.storage.core.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.search.solr.SolrVariantSearchIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
@@ -642,12 +642,12 @@ public class VariantCommandExecutor extends CommandExecutor {
     private void search() throws IOException, SolrServerException, StorageEngineException {
         StorageVariantCommandOptions.VariantSearchCommandOptions searchOptions = variantCommandOptions.searchVariantsCommandOptions;
 
-        // TODO: initialize SearchManager from the configuration file
-        SearchManager searchManager = new SearchManager("http://localhost:8983/solr/", "biotest_core2");
+        // TODO: initialize VariantSearchManager from the configuration file
+        VariantSearchManager variantSearchManager = new VariantSearchManager("http://localhost:8983/solr/", "biotest_core2");
         if (searchOptions.index) {
             // index
             Path path = Paths.get(searchOptions.inputFilename);
-            searchManager.load(path);
+            variantSearchManager.load(path);
         } else {
             // query
             int count = 0;
@@ -655,7 +655,7 @@ public class VariantCommandExecutor extends CommandExecutor {
                 Query query = new Query();
                 query = VariantQueryCommandUtils.parseQuery(searchOptions, query);
                 QueryOptions queryOptions = new QueryOptions(); // VariantQueryCommandUtils.parseQueryOptions(searchOptions);
-                SolrVariantSearchIterator iterator = searchManager.iterator(query, queryOptions);
+                SolrVariantSearchIterator iterator = variantSearchManager.iterator(query, queryOptions);
                 while (iterator.hasNext()) {
                     VariantSearchModel variantSearch = iterator.next();
                     System.out.println("Variant #" + count);

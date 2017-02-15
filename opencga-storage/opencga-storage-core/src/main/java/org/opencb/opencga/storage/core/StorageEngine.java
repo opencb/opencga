@@ -20,7 +20,7 @@ import org.opencb.opencga.core.common.MemoryUsageMonitor;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StoragePipelineException;
 import org.opencb.opencga.storage.core.exceptions.StorageEngineException;
-import org.opencb.opencga.storage.core.search.SearchManager;
+import org.opencb.opencga.storage.core.search.VariantSearchManager;
 import org.slf4j.Logger;
 
 import java.net.URI;
@@ -35,7 +35,7 @@ public abstract class StorageEngine<DBADAPTOR> {
     protected String storageEngineId;
     protected StorageConfiguration configuration;
 
-    protected SearchManager searchManager;
+    protected VariantSearchManager variantSearchManager;
 
     protected Logger logger;
 

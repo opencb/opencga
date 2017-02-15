@@ -31,14 +31,14 @@ import java.util.List;
 /**
  * Created by wasim on 09/11/16.
  */
-public class SearchManager {
+public class VariantSearchManager {
 
     private SearchConfiguration searchConfiguration;
     //    private SolrClient solrClient;
     private HttpSolrClient solrClient;
     private static VariantSearchToVariantConverter variantSearchToVariantConverter;
 
-    public SearchManager() {
+    public VariantSearchManager() {
         //TODO remove testing constructor
         if (this.solrClient == null) {
 //            this.solrClient = new HttpSolrClient("http://localhost:8983/solr/variants");
@@ -51,7 +51,7 @@ public class SearchManager {
         }
     }
 
-    public SearchManager(String host, String collection) {
+    public VariantSearchManager(String host, String collection) {
         if (this.solrClient == null) {
 //            this.solrClient = new HttpSolrClient(host + collection);
             this.solrClient = new HttpSolrClient.Builder(host + collection).build();
@@ -63,7 +63,7 @@ public class SearchManager {
         }
     }
 
-    public SearchManager(StorageConfiguration storageConfiguration) {
+    public VariantSearchManager(StorageConfiguration storageConfiguration) {
 
         this.searchConfiguration = storageConfiguration.getSearch();
 
