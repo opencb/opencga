@@ -1283,7 +1283,6 @@ public class FileWSServer extends OpenCGAWSServer {
             logger.debug("study: {}", studyStr);
 
             path = path.replace(":", "/");
-            uriStr = uriStr.replace(":", "/");
 
             ObjectMap objectMap = new ObjectMap()
                     .append("parents", parents)
