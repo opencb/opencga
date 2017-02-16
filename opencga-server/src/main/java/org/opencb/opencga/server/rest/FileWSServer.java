@@ -60,6 +60,8 @@ import javax.ws.rs.core.*;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
@@ -522,8 +524,6 @@ public class FileWSServer extends OpenCGAWSServer {
             QueryResult<File> queryResult = catalogManager.getFile(resource.getResourceId(), this.queryOptions, sessionId);
             File file = queryResult.getResult().get(0);
 
-            stream = catalogManager.downloadFile(resource.getResourceId(), sessionId);
-
             List<String> rangeList = headers.getRequestHeader("range");
             if (rangeList != null) {
                 long from;
@@ -531,17 +531,22 @@ public class FileWSServer extends OpenCGAWSServer {
                 String[] acceptedRanges = rangeList.get(0).split("=")[1].split("-");
                 from = Long.parseLong(acceptedRanges[0]);
                 to = Long.parseLong(acceptedRanges[1]);
+                int length = (int) (to - from) + 1;
+                ByteBuffer buf = ByteBuffer.allocate(length);
 
-                byte[] buf = new byte[(int) (to - from) + 1];
-                logger.debug("from: {} , to: {}, length:{}, available: {}", from, to, to - from + 1, stream.available());
+                logger.debug("from: {} , to: {}, length:{}", from, to, length);
                 StopWatch t = StopWatch.createStarted();
-                stream.skip(from);
-                stream.read(buf);
-                stream.close();
-                t.stop();
-                logger.debug("Skip {}B and read {}B in {}s", from, buf.length, t.getTime(TimeUnit.MILLISECONDS) / 1000.0);
 
-                return Response.ok(buf, MediaType.APPLICATION_OCTET_STREAM_TYPE)
+                java.nio.file.Path filePath = Paths.get(file.getUri());
+                try (FileChannel fc = (FileChannel.open(filePath, StandardOpenOption.READ))) {
+                    fc.position(from);
+                    fc.read(buf);
+                }
+
+                t.stop();
+                logger.debug("Skip {}B and read {}B in {}s", from, length, t.getTime(TimeUnit.MILLISECONDS) / 1000.0);
+
+                return Response.ok(buf.array(), MediaType.APPLICATION_OCTET_STREAM_TYPE)
                         .header("Accept-Ranges", "bytes")
                         .header("Access-Control-Allow-Origin", "*")
                         .header("Access-Control-Allow-Headers", "x-requested-with, content-type, range")
@@ -552,6 +557,7 @@ public class FileWSServer extends OpenCGAWSServer {
                         .status(Response.Status.PARTIAL_CONTENT).build();
 
             } else {
+                stream = catalogManager.downloadFile(resource.getResourceId(), sessionId);
                 return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, file.getName());
             }
         } catch (Exception e) {
