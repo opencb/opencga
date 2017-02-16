@@ -8,6 +8,7 @@ import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.opencb.biodata.formats.variant.io.VariantReader;
@@ -86,6 +87,25 @@ public class VariantSearchManager {
     }
 
     /**
+     * Check if a given core exists.
+     *
+     * @param coreName          Core name
+     * @return                  True or false
+     * @throws Exception        Exception
+     */
+    public boolean existCore(String coreName) throws Exception {
+        HttpSolrClient solrClient = new HttpSolrClient.Builder(hostName).build();
+        CoreStatus status = CoreAdminRequest.getCoreStatus(coreName, solrClient);
+        try {
+            // if the status.response is null, catch the exception
+            status.getInstanceDirectory();
+        } catch (Exception e) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Create a Solr collection from a configuration directory. The configuration has to be uploaded to the zookeeper,
      * $ ./bin/solr zk upconfig -n <config name> -d <path to the config dir> -z <host:port zookeeper>.
      * For Solr, collection name, configuration name and number of shards are mandatory in order to create a collection.
@@ -105,6 +125,47 @@ public class VariantSearchManager {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Check if a given collection exists.
+     *
+     * @param collectionName    Collection name
+     * @return                  True or false
+     * @throws Exception        Exception
+     */
+    public boolean existCollection(String collectionName) throws Exception {
+
+        HttpSolrClient solrClient = new HttpSolrClient.Builder(hostName).build();
+
+        List<String> collections = CollectionAdminRequest.listCollections(solrClient);
+        for (String collection: collections) {
+            System.out.println(collection);
+        }
+        for (String collection: collections) {
+            if (collection.equals(collectionName)) {
+                return true;
+            }
+        }
+        return false;
+//        .getCoreStatus(coreName, solrClient);
+//        try {
+//            // if the status.response is null, catch the exception
+//            status.getInstanceDirectory();
+//        } catch (Exception e) {
+//            return false;
+//        }
+//        return true;
+//
+////        CollectionAdminResponse request = CollectionAdminRequest.getClusterStatus();
+////        System.out.println(response.getCoreStatus(collectionName).size());
+////        return (response.getCoreStatus(collectionName).size() == 1);
+//
+//
+//        CollectionAdminRequest.ClusterStatus request = new CollectionAdminRequest.ClusterStatus();
+//        request.setCollectionName(collectionName);
+//        System.out.println(request.process(solrClient).getCollectionStatus().size());
+//        return (request.process(solrClient).getCollectionStatus().size() == 1);
     }
 
     /**

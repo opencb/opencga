@@ -65,6 +65,20 @@ public class VariantSearchManagerTest extends GenericTest {
         }
     }
 
+//    @Test
+    public void existCore() {
+        try {
+            String name;
+            name = "core999";
+            System.out.println("exist " + name + "? " + variantSearchManager.existCore(name));
+
+            name = "core99999";
+            System.out.println("exist " + name + "? " + variantSearchManager.existCore(name));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     //    @Test
     public void createCollection() {
         try {
@@ -73,6 +87,20 @@ public class VariantSearchManagerTest extends GenericTest {
             int numShards = 2;
             int numReplicas = 2;
             variantSearchManager.createCollection(collectionName, configName, numShards, numReplicas);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+//    @Test
+    public void existCollection() {
+        try {
+            String name;
+            name = "collection888";
+            System.out.println("exist " + name + "? " + variantSearchManager.existCollection(name));
+
+            name = "collection888888";
+            System.out.println("exist " + name + "? " + variantSearchManager.existCollection(name));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -111,7 +139,7 @@ public class VariantSearchManagerTest extends GenericTest {
         }
     }
 
-//    @Test
+    //    @Test
     public void loadVariantFileIntoSolrTest() {
 
         String test = "Test_Variant_Insert_";
