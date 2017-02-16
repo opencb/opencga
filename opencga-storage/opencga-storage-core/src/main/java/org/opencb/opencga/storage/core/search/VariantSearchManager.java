@@ -6,6 +6,8 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.opencb.biodata.formats.variant.io.VariantReader;
@@ -33,25 +35,21 @@ import java.util.List;
  */
 public class VariantSearchManager {
 
+    private String hostName;
+    private String collectionName;
+
     private SearchConfiguration searchConfiguration;
-    //    private SolrClient solrClient;
     private HttpSolrClient solrClient;
     private static VariantSearchToVariantConverter variantSearchToVariantConverter;
 
-    public VariantSearchManager() {
-        //TODO remove testing constructor
-        if (this.solrClient == null) {
-//            this.solrClient = new HttpSolrClient("http://localhost:8983/solr/variants");
-            this.solrClient = new HttpSolrClient.Builder("http://localhost:8983/solr/variants").build();
-            solrClient.setRequestWriter(new BinaryRequestWriter());
-
-        }
-        if (variantSearchToVariantConverter == null) {
-            variantSearchToVariantConverter = new VariantSearchToVariantConverter();
-        }
-    }
-
     public VariantSearchManager(String host, String collection) {
+        this.hostName = host;
+        this.collectionName = collection;
+
+        this.solrClient = new HttpSolrClient.Builder(host).build();
+        this.solrClient.setRequestWriter(new BinaryRequestWriter());
+        variantSearchToVariantConverter = new VariantSearchToVariantConverter();
+
         if (this.solrClient == null) {
 //            this.solrClient = new HttpSolrClient(host + collection);
             this.solrClient = new HttpSolrClient.Builder(host + collection).build();
@@ -64,19 +62,48 @@ public class VariantSearchManager {
     }
 
     public VariantSearchManager(StorageConfiguration storageConfiguration) {
-
+        this(storageConfiguration.getSearch().getHost(), storageConfiguration.getSearch().getCollection());
         this.searchConfiguration = storageConfiguration.getSearch();
+    }
 
-        if (searchConfiguration.getHost() != null && searchConfiguration.getCollection() != null && solrClient == null) {
-//            solrClient = new HttpSolrClient(searchConfiguration.getHost() + searchConfiguration.getCollection());
-            this.solrClient = new HttpSolrClient.Builder(searchConfiguration.getHost() + searchConfiguration.getCollection()).build();
-//            solrClient.setRequestWriter(new BinaryRequestWriter());
-//            HttpClientUtil.setBasicAuth((DefaultHttpClient) solrClient.getHttpClient(), searchConfiguration.getUser(),
-//                    searchConfiguration.getPassword());
+    /**
+     * Create a Solr core from a configuration set directory. By default, the configuration set directory is located
+     * inside the folder server/solr/configsets.
+     *
+     * @param coreName      Core name
+     * @param configSet     Configuration set name
+     */
+    public void createCore(String coreName, String configSet) {
+        try {
+            HttpSolrClient solrClient = new HttpSolrClient.Builder(hostName).build();
+            CoreAdminRequest.Create request = new CoreAdminRequest.Create();
+            request.setCoreName(coreName);
+            request.setConfigSet(configSet);
+            request.process(solrClient);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+    }
 
-        if (variantSearchToVariantConverter == null) {
-            variantSearchToVariantConverter = new VariantSearchToVariantConverter();
+    /**
+     * Create a Solr collection from a configuration directory. The configuration has to be uploaded to the zookeeper,
+     * $ ./bin/solr zk upconfig -n <config name> -d <path to the config dir> -z <host:port zookeeper>.
+     * For Solr, collection name, configuration name and number of shards are mandatory in order to create a collection.
+     * Number of replicas is optional.
+     *
+     * @param collectionName     Collection name
+     * @param config             Configuration name
+     * @param numShards          Number of shards
+     * @param numReplicas        Number of replicas
+     */
+    public void createCollection(String collectionName, String config, int numShards, int numReplicas) {
+        try {
+            HttpSolrClient solrClient = new HttpSolrClient.Builder(hostName).build();
+            CollectionAdminRequest request = CollectionAdminRequest.createCollection(collectionName, config,
+                    numShards, numReplicas);
+            request.process(solrClient);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 

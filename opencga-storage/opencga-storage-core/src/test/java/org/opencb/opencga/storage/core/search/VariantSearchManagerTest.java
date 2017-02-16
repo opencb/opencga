@@ -5,6 +5,9 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.RangeFacet;
 import org.junit.Assert;
 import org.junit.Before;
@@ -47,10 +50,35 @@ public class VariantSearchManagerTest extends GenericTest {
         jsonObjectMapper = new ObjectMapper();
         initJSONParser(new File(VariantStorageBaseTest.getResourceUri("variant-solr-sample.json.gz")));
         variantList = readNextVariantFromJSON(100);
-        variantSearchManager = new VariantSearchManager("http://localhost:8983/solr/", "biotest_core2");
+//        variantSearchManager = new VariantSearchManager("http://localhost:8983/solr/", "biotest_core2");
+        variantSearchManager = new VariantSearchManager("http://localhost:8983/solr/", "collection333");
     }
 
-//    @Test
+    //    @Test
+    public void createCore() {
+        try {
+            String coreName = "core555";
+            String configSet = "myConfSet";
+            variantSearchManager.createCore(coreName, configSet);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    //    @Test
+    public void createCollection() {
+        try {
+            String collectionName = "collection888";
+            String configName = "myConfSet";
+            int numShards = 2;
+            int numReplicas = 2;
+            variantSearchManager.createCollection(collectionName, configName, numShards, numReplicas);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    //    @Test
     public void conversionTest() {
 
         try {

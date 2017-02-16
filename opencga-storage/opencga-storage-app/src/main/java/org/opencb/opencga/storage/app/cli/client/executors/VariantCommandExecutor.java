@@ -42,6 +42,7 @@ import org.opencb.opencga.storage.core.search.VariantSearchManager;
 import org.opencb.opencga.storage.core.search.VariantSearchModel;
 import org.opencb.opencga.storage.core.search.solr.SolrVariantSearchIterator;
 import org.opencb.opencga.storage.core.variant.VariantStorageEngine;
+import org.opencb.opencga.storage.core.variant.VariantStoragePipeline;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.DefaultVariantAnnotationManager;
@@ -641,6 +642,9 @@ public class VariantCommandExecutor extends CommandExecutor {
      */
     private void search() throws IOException, SolrServerException, StorageEngineException {
         StorageVariantCommandOptions.VariantSearchCommandOptions searchOptions = variantCommandOptions.searchVariantsCommandOptions;
+
+        //VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor(exportVariantsCommandOptions.dbName);
+        // variantStorageEngine.getConfiguration().getSearch()
 
         // TODO: initialize VariantSearchManager from the configuration file
         VariantSearchManager variantSearchManager = new VariantSearchManager("http://localhost:8983/solr/", "biotest_core2");
