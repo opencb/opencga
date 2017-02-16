@@ -3,7 +3,7 @@
 !define user {test}
 !define file {4}
 !define study {2}
-!define totalVariants {1110102}
+!define totalVariants {9789}
 !define sift {%3E0.1}
 !define totalVariantsWithsift {7405}
 
