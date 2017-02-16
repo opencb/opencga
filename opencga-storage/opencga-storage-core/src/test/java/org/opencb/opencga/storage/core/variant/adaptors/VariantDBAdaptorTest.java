@@ -1121,11 +1121,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         queryResult = dbAdaptor.get(query, options);
         assertEquals(2, queryResult.getNumResults());
 
-        query = new Query(CHROMOSOME.key(), "1");
-        queryResult = dbAdaptor.get(query, options);
-        assertThat(queryResult, everyResult(allVariants, overlaps(new Region("1"))));
-
-        options.put("sort", true);
+        options.put(QueryOptions.SORT, true);
         query = new Query(REGION.key(), "1:14000000-160000000");
         queryResult = dbAdaptor.get(query, options);
         assertThat(queryResult, everyResult(allVariants, overlaps(new Region("1:14000000-160000000"))));
@@ -1141,7 +1137,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
         checkRegion(new Region("1:1000000-2000000"));
         checkRegion(new Region("1:10000000-20000000"));
         checkRegion(new Region("1:14000000-160000000"));
-        checkRegion(new Region("1"));
+        checkRegion(new Region("2"));
         checkRegion(new Region("X"));
         checkRegion(new Region("30"));
         checkRegion(new Region("3:1-200000000"));
