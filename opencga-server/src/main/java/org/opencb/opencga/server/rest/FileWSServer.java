@@ -514,6 +514,7 @@ public class FileWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "File id, name or path") @QueryParam("file") String fileIdStr,
                               @ApiParam(value = "Study [[user@]project:]study where study and project can be either the id or alias")
                               @QueryParam("study") String studyStr) {
+        DataInputStream stream = null;
         try {
             AbstractManager.MyResourceId resource = catalogManager.getFileManager().getId(fileIdStr, studyStr, sessionId);
             catalogManager.getAuthorizationManager().checkFilePermission(resource.getResourceId(), resource.getUser(),
@@ -521,7 +522,7 @@ public class FileWSServer extends OpenCGAWSServer {
             QueryResult<File> queryResult = catalogManager.getFile(resource.getResourceId(), this.queryOptions, sessionId);
             File file = queryResult.getResult().get(0);
 
-            DataInputStream stream = catalogManager.downloadFile(resource.getResourceId(), sessionId);
+            stream = catalogManager.downloadFile(resource.getResourceId(), sessionId);
 
             List<String> rangeList = headers.getRequestHeader("range");
             if (rangeList != null) {
@@ -536,6 +537,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 StopWatch t = StopWatch.createStarted();
                 stream.skip(from);
                 stream.read(buf);
+                stream.close();
                 t.stop();
                 logger.debug("Skip {}B and read {}B in {}s", from, buf.length, t.getTime(TimeUnit.MILLISECONDS) / 1000.0);
 
@@ -553,6 +555,11 @@ public class FileWSServer extends OpenCGAWSServer {
                 return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, file.getName());
             }
         } catch (Exception e) {
+            if (stream != null) {
+                try {
+                    stream.close();
+                } catch (IOException ignore) { }
+            }
             return createErrorResponse(e);
         }
     }
