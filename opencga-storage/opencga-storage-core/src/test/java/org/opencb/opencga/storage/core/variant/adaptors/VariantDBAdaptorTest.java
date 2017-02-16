@@ -469,6 +469,32 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
 
     @Test
     public void testGetAllVariants_xref() {
+        Query query = new Query(ANNOT_XREF.key(), "3:108634973:C:A,rs2032582,HP:0001250,VAR_048225,Q9BY64,ENSG00000250026,TMPRSS11B,COSM1421316");
+        queryResult = dbAdaptor.get(query, null);
+        assertThat(queryResult, everyResult(allVariants, anyOf(
+                hasAnnotation(at("3:108634973:C:A")),
+                with("id", Variant::getId, is("rs2032582")),
+                hasAnnotation(with("GeneTraitAssociation", VariantAnnotation::getGeneTraitAssociation,
+                        hasItem(with("HPO", GeneTraitAssociation::getHpo, is("HP:0001250"))))),
+                hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
+                        hasItem(with("ProteinVariantAnnotation", ConsequenceType::getProteinVariantAnnotation,
+                                with("UniprotVariantId", ProteinVariantAnnotation::getUniprotVariantId, is("VAR_048225")))))),
+                hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
+                        hasItem(with("ProteinVariantAnnotation", ConsequenceType::getProteinVariantAnnotation,
+                                with("UniprotName", ProteinVariantAnnotation::getUniprotAccession, is("Q9BY64")))))),
+                hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
+                        hasItem(with("EnsemblGene", ConsequenceType::getEnsemblGeneId, is("ENSG00000250026"))))),
+                hasAnnotation(with("ConsequenceType", VariantAnnotation::getConsequenceTypes,
+                        hasItem(with("GeneName", ConsequenceType::getGeneName, is("TMPRSS11B"))))),
+                hasAnnotation(with("VariantTraitAssociation", VariantAnnotation::getVariantTraitAssociation,
+                        with("Cosmic", VariantTraitAssociation::getCosmic,
+                                hasItem(with("MutationId", Cosmic::getMutationId, is("COSM1421316"))))))
+        )));
+
+    }
+
+    @Test
+    public void testGetAllVariants_xref_rs() {
         testGetAllVariants_rs(ANNOT_XREF.key());
     }
 

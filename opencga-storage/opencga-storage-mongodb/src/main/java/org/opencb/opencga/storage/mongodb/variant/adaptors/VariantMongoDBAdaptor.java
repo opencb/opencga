@@ -924,7 +924,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     if (variant != null) {
                         mongoIds.add(MongoDBVariantStageLoader.STRING_ID_CONVERTER.buildId(variant));
                     } else {
-                        if (isVariantAccession(value) || isClinicalAccession(value)) {
+                        if (isVariantAccession(value) || isClinicalAccession(value) || isGeneAccession(value)) {
                             otherXrefs.add(value);
                         } else {
                             genes.add(value);
@@ -1082,22 +1082,36 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         + "." + DocumentToVariantAnnotationConverter.CT_TRANSCRIPT_ANNOT_FLAGS, value, builder, QueryOperation.AND);
             }
 
-            QueryBuilder geneTraitBuilder = QueryBuilder.start();
+//            QueryBuilder geneTraitBuilder = QueryBuilder.start();
             if (isValidParam(query, VariantQueryParams.ANNOT_GENE_TRAITS_ID)) {
                 String value = query.getString(VariantQueryParams.ANNOT_GENE_TRAITS_ID.key());
-                addQueryStringFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_ID_FIELD, value, geneTraitBuilder, QueryOperation.AND);
+                addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_ID_FIELD, value, builder, QueryOperation.AND);
             }
 
             if (isValidParam(query, VariantQueryParams.ANNOT_GENE_TRAITS_NAME)) {
                 String value = query.getString(VariantQueryParams.ANNOT_GENE_TRAITS_NAME.key());
-                addCompQueryFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_NAME_FIELD, value, geneTraitBuilder, false);
+                addCompQueryFilter(DocumentToVariantConverter.ANNOTATION_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_FIELD
+                        + '.' + DocumentToVariantAnnotationConverter.GENE_TRAIT_NAME_FIELD, value, builder, false);
             }
 
             if (isValidParam(query, VariantQueryParams.ANNOT_HPO)) {
                 String value = query.getString(VariantQueryParams.ANNOT_HPO.key());
-                addQueryStringFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_HPO_FIELD, value, geneTraitBuilder,
+//                addQueryStringFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_HPO_FIELD, value, geneTraitBuilder,
+//                        QueryOperation.AND);
+                addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
+                                + '.' + DocumentToVariantAnnotationConverter.XREFS_FIELD
+                                + '.' + DocumentToVariantAnnotationConverter.XREF_ID_FIELD, value, builder,
                         QueryOperation.AND);
             }
+
+//            DBObject geneTraitQuery = geneTraitBuilder.get();
+//            if (geneTraitQuery.keySet().size() != 0) {
+//                builder.and(DocumentToVariantConverter.ANNOTATION_FIELD
+//                        + "." + DocumentToVariantAnnotationConverter.GENE_TRAIT_FIELD).elemMatch(geneTraitQuery);
+//            }
 
             if (isValidParam(query, VariantQueryParams.ANNOT_GO)) {
                 String value = query.getString(VariantQueryParams.ANNOT_GO.key());
@@ -1139,11 +1153,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             }
 
-            DBObject geneTraitQuery = geneTraitBuilder.get();
-            if (geneTraitQuery.keySet().size() != 0) {
-                builder.and(DocumentToVariantConverter.ANNOTATION_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.GENE_TRAIT_FIELD).elemMatch(geneTraitQuery);
-            }
 
             if (isValidParam(query, VariantQueryParams.ANNOT_PROTEIN_KEYWORDS)) {
                 String value = query.getString(VariantQueryParams.ANNOT_PROTEIN_KEYWORDS.key());

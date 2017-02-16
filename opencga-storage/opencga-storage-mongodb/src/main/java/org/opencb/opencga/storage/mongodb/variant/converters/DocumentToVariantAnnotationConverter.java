@@ -590,6 +590,9 @@ public class DocumentToVariantAnnotationConverter
                     putNotNull(d, GENE_TRAIT_NAME_FIELD, geneTraitAssociation.getName());
                     putNotNull(d, GENE_TRAIT_SCORE_FIELD, geneTraitAssociation.getScore());
                     putNotNull(d, GENE_TRAIT_HPO_FIELD, geneTraitAssociation.getHpo());
+                    if (StringUtils.isNotEmpty(geneTraitAssociation.getHpo())) {
+                        xrefs.add(convertXrefToStorage(geneTraitAssociation.getHpo(), "HPO"));
+                    }
 //                    putNotNull(d, GENE_TRAIT_PUBMEDS_FIELD, geneTraitAssociation.getNumberOfPubmeds());
                     putNotNull(d, GENE_TRAIT_TYPES_FIELD, geneTraitAssociation.getAssociationTypes());
 //                    putNotNull(d, GENE_TRAIT_SOURCES_FIELD, geneTraitAssociation.getSources());

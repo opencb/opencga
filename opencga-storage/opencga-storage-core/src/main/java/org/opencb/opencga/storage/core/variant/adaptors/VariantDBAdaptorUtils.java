@@ -124,14 +124,27 @@ public class VariantDBAdaptorUtils {
     /**
      * Determines if the given value is a known clinical accession or not.
      *
-     * ClinVar accession starts with RCV
-     * COSMIC mutationId starts with RCV
+     * ClinVar accession starts with 'RCV'
+     * COSMIC mutationId starts with 'COSM'
      *
      * @param value Value to check
      * @return      If is a known accession
      */
     public static boolean isClinicalAccession(String value) {
         return value.startsWith("RCV") || value.startsWith("COSM");
+    }
+
+    /**
+     * Determines if the given value is a known gene accession or not.
+     *
+     * Human Phenotype Ontology (HPO) terms starts with 'HP:'
+     * Online Mendelian Inheritance in Man (OMIM) terms starts with 'OMIM:'
+     *
+     * @param value Value to check
+     * @return      If is a known accession
+     */
+    public static boolean isGeneAccession(String value) {
+        return value.startsWith("HP:") || value.startsWith("OMIM:");
     }
 
     /**
