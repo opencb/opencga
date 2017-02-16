@@ -315,9 +315,9 @@ public class DocumentToVariantAnnotationConverter
         va.setGeneDrugInteraction(drugs);
 
         //XREfs
-        List<Xref> xrefs = new LinkedList<>();
         Object xrs = object.get(XREFS_FIELD);
         if (xrs != null && xrs instanceof List) {
+            List<Xref> xrefs = new LinkedList<>();
             for (Object o : (List) xrs) {
                 if (o instanceof Document) {
                     Document xref = (Document) o;
@@ -328,8 +328,8 @@ public class DocumentToVariantAnnotationConverter
                     );
                 }
             }
+            va.setXrefs(xrefs);
         }
-        va.setXrefs(xrefs);
 
         //Functional score
         List<Score> functionalScore = new LinkedList<>();

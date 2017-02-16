@@ -44,6 +44,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.annotation.annotators.AbstractCellBaseVariantAnnotator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
@@ -422,7 +423,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             logger.info(sql);
             logger.debug("Creating {} iterator", VariantHBaseResultSetIterator.class);
             try {
-                if (true) {
+                if (options.getBoolean("explain", true)) {
                     logger.info("---- " + "EXPLAIN " + sql);
                     phoenixHelper.getPhoenixHelper().explain(getJdbcConnection(), sql, Logger::info);
                 }
@@ -430,9 +431,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 Statement statement = getJdbcConnection().createStatement(); // Statemnet closed by iterator
                 statement.setFetchSize(options.getInt("batchSize", -1));
                 ResultSet resultSet = statement.executeQuery(sql); // RS closed by iterator
-                List<String> returnedSamples = getReturnedSamplesList(query, options);
+                Set<VariantField> returnedFields = VariantField.getReturnedFields(options);
+                List<String> returnedSamples = getReturnedSamplesList(query, returnedFields);
                 VariantHBaseResultSetIterator iterator = new VariantHBaseResultSetIterator(statement,
-                        resultSet, genomeHelper, getStudyConfigurationManager(), options, returnedSamples);
+                        resultSet, genomeHelper, getStudyConfigurationManager(), returnedSamples, returnedFields, options);
 
                 if (clientSideSkip) {
                     // Client side skip!
