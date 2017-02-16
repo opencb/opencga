@@ -525,13 +525,13 @@ public class FileWSServer extends OpenCGAWSServer {
 
             List<String> rangeList = headers.getRequestHeader("range");
             if (rangeList != null) {
-                int from;
-                int to;
+                long from;
+                long to;
                 String[] acceptedRanges = rangeList.get(0).split("=")[1].split("-");
-                from = Integer.parseInt(acceptedRanges[0]);
-                to = Integer.parseInt(acceptedRanges[1]);
+                from = Long.parseLong(acceptedRanges[0]);
+                to = Long.parseLong(acceptedRanges[1]);
 
-                byte[] buf = new byte[to - from + 1];
+                byte[] buf = new byte[(int) (to - from) + 1];
                 logger.debug("from: {} , to: {}, length:{}, available: {}", from, to, to - from + 1, stream.available());
                 StopWatch t = StopWatch.createStarted();
                 stream.skip(from);
