@@ -640,20 +640,61 @@ public class VariantCommandExecutor extends CommandExecutor {
     /**
      * search command
      */
-    private void search() throws IOException, SolrServerException, StorageEngineException {
+    private void search() throws Exception {
         StorageVariantCommandOptions.VariantSearchCommandOptions searchOptions = variantCommandOptions.searchVariantsCommandOptions;
 
         //VariantDBAdaptor dbAdaptor = variantStorageEngine.getDBAdaptor(exportVariantsCommandOptions.dbName);
         // variantStorageEngine.getConfiguration().getSearch()
 
-        // TODO: initialize VariantSearchManager from the configuration file
-        VariantSearchManager variantSearchManager = new VariantSearchManager("http://localhost:8983/solr/", "biotest_core2");
+        // TODO: initialize solrUrl and database (i.e.: core/collection name) from the configuration file
+        String solrUrl = (searchOptions.solrUrl == null ? "http://localhost:8983/solr/" : searchOptions.solrUrl);
+        String dbName = (searchOptions.dbName == null ? "variants" : searchOptions.dbName);
+
+        VariantSearchManager variantSearchManager = new VariantSearchManager(solrUrl, dbName);
+        boolean querying = true;
+        String mode = searchOptions.mode;
+
+        // create the core or collection
+        if (searchOptions.create) {
+            querying = false;
+            switch (mode.toLowerCase()) {
+                case "core": {
+                    if (variantSearchManager.existCore(dbName)) {
+                        throw new IllegalArgumentException("Core '" + dbName + "' already exists");
+                    }
+                    variantSearchManager.createCore(searchOptions.dbName, searchOptions.solrConfig);
+                    break;
+                }
+                case "collection": {
+                    if (variantSearchManager.existCore(dbName)) {
+                        throw new IllegalArgumentException("Collection '" + dbName + "' already exists");
+                    }
+                    variantSearchManager.createCollection(searchOptions.dbName, searchOptions.solrConfig,
+                            searchOptions.numShards, searchOptions.numReplicas);
+                    break;
+                }
+                default: {
+                    throw new IllegalArgumentException("Invalid value '" + searchOptions.create
+                            + "' for the --create parameter. Valid values are 'core' or 'collection'");
+                }
+            }
+        }
+
+        // index
         if (searchOptions.index) {
-            // index
+            if (!variantSearchManager.existCore(dbName)) {
+                throw new IllegalArgumentException("Search " + mode + " '" + dbName + "' does not exists");
+            }
+            querying = false;
             Path path = Paths.get(searchOptions.inputFilename);
             variantSearchManager.load(path);
-        } else {
-            // query
+        }
+
+        // query
+        if (querying) {
+            if (!variantSearchManager.existCore(dbName)) {
+                throw new IllegalArgumentException("Search " + mode + " '" + dbName + "' does not exists");
+            }
             int count = 0;
             try {
                 Query query = new Query();

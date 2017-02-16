@@ -47,19 +47,9 @@ public class VariantSearchManager {
         this.hostName = host;
         this.collectionName = collection;
 
-        this.solrClient = new HttpSolrClient.Builder(host).build();
+        this.solrClient = new HttpSolrClient.Builder(host + collection).build();
         this.solrClient.setRequestWriter(new BinaryRequestWriter());
         variantSearchToVariantConverter = new VariantSearchToVariantConverter();
-
-        if (this.solrClient == null) {
-//            this.solrClient = new HttpSolrClient(host + collection);
-            this.solrClient = new HttpSolrClient.Builder(host + collection).build();
-            solrClient.setRequestWriter(new BinaryRequestWriter());
-//            this.solrClient = new ConcurrentUpdateSolrClient.Builder(host+ collection).build();
-        }
-        if (variantSearchToVariantConverter == null) {
-            variantSearchToVariantConverter = new VariantSearchToVariantConverter();
-        }
     }
 
     public VariantSearchManager(StorageConfiguration storageConfiguration) {
@@ -76,6 +66,7 @@ public class VariantSearchManager {
      */
     public void createCore(String coreName, String configSet) {
         try {
+            System.out.println("Creating core: " + hostName + ", core=" + coreName + ", configSet=" + configSet);
             HttpSolrClient solrClient = new HttpSolrClient.Builder(hostName).build();
             CoreAdminRequest.Create request = new CoreAdminRequest.Create();
             request.setCoreName(coreName);
@@ -117,6 +108,8 @@ public class VariantSearchManager {
      * @param numReplicas        Number of replicas
      */
     public void createCollection(String collectionName, String config, int numShards, int numReplicas) {
+        System.out.println("Creating core: " + hostName + ", collection=" + collectionName + ", config=" + config
+                + ", numShards=" + numShards + ", numReplicas=" + numReplicas);
         try {
             HttpSolrClient solrClient = new HttpSolrClient.Builder(hostName).build();
             CollectionAdminRequest request = CollectionAdminRequest.createCollection(collectionName, config,
@@ -179,9 +172,9 @@ public class VariantSearchManager {
     public void load(Path path) throws IOException, SolrServerException, StorageEngineException {
         // TODO: can we use VariantReaderUtils as implemented in the function load00 below ?
         // TODO: VarriantReaderUtils supports JSON, AVRO and VCF file formats.
-        if (path.endsWith(".json")) {
+        if (path.toString().toLowerCase().endsWith("json")) {
             loadJson(path);
-        } else if (path.endsWith(".avro")) {
+        } else if (path.toString().toLowerCase().endsWith("avro")) {
             loadAvro(path);
         } else {
             throw new IOException("File format " + path + " not supported. Please, use Avro or JSON file formats.");
@@ -232,13 +225,14 @@ public class VariantSearchManager {
      * @throws SolrServerException  SolrServerException
      */
     public void insert(List<Variant> variants) throws IOException, SolrServerException {
+        if (variants != null && variants.size() > 0) {
+            List<VariantSearchModel> variantSearchModels = variantSearchToVariantConverter.convertListToStorageType(variants);
 
-        List<VariantSearchModel> variantSearchModels = variantSearchToVariantConverter.convertListToStorageType(variants);
-
-        if (!variantSearchModels.isEmpty()) {
-            UpdateResponse updateResponse = solrClient.addBeans(variantSearchModels);
-            if (0 == updateResponse.getStatus()) {
-                solrClient.commit();
+            if (!variantSearchModels.isEmpty()) {
+                UpdateResponse updateResponse = solrClient.addBeans(variantSearchModels);
+                if (0 == updateResponse.getStatus()) {
+                    solrClient.commit();
+                }
             }
         }
     }
@@ -352,7 +346,7 @@ public class VariantSearchManager {
         while ((line = bufferedReader.readLine()) != null) {
             Variant variant = objectReader.readValue(line);
             variants.add(variant);
-            if (count % bufferSize == 0) {
+            if (++count % bufferSize == 0) {
                 insert(variants);
                 variants.clear();
             }

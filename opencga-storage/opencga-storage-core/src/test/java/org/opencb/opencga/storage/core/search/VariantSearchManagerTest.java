@@ -51,7 +51,7 @@ public class VariantSearchManagerTest extends GenericTest {
         initJSONParser(new File(VariantStorageBaseTest.getResourceUri("variant-solr-sample.json.gz")));
         variantList = readNextVariantFromJSON(100);
 //        variantSearchManager = new VariantSearchManager("http://localhost:8983/solr/", "biotest_core2");
-        variantSearchManager = new VariantSearchManager("http://localhost:8983/solr/", "collection333");
+        variantSearchManager = new VariantSearchManager("http://localhost:8983/solr/", "core123");
     }
 
     //    @Test
@@ -139,7 +139,7 @@ public class VariantSearchManagerTest extends GenericTest {
         }
     }
 
-    //    @Test
+//    @Test
     public void loadVariantFileIntoSolrTest() {
 
         String test = "Test_Variant_Insert_";
