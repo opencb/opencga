@@ -104,6 +104,7 @@ public class StringDataReader implements DataReader<String> {
             for (int i = 0; i < batchSize; i++) {
                 String line = reader.readLine();
                 if (line == null) {
+                    System.out.println("Read null line");
                     break;
                 }
                 batch.add(line);
@@ -160,6 +161,7 @@ public class StringDataReader implements DataReader<String> {
         private long bytesRead = 0;
 
         SizeInputStream(InputStream in, long size) {
+            super();
             this.in = in;
             this.size = size;
         }
@@ -199,6 +201,37 @@ public class StringDataReader implements DataReader<String> {
             bytesRead += read;
             return read;
         }
+
+        @Override
+        public long skip(long n) throws IOException {
+            return in.skip(n);
+        }
+
+        @Override
+        public int available() throws IOException {
+            return in.available();
+        }
+
+        @Override
+        public void close() throws IOException {
+            in.close();
+        }
+
+        @Override
+        public synchronized void mark(int readlimit) {
+            in.mark(readlimit);
+        }
+
+        @Override
+        public synchronized void reset() throws IOException {
+            in.reset();
+        }
+
+        @Override
+        public boolean markSupported() {
+            return in.markSupported();
+        }
+
     }
 
 }
