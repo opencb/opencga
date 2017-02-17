@@ -967,6 +967,8 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 mongoDBOps.getExistingStudy().getQueries().add(and(eq("_id", id),
                         eq(STUDIES_FIELD + '.' + STUDYID_FIELD, studyId)));
                 mongoDBOps.getExistingStudy().getUpdates().add(combine(mergeUpdates));
+            } else {
+                mongoDBOps.setMissingVariantsNoFillGaps(mongoDBOps.getMissingVariantsNoFillGaps() + 1);
             }
         }
     }
