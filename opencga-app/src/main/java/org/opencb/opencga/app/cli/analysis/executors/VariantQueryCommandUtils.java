@@ -138,6 +138,7 @@ public class VariantQueryCommandUtils {
         }
 
         addParam(query, FILES, queryVariantsOptions.genericVariantQueryOptions.file);
+        addParam(query, FILTER, queryVariantsOptions.genericVariantQueryOptions.filter);
         addParam(query, GENOTYPE, queryVariantsOptions.genericVariantQueryOptions.sampleGenotype);
         if (queryVariantsOptions.genericVariantQueryOptions.returnSample != null) {
             if (queryVariantsOptions.genericVariantQueryOptions.returnSample.isEmpty() || queryVariantsOptions.genericVariantQueryOptions.returnSample.equals(".")) {

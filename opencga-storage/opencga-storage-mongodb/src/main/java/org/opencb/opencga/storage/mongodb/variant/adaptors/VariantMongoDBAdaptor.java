@@ -1249,8 +1249,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             Map<String, Integer> studies = getStudyConfigurationManager().getStudies(null);
 
             boolean singleStudy = studies.size() == 1;
-            boolean validFilesFilter = isValidParam(query, VariantQueryParams.FILES);
             boolean validStudiesFilter = isValidParam(query, VariantQueryParams.STUDIES);
+            boolean validFilesFilter = isValidParam(query, VariantQueryParams.FILES);
+            boolean validFilterFilter = isValidParam(query, VariantQueryParams.FILTER);
             boolean validGenotypeFilter = isValidParam(query, VariantQueryParams.GENOTYPE);
 
             // Use an elemMatch with all the study filters if there is more than one study registered,
@@ -1259,7 +1260,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             boolean studyElemMatch = (!singleStudy || (validFilesFilter && validStudiesFilter));
 
             // If only studyId filter is being used, elemMatch is not needed
-            if (validStudiesFilter && !validGenotypeFilter && !validFilesFilter) {
+            if (validStudiesFilter && !validGenotypeFilter && !validFilesFilter && !validFilterFilter) {
                 studyElemMatch = false;
             }
 
@@ -1270,7 +1271,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (isValidParam(query, VariantQueryParams.STUDIES)) {
                 String sidKey = DocumentToVariantConverter.STUDIES_FIELD + '.' + DocumentToStudyVariantEntryConverter.STUDYID_FIELD;
-                String value = objectToString(query.get(VariantQueryParams.STUDIES.key()));
+                String value = query.getString(VariantQueryParams.STUDIES.key());
 
                 // Check that the study exists
                 QueryOperation studiesOperation = checkOperator(value);
@@ -1313,34 +1314,30 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
 
             if (isValidParam(query, VariantQueryParams.FILES)) {
-                String fid = studyQueryPrefix
-                        + DocumentToStudyVariantEntryConverter.FILES_FIELD + "."
-                        + DocumentToStudyVariantEntryConverter.FILEID_FIELD;
-                addQueryFilter(fid,
-                        objectToString(query.get(VariantQueryParams.FILES.key())), studyBuilder, QueryOperation.AND, file -> {
-                            if (file.contains(":")) {
-                                String[] studyFile = file.split(":");
-                                QueryResult<StudyConfiguration> queryResult =
-                                        studyConfigurationManager.getStudyConfiguration(studyFile[0], null);
-                                if (queryResult.getResult().isEmpty()) {
-                                    throw VariantQueryException.studyNotFound(studyFile[0]);
-                                }
-                                return queryResult.first().getFileIds().get(studyFile[1]);
-                            } else {
-                                try {
-                                    return Integer.parseInt(file);
-                                } catch (NumberFormatException e) {
-                                    if (defaultStudyConfiguration != null) {
-                                        return defaultStudyConfiguration.getFileIds().get(file);
-                                    } else {
-                                        List<String> studyNames = studyConfigurationManager.getStudyNames(null);
-                                        throw new VariantQueryException("Unknown file \"" + file + "\". "
-                                                + "Please, specify the study belonging."
-                                                + (studyNames == null ? "" : " Available studies: " + studyNames));
-                                    }
-                                }
-                            }
-                        });
+                addQueryFilter(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD
+                                + '.' + DocumentToStudyVariantEntryConverter.FILEID_FIELD,
+                        query.getString(VariantQueryParams.FILES.key()), studyBuilder, QueryOperation.AND,
+                        f -> utils.getFileId(f, false, defaultStudyConfiguration));
+            }
+
+            if (isValidParam(query, VariantQueryParams.FILTER)) {
+                String filesValue = query.getString(VariantQueryParams.FILES.key());
+                QueryOperation filesOperation = checkOperator(filesValue);
+                List<String> fileNames = splitValue(filesValue, filesOperation);
+                List<Integer> fileIds = utils.getFileIds(fileNames, true, defaultStudyConfiguration);
+
+                String fileQueryPrefix;
+                if (fileIds.isEmpty()) {
+                    fileQueryPrefix = studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD + '.';
+                    addQueryStringFilter(fileQueryPrefix + DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + '.' + StudyEntry.FILTER,
+                            query.getString(VariantQueryParams.FILTER.key()), studyBuilder, QueryOperation.AND);
+                } else {
+                    QueryBuilder fileBuilder = QueryBuilder.start();
+                    addQueryStringFilter(DocumentToStudyVariantEntryConverter.ATTRIBUTES_FIELD + '.' + StudyEntry.FILTER,
+                            query.getString(VariantQueryParams.FILTER.key()), fileBuilder, QueryOperation.AND);
+                    fileBuilder.and(DocumentToStudyVariantEntryConverter.FILEID_FIELD).in(fileIds);
+                    studyBuilder.and(studyQueryPrefix + DocumentToStudyVariantEntryConverter.FILES_FIELD).elemMatch(fileBuilder.get());
+                }
             }
 
             if (isValidParam(query, VariantQueryParams.GENOTYPE)) {
@@ -1904,11 +1901,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 new DocumentToVariantStatsConverter(studyConfigurationManager), returnedStudies);
     }
 
-    @Deprecated
-    private QueryBuilder addQueryStringFilter(String key, String value, final QueryBuilder builder) {
-        return addQueryStringFilter(key, value, builder, QueryOperation.AND);
-    }
-
     private QueryBuilder addQueryStringFilter(String key, String value, final QueryBuilder builder, QueryOperation op) {
         return this.addQueryFilter(key, value, builder, op, Function.identity());
     }
@@ -2421,21 +2413,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             integer = null;
         }
         return integer;
-    }
-
-    /**
-     * Get the object as an integer. If it's a list, will be returned as a CSV
-     */
-    private String objectToString(Object objectValue) {
-        String value;
-        if (objectValue instanceof String) {
-            value = ((String) objectValue);
-        } else if (objectValue instanceof List) {
-            value = ((List<Object>) objectValue).stream().map(String::valueOf).collect(Collectors.joining(","));
-        } else {
-            value = String.valueOf(objectValue);
-        }
-        return value;
     }
 
     public void createIndexes(QueryOptions options) {

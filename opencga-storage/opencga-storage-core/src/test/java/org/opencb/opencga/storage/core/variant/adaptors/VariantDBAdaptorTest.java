@@ -1223,6 +1223,41 @@ public abstract class VariantDBAdaptorTest extends VariantStorageBaseTest {
     }
 
     @Test
+    public void testGetAllVariants_filter() {
+        // FILTER
+        Query query = new Query(FILTER.key(), "PASS");
+        long numResults = dbAdaptor.count(query).first();
+        assertEquals(NUM_VARIANTS, numResults);
+
+        query.append(FILTER.key(), "NO_PASS");
+        assertEquals(0, dbAdaptor.count(query).first().longValue());
+
+        // FILTER+FILE
+        query = new Query(FILES.key(), 6).append(FILTER.key(), "PASS");
+        numResults = dbAdaptor.count(query).first();
+        assertEquals(NUM_VARIANTS, numResults);
+
+        query.append(FILTER.key(), "NO_PASS");
+        assertEquals(0, dbAdaptor.count(query).first().longValue());
+
+        // FILTER+STUDY
+        query = new Query(STUDIES.key(), studyConfiguration.getStudyId()).append(FILTER.key(), "PASS");
+        numResults = dbAdaptor.count(query).first();
+        assertEquals(NUM_VARIANTS, numResults);
+
+        query.append(FILTER.key(), "NO_PASS");
+        assertEquals(0, dbAdaptor.count(query).first().longValue());
+
+        // FILTER+FILE+STUDY
+        query = new Query(FILES.key(), 6).append(STUDIES.key(), studyConfiguration.getStudyId()).append(FILTER.key(), "PASS");
+        numResults = dbAdaptor.count(query).first();
+        assertEquals(NUM_VARIANTS, numResults);
+
+        query.append(FILTER.key(), "NO_PASS");
+        assertEquals(0, dbAdaptor.count(query).first().longValue());
+    }
+
+    @Test
     public void testGetAllVariants_returned_samples() {
         checkSamplesData("NA19600");
         checkSamplesData("NA19660");
