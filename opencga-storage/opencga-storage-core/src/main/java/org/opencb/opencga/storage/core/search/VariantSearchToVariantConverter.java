@@ -68,19 +68,34 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 //                .toArray(new String[variantSearchModel.getGenes().size()]);
         String[] genes = variantSearchModel.getGenes().toArray(new String[variantSearchModel.getGenes().size()]);
         Map<String, ConsequenceType> consequenceTypeMap = new HashMap<>();
-        for (int i = 0; i < genes.length; i += 3) {
-            // genes are ordered: 1) gene name, 2) ensembl gene id, 3) ensembl transcript id, and then, repeat
-            ConsequenceType consequenceType = new ConsequenceType();
-            consequenceType.setGeneName(genes[i]);
-            consequenceType.setEnsemblGeneId(genes[i + 1]);
-            consequenceType.setEnsemblTranscriptId(genes[i + 2]);
 
-            // for that consequence type, update the protein substitution scores: sift and polyphen
-            ProteinVariantAnnotation proteinAnnotation = new ProteinVariantAnnotation();
-            List<Score> scores = new ArrayList<>();
-            scores.add(new Score(variantSearchModel.getSift(), "sift", ""));
-            scores.add(new Score(variantSearchModel.getPolyphen(), "polyhen", ""));
-            proteinAnnotation.setSubstitutionScores(scores);
+        // protein substitution scores: sift and polyphen
+        ProteinVariantAnnotation proteinAnnotation = new ProteinVariantAnnotation();
+        List<Score> scores = new ArrayList<>();
+        scores.add(new Score(variantSearchModel.getSift(), "sift", ""));
+        scores.add(new Score(variantSearchModel.getPolyphen(), "polyhen", ""));
+        proteinAnnotation.setSubstitutionScores(scores);
+
+        int i = 0;
+        while (i < genes.length) {
+            // in the gene list, genes are ordered: 1) one gene name, 2) one ensembl gene id,
+            // 3) one or more ensembl transcript ids, and then, repeat
+            ConsequenceType consequenceType = new ConsequenceType();
+            // gene name
+            consequenceType.setGeneName(genes[i++]);
+
+            // ensembl gene ids
+            while (genes[i].startsWith("ENSG")) {
+                consequenceType.setEnsemblGeneId(genes[i++]);
+            }
+
+            // ensembl transcript ids
+            while (genes[i].startsWith("ENST")) {
+                consequenceType.setEnsemblTranscriptId(genes[i++]);
+            }
+
+            // for every consequence type, we set protein substitution scores
+            // (in the VariantSearchModel only scores for one single consequence type is saved)
             consequenceType.setProteinVariantAnnotation(proteinAnnotation);
         }
         // and finally, update the SO accession for each consequence type
@@ -113,7 +128,7 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
         }
 
         // set conservations
-        List<Score> scores = new ArrayList<>();
+        scores = new ArrayList<>();
         scores.add(new Score(variantSearchModel.getGerp(), "gerp", ""));
         scores.add(new Score(variantSearchModel.getPhastCons(), "phastCons", ""));
         scores.add(new Score(variantSearchModel.getPhylop(), "phylop", ""));
@@ -246,7 +261,8 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
             // Set Genes and Consequence Types
             List<ConsequenceType> consequenceTypes = variantAnnotation.getConsequenceTypes();
             if (consequenceTypes != null) {
-                List<String> genes = new ArrayList<>();
+                Map<String, Set<String>> genes = new LinkedHashMap<>();
+//                List<String> genes = new ArrayList<>();
 //                Set<String> genes = new LinkedHashSet<>();
                 Set<Integer> soAccessions = new HashSet<>();
                 Set<String> geneToSOAccessions = new LinkedHashSet<>();
@@ -255,9 +271,11 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
 
                     // Set genes if exists
                     if (StringUtils.isNotEmpty(consequenceType.getGeneName())) {
-                        genes.add(consequenceType.getGeneName());
-                        genes.add(consequenceType.getEnsemblGeneId());
-                        genes.add(consequenceType.getEnsemblTranscriptId());
+                        if (!genes.containsKey(consequenceType.getGeneName())) {
+                            genes.put(consequenceType.getGeneName(), new LinkedHashSet<>());
+                        }
+                        genes.get(consequenceType.getGeneName()).add(consequenceType.getEnsemblGeneId());
+                        genes.get(consequenceType.getGeneName()).add(consequenceType.getEnsemblTranscriptId());
 
                         xrefs.add(consequenceType.getGeneName());
                         xrefs.add(consequenceType.getEnsemblGeneId());
@@ -290,12 +308,16 @@ public class VariantSearchToVariantConverter implements ComplexTypeConverter<Var
                 }
 
                 // We store the accumulated data
-                variantSearchModel.setGenes(genes);
+                for (String gene: genes.keySet()) {
+                    variantSearchModel.getGenes().add(gene);
+                    variantSearchModel.getGenes().addAll(genes.get(gene));
+                }
                 variantSearchModel.setSoAcc(new ArrayList<>(soAccessions));
                 variantSearchModel.setGeneToSoAcc(new ArrayList<>(geneToSOAccessions));
 
+                // JT: we don't need it, it is already done previously (~40 lines before)
                 // We accumulate genes in xrefs
-                xrefs.addAll(genes);
+                // xrefs.addAll(genes);
             }
 
             // Set Populations frequencies

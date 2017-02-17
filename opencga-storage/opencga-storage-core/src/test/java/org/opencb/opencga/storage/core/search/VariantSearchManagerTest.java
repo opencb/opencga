@@ -144,6 +144,8 @@ public class VariantSearchManagerTest extends GenericTest {
 
         String test = "Test_Variant_Insert_";
         try {
+            variantSearchManager = new VariantSearchManager("http://localhost:8983/solr/", "core.002");
+
 //            String filename = "/home/imedina/Downloads/variation_chr1.full.json.gz";
             String filename = "/home/jtarraga/data150/vcf/variation_chr22.3.json";
             BufferedReader bufferedReader = FileUtils.newBufferedReader(Paths.get(filename));
