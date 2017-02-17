@@ -949,9 +949,6 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 mergeUpdates.add(addEachToSet(STUDIES_FIELD + ".$." + ALTERNATES_FIELD, secondaryAlternates));
             }
 
-            // These files not present are missing values.
-            mongoDBOps.setMissingVariants(mongoDBOps.getMissingVariants() + fileIds.size() - fileDocuments.size());
-
             if (!fileDocuments.isEmpty()) {
                 mongoDBOps.getExistingStudy().getIds().add(id);
                 mongoDBOps.getExistingStudy().getQueries().add(and(eq("_id", id),
@@ -964,6 +961,8 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 }
                 mongoDBOps.getExistingStudy().getUpdates().add(combine(mergeUpdates));
             } else if (!mergeUpdates.isEmpty()) {
+                // These files are not present in this variant. Increase the number of missing variants.
+                mongoDBOps.setMissingVariants(mongoDBOps.getMissingVariants() + 1);
                 mongoDBOps.getExistingStudy().getIds().add(id);
                 mongoDBOps.getExistingStudy().getQueries().add(and(eq("_id", id),
                         eq(STUDIES_FIELD + '.' + STUDYID_FIELD, studyId)));
