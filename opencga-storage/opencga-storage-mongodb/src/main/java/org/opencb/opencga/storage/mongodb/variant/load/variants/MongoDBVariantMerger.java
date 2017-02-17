@@ -929,16 +929,18 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         } else {
             String id = variantConverter.buildStorageId(emptyVar);
             List<Bson> mergeUpdates = new LinkedList<>();
-            mergeUpdates.add(addEachToSet(IDS_FIELD, ids));
+            if (!ids.isEmpty()) {
+                mergeUpdates.add(addEachToSet(IDS_FIELD, ids));
+            }
 
             if (!excludeGenotypes) {
                 for (String gt : gts.keySet()) {
                     List sampleIds = getListFromDocument(gts, gt);
                     if (resume) {
-                        mergeUpdates.add(addEachToSet(STUDIES_FIELD + ".$." + GENOTYPES_FIELD + "." + gt,
+                        mergeUpdates.add(addEachToSet(STUDIES_FIELD + ".$." + GENOTYPES_FIELD + '.' + gt,
                                 sampleIds));
                     } else {
-                        mergeUpdates.add(pushEach(STUDIES_FIELD + ".$." + GENOTYPES_FIELD + "." + gt,
+                        mergeUpdates.add(pushEach(STUDIES_FIELD + ".$." + GENOTYPES_FIELD + '.' + gt,
                                 sampleIds));
                     }
                 }
@@ -953,7 +955,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             if (!fileDocuments.isEmpty()) {
                 mongoDBOps.getExistingStudy().getIds().add(id);
                 mongoDBOps.getExistingStudy().getQueries().add(and(eq("_id", id),
-                        eq(STUDIES_FIELD + "." + STUDYID_FIELD, studyId)));
+                        eq(STUDIES_FIELD + '.' + STUDYID_FIELD, studyId)));
 
                 if (resume) {
                     mergeUpdates.add(addEachToSet(STUDIES_FIELD + ".$." + FILES_FIELD, fileDocuments));
@@ -961,10 +963,10 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     mergeUpdates.add(pushEach(STUDIES_FIELD + ".$." + FILES_FIELD, fileDocuments));
                 }
                 mongoDBOps.getExistingStudy().getUpdates().add(combine(mergeUpdates));
-            } else {
+            } else if (!mergeUpdates.isEmpty()) {
                 mongoDBOps.getExistingStudy().getIds().add(id);
                 mongoDBOps.getExistingStudy().getQueries().add(and(eq("_id", id),
-                        eq(STUDIES_FIELD + "." + STUDYID_FIELD, studyId)));
+                        eq(STUDIES_FIELD + '.' + STUDYID_FIELD, studyId)));
                 mongoDBOps.getExistingStudy().getUpdates().add(combine(mergeUpdates));
             }
         }
