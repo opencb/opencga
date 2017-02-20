@@ -868,11 +868,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         NUMBER_INSTANCES.decrementAndGet();
     }
 
-    private Document parseQuery(Query query) {
+    private Document parseQuery(final Query originalQuery) {
         QueryBuilder builder = new QueryBuilder();
-        if (query != null) {
-            /** VARIANT PARAMS **/
+        if (originalQuery != null) {
+            // Copy given query. It may be modified
+            Query query = new Query(originalQuery);
+            boolean nonGeneRegionFilter = false;
+            /* VARIANT PARAMS */
             if (isValidParam(query, VariantQueryParams.CHROMOSOME)) {
+                nonGeneRegionFilter = true;
                 List<String> chromosomes = query.getAsStringList(VariantQueryParams.CHROMOSOME.key());
                 LinkedList<String> regions = new LinkedList<>(query.getAsStringList(VariantQueryParams.REGION.key()));
                 regions.addAll(chromosomes);
@@ -880,6 +884,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
 
             if (isValidParam(query, VariantQueryParams.REGION)) {
+                nonGeneRegionFilter = true;
                 List<String> stringList = query.getAsStringList(VariantQueryParams.REGION.key());
                 List<Region> regions = new ArrayList<>(stringList.size());
                 for (String reg : stringList) {
@@ -893,6 +898,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             List<String> mongoIds = new ArrayList<>();
 
             if (isValidParam(query, VariantQueryParams.ID)) {
+                nonGeneRegionFilter = true;
                 List<String> idsList = query.getAsStringList(VariantQueryParams.ID.key());
                 List<String> otherIds = new ArrayList<>(idsList.size());
 
@@ -933,6 +939,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 }
 
                 if (!otherXrefs.isEmpty()) {
+                    nonGeneRegionFilter = true;
                     addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                                     + '.' + DocumentToVariantAnnotationConverter.XREFS_FIELD
                                     + '.' + DocumentToVariantAnnotationConverter.XREF_ID_FIELD,
@@ -942,34 +949,20 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (!genes.isEmpty()) {
                 if (isValidParam(query, VariantQueryParams.ANNOT_CONSEQUENCE_TYPE)) {
-                    QueryBuilder geneCtBuilder = new QueryBuilder();
-                    QueryBuilder ctBuilder = new QueryBuilder();
-
-                    addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
-                                    + '.' + DocumentToVariantAnnotationConverter.XREFS_FIELD
-                                    + '.' + DocumentToVariantAnnotationConverter.XREF_ID_FIELD,
-                            String.join(",", genes), geneCtBuilder, QueryOperation.AND);
-                    addQueryFilter(DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD,
-                            query.getString(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key()), ctBuilder, QueryOperation.AND,
-                            VariantDBAdaptorUtils::parseConsequenceType);
-
-                    DBObject[] or = new DBObject[5];
-                    Object geneQuery;
-                    if (genes.size() > 1) {
-                        geneQuery = new BasicDBObject("$in", genes);
-                    } else {
-                        geneQuery = genes.get(0);
+                    List<String> soList = query.getAsStringList(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key());
+                    Set<String> gnSo = new HashSet<>(genes.size() * soList.size());
+                    for (String gene : genes) {
+                        for (String so : soList) {
+                            int soNumber = parseConsequenceType(so);
+                            gnSo.add(DocumentToVariantAnnotationConverter.buildGeneSO(gene, soNumber));
+                        }
                     }
-                    or[0] = new BasicDBObject(DocumentToVariantAnnotationConverter.CT_GENE_NAME_FIELD, geneQuery);
-                    or[1] = new BasicDBObject(DocumentToVariantAnnotationConverter.CT_ENSEMBL_GENE_ID_FIELD, geneQuery);
-                    or[2] = new BasicDBObject(DocumentToVariantAnnotationConverter.CT_ENSEMBL_TRANSCRIPT_ID_FIELD, geneQuery);
-                    or[3] = new BasicDBObject(DocumentToVariantAnnotationConverter.CT_PROTEIN_UNIPROT_ACCESSION, geneQuery);
-                    or[4] = new BasicDBObject(DocumentToVariantAnnotationConverter.CT_PROTEIN_UNIPROT_NAME, geneQuery);
-                    ctBuilder.or(or);
-
-                    geneCtBuilder.and(DocumentToVariantConverter.ANNOTATION_FIELD
-                            + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD).elemMatch(ctBuilder.get());
-                    builder.or(geneCtBuilder.get());
+                    builder.or(new BasicDBObject(DocumentToVariantConverter.ANNOTATION_FIELD
+                            + '.' + DocumentToVariantAnnotationConverter.GENE_SO_FIELD, new BasicDBObject("$in", gnSo)));
+                    if (!nonGeneRegionFilter) {
+                        // Filter already present in the GENE_SO_FIELD
+                        query.remove(VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key());
+                    }
                 } else {
                     addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                                     + '.' + DocumentToVariantAnnotationConverter.XREFS_FIELD
@@ -1009,16 +1002,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //                query.getString(VariantQueryParams.TYPE.key()), builder, QueryOperation.AND);
             }
 
-            /** ANNOTATION PARAMS **/
+            /* ANNOTATION PARAMS */
             parseAnnotationQueryParams(query, builder);
 
-            /** STUDIES **/
+            /* STUDIES */
             final StudyConfiguration defaultStudyConfiguration = parseStudyQueryParams(query, builder);
 
-            /** STATS PARAMS **/
+            /* STATS PARAMS */
             parseStatsQueryParams(query, builder, defaultStudyConfiguration);
         }
-        logger.debug("Query         = {}", query == null ? "{}" : query.toJson());
+        logger.debug("Query         = {}", originalQuery == null ? "{}" : originalQuery.toJson());
         Document mongoQuery = new Document(builder.get().toMap());
         logger.debug("MongoDB Query = {}", mongoQuery.toJson(new JsonWriterSettings(JsonMode.SHELL, false)));
         return mongoQuery;
@@ -2436,6 +2429,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * Annotation indices
      * - XRef.id
      * - ConsequenceType.so
+     * - _gn_so : SPARSE
      * - PopulationFrequency Study + Population + AlternateFrequency : SPARSE
      * - Clinical.Clinvar.clinicalSignificance  : SPARSE
      * ConservedRegionScore
@@ -2488,18 +2482,23 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // Annotation indices
         ////////////////
 
-        // XRefs
+        // XRefs.id
         variantsCollection.createIndex(new Document()
                         .append(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.XREFS_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.XREF_ID_FIELD, 1),
                 onBackground);
-        // ConsequenceType
+        // ConsequenceType.so
         variantsCollection.createIndex(new Document()
                         .append(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD, 1),
                 onBackground);
+        // _gn_so : SPARSE
+        variantsCollection.createIndex(new Document()
+                        .append(DocumentToVariantConverter.ANNOTATION_FIELD
+                                + "." + DocumentToVariantAnnotationConverter.GENE_SO_FIELD, 1),
+                onBackgroundSparse);
         // Population frequency : SPARSE
         variantsCollection.createIndex(new Document()
                         .append(DocumentToVariantConverter.ANNOTATION_FIELD
