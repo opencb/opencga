@@ -561,7 +561,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
             if (variantsWithValidData != 0) {
                 // Scenarios C3.1), C4.1)
-                logger.warn("Missing overlapped variant! " + mainVariant);
+                logger.debug("Missing overlapped variant! " + mainVariant);
                 mongoDBOps.setOverlappedVariants(mongoDBOps.getOverlappedVariants() + 1);
             }
             // else {
@@ -758,20 +758,23 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                         }
                     }
 
-                    boolean prompted = false;
-                    for (int i = 1; i < variantsInFile.size(); i++) {
-                        Variant auxVar = variantsInFile.get(i);
-                        // Check if variants where part of the same multiallelic variant
-                        String auxCall = auxVar.getStudies().get(0).getFiles().get(0).getCall();
-                        if (!prompted && (auxCall == null || call == null || !auxCall.startsWith(call))) {
-                            logger.warn("Overlapping variants in file {} : {}", fileId, variantsInFile);
-                            prompted = true;
-                        }
+                    // Do not prompt overlapping variants if genotypes are being excluded
+                    if (!excludeGenotypes) {
+                        boolean prompted = false;
+                        for (int i = 1; i < variantsInFile.size(); i++) {
+                            Variant auxVar = variantsInFile.get(i);
+                            // Check if variants where part of the same multiallelic variant
+                            String auxCall = auxVar.getStudies().get(0).getFiles().get(0).getCall();
+                            if (!prompted && (auxCall == null || call == null || !auxCall.startsWith(call))) {
+                                logger.warn("Overlapping variants in file {} : {}", fileId, variantsInFile);
+                                prompted = true;
+                            }
 //                        // Those variants that do not overlap with the selected variant won't be inserted
 //                        if (!auxVar.overlapWith(var, true)) {
 //                            mongoDBOps.nonInserted++;
 //                            logger.warn("Skipping overlapped variant " + auxVar);
 //                        }
+                        }
                     }
                     break;
             }
