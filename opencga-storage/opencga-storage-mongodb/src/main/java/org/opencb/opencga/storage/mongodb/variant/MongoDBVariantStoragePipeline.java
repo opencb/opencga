@@ -500,7 +500,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
         // List of all the indexed files that cover each chromosome
         ListMultimap<String, Integer> chromosomeInFilesToLoad = LinkedListMultimap.create();
 
-        boolean wholeGenomeFiles = false;
+        Set<String> wholeGenomeFiles = new HashSet<>();
+        Set<String> byChromosomeFiles = new HashSet<>();
         while (iterator.hasNext()) {
             VariantSource variantSource = iterator.next();
             int fileId = Integer.parseInt(variantSource.getFileId());
@@ -509,8 +510,9 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             if (fileIds.contains(fileId)) {
                 if (variantSource.getStats().getChromosomeCounts().size() == 1) {
                     chromosomesToLoad.addAll(variantSource.getStats().getChromosomeCounts().keySet());
+                    byChromosomeFiles.add(variantSource.getFileName());
                 } else {
-                    wholeGenomeFiles = true;
+                    wholeGenomeFiles.add(variantSource.getFileName());
                 }
             }
             // If the file is indexed, add to the map of chromosome->fileId
@@ -533,14 +535,17 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
                     logger.error("Merge shutdown hook!");
                     setStatus(BatchFileOperation.Status.ERROR, MERGE.key(), fileIds);
                 } catch (StorageEngineException e) {
-                    e.printStackTrace();
+                    logger.error("Failed setting status '" + MERGE.key() + "' operation over files " + fileIds
+                            + " to '" + BatchFileOperation.Status.ERROR + '\'', e);
                     throw new RuntimeException(e);
                 }
             });
             Runtime.getRuntime().addShutdownHook(hook);
             try {
-                if (wholeGenomeFiles && !chromosomesToLoad.isEmpty()) {
-                    String message = "Impossible to merge files splitted and not splitted by chromosome at the same time!";
+                if (!wholeGenomeFiles.isEmpty() && !byChromosomeFiles.isEmpty()) {
+                    String message = "Impossible to merge files splitted and not splitted by chromosome at the same time! "
+                            + "Files covering only one chromosome: " + byChromosomeFiles + ". "
+                            + "Files covering more than one chromosome: " + wholeGenomeFiles;
                     logger.error(message);
                     throw new StorageEngineException(message);
                 }
