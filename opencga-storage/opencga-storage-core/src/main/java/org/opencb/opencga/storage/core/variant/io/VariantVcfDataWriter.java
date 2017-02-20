@@ -479,11 +479,18 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         VariantContextBuilder variantContextBuilder = new VariantContextBuilder();
         VariantType type = variant.getType();
         Pair<Integer, Integer> adjustedRange = adjustedVariantStart(variant);
-        List<String> allelesArray = buildAlleles(variant, adjustedRange);
+
+        StudyEntry studyEntry = variant.getStudy(this.studyConfiguration.getStudyName());
+        String[] ori = getOri(studyEntry);
+        List<String> originalAlleles = getOriginalAlleles(ori);
+        List<String> allelesArray;
+        if (originalAlleles != null) {
+            allelesArray = originalAlleles;
+        } else {
+            allelesArray = buildAlleles(variant, adjustedRange);
+        }
         Set<Integer> nocallAlleles = IntStream.range(0,  allelesArray.size()).boxed()
-                .filter(i -> {
-                    return noCallAllele.equals(allelesArray.get(i));
-                })
+                .filter(i -> noCallAllele.equals(allelesArray.get(i)))
                 .collect(Collectors.toSet());
         String filter = "PASS";
         String prk = "PR";
@@ -493,36 +500,42 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
         //Attributes for INFO column
         ObjectMap attributes = new ObjectMap();
         ArrayList<Genotype> genotypes = new ArrayList<>();
-        StudyEntry studyEntry = variant.getStudy(this.studyConfiguration.getStudyName());
 
 //        Integer originalPosition = null;
 //        List<String> originalAlleles = null;
         // TODO work out properly how to deal with multi allelic sites.
-//        String[] ori = getOri(studyEntry);
 //        Integer auxOriginalPosition = getOriginalPosition(ori);
 //        if (originalPosition != null && auxOriginalPosition != null && !originalPosition.equals(auxOriginalPosition)) {
 //            throw new IllegalStateException("Two or more VariantSourceEntries have different origin. Unable to merge");
 //        }
 //        originalPosition = auxOriginalPosition;
-//        originalAlleles = getOriginalAlleles(ori);
 //        if (originalAlleles == null) {
 //            originalAlleles = allelesArray;
 //        }
 //
-//        //Only print those variants in which the alternate is the first alternate from the multiallelic alternatives
-//        if (originalAlleles.size() > 2 && !"0".equals(getOriginalAlleleIndex(ori))) {
-//            logger.debug("Skip multi allelic variant! " + variant);
-//            return null;
-//        }
+        //Only print those variants in which the alternate is the first alternate from the multiallelic alternatives
+        if (originalAlleles != null && originalAlleles.size() > 2 && !"0".equals(getOriginalAlleleIndex(ori))) {
+            logger.debug("Skip multi allelic variant! {}", variant);
+            return null;
+        }
 
         String sourceFilter = studyEntry.getAttribute("FILTER");
         if (sourceFilter != null && !filter.equals(sourceFilter)) {
             filter = ".";   // write PASS iff all sources agree that the filter is "PASS" or assumed if not present, otherwise write "."
         }
 
-        attributes.putIfNotNull(prk, DECIMAL_FORMAT_7.format(Double.valueOf(studyEntry.getAttributes().get("PR"))));
-        attributes.putIfNotNull(crk, DECIMAL_FORMAT_7.format(Double.valueOf(studyEntry.getAttributes().get("CR"))));
-        attributes.putIfNotNull(oprk, DECIMAL_FORMAT_7.format(Double.valueOf(studyEntry.getAttributes().get("OPR"))));
+        if (studyEntry.getFiles() != null && studyEntry.getFiles().size() == 1) {
+            Map<String, String> fileAttributes = studyEntry.getFiles().get(0).getAttributes();
+            if (fileAttributes.containsKey("PR")) {
+                attributes.putIfNotNull(prk, DECIMAL_FORMAT_7.format(Double.valueOf(fileAttributes.get("PR"))));
+            }
+            if (fileAttributes.containsKey("CR")) {
+                attributes.putIfNotNull(crk, DECIMAL_FORMAT_7.format(Double.valueOf(fileAttributes.get("CR"))));
+            }
+            if (fileAttributes.containsKey("OPR")) {
+                attributes.putIfNotNull(oprk, DECIMAL_FORMAT_7.format(Double.valueOf(fileAttributes.get("OPR"))));
+            }
+        }
 
         String refAllele = allelesArray.get(0);
         for (String sampleName : this.sampleNames) {
@@ -873,11 +886,19 @@ public class VariantVcfDataWriter implements DataWriter<Variant> {
     private static String[] getOri(StudyEntry studyEntry) {
 
         List<FileEntry> files = studyEntry.getFiles();
+        Set<String> calls = new HashSet<>();
+        String call = null;
         if (!files.isEmpty()) {
-            String call = files.get(0).getCall();
-            if (call != null && !call.isEmpty()) {
-                return call.split(":");
+            for (FileEntry file : files) {
+                call = file.getCall();
+//                if (call != null) {
+                    calls.add(call);
+//                }
             }
+        }
+        if (calls.size() == 1 && StringUtils.isNotEmpty(call)) {
+            // Return this CALL only if all the files have the same one
+            return calls.iterator().next().split(":");
         }
         return null;
     }

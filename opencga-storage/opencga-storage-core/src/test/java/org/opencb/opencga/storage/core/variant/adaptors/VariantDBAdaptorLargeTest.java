@@ -429,6 +429,52 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageBaseTest {
     }
 
     @Test
+    public void testGetAllVariants_filter() {
+        // FILTER
+        Query query = new Query(FILTER.key(), "PASS");
+        long numResults = dbAdaptor.count(query).first();
+        assertEquals(allVariants.getNumResults(), numResults);
+
+        query.append(FILTER.key(), "NO_PASS");
+        assertEquals(0, dbAdaptor.count(query).first().longValue());
+
+        // FILTER+FILE1,FILE2
+        query = new Query(FILES.key(), file1 + "," + file2).append(FILTER.key(), "PASS");
+        queryResult = dbAdaptor.get(query, null);
+        assertThat(queryResult, everyResult(allVariants,
+                withStudy(studyConfiguration1.getStudyName(), withFileId(anyOf(hasItem(file1.toString()), hasItem(file2.toString()))))));
+
+        query.append(FILTER.key(), "NO_PASS");
+        assertEquals(0, dbAdaptor.count(query).first().longValue());
+
+        // FILTER+FILE1;!FILE2
+        query = new Query(FILES.key(), file1 + ";!" + file2).append(FILTER.key(), "PASS");
+        queryResult = dbAdaptor.get(query, null);
+        assertThat(queryResult, everyResult(allVariants,
+                withStudy(studyConfiguration1.getStudyName(), withFileId(allOf(hasItem(file1.toString()), not(hasItem(file2.toString())))))));
+
+        query.append(FILTER.key(), "NO_PASS");
+        assertEquals(0, dbAdaptor.count(query).first().longValue());
+
+        // FILTER+STUDY
+        query = new Query(STUDIES.key(), studyConfiguration1.getStudyId()).append(FILTER.key(), "PASS");
+        queryResult = dbAdaptor.get(query, null);
+        assertThat(queryResult, everyResult(allVariants, withStudy(studyConfiguration1.getStudyName())));
+
+        query.append(FILTER.key(), "NO_PASS");
+        assertEquals(0, dbAdaptor.count(query).first().longValue());
+
+        // FILTER+FILE+STUDY
+        query = new Query(FILES.key(), file1 + "," + file2).append(STUDIES.key(), studyConfiguration1.getStudyId()).append(FILTER.key(), "PASS");
+        queryResult = dbAdaptor.get(query, null);
+        assertThat(queryResult, everyResult(allVariants,
+                withStudy(studyConfiguration1.getStudyName(), withFileId(anyOf(hasItem(file1.toString()), hasItem(file2.toString()))))));
+
+        query.append(FILTER.key(), "NO_PASS");
+        assertEquals(0, dbAdaptor.count(query).first().longValue());
+    }
+
+    @Test
     public void testGetAllVariants_returnedFiles1() {
 
         query.append(RETURNED_FILES.key(), file1)

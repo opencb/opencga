@@ -43,6 +43,8 @@ public class DocumentToVariantAnnotationConverter
 
     public static final String ANNOT_ID_FIELD = "id";
 
+    public static final String GENE_SO_FIELD = "_gn_so";
+
     public static final String CONSEQUENCE_TYPE_FIELD = "ct";
     public static final String CT_GENE_NAME_FIELD = "gn";
     public static final String CT_ENSEMBL_GENE_ID_FIELD = "ensg";
@@ -315,9 +317,9 @@ public class DocumentToVariantAnnotationConverter
         va.setGeneDrugInteraction(drugs);
 
         //XREfs
-        List<Xref> xrefs = new LinkedList<>();
         Object xrs = object.get(XREFS_FIELD);
         if (xrs != null && xrs instanceof List) {
+            List<Xref> xrefs = new LinkedList<>();
             for (Object o : (List) xrs) {
                 if (o instanceof Document) {
                     Document xref = (Document) o;
@@ -328,8 +330,8 @@ public class DocumentToVariantAnnotationConverter
                     );
                 }
             }
+            va.setXrefs(xrefs);
         }
-        va.setXrefs(xrefs);
 
         //Functional score
         List<Score> functionalScore = new LinkedList<>();
@@ -470,6 +472,7 @@ public class DocumentToVariantAnnotationConverter
 
         //ConsequenceType
         if (variantAnnotation.getConsequenceTypes() != null) {
+            Set<String> gnSo = new HashSet<>();
             List<ConsequenceType> consequenceTypes = variantAnnotation.getConsequenceTypes();
             for (ConsequenceType consequenceType : consequenceTypes) {
                 Document ct = new Document();
@@ -492,6 +495,26 @@ public class DocumentToVariantAnnotationConverter
                         soAccession.add(ConsequenceTypeMappings.termToAccession.get(entry.getName()));
                     }
                     putNotNull(ct, CT_SO_ACCESSION_FIELD, soAccession);
+
+                    for (Integer so : soAccession) {
+                        if (StringUtils.isNotEmpty(consequenceType.getGeneName())) {
+                            gnSo.add(buildGeneSO(consequenceType.getGeneName(), so));
+                        }
+                        if (StringUtils.isNotEmpty(consequenceType.getEnsemblGeneId())) {
+                            gnSo.add(buildGeneSO(consequenceType.getEnsemblGeneId(), so));
+                        }
+                        if (StringUtils.isNotEmpty(consequenceType.getEnsemblTranscriptId())) {
+                            gnSo.add(buildGeneSO(consequenceType.getEnsemblTranscriptId(), so));
+                        }
+                        if (consequenceType.getProteinVariantAnnotation() != null) {
+                            if (StringUtils.isNotEmpty(consequenceType.getProteinVariantAnnotation().getUniprotAccession())) {
+                                gnSo.add(buildGeneSO(consequenceType.getProteinVariantAnnotation().getUniprotAccession(), so));
+                            }
+                            if (StringUtils.isNotEmpty(consequenceType.getProteinVariantAnnotation().getUniprotName())) {
+                                gnSo.add(buildGeneSO(consequenceType.getProteinVariantAnnotation().getUniprotName(), so));
+                            }
+                        }
+                    }
                 }
                 //Protein annotation
                 if (consequenceType.getProteinVariantAnnotation() != null) {
@@ -558,6 +581,7 @@ public class DocumentToVariantAnnotationConverter
                 }
 
             }
+            putNotNull(document, GENE_SO_FIELD, gnSo);
             putNotNull(document, CONSEQUENCE_TYPE_FIELD, cts);
         }
 
@@ -590,6 +614,9 @@ public class DocumentToVariantAnnotationConverter
                     putNotNull(d, GENE_TRAIT_NAME_FIELD, geneTraitAssociation.getName());
                     putNotNull(d, GENE_TRAIT_SCORE_FIELD, geneTraitAssociation.getScore());
                     putNotNull(d, GENE_TRAIT_HPO_FIELD, geneTraitAssociation.getHpo());
+                    if (StringUtils.isNotEmpty(geneTraitAssociation.getHpo())) {
+                        xrefs.add(convertXrefToStorage(geneTraitAssociation.getHpo(), "HPO"));
+                    }
 //                    putNotNull(d, GENE_TRAIT_PUBMEDS_FIELD, geneTraitAssociation.getNumberOfPubmeds());
                     putNotNull(d, GENE_TRAIT_TYPES_FIELD, geneTraitAssociation.getAssociationTypes());
 //                    putNotNull(d, GENE_TRAIT_SOURCES_FIELD, geneTraitAssociation.getSources());
@@ -682,6 +709,10 @@ public class DocumentToVariantAnnotationConverter
         }
 
         return document;
+    }
+
+    public static String buildGeneSO(String gene, Integer so) {
+        return gene == null ? null : gene + '_' + so;
     }
 
 

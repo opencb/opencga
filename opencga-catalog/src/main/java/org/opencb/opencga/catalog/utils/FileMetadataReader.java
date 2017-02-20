@@ -351,7 +351,8 @@ public class FileMetadataReader {
                 for (Sample sample : sampleList) {
                     set.remove(sample.getName());
                 }
-                logger.warn("Missing samples: {}", set);
+                logger.warn("Some samples from file \"{}\" were not registered in Catalog. Registering new samples: {}",
+                        file.getName(), set);
                 if (createMissingSamples) {
                     for (String sampleName : set) {
                         if (simulate) {
