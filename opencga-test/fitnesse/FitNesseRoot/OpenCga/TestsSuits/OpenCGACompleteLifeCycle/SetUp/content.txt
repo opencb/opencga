@@ -1,0 +1,44 @@
+!define TEST_SYSTEM {slim}
+!define user {test}
+!define baseURL {http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/}
+
+
+!|Table: Rest Fixture | ${baseURL} |
+|let|projectA|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|projectAAlias|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|projectB|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|projectBAlias|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|studyA|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|studyAAlias|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|studyB|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|studyBAlias|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|iA1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)|| 
+|let|iA2|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|iA3|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|iB1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|sA1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)|| 
+|let|sA2|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|sA3|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|sB1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|vsA1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)|| 
+|let|vsA2|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|vsA3|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|vsB1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|cA1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)|| 
+|let|cA2|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|cA3|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+|let|cB1|js|Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5)||
+
+!3 Login fUser 
+!|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/  |
+| setBody | {"password" : "p@ssword"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/users/$fUser/login |200|  Content-Type: application/json ||
+|let|fUserSessionId|js|response.jsonbody.response[0].result[0].sessionId||
+
+!3 Login eUser 
+!|Table: Rest Fixture | http://bioinfoint.hpc.cam.ac.uk/opencga-1.0.0-final/webservices/rest/  |
+| setBody | {"password" : "p@ssword"}|
+| setHeader|Content-Type:application/json|
+| POST | /v1/users/$eUser/login |200|  Content-Type: application/json ||
+|let|eUserSessionId|js|response.jsonbody.response[0].result[0].sessionId||
