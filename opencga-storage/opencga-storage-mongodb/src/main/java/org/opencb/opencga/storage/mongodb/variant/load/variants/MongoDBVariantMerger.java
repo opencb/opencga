@@ -561,7 +561,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
             if (variantsWithValidData != 0) {
                 // Scenarios C3.1), C4.1)
-                logger.warn("Missing overlapped variant! " + mainVariant);
+                logger.debug("Missing overlapped variant! " + mainVariant);
                 mongoDBOps.setOverlappedVariants(mongoDBOps.getOverlappedVariants() + 1);
             }
             // else {
@@ -758,20 +758,23 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                         }
                     }
 
-                    boolean prompted = false;
-                    for (int i = 1; i < variantsInFile.size(); i++) {
-                        Variant auxVar = variantsInFile.get(i);
-                        // Check if variants where part of the same multiallelic variant
-                        String auxCall = auxVar.getStudies().get(0).getFiles().get(0).getCall();
-                        if (!prompted && (auxCall == null || call == null || !auxCall.startsWith(call))) {
-                            logger.warn("Overlapping variants in file {} : {}", fileId, variantsInFile);
-                            prompted = true;
-                        }
+                    // Do not prompt overlapping variants if genotypes are being excluded
+                    if (!excludeGenotypes) {
+                        boolean prompted = false;
+                        for (int i = 1; i < variantsInFile.size(); i++) {
+                            Variant auxVar = variantsInFile.get(i);
+                            // Check if variants where part of the same multiallelic variant
+                            String auxCall = auxVar.getStudies().get(0).getFiles().get(0).getCall();
+                            if (!prompted && (auxCall == null || call == null || !auxCall.startsWith(call))) {
+                                logger.warn("Overlapping variants in file {} : {}", fileId, variantsInFile);
+                                prompted = true;
+                            }
 //                        // Those variants that do not overlap with the selected variant won't be inserted
 //                        if (!auxVar.overlapWith(var, true)) {
 //                            mongoDBOps.nonInserted++;
 //                            logger.warn("Skipping overlapped variant " + auxVar);
 //                        }
+                        }
                     }
                     break;
             }
@@ -929,16 +932,18 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         } else {
             String id = variantConverter.buildStorageId(emptyVar);
             List<Bson> mergeUpdates = new LinkedList<>();
-            mergeUpdates.add(addEachToSet(IDS_FIELD, ids));
+            if (!ids.isEmpty()) {
+                mergeUpdates.add(addEachToSet(IDS_FIELD, ids));
+            }
 
             if (!excludeGenotypes) {
                 for (String gt : gts.keySet()) {
                     List sampleIds = getListFromDocument(gts, gt);
                     if (resume) {
-                        mergeUpdates.add(addEachToSet(STUDIES_FIELD + ".$." + GENOTYPES_FIELD + "." + gt,
+                        mergeUpdates.add(addEachToSet(STUDIES_FIELD + ".$." + GENOTYPES_FIELD + '.' + gt,
                                 sampleIds));
                     } else {
-                        mergeUpdates.add(pushEach(STUDIES_FIELD + ".$." + GENOTYPES_FIELD + "." + gt,
+                        mergeUpdates.add(pushEach(STUDIES_FIELD + ".$." + GENOTYPES_FIELD + '.' + gt,
                                 sampleIds));
                     }
                 }
@@ -947,13 +952,10 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 mergeUpdates.add(addEachToSet(STUDIES_FIELD + ".$." + ALTERNATES_FIELD, secondaryAlternates));
             }
 
-            // These files not present are missing values.
-            mongoDBOps.setMissingVariants(mongoDBOps.getMissingVariants() + fileIds.size() - fileDocuments.size());
-
             if (!fileDocuments.isEmpty()) {
                 mongoDBOps.getExistingStudy().getIds().add(id);
                 mongoDBOps.getExistingStudy().getQueries().add(and(eq("_id", id),
-                        eq(STUDIES_FIELD + "." + STUDYID_FIELD, studyId)));
+                        eq(STUDIES_FIELD + '.' + STUDYID_FIELD, studyId)));
 
                 if (resume) {
                     mergeUpdates.add(addEachToSet(STUDIES_FIELD + ".$." + FILES_FIELD, fileDocuments));
@@ -961,11 +963,15 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     mergeUpdates.add(pushEach(STUDIES_FIELD + ".$." + FILES_FIELD, fileDocuments));
                 }
                 mongoDBOps.getExistingStudy().getUpdates().add(combine(mergeUpdates));
-            } else {
+            } else if (!mergeUpdates.isEmpty()) {
+                // These files are not present in this variant. Increase the number of missing variants.
+                mongoDBOps.setMissingVariants(mongoDBOps.getMissingVariants() + 1);
                 mongoDBOps.getExistingStudy().getIds().add(id);
                 mongoDBOps.getExistingStudy().getQueries().add(and(eq("_id", id),
-                        eq(STUDIES_FIELD + "." + STUDYID_FIELD, studyId)));
+                        eq(STUDIES_FIELD + '.' + STUDYID_FIELD, studyId)));
                 mongoDBOps.getExistingStudy().getUpdates().add(combine(mergeUpdates));
+            } else {
+                mongoDBOps.setMissingVariantsNoFillGaps(mongoDBOps.getMissingVariantsNoFillGaps() + 1);
             }
         }
     }

@@ -34,6 +34,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.metadata.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantField;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
@@ -74,6 +75,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
     private boolean mutableSamplesPosition = true;
     private boolean failOnEmptyVariants = false;
     private boolean simpleGenotypes = false;
+    private Set<VariantField> variantFields = null;
 
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
         this(variantTableHelper, new HBaseStudyConfigurationManager(variantTableHelper.getOutputTableAsString(),
@@ -89,6 +91,12 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
     public HBaseToVariantConverter setReturnedSamples(List<String> returnedSamples) {
         this.returnedSamples = returnedSamples;
+        return this;
+    }
+
+    public HBaseToVariantConverter setReturnedFields(Set<VariantField> fields) {
+        variantFields = fields;
+        annotationConverter.setReturnedFields(fields);
         return this;
     }
 
