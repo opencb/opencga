@@ -485,6 +485,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
 
         return mergeVariants(studyConfiguration, Collections.singletonList(fileId), stageWriteResult, Collections.emptyList());
     }
+
     public MongoDBVariantWriteResult mergeVariants(StudyConfiguration studyConfiguration, List<Integer> fileIds,
                                                    MongoDBVariantWriteResult stageWriteResult, List<String> chromosomes) {
         MongoDBCollection stage = dbAdaptor.getStageCollection();
@@ -507,7 +508,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         reader.post();
         reader.close();
 
-        MongoDBVariantStageLoader.cleanStageCollection(stage, studyConfiguration.getStudyId(), fileIds);
+        MongoDBVariantStageLoader.cleanStageCollection(stage, studyConfiguration.getStudyId(), fileIds, variantLoader.getResult());
         studyConfiguration.getIndexedFiles().addAll(fileIds);
         dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
         return variantLoader.getResult().setSkippedVariants(stageWriteResult.getSkippedVariants());
@@ -626,69 +627,18 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
     @Test
     public void testInsertSameVariantTwice() throws StorageEngineException {
 
-        VariantMongoDBWriter mongoDBWriter;
-        StudyEntry sourceEntry;
-        mongoDBWriter = new VariantMongoDBWriter(fileId1, studyConfiguration, dbAdaptor, true, false);
-        mongoDBWriter.setThreadSynchronizationBoolean(new AtomicBoolean(false));
-        mongoDBWriter.open();
-        mongoDBWriter.pre();
+        String chromosome = "1";
+        loadFile1(chromosome, fileId1, Collections.singletonList(chromosome));
+        loadFile2(chromosome, fileId2, Collections.singletonList(chromosome));
+        Integer fileId = fileId3;
+        studyConfiguration2.getFileIds().putIfAbsent(getFileName(fileId), fileId);
+        studyConfiguration2.getSamplesInFiles().putIfAbsent(fileId, file3SampleIds);
 
-        Variant variant1 = new Variant("X", 999, 999, "A", "C");
-        sourceEntry = new StudyEntry(source1.getFileId(), source1.getStudyId());
-        sourceEntry.addSampleData("NA19600", (Collections.singletonMap("GT", "./.")));
-        sourceEntry.addSampleData("NA19660", (Collections.singletonMap("GT", "./.")));
-        sourceEntry.addSampleData("NA19661", (Collections.singletonMap("GT", "./.")));
-        sourceEntry.addSampleData("NA19685", (Collections.singletonMap("GT", "./.")));
-        variant1.addStudyEntry(sourceEntry);
-        mongoDBWriter.write(variant1);
-        System.out.println("mongoDBWriter = " + mongoDBWriter.getWriteResult());
-        assertEquals(new MongoDBVariantWriteResult(1, 0, 0, 0, 0, 0), clearTime(mongoDBWriter.getWriteResult()));
+        List<Variant> file3Variants = createFile3Variants(chromosome, fileId.toString(), source3.getStudyId());
+        file3Variants.add(file3Variants.get(2));
 
-        Variant variant2 = new Variant("X", 999, 999, "A", "C");
-        sourceEntry = new StudyEntry(source1.getFileId(), source1.getStudyId());
-        sourceEntry.addSampleData("NA19600", (Collections.singletonMap("GT", "1/1")));
-        sourceEntry.addSampleData("NA19660", (Collections.singletonMap("GT", "1/1")));
-        sourceEntry.addSampleData("NA19661", (Collections.singletonMap("GT", "1/1")));
-        sourceEntry.addSampleData("NA19685", (Collections.singletonMap("GT", "1/1")));
-        variant2.addStudyEntry(sourceEntry);
-        mongoDBWriter.write(variant2);
-        System.out.println("mongoDBWriter = " + mongoDBWriter.getWriteResult());
-        assertEquals(new MongoDBVariantWriteResult(1, 0, 0, 0, 0, 1), clearTime(mongoDBWriter.getWriteResult()));
-
-        Variant variant3 = new Variant("X", 1000, 1000, "A", "C");
-        sourceEntry = new StudyEntry(source1.getFileId(), source1.getStudyId());
-        sourceEntry.addSampleData("NA19600", (Collections.singletonMap("GT", "1/1")));
-        sourceEntry.addSampleData("NA19660", (Collections.singletonMap("GT", "1/1")));
-        sourceEntry.addSampleData("NA19661", (Collections.singletonMap("GT", "1/1")));
-        sourceEntry.addSampleData("NA19685", (Collections.singletonMap("GT", "1/1")));
-        variant3.addStudyEntry(sourceEntry);
-
-        Variant variant4 = new Variant("X", 1000, 1000, "A", "C");
-        sourceEntry = new StudyEntry(source1.getFileId(), source1.getStudyId());
-        sourceEntry.addSampleData("NA19600", (Collections.singletonMap("GT", "./.")));
-        sourceEntry.addSampleData("NA19660", (Collections.singletonMap("GT", "./.")));
-        sourceEntry.addSampleData("NA19661", (Collections.singletonMap("GT", "./.")));
-        sourceEntry.addSampleData("NA19685", (Collections.singletonMap("GT", "./.")));
-        variant4.addStudyEntry(sourceEntry);
-
-        mongoDBWriter.write(Arrays.asList(variant3, variant4));
-        System.out.println("mongoDBWriter = " + mongoDBWriter.getWriteResult());
-        assertEquals(new MongoDBVariantWriteResult(2, 0, 0, 0, 0, 2), clearTime(mongoDBWriter.getWriteResult()));
-
-        Variant variant5 = new Variant("X", 1000, 1000, "A", "<CN0>");
-        variant5.setType(VariantType.SYMBOLIC);
-        sourceEntry = new StudyEntry(source1.getFileId(), source1.getStudyId());
-        sourceEntry.addSampleData("NA19600", (Collections.singletonMap("GT", "./.")));
-        sourceEntry.addSampleData("NA19660", (Collections.singletonMap("GT", "./.")));
-        sourceEntry.addSampleData("NA19661", (Collections.singletonMap("GT", "./.")));
-        sourceEntry.addSampleData("NA19685", (Collections.singletonMap("GT", "./.")));
-        variant5.addStudyEntry(sourceEntry);
-        mongoDBWriter.write(Collections.singletonList(variant5));
-        assertEquals(new MongoDBVariantWriteResult(2, 0, 0, 0, 1, 2), clearTime(mongoDBWriter.getWriteResult()));
-
-        mongoDBWriter.post();
-        mongoDBWriter.close();
-        studyConfiguration.getIndexedFiles().add(fileId1);
+        MongoDBVariantWriteResult result = loadFile(studyConfiguration2, file3Variants, fileId, Collections.singletonList(chromosome));
+        assertEquals(new MongoDBVariantWriteResult(0, 2, 1, 0, 0, 2), clearTime(result));
     }
 
     public MongoDBVariantWriteResult clearTime(MongoDBVariantWriteResult writeResult) {
