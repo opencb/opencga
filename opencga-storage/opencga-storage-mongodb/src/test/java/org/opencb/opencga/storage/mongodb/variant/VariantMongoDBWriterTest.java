@@ -28,7 +28,6 @@ import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -493,7 +492,7 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stage, studyConfiguration.getStudyId(), chromosomes);
         MongoDBVariantMerger dbMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds,
                 variantsCollection, studyConfiguration.getIndexedFiles(), false);
-        MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(variantsCollection, fileIds, false, null);
+        MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(variantsCollection, dbAdaptor.getStageCollection(), studyConfiguration.getStudyId(), fileIds, false, null);
 
         reader.open();
         reader.pre();
@@ -508,7 +507,8 @@ public class VariantMongoDBWriterTest implements MongoDBVariantStorageTest {
         reader.post();
         reader.close();
 
-        MongoDBVariantStageLoader.cleanStageCollection(stage, studyConfiguration.getStudyId(), fileIds, variantLoader.getResult());
+        long cleanedDocuments = MongoDBVariantStageLoader.cleanStageCollection(stage, studyConfiguration.getStudyId(), fileIds, null, null);
+        assertEquals(0, cleanedDocuments);
         studyConfiguration.getIndexedFiles().addAll(fileIds);
         dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
         return variantLoader.getResult().setSkippedVariants(stageWriteResult.getSkippedVariants());

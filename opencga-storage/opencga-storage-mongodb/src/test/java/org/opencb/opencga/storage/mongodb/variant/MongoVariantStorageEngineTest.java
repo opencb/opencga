@@ -43,6 +43,7 @@ import org.opencb.opencga.storage.mongodb.variant.adaptors.VariantMongoDBAdaptor
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageEngineException;
+import org.opencb.opencga.storage.mongodb.variant.load.stage.MongoDBVariantStageLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -474,10 +475,13 @@ public class MongoVariantStorageEngineTest extends VariantStorageManagerTest imp
         assertTrue(i > 1);
         assertTrue(success.get());
 
-        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
+        VariantMongoDBAdaptor dbAdaptor = (VariantMongoDBAdaptor) variantStorageManager.getDBAdaptor(DB_NAME);
         long count = dbAdaptor.count(null).first();
         System.out.println("count = " + count);
         assertTrue(count > 0);
+
+        long cleanedDocuments = MongoDBVariantStageLoader.cleanStageCollection(dbAdaptor.getStageCollection(), studyConfiguration.getStudyId(), Collections.singletonList(FILE_ID), null, null);
+        assertEquals(0, cleanedDocuments);
 
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         studyConfiguration.getHeaders().clear();

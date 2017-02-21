@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
+import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.types.Binary;
 import org.opencb.biodata.formats.variant.io.VariantReader;
@@ -60,6 +61,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageEngine.Options;
@@ -572,11 +574,13 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             setStatus(BatchFileOperation.Status.DONE, MERGE.key(), fileIds);
         }
 
-        long startTime = System.currentTimeMillis();
-        logger.info("Deleting variant records from Stage collection");
-        long modifiedCount = MongoDBVariantStageLoader.cleanStageCollection(stageCollection, studyConfiguration.getStudyId(), fileIds,
-                chromosomesToLoad, writeResult);
-        logger.info("Delete variants time: " + (System.currentTimeMillis() - startTime) / 1000 + "s , CleanDocuments: " + modifiedCount);
+        if (options.getBoolean(STAGE_CLEAN_CHECK.key(), STAGE_CLEAN_CHECK.defaultValue())) {
+            StopWatch time = StopWatch.createStarted();
+            logger.info("Deleting variant records from Stage collection");
+            long modifiedCount = MongoDBVariantStageLoader.cleanStageCollection(stageCollection, studyConfiguration.getStudyId(), fileIds,
+                    chromosomesToLoad, writeResult);
+            logger.info("Delete variants time: " + time.getTime(TimeUnit.MILLISECONDS) / 1000.0 + "s , CleanDocuments: " + modifiedCount);
+        }
 
         writeResult.setSkippedVariants(skippedVariants);
 
@@ -675,8 +679,8 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
 
         MongoDBVariantMerger variantMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds,
                 dbAdaptor.getVariantsCollection(), indexedFiles, resume);
-        MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(dbAdaptor.getVariantsCollection(), fileIds, resume,
-                progressLogger);
+        MongoDBVariantMergeLoader variantLoader = new MongoDBVariantMergeLoader(dbAdaptor.getVariantsCollection(), stageCollection,
+                studyConfiguration.getStudyId(), fileIds, resume, progressLogger);
 
         ParallelTaskRunner<Document, MongoDBOperations> ptrMerge;
         ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
@@ -707,6 +711,7 @@ public class MongoDBVariantStoragePipeline extends VariantStoragePipeline {
             }
             ptrMerge.run();
         } catch (ExecutionException e) {
+            logger.info("Write result: {}", variantLoader.getResult());
             throw new StorageEngineException("Error while executing LoadVariants in ParallelTaskRunner", e);
         }
         return variantLoader.getResult();

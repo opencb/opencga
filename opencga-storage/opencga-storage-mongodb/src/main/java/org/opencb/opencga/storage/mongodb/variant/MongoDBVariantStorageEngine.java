@@ -74,6 +74,7 @@ public class MongoDBVariantStorageEngine extends VariantStorageEngine {
         STAGE("stage", false),
         STAGE_RESUME("stage.resume", false),
         STAGE_PARALLEL_WRITE("stage.parallel.write", false),
+        STAGE_CLEAN_CHECK("stage.clean.check", false),
         MERGE("merge", false),
         MERGE_SKIP("merge.skip", false), // Internal use only
         MERGE_RESUME("merge.resume", false),

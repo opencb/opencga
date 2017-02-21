@@ -202,13 +202,8 @@ public class MongoDBVariantStageLoader implements DataWriter<ListMultimap<Docume
     }
 
     public static long cleanStageCollection(MongoDBCollection stageCollection, int studyId, List<Integer> fileIds,
-                                            MongoDBVariantWriteResult result) {
-        return cleanStageCollection(stageCollection, studyId, fileIds, null, result);
-    }
-
-    public static long cleanStageCollection(MongoDBCollection stageCollection, int studyId, List<Integer> fileIds,
                                             Collection<String> chromosomes, MongoDBVariantWriteResult result) {
-        boolean removeDuplicatedVariants = result.getNonInsertedVariants() > 0;
+        boolean removeDuplicatedVariants = result == null || result.getNonInsertedVariants() > 0;
         // Delete those new studies that have duplicated variants. Those are not inserted, so they are not new variants.
         // i.e: For each file, or the file has not been loaded (empty), or the file has more than one element.
         //     { $or : [ { <study>.<file>.0 : {$exists:false} }, { <study>.<file>.1 : {$exists:true} } ] }
