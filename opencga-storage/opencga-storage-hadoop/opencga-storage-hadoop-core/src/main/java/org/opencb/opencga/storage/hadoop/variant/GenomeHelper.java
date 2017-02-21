@@ -227,11 +227,23 @@ public class GenomeHelper implements AutoCloseable {
     public String[] splitBlockId(String blockId) {
         char sep = getSeparator();
         String[] split = StringUtils.splitPreserveAllTokens(blockId, sep);
-        if (split.length != 2) {
-            throw new IllegalStateException(String.format("Block ID is not valid - exected 2 blocks separaed by `%s`; value `%s`", sep,
-                    blockId));
+
+        if (split.length < 2) {
+            throw new IllegalStateException(
+                    String.format("Block ID is not valid - expected 2 or more blocks separated by `%s`; value `%s`", sep, blockId));
         }
-        return split;
+
+        // Should parse contigs with separator in names, e.g. NC_007605
+        StringBuilder contig = new StringBuilder();
+        for (int i = 0; i < split.length - 1; i++) {
+            contig.append(split[i]);
+            if (i < split.length - 2) {
+                contig.append(String.valueOf(sep));
+            }
+        }
+
+        String[] res = {contig.toString(), split[split.length - 1]};
+        return res;
     }
 
     /* ***************
